@@ -5969,58 +5969,6 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_AddPrinterEx(struct torture_context *tctx,
-			      struct dcerpc_pipe *p,
-			      struct policy_handle *handle_p,
-			      const char *printername,
-			      const char *drivername,
-			      const char *portname)
-{
-	bool ret = true;
-
-	if (!torture_setting_bool(tctx, "samba3", false)) {
-		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER_EX, true)) {
-			torture_comment(tctx, "failed to add printer to well known list\n");
-			ret = false;
-		}
-	}
-
-	if (!test_AddPrinter_normal(tctx, p, handle_p,
-				    printername, drivername, portname,
-				    true)) {
-		torture_comment(tctx, "failed to add printer to printer list\n");
-		ret = false;
-	}
-
-	return ret;
-}
-
-static bool test_AddPrinter(struct torture_context *tctx,
-			    struct dcerpc_pipe *p,
-			    struct policy_handle *handle_p,
-			    const char *printername,
-			    const char *drivername,
-			    const char *portname)
-{
-	bool ret = true;
-
-	if (!torture_setting_bool(tctx, "samba3", false)) {
-		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER, false)) {
-			torture_comment(tctx, "failed to add printer to well known list\n");
-			ret = false;
-		}
-	}
-
-	if (!test_AddPrinter_normal(tctx, p, handle_p,
-				    printername, drivername, portname,
-				    false)) {
-		torture_comment(tctx, "failed to add printer to printer list\n");
-		ret = false;
-	}
-
-	return ret;
-}
-
 static bool test_printer_info(struct torture_context *tctx,
 			      struct dcerpc_binding_handle *b,
 			      struct policy_handle *handle)
@@ -6245,7 +6193,7 @@ static bool test_csetprinter(struct torture_context *tctx,
 	 * been added */
 
 	torture_assert(tctx,
-		test_AddPrinter(tctx, p, &new_handle, printername, drivername, portname),
+		test_AddPrinter_normal(tctx, p, &new_handle, printername, drivername, portname, false),
 		"failed to add new printer");
 	torture_assert(tctx,
 		test_GetPrinter_level(tctx, b, handle, 0, &info),
@@ -6285,17 +6233,21 @@ static bool test_csetprinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_printer(struct torture_context *tctx,
-			 struct dcerpc_pipe *p)
+static bool test_add_printer_args(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  const char *printer_name,
+				  const char *driver_name,
+				  const char *port_name,
+				  bool wellknown,
+				  bool ex)
 {
 	bool ret = true;
-	struct policy_handle handle[2];
+	struct policy_handle handle;
 	struct policy_handle printserver_handle;
 	bool found = false;
-	const char *drivername = "Microsoft XPS Document Writer";
-	const char *portname = "LPT1:";
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	const char *environment;
+	const char *printer_name2 = talloc_asprintf(tctx, "%s2", printer_name);
 
 	torture_assert(tctx,
 		test_OpenPrinter_server(tctx, p, &printserver_handle),
@@ -6307,57 +6259,81 @@ static bool test_printer(struct torture_context *tctx,
 		test_ClosePrinter(tctx, b, &printserver_handle),
 		"failed to close printserver");
 
-	/* test printer created via AddPrinter */
+	if (wellknown) {
 
-	if (!test_AddPrinter(tctx, p, &handle[0], TORTURE_PRINTER, drivername, portname)) {
-		return false;
+		if (torture_setting_bool(tctx, "samba3", false)) {
+			torture_skip(tctx, "skipping AddPrinter level 1 against samba");
+		}
+
+		torture_assert(tctx,
+			test_AddPrinter_wellknown(tctx, p, printer_name, ex),
+			"failed to add wellknown printer");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinter_normal(tctx, p, &handle, printer_name, driver_name, port_name, ex),
+			"failed to add printer");
 	}
 
-	if (!test_csetprinter(tctx, p, &handle[0], TORTURE_PRINTER "2", drivername, portname)) {
+	if (!test_csetprinter(tctx, p, &handle, printer_name2, driver_name, port_name)) {
 		ret = false;
 	}
 
-	if (!test_one_printer(tctx, p, &handle[0], TORTURE_PRINTER, drivername, environment)) {
+	if (!test_one_printer(tctx, p, &handle, printer_name, driver_name, environment)) {
 		ret = false;
 	}
 
-	if (!test_DeletePrinter(tctx, b, &handle[0])) {
-		ret = false;
-	}
-
-	if (!test_EnumPrinters_findname(tctx, b, PRINTER_ENUM_LOCAL, 1,
-					TORTURE_PRINTER, &found)) {
-		ret = false;
-	}
-
-	torture_assert(tctx, !found, "deleted printer still there");
-
-	/* test printer created via AddPrinterEx */
-
-	if (!test_AddPrinterEx(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, portname)) {
-		return false;
-	}
-
-	if (!test_csetprinter(tctx, p, &handle[1], TORTURE_PRINTER_EX "2", drivername, portname)) {
-		ret = false;
-	}
-
-	if (!test_one_printer(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, environment)) {
-		ret = false;
-	}
-
-	if (!test_DeletePrinter(tctx, b, &handle[1])) {
+	if (!test_DeletePrinter(tctx, b, &handle)) {
 		ret = false;
 	}
 
 	if (!test_EnumPrinters_findname(tctx, b, PRINTER_ENUM_LOCAL, 1,
-					TORTURE_PRINTER_EX, &found)) {
+					printer_name, &found)) {
 		ret = false;
 	}
 
 	torture_assert(tctx, !found, "deleted printer still there");
 
 	return ret;
+}
+
+static bool test_add_printer(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
+{
+	return test_add_printer_args(tctx, p,
+				     TORTURE_PRINTER,
+				     "Microsoft XPS Document Writer",
+				     "LPT1:",
+				     false, false);
+}
+
+static bool test_add_printer_wellknown(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	return test_add_printer_args(tctx, p,
+				     TORTURE_WELLKNOWN_PRINTER,
+				     "Microsoft XPS Document Writer",
+				     "LPT1:",
+				     true, false);
+}
+
+static bool test_add_printer_ex(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	return test_add_printer_args(tctx, p,
+				     TORTURE_PRINTER_EX,
+				     "Microsoft XPS Document Writer",
+				     "LPT1:",
+				     false, true);
+}
+
+static bool test_add_printer_ex_wellknown(struct torture_context *tctx,
+					  struct dcerpc_pipe *p)
+{
+	return test_add_printer_args(tctx, p,
+				     TORTURE_WELLKNOWN_PRINTER_EX,
+				     "Microsoft XPS Document Writer",
+				     "LPT1:",
+				     true, true);
 }
 
 static bool test_architecture_buffer(struct torture_context *tctx,
@@ -6481,7 +6457,10 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"printer", &ndr_table_spoolss);
 
-	torture_rpc_tcase_add_test(tcase, "printer", test_printer);
+	torture_rpc_tcase_add_test(tcase, "add_printer", test_add_printer);
+	torture_rpc_tcase_add_test(tcase, "add_printer_wellknown", test_add_printer_wellknown);
+	torture_rpc_tcase_add_test(tcase, "add_printer_ex", test_add_printer_ex);
+	torture_rpc_tcase_add_test(tcase, "add_printer_ex_wellknown", test_add_printer_ex_wellknown);
 
 	return suite;
 }
