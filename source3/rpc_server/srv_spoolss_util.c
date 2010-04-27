@@ -1020,6 +1020,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 	enum winreg_Type type;
 	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
+	uint32_t data_size = 0;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -1030,7 +1031,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &wvalue,
 					  &type,
 					  NULL,
-					  (uint32_t *) &blob.length,
+					  &data_size,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1047,8 +1048,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 		result = WERR_INVALID_DATATYPE;
 		goto done;
 	}
-
-	blob.data = (uint8_t *) TALLOC(mem_ctx, blob.length);
+	blob = data_blob_talloc(mem_ctx, NULL, data_size);
 	if (blob.data == NULL) {
 		result = WERR_NOMEM;
 		goto done;
@@ -1061,7 +1061,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &wvalue,
 					  &type,
 					  blob.data,
-					  (uint32_t *) &blob.length,
+					  &data_size,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1091,6 +1091,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 	enum winreg_Type type;
 	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
+	uint32_t data_size = 0;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -1101,7 +1102,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &wvalue,
 					  &type,
 					  NULL,
-					  (uint32_t *) &blob.length,
+					  &data_size,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1119,12 +1120,12 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (blob.length != 4) {
+	if (data_size != 4) {
 		result = WERR_INVALID_DATA;
 		goto done;
 	}
 
-	blob.data = (uint8_t *) TALLOC(mem_ctx, blob.length);
+	blob = data_blob_talloc(mem_ctx, NULL, data_size);
 	if (blob.data == NULL) {
 		result = WERR_NOMEM;
 		goto done;
@@ -1137,7 +1138,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &wvalue,
 					  &type,
 					  blob.data,
-					  (uint32_t *) &blob.length,
+					  &data_size,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
