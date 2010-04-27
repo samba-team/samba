@@ -651,12 +651,14 @@ RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
 		   $(LIB_EVENTLOG_OBJ) librpc/gen_ndr/srv_eventlog.o
 
+NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o
+
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
 RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
-RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
+RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ)
 
 RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2)
 
