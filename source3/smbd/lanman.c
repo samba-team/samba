@@ -4552,12 +4552,12 @@ static int check_printdest_info(struct pack_desc* desc,
 	return True;
 }
 
-static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
+static void fill_printdest_info(struct spoolss_PrinterInfo2 *info2, int uLevel,
 				struct pack_desc* desc)
 {
 	char buf[100];
 
-	strncpy(buf,SERVICE(snum),sizeof(buf)-1);
+	strncpy(buf, info2->printername, sizeof(buf)-1);
 	buf[sizeof(buf)-1] = 0;
 	strupper_m(buf);
 
@@ -4601,8 +4601,15 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 	char* PrinterName = p;
 	int uLevel;
 	struct pack_desc desc;
-	int snum;
 	char *tmpdata=NULL;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	union spoolss_PrinterInfo info;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4626,32 +4633,77 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	snum = find_service(PrinterName);
-	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_WPrintDestGetInfo: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    PrinterName,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
 		*rdata_len = 0;
 		desc.errcode = NERR_DestNotFound;
 		desc.neededlen = 0;
-	} else {
-		if (mdrcnt > 0) {
-			*rdata = smb_realloc_limit(*rdata,mdrcnt);
-			if (!*rdata) {
-				return False;
-			}
-			desc.base = *rdata;
-			desc.buflen = mdrcnt;
-		} else {
-			/*
-			 * Don't return data but need to get correct length
-			 * init_package will return wrong size if buflen=0
-			 */
-			desc.buflen = getlen(desc.format);
-			desc.base = tmpdata = (char *)SMB_MALLOC( desc.buflen );
-		}
-		if (init_package(&desc,1,0)) {
-			fill_printdest_info(conn,snum,uLevel,&desc);
-		}
-		*rdata_len = desc.usedlen;
+		goto out;
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		*rdata_len = 0;
+		desc.errcode = NERR_DestNotFound;
+		desc.neededlen = 0;
+		goto out;
+	}
+
+	werr = rpccli_spoolss_getprinter(cli, mem_ctx,
+					 &handle,
+					 2,
+					 0,
+					 &info);
+	if (!W_ERROR_IS_OK(werr)) {
+		*rdata_len = 0;
+		desc.errcode = NERR_DestNotFound;
+		desc.neededlen = 0;
+		goto out;
+	}
+
+	if (mdrcnt > 0) {
+		*rdata = smb_realloc_limit(*rdata,mdrcnt);
+		if (!*rdata) {
+			return False;
+		}
+		desc.base = *rdata;
+		desc.buflen = mdrcnt;
+	} else {
+		/*
+		 * Don't return data but need to get correct length
+		 * init_package will return wrong size if buflen=0
+		 */
+		desc.buflen = getlen(desc.format);
+		desc.base = tmpdata = (char *)SMB_MALLOC( desc.buflen );
+	}
+	if (init_package(&desc,1,0)) {
+		fill_printdest_info(&info.info2, uLevel,&desc);
+	}
+
+ out:
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
+	*rdata_len = desc.usedlen;
 
 	*rparam_len = 6;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
@@ -4682,7 +4734,13 @@ static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	int queuecnt;
 	int i, n, succnt=0;
 	struct pack_desc desc;
-	int services = lp_numservices();
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	union spoolss_PrinterInfo *info;
+	uint32_t count;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4703,11 +4761,33 @@ static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	queuecnt = 0;
-	for (i = 0; i < services; i++) {
-		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-			queuecnt++;
-		}
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_WPrintDestEnum: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
+
+	werr = rpccli_spoolss_enumprinters(cli, mem_ctx,
+					   PRINTER_ENUM_LOCAL,
+					   cli->srv_name_slash,
+					   2,
+					   0,
+					   &count,
+					   &info);
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		*rdata_len = 0;
+		desc.errcode = NERR_DestNotFound;
+		desc.neededlen = 0;
+		goto out;
+	}
+
+	queuecnt = count;
 
 	if (mdrcnt > 0) {
 		*rdata = smb_realloc_limit(*rdata,mdrcnt);
@@ -4721,17 +4801,15 @@ static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	if (init_package(&desc,queuecnt,0)) {    
 		succnt = 0;
 		n = 0;
-		for (i = 0; i < services; i++) {
-			if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-				fill_printdest_info(conn,i,uLevel,&desc);
-				n++;
-				if (desc.errcode == NERR_Success) {
-					succnt = n;
-				}
+		for (i = 0; i < count; i++) {
+			fill_printdest_info(&info[i].info2, uLevel,&desc);
+			n++;
+			if (desc.errcode == NERR_Success) {
+				succnt = n;
 			}
 		}
 	}
-
+ out:
 	*rdata_len = desc.usedlen;
 
 	*rparam_len = 8;
