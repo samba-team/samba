@@ -90,6 +90,31 @@ struct torture_driver_context {
 	bool ex;
 };
 
+struct torture_printer_context {
+	struct spoolss_SetPrinterInfo2 info2;
+	struct torture_driver_context driver;
+	bool ex;
+	bool wellknown;
+	bool added_driver;
+	bool have_driver;
+};
+
+static bool upload_printer_driver(struct torture_context *tctx,
+				  const char *server_name,
+				  struct torture_driver_context *d);
+static bool remove_printer_driver(struct torture_context *tctx,
+				  const char *server_name,
+				  struct torture_driver_context *d);
+static bool fillup_printserver_info(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct torture_driver_context *d);
+static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex);
+
 #define COMPARE_STRING(tctx, c,r,e) \
 	torture_assert_str_equal(tctx, c.e, r.e, "invalid value")
 
@@ -6106,7 +6131,8 @@ static bool test_one_printer(struct torture_context *tctx,
 			     struct policy_handle *handle,
 			     const char *name,
 			     const char *drivername,
-			     const char *environment)
+			     const char *environment,
+			     bool have_driver)
 {
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -6159,8 +6185,10 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_DriverInfo_winreg(tctx, p, handle, name, drivername, environment)) {
-		ret = false;
+	if (have_driver) {
+		if (!test_DriverInfo_winreg(tctx, p, handle, name, drivername, environment)) {
+			ret = false;
+		}
 	}
 
 	if (!test_printer_rename(tctx, p, handle, name)) {
@@ -6233,44 +6261,26 @@ static bool test_csetprinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_add_printer_args(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  const char *printer_name,
-				  const char *driver_name,
-				  const char *port_name,
-				  bool wellknown,
-				  bool ex)
+static bool test_add_printer_args_with_driver(struct torture_context *tctx,
+					      struct dcerpc_pipe *p,
+					      struct torture_printer_context *t)
 {
 	bool ret = true;
 	struct policy_handle handle;
-	struct policy_handle printserver_handle;
 	bool found = false;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	const char *environment;
+	const char *printer_name = t->info2.printername;
+	const char *driver_name = t->added_driver ? t->driver.info8.driver_name : t->info2.drivername;
+	const char *port_name = t->info2.portname;
 	const char *printer_name2 = talloc_asprintf(tctx, "%s2", printer_name);
 
-	torture_assert(tctx,
-		test_OpenPrinter_server(tctx, p, &printserver_handle),
-		"failed to open printserver");
-	torture_assert(tctx,
-		test_get_environment(tctx, b, &printserver_handle, &environment),
-		"failed to get environment");
-	torture_assert(tctx,
-		test_ClosePrinter(tctx, b, &printserver_handle),
-		"failed to close printserver");
-
-	if (wellknown) {
-
-		if (torture_setting_bool(tctx, "samba3", false)) {
-			torture_skip(tctx, "skipping AddPrinter level 1 against samba");
-		}
-
+	if (t->wellknown) {
 		torture_assert(tctx,
-			test_AddPrinter_wellknown(tctx, p, printer_name, ex),
+			test_AddPrinter_wellknown(tctx, p, printer_name, t->ex),
 			"failed to add wellknown printer");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinter_normal(tctx, p, &handle, printer_name, driver_name, port_name, ex),
+			test_AddPrinter_normal(tctx, p, &handle, printer_name, driver_name, port_name, t->ex),
 			"failed to add printer");
 	}
 
@@ -6278,7 +6288,7 @@ static bool test_add_printer_args(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_one_printer(tctx, p, &handle, printer_name, driver_name, environment)) {
+	if (!test_one_printer(tctx, p, &handle, printer_name, driver_name, t->driver.remote.environment, t->have_driver)) {
 		ret = false;
 	}
 
@@ -6296,44 +6306,150 @@ static bool test_add_printer_args(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_add_printer(struct torture_context *tctx,
-			     struct dcerpc_pipe *p)
+static bool compose_local_driver_directory(struct torture_context *tctx,
+					   const char *environment,
+					   const char *local_dir,
+					   const char **path)
 {
-	return test_add_printer_args(tctx, p,
-				     TORTURE_PRINTER,
-				     "Microsoft XPS Document Writer",
-				     "LPT1:",
-				     false, false);
+	char *p;
+
+	p = strrchr(local_dir, '/');
+	if (!p) {
+		return NULL;
+	}
+	p++;
+
+	if (strequal(environment, "Windows x64")) {
+		if (!strequal(p, "x64")) {
+			*path = talloc_asprintf(tctx, "%s/x64", local_dir);
+		}
+	} else if (strequal(environment, "Windows NT x86")) {
+		if (!strequal(p, "i386")) {
+			*path = talloc_asprintf(tctx, "%s/i386", local_dir);
+		}
+	} else {
+		torture_assert(tctx, "unknown environment: '%s'\n", environment);
+	}
+
+	return true;
+}
+
+static bool test_add_printer_args(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct torture_printer_context *t)
+{
+	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	if (t->wellknown && torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping AddPrinter level 1 against samba");
+	}
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, &t->driver),
+		"failed to fillup printserver info");
+
+	t->driver.info8.architecture = talloc_strdup(t, t->driver.remote.environment);
+
+	torture_assert(tctx,
+		compose_local_driver_directory(tctx, t->driver.remote.environment,
+					       t->driver.local.driver_directory,
+					       &t->driver.local.driver_directory),
+		"failed to compose local driver directory");
+
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, t->driver.remote.environment, 3, t->info2.drivername)) {
+		t->have_driver = true;
+		goto try_run;
+	}
+
+	torture_comment(tctx, "driver '%s' (architecture: %s, version: 3) does not exist on the server\n",
+		t->info2.drivername, t->driver.remote.environment);
+	torture_comment(tctx, "trying to upload own driver\n");
+
+	if (!directory_exist(t->driver.local.driver_directory)) {
+		torture_warning(tctx, "no local driver is available!");
+		t->have_driver = false;
+		goto try_run;
+	}
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), &t->driver),
+		"failed to upload printer driver");
+
+	torture_assert(tctx,
+		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &t->driver.info8, 0, false),
+		"failed to add driver");
+
+	t->added_driver = true;
+	t->have_driver = true;
+
+ try_run:
+	ret = test_add_printer_args_with_driver(tctx, p, t);
+
+	if (t->added_driver) {
+		torture_assert(tctx,
+			remove_printer_driver(tctx, dcerpc_server_name(p), &t->driver),
+			"failed to remove printer driver");
+	}
+
+	return ret;
+}
+
+static bool test_add_printer(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+
+	t->ex			= false;
+	t->wellknown		= false;
+	t->info2.printername	= TORTURE_PRINTER;
+
+	return test_add_printer_args(tctx, p, t);
 }
 
 static bool test_add_printer_wellknown(struct torture_context *tctx,
-				       struct dcerpc_pipe *p)
+				       struct dcerpc_pipe *p,
+				       void *private_data)
 {
-	return test_add_printer_args(tctx, p,
-				     TORTURE_WELLKNOWN_PRINTER,
-				     "Microsoft XPS Document Writer",
-				     "LPT1:",
-				     true, false);
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+
+	t->ex			= false;
+	t->wellknown		= true;
+	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER;
+
+	return test_add_printer_args(tctx, p, t);
 }
 
 static bool test_add_printer_ex(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				struct dcerpc_pipe *p,
+				void *private_data)
 {
-	return test_add_printer_args(tctx, p,
-				     TORTURE_PRINTER_EX,
-				     "Microsoft XPS Document Writer",
-				     "LPT1:",
-				     false, true);
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+
+	t->ex			= true;
+	t->wellknown		= false;
+	t->info2.printername	= TORTURE_PRINTER_EX;
+
+	return test_add_printer_args(tctx, p, t);
 }
 
 static bool test_add_printer_ex_wellknown(struct torture_context *tctx,
-					  struct dcerpc_pipe *p)
+					  struct dcerpc_pipe *p,
+					  void *private_data)
 {
-	return test_add_printer_args(tctx, p,
-				     TORTURE_WELLKNOWN_PRINTER_EX,
-				     "Microsoft XPS Document Writer",
-				     "LPT1:",
-				     true, true);
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+
+	t->ex			= true;
+	t->wellknown		= true;
+	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER_EX;
+
+	return test_add_printer_args(tctx, p, t);
 }
 
 static bool test_architecture_buffer(struct torture_context *tctx,
@@ -6457,10 +6573,26 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"printer", &ndr_table_spoolss);
 
-	torture_rpc_tcase_add_test(tcase, "add_printer", test_add_printer);
-	torture_rpc_tcase_add_test(tcase, "add_printer_wellknown", test_add_printer_wellknown);
-	torture_rpc_tcase_add_test(tcase, "add_printer_ex", test_add_printer_ex);
-	torture_rpc_tcase_add_test(tcase, "add_printer_ex_wellknown", test_add_printer_ex_wellknown);
+	struct torture_printer_context *t;
+
+	t = talloc_zero(mem_ctx, struct torture_printer_context);
+
+	t->driver.info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	t->driver.info8.driver_name	= TORTURE_DRIVER;
+	t->driver.info8.architecture	= "Windows NT x86";
+	t->driver.info8.driver_path	= "pscript5.dll";
+	t->driver.info8.data_file	= "cups6.ppd";
+	t->driver.info8.config_file	= "cupsui6.dll";
+	t->driver.local.environment	= "Windows NT x86";
+	t->driver.local.driver_directory= "/usr/share/cups/drivers/i386";
+
+	t->info2.drivername		= "Microsoft XPS Document Writer";
+	t->info2.portname		= "LPT1:";
+
+	torture_rpc_tcase_add_test_ex(tcase, "add_printer", test_add_printer, t);
+	torture_rpc_tcase_add_test_ex(tcase, "add_printer_wellknown", test_add_printer_wellknown, t);
+	torture_rpc_tcase_add_test_ex(tcase, "add_printer_ex", test_add_printer_ex, t);
+	torture_rpc_tcase_add_test_ex(tcase, "add_printer_ex_wellknown", test_add_printer_ex_wellknown, t);
 
 	return suite;
 }
@@ -7196,7 +7328,8 @@ static bool connect_printer_driver_share(struct torture_context *tctx,
 	struct smbcli_options smb_options;
 	struct smbcli_session_options smb_session_options;
 
-	torture_comment(tctx, "Connecting printer driver share\n");
+	torture_comment(tctx, "Connecting printer driver share '%s' on '%s'\n",
+		share_name, server_name);
 
 	lp_smbcli_options(tctx->lp_ctx, &smb_options);
 	lp_smbcli_session_options(tctx->lp_ctx, &smb_session_options);
