@@ -2366,7 +2366,9 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 	struct netr_DsRAddressToSitenamesW r;
 	struct netr_DsRAddress addrs[6];
 	struct sockaddr_in *addr;
+#ifdef HAVE_IPV6
 	struct sockaddr_in6 *addr6;
+#endif
 	struct netr_DsRAddressToSitenamesWCtr *ctr;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint32_t i;
@@ -2406,10 +2408,10 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 	addrs[2].buffer = talloc_zero_array(tctx, uint8_t, addrs[2].size);
 	addr = (struct sockaddr_in *) addrs[2].buffer;
 	addr->sin_family = AF_INET;
-	ret = inet_pton(AF_INET, "255.255.255.255",
-			&((struct sockaddr_in *)addrs[2].buffer)->sin_addr);
+	ret = inet_pton(AF_INET, "255.255.255.255", &addr->sin_addr);
 	torture_assert(tctx, ret > 0, "inet_pton failed");
 
+#ifdef HAVE_IPV6
 	addrs[3].size = sizeof(struct sockaddr_in6);
 	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
 	addr6 = (struct sockaddr_in6 *) addrs[3].buffer;
@@ -2430,6 +2432,30 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 	addr6->sin6_family = AF_INET6;
 	ret = inet_pton(AF_INET6, "ff02::1", &addr6->sin6_addr);
 	torture_assert(tctx, ret > 0, "inet_pton failed");
+#else
+	/* the test cases are repeated to have exactly 6. This is for
+	 * compatibility with IPv4-only machines */
+	addrs[3].size = sizeof(struct sockaddr_in);
+	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
+	addr = (struct sockaddr_in *) addrs[3].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[4].size = sizeof(struct sockaddr_in);
+	addrs[4].buffer = talloc_zero_array(tctx, uint8_t, addrs[4].size);
+	addr = (struct sockaddr_in *) addrs[4].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "0.0.0.0", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[5].size = sizeof(struct sockaddr_in);
+	addrs[5].buffer = talloc_zero_array(tctx, uint8_t, addrs[5].size);
+	addr = (struct sockaddr_in *) addrs[5].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "255.255.255.255", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+#endif
 
 	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesWCtr);
 
@@ -2515,7 +2541,9 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	struct netr_DsRAddressToSitenamesExW r;
 	struct netr_DsRAddress addrs[6];
 	struct sockaddr_in *addr;
+#ifdef HAVE_IPV6
 	struct sockaddr_in6 *addr6;
+#endif
 	struct netr_DsRAddressToSitenamesExWCtr *ctr;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint32_t i;
@@ -2555,10 +2583,10 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	addrs[2].buffer = talloc_zero_array(tctx, uint8_t, addrs[2].size);
 	addr = (struct sockaddr_in *) addrs[2].buffer;
 	addr->sin_family = AF_INET;
-	ret = inet_pton(AF_INET, "255.255.255.255",
-			&((struct sockaddr_in *)addrs[2].buffer)->sin_addr);
+	ret = inet_pton(AF_INET, "255.255.255.255", &addr->sin_addr);
 	torture_assert(tctx, ret > 0, "inet_pton failed");
 
+#ifdef HAVE_IPV6
 	addrs[3].size = sizeof(struct sockaddr_in6);
 	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
 	addr6 = (struct sockaddr_in6 *) addrs[3].buffer;
@@ -2579,6 +2607,30 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	addr6->sin6_family = AF_INET6;
 	ret = inet_pton(AF_INET6, "ff02::1", &addr6->sin6_addr);
 	torture_assert(tctx, ret > 0, "inet_pton failed");
+#else
+	/* the test cases are repeated to have exactly 6. This is for
+	 * compatibility with IPv4-only machines */
+	addrs[3].size = sizeof(struct sockaddr_in);
+	addrs[3].buffer = talloc_zero_array(tctx, uint8_t, addrs[3].size);
+	addr = (struct sockaddr_in *) addrs[3].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[4].size = sizeof(struct sockaddr_in);
+	addrs[4].buffer = talloc_zero_array(tctx, uint8_t, addrs[4].size);
+	addr = (struct sockaddr_in *) addrs[4].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "0.0.0.0", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+
+	addrs[5].size = sizeof(struct sockaddr_in);
+	addrs[5].buffer = talloc_zero_array(tctx, uint8_t, addrs[5].size);
+	addr = (struct sockaddr_in *) addrs[5].buffer;
+	addr->sin_family = AF_INET;
+	ret = inet_pton(AF_INET, "255.255.255.255", &addr->sin_addr);
+	torture_assert(tctx, ret > 0, "inet_pton failed");
+#endif
 
 	ctr = talloc(tctx, struct netr_DsRAddressToSitenamesExWCtr);
 
