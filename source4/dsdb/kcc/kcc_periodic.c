@@ -62,7 +62,7 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 	struct repsFromTo1 *r1;
 	r1 = &r->ctr.ctr1;
 	struct GUID invocation_id = r1->source_dsa_invocation_id;
-	int i, j;
+	unsigned int i, j;
 
 	for (i=0; i<res->count; i++) {
 		struct ldb_message *msg = res->msgs[i];
