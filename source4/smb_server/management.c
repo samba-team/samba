@@ -79,8 +79,14 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private_data,
 					     struct smbsrv_connection);
+	struct tsocket_address *client_addr = smb_conn->connection->remote_address;
+	char *client_addr_string;
 	int i=0, count=0;
 	struct smbsrv_tcon *tcon;
+
+	/* This is for debugging only! */
+	client_addr_string = tsocket_address_string(client_addr, r);
+	NT_STATUS_HAVE_NO_MEMORY(client_addr_string);
 
 	/* count the number of tcons */
 	for (tcon=smb_conn->smb_tcons.list; tcon; tcon=tcon->next) {
@@ -93,14 +99,8 @@ static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg,
 
 	for (tcon=smb_conn->smb_tcons.list; tcon; tcon=tcon->next) {
 		struct smbsrv_tcon_info *info = &r->out.info.tcons.tcons[i];
-		struct socket_address *client_addr;
-		client_addr = socket_get_peer_addr(smb_conn->connection->socket, r);
-		
-		if (client_addr) {
-			info->client_ip = client_addr->addr;
-		} else {
-			info->client_ip = NULL;
-		}
+
+		info->client_ip    = client_addr_string;
 
 		info->tid          = tcon->tid;
 		info->share_name   = tcon->share_name;
