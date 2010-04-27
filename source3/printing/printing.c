@@ -1857,7 +1857,7 @@ NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 
-bool print_job_set_name(const char *sharename, uint32 jobid, char *name)
+bool print_job_set_name(const char *sharename, uint32 jobid, const char *name)
 {
 	struct printjob *pjob;
 
@@ -1868,6 +1868,28 @@ bool print_job_set_name(const char *sharename, uint32 jobid, char *name)
 	fstrcpy(pjob->jobname, name);
 	return pjob_store(sharename, jobid, pjob);
 }
+
+/****************************************************************************
+ Get the name of a job. Only possible for owner.
+****************************************************************************/
+
+bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name)
+{
+	struct printjob *pjob;
+
+	pjob = print_job_find(sharename, jobid);
+	if (!pjob || pjob->pid != sys_getpid()) {
+		return false;
+	}
+
+	*name = talloc_strdup(mem_ctx, pjob->jobname);
+	if (!*name) {
+		return false;
+	}
+
+	return true;
+}
+
 
 /***************************************************************************
  Remove a jobid from the 'jobs changed' list.

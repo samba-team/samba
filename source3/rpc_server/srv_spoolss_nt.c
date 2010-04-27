@@ -6427,6 +6427,31 @@ WERROR _spoolss_ScheduleJob(pipes_struct *p,
 }
 
 /****************************************************************
+****************************************************************/
+
+static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
+			       const char *printer_name,
+			       uint32_t job_id,
+			       struct spoolss_SetJobInfo1 *r)
+{
+	char *old_doc_name;
+
+	if (!print_job_get_name(mem_ctx, printer_name, job_id, &old_doc_name)) {
+		return WERR_BADFID;
+	}
+
+	if (strequal(old_doc_name, r->document_name)) {
+		return WERR_OK;
+	}
+
+	if (!print_job_set_name(printer_name, job_id, r->document_name)) {
+		return WERR_BADFID;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
  _spoolss_SetJob
 ****************************************************************/
 
@@ -6462,6 +6487,30 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 			errcode = WERR_OK;
 		}
 		break;
+	case 0:
+		errcode = WERR_OK;
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	if (!W_ERROR_IS_OK(errcode)) {
+		return errcode;
+	}
+
+	if (r->in.ctr == NULL) {
+		return errcode;
+	}
+
+	switch (r->in.ctr->level) {
+	case 1:
+		errcode = spoolss_setjob_1(p->mem_ctx, lp_const_servicename(snum),
+					   r->in.job_id,
+					   r->in.ctr->info.info1);
+		break;
+	case 2:
+	case 3:
+	case 4:
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
