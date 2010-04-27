@@ -101,6 +101,7 @@ struct iovec;
  *
  * @return              The address as a string representation, NULL on error.
  *
+ * @see tsocket_address_is_inet()
  * @see tsocket_address_inet_addr_string()
  * @see tsocket_address_inet_port()
  */
@@ -486,6 +487,20 @@ int tstream_disconnect_recv(struct tevent_req *req,
  * @{
  */
 
+/**
+ * @brief Find out if the tsocket_address represents an ipv4 or ipv6 endpoint.
+ *
+ * @param[in]  addr     The tsocket_address pointer
+ *
+ * @param[in]  fam      The family can be can be "ipv4", "ipv6" or "ip". With
+ *                      "ip" is autodetects "ipv4" or "ipv6" based on the
+ *                      addr.
+ *
+ * @return              true if addr represents an address of the given family,
+ *                      otherwise false.
+ */
+bool tsocket_address_is_inet(const struct tsocket_address *addr, const char *fam);
+
 #if DOXYGEN
 /**
  * @brief Create a tsocket_address for ipv4 and ipv6 endpoint addresses.
@@ -533,6 +548,8 @@ int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
  *
  * @return              A newly allocated string of the address, NULL on error
  *                      with errno set.
+ *
+ * @see tsocket_address_is_inet()
  */
 char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
 				       TALLOC_CTX *mem_ctx);

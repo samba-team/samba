@@ -294,6 +294,43 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 	return sa_socklen;
 }
 
+bool tsocket_address_is_inet(const struct tsocket_address *addr, const char *fam)
+{
+	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
+					   struct tsocket_address_bsd);
+
+	if (!bsda) {
+		return false;
+	}
+
+	switch (bsda->u.sa.sa_family) {
+	case AF_INET:
+		if (strcasecmp(fam, "ip") == 0) {
+			return true;
+		}
+
+		if (strcasecmp(fam, "ipv4") == 0) {
+			return true;
+		}
+
+		return false;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		if (strcasecmp(fam, "ip") == 0) {
+			return true;
+		}
+
+		if (strcasecmp(fam, "ipv6") == 0) {
+			return true;
+		}
+
+		return false;
+#endif
+	}
+
+	return false;
+}
+
 int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 				       const char *fam,
 				       const char *addr,
