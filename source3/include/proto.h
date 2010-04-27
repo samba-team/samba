@@ -4976,7 +4976,6 @@ bool print_job_exists(const char* sharename, uint32 jobid);
 int print_job_fd(const char* sharename, uint32 jobid);
 char *print_job_fname(const char* sharename, uint32 jobid);
 NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid);
-bool print_job_set_place(const char *sharename, uint32 jobid, int place);
 bool print_job_set_name(const char *sharename, uint32 jobid, char *name);
 bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
 		      uint32 jobid, WERROR *errcode);

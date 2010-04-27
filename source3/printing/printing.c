@@ -1854,16 +1854,6 @@ NT_DEVICEMODE *print_job_devmode(const char* sharename, uint32 jobid)
 }
 
 /****************************************************************************
- Set the place in the queue for a job.
-****************************************************************************/
-
-bool print_job_set_place(const char *sharename, uint32 jobid, int place)
-{
-	DEBUG(2,("print_job_set_place not implemented yet\n"));
-	return False;
-}
-
-/****************************************************************************
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 

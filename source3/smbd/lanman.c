@@ -3382,15 +3382,6 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	errcode = NERR_notsupported;
 
 	switch (function) {
-	case 0x6:
-		/* change job place in the queue, 
-		   data gives the new place */
-		place = SVAL(data,0);
-		if (print_job_set_place(sharename, jobid, place)) {
-			errcode=NERR_Success;
-		}
-		break;
-
 	case 0xb:   
 		/* change print job name, data gives the name */
 		if (print_job_set_name(sharename, jobid, data)) {
