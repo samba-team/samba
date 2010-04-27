@@ -168,32 +168,6 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	return strlen(buf) + 1;
 }
 
-static char *Expand(connection_struct *conn, int snum, char *s)
-{
-	TALLOC_CTX *ctx = talloc_tos();
-	char *buf = NULL;
-
-	if (!s) {
-		return NULL;
-	}
-	buf = talloc_strdup(ctx,s);
-	if (!buf) {
-		return 0;
-	}
-	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(snum));
-	if (!buf) {
-		return 0;
-	}
-	return talloc_sub_advanced(ctx,
-				lp_servicename(SNUM(conn)),
-				conn->server_info->unix_name,
-				conn->connectpath,
-				conn->server_info->utok.gid,
-				conn->server_info->sanitized_username,
-				pdb_get_domain(conn->server_info->sam_account),
-				buf);
-}
-
 /*******************************************************************
  Check a API string for validity when we only need to check the prefix.
 ******************************************************************/
@@ -533,21 +507,6 @@ static int check_printq_info(struct pack_desc* desc,
 
 /* turn a print job status into a on the wire status 
 */
-static int printj_status(int v)
-{
-	switch (v) {
-	case LPQ_QUEUED:
-		return RAP_JOB_STATUS_QUEUED;
-	case LPQ_PAUSED:
-		return RAP_JOB_STATUS_PAUSED;
-	case LPQ_SPOOLING:
-		return RAP_JOB_STATUS_SPOOLING;
-	case LPQ_PRINTING:
-		return RAP_JOB_STATUS_PRINTING;
-	}
-	return 0;
-}
-
 static int printj_spoolss_status(int v)
 {
 	if (v == JOB_STATUS_QUEUED)
@@ -563,17 +522,6 @@ static int printj_spoolss_status(int v)
 
 /* turn a print queue status into a on the wire status 
 */
-static int printq_status(int v)
-{
-	switch (v) {
-	case LPQ_QUEUED:
-		return 0;
-	case LPQ_PAUSED:
-		return RAP_QUEUE_STATUS_PAUSED;
-	}
-	return RAP_QUEUE_STATUS_ERROR;
-}
-
 static int printq_spoolss_status(int v)
 {
 	if (v == PRINTER_STATUS_OK)
@@ -581,64 +529,6 @@ static int printq_spoolss_status(int v)
 	if (v & PRINTER_STATUS_PAUSED)
 		return RAP_QUEUE_STATUS_PAUSED;
 	return RAP_QUEUE_STATUS_ERROR;
-}
-
-static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
-			       struct pack_desc *desc,
-			       print_queue_struct *queue, int n)
-{
-	time_t t = queue->time;
-
-	/* the client expects localtime */
-	t -= get_time_zone(t);
-
-	PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
-	if (uLevel == 1) {
-		PACKS(desc,"B21",queue->fs_user); /* szUserName */
-		PACKS(desc,"B","");		/* pad */
-		PACKS(desc,"B16","");	/* szNotifyName */
-		PACKS(desc,"B10","PM_Q_RAW"); /* szDataType */
-		PACKS(desc,"z","");		/* pszParms */
-		PACKI(desc,"W",n+1);		/* uPosition */
-		PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
-		PACKS(desc,"z","");		/* pszStatus */
-		PACKI(desc,"D",t); /* ulSubmitted */
-		PACKI(desc,"D",queue->size); /* ulSize */
-		PACKS(desc,"z",queue->fs_file); /* pszComment */
-	}
-	if (uLevel == 2 || uLevel == 3 || uLevel == 4) {
-		PACKI(desc,"W",queue->priority);		/* uPriority */
-		PACKS(desc,"z",queue->fs_user); /* pszUserName */
-		PACKI(desc,"W",n+1);		/* uPosition */
-		PACKI(desc,"W",printj_status(queue->status)); /* fsStatus */
-		PACKI(desc,"D",t); /* ulSubmitted */
-		PACKI(desc,"D",queue->size); /* ulSize */
-		PACKS(desc,"z","Samba");	/* pszComment */
-		PACKS(desc,"z",queue->fs_file); /* pszDocument */
-		if (uLevel == 3) {
-			PACKS(desc,"z","");	/* pszNotifyName */
-			PACKS(desc,"z","PM_Q_RAW"); /* pszDataType */
-			PACKS(desc,"z","");	/* pszParms */
-			PACKS(desc,"z","");	/* pszStatus */
-			PACKS(desc,"z",SERVICE(snum)); /* pszQueue */
-			PACKS(desc,"z","lpd");	/* pszQProcName */
-			PACKS(desc,"z","");	/* pszQProcParms */
-			PACKS(desc,"z","NULL"); /* pszDriverName */
-			PackDriverData(desc);	/* pDriverData */
-			PACKS(desc,"z","");	/* pszPrinterName */
-		} else if (uLevel == 4) {   /* OS2 */
-			PACKS(desc,"z","");       /* pszSpoolFileName  */
-			PACKS(desc,"z","");       /* pszPortName       */
-			PACKS(desc,"z","");       /* pszStatus         */
-			PACKI(desc,"D",0);        /* ulPagesSpooled    */
-			PACKI(desc,"D",0);        /* ulPagesSent       */
-			PACKI(desc,"D",0);        /* ulPagesPrinted    */
-			PACKI(desc,"D",0);        /* ulTimePrinted     */
-			PACKI(desc,"D",0);        /* ulExtendJobStatus */
-			PACKI(desc,"D",0);        /* ulStartPage       */
-			PACKI(desc,"D",0);        /* ulEndPage         */
-		}
-	}
 }
 
 static time_t spoolss_Time_to_time_t(const struct spoolss_Time *r)
@@ -713,30 +603,6 @@ static void fill_spoolss_printjob_info(int uLevel,
 			PACKI(desc,"D",0);        /* ulEndPage         */
 		}
 	}
-}
-
-/********************************************************************
- Return a driver name given an snum.
- Returns True if from tdb, False otherwise.
- ********************************************************************/
-
-static bool get_driver_name(int snum, char **pp_drivername)
-{
-	NT_PRINTER_INFO_LEVEL *info = NULL;
-	bool in_tdb = false;
-
-	get_a_printer (NULL, &info, 2, lp_servicename(snum));
-	if (info != NULL) {
-		*pp_drivername = talloc_strdup(talloc_tos(),
-					info->info_2->drivername);
-		in_tdb = true;
-		free_a_printer(&info, 2);
-		if (!*pp_drivername) {
-			return false;
-		}
-	}
-
-	return in_tdb;
 }
 
 /********************************************************************
