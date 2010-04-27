@@ -462,6 +462,8 @@ struct smbd_smb2_tcon {
 struct pending_auth_data;
 
 struct smbd_server_connection {
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
 	struct {
 		bool got_session;
 	} nbt;

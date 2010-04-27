@@ -2835,7 +2835,13 @@ fail:
 void smbd_process(void)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	char remaddr[INET6_ADDRSTRLEN];
+	struct sockaddr_storage ss;
+	struct sockaddr *sa = NULL;
+	socklen_t sa_len;
+	struct tsocket_address *local_address = NULL;
+	struct tsocket_address *remote_address = NULL;
+	const char *remaddr = NULL;
+	int ret;
 
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    lp_security() != SEC_SHARE &&
@@ -2849,12 +2855,57 @@ void smbd_process(void)
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 	set_socket_options(smbd_server_fd(), lp_socket_options());
 
+	sa = (struct sockaddr *)(void *)&ss;
+	sa_len = sizeof(ss);
+	ret = getpeername(smbd_server_fd(), sa, &sa_len);
+	if (ret != 0) {
+		int level = (errno == ENOTCONN)?2:0;
+		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
+		exit_server("getpeername() failed.\n");
+	}
+	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
+						sa, sa_len,
+						&remote_address);
+	if (ret != 0) {
+		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
+			__location__, strerror(errno)));
+		exit_server("tsocket_address_bsd_from_sockaddr remote failed.\n");
+	}
+
+	sa = (struct sockaddr *)(void *)&ss;
+	sa_len = sizeof(ss);
+	ret = getsockname(smbd_server_fd(), sa, &sa_len);
+	if (ret != 0) {
+		int level = (errno == ENOTCONN)?2:0;
+		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
+		exit_server("getsockname() failed.\n");
+	}
+	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
+						sa, sa_len,
+						&local_address);
+	if (ret != 0) {
+		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
+			__location__, strerror(errno)));
+		exit_server("tsocket_address_bsd_from_sockaddr remote failed.\n");
+	}
+
+	smbd_server_conn->local_address = local_address;
+	smbd_server_conn->remote_address = remote_address;
+
+	if (tsocket_address_is_inet(remote_address, "ip")) {
+		remaddr = tsocket_address_inet_addr_string(
+				smbd_server_conn->remote_address,
+				talloc_tos());
+		if (remaddr == NULL) {
+
+		}
+	} else {
+		remaddr = "0.0.0.0";
+	}
+
 	/* this is needed so that we get decent entries
 	   in smbstatus for port 445 connects */
-	set_remote_machine_name(get_peer_addr(smbd_server_fd(),
-					      remaddr,
-					      sizeof(remaddr)),
-					      false);
+	set_remote_machine_name(remaddr, false);
 	reload_services(true);
 
 	/*
@@ -2866,19 +2917,22 @@ void smbd_process(void)
 
 	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
 			  lp_hostsdeny(-1))) {
-		char addr[INET6_ADDRSTRLEN];
-
 		/*
 		 * send a negative session response "not listening on calling
 		 * name"
 		 */
 		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		DEBUG( 1, ("Connection denied from %s\n",
-			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
+		DEBUG( 1, ("Connection denied from %s to %s\n",
+			   tsocket_address_string(remote_address, talloc_tos()),
+			   tsocket_address_string(local_address, talloc_tos())));
 		(void)srv_send_smb(smbd_server_fd(),(char *)buf, false,
 				   0, false, NULL);
 		exit_server_cleanly("connection denied");
 	}
+
+	DEBUG(10, ("Connection allowed from %s to %s\n",
+		   tsocket_address_string(remote_address, talloc_tos()),
+		   tsocket_address_string(local_address, talloc_tos())));
 
 	static_init_rpc;
 
