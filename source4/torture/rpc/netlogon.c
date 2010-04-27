@@ -3150,6 +3150,23 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		&& (info.domain_info->trusted_domains != NULL),
 		"Trusted domains have been requested!");
 
+
+	if (!torture_setting_bool(tctx, "dangerous", false)) {
+		torture_comment(tctx, "Not testing netr_LogonGetDomainInfo 6th call (no workstation info) - enable dangerous tests in order to do so\n");
+	} else {
+		/* Try a call without the workstation information structure */
+
+		torture_comment(tctx, "Testing netr_LogonGetDomainInfo 6th call (no workstation info)\n");
+		netlogon_creds_client_authenticator(creds, &a);
+
+		query.workstation_info = NULL;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonGetDomainInfo_r(b, tctx, &r),
+			"LogonGetDomainInfo failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
+		torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
+	}
+
 	return true;
 }
 
