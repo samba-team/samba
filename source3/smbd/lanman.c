@@ -3341,7 +3341,17 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	fstring sharename;
 	int uLevel = get_safe_SVAL(param,tpscnt,p,2,-1);
 	int function = get_safe_SVAL(param,tpscnt,p,4,-1);
-	int place, errcode;
+	int errcode;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct spoolss_JobInfoContainer ctr;
+	union spoolss_JobInfo info;
+	struct spoolss_SetJobInfo1 info1;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -3361,10 +3371,34 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	if (!share_defined(sharename)) {
-		DEBUG(0,("api_PrintJobInfo: sharen [%s] not defined\n",
-			 sharename));
-		return False;
+	ZERO_STRUCT(handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
+					rpc_spoolss_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_PrintJobInfo: could not connect to spoolss: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    sharename,
+					    NULL,
+					    devmode_ctr,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    &handle,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
+		goto out;
 	}
 
 	*rdata_len = 0;
@@ -3374,26 +3408,67 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(sharename, jobid)) {
-		errcode=NERR_JobNotFound;
+	werr = rpccli_spoolss_getjob(cli, mem_ctx,
+				     &handle,
+				     jobid,
+				     1, /* level */
+				     0, /* offered */
+				     &info);
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
 		goto out;
 	}
 
 	errcode = NERR_notsupported;
 
 	switch (function) {
-	case 0xb:   
+	case 0xb:
 		/* change print job name, data gives the name */
-		if (print_job_set_name(sharename, jobid, data)) {
-			errcode=NERR_Success;
-		}
 		break;
-
 	default:
-		return False;
+		goto out;
 	}
 
+	ZERO_STRUCT(ctr);
+
+	info1.job_id		= info.info1.job_id;
+	info1.printer_name	= info.info1.printer_name;
+	info1.user_name		= info.info1.user_name;
+	info1.document_name	= data;
+	info1.data_type		= info.info1.data_type;
+	info1.text_status	= info.info1.text_status;
+	info1.status		= info.info1.status;
+	info1.priority		= info.info1.priority;
+	info1.position		= info.info1.position;
+	info1.total_pages	= info.info1.total_pages;
+	info1.pages_printed	= info.info1.pages_printed;
+	info1.submitted		= info.info1.submitted;
+
+	ctr.level = 1;
+	ctr.info.info1 = &info1;
+
+	status = rpccli_spoolss_SetJob(cli, mem_ctx,
+				       &handle,
+				       jobid,
+				       &ctr,
+				       0,
+				       &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	errcode = NERR_Success;
  out:
+
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
 	SSVALS(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
 
