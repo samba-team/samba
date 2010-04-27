@@ -955,7 +955,7 @@ static void dump_values( REGF_NK_REC *nk )
 
 	for ( i=0; i<nk->num_values; i++ ) {
 		d_printf( "\"%s\" = ", nk->values[i].valuename ? nk->values[i].valuename : "(default)" );
-		d_printf( "(%s) ", reg_type_lookup( nk->values[i].type ) );
+		d_printf( "(%s) ", str_regtype( nk->values[i].type ) );
 
 		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
 		switch ( nk->values[i].type ) {

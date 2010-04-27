@@ -418,7 +418,7 @@ static void net_registry_increment_fn(void *private_data)
 
 	if (value->type != REG_DWORD) {
 		d_fprintf(stderr, _("value not a DWORD: %s\n"),
-			  reg_type_lookup(value->type));
+			  str_regtype(value->type));
 		goto done;
 	}
 

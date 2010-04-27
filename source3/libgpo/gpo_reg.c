@@ -787,7 +787,7 @@ void dump_reg_val(int lvl, const char *direction,
 		return;
 	}
 
-	type_str = reg_type_lookup(val->type);
+	type_str = str_regtype(val->type);
 
 	DEBUG(lvl,("\tdump_reg_val:\t%s '%s'\n\t\t\t'%s' %s: ",
 		direction, key, subkey, type_str));
@@ -933,7 +933,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 	if (flags & GPO_INFO_FLAG_VERBOSE) {
 		printf("about to store key:    [%s]\n", entry->key);
 		printf("               value:  [%s]\n", entry->value);
-		printf("               data:   [%s]\n", reg_type_lookup(entry->data->type));
+		printf("               data:   [%s]\n", str_regtype(entry->data->type));
 		printf("               action: [%s]\n", gp_reg_action_str(entry->action));
 	}
 

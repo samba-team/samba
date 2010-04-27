@@ -1290,9 +1290,9 @@ void flush_pwnam_cache(void);
 struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name);
 struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 
-/* The following definitions come from lib/util_reg.c  */
+/* The following definitions come from ..libcli/registry/util_reg.c  */
 
-const char *reg_type_lookup(enum winreg_Type type);
+const char *str_regtype(int type);
 bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
 		 DATA_BLOB *blob, const char *s);
 bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,

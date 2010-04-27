@@ -561,7 +561,7 @@ LIBMSRPC_GEN_OBJ = ../librpc/gen_ndr/cli_lsa.o \
 #
 # registry-related objects
 #
-UTIL_REG_OBJ = lib/util_reg.o
+UTIL_REG_OBJ = ../libcli/registry/util_reg.o
 UTIL_REG_API_OBJ = lib/util_reg_api.o
 
 REG_INIT_BASIC_OBJ = registry/reg_init_basic.o

@@ -37,7 +37,7 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 {
 	if (!raw) {
 		d_printf(_("Type       = %s\n"),
-			 reg_type_lookup(valvalue->type));
+			 str_regtype(valvalue->type));
 	}
 	switch(valvalue->type) {
 	case REG_DWORD:
