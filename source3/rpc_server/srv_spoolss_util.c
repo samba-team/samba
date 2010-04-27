@@ -3633,11 +3633,6 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 
 		v = &enum_values[i];
 
-#define CHECK_ERROR(result) \
-	if (W_ERROR_IS_OK(result)) continue; \
-	if (W_ERROR_EQUAL(result, WERR_NOT_FOUND)) result = WERR_OK; \
-	if (!W_ERROR_IS_OK(result)) break
-
 		result = winreg_enumval_to_dword(info8, v,
 						 "Version",
 						 &info8->version);
