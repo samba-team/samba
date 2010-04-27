@@ -103,7 +103,8 @@ static void wreplsrv_accept(struct stream_connection *conn)
 {
 	struct wreplsrv_service *service = talloc_get_type(conn->private_data, struct wreplsrv_service);
 	struct wreplsrv_in_connection *wrepl_conn;
-	struct socket_address *peer_ip;
+	struct tsocket_address *peer_addr;
+	char *peer_ip;
 	struct tevent_req *subreq;
 	int rc, fd;
 
@@ -151,14 +152,24 @@ static void wreplsrv_accept(struct stream_connection *conn)
 	wrepl_conn->conn = conn;
 	wrepl_conn->service = service;
 
-	peer_ip = socket_get_peer_addr(conn->socket, wrepl_conn);
-	if (peer_ip == NULL) {
+	peer_addr = conn->remote_address;
+
+	if (!tsocket_address_is_inet(peer_addr, "ipv4")) {
+		DEBUG(0,("wreplsrv_accept: non ipv4 peer addr '%s'\n",
+			tsocket_address_string(peer_addr, wrepl_conn)));
 		wreplsrv_terminate_in_connection(wrepl_conn, "wreplsrv_accept: "
-				"could not obtain peer IP from kernel");
+				"invalid peer IP");
 		return;
 	}
 
-	wrepl_conn->partner = wreplsrv_find_partner(service, peer_ip->addr);
+	peer_ip = tsocket_address_inet_addr_string(peer_addr, wrepl_conn);
+	if (peer_ip == NULL) {
+		wreplsrv_terminate_in_connection(wrepl_conn, "wreplsrv_accept: "
+				"could not convert peer IP into a string");
+		return;
+	}
+
+	wrepl_conn->partner = wreplsrv_find_partner(service, peer_ip);
 	irpc_add_name(conn->msg_ctx, "wreplsrv_connection");
 
 	/*
