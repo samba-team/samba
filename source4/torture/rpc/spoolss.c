@@ -7452,6 +7452,12 @@ static bool remove_printer_driver(struct torture_context *tctx,
 		"failed to remove help_file");
 	if (d->info8.dependent_files) {
 		for (i=0; d->info8.dependent_files->string && d->info8.dependent_files->string[i] != NULL; i++) {
+			if (strequal(d->info8.dependent_files->string[i], d->info8.driver_path) ||
+			    strequal(d->info8.dependent_files->string[i], d->info8.data_file) ||
+			    strequal(d->info8.dependent_files->string[i], d->info8.config_file) ||
+			    strequal(d->info8.dependent_files->string[i], d->info8.help_file)) {
+				continue;
+			}
 			torture_assert(tctx,
 				remove_printer_driver_file(tctx, cli, d, d->info8.dependent_files->string[i]),
 				"failed to remove dependent_files");
