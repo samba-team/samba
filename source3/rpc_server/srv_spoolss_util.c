@@ -1368,7 +1368,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_SetPrinterInfo2 *info2;
-	struct spoolss_DeviceMode *devmode;
+	struct spoolss_DeviceMode *devmode = NULL;
 	struct security_descriptor *secdesc;
 	struct winreg_String wkey, wkeyclass;
 	const char *path;
@@ -3324,7 +3324,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_DriverInfo8 info8;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR result;
 
 	ZERO_STRUCT(hive_hnd);
