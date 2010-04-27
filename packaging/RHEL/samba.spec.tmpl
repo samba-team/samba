@@ -131,6 +131,9 @@ fi
 ## always run autogen.sh
 ./autogen.sh
 
+## ignore insufficiently linked libreadline (RH bugzilla #499837):
+export LDFLAGS="$LDFLAGS -Wl,--allow-shlib-undefined,--no-as-needed"
+
 CC="$CC" CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
