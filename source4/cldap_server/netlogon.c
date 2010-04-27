@@ -280,7 +280,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 							   lp_netbios_name(lp_ctx)), 
 					   dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY(pdc_dns_name);
-	flatname         = lp_sam_name(lp_ctx);
+	flatname         = lp_workgroup(lp_ctx);
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(server_site);
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
