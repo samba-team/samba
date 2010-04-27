@@ -7547,6 +7547,8 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 	uint32_t add_flags = APD_COPY_NEW_FILES;
 	uint32_t delete_flags = 0;
 
+	ZERO_STRUCT(info8);
+
 	torture_comment(tctx, "Testing PrinterDriver%s '%s' for environment '%s'\n",
 		d->ex ? "Ex" : "", d->info8.driver_name, d->local.environment);
 
