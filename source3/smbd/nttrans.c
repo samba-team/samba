@@ -828,8 +828,8 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
  Internal fn to set security descriptors.
 ****************************************************************************/
 
-static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
-		       uint32 security_info_sent)
+NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+		       uint32_t security_info_sent)
 {
 	SEC_DESC *psd = NULL;
 	NTSTATUS status;

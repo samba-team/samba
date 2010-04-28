@@ -161,11 +161,12 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 						 uint32_t in_additional_information,
 						 uint64_t in_file_id_volatile)
 {
-	struct tevent_req *req;
-	struct smbd_smb2_setinfo_state *state;
-	struct smb_request *smbreq;
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_setinfo_state *state = NULL;
+	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp;
+	files_struct *fsp = NULL;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_setinfo_state);
@@ -208,7 +209,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		char *data;
 		int data_size;
 		int ret_size = 0;
-		NTSTATUS status;
 
 
 		file_info_level = in_file_info_class + 1000;
@@ -285,7 +285,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		if (data_size > 0) {
 			data = (char *)SMB_MALLOC_ARRAY(char, data_size);
 			if (tevent_req_nomem(data, req)) {
-
+				return tevent_req_post(req, ev);
 			}
 			memcpy(data, in_input_buffer.data, data_size);
 		}
@@ -302,6 +302,19 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
 				status = NT_STATUS_INVALID_INFO_CLASS;
 			}
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		break;
+	}
+
+	case 0x03:/* SMB2_SETINFO_SECURITY */
+	{
+		status = set_sd(fsp,
+				in_input_buffer.data,
+				in_input_buffer.length,
+				in_additional_information);
+		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
