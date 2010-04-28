@@ -449,7 +449,21 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	state->outbuf = NULL;
 
 	srv_set_message((char *)req->outbuf, 12, nread, False);
-  
+
+#if 0
+	/*
+	 * we should return STATUS_BUFFER_OVERFLOW if there's
+	 * out standing data.
+	 *
+	 * But we can't enable it yet, as it has bad interactions
+	 * with fixup_chain_error_packet() in chain_reply().
+	 */
+	if (is_data_outstanding) {
+		error_packet_set((char *)req->outbuf, ERRDOS, ERRmoredata,
+				 STATUS_BUFFER_OVERFLOW, __LINE__, __FILE__);
+	}
+#endif
+
 	SSVAL(req->outbuf,smb_vwv5,nread);
 	SSVAL(req->outbuf,smb_vwv6,
 	      req_wct_ofs(req)
