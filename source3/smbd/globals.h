@@ -2,6 +2,7 @@
    Unix SMB/Netbios implementation.
    smbd globals
    Copyright (C) Stefan Metzmacher 2009
+   Copyright (C) Jeremy Allison 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

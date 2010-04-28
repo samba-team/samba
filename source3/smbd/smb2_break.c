@@ -3,6 +3,7 @@
    Core SMB2 server
 
    Copyright (C) Stefan Metzmacher 2009
+   Copyright (C) Jeremy Allison 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -259,7 +260,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 		fsp_str_dbg(fsp),
 		fsp->fnum,
 		(unsigned int)smb2_oplock_level ));
-		
+
 	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
 					(uint64_t)fsp->fnum,
 					smb2_oplock_level);
