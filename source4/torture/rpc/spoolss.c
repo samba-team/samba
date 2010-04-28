@@ -4953,6 +4953,90 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_PrinterData_DsSpooler(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct policy_handle *handle,
+				       const char *printer_name)
+{
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	union spoolss_SetPrinterInfo sinfo;
+	union spoolss_PrinterInfo info;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	torture_comment(tctx, "Testing DsSpooler <-> SetPrinter relations\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 2, &info),
+		"failed to query Printer level 2");
+
+	torture_assert(tctx,
+		PrinterInfo_to_SetPrinterInfo(tctx, &info, 2, &sinfo),
+		"failed to convert");
+
+	info_ctr.level = 2;
+	info_ctr.info = sinfo;
+
+#define TEST_SET_SZ(wname, iname, val) \
+do {\
+	enum winreg_Type type;\
+	uint8_t *data;\
+	uint32_t needed;\
+	DATA_BLOB blob;\
+	const char *str;\
+	sinfo.info2->iname = val;\
+	torture_assert(tctx,\
+		test_SetPrinter(tctx, b, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),\
+		"failed to call SetPrinter");\
+	torture_assert(tctx,\
+		test_GetPrinterDataEx(tctx, p, handle, "DsSpooler", wname, &type, &data, &needed),\
+		"failed to query");\
+	torture_assert_int_equal(tctx, type, REG_SZ, "unexpected type");\
+	blob = data_blob_const(data, needed);\
+	torture_assert(tctx,\
+		pull_reg_sz(tctx, lp_iconv_convenience(tctx->lp_ctx), &blob, &str),\
+		"failed to pull REG_SZ");\
+	torture_assert_str_equal(tctx, str, val, "unexpected result");\
+} while(0);
+
+#define TEST_SET_DWORD(wname, iname, val) \
+do {\
+	enum winreg_Type type;\
+	uint8_t *data;\
+	uint32_t needed;\
+	uint32_t value;\
+	sinfo.info2->iname = val;\
+	torture_assert(tctx,\
+		test_SetPrinter(tctx, b, handle, &info_ctr, &devmode_ctr, &secdesc_ctr, 0),\
+		"failed to call SetPrinter");\
+	torture_assert(tctx,\
+		test_GetPrinterDataEx(tctx, p, handle, "DsSpooler", wname, &type, &data, &needed),\
+		"failed to query");\
+	torture_assert_int_equal(tctx, type, REG_DWORD, "unexpected type");\
+	torture_assert_int_equal(tctx, needed, 4, "unexpected length");\
+	value = IVAL(data, 0); \
+	torture_assert_int_equal(tctx, value, val, "unexpected result");\
+} while(0);
+
+	TEST_SET_SZ("description", comment, "newval");
+	TEST_SET_SZ("location", location, "newval");
+/*	TEST_SET_DWORD("priority", priority, 25); */
+
+	/* FIXME gd: complete the list */
+
+#undef TEST_SET_SZ
+#undef TEST_DWORD
+
+	torture_comment(tctx, "DsSpooler <-> SetPrinter relations test succeeded\n\n");
+
+	return true;
+}
+
 static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -6249,6 +6333,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterData_winreg(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_PrinterData_DsSpooler(tctx, p, handle, name)) {
 		ret = false;
 	}
 
