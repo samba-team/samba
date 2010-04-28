@@ -2180,6 +2180,11 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Fix for OS/2 drivers. */
+	if (get_remote_arch() == RA_OS2) {
+		spoolss_map_to_os2_driver(info2, &info2->drivername);
+	}
+
 	if (pinfo2) {
 		*pinfo2 = talloc_move(mem_ctx, &info2);
 	}
