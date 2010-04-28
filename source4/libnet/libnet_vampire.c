@@ -36,6 +36,7 @@
 #include "system/time.h"
 #include "lib/ldb_wrap.h"
 #include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "param/provision.h"
 #include "libcli/security/dom_sid.h"
@@ -655,6 +656,11 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	/* Re-use the domain we are joining as the domain for the user
+	 * to be authenticated with, unless they specified
+	 * otherwise */
+	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
+
 	join->in.domain_name	= r->in.domain_name;
 	join->in.account_name	= account_name;
 	join->in.netbios_name	= netbios_name;
@@ -673,6 +679,20 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	s->targetdir = r->in.targetdir;
 
 	ZERO_STRUCT(b);
+
+	/* Be more robust:
+	 * We now know the domain and realm for sure - if they didn't
+	 * put one on the command line, use this for the rest of the
+	 * join */
+	cli_credentials_set_realm(ctx->cred, join->out.realm, CRED_GUESS_ENV);
+	cli_credentials_set_domain(ctx->cred, join->out.domain_name, CRED_GUESS_ENV);
+
+	/* Now set these values into the smb.conf - we probably had
+	 * empty or useless defaults here from whatever smb.conf we
+	 * started with */
+	lp_set_cmdline(s->lp_ctx, "realm", join->out.realm);
+	lp_set_cmdline(s->lp_ctx, "workgroup", join->out.domain_name);
+
 	b.in.domain_dns_name		= join->out.realm;
 	b.in.domain_netbios_name	= join->out.domain_name;
 	b.in.domain_sid			= join->out.domain_sid;
