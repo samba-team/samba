@@ -5209,6 +5209,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const char *client_address,
 		 struct auth_serversupplied_info *server_info,
 		 struct fake_file_handle **phandle);
+bool np_read_in_progress(struct fake_file_handle *handle);
 struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct fake_file_handle *handle,
 				 const uint8_t *data, size_t len);

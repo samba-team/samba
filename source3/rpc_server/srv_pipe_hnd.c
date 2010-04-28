@@ -1179,6 +1179,28 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	return NT_STATUS_OK;
 }
 
+bool np_read_in_progress(struct fake_file_handle *handle)
+{
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
+		return false;
+	}
+
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
+		struct np_proxy_state *p = talloc_get_type_abort(
+			handle->private_data, struct np_proxy_state);
+		size_t read_count;
+
+		read_count = tevent_queue_length(p->read_queue);
+		if (read_count > 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	return false;
+}
+
 struct np_write_state {
 	struct event_context *ev;
 	struct np_proxy_state *p;
