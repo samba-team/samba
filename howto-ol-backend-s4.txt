@@ -5,10 +5,13 @@ oliver@itc.li  -  August 2009
 
 
 This Mini-Howto describes in a very simplified way 
-how to setup Samba 4 (S4) (pre)Alpha 9 with the
+how to setup Samba 4 (S4) (pre)Alpha 13 with the
 OpenLDAP (OL) -Backend.
-Use of OpenLDAP >= 2.4.17 is strongly recommended.
+Use of OpenLDAP from CVS after 2010-04-22 is required
 
+The current instructions are at:
+
+http://wiki.samba.org/index.php/Samba4/LDAP_Backend/OpenLDAP
 
 1.) Download and compile OpenLDAP. 
 
@@ -32,7 +35,7 @@ cn=Administrator,cn=users,<Your Base-DN>):
 
 #> setup/provision \
    --ldap-backend-type=openldap \
-   --ol-slapd="/usr/local/libexec/slapd"
+   --slapd-path="/usr/local/libexec/slapd"
    --username=samba-admin --realm=ldap.local.site \
    --domain=LDAP --server-role='domain controller'\
    --adminpass=linux
@@ -92,7 +95,6 @@ Attention: You _should_not_ edit the olc-Sections
 
 
 b) MultiMaster-Configuration (MMR):
-At this time (S4 (pre)Alpha9) the only possible Replication setup.
 Use the provision Parameter:
 
  --ol-mmr-urls=<list of whitespace separated ldap-urls (and Ports <> 389!).
