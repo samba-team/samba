@@ -222,6 +222,7 @@ class LDAPBackend(ProvisionBackend):
         self.slapd = subprocess.Popen(self.slapd_provision_command,
             close_fds=True, shell=False)
     
+        count = 0
         while self.slapd.poll() is None:
             # Wait until the socket appears
             try:
@@ -232,6 +233,11 @@ class LDAPBackend(ProvisionBackend):
                 return
             except LdbError:
                 time.sleep(1)
+                count = count + 1
+
+                if count > 15:
+                    self.message("Could not connect to slapd started with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
+                    raise ProvisioningError("slapd never accepted a connection within 15 seconds of starting")
 
         self.message("Could not start slapd with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
         raise ProvisioningError("slapd died before we could make a connection to it")
