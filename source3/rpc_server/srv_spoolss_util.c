@@ -30,6 +30,8 @@
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
 #define EMPTY_STRING ""
+static const char *empty_string_array[1] = { NULL };
+#define EMPTY_STRING_ARRAY empty_string_array
 
 #define CHECK_ERROR(result) \
 	if (W_ERROR_IS_OK(result)) continue; \
@@ -3654,10 +3656,41 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	info8 = talloc_zero(tmp_ctx, struct spoolss_DriverInfo8);
-	if (!info8) {
+	if (info8 == NULL) {
 		result = WERR_NOMEM;
 		goto done;
 	}
+
+	info8->driver_name = talloc_strdup(info8, driver_name);
+	if (info8->driver_name == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	info8->architecture = talloc_strdup(info8, architecture);
+	if (info8->architecture == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	info8->config_file = EMPTY_STRING;
+	info8->data_file = EMPTY_STRING;
+	info8->default_datatype = EMPTY_STRING;
+	info8->driver_path = EMPTY_STRING;
+	info8->hardware_id = EMPTY_STRING;
+	info8->help_file = EMPTY_STRING;
+	info8->inf_path = EMPTY_STRING;
+	info8->manufacturer_name = EMPTY_STRING;
+	info8->manufacturer_url = EMPTY_STRING;
+	info8->monitor_name = EMPTY_STRING;
+	info8->print_processor = EMPTY_STRING;
+	info8->provider = EMPTY_STRING;
+	info8->vendor_setup = EMPTY_STRING;
+
+	info8->color_profiles = empty_string_array;
+	info8->core_driver_dependencies = EMPTY_STRING_ARRAY;
+	info8->dependent_files = EMPTY_STRING_ARRAY;
+	info8->previous_names = EMPTY_STRING_ARRAY;
 
 	result = WERR_OK;
 
