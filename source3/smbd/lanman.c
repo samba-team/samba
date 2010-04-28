@@ -962,6 +962,8 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	struct spoolss_DevmodeContainer devmode_ctr;
 	uint32_t num_printers;
 	union spoolss_PrinterInfo *printer_info;
+	union spoolss_DriverInfo *driver_info;
+	union spoolss_JobInfo **job_info;
 
 	if (!param_format || !output_format1 || !p) {
 		return False;
@@ -1016,6 +1018,16 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 
 	queuecnt = num_printers;
 
+	job_info = talloc_array(mem_ctx, union spoolss_JobInfo *, num_printers);
+	if (job_info == NULL) {
+		goto err;
+	}
+
+	driver_info = talloc_array(mem_ctx, union spoolss_DriverInfo, num_printers);
+	if (driver_info == NULL) {
+		goto err;
+	}
+
 	if((subcntarr = SMB_MALLOC_ARRAY(int,queuecnt)) == NULL) {
 		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
 		goto err;
@@ -1035,8 +1047,6 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 
 		uint32_t num_jobs;
 		struct policy_handle handle;
-		union spoolss_DriverInfo driver_info;
-		union spoolss_JobInfo *job_info;
 
 		ZERO_STRUCT(handle);
 		ZERO_STRUCT(devmode_ctr);
@@ -1064,7 +1074,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 					       2, /* level */
 					       0, /* offered */
 					       &num_jobs,
-					       &job_info);
+					       &job_info[i]);
 		if (!W_ERROR_IS_OK(werr)) {
 			desc.errcode = W_ERROR_V(werr);
 			goto out;
@@ -1081,7 +1091,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 								0,
 								0, /* version */
 								0,
-								&driver_info,
+								&driver_info[i],
 								&server_major_version,
 								&server_minor_version);
 			if (!W_ERROR_IS_OK(werr)) {
@@ -1093,15 +1103,17 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		subcntarr[i] = num_jobs;
 		subcnt += subcntarr[i];
 
-		if (init_package(&desc,queuecnt,subcnt)) {
-			fill_printq_info(uLevel,&desc,subcntarr[i], job_info, &driver_info.info3, &printer_info[i].info2);
+		if (is_valid_policy_hnd(&handle)) {
+			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+		}
+	}
+
+	if (init_package(&desc,queuecnt,subcnt)) {
+		for (i = 0; i < num_printers; i++) {
+			fill_printq_info(uLevel,&desc,subcntarr[i], job_info[i], &driver_info[i].info3, &printer_info[i].info2);
 			if (desc.errcode == NERR_Success) {
 				succnt = i;
 			}
-		}
-
-		if (is_valid_policy_hnd(&handle)) {
-			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 		}
 	}
 
