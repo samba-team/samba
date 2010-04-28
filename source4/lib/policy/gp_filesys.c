@@ -62,19 +62,14 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 	size_t nread = 0;
 	size_t buf_size = 1024;
 
-	/* If the relative path is empty, then avoid the extra slash */
-	if (state->cur_rel_path[0] != '\0') {
-		/* Get local path by replacing backslashes with slashes */
-		local_rel_path = talloc_strdup(state, state->cur_rel_path);
-		for (i = 0; local_rel_path[i] != '\0'; i++) {
-			if (local_rel_path[i] == '\\') {
-				local_rel_path[i] = '/';
-			}
+	/* Get local path by replacing backslashes with slashes */
+	local_rel_path = talloc_strdup(state, state->cur_rel_path);
+	for (i = 0; local_rel_path[i] != '\0'; i++) {
+		if (local_rel_path[i] == '\\') {
+			local_rel_path[i] = '/';
 		}
-		full_local_path = talloc_asprintf(state, "%s/%s/%s", state->local_path, local_rel_path, info->name);
-	} else {
-		full_local_path = talloc_asprintf(state, "%s/%s", state->local_path, info->name);
 	}
+	full_local_path = talloc_asprintf(state, "%s%s/%s", state->local_path, local_rel_path, info->name);
 
 	/* Directory */
 	if (info->attrib & FILE_ATTRIBUTE_DIRECTORY) {
@@ -85,24 +80,14 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 
 		mkdir(full_local_path, 0755);
 
-		/* If the relative path is empty, then avoid the extra backslash */
-		if (state->cur_rel_path[0] == '\0') {
-			rel_path = info->name;
-		} else {
-			rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
-		}
+		rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
 
 		/* Recurse into this directory */
 		gp_do_list(rel_path, state);
 		return;
 	}
 
-	/* If the relative path is empty, then avoid the extra backslash */
-	if (state->cur_rel_path[0] != '\0') {
-		full_remote_path = talloc_asprintf(state, "%s\\%s\\%s", state->share_path, state->cur_rel_path, info->name);
-	} else {
-		full_remote_path = talloc_asprintf(state, "%s\\%s", state->share_path, info->name);
-	}
+	full_remote_path = talloc_asprintf(state, "%s%s\\%s", state->share_path, state->cur_rel_path, info->name);
 
 	/* Open the remote file */
 	fh_remote = smbcli_open(state->gp_ctx->cli->tree, full_remote_path, O_RDONLY, DENY_NONE);
@@ -153,7 +138,7 @@ static NTSTATUS gp_do_list (const char *rel_path, struct gp_list_state *state)
 	state->depth++;
 
 	/* Get the current mask */
-	mask = talloc_asprintf(state, "%s\\%s\\*", state->share_path, rel_path);
+	mask = talloc_asprintf(state, "%s%s\\*", state->share_path, rel_path);
 	success = smbcli_list(state->gp_ctx->cli->tree, mask, attributes, gp_list_helper, state);
 	talloc_free(mask);
 
