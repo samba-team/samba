@@ -241,6 +241,12 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 {
 	struct byte_range_lock *br_lck = NULL;
 
+	/* silently return ok on print files as we don't do locking there */
+	if (fsp->print_file) {
+		*perr = NT_STATUS_OK;
+		return NULL;
+	}
+
 	if (!fsp->can_lock) {
 		*perr = fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 		return NULL;

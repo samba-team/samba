@@ -76,7 +76,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_vuid;
 	fsp->fh->pos = -1;
-	fsp->can_lock = True;
+	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->access_mask = FILE_GENERIC_WRITE;
 	fsp->can_write = True;
@@ -130,6 +130,11 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 SMB_OFF_T printfile_offset(files_struct *fsp, SMB_OFF_T offset)
 {
 	SMB_STRUCT_STAT st;
+
+	if (offset & 0xffffffff00000000LL) {
+		/* offset is > 4G, skip */
+		return offset;
+	}
 
 	if (sys_fstat(fsp->fh->fd, &st, false) == -1) {
 		DEBUG(3,("printfile_offset: sys_fstat failed on %s (%s)\n",

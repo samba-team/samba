@@ -301,6 +301,9 @@ ssize_t write_file(struct smb_request *req,
 			return -1;
 		}
 
+		/* support seeks for print files bigger than 4G */
+		pos = printfile_offset(fsp, pos);
+
 		return print_job_write(SNUM(fsp->conn), jobid, data, pos, n);
 	}
 
