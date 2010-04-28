@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 
 #undef DBGC_CLASS
@@ -1514,5 +1515,37 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	result->max_recv_frag = -1;
 
 	*presult = result;
+	return NT_STATUS_OK;
+}
+
+/**
+ * @brief Create a new RPC client context which uses a local dispatch function.
+ *
+ * @param[in]  conn  The connection struct that will hold the pipe
+ *
+ * @param[out] spoolss_pipe  A pointer to the connected rpc client pipe.
+ *
+ * @return              NT_STATUS_OK on success, a corresponding NT status if an
+ *                      error occured.
+ */
+NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
+				  struct rpc_pipe_client **spoolss_pipe)
+{
+	NTSTATUS status;
+
+	/* TODO: check and handle disconnections */
+
+	if (!conn->spoolss_pipe) {
+		status = rpc_pipe_open_internal(conn,
+						&ndr_table_spoolss.syntax_id,
+						rpc_spoolss_dispatch,
+						conn->server_info,
+						&conn->spoolss_pipe);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	*spoolss_pipe = conn->spoolss_pipe;
 	return NT_STATUS_OK;
 }

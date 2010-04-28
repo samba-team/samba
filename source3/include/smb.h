@@ -592,6 +592,9 @@ typedef struct connection_struct {
 	struct dfree_cached_info *dfree_info;
 	struct trans_state *pending_trans;
 	struct notify_context *notify_ctx;
+
+	struct rpc_pipe_client *spoolss_pipe;
+
 } connection_struct;
 
 struct current_user {
