@@ -467,7 +467,7 @@ static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *out_output)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
 					      struct smbd_smb2_ioctl_state);
 
