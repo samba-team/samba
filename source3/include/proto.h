@@ -4785,6 +4785,7 @@ SMB_OFF_T printfile_offset(files_struct *fsp, SMB_OFF_T offset);
 
 uint16 pjobid_to_rap(const char* sharename, uint32 jobid);
 bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid);
+void rap_jobid_delete(const char* sharename, uint32 jobid);
 bool print_backend_init(struct messaging_context *msg_ctx);
 void printing_end(void);
 int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob );

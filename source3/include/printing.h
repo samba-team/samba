@@ -100,4 +100,16 @@ struct tdb_print_db {
 
 #define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
 
+NTSTATUS print_spool_open(files_struct *fsp,
+			  const char *fname,
+			  uint16_t current_vuid);
+
+int print_spool_write(files_struct *fsp, const char *data, uint32_t size,
+		      SMB_OFF_T offset, uint32_t *written);
+
+void print_spool_end(files_struct *fsp, enum file_close_type close_type);
+
+void print_spool_terminate(struct connection_struct *conn,
+			   struct print_file_data *print_file);
+
 #endif /* PRINTING_H_ */

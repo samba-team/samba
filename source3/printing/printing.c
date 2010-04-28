@@ -134,7 +134,7 @@ bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 	return False;
 }
 
-static void rap_jobid_delete(const char* sharename, uint32 jobid)
+void rap_jobid_delete(const char* sharename, uint32 jobid)
 {
 	TDB_DATA key, data;
 	uint16 rap_jobid;
