@@ -263,6 +263,11 @@ bld.SAMBA_SUBSYSTEM('NDR_KEYSVC',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_RAP',
+	source='../../librpc/gen_ndr/ndr_rap.c',
+	public_deps='LIBNDR'
+	)
+
 
 bld.SAMBA_SUBSYSTEM('NDR_KRB5PAC',
 	source='../../librpc/ndr/ndr_krb5pac.c ../../librpc/gen_ndr/ndr_krb5pac.c',
