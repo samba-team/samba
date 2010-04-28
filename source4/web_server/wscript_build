@@ -3,7 +3,7 @@
 
 bld.SAMBA_PYTHON('WEB_WSGI',
                  source='wsgi.c',
-                 deps='talloc'
+                 deps='talloc LIBTSOCKET'
                  )
 
 
