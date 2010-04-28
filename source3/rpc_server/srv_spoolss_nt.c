@@ -6202,7 +6202,6 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 			      union spoolss_JobInfo **info_p,
 			      uint32_t *count)
 {
-	struct spoolss_DeviceMode *devmode;
 	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
@@ -6213,16 +6212,11 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 	*count = num_queues;
 
 	for (i=0; i<*count; i++) {
+		struct spoolss_DeviceMode *devmode;
 
-		if (!pinfo2->devmode) {
-			result = spoolss_create_default_devmode(info,
+		result = spoolss_create_default_devmode(info,
 							pinfo2->printername,
 							&devmode);
-		} else {
-			result = copy_devicemode(info,
-						 pinfo2->devmode,
-						 &devmode);
-		}
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(3, ("Can't proceed w/o a devmode!"));
 			goto out;
