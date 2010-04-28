@@ -30,6 +30,12 @@ def set_options(opt):
     opt.RECURSE('../lib/uid_wrapper')
     opt.RECURSE('../pidl')
 
+    gr = opt.option_group('developer options')
+    gr.add_option('--enable-build-farm',
+                   help='enable special build farm options',
+                   action='store_true', dest='BUILD_FARM')
+
+
 def configure(conf):
     conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
     conf.DEFINE('PACKAGE_STRING', 'samba 4', quote=True)
@@ -44,6 +50,9 @@ def configure(conf):
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
+
+    # this enables smbtorture.static for s3 in the build farm
+    conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
 
     # set a lower limit on recursing in waf preprocessor
     conf.env.preprocessor_recursion_limit = 10

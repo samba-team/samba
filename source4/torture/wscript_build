@@ -131,13 +131,30 @@ bld.SAMBA_MODULE('TORTURE_NTP',
 
 TORTURE_MODULES = 'TORTURE_BASIC TORTURE_RAW torture_rpc TORTURE_RAP TORTURE_AUTH TORTURE_NBENCH TORTURE_UNIX TORTURE_LDAP TORTURE_NBT TORTURE_NET TORTURE_NTP torture_registry'
 
+bld.SAMBA_SUBSYSTEM('torturemain',
+                    source='smbtorture.c torture.c',
+                    subsystem_name='smbtorture',
+                    deps='torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
+                    needs_python=True
+                    )
+
 bld.SAMBA_BINARY('smbtorture',
-	source='smbtorture.c torture.c',
-	manpages='man/smbtorture.1',
-	public_headers='smbtorture.h',
-	deps='torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
-        needs_python=True
-	)
+                 source=[],
+                 manpages='man/smbtorture.1',
+                 public_headers='smbtorture.h',
+                 deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
+                 needs_python=True
+                 )
+
+# this is used in the build farm to build a smbtorture.static binary for s3
+bld.SAMBA_BINARY('smbtorture.static',
+                 source=[],
+                 deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
+                 enabled = bld.env.BUILD_FARM,
+                 needs_python=True
+                 )
+bld.env.NONSHARED_BINARIES.append('smbtorture.static')
+
 
 
 bld.SAMBA_BINARY('gentest',
