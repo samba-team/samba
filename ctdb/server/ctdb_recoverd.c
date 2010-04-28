@@ -1891,6 +1891,29 @@ static void reenable_ip_check(struct event_context *ev, struct timed_event *te,
 	rec->ip_check_disable_ctx = NULL;
 }
 
+
+static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_public_ip *ip;
+
+	if (rec->recmaster != rec->ctdb->pnn) {
+		DEBUG(DEBUG_INFO,("Not recmaster, ignore update ip message\n"));
+		return;
+	}
+
+	if (data.dsize != sizeof(struct ctdb_public_ip)) {
+		DEBUG(DEBUG_ERR,(__location__ " Incorrect size of recd update ip message. Was %zd but expected %zd bytes\n", data.dsize, sizeof(struct ctdb_public_ip)));
+		return;
+	}
+
+	ip = (struct ctdb_public_ip *)data.dptr;
+
+	update_ip_assignment_tree(rec->ctdb, ip);
+}
+
+
 static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -2861,6 +2884,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for disabling the ip check for a short while */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_DISABLE_IP_CHECK, disable_ip_check_handler, rec);
+
+	/* register a message port for updating the recovery daemons node assignment for an ip */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECD_UPDATE_IP, recd_update_ip_handler, rec);
 
 again:
 	if (mem_ctx) {

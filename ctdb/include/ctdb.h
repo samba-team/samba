@@ -75,6 +75,12 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
 
+/* 
+   a message ID to ask the recovery daemon to update the expected node
+   assignment for a public ip
+ */
+#define CTDB_SRVID_RECD_UPDATE_IP 0xF500000000000000LL
+
 /*
   a message to tell the recovery daemon to fetch a set of records
  */
