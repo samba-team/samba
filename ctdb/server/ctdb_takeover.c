@@ -2842,7 +2842,7 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb, struct ctdb_all_publi
 		}
 
 		if (tmp_ip->pnn != ips->ips[i].pnn) {
-			DEBUG(DEBUG_ERR,("Inconsistent ip allocation. Trigger reallocation.\n"));
+			DEBUG(DEBUG_ERR,("Inconsistent ip allocation. Trigger reallocation. Thinks %s is held by node %u while it is held by node %u\n", ctdb_addr_to_str(&ips->ips[i].addr), ips->ips[i].pnn, tmp_ip->pnn));
 			return -1;
 		}
 	}
