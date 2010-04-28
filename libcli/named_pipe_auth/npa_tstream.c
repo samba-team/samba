@@ -743,7 +743,7 @@ static int tstream_npa_readv_next_vector(struct tstream_context *unix_stream,
 
 	if (left > 0) {
 		/*
-		 * if the message if longer than the buffers the caller
+		 * if the message is longer than the buffers the caller
 		 * requested, we need to consume the rest of the message
 		 * into the pending buffer, where the next readv can
 		 * be served from.
@@ -808,6 +808,7 @@ struct tstream_npa_writev_state {
 	size_t count;
 
 	/* the header for message mode */
+	bool hdr_used;
 	uint8_t hdr[2];
 
 	int ret;
@@ -844,6 +845,7 @@ static struct tevent_req *tstream_npa_writev_send(TALLOC_CTX *mem_ctx,
 
 	switch (npas->file_type) {
 	case FILE_TYPE_BYTE_MODE_PIPE:
+		state->hdr_used	= false;
 		state->vector	= vector;
 		state->count	= count;
 		break;
@@ -861,6 +863,7 @@ static struct tevent_req *tstream_npa_writev_send(TALLOC_CTX *mem_ctx,
 		new_vector[0].iov_len = sizeof(state->hdr);
 		memcpy(new_vector + 1, vector, sizeof(struct iovec)*count);
 
+		state->hdr_used	= true;
 		state->vector	= new_vector;
 		state->count	= count + 1;
 
@@ -909,6 +912,14 @@ static void tstream_npa_writev_handler(struct tevent_req *subreq)
 	if (ret == -1) {
 		tevent_req_error(req, sys_errno);
 		return;
+	}
+
+	/*
+	 * in message mode we need to hide the length
+	 * of the hdr from the caller
+	 */
+	if (state->hdr_used) {
+		ret -= sizeof(state->hdr);
 	}
 
 	state->ret = ret;
