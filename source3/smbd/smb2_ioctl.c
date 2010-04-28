@@ -127,6 +127,12 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	NTSTATUS error; /* transport error */
 
 	status = smbd_smb2_ioctl_recv(subreq, req, &out_output_buffer);
+
+	DEBUG(10,("smbd_smb2_request_ioctl_done: smbd_smb2_ioctl_recv returned "
+		"%u status %s\n",
+		(unsigned int)out_output_buffer.length,
+		nt_errstr(status) ));
+
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
 		/* also ok */
@@ -353,6 +359,9 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
+		DEBUG(10,("smbd_smb2_ioctl_send: np_write_send of size %u\n",
+			(unsigned int)in_input.length ));
+
 		subreq = np_write_send(state, ev,
 				       fsp->fake_file_handle,
 				       in_input.data,
@@ -388,6 +397,10 @@ static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
 	ssize_t nwritten = -1;
 
 	status = np_write_recv(subreq, &nwritten);
+
+	DEBUG(10,("smbd_smb2_ioctl_pipe_write_done: received %ld\n",
+		(long int)nwritten ));
+
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -405,6 +418,11 @@ static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
 		return;
 	}
 
+	DEBUG(10,("smbd_smb2_ioctl_pipe_write_done: issuing np_read_send "
+		"of size %u\n",
+		(unsigned int)state->out_output.length ));
+
+	TALLOC_FREE(subreq);
 	subreq = np_read_send(state->smbreq->conn,
 			      state->smb2req->sconn->smb2.event_ctx,
 			      state->fsp->fake_file_handle,
@@ -423,10 +441,17 @@ static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
 	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
 					      struct smbd_smb2_ioctl_state);
 	NTSTATUS status;
-	ssize_t nread;
-	bool is_data_outstanding;
+	ssize_t nread = -1;
+	bool is_data_outstanding = false;
 
 	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+
+	DEBUG(10,("smbd_smb2_ioctl_pipe_read_done: np_read_recv nread = %d "
+		 "is_data_outstanding = %d, status = %s\n",
+		(int)nread,
+		(int)is_data_outstanding,
+		nt_errstr(status) ));
+
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
