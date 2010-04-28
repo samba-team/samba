@@ -4990,6 +4990,25 @@ static bool test_PrinterData_DsSpooler(struct torture_context *tctx,
 	info_ctr.level = 2;
 	info_ctr.info = sinfo;
 
+#define TEST_SZ(wname, iname) \
+do {\
+	enum winreg_Type type;\
+	uint8_t *data;\
+	uint32_t needed;\
+	DATA_BLOB blob;\
+	const char *str;\
+	torture_assert(tctx,\
+		test_GetPrinterDataEx(tctx, p, handle, "DsSpooler", wname, &type, &data, &needed),\
+		"failed to query");\
+	torture_assert_int_equal(tctx, type, REG_SZ, "unexpected type");\
+	blob = data_blob_const(data, needed);\
+	torture_assert(tctx,\
+		pull_reg_sz(tctx, lp_iconv_convenience(tctx->lp_ctx), &blob, &str),\
+		"failed to pull REG_SZ");\
+	torture_assert_str_equal(tctx, str, iname, "unexpected result");\
+} while(0);
+
+
 #define TEST_SET_SZ(wname, iname, val) \
 do {\
 	enum winreg_Type type;\
@@ -5035,8 +5054,20 @@ do {\
 	TEST_SET_SZ("location", location, "newval");
 /*	TEST_SET_DWORD("priority", priority, 25); */
 
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 2, &info),
+		"failed to query Printer level 2");
+
+	TEST_SZ("description", info.info2.comment);
+	TEST_SZ("driverName", info.info2.drivername);
+	TEST_SZ("location", info.info2.location);
+	TEST_SZ("printerName", info.info2.printername);
+	/* TEST_SZ("printSeparatorFile", info.info2.sepfile); */
+	/* TEST_SZ("printShareName", info.info2.sharename); */
+
 	/* FIXME gd: complete the list */
 
+#undef TEST_SZ
 #undef TEST_SET_SZ
 #undef TEST_DWORD
 
