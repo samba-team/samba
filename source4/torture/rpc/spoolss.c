@@ -97,6 +97,7 @@ struct torture_printer_context {
 	bool wellknown;
 	bool added_driver;
 	bool have_driver;
+	struct spoolss_DeviceMode *devmode;
 };
 
 static bool upload_printer_driver(struct torture_context *tctx,
@@ -2274,7 +2275,8 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     struct policy_handle *handle,
-				     const char *name)
+				     const char *name,
+				     struct spoolss_DeviceMode *addprinter_devmode)
 {
 	union spoolss_PrinterInfo info;
 	struct spoolss_DeviceMode *devmode;
@@ -2289,6 +2291,12 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 		"failed to get initial global devicemode");
 
 	devmode = info.info8.devmode;
+
+	if (addprinter_devmode) {
+		if (!test_devicemode_equal(tctx, devmode, addprinter_devmode)) {
+			torture_warning(tctx, "current global DM is != DM provided in addprinter");
+		}
+	}
 
 	/* run tests */
 
@@ -6009,6 +6017,7 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 				   const char *printername,
 				   const char *drivername,
 				   const char *portname,
+				   struct spoolss_DeviceMode *devmode,
 				   bool ex)
 {
 	WERROR result;
@@ -6029,6 +6038,8 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	ZERO_STRUCT(userlevel_ctr);
 
 	torture_comment(tctx, "Testing AddPrinter%s level 2\n", ex ? "Ex":"");
+
+	devmode_ctr.devmode = devmode;
 
 	userlevel_ctr.level = 1;
 
@@ -6283,7 +6294,8 @@ static bool test_one_printer(struct torture_context *tctx,
 			     const char *name,
 			     const char *drivername,
 			     const char *environment,
-			     bool have_driver)
+			     bool have_driver,
+			     struct spoolss_DeviceMode *devmode)
 {
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -6308,7 +6320,7 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_PrinterInfo_DevMode(tctx, p, handle, name)) {
+	if (!test_PrinterInfo_DevMode(tctx, p, handle, name, devmode)) {
 		ret = false;
 	}
 
@@ -6376,7 +6388,7 @@ static bool test_csetprinter(struct torture_context *tctx,
 	 * been added */
 
 	torture_assert(tctx,
-		test_AddPrinter_normal(tctx, p, &new_handle, printername, drivername, portname, false),
+		test_AddPrinter_normal(tctx, p, &new_handle, printername, drivername, portname, NULL, false),
 		"failed to add new printer");
 	torture_assert(tctx,
 		test_GetPrinter_level(tctx, b, handle, 0, &info),
@@ -6435,7 +6447,7 @@ static bool test_add_printer_args_with_driver(struct torture_context *tctx,
 			"failed to add wellknown printer");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinter_normal(tctx, p, &handle, printer_name, driver_name, port_name, t->ex),
+			test_AddPrinter_normal(tctx, p, &handle, printer_name, driver_name, port_name, t->devmode, t->ex),
 			"failed to add printer");
 	}
 
@@ -6443,7 +6455,7 @@ static bool test_add_printer_args_with_driver(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_one_printer(tctx, p, &handle, printer_name, driver_name, t->driver.remote.environment, t->have_driver)) {
+	if (!test_one_printer(tctx, p, &handle, printer_name, driver_name, t->driver.remote.environment, t->have_driver, t->devmode)) {
 		ret = false;
 	}
 
@@ -6575,6 +6587,7 @@ static bool test_add_printer_wellknown(struct torture_context *tctx,
 	t->ex			= false;
 	t->wellknown		= true;
 	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER;
+	t->devmode		= NULL;
 
 	return test_add_printer_args(tctx, p, t);
 }
@@ -6589,6 +6602,7 @@ static bool test_add_printer_ex(struct torture_context *tctx,
 	t->ex			= true;
 	t->wellknown		= false;
 	t->info2.printername	= TORTURE_PRINTER_EX;
+	t->devmode		= NULL;
 
 	return test_add_printer_args(tctx, p, t);
 }
@@ -6603,6 +6617,63 @@ static bool test_add_printer_ex_wellknown(struct torture_context *tctx,
 	t->ex			= true;
 	t->wellknown		= true;
 	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER_EX;
+	t->devmode		= NULL;
+
+	return test_add_printer_args(tctx, p, t);
+}
+
+static struct spoolss_DeviceMode *torture_devicemode(TALLOC_CTX *mem_ctx,
+						     const char *devicename)
+{
+	struct spoolss_DeviceMode *r;
+
+	r = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+	if (r == NULL) {
+		return NULL;
+	}
+
+	r->devicename		= talloc_strdup(r, devicename);
+	r->specversion		= DMSPEC_NT4_AND_ABOVE;
+	r->driverversion	= 0x0600;
+	r->size			= 0x00dc;
+	r->__driverextra_length = 0;
+	r->fields		= DEVMODE_FORMNAME |
+				  DEVMODE_TTOPTION |
+				  DEVMODE_PRINTQUALITY |
+				  DEVMODE_DEFAULTSOURCE |
+				  DEVMODE_COPIES |
+				  DEVMODE_SCALE |
+				  DEVMODE_PAPERSIZE |
+				  DEVMODE_ORIENTATION;
+	r->orientation		= DMORIENT_PORTRAIT;
+	r->papersize		= DMPAPER_LETTER;
+	r->paperlength		= 0;
+	r->paperwidth		= 0;
+	r->scale		= 100;
+	r->copies		= 55;
+	r->defaultsource	= DMBIN_FORMSOURCE;
+	r->printquality		= DMRES_HIGH;
+	r->color		= DMRES_MONOCHROME;
+	r->duplex		= DMDUP_SIMPLEX;
+	r->yresolution		= 0;
+	r->ttoption		= DMTT_SUBDEV;
+	r->collate		= DMCOLLATE_FALSE;
+	r->formname		= talloc_strdup(r, "Letter");
+
+	return r;
+}
+
+static bool test_add_printer_with_devmode(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+
+	t->ex			= true;
+	t->wellknown		= false;
+	t->info2.printername	= TORTURE_PRINTER_EX;
+	t->devmode		= torture_devicemode(t, TORTURE_PRINTER_EX);
 
 	return test_add_printer_args(tctx, p, t);
 }
@@ -6759,6 +6830,8 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_ex(tcase, "add_printer_wellknown", test_add_printer_wellknown, t);
 	torture_rpc_tcase_add_test_ex(tcase, "add_printer_ex", test_add_printer_ex, t);
 	torture_rpc_tcase_add_test_ex(tcase, "add_printer_ex_wellknown", test_add_printer_ex_wellknown, t);
+
+	torture_rpc_tcase_add_test_ex(tcase, "add_printer_with_devmode", test_add_printer_with_devmode, t);
 
 	return suite;
 }
