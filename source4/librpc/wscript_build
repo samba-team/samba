@@ -264,7 +264,7 @@ bld.SAMBA_SUBSYSTEM('NDR_KEYSVC',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_RAP',
-	source='../../librpc/gen_ndr/ndr_rap.c',
+	source='../../librpc/gen_ndr/ndr_rap.c ../../librpc/ndr/ndr_rap.c',
 	public_deps='LIBNDR'
 	)
 
@@ -607,7 +607,6 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
 	public_headers='rpc/dcerpc.h ../../librpc/gen_ndr/ndr_dcerpc.h ../../librpc/gen_ndr/dcerpc.h',
         header_path= [ ('*gen_ndr*', 'gen_ndr') ],
 	)
-
 
 bld.SAMBA_LIBRARY('dcerpc',
 	source='rpc/dcerpc.c rpc/dcerpc_auth.c rpc/dcerpc_schannel.c rpc/dcerpc_util.c rpc/dcerpc_smb.c rpc/dcerpc_smb2.c rpc/dcerpc_sock.c rpc/dcerpc_connect.c rpc/dcerpc_secondary.c ../../librpc/rpc/binding.c ../../librpc/rpc/dcerpc_error.c',

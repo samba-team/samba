@@ -578,7 +578,7 @@ RPC_NDR_KEYSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_keysvc_c.o
 [SUBSYSTEM::NDR_RAP]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_RAP_OBJ_FILES = ../librpc/gen_ndr/ndr_rap.o
+NDR_RAP_OBJ_FILES = ../librpc/gen_ndr/ndr_rap.o ../librpc/ndr/ndr_rap.o
 
 [SUBSYSTEM::NDR_DCERPC]
 PUBLIC_DEPENDENCIES = LIBNDR

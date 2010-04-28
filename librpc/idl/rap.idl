@@ -5,7 +5,8 @@
 */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	helper("../librpc/ndr/ndr_rap.h")
 ]
 interface rap
 {
@@ -541,7 +542,7 @@ interface rap
 		uint16 PrinterNameOffsetHigh;
 	} rap_PrintJobInfo3;
 
-	[public] void rap_NetPrintQEnum(
+	[public,noprint] void rap_NetPrintQEnum(
 		[in] uint16 level,
 		[in] uint16 bufsize,
 		[out] uint16 status,
