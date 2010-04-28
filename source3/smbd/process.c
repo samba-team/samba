@@ -1633,8 +1633,12 @@ static void process_smb(struct smbd_server_connection *conn,
 		if (smbd_is_smb2_header(inbuf, nread)) {
 			smbd_smb2_first_negprot(smbd_server_conn, inbuf, nread);
 			return;
+		} else if (nread >= smb_size && valid_smb_header(inbuf)
+				&& CVAL(inbuf, smb_com) != 0x72) {
+			/* This is a non-negprot SMB1 packet.
+			   Disable SMB2 from now on. */
+			smbd_server_conn->allow_smb2 = false;
 		}
-		smbd_server_conn->allow_smb2 = false;
 	}
 
 	show_msg((char *)inbuf);
