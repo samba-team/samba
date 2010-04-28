@@ -227,9 +227,20 @@ static void api_dcerpc_cmd(connection_struct *conn, struct smb_request *req,
 {
 	struct tevent_req *subreq;
 	struct dcerpc_cmd_state *state;
+	bool busy;
 
 	if (!fsp_is_np(fsp)) {
 		api_no_reply(conn, req);
+		return;
+	}
+
+	/*
+	 * Trans requests are only allowed
+	 * if no other Trans or Read is active
+	 */
+	busy = np_read_in_progress(fsp->fake_file_handle);
+	if (busy) {
+		reply_nterror(req, NT_STATUS_PIPE_BUSY);
 		return;
 	}
 
