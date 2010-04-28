@@ -2720,7 +2720,7 @@ int drsuapi_DsReplicaCursor_compare(const struct drsuapi_DsReplicaCursor *c1,
 /*
   see if a computer identified by its invocationId is a RODC
 */
-int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *invocationId, bool *is_rodc)
+int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bool *is_rodc)
 {
 	/* 1) find the DN for this servers NTDSDSA object
 	   2) search for the msDS-isRODC attribute
@@ -2740,8 +2740,17 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *invocationId, 
 	}
 
 	ret = dsdb_search(sam_ctx, tmp_ctx, &res, config_dn, LDB_SCOPE_SUBTREE, attrs,
-			  DSDB_SEARCH_ONE_ONLY, "invocationID=%s", GUID_string(tmp_ctx, invocationId));
+			  DSDB_SEARCH_ONE_ONLY, "objectGUID=%s", GUID_string(tmp_ctx, objectGUID));
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		*is_rodc = false;
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
 	if (ret != LDB_SUCCESS) {
+		DEBUG(1,(("Failed to find our own NTDS Settings object by objectGUID=%s!\n"),
+			 GUID_string(tmp_ctx, objectGUID)));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -2759,12 +2768,12 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *invocationId, 
 */
 int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 {
-	const struct GUID *invocationId;
-	invocationId = samdb_ntds_invocation_id(sam_ctx);
-	if (!invocationId) {
+	const struct GUID *objectGUID;
+	objectGUID = samdb_ntds_objectGUID(sam_ctx);
+	if (!objectGUID) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return samdb_is_rodc(sam_ctx, invocationId, am_rodc);
+	return samdb_is_rodc(sam_ctx, objectGUID, am_rodc);
 }
 
 

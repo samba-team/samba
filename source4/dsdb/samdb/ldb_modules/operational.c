@@ -287,6 +287,156 @@ static int construct_subschema_subentry(struct ldb_module *module,
 }
 
 
+static int construct_msds_isrodc_with_dn(struct ldb_module *module,
+					 struct ldb_message *msg,
+					 struct ldb_message_element *object_category)
+{
+	struct ldb_context *ldb;
+	struct ldb_dn *dn;
+	const struct ldb_val *val;
+
+	ldb = ldb_module_get_ctx(module);
+	if (!ldb) {
+		DEBUG(4, (__location__ ": Failed to get ldb \n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	dn = ldb_dn_new(msg, ldb, (const char *)object_category->values[0].data);
+	if (!dn) {
+		DEBUG(4, (__location__ ": Failed to create dn from %s \n",
+			  (const char *)object_category->values[0].data));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	val = ldb_dn_get_rdn_val(dn);
+	if (!val) {
+		DEBUG(4, (__location__ ": Failed to get rdn val from %s \n",
+			  ldb_dn_get_linearized(dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (strequal((const char *)val->data, "NTDS-DSA")) {
+		ldb_msg_add_string(msg, "msDS-isRODC", "FALSE");
+	} else {
+		ldb_msg_add_string(msg, "msDS-isRODC", "TRUE");
+	}
+	return LDB_SUCCESS;
+}
+
+static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
+						struct ldb_message *msg,
+						struct ldb_dn *dn)
+{
+	struct ldb_dn *server_dn;
+	const char *attr_obj_cat[] = { "objectCategory", NULL };
+	struct ldb_result *res;
+	struct ldb_message_element *object_category;
+	int ret;
+
+	server_dn = ldb_dn_copy(msg, dn);
+	if (!ldb_dn_add_child_fmt(server_dn, "CN=NTDS Settings")) {
+		DEBUG(4, (__location__ ": Failed to add child to %s \n",
+			  ldb_dn_get_linearized(server_dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_search_dn(module, msg, &res, server_dn, attr_obj_cat, 0);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(4,(__location__ ": Can't get objectCategory for %s \n",
+					 ldb_dn_get_linearized(server_dn)));
+		return LDB_SUCCESS;
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	object_category = ldb_msg_find_element(res->msgs[0], "objectCategory");
+	if (!object_category) {
+		DEBUG(4,(__location__ ": Can't find objectCategory for %s \n",
+			 ldb_dn_get_linearized(res->msgs[0]->dn)));
+		return LDB_SUCCESS;
+	}
+	return construct_msds_isrodc_with_dn(module, msg, object_category);
+}
+
+static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
+						  struct ldb_message *msg)
+{
+	struct ldb_context *ldb;
+	const char *attr[] = { "serverReferenceBL", NULL };
+	struct ldb_result *res;
+	int ret;
+	struct ldb_dn *server_dn;
+
+	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attr, 0);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(4,(__location__ ": Can't get serverReferenceBL for %s \n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_SUCCESS;
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ldb = ldb_module_get_ctx(module);
+	if (!ldb) {
+		return LDB_SUCCESS;
+	}
+
+	server_dn = ldb_msg_find_attr_as_dn(ldb, msg, res->msgs[0], "serverReferenceBL");
+	if (!server_dn) {
+		DEBUG(4,(__location__ ": Can't find serverReferenceBL for %s \n",
+			 ldb_dn_get_linearized(res->msgs[0]->dn)));
+		return LDB_SUCCESS;
+	}
+	return construct_msds_isrodc_with_server_dn(module, msg, server_dn);
+}
+
+/*
+  construct msDS-isRODC attr
+*/
+static int construct_msds_isrodc(struct ldb_module *module, struct ldb_message *msg)
+{
+	struct ldb_message_element * object_class;
+	struct ldb_message_element * object_category;
+	unsigned int i;
+
+	object_class = ldb_msg_find_element(msg, "objectClass");
+	if (!object_class) {
+		DEBUG(4,(__location__ ": Can't get objectClass for %s \n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i<object_class->num_values; i++) {
+		if (strequal((const char*)object_class->values[i].data, "nTDSDSA")) {
+			/* If TO!objectCategory  equals the DN of the classSchema  object for the nTDSDSA
+			 * object class, then TO!msDS-isRODC  is false. Otherwise, TO!msDS-isRODC  is true.
+			 */
+			object_category = ldb_msg_find_element(msg, "objectCategory");
+			if (!object_category) {
+				DEBUG(4,(__location__ ": Can't get objectCategory for %s \n",
+					 ldb_dn_get_linearized(msg->dn)));
+				return LDB_SUCCESS;
+			}
+			return construct_msds_isrodc_with_dn(module, msg, object_category);
+		}
+		if (strequal((const char*)object_class->values[i].data, "server")) {
+			/* Let TN be the nTDSDSA  object whose DN is "CN=NTDS Settings," prepended to
+			 * the DN of TO. Apply the previous rule for the "TO is an nTDSDSA  object" case,
+			 * substituting TN for TO.
+			 */
+			return construct_msds_isrodc_with_server_dn(module, msg, msg->dn);
+		}
+		if (strequal((const char*)object_class->values[i].data, "computer")) {
+			/* Let TS be the server  object named by TO!serverReferenceBL. Apply the previous
+			 * rule for the "TO is a server  object" case, substituting TS for TO.
+			 */
+			return construct_msds_isrodc_with_computer_dn(module, msg);
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
   a list of attribute names that should be substituted in the parse
   tree before the search is done
@@ -317,7 +467,8 @@ static const struct {
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
 	{ "tokenGroups", "objectSid", "primaryGroupID", construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
-	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry }
+	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
+	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc }
 };
 
 
