@@ -411,6 +411,185 @@ union rap_server_info {
 	struct rap_server_info_1 info1;/* [case] */
 }/* [nodiscriminant] */;
 
+enum rap_PrintQStatusCode
+#ifndef USE_UINT_ENUMS
+ {
+	PRQ_ACTIVE=(int)(0x0000),
+	PRQ_PAUSE=(int)(0x0001),
+	PRQ_ERROR=(int)(0x0002),
+	PRQ_PENDING=(int)(0x0003)
+}
+#else
+ { __donnot_use_enum_rap_PrintQStatusCode=0x7FFFFFFF}
+#define PRQ_ACTIVE ( 0x0000 )
+#define PRQ_PAUSE ( 0x0001 )
+#define PRQ_ERROR ( 0x0002 )
+#define PRQ_PENDING ( 0x0003 )
+#endif
+;
+
+struct rap_PrintQueue0 {
+	uint8_t PrintQName[13];
+};
+
+struct rap_PrintQueue1 {
+	uint8_t PrintQName[13];
+	uint8_t Pad1;
+	uint16_t Priority;
+	uint16_t StartTime;
+	uint16_t UntilTime;
+	const char *SeparatorPageFilename;/* [charset(DOS),relative_short] */
+	uint16_t SeparatorPageFilenameHigh;
+	const char *PrintProcessorDllName;/* [charset(DOS),relative_short] */
+	uint16_t PrintProcessorDllNameHigh;
+	const char *PrintDestinationsName;/* [charset(DOS),relative_short] */
+	uint16_t PrintDestinationsNameHigh;
+	const char *PrintParameterString;/* [charset(DOS),relative_short] */
+	uint16_t PrintParameterStringHigh;
+	const char *CommentString;/* [charset(DOS),relative_short] */
+	uint16_t CommentStringHigh;
+	enum rap_PrintQStatusCode PrintQStatus;
+	uint16_t PrintJobCount;
+};
+
+struct rap_PrintQueue2 {
+	char _empty_;
+};
+
+struct rap_PrintQueue3 {
+	const char *PrintQueueName;/* [charset(DOS),relative_short] */
+	uint16_t PrintQueueNameHigh;
+	uint16_t Priority;
+	uint16_t StartTime;
+	uint16_t UntilTime;
+	uint16_t Pad;
+	const char *SeparatorPageFilename;/* [charset(DOS),relative_short] */
+	uint16_t SeparatorPageFilenameHigh;
+	const char *PrintProcessorDllName;/* [charset(DOS),relative_short] */
+	uint16_t PrintProcessorDllNameHigh;
+	const char *PrintParameterString;/* [charset(DOS),relative_short] */
+	uint16_t PrintParameterStringHigh;
+	const char *CommentString;/* [charset(DOS),relative_short] */
+	uint16_t CommentStringHigh;
+	enum rap_PrintQStatusCode PrintQStatus;
+	uint16_t PrintJobCount;
+	const char *Printers;/* [charset(DOS),relative_short] */
+	uint16_t PrintersHigh;
+	const char *DriverName;/* [charset(DOS),relative_short] */
+	uint16_t DriverNameHigh;
+	const char *PrintDriverData;/* [charset(DOS),relative_short] */
+	uint16_t PrintDriverDataHigh;
+};
+
+struct rap_PrintQueue4 {
+	char _empty_;
+};
+
+struct rap_PrintQueue5 {
+	const char *PrintQueueName;/* [charset(DOS),relative_short] */
+	uint16_t PrintQueueNameHigh;
+};
+
+union rap_printq_info {
+	struct rap_PrintQueue0 info0;/* [case(0)] */
+	struct rap_PrintQueue1 info1;/* [case] */
+	struct rap_PrintQueue2 info2;/* [case(2)] */
+	struct rap_PrintQueue3 info3;/* [case(3)] */
+	struct rap_PrintQueue4 info4;/* [case(4)] */
+	struct rap_PrintQueue5 info5;/* [case(5)] */
+}/* [nodiscriminant] */;
+
+enum rap_PrintJStatusCode
+#ifndef USE_UINT_ENUMS
+ {
+	PRJ_QS_QUEUED=(int)(0x0000),
+	PRJ_QS_PAUSED=(int)(0x0001),
+	PRJ_QS_SPOOLING=(int)(0x0002),
+	PRJ_QS_PRINTING=(int)(0x0003),
+	PRJ_QS_ERROR=(int)(0x0010)
+}
+#else
+ { __donnot_use_enum_rap_PrintJStatusCode=0x7FFFFFFF}
+#define PRJ_QS_QUEUED ( 0x0000 )
+#define PRJ_QS_PAUSED ( 0x0001 )
+#define PRJ_QS_SPOOLING ( 0x0002 )
+#define PRJ_QS_PRINTING ( 0x0003 )
+#define PRJ_QS_ERROR ( 0x0010 )
+#endif
+;
+
+struct rap_PrintJobInfo0 {
+	uint16_t JobID;
+};
+
+struct rap_PrintJobInfo1 {
+	uint16_t JobID;
+	uint8_t UserName[21];
+	uint8_t Pad;
+	uint8_t NotifyName[16];
+	uint8_t DataType[10];
+	const char *PrintParameterString;/* [charset(DOS),relative_short] */
+	uint16_t PrintParameterStringHigh;
+	uint16_t JobPosition;
+	enum rap_PrintJStatusCode JobStatus;
+	const char *JobStatusString;/* [charset(DOS),relative_short] */
+	uint16_t JobStatusStringHigh;
+	uint32_t TimeSubmitted;
+	uint32_t JobSize;
+	const char *JobCommentString;/* [charset(DOS),relative_short] */
+	uint16_t JobCommentStringHigh;
+};
+
+struct rap_PrintJobInfo2 {
+	uint16_t JobID;
+	uint16_t Priority;
+	const char *UserName;/* [charset(DOS),relative_short] */
+	uint16_t UserNameHigh;
+	uint16_t JobPosition;
+	enum rap_PrintJStatusCode JobStatus;
+	uint32_t TimeSubmitted;
+	uint32_t JobSize;
+	const char *JobCommentString;/* [charset(DOS),relative_short] */
+	uint16_t JobCommentStringHigh;
+	const char *DocumentName;/* [charset(DOS),relative_short] */
+	uint16_t DocumentNameHigh;
+};
+
+struct rap_PrintJobInfo3 {
+	uint16_t JobID;
+	uint16_t Priority;
+	const char *UserName;/* [charset(DOS),relative_short] */
+	uint16_t UserNameHigh;
+	uint16_t JobPosition;
+	enum rap_PrintJStatusCode JobStatus;
+	uint32_t TimeSubmitted;
+	uint32_t JobSize;
+	const char *JobCommentString;/* [charset(DOS),relative_short] */
+	uint16_t JobCommentStringHigh;
+	const char *DocumentName;/* [charset(DOS),relative_short] */
+	uint16_t DocumentNameHigh;
+	const char *NotifyName;/* [charset(DOS),relative_short] */
+	uint16_t NotifyNameHigh;
+	const char *DataType;/* [charset(DOS),relative_short] */
+	uint16_t DataTypeHigh;
+	const char *PrintParameterString;/* [charset(DOS),relative_short] */
+	uint16_t PrintParameterStringHigh;
+	const char *StatusString;/* [charset(DOS),relative_short] */
+	uint16_t StatusStringHigh;
+	const char *QueueName;/* [charset(DOS),relative_short] */
+	uint16_t QueueNameHigh;
+	const char *PrintProcessorName;/* [charset(DOS),relative_short] */
+	uint16_t PrintProcessorNameHigh;
+	const char *PrintProcessorParams;/* [charset(DOS),relative_short] */
+	uint16_t PrintProcessorParamsHigh;
+	const char *DriverName;/* [charset(DOS),relative_short] */
+	uint16_t DriverNameHigh;
+	const char *DriverDataOffset;/* [charset(DOS),relative_short] */
+	uint16_t DriverDataOffsetHigh;
+	const char *PrinterNameOffset;/* [charset(DOS),relative_short] */
+	uint16_t PrinterNameOffsetHigh;
+};
+
 
 struct rap_NetShareEnum {
 	struct {
@@ -459,6 +638,23 @@ struct rap_WserverGetInfo {
 		uint16_t convert;
 		uint16_t available;
 		union rap_server_info info;/* [switch_is(level)] */
+	} out;
+
+};
+
+
+struct rap_NetPrintQEnum {
+	struct {
+		uint16_t level;
+		uint16_t bufsize;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+		uint16_t count;
+		uint16_t available;
+		union rap_printq_info *info;/* [ref,switch_is(level)] */
 	} out;
 
 };
