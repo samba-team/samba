@@ -270,6 +270,10 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 		break;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetShareEnum, r);
+	}
+
 	result = rap_cli_do_call(tree, iconv_convenience, call);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -307,6 +311,9 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 		}
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetShareEnum, r);
+	}
 	result = NT_STATUS_OK;
 
  done:
@@ -364,6 +371,10 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 		break;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetServerEnum2, r);
+	}
+
 	result = rap_cli_do_call(tree, iconv_convenience, call);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -402,6 +413,10 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 		}
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetServerEnum2, r);
 	}
 
 	result = NT_STATUS_OK;
@@ -470,6 +485,10 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 		goto done;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_WserverGetInfo, r);
+	}
+
 	result = rap_cli_do_call(tree, iconv_convenience, call);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -496,6 +515,10 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 		RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
 				       r->out.convert,
 				       &r->out.info.info1.comment));
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_WserverGetInfo, r);
 	}
  done:
 	talloc_free(call);
@@ -541,6 +564,10 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 	default:
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintQEnum, r);
 	}
 
 	result = rap_cli_do_call(tree, iconv_convenience, call);
@@ -601,6 +628,10 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 
 			break;
 		}
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintQEnum, r);
 	}
 
 	result = NT_STATUS_OK;
