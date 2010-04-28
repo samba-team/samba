@@ -385,6 +385,172 @@ interface rap
 		[out,switch_is(level)] rap_server_info info
 	);
 
+	typedef [public] enum {
+		PRQ_ACTIVE	= 0x0000,
+		PRQ_PAUSE	= 0x0001,
+		PRQ_ERROR	= 0x0002,
+		PRQ_PENDING	= 0x0003
+	} rap_PrintQStatusCode;
+
+	typedef struct {
+		uint8 PrintQName[13];
+	} rap_PrintQueue0;
+
+	typedef struct {
+		uint8 PrintQName[13];
+		uint8 Pad1;
+		uint16 Priority;
+		uint16 StartTime;
+		uint16 UntilTime;
+		[relative_short] [string,charset(DOS)] uint8 *SeparatorPageFilename;
+		uint16 SeparatorPageFilenameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorDllName;
+		uint16 PrintProcessorDllNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintDestinationsName;
+		uint16 PrintDestinationsNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		uint16 PrintParameterStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *CommentString;
+		uint16 CommentStringHigh;
+		rap_PrintQStatusCode PrintQStatus;
+		uint16 PrintJobCount;
+	} rap_PrintQueue1;
+
+	typedef struct {
+	} rap_PrintQueue2;
+
+	typedef struct {
+		[relative_short] [string,charset(DOS)] uint8 *PrintQueueName;
+		uint16 PrintQueueNameHigh;
+		uint16 Priority;
+		uint16 StartTime;
+		uint16 UntilTime;
+		uint16 Pad;
+		[relative_short] [string,charset(DOS)] uint8 *SeparatorPageFilename;
+		uint16 SeparatorPageFilenameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorDllName;
+		uint16 PrintProcessorDllNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		uint16 PrintParameterStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *CommentString;
+		uint16 CommentStringHigh;
+		rap_PrintQStatusCode PrintQStatus;
+		uint16 PrintJobCount;
+		[relative_short] [string,charset(DOS)] uint8 *Printers;
+		uint16 PrintersHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DriverName;
+		uint16 DriverNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintDriverData;
+		uint16 PrintDriverDataHigh;
+	} rap_PrintQueue3;
+
+	typedef struct {
+	} rap_PrintQueue4;
+
+	typedef struct {
+		[relative_short] [string,charset(DOS)] uint8 *PrintQueueName;
+		uint16 PrintQueueNameHigh;
+	} rap_PrintQueue5;
+
+	typedef [nodiscriminant] union {
+		[case(0)] rap_PrintQueue0 info0;
+		[case(1)] rap_PrintQueue1 info1;
+		[case(2)] rap_PrintQueue2 info2;
+		[case(3)] rap_PrintQueue3 info3;
+		[case(4)] rap_PrintQueue4 info4;
+		[case(5)] rap_PrintQueue5 info5;
+	} rap_printq_info;
+
+	typedef [public] enum {
+		PRJ_QS_QUEUED	= 0x0000,
+		PRJ_QS_PAUSED	= 0x0001,
+		PRJ_QS_SPOOLING	= 0x0002,
+		PRJ_QS_PRINTING	= 0x0003,
+		PRJ_QS_ERROR	= 0x0010
+	} rap_PrintJStatusCode;
+
+	typedef struct {
+		uint16 JobID;
+	} rap_PrintJobInfo0;
+
+	typedef struct {
+		uint16 JobID;
+		uint8 UserName[21];
+		uint8 Pad;
+		uint8 NotifyName[16];
+		uint8 DataType[10];
+		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		uint16 PrintParameterStringHigh;
+		uint16 JobPosition;
+		rap_PrintJStatusCode JobStatus;
+		[relative_short] [string,charset(DOS)] uint8 *JobStatusString;
+		uint16 JobStatusStringHigh;
+		uint32 TimeSubmitted;
+		uint32 JobSize;
+		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		uint16 JobCommentStringHigh;
+	} rap_PrintJobInfo1;
+
+	typedef struct {
+		uint16 JobID;
+		uint16 Priority;
+		[relative_short] [string,charset(DOS)] uint8 *UserName;
+		uint16 UserNameHigh;
+		uint16 JobPosition;
+		rap_PrintJStatusCode JobStatus;
+		uint32 TimeSubmitted;
+		uint32 JobSize;
+		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		uint16 JobCommentStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DocumentName;
+		uint16 DocumentNameHigh;
+	} rap_PrintJobInfo2;
+
+	typedef struct {
+		uint16 JobID;
+		uint16 Priority;
+		[relative_short] [string,charset(DOS)] uint8 *UserName;
+		uint16 UserNameHigh;
+		uint16 JobPosition;
+		rap_PrintJStatusCode JobStatus;
+		uint32 TimeSubmitted;
+		uint32 JobSize;
+		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		uint16 JobCommentStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DocumentName;
+		uint16 DocumentNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *NotifyName;
+		uint16 NotifyNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DataType;
+		uint16 DataTypeHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		uint16 PrintParameterStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *StatusString;
+		uint16 StatusStringHigh;
+		[relative_short] [string,charset(DOS)] uint8 *QueueName;
+		uint16 QueueNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorName;
+		uint16 PrintProcessorNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorParams;
+		uint16 PrintProcessorParamsHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DriverName;
+		uint16 DriverNameHigh;
+		[relative_short] [string,charset(DOS)] uint8 *DriverDataOffset;
+		uint16 DriverDataOffsetHigh;
+		[relative_short] [string,charset(DOS)] uint8 *PrinterNameOffset;
+		uint16 PrinterNameOffsetHigh;
+	} rap_PrintJobInfo3;
+
+	[public] void rap_NetPrintQEnum(
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] uint16 status,
+		[out] uint16 convert,
+		[out] uint16 count,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_printq_info *info
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
