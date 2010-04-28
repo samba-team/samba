@@ -811,7 +811,7 @@ static void reply_read_and_X_send(struct ntvfs_request *ntvfs)
 	struct smbsrv_request *req;
 	union smb_read *io;
 
-	SMBSRV_CHECK_ASYNC_STATUS(io, union smb_read);
+	SMBSRV_CHECK_ASYNC_STATUS_ERR(io, union smb_read);
 
 	/* readx reply packets can be over-sized */
 	req->control_flags |= SMBSRV_REQ_CONTROL_LARGE;
@@ -833,6 +833,10 @@ static void reply_read_and_X_send(struct ntvfs_request *ntvfs)
 	SSVAL(req->out.vwv, VWV(6), PTR_DIFF(io->readx.out.data, req->out.hdr));
 	SSVAL(req->out.vwv, VWV(7), (io->readx.out.nread>>16));
 	SMBSRV_VWV_RESERVED(8, 4);
+
+	if (!NT_STATUS_IS_OK(req->ntvfs->async_states->status)) {
+		smbsrv_setup_error(req, req->ntvfs->async_states->status);
+	}
 
 	smbsrv_chain_reply(req);
 }
