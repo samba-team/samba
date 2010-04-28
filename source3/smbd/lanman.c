@@ -33,7 +33,6 @@
 #include "rpc_client/init_spoolss.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/srv_samr.h"
-#include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
@@ -816,9 +815,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_DosPrintQGetInfo: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -1007,9 +1004,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		return(True);
 	}
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_DosPrintQEnum: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -3099,9 +3094,7 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_RDosPrintJobDel: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -3221,9 +3214,7 @@ static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_WPrintQueueCtrl: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -3397,9 +3388,7 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_PrintJobInfo: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -4385,9 +4374,7 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_WPrintJobGetInfo: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -4521,9 +4508,7 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_WPrintJobEnumerate: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -4715,9 +4700,7 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_WPrintDestGetInfo: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
@@ -4842,9 +4825,7 @@ static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 
 	queuecnt = 0;
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
-					rpc_spoolss_dispatch, conn->server_info,
-					&cli);
+	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_WPrintDestEnum: could not connect to spoolss: %s\n",
 			  nt_errstr(status)));
