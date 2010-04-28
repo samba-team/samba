@@ -81,8 +81,8 @@ static int net_gpo_list_all(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_get_gpo_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo getgpo <dn> [options]\n");
-	d_printf("For a list of available options, please type net gpo getgpo --help\n");
+	d_printf("Syntax: net gpo show <dn> [options]\n");
+	d_printf("For a list of available options, please type net gpo show --help\n");
 	return 0;
 }
 
@@ -440,12 +440,23 @@ static int net_gpo_inheritance_set(struct net_context *ctx, int argc, const char
 	return 0;
 }
 
+static int net_gpo_fetch_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo fetch <container> [options]\n");
+	d_printf("For a list of available options, please type net gpo fetch --help\n");
+	return 0;
+}
+
 static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 {
 	struct gp_context *gp_ctx;
 	struct gp_object *gpo;
 	const char *path;
 	NTSTATUS rv;
+
+	if (argc != 1) {
+		return net_gpo_fetch_usage(ctx, argc, argv);
+	}
 
 	rv = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
 	if (!NT_STATUS_IS_OK(rv)) {
@@ -471,16 +482,14 @@ static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
-	{ "getgpo", "List specificied GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
+	{ "list", "List all active GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
+	{ "show", "Show information for a GPO\n", net_gpo_get_gpo, net_gpo_get_gpo_usage },
 	{ "getlink", "List gPLink of container\n", net_gpo_link_get, net_gpo_link_get_usage },
 	{ "setlink", "Link a GPO to a container\n", net_gpo_link_set, net_gpo_link_set_usage },
 	{ "dellink", "Delete GPO link from a container\n", net_gpo_link_del, net_gpo_link_del_usage },
 	{ "getinheritance", "Get inheritance flag from a container\n", net_gpo_inheritance_get, net_gpo_inheritance_get_usage },
 	{ "setinheritance", "Set inheritance flag on a container\n", net_gpo_inheritance_set, net_gpo_inheritance_set_usage },
-	{ "list", "List all GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
-	{ "fetch", "Download a GPO\n", net_gpo_fetch, net_gpo_usage },
-/*	{ "apply", "Apply GPO to container\n", net_gpo_apply, net_gpo_usage }, */
-//	{ "refresh", "List all GPO's for machine/user and download them\n", net_gpo_refresh, net_gpo_refresh_usage },
+	{ "fetch", "Download a GPO\n", net_gpo_fetch, net_gpo_fetch_usage },
 	{ NULL, NULL }
 };
 
