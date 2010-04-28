@@ -65,7 +65,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	DEBUG(10,("lookup_name: %s => %s (domain), %s (name)\n",
+	DEBUG(10,("lookup_name: %s => domain=[%s], name=[%s]\n",
 		full_name, domain, name));
 	DEBUG(10, ("lookup_name: flags = 0x0%x\n", flags));
 
