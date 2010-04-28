@@ -1158,7 +1158,7 @@ void getips_count_callback(void *param, void *data)
 	*ip_list     = new_ip;
 }
 
-struct ctdb_public_ip_list *
+static struct ctdb_public_ip_list *
 create_merged_ip_list(struct ctdb_context *ctdb)
 {
 	int i, j;
