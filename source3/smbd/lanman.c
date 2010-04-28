@@ -669,6 +669,7 @@ static void fill_printq_info(int uLevel,
 			     struct spoolss_PrinterInfo2 *printer_info)
 {
 	switch (uLevel) {
+	case 0:
 	case 1:
 	case 2:
 		PACKS(desc,"B13", printer_info->printername);
