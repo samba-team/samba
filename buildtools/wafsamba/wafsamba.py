@@ -229,8 +229,13 @@ def SAMBA_BINARY(bld, binname, source,
                  needs_python=False,
                  vars=None,
                  install=True,
-                 install_path=None):
+                 install_path=None,
+                 enabled=True):
     '''define a Samba binary'''
+
+    if not enabled:
+        SET_TARGET_TYPE(bld, binname, 'DISABLED')
+        return
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
