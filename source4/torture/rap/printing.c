@@ -68,7 +68,7 @@ static bool test_netprintqenum(struct torture_context *tctx,
 {
 	struct rap_NetPrintQEnum r;
 	int i, q;
-	uint16_t levels[] = { 0, 1, 3, 5 };
+	uint16_t levels[] = { 0, 1, 2, 3, 4, 5 };
 	NTSTATUS status;
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
@@ -103,7 +103,7 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	struct rap_NetPrintQGetInfo r;
 	struct rap_NetPrintQEnum r_enum;
 	int i, p;
-	uint16_t levels[] = { 0, 1, 3, 5 };
+	uint16_t levels[] = { 0, 1, 2, 3, 4, 5 };
 	NTSTATUS status;
 
 	r_enum.in.level = 5;
