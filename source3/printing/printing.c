@@ -558,19 +558,97 @@ static uint32 map_to_spoolss_status(uint32 lpq_status)
 	return 0;
 }
 
+/***************************************************************************
+ Append a jobid to the 'jobs changed' list.
+***************************************************************************/
+
+static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32_t jobid)
+{
+	TDB_DATA data;
+	uint32_t store_jobid;
+
+	SIVAL(&store_jobid, 0, jobid);
+	data.dptr = (uint8 *) &store_jobid;
+	data.dsize = 4;
+
+	DEBUG(10,("add_to_jobs_added: Added jobid %u\n", (unsigned int)jobid ));
+
+	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_changed"),
+			   data) == 0);
+}
+
+/***************************************************************************
+ Remove a jobid from the 'jobs changed' list.
+***************************************************************************/
+
+static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
+{
+	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+	TDB_DATA data, key;
+	size_t job_count, i;
+	bool ret = False;
+	bool gotlock = False;
+
+	if (!pdb) {
+		return False;
+	}
+
+	ZERO_STRUCT(data);
+
+	key = string_tdb_data("INFO/jobs_changed");
+
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
+		goto out;
+
+	gotlock = True;
+
+	data = tdb_fetch(pdb->tdb, key);
+
+	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
+		goto out;
+
+	job_count = data.dsize / 4;
+	for (i = 0; i < job_count; i++) {
+		uint32 ch_jobid;
+
+		ch_jobid = IVAL(data.dptr, i*4);
+		if (ch_jobid == jobid) {
+			if (i < job_count -1 )
+				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
+			data.dsize -= 4;
+			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) == -1)
+				goto out;
+			break;
+		}
+	}
+
+	ret = True;
+  out:
+
+	if (gotlock)
+		tdb_chainunlock(pdb->tdb, key);
+	SAFE_FREE(data.dptr);
+	release_print_db(pdb);
+	if (ret)
+		DEBUG(10,("remove_from_jobs_changed: removed jobid %u\n", (unsigned int)jobid ));
+	else
+		DEBUG(10,("remove_from_jobs_changed: Failed to remove jobid %u\n", (unsigned int)jobid ));
+	return ret;
+}
+
 static void pjob_store_notify(struct tevent_context *ev,
 			      struct messaging_context *msg_ctx,
 			      const char* sharename, uint32 jobid,
 			      struct printjob *old_data,
-			      struct printjob *new_data)
+			      struct printjob *new_data,
+			      bool *pchanged)
 {
-	bool new_job = False;
+	bool new_job = false;
+	bool changed = false;
 
-	if (!old_data)
-		new_job = True;
-
-	/* Job attributes that can't be changed.  We only send
-	   notification for these on a new job. */
+	if (old_data == NULL) {
+		new_job = true;
+	}
 
 	/* ACHTUNG!  Due to a bug in Samba's spoolss parsing of the
 	   NOTIFY_INFO_DATA buffer, we *have* to send the job submission
@@ -584,31 +662,40 @@ static void pjob_store_notify(struct tevent_context *ev,
 				     sharename, jobid, new_data->starttime);
 		notify_job_username(ev, msg_ctx,
 				    sharename, jobid, new_data->user);
-	}
-
-	if (new_job || !strequal(old_data->jobname, new_data->jobname))
 		notify_job_name(ev, msg_ctx,
 				sharename, jobid, new_data->jobname);
-
-	/* Job attributes of a new job or attributes that can be
-	   modified. */
-
-	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(ev, msg_ctx,
-				sharename, jobid, new_data->jobname);
-
-	if (new_job || old_data->status != new_data->status)
 		notify_job_status(ev, msg_ctx,
-				  sharename, jobid,
-				  map_to_spoolss_status(new_data->status));
-
-	if (new_job || old_data->size != new_data->size)
+				  sharename, jobid, map_to_spoolss_status(new_data->status));
 		notify_job_total_bytes(ev, msg_ctx,
 				       sharename, jobid, new_data->size);
-
-	if (new_job || old_data->page_count != new_data->page_count)
 		notify_job_total_pages(ev, msg_ctx,
 				       sharename, jobid, new_data->page_count);
+	} else {
+		if (!strequal(old_data->jobname, new_data->jobname)) {
+			notify_job_name(ev, msg_ctx, sharename,
+					jobid, new_data->jobname);
+			changed = true;
+		}
+
+		if (old_data->status != new_data->status) {
+			notify_job_status(ev, msg_ctx,
+					  sharename, jobid,
+					  map_to_spoolss_status(new_data->status));
+		}
+
+		if (old_data->size != new_data->size) {
+			notify_job_total_bytes(ev, msg_ctx,
+					       sharename, jobid, new_data->size);
+		}
+
+		if (old_data->page_count != new_data->page_count) {
+			notify_job_total_pages(ev, msg_ctx,
+					       sharename, jobid,
+					       new_data->page_count);
+		}
+	}
+
+	*pchanged = changed;
 }
 
 /****************************************************************************
@@ -678,11 +765,10 @@ static bool pjob_store(struct tevent_context *ev,
 	ret = (tdb_store(pdb->tdb, print_key(jobid, &tmp), new_data,
 			 TDB_REPLACE) == 0);
 
-	release_print_db(pdb);
-
 	/* Send notify updates for what has changed */
 
 	if ( ret ) {
+		bool changed = false;
 		struct printjob old_pjob;
 
 		if ( old_data.dsize )
@@ -692,17 +778,25 @@ static bool pjob_store(struct tevent_context *ev,
 				pjob_store_notify(server_event_context(),
 						  msg_ctx,
 						  sharename, jobid, &old_pjob,
-						  pjob);
+						  pjob,
+						  &changed);
 				talloc_free(old_pjob.devmode);
+
+				if (changed) {
+					add_to_jobs_changed(pdb, jobid);
+				}
 			}
+
 		}
 		else {
 			/* new job */
 			pjob_store_notify(server_event_context(), msg_ctx,
-					  sharename, jobid, NULL, pjob);
+					  sharename, jobid, NULL, pjob,
+					  &changed);
 		}
 	}
 
+	release_print_db(pdb);
 done:
 	SAFE_FREE( old_data.dptr );
 	SAFE_FREE( buf );
@@ -2913,10 +3007,11 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 				  struct tdb_print_db *pdb, int snum,
 				  int *pcount, print_queue_struct **ppqueue)
 {
-	TDB_DATA data, cgdata;
+	TDB_DATA data, cgdata, jcdata;
 	print_queue_struct *queue = NULL;
 	uint32 qcount = 0;
 	uint32 extra_count = 0;
+	uint32_t changed_count = 0;
 	int total_count = 0;
 	size_t len = 0;
 	uint32 i;
@@ -2944,6 +3039,11 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
+
+	/* Get the changed jobs list. */
+	jcdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	if (jcdata.dptr != NULL && (jcdata.dsize % 4 == 0))
+		changed_count = jcdata.dsize / 4;
 
 	DEBUG(5,("get_stored_queue_info: qcount = %u, extra_count = %u\n", (unsigned int)qcount, (unsigned int)extra_count));
 
@@ -3000,6 +3100,50 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 		fstrcpy(queue[total_count].fs_user, pjob->user);
 		fstrcpy(queue[total_count].fs_file, pjob->jobname);
 		total_count++;
+	}
+
+	/* Update the changed jobids. */
+	for (i = 0; i < changed_count; i++) {
+		uint32_t jobid = IVAL(jcdata.dptr, i * 4);
+		uint32_t j;
+		bool found = false;
+
+		for (j = 0; j < total_count; j++) {
+			if (queue[j].job == jobid) {
+				found = true;
+				break;
+			}
+		}
+
+		if (found) {
+			struct printjob *pjob;
+
+			DEBUG(5,("get_stored_queue_info: changed job: %u\n",
+				 (unsigned int) jobid));
+
+			pjob = print_job_find(sharename, jobid);
+			if (pjob == NULL) {
+				DEBUG(5,("get_stored_queue_info: failed to find "
+					 "changed job = %u\n",
+					 (unsigned int) jobid));
+				remove_from_jobs_changed(sharename, jobid);
+				continue;
+			}
+
+			queue[j].job = jobid;
+			queue[j].size = pjob->size;
+			queue[j].page_count = pjob->page_count;
+			queue[j].status = pjob->status;
+			queue[j].priority = 1;
+			queue[j].time = pjob->starttime;
+			fstrcpy(queue[j].fs_user, pjob->user);
+			fstrcpy(queue[j].fs_file, pjob->jobname);
+
+			DEBUG(5,("get_stored_queue_info: updated queue[%u], jobid: %u, jobname: %s\n",
+				 (unsigned int) j, (unsigned int) jobid, pjob->jobname));
+		}
+
+		remove_from_jobs_changed(sharename, jobid);
 	}
 
 	/* Sort the queue by submission time otherwise they are displayed

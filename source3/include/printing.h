@@ -83,7 +83,7 @@ extern struct printif	iprint_printif;
 #ifndef PRINT_SPOOL_PREFIX
 #define PRINT_SPOOL_PREFIX "smbprn."
 #endif
-#define PRINT_DATABASE_VERSION 6
+#define PRINT_DATABASE_VERSION 7
 
 /* There can be this many printing tdb's open, plus any locked ones. */
 #define MAX_PRINT_DBS_OPEN 1
