@@ -67,6 +67,7 @@ struct rap_call {
 	uint16_t callno;
 	char *paramdesc;
 	const char *datadesc;
+	const char *auxdatadesc;
 
 	uint16_t status;
 	uint16_t convert;
@@ -95,6 +96,7 @@ static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, struct smb_iconv_c
 
 	call->paramdesc = NULL;
 	call->datadesc = NULL;
+	call->auxdatadesc = NULL;
 
 	call->ndr_push_param = ndr_push_init_ctx(mem_ctx, iconv_convenience);
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
@@ -183,6 +185,11 @@ static void rap_cli_expect_format(struct rap_call *call, const char *format)
 	call->datadesc = format;
 }
 
+static void rap_cli_expect_extra_format(struct rap_call *call, const char *format)
+{
+	call->auxdatadesc = format;
+}
+
 static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 				uint16_t convert, const char **dest)
 {
@@ -245,6 +252,9 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 	param_blob = ndr_push_blob(call->ndr_push_param);
 	NDR_RETURN(ndr_push_bytes(params, param_blob.data,
 				 param_blob.length));
+
+	if (call->auxdatadesc)
+		NDR_RETURN(ndr_push_string(params, NDR_SCALARS, call->auxdatadesc));
 
 	trans.in.params = ndr_push_blob(params);
 	trans.in.data = data_blob(NULL, 0);
