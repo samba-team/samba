@@ -15,7 +15,9 @@
 
 #define NDR_RAP_NETPRINTQENUM (0x03)
 
-#define NDR_RAP_CALL_COUNT (4)
+#define NDR_RAP_NETPRINTQGETINFO (0x04)
+
+#define NDR_RAP_CALL_COUNT (5)
 void ndr_print_rap_share_info_0(struct ndr_print *ndr, const char *name, const struct rap_share_info_0 *r);
 void ndr_print_rap_share_info_1(struct ndr_print *ndr, const char *name, const struct rap_share_info_1 *r);
 void ndr_print_rap_share_info_2(struct ndr_print *ndr, const char *name, const struct rap_share_info_2 *r);
@@ -49,4 +51,7 @@ void ndr_print_rap_WserverGetInfo(struct ndr_print *ndr, const char *name, int f
 enum ndr_err_code ndr_push_rap_NetPrintQEnum(struct ndr_push *ndr, int flags, const struct rap_NetPrintQEnum *r);
 enum ndr_err_code ndr_pull_rap_NetPrintQEnum(struct ndr_pull *ndr, int flags, struct rap_NetPrintQEnum *r);
 void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQEnum *r);
+enum ndr_err_code ndr_push_rap_NetPrintQGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintQGetInfo *r);
+enum ndr_err_code ndr_pull_rap_NetPrintQGetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintQGetInfo *r);
+void ndr_print_rap_NetPrintQGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQGetInfo *r);
 #endif /* _HEADER_NDR_rap */

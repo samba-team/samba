@@ -554,6 +554,16 @@ interface rap
 		[out,switch_is(level)] rap_printq_info *info
 	);
 
+	[public] void rap_NetPrintQGetInfo(
+		[in] [string,charset(DOS)] uint8 *PrintQueueName,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] uint16 status,
+		[out] uint16 convert,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_printq_info info
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */

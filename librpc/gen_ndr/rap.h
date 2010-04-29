@@ -660,4 +660,21 @@ struct rap_NetPrintQEnum {
 
 };
 
+
+struct rap_NetPrintQGetInfo {
+	struct {
+		const char *PrintQueueName;/* [ref,charset(DOS)] */
+		uint16_t level;
+		uint16_t bufsize;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+		uint16_t available;
+		union rap_printq_info info;/* [switch_is(level)] */
+	} out;
+
+};
+
 #endif /* _HEADER_rap */
