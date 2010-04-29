@@ -660,6 +660,20 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 
 }
 
+static const char *strip_unc(const char *unc)
+{
+	char *p;
+
+	if (unc == NULL) {
+		return NULL;
+	}
+
+	if ((p = strrchr(unc, '\\')) != NULL) {
+		return p+1;
+	}
+
+	return unc;
+}
 
 static void fill_printq_info(int uLevel,
  			     struct pack_desc* desc,
@@ -672,12 +686,12 @@ static void fill_printq_info(int uLevel,
 	case 0:
 	case 1:
 	case 2:
-		PACKS(desc,"B13", printer_info->printername);
+		PACKS(desc,"B13", strip_unc(printer_info->printername));
 		break;
 	case 3:
 	case 4:
 	case 5:
-		PACKS(desc,"z", printer_info->printername);
+		PACKS(desc,"z", strip_unc(printer_info->printername));
 		break;
 	case 51:
 		PACKI(desc,"K", printq_spoolss_status(printer_info->status));
@@ -691,7 +705,7 @@ static void fill_printq_info(int uLevel,
 		PACKI(desc,"W",0);		/* until time */
 		PACKS(desc,"z","");		/* pSepFile */
 		PACKS(desc,"z","lpd");	/* pPrProc */
-		PACKS(desc,"z", printer_info->printername); /* pDestinations */
+		PACKS(desc,"z", strip_unc(printer_info->printername)); /* pDestinations */
 		PACKS(desc,"z","");		/* pParms */
 		if (printer_info->printername == NULL) {
 			PACKS(desc,"z","UNKNOWN PRINTER");
@@ -716,7 +730,7 @@ static void fill_printq_info(int uLevel,
 		   Win9X/ME printer comments. */
 		PACKI(desc,"W", printq_spoolss_status(printer_info->status)); /* fsStatus */
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
-		PACKS(desc,"z", printer_info->printername); /* pszPrinters */
+		PACKS(desc,"z", strip_unc(printer_info->printername)); /* pszPrinters */
 		PACKS(desc,"z", printer_info->drivername);		/* pszDriverName */
 		PackDriverData(desc);	/* pDriverData */
 	}
@@ -836,6 +850,16 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	werr = rpccli_spoolss_getprinter(cli, mem_ctx,
+					 &handle,
+					 2,
+					 0,
+					 &printer_info);
 	if (!W_ERROR_IS_OK(werr)) {
 		desc.errcode = W_ERROR_V(werr);
 		goto out;
