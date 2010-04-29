@@ -536,13 +536,14 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 
 static NTSTATUS rap_pull_rap_PrintQueue0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue0 *r)
 {
-	NDR_RETURN(ndr_pull_bytes(ndr, r->PrintQName, 13));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
+
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS rap_pull_rap_PrintQueue1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue1 *r)
 {
-	NDR_RETURN(ndr_pull_bytes(ndr, r->PrintQName, 13));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
 	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad1));
 	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Priority));
 	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->StartTime));
