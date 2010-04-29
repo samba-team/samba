@@ -528,6 +528,8 @@ interface rap
 	} rap_PrintQueue3;
 
 	typedef struct {
+		rap_PrintQueue3 queue;
+		rap_PrintJobInfo2 job;
 	} rap_PrintQueue4;
 
 	typedef struct {
