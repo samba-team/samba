@@ -30,7 +30,7 @@ extern struct current_user current_user;
 extern userdom_struct current_user_info;
 
 /* Current printer interface */
-static bool remove_from_jobs_changed(const char* sharename, uint32 jobid);
+static bool remove_from_jobs_added(const char* sharename, uint32 jobid);
 
 /*
    the printing backend revolves around a tdb database that stores the
@@ -747,7 +747,7 @@ static void pjob_delete(struct tevent_context *ev,
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid, &tmp));
-	remove_from_jobs_changed(sharename, jobid);
+	remove_from_jobs_added(sharename, jobid);
 	release_print_db( pdb );
 	rap_jobid_delete(sharename, jobid);
 }
@@ -1117,13 +1117,13 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	return;
 }
 
-static TDB_DATA get_jobs_changed_data(struct tdb_print_db *pdb)
+static TDB_DATA get_jobs_added_data(struct tdb_print_db *pdb)
 {
 	TDB_DATA data;
 
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0)) {
 		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
@@ -1132,7 +1132,7 @@ static TDB_DATA get_jobs_changed_data(struct tdb_print_db *pdb)
 	return data;
 }
 
-static void check_job_changed(const char *sharename, TDB_DATA data, uint32 jobid)
+static void check_job_added(const char *sharename, TDB_DATA data, uint32 jobid)
 {
 	unsigned int i;
 	unsigned int job_count = data.dsize / 4;
@@ -1142,7 +1142,7 @@ static void check_job_changed(const char *sharename, TDB_DATA data, uint32 jobid
 
 		ch_jobid = IVAL(data.dptr, i*4);
 		if (ch_jobid == jobid)
-			remove_from_jobs_changed(sharename, jobid);
+			remove_from_jobs_added(sharename, jobid);
 	}
 }
 
@@ -1274,7 +1274,7 @@ static void print_queue_update_internal( struct tevent_context *ev,
 	  fill in any system job numbers as we go
 	*/
 
-	jcdata = get_jobs_changed_data(pdb);
+	jcdata = get_jobs_added_data(pdb);
 
 	for (i=0; i<qcount; i++) {
 		uint32 jobid = print_parse_jobid(queue[i].fs_file);
@@ -1306,7 +1306,7 @@ static void print_queue_update_internal( struct tevent_context *ev,
 
 		pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 
-		check_job_changed(sharename, jcdata, jobid);
+		check_job_added(sharename, jcdata, jobid);
 	}
 
 	SAFE_FREE(jcdata.dptr);
@@ -2013,10 +2013,10 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 
 
 /***************************************************************************
- Remove a jobid from the 'jobs changed' list.
+ Remove a jobid from the 'jobs added' list.
 ***************************************************************************/
 
-static bool remove_from_jobs_changed(const char* sharename, uint32 jobid)
+static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	TDB_DATA data, key;
@@ -2030,7 +2030,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32 jobid)
 
 	ZERO_STRUCT(data);
 
-	key = string_tdb_data("INFO/jobs_changed");
+	key = string_tdb_data("INFO/jobs_added");
 
 	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
 		goto out;
@@ -2065,9 +2065,9 @@ static bool remove_from_jobs_changed(const char* sharename, uint32 jobid)
 	SAFE_FREE(data.dptr);
 	release_print_db(pdb);
 	if (ret)
-		DEBUG(10,("remove_from_jobs_changed: removed jobid %u\n", (unsigned int)jobid ));
+		DEBUG(10,("remove_from_jobs_added: removed jobid %u\n", (unsigned int)jobid ));
 	else
-		DEBUG(10,("remove_from_jobs_changed: Failed to remove jobid %u\n", (unsigned int)jobid ));
+		DEBUG(10,("remove_from_jobs_added: Failed to remove jobid %u\n", (unsigned int)jobid ));
 	return ret;
 }
 
@@ -2131,7 +2131,7 @@ static bool print_job_delete1(struct tevent_context *ev,
 		}
 	}
 
-	remove_from_jobs_changed( sharename, jobid );
+	remove_from_jobs_added( sharename, jobid );
 
 	return (result == 0);
 }
@@ -2534,10 +2534,10 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 }
 
 /***************************************************************************
- Append a jobid to the 'jobs changed' list.
+ Append a jobid to the 'jobs added' list.
 ***************************************************************************/
 
-static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
+static bool add_to_jobs_added(struct tdb_print_db *pdb, uint32 jobid)
 {
 	TDB_DATA data;
 	uint32 store_jobid;
@@ -2546,9 +2546,9 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 	data.dptr = (uint8 *)&store_jobid;
 	data.dsize = 4;
 
-	DEBUG(10,("add_to_jobs_changed: Added jobid %u\n", (unsigned int)jobid ));
+	DEBUG(10,("add_to_jobs_added: Added jobid %u\n", (unsigned int)jobid ));
 
-	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_changed"),
+	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_added"),
 			   data) == 0);
 }
 
@@ -2755,8 +2755,8 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 
 	pjob_store(server_event_context(), msg_ctx, sharename, jobid, &pjob);
 
-	/* Update the 'jobs changed' entry used by print_queue_status. */
-	add_to_jobs_changed(pdb, jobid);
+	/* Update the 'jobs added' entry used by print_queue_status. */
+	add_to_jobs_added(pdb, jobid);
 
 	/* Ensure we keep a rough count of the number of total jobs... */
 	tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, 1);
@@ -2940,8 +2940,8 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	if (data.dptr && data.dsize >= sizeof(qcount))
 		len += tdb_unpack(data.dptr + len, data.dsize - len, "d", &qcount);
 
-	/* Get the changed jobs list. */
-	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	/* Get the added jobs list. */
+	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
 
@@ -2977,17 +2977,17 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 
 	total_count = qcount;
 
-	/* Add in the changed jobids. */
+	/* Add new jobids to the queue. */
 	for( i  = 0; i < extra_count; i++) {
 		uint32 jobid;
 		struct printjob *pjob;
 
 		jobid = IVAL(cgdata.dptr, i*4);
-		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
+		DEBUG(5,("get_stored_queue_info: added job = %u\n", (unsigned int)jobid));
 		pjob = print_job_find(lp_const_servicename(snum), jobid);
 		if (!pjob) {
-			DEBUG(5,("get_stored_queue_info: failed to find changed job = %u\n", (unsigned int)jobid));
-			remove_from_jobs_changed(sharename, jobid);
+			DEBUG(5,("get_stored_queue_info: failed to find added job = %u\n", (unsigned int)jobid));
+			remove_from_jobs_added(sharename, jobid);
 			continue;
 		}
 
