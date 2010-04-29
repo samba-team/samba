@@ -285,7 +285,7 @@ interface rap
 	typedef struct {
 		uint8 group_name[21];
 		char reserved1;
-		[string,charset(DOS)] uint8 *comment;
+		astring *comment;
 	} rap_group_info_1;
 
 	typedef struct {
@@ -294,10 +294,10 @@ interface rap
 		uint8 passwrd[16];
 		uint32 pwage;
 		uint16 priv;
-		[string,charset(DOS)] uint8 *home_dir;
-		[string,charset(DOS)] uint8 *comment;
+		astring *home_dir;
+		astring *comment;
 		uint16 userflags;
-		[string,charset(DOS)] uint8 *logon_script;
+		astring *logon_script;
 	} rap_user_info_1;
 
 	typedef struct {
@@ -305,7 +305,7 @@ interface rap
 		uint16 status;
 		uint32 installcode;
 		uint16 process_num;
-		[string,charset(DOS)] uint8 *comment;
+		astring *comment;
 	} rap_service_info_2;
 
 	typedef struct {
@@ -316,18 +316,18 @@ interface rap
 		uint8 share_name[13];
 		char reserved1;
 		uint16 share_type;
-		[string,charset(DOS)] uint8 *comment;
+		astring *comment;
 	} rap_share_info_1;
 
 	typedef struct {
 		uint8 share_name[13];
 		char reserved1;
 		uint16 share_type;
-		[string,charset(DOS)] uint8 *comment;
+		astring *comment;
 		uint16 perms;
 		uint16 maximum_users;
 		uint16 active_users;
-		[string,charset(DOS)] uint8 *path;
+		astring *path;
 		uint8 password[9];
 		char reserved2;
 	} rap_share_info_2;
@@ -357,7 +357,7 @@ interface rap
 		uint8 version_major;
 		uint8 version_minor;
 		uint32 servertype;
-		[string,charset(DOS)] uint8 *comment;
+		astring *comment;
 	} rap_server_info_1;
 
 	typedef [nodiscriminant] union {
@@ -369,7 +369,7 @@ interface rap
 		[in] uint16 level,
 		[in] uint16 bufsize,
 		[in] uint32 servertype,
-		[in] [string,charset(DOS)] uint8 *domain,
+		[in] astring *domain,
 		[out] uint16 status,
 		[out] uint16 convert,
 		[out] uint16 count,
@@ -404,65 +404,65 @@ interface rap
 		uint8 Pad;
 		[charset(DOS)] uint8 NotifyName[16];
 		[charset(DOS)] uint8 DataType[10];
-		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		[relative_short] astring *PrintParameterString;
 		uint16 PrintParameterStringHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
-		[relative_short] [string,charset(DOS)] uint8 *JobStatusString;
+		[relative_short] astring *JobStatusString;
 		uint16 JobStatusStringHigh;
 		time_t TimeSubmitted;
 		uint32 JobSize;
-		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		[relative_short] astring *JobCommentString;
 		uint16 JobCommentStringHigh;
 	} rap_PrintJobInfo1;
 
 	typedef struct {
 		uint16 JobID;
 		uint16 Priority;
-		[relative_short] [string,charset(DOS)] uint8 *UserName;
+		[relative_short] astring *UserName;
 		uint16 UserNameHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
 		time_t TimeSubmitted;
 		uint32 JobSize;
-		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		[relative_short] astring *JobCommentString;
 		uint16 JobCommentStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DocumentName;
+		[relative_short] astring *DocumentName;
 		uint16 DocumentNameHigh;
 	} rap_PrintJobInfo2;
 
 	typedef struct {
 		uint16 JobID;
 		uint16 Priority;
-		[relative_short] [string,charset(DOS)] uint8 *UserName;
+		[relative_short] astring *UserName;
 		uint16 UserNameHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
 		time_t TimeSubmitted;
 		uint32 JobSize;
-		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
+		[relative_short] astring *JobCommentString;
 		uint16 JobCommentStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DocumentName;
+		[relative_short] astring *DocumentName;
 		uint16 DocumentNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *NotifyName;
+		[relative_short] astring *NotifyName;
 		uint16 NotifyNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DataType;
+		[relative_short] astring *DataType;
 		uint16 DataTypeHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		[relative_short] astring *PrintParameterString;
 		uint16 PrintParameterStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *StatusString;
+		[relative_short] astring *StatusString;
 		uint16 StatusStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *QueueName;
+		[relative_short] astring *QueueName;
 		uint16 QueueNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorName;
+		[relative_short] astring *PrintProcessorName;
 		uint16 PrintProcessorNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorParams;
+		[relative_short] astring *PrintProcessorParams;
 		uint16 PrintProcessorParamsHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DriverName;
+		[relative_short] astring *DriverName;
 		uint16 DriverNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DriverDataOffset;
+		[relative_short] astring *DriverDataOffset;
 		uint16 DriverDataOffsetHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrinterNameOffset;
+		[relative_short] astring *PrinterNameOffset;
 		uint16 PrinterNameOffsetHigh;
 	} rap_PrintJobInfo3;
 
@@ -483,15 +483,15 @@ interface rap
 		uint16 Priority;
 		uint16 StartTime;
 		uint16 UntilTime;
-		[relative_short] [string,charset(DOS)] uint8 *SeparatorPageFilename;
+		[relative_short] astring *SeparatorPageFilename;
 		uint16 SeparatorPageFilenameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorDllName;
+		[relative_short] astring *PrintProcessorDllName;
 		uint16 PrintProcessorDllNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintDestinationsName;
+		[relative_short] astring *PrintDestinationsName;
 		uint16 PrintDestinationsNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		[relative_short] astring *PrintParameterString;
 		uint16 PrintParameterStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *CommentString;
+		[relative_short] astring *CommentString;
 		uint16 CommentStringHigh;
 		rap_PrintQStatusCode PrintQStatus;
 		uint16 PrintJobCount;
@@ -502,28 +502,28 @@ interface rap
 		rap_PrintJobInfo1 job;
 	} rap_PrintQueue2;
 
-	typedef struct {
-		[relative_short] [string,charset(DOS)] uint8 *PrintQueueName;
+	typedef [public] struct {
+		[relative_short] astring *PrintQueueName;
 		uint16 PrintQueueNameHigh;
 		uint16 Priority;
 		uint16 StartTime;
 		uint16 UntilTime;
 		uint16 Pad;
-		[relative_short] [string,charset(DOS)] uint8 *SeparatorPageFilename;
+		[relative_short] astring *SeparatorPageFilename;
 		uint16 SeparatorPageFilenameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintProcessorDllName;
+		[relative_short] astring *PrintProcessorDllName;
 		uint16 PrintProcessorDllNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
+		[relative_short] astring *PrintParameterString;
 		uint16 PrintParameterStringHigh;
-		[relative_short] [string,charset(DOS)] uint8 *CommentString;
+		[relative_short] astring *CommentString;
 		uint16 CommentStringHigh;
 		rap_PrintQStatusCode PrintQStatus;
 		uint16 PrintJobCount;
-		[relative_short] [string,charset(DOS)] uint8 *Printers;
+		[relative_short] astring *Printers;
 		uint16 PrintersHigh;
-		[relative_short] [string,charset(DOS)] uint8 *DriverName;
+		[relative_short] astring *DriverName;
 		uint16 DriverNameHigh;
-		[relative_short] [string,charset(DOS)] uint8 *PrintDriverData;
+		[relative_short] astring *PrintDriverData;
 		uint16 PrintDriverDataHigh;
 	} rap_PrintQueue3;
 
@@ -533,11 +533,11 @@ interface rap
 	} rap_PrintQueue4;
 
 	typedef struct {
-		[relative_short] [string,charset(DOS)] uint8 *PrintQueueName;
+		[relative_short] astring *PrintQueueName;
 		uint16 PrintQueueNameHigh;
 	} rap_PrintQueue5;
 
-	typedef [nodiscriminant] union {
+	typedef [public,nodiscriminant] union {
 		[case(0)] rap_PrintQueue0 info0;
 		[case(1)] rap_PrintQueue1 info1;
 		[case(2)] rap_PrintQueue2 info2;
@@ -553,11 +553,11 @@ interface rap
 		[out] uint16 convert,
 		[out] uint16 count,
 		[out] uint16 available,
-		[out,switch_is(level)] rap_printq_info *info
+		[out,switch_is(level)] rap_printq_info info[count]
 	);
 
 	[public] void rap_NetPrintQGetInfo(
-		[in] [string,charset(DOS)] uint8 *PrintQueueName,
+		[in] astring PrintQueueName,
 		[in] uint16 level,
 		[in] uint16 bufsize,
 		[out] uint16 status,
