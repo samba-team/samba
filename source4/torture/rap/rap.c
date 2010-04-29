@@ -552,6 +552,21 @@ static NTSTATUS rap_pull_rap_JobInfo1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS rap_pull_rap_JobInfo2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintJobInfo2 *r)
+{
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Priority));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UserName));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobPosition));
+	NDR_RETURN(ndr_pull_rap_PrintJStatusCode(ndr, NDR_SCALARS, &r->JobStatus));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->TimeSubmitted));
+	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->JobCommentString));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DocumentName));
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS rap_pull_rap_PrintQueue0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue0 *r)
 {
 	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
@@ -601,6 +616,14 @@ static NTSTATUS rap_pull_rap_PrintQueue3(TALLOC_CTX *mem_ctx, struct ndr_pull *n
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Printers));
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DriverName));
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrintDriverData));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_PrintQueue4(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue4 *r)
+{
+	RAP_RETURN(rap_pull_rap_PrintQueue3(mem_ctx, ndr, convert, &r->queue));
+	RAP_RETURN(rap_pull_rap_JobInfo2(mem_ctx, ndr, convert, &r->job));
 
 	return NT_STATUS_OK;
 }
@@ -689,6 +712,9 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 			break;
 		case 3:
 			result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
+			break;
+		case 4:
+			result = rap_pull_rap_PrintQueue4(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info4);
 			break;
 		case 5:
 			result = rap_pull_rap_PrintQueue5(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info5);
@@ -779,6 +805,9 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 		break;
 	case 3:
 		result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
+		break;
+	case 4:
+		result = rap_pull_rap_PrintQueue4(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info4);
 		break;
 	case 5:
 		result = rap_pull_rap_PrintQueue5(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info5);
