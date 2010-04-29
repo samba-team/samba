@@ -6329,7 +6329,7 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = winreg_get_printer(talloc_tos(), p->server_info, NULL,
+	result = winreg_get_printer(p->mem_ctx, p->server_info, NULL,
 				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
@@ -8317,7 +8317,7 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = winreg_get_printer(talloc_tos(), p->server_info, NULL,
+	result = winreg_get_printer(p->mem_ctx, p->server_info, NULL,
 				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
