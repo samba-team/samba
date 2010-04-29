@@ -141,6 +141,75 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintjob_pause(struct torture_context *tctx,
+				   struct smbcli_state *cli,
+				   uint16_t job_id)
+{
+	struct rap_NetPrintJobPause r;
+
+	r.in.JobID = job_id;
+
+	torture_comment(tctx, "Testing rap_NetPrintJobPause(%d)\n", r.in.JobID);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintjobpause(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintjobpause failed");
+
+	return true;
+}
+
+static bool test_netprintjob_continue(struct torture_context *tctx,
+				      struct smbcli_state *cli,
+				      uint16_t job_id)
+{
+	struct rap_NetPrintJobContinue r;
+
+	r.in.JobID = job_id;
+
+	torture_comment(tctx, "Testing rap_NetPrintJobContinue(%d)\n", r.in.JobID);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintjobcontinue(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintjobcontinue failed");
+
+	return true;
+}
+
+static bool test_netprintjob_delete(struct torture_context *tctx,
+				    struct smbcli_state *cli,
+				    uint16_t job_id)
+{
+	struct rap_NetPrintJobDelete r;
+
+	r.in.JobID = job_id;
+
+	torture_comment(tctx, "Testing rap_NetPrintJobDelete(%d)\n", r.in.JobID);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintjobdelete(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintjobdelete failed");
+
+	return true;
+}
+
+static bool test_netprintjob(struct torture_context *tctx,
+			     struct smbcli_state *cli)
+{
+	uint16_t job_id = 400;
+
+	torture_assert(tctx,
+		test_netprintjob_pause(tctx, cli, job_id),
+		"failed to pause job");
+	torture_assert(tctx,
+		test_netprintjob_continue(tctx, cli, job_id),
+		"failed to continue job");
+	torture_assert(tctx,
+		test_netprintjob_delete(tctx, cli, job_id),
+		"failed to delete job");
+
+	return true;
+}
+
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -163,6 +232,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "rap_print", test_rap_print);
 	torture_suite_add_1smb_test(suite, "rap_printq_enum", test_netprintqenum);
 	torture_suite_add_1smb_test(suite, "rap_printq_getinfo", test_netprintqgetinfo);
+	torture_suite_add_1smb_test(suite, "rap_printjob", test_netprintjob);
 
 	return suite;
 }
