@@ -185,6 +185,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr_short(struct ndr_pull *ndr, uin
 	if (*v != 0) {
 		ndr->ptr_count++;
 	}
+	*(v) -= ndr->relative_rap_convert;
 	return NDR_ERR_SUCCESS;
 }
 

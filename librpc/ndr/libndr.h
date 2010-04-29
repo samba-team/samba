@@ -62,6 +62,7 @@ struct ndr_pull {
 
 	uint32_t relative_highest_offset;
 	uint32_t relative_base_offset;
+	uint32_t relative_rap_convert;
 	struct ndr_token_list *relative_base_list;
 
 	struct ndr_token_list *relative_list;
