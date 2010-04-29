@@ -97,6 +97,49 @@ static bool test_netprintqenum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintqgetinfo(struct torture_context *tctx,
+				  struct smbcli_state *cli)
+{
+	struct rap_NetPrintQGetInfo r;
+	struct rap_NetPrintQEnum r_enum;
+	int i, p;
+	uint16_t levels[] = { 0, 1, 3, 5 };
+	NTSTATUS status;
+
+	r_enum.in.level = 5;
+	r_enum.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r_enum),
+		"failed to enum printq");
+
+	for (p=0; p < r_enum.out.count; p++) {
+
+		for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+			r.in.level = levels[i];
+			r.in.bufsize = 8192;
+			r.in.PrintQueueName = r_enum.out.info[p].info5.PrintQueueName;
+
+			torture_comment(tctx, "Testing rap_NetPrintQGetInfo(%s) level %d\n",
+				r.in.PrintQueueName, r.in.level);
+
+			status = smbcli_rap_netprintqgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				torture_warning(tctx, "smbcli_rap_netprintqgetinfo failed with %s\n", nt_errstr(status));
+				continue;
+			}
+
+			switch (r.in.level) {
+			case 0:
+				printf("%s\n", r.out.info.info0.PrintQName);
+				break;
+			}
+		}
+	}
+
+	return true;
+}
 
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
@@ -119,6 +162,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "raw_print", test_raw_print);
 	torture_suite_add_1smb_test(suite, "rap_print", test_rap_print);
 	torture_suite_add_1smb_test(suite, "rap_printq_enum", test_netprintqenum);
+	torture_suite_add_1smb_test(suite, "rap_printq_getinfo", test_netprintqgetinfo);
 
 	return suite;
 }
