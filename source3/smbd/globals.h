@@ -26,18 +26,6 @@ extern int aio_pending_size;
 extern int outstanding_aio_calls;
 #endif
 
-/* dlink list we store pending lock records on. */
-extern struct blocking_lock_record *blocking_lock_queue;
-
-/* dlink list we move cancelled lock records onto. */
-extern struct blocking_lock_record *blocking_lock_cancelled_queue;
-
-/* The event that makes us process our blocking lock queue */
-extern struct timed_event *brl_timeout;
-
-extern bool blocking_lock_unlock_state;
-extern bool blocking_lock_cancel_state;
-
 #ifdef USE_DMAPI
 struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
@@ -551,6 +539,18 @@ struct smbd_server_connection {
 			struct dptr_struct *dirptrs;
 			int dirhandles_open;
 		} searches;
+		struct {
+			/* dlink list we store pending lock records on. */
+			struct blocking_lock_record *blocking_lock_queue;
+			/* dlink list we move cancelled lock records onto. */
+			struct blocking_lock_record *blocking_lock_cancelled_queue;
+
+			/* The event that makes us process our blocking lock queue */
+			struct timed_event *brl_timeout;
+
+			bool blocking_lock_unlock_state;
+			bool blocking_lock_cancel_state;
+		} locks;
 	} smb1;
 	struct {
 		struct tevent_context *event_ctx;

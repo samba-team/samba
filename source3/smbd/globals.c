@@ -27,18 +27,6 @@ int aio_pending_size = 0;
 int outstanding_aio_calls = 0;
 #endif
 
-/* dlink list we store pending lock records on. */
-struct blocking_lock_record *blocking_lock_queue = NULL;
-
-/* dlink list we move cancelled lock records onto. */
-struct blocking_lock_record *blocking_lock_cancelled_queue = NULL;
-
-/* The event that makes us process our blocking lock queue */
-struct timed_event *brl_timeout = NULL;
-
-bool blocking_lock_unlock_state = false;
-bool blocking_lock_cancel_state = false;
-
 #ifdef USE_DMAPI
 struct smbd_dmapi_context *dmapi_ctx = NULL;
 #endif

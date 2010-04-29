@@ -28,8 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-extern struct blocking_lock_record *blocking_lock_queue;
-
 static uint64_t onefs_get_new_id(void) {
 	static uint64_t id = 0;
 
@@ -84,6 +82,7 @@ static char *onefs_cbrl_blr_state_str(const struct blocking_lock_record *blr)
 
 static void onefs_cbrl_enumerate_blq(const char *fn)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr;
 
 	if (DEBUGLVL(10))
@@ -91,18 +90,19 @@ static void onefs_cbrl_enumerate_blq(const char *fn)
 
 	DEBUG(10, ("CBRL BLR records (%s):\n", fn));
 
-	for (blr = blocking_lock_queue; blr; blr = blr->next)
+	for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next)
 		DEBUGADD(10, ("%s\n", onefs_cbrl_blr_state_str(blr)));
 }
 
 static struct blocking_lock_record *onefs_cbrl_find_blr(uint64_t id)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr;
 	struct onefs_cbrl_blr_state *bs;
 
 	onefs_cbrl_enumerate_blq("onefs_cbrl_find_blr");
 
-	for (blr = blocking_lock_queue; blr; blr = blr->next) {
+	for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next) {
 		bs = (struct onefs_cbrl_blr_state *)blr->blr_private;
 
 		/* We don't control all of the BLRs on the BLQ. */
