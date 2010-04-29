@@ -767,7 +767,7 @@ static enum ndr_err_code ndr_push_rap_PrintQueue0(struct ndr_push *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->PrintQName, 13));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -779,7 +779,7 @@ static enum ndr_err_code ndr_pull_rap_PrintQueue0(struct ndr_pull *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->PrintQName, 13));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -791,7 +791,7 @@ _PUBLIC_ void ndr_print_rap_PrintQueue0(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "rap_PrintQueue0");
 	ndr->depth++;
-	ndr_print_array_uint8(ndr, "PrintQName", r->PrintQName, 13);
+	ndr_print_string(ndr, "PrintQName", r->PrintQName);
 	ndr->depth--;
 }
 
@@ -799,7 +799,7 @@ static enum ndr_err_code ndr_push_rap_PrintQueue1(struct ndr_push *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->PrintQName, 13));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->Pad1));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Priority));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->StartTime));
@@ -872,7 +872,7 @@ static enum ndr_err_code ndr_pull_rap_PrintQueue1(struct ndr_pull *ndr, int ndr_
 	TALLOC_CTX *_mem_save_CommentString_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->PrintQName, 13));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad1));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Priority));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->StartTime));
@@ -1005,7 +1005,7 @@ _PUBLIC_ void ndr_print_rap_PrintQueue1(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "rap_PrintQueue1");
 	ndr->depth++;
-	ndr_print_array_uint8(ndr, "PrintQName", r->PrintQName, 13);
+	ndr_print_string(ndr, "PrintQName", r->PrintQName);
 	ndr_print_uint8(ndr, "Pad1", r->Pad1);
 	ndr_print_uint16(ndr, "Priority", r->Priority);
 	ndr_print_uint16(ndr, "StartTime", r->StartTime);

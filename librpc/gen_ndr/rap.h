@@ -520,11 +520,11 @@ enum rap_PrintQStatusCode
 ;
 
 struct rap_PrintQueue0 {
-	uint8_t PrintQName[13];
+	const char *PrintQName;/* [charset(DOS)] */
 };
 
 struct rap_PrintQueue1 {
-	uint8_t PrintQName[13];
+	const char *PrintQName;/* [charset(DOS)] */
 	uint8_t Pad1;
 	uint16_t Priority;
 	uint16_t StartTime;
