@@ -15,26 +15,26 @@ dir_options = {
 
 # list of cflags to use for dynconfig.c
 dyn_cflags = {
-    'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
     'BINDIR'                         : '${BINDIR}',
     'SBINDIR'                        : '${SBINDIR}',
+    'CONFIGDIR'                      : '${SYSCONFDIR}',
+    'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
     'LMHOSTSFILE'                    : '${SYSCONFDIR}/lmhosts',
+    'PRIVATE_DIR'                    : '${PRIVATEDIR}',
+    'LOGFILEBASE'                    : '${LOCALSTATEDIR}',
     'LOCKDIR'                        : '${LOCALSTATEDIR}/locks',
     'PIDDIR'                         : '${LOCALSTATEDIR}/run',
     'DATADIR'                        : '${DATADIR}',
-    'LOGFILEBASE'                    : '${LOCALSTATEDIR}',
-    'CONFIGDIR'                      : '${SYSCONFDIR}',
-    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
-    'SWATDIR'                        : '${DATADIR}/swat',
-    'PRIVATE_DIR'                    : '${PRIVATEDIR}',
-    'MODULESDIR'                     : '${PREFIX}/modules',
     'SETUPDIR'                       : '${DATADIR}/setup',
-    'INCLUDEDIR'                     : '${PREFIX}/include',
-    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
     'WINBINDD_SOCKET_DIR'            : '${WINBINDD_SOCKET_DIR}',
+    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
     'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
-    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
     'PYTHONDIR'                      : '${PYTHONDIR}',
+    'MODULESDIR'                     : '${PREFIX}/modules',
+    'INCLUDEDIR'                     : '${PREFIX}/include',
+    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    'SWATDIR'                        : '${DATADIR}/swat',
     }
 
 # changes for when FHS is enabled
