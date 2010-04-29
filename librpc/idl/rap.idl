@@ -474,11 +474,11 @@ interface rap
 	} rap_PrintQStatusCode;
 
 	typedef struct {
-		uint8 PrintQName[13];
+		[charset(DOS)] uint8 PrintQName[13];
 	} rap_PrintQueue0;
 
 	typedef struct {
-		uint8 PrintQName[13];
+		[charset(DOS)] uint8 PrintQName[13];
 		uint8 Pad1;
 		uint16 Priority;
 		uint16 StartTime;
