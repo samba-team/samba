@@ -14,17 +14,17 @@
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Jeremy Allison 2006
    Copyright (C) Simo Sorce 2003-2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -97,7 +97,7 @@ static NTSTATUS idmap_tdb2_load_ranges(void)
 static NTSTATUS idmap_tdb2_open_db(void)
 {
 	char *db_path;
-	
+
 	if (idmap_tdb2) {
 		/* its already open */
 		return NT_STATUS_OK;
@@ -605,7 +605,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 	case ID_TYPE_UID:
 		keystr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
-		
+
 	case ID_TYPE_GID:
 		keystr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
@@ -659,7 +659,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 				      &store_state);
 		goto done;
 	}
-		
+
 	if (!string_to_sid(map->sid, (const char *)data.dptr)) {
 		DEBUG(10,("INVALID SID (%s) in record %s\n",
 			(const char *)data.dptr, keystr));
@@ -711,7 +711,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 			ret = NT_STATUS_NONE_MAPPED;
 			goto done;
 		}
-			
+
 		ret = idmap_tdb2_script(ctx, map, "SIDTOID %s", keystr);
 		/* store it on shared storage */
 		if (!NT_STATUS_IS_OK(ret)) {
@@ -751,7 +751,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 		DEBUG(2, ("Found INVALID record %s -> %s\n", keystr, (const char *)data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 	}
-	
+
 	/* apply filters before returning result */
 	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
 	    (ctx->filter_high_id && (map->xid.id > ctx->filter_high_id))) {
@@ -778,7 +778,7 @@ static NTSTATUS idmap_tdb2_unixids_to_sids(struct idmap_domain *dom, struct id_m
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	for (i = 0; ids[i]; i++) {
@@ -792,7 +792,7 @@ static NTSTATUS idmap_tdb2_unixids_to_sids(struct idmap_domain *dom, struct id_m
 				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
-			
+
 			/* some fatal error occurred, return immediately */
 			goto done;
 		}
@@ -820,7 +820,7 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	for (i = 0; ids[i]; i++) {
@@ -834,7 +834,7 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
-			
+
 			/* some fatal error occurred, return immediately */
 			goto done;
 		}
@@ -868,7 +868,7 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	ksidstr = kidstr = NULL;
 
 	/* TODO: should we filter a set_mapping using low/high filters ? */
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	switch (map->xid.type) {
@@ -876,7 +876,7 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	case ID_TYPE_UID:
 		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
-		
+
 	case ID_TYPE_GID:
 		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
