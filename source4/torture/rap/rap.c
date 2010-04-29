@@ -594,8 +594,15 @@ static NTSTATUS rap_pull_rap_PrintQueue1(TALLOC_CTX *mem_ctx, struct ndr_pull *n
 
 static NTSTATUS rap_pull_rap_PrintQueue2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue2 *r)
 {
+	int i;
 	RAP_RETURN(rap_pull_rap_PrintQueue1(mem_ctx, ndr, convert, &r->queue));
-	RAP_RETURN(rap_pull_rap_JobInfo1(mem_ctx, ndr, convert, &r->job));
+	r->job = talloc_zero_array(mem_ctx, struct rap_PrintJobInfo1, r->queue.PrintJobCount);
+	if (r->job == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0; i < r->queue.PrintJobCount; i++) {
+		RAP_RETURN(rap_pull_rap_JobInfo1(mem_ctx, ndr, convert, &r->job[i]));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -622,8 +629,15 @@ static NTSTATUS rap_pull_rap_PrintQueue3(TALLOC_CTX *mem_ctx, struct ndr_pull *n
 
 static NTSTATUS rap_pull_rap_PrintQueue4(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue4 *r)
 {
+	int i;
 	RAP_RETURN(rap_pull_rap_PrintQueue3(mem_ctx, ndr, convert, &r->queue));
-	RAP_RETURN(rap_pull_rap_JobInfo2(mem_ctx, ndr, convert, &r->job));
+	r->job = talloc_zero_array(mem_ctx, struct rap_PrintJobInfo2, r->queue.PrintJobCount);
+	if (r->job == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0; i < r->queue.PrintJobCount; i++) {
+		RAP_RETURN(rap_pull_rap_JobInfo2(mem_ctx, ndr, convert, &r->job[i]));
+	}
 
 	return NT_STATUS_OK;
 }
