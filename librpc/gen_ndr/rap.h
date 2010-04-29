@@ -574,7 +574,8 @@ struct rap_PrintQueue3 {
 };
 
 struct rap_PrintQueue4 {
-	char _empty_;
+	struct rap_PrintQueue3 queue;
+	struct rap_PrintJobInfo2 job;
 };
 
 struct rap_PrintQueue5 {

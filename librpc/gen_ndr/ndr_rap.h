@@ -35,6 +35,7 @@ enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_fl
 enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r);
 void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r);
 void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo1 *r);
+void ndr_print_rap_PrintJobInfo2(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo2 *r);
 enum ndr_err_code ndr_push_rap_PrintQStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintQStatusCode r);
 enum ndr_err_code ndr_pull_rap_PrintQStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintQStatusCode *r);
 void ndr_print_rap_PrintQStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintQStatusCode r);
