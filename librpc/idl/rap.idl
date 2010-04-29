@@ -499,7 +499,7 @@ interface rap
 
 	typedef struct {
 		rap_PrintQueue1 queue;
-		rap_PrintJobInfo1 job;
+		rap_PrintJobInfo1 job[queue.PrintJobCount];
 	} rap_PrintQueue2;
 
 	typedef [public] struct {
@@ -529,7 +529,7 @@ interface rap
 
 	typedef struct {
 		rap_PrintQueue3 queue;
-		rap_PrintJobInfo2 job;
+		rap_PrintJobInfo2 job[queue.PrintJobCount];
 	} rap_PrintQueue4;
 
 	typedef struct {
