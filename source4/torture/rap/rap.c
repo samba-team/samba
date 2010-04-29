@@ -534,6 +534,24 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
+static NTSTATUS rap_pull_rap_JobInfo1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintJobInfo1 *r)
+{
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->UserName, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->NotifyName, 16, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->DataType, 10, sizeof(uint8_t), CH_DOS));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrintParameterString));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobPosition));
+	NDR_RETURN(ndr_pull_rap_PrintJStatusCode(ndr, NDR_SCALARS, &r->JobStatus));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->JobStatusString));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->TimeSubmitted));
+	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->JobCommentString));
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS rap_pull_rap_PrintQueue0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue0 *r)
 {
 	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintQName, 13, sizeof(uint8_t), CH_DOS));
@@ -555,6 +573,14 @@ static NTSTATUS rap_pull_rap_PrintQueue1(TALLOC_CTX *mem_ctx, struct ndr_pull *n
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->CommentString));
 	NDR_RETURN(ndr_pull_rap_PrintQStatusCode(ndr, NDR_SCALARS, &r->PrintQStatus));
 	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->PrintJobCount));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_PrintQueue2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintQueue2 *r)
+{
+	RAP_RETURN(rap_pull_rap_PrintQueue1(mem_ctx, ndr, convert, &r->queue));
+	RAP_RETURN(rap_pull_rap_JobInfo1(mem_ctx, ndr, convert, &r->job));
 
 	return NT_STATUS_OK;
 }
@@ -658,6 +684,9 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 		case 1:
 			result = rap_pull_rap_PrintQueue1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
 			break;
+		case 2:
+			result = rap_pull_rap_PrintQueue2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
+			break;
 		case 3:
 			result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
 			break;
@@ -744,6 +773,9 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 		break;
 	case 1:
 		result = rap_pull_rap_PrintQueue1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
+		break;
+	case 2:
+		result = rap_pull_rap_PrintQueue2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
 		break;
 	case 3:
 		result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
