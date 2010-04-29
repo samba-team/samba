@@ -17,7 +17,13 @@
 
 #define NDR_RAP_NETPRINTQGETINFO (0x04)
 
-#define NDR_RAP_CALL_COUNT (5)
+#define NDR_RAP_NETPRINTJOBPAUSE (0x05)
+
+#define NDR_RAP_NETPRINTJOBCONTINUE (0x06)
+
+#define NDR_RAP_NETPRINTJOBDELETE (0x07)
+
+#define NDR_RAP_CALL_COUNT (8)
 void ndr_print_rap_share_info_0(struct ndr_print *ndr, const char *name, const struct rap_share_info_0 *r);
 void ndr_print_rap_share_info_1(struct ndr_print *ndr, const char *name, const struct rap_share_info_1 *r);
 void ndr_print_rap_share_info_2(struct ndr_print *ndr, const char *name, const struct rap_share_info_2 *r);
@@ -54,4 +60,13 @@ void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *name, int fl
 enum ndr_err_code ndr_push_rap_NetPrintQGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintQGetInfo *r);
 enum ndr_err_code ndr_pull_rap_NetPrintQGetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintQGetInfo *r);
 void ndr_print_rap_NetPrintQGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQGetInfo *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobPause(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobPause *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobPause(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobPause *r);
+void ndr_print_rap_NetPrintJobPause(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobPause *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobContinue(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobContinue *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobContinue(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobContinue *r);
+void ndr_print_rap_NetPrintJobContinue(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobContinue *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobDelete(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobDelete *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobDelete(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobDelete *r);
+void ndr_print_rap_NetPrintJobDelete(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobDelete *r);
 #endif /* _HEADER_NDR_rap */

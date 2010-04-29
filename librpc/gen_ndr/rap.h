@@ -677,4 +677,43 @@ struct rap_NetPrintQGetInfo {
 
 };
 
+
+struct rap_NetPrintJobPause {
+	struct {
+		uint16_t JobID;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
+
+struct rap_NetPrintJobContinue {
+	struct {
+		uint16_t JobID;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
+
+struct rap_NetPrintJobDelete {
+	struct {
+		uint16_t JobID;
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
 #endif /* _HEADER_rap */

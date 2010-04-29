@@ -564,6 +564,24 @@ interface rap
 		[out,switch_is(level)] rap_printq_info info
 	);
 
+	[public] void rap_NetPrintJobPause(
+		[in] uint16 JobID,
+		[out] uint16 status,
+		[out] uint16 convert
+	);
+
+	[public] void rap_NetPrintJobContinue(
+		[in] uint16 JobID,
+		[out] uint16 status,
+		[out] uint16 convert
+	);
+
+	[public] void rap_NetPrintJobDelete(
+		[in] uint16 JobID,
+		[out] uint16 status,
+		[out] uint16 convert
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */

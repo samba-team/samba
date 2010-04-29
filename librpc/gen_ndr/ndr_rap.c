@@ -2096,3 +2096,150 @@ _PUBLIC_ void ndr_print_rap_NetPrintQGetInfo(struct ndr_print *ndr, const char *
 	}
 	ndr->depth--;
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobPause(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobPause *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobPause(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobPause *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintJobPause(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobPause *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintJobPause");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintJobPause");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "JobID", r->in.JobID);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintJobPause");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobContinue(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobContinue *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobContinue(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobContinue *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintJobContinue(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobContinue *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintJobContinue");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintJobContinue");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "JobID", r->in.JobID);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintJobContinue");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobDelete(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobDelete *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobDelete(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobDelete *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintJobDelete(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobDelete *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintJobDelete");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintJobDelete");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "JobID", r->in.JobID);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintJobDelete");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
