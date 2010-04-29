@@ -718,6 +718,19 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 			goto done;
 		}
 
+		/* apply filters before returning result */
+		if ((ctx->filter_low_id
+		     && (map->xid.id < ctx->filter_low_id)) ||
+		    (ctx->filter_high_id
+		     && (map->xid.id > ctx->filter_high_id))) {
+			DEBUG(5, ("Script returned id (%u) out of range "
+				  "(%u - %u). Filtered!\n",
+				  map->xid.id,
+				  ctx->filter_low_id, ctx->filter_high_id));
+			ret = NT_STATUS_NONE_MAPPED;
+			goto done;
+		}
+
 		idstr = talloc_asprintf(tmp_ctx, "%cID %lu",
 					map->xid.type == ID_TYPE_UID?'U':'G',
 					(unsigned long)map->xid.id);
