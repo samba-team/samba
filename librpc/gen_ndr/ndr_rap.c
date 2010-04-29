@@ -1387,40 +1387,68 @@ _PUBLIC_ void ndr_print_rap_PrintQueue1(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_rap_PrintQueue2(struct ndr_push *ndr, int ndr_flags, const struct rap_PrintQueue2 *r)
 {
+	uint32_t cntr_job_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_rap_PrintQueue1(ndr, NDR_SCALARS, &r->queue));
-		NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job));
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job[cntr_job_0]));
+		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_rap_PrintQueue1(ndr, NDR_BUFFERS, &r->queue));
-		NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job));
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job[cntr_job_0]));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_rap_PrintQueue2(struct ndr_pull *ndr, int ndr_flags, struct rap_PrintQueue2 *r)
 {
+	uint32_t cntr_job_0;
+	TALLOC_CTX *_mem_save_job_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_rap_PrintQueue1(ndr, NDR_SCALARS, &r->queue));
-		NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job));
+		NDR_PULL_ALLOC_N(ndr, r->job, r->queue.PrintJobCount);
+		_mem_save_job_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->job, 0);
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job[cntr_job_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_job_0, 0);
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_rap_PrintQueue1(ndr, NDR_BUFFERS, &r->queue));
-		NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job));
+		_mem_save_job_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->job, 0);
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job[cntr_job_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_job_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_rap_PrintQueue2(struct ndr_print *ndr, const char *name, const struct rap_PrintQueue2 *r)
 {
+	uint32_t cntr_job_0;
 	ndr_print_struct(ndr, name, "rap_PrintQueue2");
 	ndr->depth++;
 	ndr_print_rap_PrintQueue1(ndr, "queue", &r->queue);
-	ndr_print_rap_PrintJobInfo1(ndr, "job", &r->job);
+	ndr->print(ndr, "%s: ARRAY(%d)", "job", (int)r->queue.PrintJobCount);
+	ndr->depth++;
+	for (cntr_job_0=0;cntr_job_0<r->queue.PrintJobCount;cntr_job_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_job_0) != -1) {
+			ndr_print_rap_PrintJobInfo1(ndr, "job", &r->job[cntr_job_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -1889,40 +1917,68 @@ _PUBLIC_ void ndr_print_rap_PrintQueue3(struct ndr_print *ndr, const char *name,
 
 static enum ndr_err_code ndr_push_rap_PrintQueue4(struct ndr_push *ndr, int ndr_flags, const struct rap_PrintQueue4 *r)
 {
+	uint32_t cntr_job_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_rap_PrintQueue3(ndr, NDR_SCALARS, &r->queue));
-		NDR_CHECK(ndr_push_rap_PrintJobInfo2(ndr, NDR_SCALARS, &r->job));
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_push_rap_PrintJobInfo2(ndr, NDR_SCALARS, &r->job[cntr_job_0]));
+		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_rap_PrintQueue3(ndr, NDR_BUFFERS, &r->queue));
-		NDR_CHECK(ndr_push_rap_PrintJobInfo2(ndr, NDR_BUFFERS, &r->job));
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_push_rap_PrintJobInfo2(ndr, NDR_BUFFERS, &r->job[cntr_job_0]));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_rap_PrintQueue4(struct ndr_pull *ndr, int ndr_flags, struct rap_PrintQueue4 *r)
 {
+	uint32_t cntr_job_0;
+	TALLOC_CTX *_mem_save_job_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_rap_PrintQueue3(ndr, NDR_SCALARS, &r->queue));
-		NDR_CHECK(ndr_pull_rap_PrintJobInfo2(ndr, NDR_SCALARS, &r->job));
+		NDR_PULL_ALLOC_N(ndr, r->job, r->queue.PrintJobCount);
+		_mem_save_job_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->job, 0);
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_pull_rap_PrintJobInfo2(ndr, NDR_SCALARS, &r->job[cntr_job_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_job_0, 0);
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_rap_PrintQueue3(ndr, NDR_BUFFERS, &r->queue));
-		NDR_CHECK(ndr_pull_rap_PrintJobInfo2(ndr, NDR_BUFFERS, &r->job));
+		_mem_save_job_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->job, 0);
+		for (cntr_job_0 = 0; cntr_job_0 < r->queue.PrintJobCount; cntr_job_0++) {
+			NDR_CHECK(ndr_pull_rap_PrintJobInfo2(ndr, NDR_BUFFERS, &r->job[cntr_job_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_job_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_rap_PrintQueue4(struct ndr_print *ndr, const char *name, const struct rap_PrintQueue4 *r)
 {
+	uint32_t cntr_job_0;
 	ndr_print_struct(ndr, name, "rap_PrintQueue4");
 	ndr->depth++;
 	ndr_print_rap_PrintQueue3(ndr, "queue", &r->queue);
-	ndr_print_rap_PrintJobInfo2(ndr, "job", &r->job);
+	ndr->print(ndr, "%s: ARRAY(%d)", "job", (int)r->queue.PrintJobCount);
+	ndr->depth++;
+	for (cntr_job_0=0;cntr_job_0<r->queue.PrintJobCount;cntr_job_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_job_0) != -1) {
+			ndr_print_rap_PrintJobInfo2(ndr, "job", &r->job[cntr_job_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
 	ndr->depth--;
 }
 

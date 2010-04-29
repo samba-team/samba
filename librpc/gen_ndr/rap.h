@@ -545,7 +545,7 @@ struct rap_PrintQueue1 {
 
 struct rap_PrintQueue2 {
 	struct rap_PrintQueue1 queue;
-	struct rap_PrintJobInfo1 job;
+	struct rap_PrintJobInfo1 *job;
 };
 
 struct rap_PrintQueue3 {
@@ -575,7 +575,7 @@ struct rap_PrintQueue3 {
 
 struct rap_PrintQueue4 {
 	struct rap_PrintQueue3 queue;
-	struct rap_PrintJobInfo2 job;
+	struct rap_PrintJobInfo2 *job;
 };
 
 struct rap_PrintQueue5 {
