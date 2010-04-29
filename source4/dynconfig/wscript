@@ -39,23 +39,26 @@ dyn_cflags = {
 
 # changes for when FHS is enabled
 dyn_cflags_fhs = {
+    'BINDIR'                         : '${BINDIR}',
+    'SBINDIR'                        : '${SBINDIR}',
     'CONFIGDIR'                      : '${SYSCONFDIR}/samba',
-    'CONFIGFILE'                     : '${CONFIGDIR}/smb.conf',
-    'LMHOSTSFILE'                    : '${CONFIGDIR}/lmhosts',
+    'CONFIGFILE'                     : '${SYSCONFDIR}/samba/smb.conf',
+    'LMHOSTSFILE'                    : '${SYSCONFDIR}/samba/lmhosts',
+    'PRIVATE_DIR'                    : '${LOCALSTATEDIR}/lib/samba/private',
+    'LOGFILEBASE'                    : '${LOCALSTATEDIR}/log/samba',
     'LOCKDIR'                        : '${LOCALSTATEDIR}/lib/samba',
     'PIDDIR'                         : '${LOCALSTATEDIR}/run/samba',
-    'LOGFILEBASE'                    : '${LOCALSTATEDIR}/log/samba',
-    'PRIVATE_DIR'                    : '${LOCALSTATEDIR}/lib/samba/private',
-    'MODULESDIR'                     : '${LIBDIR}/samba',
     'DATADIR'                        : '${DATADIR}/samba',
-    'INCLUDEDIR'                     : '${INCLUDEDIR}/samba-4.0',
-    'NTP_SIGND_SOCKET_DIR'           : '${LOCALSTATEDIR}/run/samba/ntp_signd',
+    'SETUPDIR'                       : '${DATADIR}/samba/setup',
     'WINBINDD_SOCKET_DIR'            : '${LOCALSTATEDIR}/run/samba/winbindd',
     'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${LOCALSTATEDIR}/run/samba/winbindd_privileged',
+    'NTP_SIGND_SOCKET_DIR'           : '${LOCALSTATEDIR}/run/samba/ntp_signd',
     'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
-    'SWATDIR'                        : '${DATADIR}/swat',
-    'SETUPDIR'                       : '${DATADIR}/setup',
+    'PYTHONDIR'                      : '${PYTHONDIR}',
+    'MODULESDIR'                     : '${LIBDIR}/samba',
+    'INCLUDEDIR'                     : '${INCLUDEDIR}/samba-4.0',
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    'SWATDIR'                        : '${DATADIR}/swat',
     }
 
 def get_varname(v):
