@@ -562,17 +562,17 @@ static enum ndr_err_code ndr_push_rap_PrintJobInfo1(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobID));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->UserName, 21));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->UserName, 21, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->Pad));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->NotifyName, 16));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->DataType, 10));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->NotifyName, 16, sizeof(uint8_t), CH_DOS));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->DataType, 10, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->PrintParameterString));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->PrintParameterStringHigh));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobPosition));
 		NDR_CHECK(ndr_push_rap_PrintJStatusCode(ndr, NDR_SCALARS, r->JobStatus));
 		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->JobStatusString));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobStatusStringHigh));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->TimeSubmitted));
+		NDR_CHECK(ndr_push_time_t(ndr, NDR_SCALARS, r->TimeSubmitted));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->JobSize));
 		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->JobCommentString));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobCommentStringHigh));
@@ -615,10 +615,10 @@ static enum ndr_err_code ndr_pull_rap_PrintJobInfo1(struct ndr_pull *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->UserName, 21));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->UserName, 21, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->NotifyName, 16));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->DataType, 10));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->NotifyName, 16, sizeof(uint8_t), CH_DOS));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->DataType, 10, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_relative_ptr_short(ndr, &_ptr_PrintParameterString));
 		if (_ptr_PrintParameterString) {
 			NDR_PULL_ALLOC(ndr, r->PrintParameterString);
@@ -637,7 +637,7 @@ static enum ndr_err_code ndr_pull_rap_PrintJobInfo1(struct ndr_pull *ndr, int nd
 			r->JobStatusString = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobStatusStringHigh));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->TimeSubmitted));
+		NDR_CHECK(ndr_pull_time_t(ndr, NDR_SCALARS, &r->TimeSubmitted));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
 		NDR_CHECK(ndr_pull_relative_ptr_short(ndr, &_ptr_JobCommentString));
 		if (_ptr_JobCommentString) {
@@ -704,10 +704,10 @@ _PUBLIC_ void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *nam
 	ndr_print_struct(ndr, name, "rap_PrintJobInfo1");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "JobID", r->JobID);
-	ndr_print_array_uint8(ndr, "UserName", r->UserName, 21);
+	ndr_print_string(ndr, "UserName", r->UserName);
 	ndr_print_uint8(ndr, "Pad", r->Pad);
-	ndr_print_array_uint8(ndr, "NotifyName", r->NotifyName, 16);
-	ndr_print_array_uint8(ndr, "DataType", r->DataType, 10);
+	ndr_print_string(ndr, "NotifyName", r->NotifyName);
+	ndr_print_string(ndr, "DataType", r->DataType);
 	ndr_print_ptr(ndr, "PrintParameterString", r->PrintParameterString);
 	ndr->depth++;
 	if (r->PrintParameterString) {
@@ -724,7 +724,7 @@ _PUBLIC_ void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *nam
 	}
 	ndr->depth--;
 	ndr_print_uint16(ndr, "JobStatusStringHigh", r->JobStatusStringHigh);
-	ndr_print_uint32(ndr, "TimeSubmitted", r->TimeSubmitted);
+	ndr_print_time_t(ndr, "TimeSubmitted", r->TimeSubmitted);
 	ndr_print_uint32(ndr, "JobSize", r->JobSize);
 	ndr_print_ptr(ndr, "JobCommentString", r->JobCommentString);
 	ndr->depth++;

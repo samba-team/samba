@@ -436,17 +436,17 @@ struct rap_PrintJobInfo0 {
 
 struct rap_PrintJobInfo1 {
 	uint16_t JobID;
-	uint8_t UserName[21];
+	const char *UserName;/* [charset(DOS)] */
 	uint8_t Pad;
-	uint8_t NotifyName[16];
-	uint8_t DataType[10];
+	const char *NotifyName;/* [charset(DOS)] */
+	const char *DataType;/* [charset(DOS)] */
 	const char *PrintParameterString;/* [charset(DOS),relative_short] */
 	uint16_t PrintParameterStringHigh;
 	uint16_t JobPosition;
 	enum rap_PrintJStatusCode JobStatus;
 	const char *JobStatusString;/* [charset(DOS),relative_short] */
 	uint16_t JobStatusStringHigh;
-	uint32_t TimeSubmitted;
+	time_t TimeSubmitted;
 	uint32_t JobSize;
 	const char *JobCommentString;/* [charset(DOS),relative_short] */
 	uint16_t JobCommentStringHigh;
@@ -459,7 +459,7 @@ struct rap_PrintJobInfo2 {
 	uint16_t UserNameHigh;
 	uint16_t JobPosition;
 	enum rap_PrintJStatusCode JobStatus;
-	uint32_t TimeSubmitted;
+	time_t TimeSubmitted;
 	uint32_t JobSize;
 	const char *JobCommentString;/* [charset(DOS),relative_short] */
 	uint16_t JobCommentStringHigh;
@@ -474,7 +474,7 @@ struct rap_PrintJobInfo3 {
 	uint16_t UserNameHigh;
 	uint16_t JobPosition;
 	enum rap_PrintJStatusCode JobStatus;
-	uint32_t TimeSubmitted;
+	time_t TimeSubmitted;
 	uint32_t JobSize;
 	const char *JobCommentString;/* [charset(DOS),relative_short] */
 	uint16_t JobCommentStringHigh;
