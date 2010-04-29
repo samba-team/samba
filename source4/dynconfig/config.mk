@@ -15,7 +15,6 @@ $(dynconfigsrcdir)/dynconfig.o: CFLAGS+=-DCONFIGFILE=\"$(CONFIG4FILE)\" -DBINDIR
 	 -DLOCKDIR=\"$(lockdir)\" -DPIDDIR=\"$(piddir)\" -DDATADIR=\"$(datadir)\" \
 	 -DLOGFILEBASE=\"$(logfilebase)\" \
 	 -DCONFIGDIR=\"$(sysconfdir)\" -DNCALRPCDIR=\"$(ncalrpcdir)\" \
-	 -DSWATDIR=\"$(swatdir)\" \
 	 -DPRIVATE_DIR=\"$(privatedir)\" \
 	 -DMODULESDIR=\"$(modulesdir)\" \
 	 -DSETUPDIR=\"$(setupdir)\" \

@@ -76,9 +76,6 @@ _PUBLIC_ const char *dyn_PIDDIR  = PIDDIR;
 /** Private data directory; holds ldb files and the like */
 _PUBLIC_ const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 
-/** SWAT  directory */
-_PUBLIC_ const char *dyn_SWATDIR = SWATDIR;
-
 /** SETUP files (source files used by the provision) */
 _PUBLIC_ const char *dyn_SETUPDIR = SETUPDIR;
 

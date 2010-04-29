@@ -127,7 +127,6 @@ struct loadparm_global
 	char *szTemplateHomedir;
 	int bWinbindSealedPipes;
 	int bIdmapTrustedOnly;
-	char *swat_directory;
 	int tls_enabled;
 	char *tls_keyfile;
 	char *tls_certfile;
@@ -415,7 +414,6 @@ static struct parm_struct parm_table[] = {
 	{"tls cafile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_cafile), NULL, NULL},
 	{"tls crlfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_crlfile), NULL, NULL},
 	{"tls dh params file", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_dhpfile), NULL, NULL},
-	{"swat directory", P_STRING, P_GLOBAL, GLOBAL_VAR(swat_directory), NULL, NULL},
 	{"large readwrite", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLargeReadwrite), NULL, NULL},
 	{"server max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_maxprotocol), NULL, enum_protocol},
 	{"server min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_minprotocol), NULL, enum_protocol},
@@ -636,7 +634,6 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, cldap_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, krb5_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, kpasswd_port)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, web_port)
-_PUBLIC_ FN_GLOBAL_STRING(lp_swat_directory, swat_directory)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, tls_enabled)
 _PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, szSAM_URL)
@@ -2442,7 +2439,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lp_do_global_parameter(lp_ctx, "kpasswd port", "464");
 	lp_do_global_parameter(lp_ctx, "web port", "901");
-	lp_do_global_parameter(lp_ctx, "swat directory", dyn_SWATDIR);
 
 	lp_do_global_parameter(lp_ctx, "nt status support", "True");
 

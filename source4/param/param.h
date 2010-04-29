@@ -82,7 +82,6 @@ int lp_cldap_port(struct loadparm_context *);
 int lp_krb5_port(struct loadparm_context *);
 int lp_kpasswd_port(struct loadparm_context *);
 int lp_web_port(struct loadparm_context *);
-const char *lp_swat_directory(struct loadparm_context *);
 bool lp_tls_enabled(struct loadparm_context *);
 char *lp_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
 char *lp_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
