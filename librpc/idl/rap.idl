@@ -374,7 +374,7 @@ interface rap
 		[out] uint16 convert,
 		[out] uint16 count,
 		[out] uint16 available,
-		[out,switch_is(level)] rap_server_info *info
+		[out,switch_is(level)] rap_server_info info[count]
 	);
 
 	[public] void rap_WserverGetInfo(
@@ -546,7 +546,7 @@ interface rap
 		[case(5)] rap_PrintQueue5 info5;
 	} rap_printq_info;
 
-	[public,noprint] void rap_NetPrintQEnum(
+	[public] void rap_NetPrintQEnum(
 		[in] uint16 level,
 		[in] uint16 bufsize,
 		[out] uint16 status,

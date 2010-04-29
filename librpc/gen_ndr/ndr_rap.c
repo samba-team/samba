@@ -2257,6 +2257,7 @@ _PUBLIC_ void ndr_print_rap_NetShareEnum(struct ndr_print *ndr, const char *name
 
 _PUBLIC_ enum ndr_err_code ndr_push_rap_NetServerEnum2(struct ndr_push *ndr, int flags, const struct rap_NetServerEnum2 *r)
 {
+	uint32_t cntr_info_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
@@ -2276,17 +2277,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetServerEnum2(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
-		if (r->out.info == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+			NDR_CHECK(ndr_push_rap_server_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.info, r->in.level));
-		NDR_CHECK(ndr_push_rap_server_info(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+			NDR_CHECK(ndr_push_rap_server_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetServerEnum2(struct ndr_pull *ndr, int flags, struct rap_NetServerEnum2 *r)
 {
+	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -2300,28 +2304,30 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetServerEnum2(struct ndr_pull *ndr, int
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->in.domain));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_PULL_ALLOC(ndr, r->out.info);
-		ZERO_STRUCTP(r->out.info);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.info);
-		}
+		NDR_PULL_ALLOC_N(ndr, r->out.info, r->out.count);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.info, r->in.level));
-		NDR_CHECK(ndr_pull_rap_server_info(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+		for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+			NDR_CHECK(ndr_pull_rap_server_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+		}
+		for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+			NDR_CHECK(ndr_pull_rap_server_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_rap_NetServerEnum2(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetServerEnum2 *r)
 {
+	uint32_t cntr_info_0;
 	ndr_print_struct(ndr, name, "rap_NetServerEnum2");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -2346,10 +2352,16 @@ _PUBLIC_ void ndr_print_rap_NetServerEnum2(struct ndr_print *ndr, const char *na
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "count", r->out.count);
 		ndr_print_uint16(ndr, "available", r->out.available);
-		ndr_print_ptr(ndr, "info", r->out.info);
+		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)r->out.count);
 		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->out.info, r->in.level);
-		ndr_print_rap_server_info(ndr, "info", r->out.info);
+		for (cntr_info_0=0;cntr_info_0<r->out.count;cntr_info_0++) {
+			char *idx_0=NULL;
+			if (asprintf(&idx_0, "[%d]", cntr_info_0) != -1) {
+				ndr_print_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level);
+				ndr_print_rap_server_info(ndr, "info", &r->out.info[cntr_info_0]);
+				free(idx_0);
+			}
+		}
 		ndr->depth--;
 		ndr->depth--;
 	}
@@ -2468,6 +2480,44 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQEnum(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQEnum *r)
+{
+	uint32_t cntr_info_0;
+	ndr_print_struct(ndr, name, "rap_NetPrintQEnum");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintQEnum");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_uint16(ndr, "bufsize", r->in.bufsize);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintQEnum");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr_print_uint16(ndr, "count", r->out.count);
+		ndr_print_uint16(ndr, "available", r->out.available);
+		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)r->out.count);
+		ndr->depth++;
+		for (cntr_info_0=0;cntr_info_0<r->out.count;cntr_info_0++) {
+			char *idx_0=NULL;
+			if (asprintf(&idx_0, "[%d]", cntr_info_0) != -1) {
+				ndr_print_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level);
+				ndr_print_rap_printq_info(ndr, "info", &r->out.info[cntr_info_0]);
+				free(idx_0);
+			}
+		}
+		ndr->depth--;
+		ndr->depth--;
+	}
+	ndr->depth--;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintQGetInfo *r)

@@ -623,7 +623,7 @@ struct rap_NetServerEnum2 {
 		uint16_t convert;
 		uint16_t count;
 		uint16_t available;
-		union rap_server_info *info;/* [ref,switch_is(level)] */
+		union rap_server_info *info;/* [switch_is(level)] */
 	} out;
 
 };

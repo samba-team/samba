@@ -19,4 +19,3 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-_PUBLIC_ void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQEnum *r);
