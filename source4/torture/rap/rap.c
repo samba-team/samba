@@ -582,7 +582,7 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_array(mem_ctx, union rap_printq_info, r->out.count);
+	r->out.info = talloc_zero_array(mem_ctx, union rap_printq_info, r->out.count);
 
 	if (r->out.info == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -625,8 +625,51 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 						 NDR_SCALARS,  &r->out.info[i].info1.PrintQStatus));
 			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
 						 NDR_SCALARS,  &r->out.info[i].info1.PrintJobCount));
-
 			break;
+		case 3:
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.PrintQueueName));
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
+						 NDR_SCALARS,  &r->out.info[i].info3.Priority));
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
+						 NDR_SCALARS,  &r->out.info[i].info3.StartTime));
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
+						 NDR_SCALARS,  &r->out.info[i].info3.UntilTime));
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
+						NDR_SCALARS, &r->out.info[i].info3.Pad));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.SeparatorPageFilename));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.PrintProcessorDllName));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.PrintParameterString));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.CommentString));
+			NDR_GOTO(ndr_pull_rap_PrintQStatusCode(call->ndr_pull_data,
+						 NDR_SCALARS,  &r->out.info[i].info3.PrintQStatus));
+			NDR_GOTO(ndr_pull_uint16(call->ndr_pull_data,
+						 NDR_SCALARS,  &r->out.info[i].info3.PrintJobCount));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.Printers));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.DriverName));
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info3.PrintDriverData));
+			break;
+		case 5:
+			RAP_GOTO(rap_pull_string(mem_ctx, call->ndr_pull_data,
+					       r->out.convert,
+					       &r->out.info[i].info5.PrintQueueName));
+			break;
+
 		}
 	}
 
