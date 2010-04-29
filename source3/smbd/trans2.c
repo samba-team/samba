@@ -1464,7 +1464,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				    uint32_t mode,
 				    const char *fname,
 				    const struct smb_filename *smb_fname,
-				    uint64_t space_remaining,
+				    int space_remaining,
 				    uint8_t align,
 				    bool do_pad,
 				    char *base_data,
@@ -1484,8 +1484,8 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	char *nameptr;
 	char *last_entry_ptr;
 	bool was_8_3;
-	off_t off;
-	off_t pad = 0;
+	int off;
+	int pad = 0;
 
 	*out_of_space = false;
 
@@ -1517,7 +1517,9 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	c_date = convert_timespec_to_time_t(cdate_ts);
 
 	/* align the record */
-	off = PTR_DIFF(pdata, base_data);
+	SMB_ASSERT(align >= 1);
+
+	off = (int)PTR_DIFF(pdata, base_data);
 	pad = (off + (align-1)) & ~(align-1);
 	pad -= off;
 	off += pad;
@@ -1526,6 +1528,9 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		memset(pdata, 0, pad);
 	}
 	space_remaining -= pad;
+
+	DEBUG(10,("smbd_marshall_dir_entry: space_remaining = %d\n",
+		space_remaining ));
 
 	pdata += pad;
 	p = pdata;
@@ -1641,7 +1646,10 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		/* Max string size is 255 bytes. */
 		if (PTR_DIFF(p + 255 + ea_len,pdata) > space_remaining) {
 			*out_of_space = true;
-			DEBUG(9,("smbd_marshall_dir_entry: out of space\n"));
+			DEBUG(9,("smbd_marshall_dir_entry: out of space "
+				"(wanted %u, had %d)\n",
+				(unsigned int)PTR_DIFF(p + 255 + ea_len,pdata),
+				space_remaining ));
 			return False; /* Not finished - just out of space */
 		}
 
@@ -2021,7 +2029,10 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		*out_of_space = true;
-		DEBUG(9,("smbd_marshall_dir_entry: out of space\n"));
+		DEBUG(9,("smbd_marshall_dir_entry: out of space "
+			"(wanted %u, had %d)\n",
+			(unsigned int)PTR_DIFF(p,pdata),
+			space_remaining ));
 		return false; /* Not finished - just out of space */
 	}
 

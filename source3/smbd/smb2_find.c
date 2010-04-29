@@ -89,6 +89,17 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
+	/* The output header is 8 bytes. */
+	if (in_output_buffer_length <= 8) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	DEBUG(10,("smbd_smb2_request_find_done: in_output_buffer_length = %u\n",
+		(unsigned int)in_output_buffer_length ));
+
+	/* Take into account the output header. */
+	in_output_buffer_length -= 8;
+
 	in_file_name_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_file_name_buffer.length = in_file_name_length;
 
@@ -172,6 +183,9 @@ static void smbd_smb2_request_find_done(struct tevent_req *subreq)
 	SIVAL(outbody.data, 0x04,
 	      out_output_buffer.length);	/* output buffer length */
 
+	DEBUG(10,("smbd_smb2_request_find_done: out_output_buffer.length = %u\n",
+		(unsigned int)out_output_buffer.length ));
+
 	outdyn = out_output_buffer;
 
 	error = smbd_smb2_request_done(req, outbody, &outdyn);
@@ -210,7 +224,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	char *base_data;
 	char *end_data;
 	int last_entry_off = 0;
-	uint64_t off = 0;
+	int off = 0;
 	uint32_t num = 0;
 	uint32_t dirtype = aHIDDEN | aSYSTEM | aDIR;
 	const char *directory;
@@ -364,8 +378,10 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	off = 0;
 	num = 0;
 
-	DEBUG(8,("smbd_smb2_find_send: dirpath=<%s> dontdescend=<%s>\n",
-		directory, lp_dontdescend(SNUM(conn))));
+	DEBUG(8,("smbd_smb2_find_send: dirpath=<%s> dontdescend=<%s>, "
+		"in_output_buffer_length = %u\n",
+		directory, lp_dontdescend(SNUM(conn)),
+		(unsigned int)in_output_buffer_length ));
 	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive)) {
 		dont_descend = true;
 	}
@@ -379,6 +395,8 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		bool got_exact_match = false;
 		bool out_of_space = false;
 		int space_remaining = in_output_buffer_length - off;
+
+		SMB_ASSERT(space_remaining >= 0);
 
 		ok = smbd_dirptr_lanman2_entry(state,
 					       conn,
@@ -401,7 +419,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 					       &last_entry_off,
 					       NULL);
 
-		off = PTR_DIFF(pdata, base_data);
+		off = (int)PTR_DIFF(pdata, base_data);
 
 		if (!ok) {
 			if (num > 0) {
