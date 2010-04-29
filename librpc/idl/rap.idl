@@ -400,17 +400,17 @@ interface rap
 
 	typedef struct {
 		uint16 JobID;
-		uint8 UserName[21];
+		[charset(DOS)] uint8 UserName[21];
 		uint8 Pad;
-		uint8 NotifyName[16];
-		uint8 DataType[10];
+		[charset(DOS)] uint8 NotifyName[16];
+		[charset(DOS)] uint8 DataType[10];
 		[relative_short] [string,charset(DOS)] uint8 *PrintParameterString;
 		uint16 PrintParameterStringHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
 		[relative_short] [string,charset(DOS)] uint8 *JobStatusString;
 		uint16 JobStatusStringHigh;
-		uint32 TimeSubmitted;
+		time_t TimeSubmitted;
 		uint32 JobSize;
 		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
 		uint16 JobCommentStringHigh;
@@ -423,7 +423,7 @@ interface rap
 		uint16 UserNameHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
-		uint32 TimeSubmitted;
+		time_t TimeSubmitted;
 		uint32 JobSize;
 		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
 		uint16 JobCommentStringHigh;
@@ -438,7 +438,7 @@ interface rap
 		uint16 UserNameHigh;
 		uint16 JobPosition;
 		rap_PrintJStatusCode JobStatus;
-		uint32 TimeSubmitted;
+		time_t TimeSubmitted;
 		uint32 JobSize;
 		[relative_short] [string,charset(DOS)] uint8 *JobCommentString;
 		uint16 JobCommentStringHigh;
