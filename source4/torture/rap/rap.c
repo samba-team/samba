@@ -711,13 +711,32 @@ static NTSTATUS rap_pull_rap_PrintQueue5(TALLOC_CTX *mem_ctx, struct ndr_pull *n
 	return NT_STATUS_OK;
 }
 
+static enum ndr_err_code ndr_pull_rap_NetPrintQEnum_data(struct ndr_pull *ndr, struct rap_NetPrintQEnum *r)
+{
+	uint32_t cntr_info_0;
+	TALLOC_CTX *_mem_save_info_0;
+
+	NDR_PULL_ALLOC_N(ndr, r->out.info, r->out.count);
+	_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+	NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+		NDR_CHECK(ndr_pull_rap_printq_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+	}
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_rap_printq_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+	}
+	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+
+	return NDR_ERR_SUCCESS;
+}
+
 NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 				  TALLOC_CTX *mem_ctx,
 				  struct rap_NetPrintQEnum *r)
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
 
 	if (!(call = new_rap_cli_call(mem_ctx, RAP_WPrintQEnum))) {
 		return NT_STATUS_NO_MEMORY;
@@ -770,39 +789,11 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_zero_array(mem_ctx, union rap_printq_info, r->out.count);
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (r->out.info == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_rap_NetPrintQEnum_data(call->ndr_pull_data, r));
 
-	for (i=0; i<r->out.count; i++) {
-		switch(r->in.level) {
-		case 0:
-			result = rap_pull_rap_PrintQueue0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info0);
-			break;
-		case 1:
-			result = rap_pull_rap_PrintQueue1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
-			break;
-		case 2:
-			result = rap_pull_rap_PrintQueue2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
-			break;
-		case 3:
-			result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
-			break;
-		case 4:
-			result = rap_pull_rap_PrintQueue4(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info4);
-			break;
-		case 5:
-			result = rap_pull_rap_PrintQueue5(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info5);
-			break;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	r->out.info = talloc_steal(mem_ctx, r->out.info);
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintQEnum, r);
@@ -869,39 +860,22 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
+	ZERO_STRUCT(r->out);
+
 	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	switch(r->in.level) {
-	case 0:
-		result = rap_pull_rap_PrintQueue0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
-		break;
-	case 1:
-		result = rap_pull_rap_PrintQueue1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
-		break;
-	case 2:
-		result = rap_pull_rap_PrintQueue2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
-		break;
-	case 3:
-		result = rap_pull_rap_PrintQueue3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
-		break;
-	case 4:
-		result = rap_pull_rap_PrintQueue4(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info4);
-		break;
-	case 5:
-		result = rap_pull_rap_PrintQueue5(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info5);
-		break;
-	}
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
+	NDR_GOTO(ndr_pull_rap_printq_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintQGetInfo, r);
 	}
 
+	result = NT_STATUS_OK;
  done:
 	talloc_free(call);
 	return result;
@@ -1123,13 +1097,32 @@ NTSTATUS smbcli_rap_netprintqueuepurge(struct smbcli_tree *tree,
 	return result;
 }
 
+static enum ndr_err_code ndr_pull_rap_NetPrintJobEnum_data(struct ndr_pull *ndr, struct rap_NetPrintJobEnum *r)
+{
+	uint32_t cntr_info_0;
+	TALLOC_CTX *_mem_save_info_0;
+
+	NDR_PULL_ALLOC_N(ndr, r->out.info, r->out.count);
+	_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+	NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+		NDR_CHECK(ndr_pull_rap_printj_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+	}
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_rap_printj_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+	}
+	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+
+	return NDR_ERR_SUCCESS;
+}
+
 NTSTATUS smbcli_rap_netprintjobenum(struct smbcli_tree *tree,
 				    TALLOC_CTX *mem_ctx,
 				    struct rap_NetPrintJobEnum *r)
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
 
 	if (!(call = new_rap_cli_call(mem_ctx, RAP_WPrintJobEnum))) {
 		return NT_STATUS_NO_MEMORY;
@@ -1177,39 +1170,15 @@ NTSTATUS smbcli_rap_netprintjobenum(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_zero_array(mem_ctx, union rap_printj_info, r->out.count);
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (r->out.info == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	result = NT_STATUS_OK;
-
-	for (i=0; i<r->out.count; i++) {
-		switch(r->in.level) {
-		case 0:
-			result = rap_pull_rap_JobInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info0);
-			break;
-		case 1:
-			result = rap_pull_rap_JobInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
-			break;
-		case 2:
-			result = rap_pull_rap_JobInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
-			break;
-		case 3:
-			result = rap_pull_rap_JobInfo3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
-			break;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_rap_NetPrintJobEnum_data(call->ndr_pull_data, r));
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintJobEnum, r);
 	}
+
+	r->out.info = talloc_steal(mem_ctx, r->out.info);
 
 	result = NT_STATUS_OK;
 
@@ -1270,32 +1239,16 @@ NTSTATUS smbcli_rap_netprintjobgetinfo(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	switch(r->in.level) {
-	case 0:
-		result = rap_pull_rap_JobInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
-		break;
-	case 1:
-		result = rap_pull_rap_JobInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
-		break;
-	case 2:
-		result = rap_pull_rap_JobInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
-		break;
-	case 3:
-		result = rap_pull_rap_JobInfo3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
-		break;
-	default:
-		result = NT_STATUS_NOT_IMPLEMENTED;
-		break;
-	}
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
+	NDR_GOTO(ndr_pull_rap_printj_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintJobGetInfo, r);
 	}
+
+	result = NT_STATUS_OK;
 
  done:
 	talloc_free(call);
@@ -1416,13 +1369,33 @@ static NTSTATUS rap_pull_rap_PrintDest3(TALLOC_CTX *mem_ctx, struct ndr_pull *nd
 
 }
 
+static enum ndr_err_code ndr_pull_rap_NetPrintDestEnum_data(struct ndr_pull *ndr, struct rap_NetPrintDestEnum *r)
+{
+	uint32_t cntr_info_0;
+	TALLOC_CTX *_mem_save_info_0;
+
+	NDR_PULL_ALLOC_N(ndr, r->out.info, r->out.count);
+	_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+	NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+		NDR_CHECK(ndr_pull_rap_printdest_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+	}
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_rap_printdest_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+	}
+	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+
+	return NDR_ERR_SUCCESS;
+}
+
+
 NTSTATUS smbcli_rap_netprintdestenum(struct smbcli_tree *tree,
 				     TALLOC_CTX *mem_ctx,
 				     struct rap_NetPrintDestEnum *r)
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
 
 	if (!(call = new_rap_cli_call(mem_ctx, RAP_WPrintDestEnum))) {
 		return NT_STATUS_NO_MEMORY;
@@ -1466,35 +1439,11 @@ NTSTATUS smbcli_rap_netprintdestenum(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_zero_array(mem_ctx, union rap_printdest_info, r->out.count);
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (r->out.info == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_rap_NetPrintDestEnum_data(call->ndr_pull_data, r));
 
-	result = NT_STATUS_OK;
-
-	for (i=0; i<r->out.count; i++) {
-		switch(r->in.level) {
-		case 0:
-			result = rap_pull_rap_PrintDest0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info0);
-			break;
-		case 1:
-			result = rap_pull_rap_PrintDest1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
-			break;
-		case 2:
-			result = rap_pull_rap_PrintDest2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
-			break;
-		case 3:
-			result = rap_pull_rap_PrintDest3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
-			break;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	r->out.info = talloc_steal(mem_ctx, r->out.info);
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintDestEnum, r);
@@ -1556,24 +1505,10 @@ NTSTATUS smbcli_rap_netprintdestgetinfo(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	switch(r->in.level) {
-	case 0:
-		result = rap_pull_rap_PrintDest0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
-		break;
-	case 1:
-		result = rap_pull_rap_PrintDest1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
-		break;
-	case 2:
-		result = rap_pull_rap_PrintDest2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
-		break;
-	case 3:
-		result = rap_pull_rap_PrintDest3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
-		break;
-	}
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
+	NDR_GOTO(ndr_pull_rap_printdest_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintDestGetInfo, r);
@@ -1826,37 +1761,20 @@ NTSTATUS smbcli_rap_netusergetinfo(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = NT_STATUS_INVALID_PARAMETER;
-
 	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	switch(r->in.level) {
-	case 0:
-		result = rap_pull_rap_NetUserInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
-		break;
-	case 1:
-		result = rap_pull_rap_NetUserInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
-		break;
-	case 2:
-		result = rap_pull_rap_NetUserInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
-		break;
-	case 10:
-		result = rap_pull_rap_NetUserInfo10(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info10);
-		break;
-	case 11:
-		result = rap_pull_rap_NetUserInfo11(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info11);
-		break;
-	}
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
+	NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
+	NDR_GOTO(ndr_pull_rap_netuser_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetUserGetInfo, r);
 	}
+
+	result = NT_STATUS_OK;
 
  done:
 	talloc_free(call);
