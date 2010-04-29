@@ -529,6 +529,213 @@ _PUBLIC_ void ndr_print_rap_server_info(struct ndr_print *ndr, const char *name,
 	}
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintJStatusCode r)
+{
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case PRJ_QS_QUEUED: val = "PRJ_QS_QUEUED"; break;
+		case PRJ_QS_PAUSED: val = "PRJ_QS_PAUSED"; break;
+		case PRJ_QS_SPOOLING: val = "PRJ_QS_SPOOLING"; break;
+		case PRJ_QS_PRINTING: val = "PRJ_QS_PRINTING"; break;
+		case PRJ_QS_ERROR: val = "PRJ_QS_ERROR"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_rap_PrintJobInfo1(struct ndr_push *ndr, int ndr_flags, const struct rap_PrintJobInfo1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobID));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->UserName, 21));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->Pad));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->NotifyName, 16));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->DataType, 10));
+		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->PrintParameterString));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->PrintParameterStringHigh));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobPosition));
+		NDR_CHECK(ndr_push_rap_PrintJStatusCode(ndr, NDR_SCALARS, r->JobStatus));
+		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->JobStatusString));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobStatusStringHigh));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->TimeSubmitted));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->JobSize));
+		NDR_CHECK(ndr_push_short_relative_ptr1(ndr, r->JobCommentString));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->JobCommentStringHigh));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->PrintParameterString) {
+			NDR_CHECK(ndr_push_short_relative_ptr2(ndr, r->PrintParameterString));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->PrintParameterString, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->PrintParameterString, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->PrintParameterString, ndr_charset_length(r->PrintParameterString, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->JobStatusString) {
+			NDR_CHECK(ndr_push_short_relative_ptr2(ndr, r->JobStatusString));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->JobStatusString, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->JobStatusString, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->JobStatusString, ndr_charset_length(r->JobStatusString, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->JobCommentString) {
+			NDR_CHECK(ndr_push_short_relative_ptr2(ndr, r->JobCommentString));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->JobCommentString, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->JobCommentString, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->JobCommentString, ndr_charset_length(r->JobCommentString, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_rap_PrintJobInfo1(struct ndr_pull *ndr, int ndr_flags, struct rap_PrintJobInfo1 *r)
+{
+	uint16_t _ptr_PrintParameterString;
+	TALLOC_CTX *_mem_save_PrintParameterString_0;
+	uint16_t _ptr_JobStatusString;
+	TALLOC_CTX *_mem_save_JobStatusString_0;
+	uint16_t _ptr_JobCommentString;
+	TALLOC_CTX *_mem_save_JobCommentString_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->UserName, 21));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->NotifyName, 16));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->DataType, 10));
+		NDR_CHECK(ndr_pull_relative_ptr_short(ndr, &_ptr_PrintParameterString));
+		if (_ptr_PrintParameterString) {
+			NDR_PULL_ALLOC(ndr, r->PrintParameterString);
+			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->PrintParameterString, _ptr_PrintParameterString));
+		} else {
+			r->PrintParameterString = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->PrintParameterStringHigh));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobPosition));
+		NDR_CHECK(ndr_pull_rap_PrintJStatusCode(ndr, NDR_SCALARS, &r->JobStatus));
+		NDR_CHECK(ndr_pull_relative_ptr_short(ndr, &_ptr_JobStatusString));
+		if (_ptr_JobStatusString) {
+			NDR_PULL_ALLOC(ndr, r->JobStatusString);
+			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->JobStatusString, _ptr_JobStatusString));
+		} else {
+			r->JobStatusString = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobStatusStringHigh));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->TimeSubmitted));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
+		NDR_CHECK(ndr_pull_relative_ptr_short(ndr, &_ptr_JobCommentString));
+		if (_ptr_JobCommentString) {
+			NDR_PULL_ALLOC(ndr, r->JobCommentString);
+			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->JobCommentString, _ptr_JobCommentString));
+		} else {
+			r->JobCommentString = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobCommentStringHigh));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->PrintParameterString) {
+			uint32_t _relative_save_offset;
+			_relative_save_offset = ndr->offset;
+			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->PrintParameterString));
+			_mem_save_PrintParameterString_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->PrintParameterString, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->PrintParameterString));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->PrintParameterString));
+			if (ndr_get_array_length(ndr, &r->PrintParameterString) > ndr_get_array_size(ndr, &r->PrintParameterString)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->PrintParameterString), ndr_get_array_length(ndr, &r->PrintParameterString));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->PrintParameterString), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintParameterString, ndr_get_array_length(ndr, &r->PrintParameterString), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_PrintParameterString_0, 0);
+		}
+		if (r->JobStatusString) {
+			uint32_t _relative_save_offset;
+			_relative_save_offset = ndr->offset;
+			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->JobStatusString));
+			_mem_save_JobStatusString_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->JobStatusString, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->JobStatusString));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->JobStatusString));
+			if (ndr_get_array_length(ndr, &r->JobStatusString) > ndr_get_array_size(ndr, &r->JobStatusString)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->JobStatusString), ndr_get_array_length(ndr, &r->JobStatusString));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->JobStatusString), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->JobStatusString, ndr_get_array_length(ndr, &r->JobStatusString), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_JobStatusString_0, 0);
+		}
+		if (r->JobCommentString) {
+			uint32_t _relative_save_offset;
+			_relative_save_offset = ndr->offset;
+			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->JobCommentString));
+			_mem_save_JobCommentString_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->JobCommentString, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->JobCommentString));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->JobCommentString));
+			if (ndr_get_array_length(ndr, &r->JobCommentString) > ndr_get_array_size(ndr, &r->JobCommentString)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->JobCommentString), ndr_get_array_length(ndr, &r->JobCommentString));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->JobCommentString), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->JobCommentString, ndr_get_array_length(ndr, &r->JobCommentString), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_JobCommentString_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo1 *r)
+{
+	ndr_print_struct(ndr, name, "rap_PrintJobInfo1");
+	ndr->depth++;
+	ndr_print_uint16(ndr, "JobID", r->JobID);
+	ndr_print_array_uint8(ndr, "UserName", r->UserName, 21);
+	ndr_print_uint8(ndr, "Pad", r->Pad);
+	ndr_print_array_uint8(ndr, "NotifyName", r->NotifyName, 16);
+	ndr_print_array_uint8(ndr, "DataType", r->DataType, 10);
+	ndr_print_ptr(ndr, "PrintParameterString", r->PrintParameterString);
+	ndr->depth++;
+	if (r->PrintParameterString) {
+		ndr_print_string(ndr, "PrintParameterString", r->PrintParameterString);
+	}
+	ndr->depth--;
+	ndr_print_uint16(ndr, "PrintParameterStringHigh", r->PrintParameterStringHigh);
+	ndr_print_uint16(ndr, "JobPosition", r->JobPosition);
+	ndr_print_rap_PrintJStatusCode(ndr, "JobStatus", r->JobStatus);
+	ndr_print_ptr(ndr, "JobStatusString", r->JobStatusString);
+	ndr->depth++;
+	if (r->JobStatusString) {
+		ndr_print_string(ndr, "JobStatusString", r->JobStatusString);
+	}
+	ndr->depth--;
+	ndr_print_uint16(ndr, "JobStatusStringHigh", r->JobStatusStringHigh);
+	ndr_print_uint32(ndr, "TimeSubmitted", r->TimeSubmitted);
+	ndr_print_uint32(ndr, "JobSize", r->JobSize);
+	ndr_print_ptr(ndr, "JobCommentString", r->JobCommentString);
+	ndr->depth++;
+	if (r->JobCommentString) {
+		ndr_print_string(ndr, "JobCommentString", r->JobCommentString);
+	}
+	ndr->depth--;
+	ndr_print_uint16(ndr, "JobCommentStringHigh", r->JobCommentStringHigh);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_rap_PrintQStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintQStatusCode r)
 {
 	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
@@ -846,10 +1053,14 @@ _PUBLIC_ void ndr_print_rap_PrintQueue1(struct ndr_print *ndr, const char *name,
 static enum ndr_err_code ndr_push_rap_PrintQueue2(struct ndr_push *ndr, int ndr_flags, const struct rap_PrintQueue2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 1));
-		NDR_CHECK(ndr_push_trailer_align(ndr, 1));
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_rap_PrintQueue1(ndr, NDR_SCALARS, &r->queue));
+		NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job));
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_rap_PrintQueue1(ndr, NDR_BUFFERS, &r->queue));
+		NDR_CHECK(ndr_push_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -857,10 +1068,14 @@ static enum ndr_err_code ndr_push_rap_PrintQueue2(struct ndr_push *ndr, int ndr_
 static enum ndr_err_code ndr_pull_rap_PrintQueue2(struct ndr_pull *ndr, int ndr_flags, struct rap_PrintQueue2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 1));
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_rap_PrintQueue1(ndr, NDR_SCALARS, &r->queue));
+		NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_SCALARS, &r->job));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_rap_PrintQueue1(ndr, NDR_BUFFERS, &r->queue));
+		NDR_CHECK(ndr_pull_rap_PrintJobInfo1(ndr, NDR_BUFFERS, &r->job));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -869,6 +1084,8 @@ _PUBLIC_ void ndr_print_rap_PrintQueue2(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "rap_PrintQueue2");
 	ndr->depth++;
+	ndr_print_rap_PrintQueue1(ndr, "queue", &r->queue);
+	ndr_print_rap_PrintJobInfo1(ndr, "job", &r->job);
 	ndr->depth--;
 }
 
@@ -1391,6 +1608,7 @@ static enum ndr_err_code ndr_push_rap_printq_info(struct ndr_push *ndr, int ndr_
 			break;
 
 			case 2:
+				NDR_CHECK(ndr_push_rap_PrintQueue2(ndr, NDR_BUFFERS, &r->info2));
 			break;
 
 			case 3:
@@ -1456,6 +1674,7 @@ static enum ndr_err_code ndr_pull_rap_printq_info(struct ndr_pull *ndr, int ndr_
 			break;
 
 			case 2:
+				NDR_CHECK(ndr_pull_rap_PrintQueue2(ndr, NDR_BUFFERS, &r->info2));
 			break;
 
 			case 3:
@@ -1509,34 +1728,6 @@ _PUBLIC_ void ndr_print_rap_printq_info(struct ndr_print *ndr, const char *name,
 		default:
 			ndr_print_bad_level(ndr, name, level);
 	}
-}
-
-_PUBLIC_ enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintJStatusCode r)
-{
-	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r)
-{
-	uint16_t v;
-	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r)
-{
-	const char *val = NULL;
-
-	switch (r) {
-		case PRJ_QS_QUEUED: val = "PRJ_QS_QUEUED"; break;
-		case PRJ_QS_PAUSED: val = "PRJ_QS_PAUSED"; break;
-		case PRJ_QS_SPOOLING: val = "PRJ_QS_SPOOLING"; break;
-		case PRJ_QS_PRINTING: val = "PRJ_QS_PRINTING"; break;
-		case PRJ_QS_ERROR: val = "PRJ_QS_ERROR"; break;
-	}
-	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_rap_NetShareEnum(struct ndr_push *ndr, int flags, const struct rap_NetShareEnum *r)
@@ -1825,36 +2016,5 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQEnum(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQEnum *r)
-{
-	ndr_print_struct(ndr, name, "rap_NetPrintQEnum");
-	ndr->depth++;
-	if (flags & NDR_SET_VALUES) {
-		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
-	}
-	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "rap_NetPrintQEnum");
-		ndr->depth++;
-		ndr_print_uint16(ndr, "level", r->in.level);
-		ndr_print_uint16(ndr, "bufsize", r->in.bufsize);
-		ndr->depth--;
-	}
-	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "rap_NetPrintQEnum");
-		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
-		ndr_print_uint16(ndr, "convert", r->out.convert);
-		ndr_print_uint16(ndr, "count", r->out.count);
-		ndr_print_uint16(ndr, "available", r->out.available);
-		ndr_print_ptr(ndr, "info", r->out.info);
-		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->out.info, r->in.level);
-		ndr_print_rap_printq_info(ndr, "info", r->out.info);
-		ndr->depth--;
-		ndr->depth--;
-	}
-	ndr->depth--;
 }
 

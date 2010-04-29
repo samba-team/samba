@@ -6,6 +6,7 @@
 #ifndef _HEADER_NDR_rap
 #define _HEADER_NDR_rap
 
+#include "../librpc/ndr/ndr_rap.h"
 #define NDR_RAP_NETSHAREENUM (0x00)
 
 #define NDR_RAP_NETSERVERENUM2 (0x01)
@@ -22,6 +23,10 @@ void ndr_print_rap_share_info(struct ndr_print *ndr, const char *name, const uni
 void ndr_print_rap_server_info_0(struct ndr_print *ndr, const char *name, const struct rap_server_info_0 *r);
 void ndr_print_rap_server_info_1(struct ndr_print *ndr, const char *name, const struct rap_server_info_1 *r);
 void ndr_print_rap_server_info(struct ndr_print *ndr, const char *name, const union rap_server_info *r);
+enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintJStatusCode r);
+enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r);
+void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r);
+void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo1 *r);
 enum ndr_err_code ndr_push_rap_PrintQStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintQStatusCode r);
 enum ndr_err_code ndr_pull_rap_PrintQStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintQStatusCode *r);
 void ndr_print_rap_PrintQStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintQStatusCode r);
@@ -32,9 +37,6 @@ void ndr_print_rap_PrintQueue3(struct ndr_print *ndr, const char *name, const st
 void ndr_print_rap_PrintQueue4(struct ndr_print *ndr, const char *name, const struct rap_PrintQueue4 *r);
 void ndr_print_rap_PrintQueue5(struct ndr_print *ndr, const char *name, const struct rap_PrintQueue5 *r);
 void ndr_print_rap_printq_info(struct ndr_print *ndr, const char *name, const union rap_printq_info *r);
-enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintJStatusCode r);
-enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r);
-void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r);
 enum ndr_err_code ndr_push_rap_NetShareEnum(struct ndr_push *ndr, int flags, const struct rap_NetShareEnum *r);
 enum ndr_err_code ndr_pull_rap_NetShareEnum(struct ndr_pull *ndr, int flags, struct rap_NetShareEnum *r);
 void ndr_print_rap_NetShareEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetShareEnum *r);
