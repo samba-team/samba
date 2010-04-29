@@ -750,6 +750,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	} else { /* Unknown record type ! */
 		DEBUG(2, ("Found INVALID record %s -> %s\n", keystr, (const char *)data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
+		goto done;
 	}
 
 	/* apply filters before returning result */
