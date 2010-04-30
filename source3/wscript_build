@@ -248,14 +248,10 @@ LIBSAMBA_SRC = '${LIBSMB_SRC0}'
 LIBCLI_LDAP_MESSAGE_SRC = '''../libcli/ldap/ldap_message.c'''
 LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c'''
 
-LIBTSOCKET_SRC = '''../lib/tsocket/tsocket.c
-                ../lib/tsocket/tsocket_helpers.c
-                ../lib/tsocket/tsocket_bsd.c'''
-
 CLDAP_SRC = '''libads/cldap.c
         ../libcli/cldap/cldap.c
         ../lib/util/idtree.c
-        ${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC} ${LIBTSOCKET_SRC}'''
+        ${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC}'''
 
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
@@ -268,7 +264,6 @@ SCHANNEL_SRC = '''../libcli/auth/credentials.c
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clikrb5.c libsmb/clispnego.c
              ../libcli/auth/spnego_parse.c
-             ../lib/util/asn1.c
              libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
              libsmb/clireadwrite.c libsmb/clilist.c libsmb/cliprint.c
              libsmb/clitrans.c libsmb/clisecdesc.c libsmb/clidgram.c
@@ -798,6 +793,13 @@ WBINFO_SRC = '../nsswitch/wbinfo.c ${AFS_SETTOKEN_SRC}'
 
 TESTPARM_SRC = 'utils/testparm.c'
 
+EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
+
+EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
+	        registry/reg_eventlog.c ${LIB_EVENTLOG_SRC}
+		../librpc/gen_ndr/ndr_eventlog.c
+		../librpc/gen_ndr/ndr_lsa.c'''
+
 LIBS='ICONV'
 
 bld.env.AWK = 'gawk'
@@ -850,7 +852,7 @@ bld.SAMBA_SUBSYSTEM('GROUPDB',
 
 bld.SAMBA_SUBSYSTEM('TLDAP',
                     source=TLDAP_SRC,
-                    deps='tdb popt')
+                    deps='tdb popt ASN1_UTIL LIBTSOCKET')
 
 bld.SAMBA_SUBSYSTEM('PASSDB',
                     source=PASSDB_SRC,
@@ -959,6 +961,12 @@ bld.SAMBA_BINARY('testparm',
                  deps='''talloc tdb tevent popt DYNCONFIG ldap cap NSS_WRAPPER
                  LIBWBCLIENT ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
                  LIBSMB_ERR POPT_SAMBA''',
+                 vars=locals())
+
+bld.SAMBA_BINARY('eventlogadm',
+                 source=EVTLOGADM_SRC,
+                 deps='''talloc tdb tevent POPT_SAMBA DYNCONFIG LIBS PARAM
+                 LIB_NONSMBD LIBSMB_ERR PASSDB''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
