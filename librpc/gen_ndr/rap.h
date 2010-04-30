@@ -717,4 +717,43 @@ struct rap_NetPrintJobDelete {
 
 };
 
+
+struct rap_NetPrintQueuePause {
+	struct {
+		const char * PrintQueueName;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
+
+struct rap_NetPrintQueueResume {
+	struct {
+		const char * PrintQueueName;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
+
+struct rap_NetPrintQueuePurge {
+	struct {
+		const char * PrintQueueName;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	} in;
+
+	struct {
+		uint16_t status;
+		uint16_t convert;
+	} out;
+
+};
+
 #endif /* _HEADER_rap */

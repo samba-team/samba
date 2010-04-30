@@ -23,7 +23,13 @@
 
 #define NDR_RAP_NETPRINTJOBDELETE (0x07)
 
-#define NDR_RAP_CALL_COUNT (8)
+#define NDR_RAP_NETPRINTQUEUEPAUSE (0x08)
+
+#define NDR_RAP_NETPRINTQUEUERESUME (0x09)
+
+#define NDR_RAP_NETPRINTQUEUEPURGE (0x0a)
+
+#define NDR_RAP_CALL_COUNT (11)
 void ndr_print_rap_share_info_0(struct ndr_print *ndr, const char *name, const struct rap_share_info_0 *r);
 void ndr_print_rap_share_info_1(struct ndr_print *ndr, const char *name, const struct rap_share_info_1 *r);
 void ndr_print_rap_share_info_2(struct ndr_print *ndr, const char *name, const struct rap_share_info_2 *r);
@@ -74,4 +80,13 @@ void ndr_print_rap_NetPrintJobContinue(struct ndr_print *ndr, const char *name, 
 enum ndr_err_code ndr_push_rap_NetPrintJobDelete(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobDelete *r);
 enum ndr_err_code ndr_pull_rap_NetPrintJobDelete(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobDelete *r);
 void ndr_print_rap_NetPrintJobDelete(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobDelete *r);
+enum ndr_err_code ndr_push_rap_NetPrintQueuePause(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueuePause *r);
+enum ndr_err_code ndr_pull_rap_NetPrintQueuePause(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueuePause *r);
+void ndr_print_rap_NetPrintQueuePause(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueuePause *r);
+enum ndr_err_code ndr_push_rap_NetPrintQueueResume(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueueResume *r);
+enum ndr_err_code ndr_pull_rap_NetPrintQueueResume(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueueResume *r);
+void ndr_print_rap_NetPrintQueueResume(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueueResume *r);
+enum ndr_err_code ndr_push_rap_NetPrintQueuePurge(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueuePurge *r);
+enum ndr_err_code ndr_pull_rap_NetPrintQueuePurge(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueuePurge *r);
+void ndr_print_rap_NetPrintQueuePurge(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueuePurge *r);
 #endif /* _HEADER_NDR_rap */

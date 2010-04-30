@@ -2796,3 +2796,180 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobDelete(struct ndr_print *ndr, const char 
 	}
 	ndr->depth--;
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueuePause(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueuePause *r)
+{
+	if (flags & NDR_IN) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueuePause(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueuePause *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintQueuePause(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueuePause *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintQueuePause");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintQueuePause");
+		ndr->depth++;
+		ndr_print_string(ndr, "PrintQueueName", r->in.PrintQueueName);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintQueuePause");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueueResume(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueueResume *r)
+{
+	if (flags & NDR_IN) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueueResume(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueueResume *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintQueueResume(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueueResume *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintQueueResume");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintQueueResume");
+		ndr->depth++;
+		ndr_print_string(ndr, "PrintQueueName", r->in.PrintQueueName);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintQueueResume");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueuePurge(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueuePurge *r)
+{
+	if (flags & NDR_IN) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueuePurge(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueuePurge *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->in.PrintQueueName));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintQueuePurge(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueuePurge *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintQueuePurge");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintQueuePurge");
+		ndr->depth++;
+		ndr_print_string(ndr, "PrintQueueName", r->in.PrintQueueName);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintQueuePurge");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
