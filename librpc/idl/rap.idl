@@ -470,6 +470,13 @@ interface rap
 		uint16 PrinterNameOffsetHigh;
 	} rap_PrintJobInfo3;
 
+	typedef [public,nodiscriminant] union {
+		[case(0)] rap_PrintJobInfo0 info0;
+		[case(1)] rap_PrintJobInfo1 info1;
+		[case(2)] rap_PrintJobInfo2 info2;
+		[case(3)] rap_PrintJobInfo3 info3;
+	} rap_printj_info;
+
 	typedef [public] enum {
 		PRQ_ACTIVE	= 0x0000,
 		PRQ_PAUSE	= 0x0001,
@@ -607,6 +614,18 @@ interface rap
 		[in] astring PrintQueueName,
 		[out] rap_status status,
 		[out] uint16 convert
+	);
+
+	/* not documented in MS-RAP */
+	[public] void rap_NetPrintJobEnum(
+		[in] astring PrintQueueName,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] uint16 count,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_printj_info info[count]
 	);
 
 	/* Parameter description strings for RAP calls   */
