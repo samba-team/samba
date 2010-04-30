@@ -638,6 +638,44 @@ interface rap
 		[out,switch_is(level)] rap_printj_info info
 	);
 
+	typedef enum {
+		RAP_PARAM_JOBNUM		= 0x0001,
+		RAP_PARAM_USERNAME		= 0x0002,
+		RAP_PARAM_NOTIFYNAME		= 0x0003,
+		RAP_PARAM_DATATYPE		= 0x0004,
+		RAP_PARAM_PARAMETERS_STRING	= 0x0005,
+		RAP_PARAM_JOBPOSITION		= 0x0006,
+		RAP_PARAM_JOBSTATUS		= 0x0007,
+		RAP_PARAM_JOBSTATUSSTR		= 0x0008,
+		RAP_PARAM_TIMESUBMITTED		= 0x0009,
+		RAP_PARAM_JOBSIZE		= 0x000a,
+		RAP_PARAM_JOBCOMMENT		= 0x000b
+	} rap_JobInfoParamNum;
+
+	typedef [nodiscriminant] union {
+		[case (RAP_PARAM_JOBNUM)] uint16 value;
+		[case (RAP_PARAM_USERNAME)] astring string;
+		[case (RAP_PARAM_NOTIFYNAME)] astring string;
+		[case (RAP_PARAM_DATATYPE)] astring string;
+		[case (RAP_PARAM_PARAMETERS_STRING)] astring string;
+		[case (RAP_PARAM_JOBPOSITION)] uint16 value;
+		[case (RAP_PARAM_JOBSTATUS)] uint16 value;
+		[case (RAP_PARAM_JOBSTATUSSTR)] astring string;
+		[case (RAP_PARAM_TIMESUBMITTED)] uint32 value4;
+		[case (RAP_PARAM_JOBSIZE)] uint32 value4;
+		[case (RAP_PARAM_JOBCOMMENT)] astring string;
+	} rap_JobInfoParam;
+
+	[public] void rap_NetPrintJobSetInfo(
+		[in] uint16 JobID,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[in] rap_JobInfoParamNum ParamNum,
+		[in,switch_is(ParamNum)] rap_JobInfoParam Param,
+		[out] rap_status status,
+		[out] uint16 convert
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
