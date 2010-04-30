@@ -1067,18 +1067,7 @@ static const struct {
 	{ "securityIdentifier", 	LDB_SYNTAX_SAMBA_SID },
 	{ "tokenGroups", 	        LDB_SYNTAX_SAMBA_SID },
 	{ "ntSecurityDescriptor",	LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR },
-	{ "objectGUID",			LDB_SYNTAX_SAMBA_GUID },
-	{ "invocationId",		LDB_SYNTAX_SAMBA_GUID },
-	{ "schemaIDGUID",		LDB_SYNTAX_SAMBA_GUID },
 	{ "oMSyntax",			LDB_SYNTAX_SAMBA_INT32 },
-	{ "attributeSecurityGUID",	LDB_SYNTAX_SAMBA_GUID },
-	{ "parentGUID",			LDB_SYNTAX_SAMBA_GUID },
-	{ "siteGUID",			LDB_SYNTAX_SAMBA_GUID },
-	{ "pKTGUID",			LDB_SYNTAX_SAMBA_GUID },
-	{ "fRSVersionGUID",		LDB_SYNTAX_SAMBA_GUID },
-	{ "fRSReplicaSetGUID",		LDB_SYNTAX_SAMBA_GUID },
-	{ "netbootGUID",		LDB_SYNTAX_SAMBA_GUID },
-	{ "msDS-OptionalFeatureGUID",	LDB_SYNTAX_SAMBA_GUID },
 	{ "objectCategory",		LDB_SYNTAX_SAMBA_OBJECT_CATEGORY },
 	{ "schemaInfo",			LDB_SYNTAX_SAMBA_SCHEMAINFO },
 	{ "prefixMap",                  LDB_SYNTAX_SAMBA_PREFIX_MAP },
@@ -1089,6 +1078,42 @@ static const struct {
 	{ "rIDAllocationPool",		LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDPreviousAllocationPool",	LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDAvailablePool",		LDB_SYNTAX_SAMBA_RANGE64 },
+
+	/*
+	 * these are extracted by searching
+	 * (&(attributeSyntax=2.5.5.10)(rangeLower=16)(rangeUpper=16)(omSyntax=4))
+	 */
+	{ "attributeSecurityGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "categoryId",				LDB_SYNTAX_SAMBA_GUID },
+	{ "controlAccessRights",		LDB_SYNTAX_SAMBA_GUID },
+	{ "currMachineId",			LDB_SYNTAX_SAMBA_GUID },
+	{ "fRSReplicaSetGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "fRSVersionGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "implementedCategories",		LDB_SYNTAX_SAMBA_GUID },
+	{ "msDS-AzObjectGuid",			LDB_SYNTAX_SAMBA_GUID },
+	{ "msDFSR-ContentSetGuid",		LDB_SYNTAX_SAMBA_GUID },
+	{ "msDFSR-ReplicationGroupGuid",	LDB_SYNTAX_SAMBA_GUID },
+	{ "mSMQDigests",			LDB_SYNTAX_SAMBA_GUID },
+	{ "mSMQOwnerID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "mSMQQMID",				LDB_SYNTAX_SAMBA_GUID },
+	{ "mSMQQueueType",			LDB_SYNTAX_SAMBA_GUID },
+	{ "mSMQSites",				LDB_SYNTAX_SAMBA_GUID },
+	{ "netbootGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "objectGUID",				LDB_SYNTAX_SAMBA_GUID },
+	{ "pKTGuid",				LDB_SYNTAX_SAMBA_GUID },
+	{ "requiredCategories",			LDB_SYNTAX_SAMBA_GUID },
+	{ "schemaIDGUID",			LDB_SYNTAX_SAMBA_GUID },
+	{ "siteGUID",				LDB_SYNTAX_SAMBA_GUID },
+	{ "msDFS-GenerationGUIDv2",		LDB_SYNTAX_SAMBA_GUID },
+	{ "msDFS-LinkIdentityGUIDv2",		LDB_SYNTAX_SAMBA_GUID },
+	{ "msDFS-NamespaceIdentityGUIDv2",	LDB_SYNTAX_SAMBA_GUID },
+
+	/*
+	 * these are known to be GUIDs
+	 */
+	{ "invocationId",			LDB_SYNTAX_SAMBA_GUID },
+	{ "parentGUID",				LDB_SYNTAX_SAMBA_GUID },
+	{ "msDS-OptionalFeatureGUID",		LDB_SYNTAX_SAMBA_GUID },
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
