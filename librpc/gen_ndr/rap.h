@@ -610,6 +610,43 @@ union rap_printq_info {
 	struct rap_PrintQueue5 info5;/* [case(5)] */
 }/* [public,nodiscriminant] */;
 
+enum rap_JobInfoParamNum
+#ifndef USE_UINT_ENUMS
+ {
+	RAP_PARAM_JOBNUM=(int)(0x0001),
+	RAP_PARAM_USERNAME=(int)(0x0002),
+	RAP_PARAM_NOTIFYNAME=(int)(0x0003),
+	RAP_PARAM_DATATYPE=(int)(0x0004),
+	RAP_PARAM_PARAMETERS_STRING=(int)(0x0005),
+	RAP_PARAM_JOBPOSITION=(int)(0x0006),
+	RAP_PARAM_JOBSTATUS=(int)(0x0007),
+	RAP_PARAM_JOBSTATUSSTR=(int)(0x0008),
+	RAP_PARAM_TIMESUBMITTED=(int)(0x0009),
+	RAP_PARAM_JOBSIZE=(int)(0x000a),
+	RAP_PARAM_JOBCOMMENT=(int)(0x000b)
+}
+#else
+ { __donnot_use_enum_rap_JobInfoParamNum=0x7FFFFFFF}
+#define RAP_PARAM_JOBNUM ( 0x0001 )
+#define RAP_PARAM_USERNAME ( 0x0002 )
+#define RAP_PARAM_NOTIFYNAME ( 0x0003 )
+#define RAP_PARAM_DATATYPE ( 0x0004 )
+#define RAP_PARAM_PARAMETERS_STRING ( 0x0005 )
+#define RAP_PARAM_JOBPOSITION ( 0x0006 )
+#define RAP_PARAM_JOBSTATUS ( 0x0007 )
+#define RAP_PARAM_JOBSTATUSSTR ( 0x0008 )
+#define RAP_PARAM_TIMESUBMITTED ( 0x0009 )
+#define RAP_PARAM_JOBSIZE ( 0x000a )
+#define RAP_PARAM_JOBCOMMENT ( 0x000b )
+#endif
+;
+
+union rap_JobInfoParam {
+	uint16_t value;/* [case(RAP_PARAM_JOBNUM)] */
+	const char * string;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM),case(RAP_PARAM_USERNAME)] */
+	uint32_t value4;/* [case(RAP_PARAM_TIMESUBMITTED)] */
+}/* [nodiscriminant] */;
+
 
 struct rap_NetShareEnum {
 	struct {
@@ -805,6 +842,23 @@ struct rap_NetPrintJobGetInfo {
 		uint16_t convert;
 		uint16_t available;
 		union rap_printj_info info;/* [switch_is(level)] */
+	} out;
+
+};
+
+
+struct rap_NetPrintJobSetInfo {
+	struct {
+		uint16_t JobID;
+		uint16_t level;
+		uint16_t bufsize;
+		enum rap_JobInfoParamNum ParamNum;
+		union rap_JobInfoParam Param;/* [switch_is(ParamNum)] */
+	} in;
+
+	struct {
+		enum rap_status status;
+		uint16_t convert;
 	} out;
 
 };

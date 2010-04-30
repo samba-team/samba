@@ -3130,6 +3130,349 @@ _PUBLIC_ void ndr_print_rap_printq_info(struct ndr_print *ndr, const char *name,
 	}
 }
 
+static enum ndr_err_code ndr_push_rap_JobInfoParamNum(struct ndr_push *ndr, int ndr_flags, enum rap_JobInfoParamNum r)
+{
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_rap_JobInfoParamNum(struct ndr_pull *ndr, int ndr_flags, enum rap_JobInfoParamNum *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_JobInfoParamNum(struct ndr_print *ndr, const char *name, enum rap_JobInfoParamNum r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case RAP_PARAM_JOBNUM: val = "RAP_PARAM_JOBNUM"; break;
+		case RAP_PARAM_USERNAME: val = "RAP_PARAM_USERNAME"; break;
+		case RAP_PARAM_NOTIFYNAME: val = "RAP_PARAM_NOTIFYNAME"; break;
+		case RAP_PARAM_DATATYPE: val = "RAP_PARAM_DATATYPE"; break;
+		case RAP_PARAM_PARAMETERS_STRING: val = "RAP_PARAM_PARAMETERS_STRING"; break;
+		case RAP_PARAM_JOBPOSITION: val = "RAP_PARAM_JOBPOSITION"; break;
+		case RAP_PARAM_JOBSTATUS: val = "RAP_PARAM_JOBSTATUS"; break;
+		case RAP_PARAM_JOBSTATUSSTR: val = "RAP_PARAM_JOBSTATUSSTR"; break;
+		case RAP_PARAM_TIMESUBMITTED: val = "RAP_PARAM_TIMESUBMITTED"; break;
+		case RAP_PARAM_JOBSIZE: val = "RAP_PARAM_JOBSIZE"; break;
+		case RAP_PARAM_JOBCOMMENT: val = "RAP_PARAM_JOBCOMMENT"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_rap_JobInfoParam(struct ndr_push *ndr, int ndr_flags, const union rap_JobInfoParam *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_union_align(ndr, 4));
+		switch (level) {
+			case RAP_PARAM_JOBNUM: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->value));
+			break; }
+
+			case RAP_PARAM_USERNAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_NOTIFYNAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_DATATYPE: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_PARAMETERS_STRING: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_JOBPOSITION: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->value));
+			break; }
+
+			case RAP_PARAM_JOBSTATUS: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->value));
+			break; }
+
+			case RAP_PARAM_JOBSTATUSSTR: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_TIMESUBMITTED: {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->value4));
+			break; }
+
+			case RAP_PARAM_JOBSIZE: {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->value4));
+			break; }
+
+			case RAP_PARAM_JOBCOMMENT: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case RAP_PARAM_JOBNUM:
+			break;
+
+			case RAP_PARAM_USERNAME:
+			break;
+
+			case RAP_PARAM_NOTIFYNAME:
+			break;
+
+			case RAP_PARAM_DATATYPE:
+			break;
+
+			case RAP_PARAM_PARAMETERS_STRING:
+			break;
+
+			case RAP_PARAM_JOBPOSITION:
+			break;
+
+			case RAP_PARAM_JOBSTATUS:
+			break;
+
+			case RAP_PARAM_JOBSTATUSSTR:
+			break;
+
+			case RAP_PARAM_TIMESUBMITTED:
+			break;
+
+			case RAP_PARAM_JOBSIZE:
+			break;
+
+			case RAP_PARAM_JOBCOMMENT:
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_rap_JobInfoParam(struct ndr_pull *ndr, int ndr_flags, union rap_JobInfoParam *r)
+{
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_union_align(ndr, 4));
+		switch (level) {
+			case RAP_PARAM_JOBNUM: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->value));
+			break; }
+
+			case RAP_PARAM_USERNAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_NOTIFYNAME: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_DATATYPE: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_PARAMETERS_STRING: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_JOBPOSITION: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->value));
+			break; }
+
+			case RAP_PARAM_JOBSTATUS: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->value));
+			break; }
+
+			case RAP_PARAM_JOBSTATUSSTR: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			case RAP_PARAM_TIMESUBMITTED: {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value4));
+			break; }
+
+			case RAP_PARAM_JOBSIZE: {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value4));
+			break; }
+
+			case RAP_PARAM_JOBCOMMENT: {
+				{
+					uint32_t _flags_save_string = ndr->flags;
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
+					ndr->flags = _flags_save_string;
+				}
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case RAP_PARAM_JOBNUM:
+			break;
+
+			case RAP_PARAM_USERNAME:
+			break;
+
+			case RAP_PARAM_NOTIFYNAME:
+			break;
+
+			case RAP_PARAM_DATATYPE:
+			break;
+
+			case RAP_PARAM_PARAMETERS_STRING:
+			break;
+
+			case RAP_PARAM_JOBPOSITION:
+			break;
+
+			case RAP_PARAM_JOBSTATUS:
+			break;
+
+			case RAP_PARAM_JOBSTATUSSTR:
+			break;
+
+			case RAP_PARAM_TIMESUBMITTED:
+			break;
+
+			case RAP_PARAM_JOBSIZE:
+			break;
+
+			case RAP_PARAM_JOBCOMMENT:
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u at %s", level, __location__);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_JobInfoParam(struct ndr_print *ndr, const char *name, const union rap_JobInfoParam *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "rap_JobInfoParam");
+	switch (level) {
+		case RAP_PARAM_JOBNUM:
+			ndr_print_uint16(ndr, "value", r->value);
+		break;
+
+		case RAP_PARAM_USERNAME:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		case RAP_PARAM_NOTIFYNAME:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		case RAP_PARAM_DATATYPE:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		case RAP_PARAM_PARAMETERS_STRING:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		case RAP_PARAM_JOBPOSITION:
+			ndr_print_uint16(ndr, "value", r->value);
+		break;
+
+		case RAP_PARAM_JOBSTATUS:
+			ndr_print_uint16(ndr, "value", r->value);
+		break;
+
+		case RAP_PARAM_JOBSTATUSSTR:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		case RAP_PARAM_TIMESUBMITTED:
+			ndr_print_uint32(ndr, "value4", r->value4);
+		break;
+
+		case RAP_PARAM_JOBSIZE:
+			ndr_print_uint32(ndr, "value4", r->value4);
+		break;
+
+		case RAP_PARAM_JOBCOMMENT:
+			ndr_print_string(ndr, "string", r->string);
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_rap_NetShareEnum(struct ndr_push *ndr, int flags, const struct rap_NetShareEnum *r)
 {
 	if (flags & NDR_IN) {
@@ -4040,3 +4383,66 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobGetInfo(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobSetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobSetInfo *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
+		NDR_CHECK(ndr_push_rap_JobInfoParamNum(ndr, NDR_SCALARS, r->in.ParamNum));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.Param, r->in.ParamNum));
+		NDR_CHECK(ndr_push_rap_JobInfoParam(ndr, NDR_SCALARS, &r->in.Param));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobSetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobSetInfo *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.bufsize));
+		NDR_CHECK(ndr_pull_rap_JobInfoParamNum(ndr, NDR_SCALARS, &r->in.ParamNum));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.Param, r->in.ParamNum));
+		NDR_CHECK(ndr_pull_rap_JobInfoParam(ndr, NDR_SCALARS, &r->in.Param));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintJobSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobSetInfo *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintJobSetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintJobSetInfo");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "JobID", r->in.JobID);
+		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_uint16(ndr, "bufsize", r->in.bufsize);
+		ndr_print_rap_JobInfoParamNum(ndr, "ParamNum", r->in.ParamNum);
+		ndr_print_set_switch_value(ndr, &r->in.Param, r->in.ParamNum);
+		ndr_print_rap_JobInfoParam(ndr, "Param", &r->in.Param);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintJobSetInfo");
+		ndr->depth++;
+		ndr_print_rap_status(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}

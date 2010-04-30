@@ -33,7 +33,9 @@
 
 #define NDR_RAP_NETPRINTJOBGETINFO (0x0c)
 
-#define NDR_RAP_CALL_COUNT (13)
+#define NDR_RAP_NETPRINTJOBSETINFO (0x0d)
+
+#define NDR_RAP_CALL_COUNT (14)
 enum ndr_err_code ndr_push_rap_status(struct ndr_push *ndr, int ndr_flags, enum rap_status r);
 enum ndr_err_code ndr_pull_rap_status(struct ndr_pull *ndr, int ndr_flags, enum rap_status *r);
 void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r);
@@ -68,6 +70,8 @@ void ndr_print_rap_PrintQueue5(struct ndr_print *ndr, const char *name, const st
 enum ndr_err_code ndr_push_rap_printq_info(struct ndr_push *ndr, int ndr_flags, const union rap_printq_info *r);
 enum ndr_err_code ndr_pull_rap_printq_info(struct ndr_pull *ndr, int ndr_flags, union rap_printq_info *r);
 void ndr_print_rap_printq_info(struct ndr_print *ndr, const char *name, const union rap_printq_info *r);
+void ndr_print_rap_JobInfoParamNum(struct ndr_print *ndr, const char *name, enum rap_JobInfoParamNum r);
+void ndr_print_rap_JobInfoParam(struct ndr_print *ndr, const char *name, const union rap_JobInfoParam *r);
 enum ndr_err_code ndr_push_rap_NetShareEnum(struct ndr_push *ndr, int flags, const struct rap_NetShareEnum *r);
 enum ndr_err_code ndr_pull_rap_NetShareEnum(struct ndr_pull *ndr, int flags, struct rap_NetShareEnum *r);
 void ndr_print_rap_NetShareEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetShareEnum *r);
@@ -107,4 +111,7 @@ void ndr_print_rap_NetPrintJobEnum(struct ndr_print *ndr, const char *name, int 
 enum ndr_err_code ndr_push_rap_NetPrintJobGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobGetInfo *r);
 enum ndr_err_code ndr_pull_rap_NetPrintJobGetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobGetInfo *r);
 void ndr_print_rap_NetPrintJobGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobGetInfo *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobSetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobSetInfo *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobSetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobSetInfo *r);
+void ndr_print_rap_NetPrintJobSetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobSetInfo *r);
 #endif /* _HEADER_NDR_rap */
