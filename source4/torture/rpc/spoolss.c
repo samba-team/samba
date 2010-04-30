@@ -4972,6 +4972,7 @@ static bool test_PrinterData_DsSpooler(struct torture_context *tctx,
 	union spoolss_SetPrinterInfo sinfo;
 	union spoolss_PrinterInfo info;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *pname;
 
 	ZERO_STRUCT(info_ctr);
 	ZERO_STRUCT(devmode_ctr);
@@ -5061,7 +5062,14 @@ do {\
 	TEST_SZ("description", info.info2.comment);
 	TEST_SZ("driverName", info.info2.drivername);
 	TEST_SZ("location", info.info2.location);
-	TEST_SZ("printerName", info.info2.printername);
+
+	pname = strrchr(info.info2.printername, '\\');
+	if (pname == NULL) {
+		pname = info.info2.printername;
+	} else {
+		pname++;
+	}
+	TEST_SZ("printerName", pname);
 	/* TEST_SZ("printSeparatorFile", info.info2.sepfile); */
 	/* TEST_SZ("printShareName", info.info2.sharename); */
 
