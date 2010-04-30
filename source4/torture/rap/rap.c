@@ -288,7 +288,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
@@ -391,7 +391,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
@@ -503,7 +503,7 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
@@ -701,7 +701,7 @@ NTSTATUS smbcli_rap_netprintqenum(struct smbcli_tree *tree,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
@@ -803,7 +803,7 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
@@ -866,7 +866,7 @@ NTSTATUS smbcli_rap_netprintjobpause(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
@@ -903,7 +903,7 @@ NTSTATUS smbcli_rap_netprintjobcontinue(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
@@ -940,7 +940,7 @@ NTSTATUS smbcli_rap_netprintjobdelete(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
@@ -977,7 +977,7 @@ NTSTATUS smbcli_rap_netprintqueuepause(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
@@ -1014,7 +1014,7 @@ NTSTATUS smbcli_rap_netprintqueueresume(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
@@ -1051,7 +1051,7 @@ NTSTATUS smbcli_rap_netprintqueuepurge(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 
 	if (DEBUGLEVEL >= 10) {
