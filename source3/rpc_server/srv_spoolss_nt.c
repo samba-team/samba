@@ -5636,14 +5636,18 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	struct spoolss_PrinterInfo2 *old_printer;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	const char *servername = NULL;
+	const char *uncname;
 	int snum;
-	WERROR result;
+	WERROR result = WERR_OK;
 	DATA_BLOB buffer;
-	fstring asc_buffer;
+	TALLOC_CTX *tmp_ctx;
 
 	DEBUG(8,("update_printer\n"));
 
-	result = WERR_OK;
+	tmp_ctx = talloc_new(p->mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
 	if (!Printer) {
 		result = WERR_BADFID;
@@ -5659,7 +5663,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		servername = Printer->servername;
 	}
 
-	result = winreg_get_printer(p->mem_ctx,
+	result = winreg_get_printer(tmp_ctx,
 				    p->server_info,
 				    servername,
 				    lp_const_servicename(snum),
@@ -5670,7 +5674,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	/* Do sanity check on the requested changes for Samba */
-	if (!check_printer_ok(p->mem_ctx, printer, snum)) {
+	if (!check_printer_ok(tmp_ctx, printer, snum)) {
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -5695,7 +5699,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 			 !strequal(printer->location, old_printer->location)) )
 	{
 		/* add_printer_hook() will call reload_services() */
-		if (!add_printer_hook(p->mem_ctx, p->server_info->ptok,
+		if (!add_printer_hook(tmp_ctx, p->server_info->ptok,
 				      printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
@@ -5720,7 +5724,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 * DsSpooler key.
 	 */
 	if (!strequal(printer->comment, old_printer->comment)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->comment);
+		push_reg_sz(tmp_ctx, &buffer, printer->comment);
 		winreg_set_printer_dataex(p->mem_ctx,
 					  p->server_info,
 					  printer->sharename,
@@ -5734,8 +5738,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->sharename, old_printer->sharename)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->sharename);
-		winreg_set_printer_dataex(p->mem_ctx,
+		push_reg_sz(tmp_ctx, &buffer, printer->sharename);
+		winreg_set_printer_dataex(tmp_ctx,
 					  p->server_info,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
@@ -5755,8 +5759,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		else
 			pname = printer->printername;
 
-		push_reg_sz(talloc_tos(), &buffer, pname);
-		winreg_set_printer_dataex(p->mem_ctx,
+		push_reg_sz(tmp_ctx, &buffer, pname);
+		winreg_set_printer_dataex(tmp_ctx,
 					  p->server_info,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
@@ -5769,8 +5773,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->portname, old_printer->portname)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->portname);
-		winreg_set_printer_dataex(p->mem_ctx,
+		push_reg_sz(tmp_ctx, &buffer, printer->portname);
+		winreg_set_printer_dataex(tmp_ctx,
 					  p->server_info,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
@@ -5783,8 +5787,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->location, old_printer->location)) {
-		push_reg_sz(talloc_tos(), &buffer, printer->location);
-		winreg_set_printer_dataex(p->mem_ctx,
+		push_reg_sz(tmp_ctx, &buffer, printer->location);
+		winreg_set_printer_dataex(tmp_ctx,
 					  p->server_info,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
@@ -5799,8 +5803,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	/* here we need to update some more DsSpooler keys */
 	/* uNCName, serverName, shortServerName */
 
-	push_reg_sz(talloc_tos(), &buffer, global_myname());
-	winreg_set_printer_dataex(p->mem_ctx,
+	push_reg_sz(tmp_ctx, &buffer, global_myname());
+	winreg_set_printer_dataex(tmp_ctx,
 				  p->server_info,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
@@ -5808,7 +5812,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 				  REG_SZ,
 				  buffer.data,
 				  buffer.length);
-	winreg_set_printer_dataex(p->mem_ctx,
+	winreg_set_printer_dataex(tmp_ctx,
 				  p->server_info,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
@@ -5817,10 +5821,10 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 				  buffer.data,
 				  buffer.length);
 
-	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
-                 global_myname(), printer->sharename );
-	push_reg_sz(talloc_tos(), &buffer, asc_buffer);
-	winreg_set_printer_dataex(p->mem_ctx,
+	uncname = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+				  global_myname(), printer->sharename);
+	push_reg_sz(tmp_ctx, &buffer, uncname);
+	winreg_set_printer_dataex(tmp_ctx,
 				  p->server_info,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
@@ -5834,7 +5838,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	if (devmode == NULL) {
 		printer_mask &= ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
-	result = winreg_update_printer(p->mem_ctx,
+	result = winreg_update_printer(tmp_ctx,
 				       p->server_info,
 				       printer->sharename,
 				       printer_mask,
@@ -5843,7 +5847,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 				       NULL);
 
 done:
-	talloc_free(old_printer);
+	talloc_free(tmp_ctx);
 
 	return result;
 }
