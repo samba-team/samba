@@ -273,6 +273,60 @@ static bool test_netprintq(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintjobenum_one(struct torture_context *tctx,
+				     struct smbcli_state *cli,
+				     const char *PrintQueueName)
+{
+	struct rap_NetPrintJobEnum r;
+	int i;
+	uint16_t levels[] = { 0, 1, 2 };
+	NTSTATUS status;
+
+	r.in.PrintQueueName = PrintQueueName;
+	r.in.bufsize = 8192;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.level = levels[i];
+
+		torture_comment(tctx,
+			"Testing rap_NetPrintJobEnum(%s) level %d\n", r.in.PrintQueueName, r.in.level);
+
+		status = smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			torture_warning(tctx, "smbcli_rap_netprintjobenum failed with %s\n", nt_errstr(status));
+			continue;
+		}
+	}
+
+	return true;
+}
+
+static bool test_netprintjobenum(struct torture_context *tctx,
+				 struct smbcli_state *cli)
+{
+	struct rap_NetPrintQEnum r;
+	int i;
+
+	r.in.level = 5;
+	r.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+
+	for (i=0; i < r.out.count; i++) {
+
+		const char *printqname = r.out.info[i].info5.PrintQueueName;
+
+		torture_assert(tctx,
+			test_netprintjobenum_one(tctx, cli, printqname),
+			"failed to enumerate printjobs on print queue");
+	}
+
+	return true;
+}
+
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -295,6 +349,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "rap_print", test_rap_print);
 	torture_suite_add_1smb_test(suite, "rap_printq_enum", test_netprintqenum);
 	torture_suite_add_1smb_test(suite, "rap_printq_getinfo", test_netprintqgetinfo);
+	torture_suite_add_1smb_test(suite, "rap_printjob_enum", test_netprintjobenum);
 	torture_suite_add_1smb_test(suite, "rap_printjob", test_netprintjob);
 	torture_suite_add_1smb_test(suite, "rap_printq", test_netprintq);
 
