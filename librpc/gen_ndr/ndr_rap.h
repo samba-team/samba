@@ -29,7 +29,9 @@
 
 #define NDR_RAP_NETPRINTQUEUEPURGE (0x0a)
 
-#define NDR_RAP_CALL_COUNT (11)
+#define NDR_RAP_NETPRINTJOBENUM (0x0b)
+
+#define NDR_RAP_CALL_COUNT (12)
 enum ndr_err_code ndr_push_rap_status(struct ndr_push *ndr, int ndr_flags, enum rap_status r);
 enum ndr_err_code ndr_pull_rap_status(struct ndr_pull *ndr, int ndr_flags, enum rap_status *r);
 void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r);
@@ -43,8 +45,13 @@ void ndr_print_rap_server_info(struct ndr_print *ndr, const char *name, const un
 enum ndr_err_code ndr_push_rap_PrintJStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintJStatusCode r);
 enum ndr_err_code ndr_pull_rap_PrintJStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintJStatusCode *r);
 void ndr_print_rap_PrintJStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintJStatusCode r);
+void ndr_print_rap_PrintJobInfo0(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo0 *r);
 void ndr_print_rap_PrintJobInfo1(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo1 *r);
 void ndr_print_rap_PrintJobInfo2(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo2 *r);
+void ndr_print_rap_PrintJobInfo3(struct ndr_print *ndr, const char *name, const struct rap_PrintJobInfo3 *r);
+enum ndr_err_code ndr_push_rap_printj_info(struct ndr_push *ndr, int ndr_flags, const union rap_printj_info *r);
+enum ndr_err_code ndr_pull_rap_printj_info(struct ndr_pull *ndr, int ndr_flags, union rap_printj_info *r);
+void ndr_print_rap_printj_info(struct ndr_print *ndr, const char *name, const union rap_printj_info *r);
 enum ndr_err_code ndr_push_rap_PrintQStatusCode(struct ndr_push *ndr, int ndr_flags, enum rap_PrintQStatusCode r);
 enum ndr_err_code ndr_pull_rap_PrintQStatusCode(struct ndr_pull *ndr, int ndr_flags, enum rap_PrintQStatusCode *r);
 void ndr_print_rap_PrintQStatusCode(struct ndr_print *ndr, const char *name, enum rap_PrintQStatusCode r);
@@ -92,4 +99,7 @@ void ndr_print_rap_NetPrintQueueResume(struct ndr_print *ndr, const char *name, 
 enum ndr_err_code ndr_push_rap_NetPrintQueuePurge(struct ndr_push *ndr, int flags, const struct rap_NetPrintQueuePurge *r);
 enum ndr_err_code ndr_pull_rap_NetPrintQueuePurge(struct ndr_pull *ndr, int flags, struct rap_NetPrintQueuePurge *r);
 void ndr_print_rap_NetPrintQueuePurge(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintQueuePurge *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobEnum(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobEnum *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobEnum(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobEnum *r);
+void ndr_print_rap_NetPrintJobEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobEnum *r);
 #endif /* _HEADER_NDR_rap */

@@ -513,6 +513,13 @@ struct rap_PrintJobInfo3 {
 	uint16_t PrinterNameOffsetHigh;
 };
 
+union rap_printj_info {
+	struct rap_PrintJobInfo0 info0;/* [case(0)] */
+	struct rap_PrintJobInfo1 info1;/* [case] */
+	struct rap_PrintJobInfo2 info2;/* [case(2)] */
+	struct rap_PrintJobInfo3 info3;/* [case(3)] */
+}/* [public,nodiscriminant] */;
+
 enum rap_PrintQStatusCode
 #ifndef USE_UINT_ENUMS
  {
@@ -763,6 +770,24 @@ struct rap_NetPrintQueuePurge {
 	struct {
 		enum rap_status status;
 		uint16_t convert;
+	} out;
+
+};
+
+
+struct rap_NetPrintJobEnum {
+	struct {
+		const char * PrintQueueName;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+		uint16_t level;
+		uint16_t bufsize;
+	} in;
+
+	struct {
+		enum rap_status status;
+		uint16_t convert;
+		uint16_t count;
+		uint16_t available;
+		union rap_printj_info *info;/* [switch_is(level)] */
 	} out;
 
 };
