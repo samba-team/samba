@@ -1157,6 +1157,8 @@ NTSTATUS smbcli_rap_netprintjobenum(struct smbcli_tree *tree,
 		goto done;
 	}
 
+	result = NT_STATUS_OK;
+
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
 		case 0:
