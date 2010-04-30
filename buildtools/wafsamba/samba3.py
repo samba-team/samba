@@ -9,7 +9,7 @@ def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
     if help == ():
         help = ("Build with %s support" % option)
     if dest is None:
-        dest = "with_%s" % option
+        dest = "with_%s" % option.replace('-', '_')
 
     with_val = "--%s-%s" % (with_name, option)
     without_val = "--%s-%s" % (without_name, option)
