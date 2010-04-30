@@ -799,7 +799,7 @@ def setup_self_join(samdb, names,
               "DOMAINDN": names.domaindn})
     
     # add the NTDSGUID based SPNs
-    ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
+    ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=%s,CN=Sites,CN=Configuration,%s" % (names.hostname, names.sitename, names.domaindn)
     names.ntdsguid = samdb.searchone(basedn=ntds_dn, attribute="objectGUID",
                                      expression="", scope=ldb.SCOPE_BASE)
     assert isinstance(names.ntdsguid, str)
@@ -1035,7 +1035,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
                             domainControllerFunctionality=domainControllerFunctionality,
                             ntdsguid=ntdsguid)
 
-            ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,%s" % (names.hostname, names.domaindn)
+            ntds_dn = "CN=NTDS Settings,CN=%s,CN=Servers,CN=%s,CN=Sites,CN=Configuration,%s" % (names.hostname, names.sitename, names.domaindn)
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
                 attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
             assert isinstance(names.ntdsguid, str)
