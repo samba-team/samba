@@ -41,7 +41,7 @@ def build(bld):
     cflags = dynconfig_cflags(bld)
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         '../dynconfig.c',
-                        deps='replace talloc tdb',
+                        deps='replace talloc tdb popt',
                         cflags=cflags)
 
 def dynconfig_cflags(bld):

@@ -35,11 +35,7 @@ LIBNDR_DRSUAPI_SRC = '''../librpc/ndr/ndr_drsuapi.c
                      ../librpc/ndr/ndr_drsblobs.c
                      ../librpc/gen_ndr/ndr_drsblobs.c'''
 
-ZLIB_SRC = '''${ZLIB_SRCS}'''
-
-COMPRESSION_SRC = '''../lib/compression/mszip.c
-                                  ../lib/compression/lzxpress.c
-                                  ${ZLIB_SRC}'''
+COMPRESSION_SRC = '../lib/compression/mszip.c ../lib/compression/lzxpress.c'
 
 DRSUAPI_SRC = '''${LIBNDR_DRSUAPI_SRC}
               ${COMPRESSION_SRC}'''
@@ -840,17 +836,16 @@ bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
-                    deps='talloc',
-                    includes='../lib/tdb/include',
+                    deps='talloc tdb popt',
                     local_include=False)
 
 bld.SAMBA_SUBSYSTEM('GROUPDB',
                     source=GROUPDB_SRC,
-                    deps='tdb')
+                    deps='tdb popt')
 
 bld.SAMBA_SUBSYSTEM('TLDAP',
                     source=TLDAP_SRC,
-                    deps='tdb')
+                    deps='tdb popt')
 
 bld.SAMBA_SUBSYSTEM('PASSDB',
                     source=PASSDB_SRC,
@@ -859,13 +854,13 @@ bld.SAMBA_SUBSYSTEM('PASSDB',
 
 bld.SAMBA_SUBSYSTEM('LDB',
                     source=LDB_SRC,
-                    deps='tdb',
-                    includes='../lib/tdb/include lib',
+                    deps='tdb popt',
+                    includes='lib',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
-                    deps='tdb')
+                    deps='tdb popt')
 
 bld.SAMBA_SUBSYSTEM('PARAM',
                     source=PARAM_SRC,
@@ -874,7 +869,7 @@ bld.SAMBA_SUBSYSTEM('PARAM',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='tdb',
+                    deps='tdb popt',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -884,7 +879,7 @@ bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB_ERR',
                     source=LIBSMB_ERR_SRC,
-                    deps='tdb',
+                    deps='tdb popt',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA',
@@ -894,7 +889,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA',
+                    deps='LIBSAMBA ZLIB',
                     vars=locals())
 
 ########################## BINARIES #################################
@@ -902,21 +897,21 @@ bld.SAMBA_SUBSYSTEM('LIBSMB',
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv z PASSDB LDB
+                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB LDB
                  PARAM_WITHOUT_REG LIBS LIBSMB''',
                  includes='lib',
                  vars=locals())
 
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
-                 deps='''talloc tdb tevent z cap resolv LIBWBCLIENT popt dl
-                 NSS_WRAPPER DYNCONFIG PASSDB LDB ldap PARAM LIB_NONSMBD LIBSMB''',
+                 deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT popt dl
+                 NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
-                 deps='''talloc tdb tevent cap dl popt DYNCONFIG z NSS_WRAPPER
+                 deps='''talloc tdb tevent cap dl popt DYNCONFIG ZLIB NSS_WRAPPER
                  LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD''',
                  includes='lib',
                  enabled=(bld.env.WITH_WINBIND == 1),
