@@ -10,6 +10,9 @@ TDB_LIB_SRC = '''lib/util_tdb.c ../lib/util/util_tdb.c
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
+SMBLDAP = bld.env.SMBLDAP
+SMBLDAPUTIL = bld.env.SMBLDAPUTIL
+
 SMBLDAP_SRC = '''${SMBLDAP} ${SMBLDAPUTIL}'''
 
 VERSION_SRC = '''lib/version.c'''
@@ -128,10 +131,6 @@ CHARSET_STATIC = ''
 PTHREADPOOL_SRC = ''
 
 AUTH_STATIC = ''
-
-SMBLDAP = ''
-
-SMBLDAPUTIL = ''
 
 LIBREPLACE_SRCS = ''
 
@@ -911,14 +910,14 @@ bld.SAMBA_BINARY('smbd/smbd',
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent z cap resolv LIBWBCLIENT popt dl
-                 NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM LIB_NONSMBD LIBSMB''',
+                 NSS_WRAPPER DYNCONFIG PASSDB LDB ldap PARAM LIB_NONSMBD LIBSMB''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl popt DYNCONFIG z NSS_WRAPPER
-                 LIBWBCLIENT PASSDB resolv LDB PARAM LIB_NONSMBD''',
+                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD''',
                  includes='lib',
                  enabled=(bld.env.WITH_WINBIND == 1),
                  vars=locals())
@@ -926,14 +925,14 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
                  deps='''talloc LIBWBCLIENT popt DYNCONFIG tevent tdb cap
-                 NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
+                 NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
                  LIBSAMBA''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.SAMBA_BINARY('testparm',
                  source=TESTPARM_SRC,
-                 deps='''talloc tdb tevent popt DYNCONFIG cap NSS_WRAPPER
+                 deps='''talloc tdb tevent popt DYNCONFIG ldap cap NSS_WRAPPER
                  LIBWBCLIENT ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
                  LIBSMB_ERR''',
                  vars=locals())
