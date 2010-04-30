@@ -5621,6 +5621,266 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 	return true;
 }
 
+static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
+			       struct auth_serversupplied_info *server_info,
+			       int snum,
+			       struct spoolss_SetPrinterInfo2 *printer,
+			       struct spoolss_PrinterInfo2 *old_printer)
+{
+	bool force_update = (old_printer == NULL);
+	const char *dnsdomname;
+	const char *longname;
+	const char *uncname;
+	const char *spooling;
+	DATA_BLOB buffer;
+	WERROR result = WERR_OK;
+
+	if (force_update || !strequal(printer->drivername, old_printer->drivername)) {
+		push_reg_sz(mem_ctx, &buffer, printer->drivername);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_DRIVERNAME,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
+				printer->drivername));
+
+			notify_printer_driver(snum, printer->drivername);
+		}
+	}
+
+	if (force_update || !strequal(printer->comment, old_printer->comment)) {
+		push_reg_sz(mem_ctx, &buffer, printer->comment);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_DESCRIPTION,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_comment(snum, printer->comment);
+		}
+	}
+
+	if (force_update || !strequal(printer->sharename, old_printer->sharename)) {
+		push_reg_sz(mem_ctx, &buffer, printer->sharename);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTSHARENAME,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_sharename(snum, printer->sharename);
+		}
+	}
+
+	if (force_update || !strequal(printer->printername, old_printer->printername)) {
+		const char *p;
+
+		p = strrchr(printer->printername, '\\' );
+		if (p != NULL) {
+			p++;
+		} else {
+			p = printer->printername;
+		}
+
+		push_reg_sz(mem_ctx, &buffer, p);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTERNAME,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_printername(snum, p);
+		}
+	}
+
+	if (force_update || !strequal(printer->portname, old_printer->portname)) {
+		push_reg_sz(mem_ctx, &buffer, printer->portname);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PORTNAME,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_port(snum, printer->portname);
+		}
+	}
+
+	if (force_update || !strequal(printer->location, old_printer->location)) {
+		push_reg_sz(mem_ctx, &buffer, printer->location);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_LOCATION,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_location(snum, printer->location);
+		}
+	}
+
+	if (force_update || !strequal(printer->sepfile, old_printer->sepfile)) {
+		push_reg_sz(mem_ctx, &buffer, printer->sepfile);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTSEPARATORFILE,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+
+		if (!force_update) {
+			notify_printer_location(snum, printer->location);
+		}
+	}
+
+	if (force_update || printer->starttime != old_printer->starttime) {
+		buffer = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(buffer.data, 0, printer->starttime);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTSTARTTIME,
+					  REG_DWORD,
+					  buffer.data,
+					  buffer.length);
+	}
+
+	if (force_update || printer->untiltime != old_printer->untiltime) {
+		buffer = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(buffer.data, 0, printer->untiltime);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTENDTIME,
+					  REG_DWORD,
+					  buffer.data,
+					  buffer.length);
+	}
+
+	if (force_update || printer->priority != old_printer->priority) {
+		buffer = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(buffer.data, 0, printer->priority);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRIORITY,
+					  REG_DWORD,
+					  buffer.data,
+					  buffer.length);
+	}
+
+	if (force_update || printer->attributes != old_printer->attributes) {
+		buffer = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(buffer.data, 0, (printer->attributes &
+				       PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS));
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTKEEPPRINTEDJOBS,
+					  REG_DWORD,
+					  buffer.data,
+					  buffer.length);
+
+		switch (printer->attributes & 0x3) {
+			case 0:
+				spooling = SPOOL_REGVAL_PRINTWHILESPOOLING;
+				break;
+			case 1:
+				spooling = SPOOL_REGVAL_PRINTAFTERSPOOLED;
+				break;
+			case 2:
+				spooling = SPOOL_REGVAL_PRINTDIRECT;
+				break;
+			default:
+				spooling = "unknown";
+		}
+		push_reg_sz(mem_ctx, &buffer, spooling);
+		winreg_set_printer_dataex(mem_ctx,
+					  server_info,
+					  printer->sharename,
+					  SPOOL_DSSPOOLER_KEY,
+					  SPOOL_REG_PRINTSPOOLING,
+					  REG_SZ,
+					  buffer.data,
+					  buffer.length);
+	}
+
+	push_reg_sz(mem_ctx, &buffer, global_myname());
+	winreg_set_printer_dataex(mem_ctx,
+				  server_info,
+				  printer->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  SPOOL_REG_SHORTSERVERNAME,
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
+
+	dnsdomname = get_mydnsfullname();
+	if (dnsdomname != NULL && dnsdomname[0] != '\0') {
+		longname = talloc_strdup(mem_ctx, dnsdomname);
+	} else {
+		longname = talloc_strdup(mem_ctx, global_myname());
+	}
+	if (longname == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	push_reg_sz(mem_ctx, &buffer, longname);
+	winreg_set_printer_dataex(mem_ctx,
+				  server_info,
+				  printer->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  SPOOL_REG_SERVERNAME,
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
+
+	uncname = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
+				  global_myname(), printer->sharename);
+	push_reg_sz(mem_ctx, &buffer, uncname);
+	winreg_set_printer_dataex(mem_ctx,
+				  server_info,
+				  printer->sharename,
+				  SPOOL_DSSPOOLER_KEY,
+				  SPOOL_REG_UNCNAME,
+				  REG_SZ,
+				  buffer.data,
+				  buffer.length);
+
+done:
+	return result;
+}
 
 /********************************************************************
  * Called by spoolss_api_setprinter
@@ -5636,10 +5896,8 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	struct spoolss_PrinterInfo2 *old_printer;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	const char *servername = NULL;
-	const char *uncname;
 	int snum;
 	WERROR result = WERR_OK;
-	DATA_BLOB buffer;
 	TALLOC_CTX *tmp_ctx;
 
 	DEBUG(8,("update_printer\n"));
@@ -5706,132 +5964,11 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 		}
 	}
 
-	/*
-	 * When a *new* driver is bound to a printer, the drivername is used to
-	 * lookup previously saved driver initialization info, which is then
-	 * bound to the printer, simulating what happens in the Windows arch.
-	 */
-	if (!strequal(printer->drivername, old_printer->drivername)) {
-		DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
-			printer->drivername));
-
-		notify_printer_driver(snum, printer->drivername);
-	}
-
-	/*
-	 * flag which changes actually occured.  This is a small subset of
-	 * all the possible changes.  We also have to update things in the
-	 * DsSpooler key.
-	 */
-	if (!strequal(printer->comment, old_printer->comment)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->comment);
-		winreg_set_printer_dataex(p->mem_ctx,
-					  p->server_info,
-					  printer->sharename,
-					  SPOOL_DSSPOOLER_KEY,
-					  "description",
-					  REG_SZ,
-					  buffer.data,
-					  buffer.length);
-
-		notify_printer_comment(snum, printer->comment);
-	}
-
-	if (!strequal(printer->sharename, old_printer->sharename)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->sharename);
-		winreg_set_printer_dataex(tmp_ctx,
-					  p->server_info,
-					  printer->sharename,
-					  SPOOL_DSSPOOLER_KEY,
-					  "shareName",
-					  REG_SZ,
-					  buffer.data,
-					  buffer.length);
-
-		notify_printer_sharename(snum, printer->sharename);
-	}
-
-	if (!strequal(printer->printername, old_printer->printername)) {
-		const char *pname;
-
-		if ( (pname = strchr_m( printer->printername+2, '\\' )) != NULL )
-			pname++;
-		else
-			pname = printer->printername;
-
-		push_reg_sz(tmp_ctx, &buffer, pname);
-		winreg_set_printer_dataex(tmp_ctx,
-					  p->server_info,
-					  printer->sharename,
-					  SPOOL_DSSPOOLER_KEY,
-					  "printerName",
-					  REG_SZ,
-					  buffer.data,
-					  buffer.length);
-
-		notify_printer_printername( snum, pname );
-	}
-
-	if (!strequal(printer->portname, old_printer->portname)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->portname);
-		winreg_set_printer_dataex(tmp_ctx,
-					  p->server_info,
-					  printer->sharename,
-					  SPOOL_DSSPOOLER_KEY,
-					  "portName",
-					  REG_SZ,
-					  buffer.data,
-					  buffer.length);
-
-		notify_printer_port(snum, printer->portname);
-	}
-
-	if (!strequal(printer->location, old_printer->location)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->location);
-		winreg_set_printer_dataex(tmp_ctx,
-					  p->server_info,
-					  printer->sharename,
-					  SPOOL_DSSPOOLER_KEY,
-					  "location",
-					  REG_SZ,
-					  buffer.data,
-					  buffer.length);
-
-		notify_printer_location(snum, printer->location);
-	}
-
-	/* here we need to update some more DsSpooler keys */
-	/* uNCName, serverName, shortServerName */
-
-	push_reg_sz(tmp_ctx, &buffer, global_myname());
-	winreg_set_printer_dataex(tmp_ctx,
-				  p->server_info,
-				  printer->sharename,
-				  SPOOL_DSSPOOLER_KEY,
-				  "serverName",
-				  REG_SZ,
-				  buffer.data,
-				  buffer.length);
-	winreg_set_printer_dataex(tmp_ctx,
-				  p->server_info,
-				  printer->sharename,
-				  SPOOL_DSSPOOLER_KEY,
-				  "shortServerName",
-				  REG_SZ,
-				  buffer.data,
-				  buffer.length);
-
-	uncname = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
-				  global_myname(), printer->sharename);
-	push_reg_sz(tmp_ctx, &buffer, uncname);
-	winreg_set_printer_dataex(tmp_ctx,
-				  p->server_info,
-				  printer->sharename,
-				  SPOOL_DSSPOOLER_KEY,
-				  "uNCName",
-				  REG_SZ,
-				  buffer.data,
-				  buffer.length);
+	update_dsspooler(tmp_ctx,
+			 p->server_info,
+			 snum,
+			 printer,
+			 old_printer);
 
 	printer_mask &= ~SPOOLSS_PRINTER_INFO_SECDESC;
 
@@ -7138,6 +7275,12 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 	if (devmode == NULL) {
 		info2_mask = ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
+
+	update_dsspooler(p->mem_ctx,
+			 p->server_info,
+			 0,
+			 info2,
+			 NULL);
 
 	err = winreg_update_printer(p->mem_ctx,
 				    p->server_info,
