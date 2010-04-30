@@ -7842,7 +7842,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			return;
 		}
-		if (blocking_lock_was_deferred(req->mid)) {
+		if (blocking_lock_was_deferred_smb1(req->mid)) {
 			/* We have re-scheduled this call. */
 			return;
 		}

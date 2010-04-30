@@ -561,12 +561,18 @@ static bool blocking_lock_record_process(struct blocking_lock_record *blr)
 
 /****************************************************************************
  Cancel entries by fnum from the blocking lock pending queue.
+ Called when a file is closed.
 *****************************************************************************/
 
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *blr_cancelled, *next = NULL;
+
+	if (sconn->allow_smb2) {
+		cancel_pending_lock_requests_by_fid_smb2(fsp, br_lck);
+		return;
+	}
 
 	for(blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = next) {
 		unsigned char locktype = 0;
@@ -584,7 +590,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 			   "request type %d for file %s fnum = %d\n",
 			   blr->req->cmd, fsp_str_dbg(fsp), fsp->fnum));
 
-		blr_cancelled = blocking_lock_cancel(fsp,
+		blr_cancelled = blocking_lock_cancel_smb1(fsp,
 				     blr->lock_pid,
 				     blr->offset,
 				     blr->count,
@@ -610,9 +616,10 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 
 /****************************************************************************
  Delete entries by mid from the blocking lock pending queue. Always send reply.
+ Only called from the SMB1 cancel code.
 *****************************************************************************/
 
-void remove_pending_lock_requests_by_mid(uint64_t mid)
+void remove_pending_lock_requests_by_mid_smb1(uint64_t mid)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *next = NULL;
@@ -631,7 +638,7 @@ void remove_pending_lock_requests_by_mid(uint64_t mid)
 		br_lck = brl_get_locks(talloc_tos(), fsp);
 
 		if (br_lck) {
-			DEBUG(10, ("remove_pending_lock_requests_by_mid - "
+			DEBUG(10, ("remove_pending_lock_requests_by_mid_smb1 - "
 				   "removing request type %d for file %s fnum "
 				   "= %d\n", blr->req->cmd, fsp_str_dbg(fsp),
 				   fsp->fnum ));
@@ -654,9 +661,10 @@ void remove_pending_lock_requests_by_mid(uint64_t mid)
 
 /****************************************************************************
  Is this mid a blocking lock request on the queue ?
+ Currently only called from the SMB1 unix extensions POSIX lock code.
 *****************************************************************************/
 
-bool blocking_lock_was_deferred(uint64_t mid)
+bool blocking_lock_was_deferred_smb1(uint64_t mid)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *next = NULL;
@@ -823,9 +831,10 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 /****************************************************************************
  Send ourselves a blocking lock cancelled message. Handled asynchronously above.
  Returns the blocking_lock_record that is being cancelled.
+ Only called from the SMB1 code.
 *****************************************************************************/
 
-struct blocking_lock_record *blocking_lock_cancel(files_struct *fsp,
+struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 			uint32 lock_pid,
 			uint64_t offset,
 			uint64_t count,

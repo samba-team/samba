@@ -401,3 +401,8 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 {
 	return false;
 }
+
+void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
+			struct byte_range_lock *br_lck)
+{
+}

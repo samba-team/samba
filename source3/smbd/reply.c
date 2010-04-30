@@ -7174,7 +7174,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 				   remove the blocking lock record and
 				   return the right error. */
 
-				blr = blocking_lock_cancel(fsp,
+				blr = blocking_lock_cancel_smb1(fsp,
 						e->smbpid,
 						e->offset,
 						e->count,
