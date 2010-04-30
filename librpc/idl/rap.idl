@@ -345,7 +345,7 @@ interface rap
 	[public] void rap_NetShareEnum(
 		[in] uint16 level,
 		[in] uint16 bufsize,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert,
 		[out] uint16 count,
 		[out] uint16 available,
@@ -374,7 +374,7 @@ interface rap
 		[in] uint16 bufsize,
 		[in] uint32 servertype,
 		[in] astring *domain,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert,
 		[out] uint16 count,
 		[out] uint16 available,
@@ -384,7 +384,7 @@ interface rap
 	[public] void rap_WserverGetInfo(
 		[in] uint16 level,
 		[in] uint16 bufsize,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert,
 		[out] uint16 available,
 		[out,switch_is(level)] rap_server_info info
@@ -553,7 +553,7 @@ interface rap
 	[public] void rap_NetPrintQEnum(
 		[in] uint16 level,
 		[in] uint16 bufsize,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert,
 		[out] uint16 count,
 		[out] uint16 available,
@@ -564,7 +564,7 @@ interface rap
 		[in] astring PrintQueueName,
 		[in] uint16 level,
 		[in] uint16 bufsize,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert,
 		[out] uint16 available,
 		[out,switch_is(level)] rap_printq_info info
@@ -572,40 +572,40 @@ interface rap
 
 	[public] void rap_NetPrintJobPause(
 		[in] uint16 JobID,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
 	[public] void rap_NetPrintJobContinue(
 		[in] uint16 JobID,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
 	[public] void rap_NetPrintJobDelete(
 		[in] uint16 JobID,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
 	/* not documented in MS-RAP */
 	[public] void rap_NetPrintQueuePause(
 		[in] astring PrintQueueName,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
 	/* not documented in MS-RAP */
 	[public] void rap_NetPrintQueueResume(
 		[in] astring PrintQueueName,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
 	/* not documented in MS-RAP */
 	[public] void rap_NetPrintQueuePurge(
 		[in] astring PrintQueueName,
-		[out] uint16 status,
+		[out] rap_status status,
 		[out] uint16 convert
 	);
 
