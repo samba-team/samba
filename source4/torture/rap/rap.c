@@ -952,6 +952,43 @@ NTSTATUS smbcli_rap_netprintjobdelete(struct smbcli_tree *tree,
 	return result;
 }
 
+NTSTATUS smbcli_rap_netprintqueuepause(struct smbcli_tree *tree,
+				       struct smb_iconv_convenience *iconv_convenience,
+				       TALLOC_CTX *mem_ctx,
+				       struct rap_NetPrintQueuePause *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintQPause))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_string(call, r->in.PrintQueueName);
+
+	rap_cli_expect_format(call, "");
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintQueuePause, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintQueuePause, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
 {
