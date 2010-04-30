@@ -31,7 +31,9 @@
 
 #define NDR_RAP_NETPRINTJOBENUM (0x0b)
 
-#define NDR_RAP_CALL_COUNT (12)
+#define NDR_RAP_NETPRINTJOBGETINFO (0x0c)
+
+#define NDR_RAP_CALL_COUNT (13)
 enum ndr_err_code ndr_push_rap_status(struct ndr_push *ndr, int ndr_flags, enum rap_status r);
 enum ndr_err_code ndr_pull_rap_status(struct ndr_pull *ndr, int ndr_flags, enum rap_status *r);
 void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r);
@@ -102,4 +104,7 @@ void ndr_print_rap_NetPrintQueuePurge(struct ndr_print *ndr, const char *name, i
 enum ndr_err_code ndr_push_rap_NetPrintJobEnum(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobEnum *r);
 enum ndr_err_code ndr_pull_rap_NetPrintJobEnum(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobEnum *r);
 void ndr_print_rap_NetPrintJobEnum(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobEnum *r);
+enum ndr_err_code ndr_push_rap_NetPrintJobGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobGetInfo *r);
+enum ndr_err_code ndr_pull_rap_NetPrintJobGetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobGetInfo *r);
+void ndr_print_rap_NetPrintJobGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobGetInfo *r);
 #endif /* _HEADER_NDR_rap */

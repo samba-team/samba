@@ -3976,3 +3976,67 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobEnum(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobGetInfo(struct ndr_push *ndr, int flags, const struct rap_NetPrintJobGetInfo *r)
+{
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.info, r->in.level));
+		NDR_CHECK(ndr_push_rap_printj_info(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobGetInfo(struct ndr_pull *ndr, int flags, struct rap_NetPrintJobGetInfo *r)
+{
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.bufsize));
+	}
+	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info, r->in.level));
+		NDR_CHECK(ndr_pull_rap_printj_info(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_rap_NetPrintJobGetInfo(struct ndr_print *ndr, const char *name, int flags, const struct rap_NetPrintJobGetInfo *r)
+{
+	ndr_print_struct(ndr, name, "rap_NetPrintJobGetInfo");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "rap_NetPrintJobGetInfo");
+		ndr->depth++;
+		ndr_print_uint16(ndr, "JobID", r->in.JobID);
+		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_uint16(ndr, "bufsize", r->in.bufsize);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "rap_NetPrintJobGetInfo");
+		ndr->depth++;
+		ndr_print_rap_status(ndr, "status", r->out.status);
+		ndr_print_uint16(ndr, "convert", r->out.convert);
+		ndr_print_uint16(ndr, "available", r->out.available);
+		ndr_print_set_switch_value(ndr, &r->out.info, r->in.level);
+		ndr_print_rap_printj_info(ndr, "info", &r->out.info);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+

@@ -792,4 +792,21 @@ struct rap_NetPrintJobEnum {
 
 };
 
+
+struct rap_NetPrintJobGetInfo {
+	struct {
+		uint16_t JobID;
+		uint16_t level;
+		uint16_t bufsize;
+	} in;
+
+	struct {
+		enum rap_status status;
+		uint16_t convert;
+		uint16_t available;
+		union rap_printj_info info;/* [switch_is(level)] */
+	} out;
+
+};
+
 #endif /* _HEADER_rap */
