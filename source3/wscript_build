@@ -650,7 +650,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${PARAM_SRC}
                   ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC} ${RPC_PARSE_SRC}
                   ${PROFILE_SRC} ${SLCACHE_SRC} ${SMBLDAP_SRC}
                   ${LIBADS_SRC} ${KRBCLIENT_SRC} ${POPT_LIB_SRC}
@@ -914,9 +913,9 @@ bld.SAMBA_BINARY('nmbd/nmbd',
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl popt DYNCONFIG ZLIB NSS_WRAPPER
-                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD''',
+                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB''',
                  includes='lib',
-                 enabled=(bld.env.WITH_WINBIND == 1),
+                 enabled=Options.options.with_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
 
