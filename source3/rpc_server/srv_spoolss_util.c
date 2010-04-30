@@ -1303,7 +1303,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	struct security_descriptor *secdesc;
 	struct winreg_String wkey, wkeyclass;
 	const char *path;
-	const char *subkeys[] = { "DsDriver", "DsSpooler", "PrinterDriverData" };
+	const char *subkeys[] = { SPOOL_DSDRIVER_KEY, SPOOL_DSSPOOLER_KEY, SPOOL_PRINTERDATA_KEY };
 	uint32_t i, count = ARRAY_SIZE(subkeys);
 	uint32_t info2_mask = 0;
 	WERROR result = WERR_OK;
@@ -1398,6 +1398,119 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				result = ntstatus_to_werror(status);
 			}
 			goto done;
+		}
+
+		switch (i) {
+		case 1: {
+			const char *dnssuffix;
+			const char *longname;
+			const char *uncname;
+
+			result = winreg_printer_write_sz(tmp_ctx,
+							 winreg_pipe,
+							 &key_hnd,
+							 SPOOL_REG_PRINTERNAME,
+							 sharename);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_sz(tmp_ctx,
+							 winreg_pipe,
+							 &key_hnd,
+							 SPOOL_REG_SHORTSERVERNAME,
+							 global_myname());
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			/* We make the assumption that the netbios name
+			 * is the same as the DNS name since the former
+			 * will be what we used to join the domain
+			 */
+			dnssuffix = get_mydnsdomname(tmp_ctx);
+			if (dnssuffix != NULL && dnssuffix[0] != '\0') {
+				longname = talloc_asprintf(tmp_ctx, "%s.%s", global_myname(), dnssuffix);
+			} else {
+				longname = talloc_strdup(tmp_ctx, global_myname());
+			}
+			if (longname == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+
+			result = winreg_printer_write_sz(tmp_ctx,
+							 winreg_pipe,
+							 &key_hnd,
+							 SPOOL_REG_SERVERNAME,
+							 longname);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			uncname = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+						  longname, sharename);
+			if (uncname == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+
+			result = winreg_printer_write_sz(tmp_ctx,
+							 winreg_pipe,
+							 &key_hnd,
+							 SPOOL_REG_UNCNAME,
+							 uncname);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_dword(tmp_ctx,
+							    winreg_pipe,
+							    &key_hnd,
+							    SPOOL_REG_VERSIONNUMBER,
+							    4);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_dword(tmp_ctx,
+							    winreg_pipe,
+							    &key_hnd,
+							    SPOOL_REG_PRINTSTARTTIME,
+							    0);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_dword(tmp_ctx,
+							    winreg_pipe,
+							    &key_hnd,
+							    SPOOL_REG_PRINTENDTIME,
+							    0);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_dword(tmp_ctx,
+							    winreg_pipe,
+							    &key_hnd,
+							    SPOOL_REG_PRIORITY,
+							    1);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+
+			result = winreg_printer_write_dword(tmp_ctx,
+							    winreg_pipe,
+							    &key_hnd,
+							    SPOOL_REG_PRINTKEEPPRINTEDJOBS,
+							    0);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+		} /* case 1 */
+		default:
+			break;
 		}
 
 		if (is_valid_policy_hnd(&key_hnd)) {
