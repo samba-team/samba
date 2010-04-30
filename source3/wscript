@@ -32,6 +32,7 @@ def set_options(opt):
                   action="store_true", dest='enable_selftest', default=False)
 
     opt.SAMBA3_ADD_OPTION('winbind')
+    opt.SAMBA3_ADD_OPTION('swat')
     opt.SAMBA3_ADD_OPTION('ads')
     opt.SAMBA3_ADD_OPTION('krb5')
     opt.SAMBA3_ADD_OPTION('ldap')

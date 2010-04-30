@@ -788,6 +788,15 @@ NMBD_SRC = '''${NMBD_SRC1} ${KRBCLIENT_SRC}
            ${PROFILE_SRC} ${POPT_LIB_SRC}
            ${LIBNDR_GEN_SRC0}'''
 
+SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
+               web/swat.c web/neg_lang.c'''
+
+SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
+           ${LOCKING_SRC} ${KRBCLIENT_SRC}
+           ${PLAINTEXT_AUTH_SRC}
+           ${POPT_LIB_SRC} ${SMBLDAP_SRC} ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
+           ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}'''
+
 WBINFO_SRC = '../nsswitch/wbinfo.c ${POPT_LIB_SRC} ${AFS_SETTOKEN_SRC}'
 
 TESTPARM_SRC = 'utils/testparm.c ${POPT_LIB_SRC}'
@@ -868,7 +877,7 @@ bld.SAMBA_SUBSYSTEM('PARAM',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='tdb popt',
+                    deps='tdb popt NSS_WRAPPER',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -916,6 +925,15 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB''',
                  includes='lib',
                  enabled=Options.options.with_winbind,
+                 install_path='${SBINDIR}',
+                 vars=locals())
+
+bld.SAMBA_BINARY('web/swat',
+                 source=SWAT_SRC,
+                 deps='''talloc tevent DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
+                 LIB_NONSMBD resolv LDB PASSDB''',
+                 includes='lib',
+                 enabled=Options.options.with_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
 
