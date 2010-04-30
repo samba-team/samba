@@ -227,6 +227,23 @@ static bool test_netprintq_pause(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintq_resume(struct torture_context *tctx,
+				  struct smbcli_state *cli,
+				  const char *PrintQueueName)
+{
+	struct rap_NetPrintQueueResume r;
+
+	r.in.PrintQueueName = PrintQueueName;
+
+	torture_comment(tctx, "Testing rap_NetPrintQueueResume(%s)\n", r.in.PrintQueueName);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqueueresume(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintqueueresume failed");
+
+	return true;
+}
+
 static bool test_netprintq(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -242,9 +259,15 @@ static bool test_netprintq(struct torture_context *tctx,
 
 	for (i=0; i < r.out.count; i++) {
 
+		const char *printqname = r.out.info[i].info5.PrintQueueName;
+
 		torture_assert(tctx,
-			test_netprintq_pause(tctx, cli, r.out.info[i].info5.PrintQueueName),
+			test_netprintq_pause(tctx, cli, printqname),
 			"failed to pause print queue");
+
+		torture_assert(tctx,
+			test_netprintq_resume(tctx, cli, printqname),
+			"failed to resume print queue");
 	}
 
 	return true;
