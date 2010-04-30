@@ -19,3 +19,4 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+_PUBLIC_ void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r);

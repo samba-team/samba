@@ -22,3 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_rap.h"
 
+_PUBLIC_ void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r)
+{
+	ndr_print_WERROR(ndr, name, W_ERROR(r));
+}

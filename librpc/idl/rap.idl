@@ -10,6 +10,10 @@
 ]
 interface rap
 {
+	typedef [public,noprint] enum {
+		NERR_Success = 0
+	} rap_status;
+
 	const int RAP_WshareEnum			= 0;
 	const int RAP_WshareGetInfo			= 1;
 	const int RAP_WshareSetInfo			= 2;
