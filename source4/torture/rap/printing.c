@@ -210,6 +210,46 @@ static bool test_netprintjob(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintq_pause(struct torture_context *tctx,
+				 struct smbcli_state *cli,
+				 const char *PrintQueueName)
+{
+	struct rap_NetPrintQueuePause r;
+
+	r.in.PrintQueueName = PrintQueueName;
+
+	torture_comment(tctx, "Testing rap_NetPrintQueuePause(%s)\n", r.in.PrintQueueName);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqueuepause(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintqueuepause failed");
+
+	return true;
+}
+
+static bool test_netprintq(struct torture_context *tctx,
+			   struct smbcli_state *cli)
+{
+	struct rap_NetPrintQEnum r;
+	int i;
+
+	r.in.level = 5;
+	r.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+
+	for (i=0; i < r.out.count; i++) {
+
+		torture_assert(tctx,
+			test_netprintq_pause(tctx, cli, r.out.info[i].info5.PrintQueueName),
+			"failed to pause print queue");
+	}
+
+	return true;
+}
+
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -233,6 +273,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "rap_printq_enum", test_netprintqenum);
 	torture_suite_add_1smb_test(suite, "rap_printq_getinfo", test_netprintqgetinfo);
 	torture_suite_add_1smb_test(suite, "rap_printjob", test_netprintjob);
+	torture_suite_add_1smb_test(suite, "rap_printq", test_netprintq);
 
 	return suite;
 }
