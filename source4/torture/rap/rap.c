@@ -1191,6 +1191,90 @@ NTSTATUS smbcli_rap_netprintjobenum(struct smbcli_tree *tree,
 	return result;
 }
 
+NTSTATUS smbcli_rap_netprintjobgetinfo(struct smbcli_tree *tree,
+				       struct smb_iconv_convenience *iconv_convenience,
+				       TALLOC_CTX *mem_ctx,
+				       struct rap_NetPrintJobGetInfo *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintJobGetInfo))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_word(call, r->in.JobID);
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_word(call);
+
+	switch(r->in.level) {
+	case 0:
+		rap_cli_expect_format(call, "W");
+		break;
+	case 1:
+		rap_cli_expect_format(call, "WB21BB16B10zWWzDDz");
+		break;
+	case 2:
+		rap_cli_expect_format(call, "WWzWWDDzz");
+		break;
+	case 3:
+		rap_cli_expect_format(call, "WWzWWDDzzzzzzzzzzlz");
+		break;
+	case 4:
+		rap_cli_expect_format(call, "WWzWWDDzzzzzDDDDDDD");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintJobGetInfo, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	switch(r->in.level) {
+	case 0:
+		result = rap_pull_rap_JobInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
+		break;
+	case 1:
+		result = rap_pull_rap_JobInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
+		break;
+	case 2:
+		result = rap_pull_rap_JobInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
+		break;
+	case 3:
+		result = rap_pull_rap_JobInfo3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info3);
+		break;
+	default:
+		result = NT_STATUS_NOT_IMPLEMENTED;
+		break;
+	}
+
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintJobGetInfo, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
 
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
