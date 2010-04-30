@@ -455,8 +455,7 @@ PROFILE_SRC = '''profile/profile.c'''
 PROFILES_SRC = '''utils/profiles.c
                ${LIBSMB_ERR_SRC}
                ${PARAM_SRC}
-               ${LIB_SRC} ${LIB_DUMMY_SRC}
-               ${POPT_LIB_SRC}'''
+               ${LIB_SRC} ${LIB_DUMMY_SRC}'''
 
 OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
              smbd/oplock_onefs.c'''
@@ -652,7 +651,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
 WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC} ${RPC_PARSE_SRC}
                   ${PROFILE_SRC} ${SLCACHE_SRC} ${SMBLDAP_SRC}
-                  ${LIBADS_SRC} ${KRBCLIENT_SRC} ${POPT_LIB_SRC}
+                  ${LIBADS_SRC} ${KRBCLIENT_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
@@ -676,7 +675,7 @@ LDB_LDAP_SRC = ''
 
 LDB_SRC = '${LDB_COMMON_SRC} ${LDB_TDB_SRC} ${LDB_LDAP_SRC} ${LDB_MODULES_SRC}'
 
-LDB_CMDLINE_SRC = '''${PARAM_SRC} ${POPT_LIB_SRC} ${LIB_SRC} ${LIB_DUMMY_SRC} ${LIBSMB_ERR_SRC0}
+LDB_CMDLINE_SRC = '''${PARAM_SRC} ${LIB_SRC} ${LIB_DUMMY_SRC} ${LIBSMB_ERR_SRC0}
                      ${LIBSMB_ERR_SRC1} ${RPC_PARSE_SRC1} ${SECRETS_SRC} ${LDB_SRC}
                      lib/ldb/tools/cmdline.c'''
 
@@ -749,7 +748,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBMSRPC_SRC}
                 ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC} ${LIBADS_SRC}
                 ${KRBCLIENT_SRC} ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
-                ${POPT_LIB_SRC} ${BUILDOPT_SRC} ${SMBLDAP_SRC}
+                ${BUILDOPT_SRC} ${SMBLDAP_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${RPC_LSA_SRC}
                 ${RPC_NETLOG_SRC} ${RPC_SAMR_SRC}
@@ -785,7 +784,7 @@ NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
             nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c'''
 
 NMBD_SRC = '''${NMBD_SRC1} ${KRBCLIENT_SRC}
-           ${PROFILE_SRC} ${POPT_LIB_SRC}
+           ${PROFILE_SRC}
            ${LIBNDR_GEN_SRC0}'''
 
 SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
@@ -794,12 +793,12 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
 SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
            ${LOCKING_SRC} ${KRBCLIENT_SRC}
            ${PLAINTEXT_AUTH_SRC}
-           ${POPT_LIB_SRC} ${SMBLDAP_SRC} ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
+           ${SMBLDAP_SRC} ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}'''
 
-WBINFO_SRC = '../nsswitch/wbinfo.c ${POPT_LIB_SRC} ${AFS_SETTOKEN_SRC}'
+WBINFO_SRC = '../nsswitch/wbinfo.c ${AFS_SETTOKEN_SRC}'
 
-TESTPARM_SRC = 'utils/testparm.c ${POPT_LIB_SRC}'
+TESTPARM_SRC = 'utils/testparm.c'
 
 LIBS='ICONV'
 
@@ -875,6 +874,11 @@ bld.SAMBA_SUBSYSTEM('PARAM',
                     deps='PARAM_WITHOUT_REG',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
+                    source=POPT_LIB_SRC,
+                    deps='tdb popt',
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
                     deps='tdb popt NSS_WRAPPER',
@@ -906,7 +910,7 @@ bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent popt dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB LDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB''',
+                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA''',
                  includes='lib',
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -914,7 +918,8 @@ bld.SAMBA_BINARY('smbd/smbd',
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT popt dl
-                 NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB''',
+                 NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB
+                 POPT_SAMBA''',
                  includes='lib ../lib/tdb/include',
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -922,7 +927,8 @@ bld.SAMBA_BINARY('nmbd/nmbd',
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl popt DYNCONFIG ZLIB NSS_WRAPPER
-                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB''',
+                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB
+                 POPT_SAMBA''',
                  includes='lib',
                  enabled=Options.options.with_winbind,
                  install_path='${SBINDIR}',
@@ -931,7 +937,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
-                 LIB_NONSMBD resolv LDB PASSDB''',
+                 LIB_NONSMBD resolv LDB PASSDB POPT_SAMBA''',
                  includes='lib',
                  enabled=Options.options.with_swat,
                  install_path='${SBINDIR}',
@@ -941,7 +947,7 @@ bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
                  deps='''talloc LIBWBCLIENT popt DYNCONFIG tevent tdb cap
                  NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
-                 LIBSAMBA''',
+                 LIBSAMBA POPT_SAMBA''',
                  includes='lib ../lib/tdb/include',
                  vars=locals())
 
@@ -949,7 +955,7 @@ bld.SAMBA_BINARY('testparm',
                  source=TESTPARM_SRC,
                  deps='''talloc tdb tevent popt DYNCONFIG ldap cap NSS_WRAPPER
                  LIBWBCLIENT ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
-                 LIBSMB_ERR''',
+                 LIBSMB_ERR POPT_SAMBA''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
