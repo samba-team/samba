@@ -534,6 +534,13 @@ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
+static NTSTATUS rap_pull_rap_JobInfo0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintJobInfo0 *r)
+{
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS rap_pull_rap_JobInfo1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintJobInfo1 *r)
 {
 	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
@@ -563,6 +570,31 @@ static NTSTATUS rap_pull_rap_JobInfo2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->JobCommentString));
 	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DocumentName));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_JobInfo3(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintJobInfo3 *r)
+{
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobID));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Priority));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UserName));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobPosition));
+	NDR_RETURN(ndr_pull_rap_PrintJStatusCode(ndr, NDR_SCALARS, &r->JobStatus));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->TimeSubmitted));
+	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->JobSize));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->JobCommentString));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DocumentName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->NotifyName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DataType));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrintParameterString));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->StatusString));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->QueueName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrintProcessorName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrintProcessorParams));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DriverName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->DriverDataOffset));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrinterNameOffset));
 
 	return NT_STATUS_OK;
 }
@@ -1062,6 +1094,101 @@ NTSTATUS smbcli_rap_netprintqueuepurge(struct smbcli_tree *tree,
 	talloc_free(call);
 	return result;
 }
+
+NTSTATUS smbcli_rap_netprintjobenum(struct smbcli_tree *tree,
+				    struct smb_iconv_convenience *iconv_convenience,
+				    TALLOC_CTX *mem_ctx,
+				    struct rap_NetPrintJobEnum *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int i;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintJobEnum))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_string(call, r->in.PrintQueueName);
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_multiple_entries(call);
+
+	switch(r->in.level) {
+	case 0:
+		rap_cli_expect_format(call, "W");
+		break;
+	case 1:
+		rap_cli_expect_format(call, "WB21BB16B10zWWzDDz");
+		break;
+	case 2:
+		rap_cli_expect_format(call, "WWzWWDDzz");
+		break;
+	case 3:
+		rap_cli_expect_format(call, "WWzWWDDzzzzzzzzzzlz");
+		break;
+	case 4:
+		rap_cli_expect_format(call, "WWzWWDDzzzzzDDDDDDD");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintJobEnum, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	r->out.info = talloc_zero_array(mem_ctx, union rap_printj_info, r->out.count);
+
+	if (r->out.info == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<r->out.count; i++) {
+		switch(r->in.level) {
+		case 0:
+			result = rap_pull_rap_JobInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info0);
+			break;
+		case 1:
+			result = rap_pull_rap_JobInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
+			break;
+		case 2:
+			result = rap_pull_rap_JobInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
+			break;
+		case 3:
+			result = rap_pull_rap_JobInfo3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
+			break;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintJobEnum, r);
+	}
+
+	result = NT_STATUS_OK;
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
