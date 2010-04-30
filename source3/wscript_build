@@ -10,8 +10,8 @@ TDB_LIB_SRC = '''lib/util_tdb.c ../lib/util/util_tdb.c
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-SMBLDAP = bld.env.SMBLDAP
-SMBLDAPUTIL = bld.env.SMBLDAPUTIL
+SMBLDAP = bld.env.SMBLDAP or ""
+SMBLDAPUTIL = bld.env.SMBLDAPUTIL or ""
 
 SMBLDAP_SRC = '''${SMBLDAP} ${SMBLDAPUTIL}'''
 
