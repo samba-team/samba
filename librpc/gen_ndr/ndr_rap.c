@@ -3,6 +3,20 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_rap.h"
 
+_PUBLIC_ enum ndr_err_code ndr_push_rap_status(struct ndr_push *ndr, int ndr_flags, enum rap_status r)
+{
+	NDR_CHECK(ndr_push_enum_uint1632(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_rap_status(struct ndr_pull *ndr, int ndr_flags, enum rap_status *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_enum_uint1632(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
 static enum ndr_err_code ndr_push_rap_share_info_0(struct ndr_push *ndr, int ndr_flags, const struct rap_share_info_0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -2239,7 +2253,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetShareEnum(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
@@ -2264,7 +2278,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetShareEnum(struct ndr_pull *ndr, int f
 		ZERO_STRUCTP(r->out.info);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
@@ -2297,7 +2311,7 @@ _PUBLIC_ void ndr_print_rap_NetShareEnum(struct ndr_print *ndr, const char *name
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetShareEnum");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "count", r->out.count);
 		ndr_print_uint16(ndr, "available", r->out.available);
@@ -2329,7 +2343,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetServerEnum2(struct ndr_push *ndr, int
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
@@ -2362,7 +2376,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetServerEnum2(struct ndr_pull *ndr, int
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
@@ -2404,7 +2418,7 @@ _PUBLIC_ void ndr_print_rap_NetServerEnum2(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetServerEnum2");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "count", r->out.count);
 		ndr_print_uint16(ndr, "available", r->out.available);
@@ -2431,7 +2445,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_WserverGetInfo(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.info, r->in.level));
@@ -2449,7 +2463,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_WserverGetInfo(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info, r->in.level));
@@ -2475,7 +2489,7 @@ _PUBLIC_ void ndr_print_rap_WserverGetInfo(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_WserverGetInfo");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "available", r->out.available);
 		ndr_print_set_switch_value(ndr, &r->out.info, r->in.level);
@@ -2493,7 +2507,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQEnum(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
@@ -2519,7 +2533,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQEnum(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
@@ -2556,7 +2570,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintQEnum(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintQEnum");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "count", r->out.count);
 		ndr_print_uint16(ndr, "available", r->out.available);
@@ -2589,7 +2603,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQGetInfo(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.available));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.info, r->in.level));
@@ -2613,7 +2627,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQGetInfo(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.bufsize));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.available));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info, r->in.level));
@@ -2640,7 +2654,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintQGetInfo(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintQGetInfo");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr_print_uint16(ndr, "available", r->out.available);
 		ndr_print_set_switch_value(ndr, &r->out.info, r->in.level);
@@ -2656,7 +2670,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobPause(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2670,7 +2684,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobPause(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2692,7 +2706,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobPause(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintJobPause");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}
@@ -2705,7 +2719,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobContinue(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2719,7 +2733,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobContinue(struct ndr_pull *ndr
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2741,7 +2755,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobContinue(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintJobContinue");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}
@@ -2754,7 +2768,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintJobDelete(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2768,7 +2782,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintJobDelete(struct ndr_pull *ndr, 
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.JobID));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2790,7 +2804,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintJobDelete(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintJobDelete");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}
@@ -2808,7 +2822,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueuePause(struct ndr_push *ndr,
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2827,7 +2841,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueuePause(struct ndr_pull *ndr,
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2849,7 +2863,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintQueuePause(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintQueuePause");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}
@@ -2867,7 +2881,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueueResume(struct ndr_push *ndr
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2886,7 +2900,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueueResume(struct ndr_pull *ndr
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2908,7 +2922,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintQueueResume(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintQueueResume");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}
@@ -2926,7 +2940,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_rap_NetPrintQueuePurge(struct ndr_push *ndr,
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.status));
+		NDR_CHECK(ndr_push_rap_status(ndr, NDR_SCALARS, r->out.status));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2945,7 +2959,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_rap_NetPrintQueuePurge(struct ndr_pull *ndr,
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.status));
+		NDR_CHECK(ndr_pull_rap_status(ndr, NDR_SCALARS, &r->out.status));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.convert));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2967,7 +2981,7 @@ _PUBLIC_ void ndr_print_rap_NetPrintQueuePurge(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "rap_NetPrintQueuePurge");
 		ndr->depth++;
-		ndr_print_uint16(ndr, "status", r->out.status);
+		ndr_print_rap_status(ndr, "status", r->out.status);
 		ndr_print_uint16(ndr, "convert", r->out.convert);
 		ndr->depth--;
 	}

@@ -338,6 +338,17 @@
 #define RAP_USER_LOGOFF_INFO_L1	( "WDW" )
 #define RAP_WKSTA_INFO_L1	( "WDzzzzBBDWDWWWWWWWWWWWWWWWWWWWzzWzzW" )
 #define RAP_WKSTA_INFO_L10	( "zzzBBzz" )
+enum rap_status
+#ifndef USE_UINT_ENUMS
+ {
+	NERR_Success=(int)(0)
+}
+#else
+ { __donnot_use_enum_rap_status=0x7FFFFFFF}
+#define NERR_Success ( 0 )
+#endif
+;
+
 struct rap_group_info_1 {
 	uint8_t group_name[21];
 	uint8_t reserved1;
@@ -600,7 +611,7 @@ struct rap_NetShareEnum {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 		uint16_t count;
 		uint16_t available;
@@ -619,7 +630,7 @@ struct rap_NetServerEnum2 {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 		uint16_t count;
 		uint16_t available;
@@ -636,7 +647,7 @@ struct rap_WserverGetInfo {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 		uint16_t available;
 		union rap_server_info info;/* [switch_is(level)] */
@@ -652,7 +663,7 @@ struct rap_NetPrintQEnum {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 		uint16_t count;
 		uint16_t available;
@@ -670,7 +681,7 @@ struct rap_NetPrintQGetInfo {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 		uint16_t available;
 		union rap_printq_info info;/* [switch_is(level)] */
@@ -685,7 +696,7 @@ struct rap_NetPrintJobPause {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 
@@ -698,7 +709,7 @@ struct rap_NetPrintJobContinue {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 
@@ -711,7 +722,7 @@ struct rap_NetPrintJobDelete {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 
@@ -724,7 +735,7 @@ struct rap_NetPrintQueuePause {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 
@@ -737,7 +748,7 @@ struct rap_NetPrintQueueResume {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 
@@ -750,7 +761,7 @@ struct rap_NetPrintQueuePurge {
 	} in;
 
 	struct {
-		uint16_t status;
+		enum rap_status status;
 		uint16_t convert;
 	} out;
 

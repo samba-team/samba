@@ -30,6 +30,9 @@
 #define NDR_RAP_NETPRINTQUEUEPURGE (0x0a)
 
 #define NDR_RAP_CALL_COUNT (11)
+enum ndr_err_code ndr_push_rap_status(struct ndr_push *ndr, int ndr_flags, enum rap_status r);
+enum ndr_err_code ndr_pull_rap_status(struct ndr_pull *ndr, int ndr_flags, enum rap_status *r);
+void ndr_print_rap_status(struct ndr_print *ndr, const char *name, enum rap_status r);
 void ndr_print_rap_share_info_0(struct ndr_print *ndr, const char *name, const struct rap_share_info_0 *r);
 void ndr_print_rap_share_info_1(struct ndr_print *ndr, const char *name, const struct rap_share_info_1 *r);
 void ndr_print_rap_share_info_2(struct ndr_print *ndr, const char *name, const struct rap_share_info_2 *r);
