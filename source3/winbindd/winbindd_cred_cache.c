@@ -359,7 +359,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 
   retry_later:
  
-#if defined(DEBUG_KRB5_TKT_REGAIN)
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
  	t = timeval_set(time(NULL) + 30, 0);
 #else
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
