@@ -222,7 +222,7 @@ _PUBLIC_ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-_PUBLIC_ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
+const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
@@ -238,18 +238,34 @@ _PUBLIC_ const char *cli_credentials_get_principal(struct cli_credentials *cred,
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 	}
 
-	if (cred->principal_obtained < cred->username_obtained) {
+	if (cred->principal_obtained < cred->username_obtained
+	    || cred->principal_obtained < MAX(cred->domain_obtained, cred->realm_obtained)) {
 		if (cred->domain_obtained > cred->realm_obtained) {
+			*obtained = MIN(cred->domain_obtained, cred->username_obtained);
 			return talloc_asprintf(mem_ctx, "%s@%s", 
 					       cli_credentials_get_username(cred),
 					       cli_credentials_get_domain(cred));
 		} else {
+			*obtained = MIN(cred->domain_obtained, cred->username_obtained);
 			return talloc_asprintf(mem_ctx, "%s@%s", 
 					       cli_credentials_get_username(cred),
 					       cli_credentials_get_realm(cred));
 		}
 	}
+	*obtained = cred->principal_obtained;
 	return talloc_reference(mem_ctx, cred->principal);
+}
+
+/**
+ * Obtain the client principal for this credentials context.
+ * @param cred credentials context
+ * @retval The username set on this context.
+ * @note Return value will never be NULL except by programmer error.
+ */
+_PUBLIC_ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
+{
+	enum credentials_obtained obtained;
+	return cli_credentials_get_principal_and_obtained(cred, mem_ctx, &obtained);
 }
 
 bool cli_credentials_set_principal(struct cli_credentials *cred, 

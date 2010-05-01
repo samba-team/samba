@@ -31,6 +31,8 @@
 #include "lib/tsocket/tsocket.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
+#include "auth/kerberos/kerberos_credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
@@ -287,6 +289,10 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s: %s\n", principal, error_string));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+	case KRB5_CC_NOTFOUND:
+	case KRB5_CC_END:
+		DEBUG(3, ("Error preparing credentials we require to contact %s : %s\n", principal, error_string));
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
 		DEBUG(1, ("gensec_krb5_start: Aquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -474,6 +480,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		struct keytab_container *keytab;
 		krb5_principal server_in_keytab;
 		const char *error_string;
+		enum credentials_obtained obtained;
 
 		if (!in.data) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -490,7 +497,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		/* This ensures we lookup the correct entry in that keytab */
 		ret = principal_from_credentials(out_mem_ctx, gensec_get_credentials(gensec_security), 
 						 gensec_krb5_state->smb_krb5_context, 
-						 &server_in_keytab, &error_string);
+						 &server_in_keytab, &obtained, &error_string);
 
 		if (ret) {
 			DEBUG(2,("Failed to make credentials from principal: %s\n", error_string));

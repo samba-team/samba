@@ -27,6 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_proto.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "auth/kerberos/kerberos_credentials.h"
 #include "param/param.h"
 
 _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
@@ -282,6 +283,7 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 					      const char **error_string)
 {
 	krb5_error_code ret;
+	enum credentials_obtained obtained;
 	
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred, lp_ctx);
@@ -302,15 +304,13 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 
-	ret = kinit_to_ccache(cred, cred, (*ccc)->smb_krb5_context, (*ccc)->ccache, error_string);
+	ret = kinit_to_ccache(cred, cred, (*ccc)->smb_krb5_context, (*ccc)->ccache, &obtained, error_string);
 	if (ret) {
 		return ret;
 	}
 
 	ret = cli_credentials_set_from_ccache(cred, *ccc, 
-					      (MAX(MAX(cred->principal_obtained, 
-						       cred->username_obtained), 
-						   cred->password_obtained)), error_string);
+					      obtained, error_string);
 	
 	cred->ccache = *ccc;
 	cred->ccache_obtained = cred->principal_obtained;
@@ -328,6 +328,16 @@ _PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred,
 					const char **error_string)
 {
 	return cli_credentials_get_named_ccache(cred, event_ctx, lp_ctx, NULL, ccc, error_string);
+}
+
+/* We have good reason to think the ccache in these credentials is invalid - blow it away */
+static void cli_credentials_unconditionally_invalidate_client_gss_creds(struct cli_credentials *cred)
+{
+	if (cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
+		talloc_unlink(cred, cred->client_gss_creds);
+		cred->client_gss_creds = NULL;
+	}
+	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
 }
 
 void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred, 
@@ -349,6 +359,18 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	if (obtained > cred->client_gss_creds_threshold) {
 		cred->client_gss_creds_threshold = obtained;
 	}
+}
+
+/* We have good reason to think this CCACHE is invalid.  Blow it away */
+static void cli_credentials_unconditionally_invalidate_ccache(struct cli_credentials *cred)
+{
+	if (cred->ccache_obtained > CRED_UNINITIALISED) {
+		talloc_unlink(cred, cred->ccache);
+		cred->ccache = NULL;
+	}
+	cred->ccache_obtained = CRED_UNINITIALISED;
+
+	cli_credentials_unconditionally_invalidate_client_gss_creds(cred);
 }
 
 _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred, 
@@ -416,6 +438,23 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 
 	maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL, 
 					&gcc->creds);
+	if ((maj_stat == GSS_S_FAILURE) && (min_stat == (OM_uint32)KRB5_CC_END || min_stat == (OM_uint32) KRB5_CC_NOTFOUND)) {
+		/* This CCACHE is no good.  Ensure we don't use it again */
+		cli_credentials_unconditionally_invalidate_ccache(cred);
+
+		/* Now try again to get a ccache */
+		ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx,
+						 &ccache, error_string);
+		if (ret) {
+			DEBUG(1, ("Failed to re-get CCACHE for GSSAPI client: %s\n", error_message(ret)));
+			return ret;
+		}
+
+		maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL,
+						&gcc->creds);
+
+	}
+
 	if (maj_stat) {
 		talloc_free(gcc);
 		if (min_stat) {
@@ -698,12 +737,11 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 	TALLOC_CTX *mem_ctx;
 	krb5_principal princ;
 	const char *error_string;
+	enum credentials_obtained obtained;
 
-	if (cred->server_gss_creds_obtained >= (MAX(cred->keytab_obtained, 
-						    MAX(cred->principal_obtained, 
-							cred->username_obtained)))) {
-		*_gcc = cred->server_gss_creds;
-		return 0;
+	mem_ctx = talloc_new(cred);
+	if (!mem_ctx) {
+		return ENOMEM;
 	}
 
 	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx, &smb_krb5_context);
@@ -711,22 +749,23 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 		return ret;
 	}
 
-	ret = cli_credentials_get_keytab(cred, event_ctx, lp_ctx, &ktc);
-	if (ret) {
-		DEBUG(1, ("Failed to get keytab for GSSAPI server: %s\n", error_message(ret)));
-		return ret;
-	}
-
-	mem_ctx = talloc_new(cred);
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
-	ret = principal_from_credentials(mem_ctx, cred, smb_krb5_context, &princ, &error_string);
+	ret = principal_from_credentials(mem_ctx, cred, smb_krb5_context, &princ, &obtained, &error_string);
 	if (ret) {
 		DEBUG(1,("cli_credentials_get_server_gss_creds: makeing krb5 principal failed (%s)\n",
 			 error_string));
 		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	if (cred->server_gss_creds_obtained >= (MAX(cred->keytab_obtained, obtained))) {
+		talloc_free(mem_ctx);
+		*_gcc = cred->server_gss_creds;
+		return 0;
+	}
+
+	ret = cli_credentials_get_keytab(cred, event_ctx, lp_ctx, &ktc);
+	if (ret) {
+		DEBUG(1, ("Failed to get keytab for GSSAPI server: %s\n", error_message(ret)));
 		return ret;
 	}
 

@@ -379,6 +379,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", principal, error_string));
 		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+	case KRB5_CC_NOTFOUND:
+	case KRB5_CC_END:
+		DEBUG(3, ("Error preparing credentials we require to contact %s : %s\n", principal, error_string));
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	default:
 		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
