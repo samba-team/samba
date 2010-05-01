@@ -33,14 +33,20 @@ static void received_unlock_msg(struct messaging_context *msg,
 				struct server_id server_id,
 				DATA_BLOB *data);
 
-static void brl_timeout_fn(struct event_context *event_ctx,
+void brl_timeout_fn(struct event_context *event_ctx,
 			   struct timed_event *te,
 			   struct timeval now,
 			   void *private_data)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
-	SMB_ASSERT(sconn->smb1.locks.brl_timeout == te);
-	TALLOC_FREE(sconn->smb1.locks.brl_timeout);
+
+	if (sconn->allow_smb2) {
+		SMB_ASSERT(sconn->smb2.locks.brl_timeout == te);
+		TALLOC_FREE(sconn->smb2.locks.brl_timeout);
+	} else {
+		SMB_ASSERT(sconn->smb1.locks.brl_timeout == te);
+		TALLOC_FREE(sconn->smb1.locks.brl_timeout);
+	}
 
 	change_to_root_user();	/* TODO: Possibly run all timed events as
 				 * root */
@@ -52,7 +58,7 @@ static void brl_timeout_fn(struct event_context *event_ctx,
  We need a version of timeval_min that treats zero timval as infinite.
 ****************************************************************************/
 
-static struct timeval timeval_brl_min(const struct timeval *tv1,
+struct timeval timeval_brl_min(const struct timeval *tv1,
 					const struct timeval *tv2)
 {
 	if (timeval_is_zero(tv1)) {
@@ -699,9 +705,14 @@ static void received_unlock_msg(struct messaging_context *msg,
 void process_blocking_lock_queue(void)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
-	struct timeval tv_curr = timeval_current();
+	struct timeval tv_curr;
 	struct blocking_lock_record *blr, *next = NULL;
 
+	if (sconn->allow_smb2) {
+		return process_blocking_lock_queue_smb2();
+	}
+
+	tv_curr = timeval_current();
 	/*
 	 * Go through the queue and see if we can get any of the locks.
 	 */

@@ -90,8 +90,18 @@ static void onefs_cbrl_enumerate_blq(const char *fn)
 
 	DEBUG(10, ("CBRL BLR records (%s):\n", fn));
 
-	for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next)
-		DEBUGADD(10, ("%s\n", onefs_cbrl_blr_state_str(blr)));
+	if (sconn->allow_smb2) {
+		struct smbd_smb2_request *smb2req;
+		for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
+			blr = get_pending_smb2req_blr(smb2req);
+			if (blr) {
+				DEBUGADD(10, ("%s\n", onefs_cbrl_blr_state_str(blr)));
+			}
+		}
+	} else {
+		for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next)
+			DEBUGADD(10, ("%s\n", onefs_cbrl_blr_state_str(blr)));
+	}
 }
 
 static struct blocking_lock_record *onefs_cbrl_find_blr(uint64_t id)
@@ -102,17 +112,35 @@ static struct blocking_lock_record *onefs_cbrl_find_blr(uint64_t id)
 
 	onefs_cbrl_enumerate_blq("onefs_cbrl_find_blr");
 
-	for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next) {
-		bs = (struct onefs_cbrl_blr_state *)blr->blr_private;
+	if (sconn->allow_smb2) {
+		struct smbd_smb2_request *smb2req;
+		for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
+			blr = get_pending_smb2req_blr(smb2req);
+			if (!blr) {
+				continue;
+			}
+			bs = (struct onefs_cbrl_blr_state *)blr->blr_private;
+			if (bs == NULL)	{
+				continue;
+			}
+			if (bs->id == id) {
+				DEBUG(10, ("found %s\n",
+				    onefs_cbrl_blr_state_str(blr)));
+				break;
+			}
+	} else {
+		for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next) {
+			bs = (struct onefs_cbrl_blr_state *)blr->blr_private;
 
-		/* We don't control all of the BLRs on the BLQ. */
-		if (bs == NULL)
-			continue;
+			/* We don't control all of the BLRs on the BLQ. */
+			if (bs == NULL)
+				continue;
 
-		if (bs->id == id) {
-			DEBUG(10, ("found %s\n",
-			    onefs_cbrl_blr_state_str(blr)));
-			break;
+			if (bs->id == id) {
+				DEBUG(10, ("found %s\n",
+				    onefs_cbrl_blr_state_str(blr)));
+				break;
+			}
 		}
 	}
 

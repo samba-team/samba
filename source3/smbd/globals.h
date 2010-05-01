@@ -152,13 +152,6 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 				const struct iovec *vector,
 				int count);
 
-struct smbd_lock_element {
-	uint32_t smbpid;
-	enum brl_type brltype;
-	uint64_t offset;
-	uint64_t count;
-};
-
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
 			 uint8_t type,
@@ -313,6 +306,7 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 
 /* SMB1 -> SMB2 glue. */
 void send_break_message_smb2(files_struct *fsp, int level);
+struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *smb2req);
 bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				struct smb_request *req,
 				files_struct *fsp,
@@ -324,6 +318,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t offset,
 				uint64_t count,
 				uint32_t blocking_pid);
+void process_blocking_lock_queue_smb2(void);
 void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			struct byte_range_lock *br_lck);
 /* From smbd/smb2_create.c */
@@ -570,6 +565,11 @@ struct smbd_server_connection {
 
 			struct smbd_smb2_session *list;
 		} sessions;
+		struct {
+			/* The event that makes us process our blocking lock queue */
+			struct timed_event *brl_timeout;
+			bool blocking_lock_unlock_state;
+		} locks;
 		struct smbd_smb2_request *requests;
 	} smb2;
 };

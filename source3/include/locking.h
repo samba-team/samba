@@ -96,4 +96,11 @@ struct blocking_lock_record {
 	void *blr_private; /* Implementation specific. */
 };
 
+struct smbd_lock_element {
+	uint32_t smbpid;
+	enum brl_type brltype;
+	uint64_t offset;
+	uint64_t count;
+};
+
 #endif /* _LOCKING_H_ */
