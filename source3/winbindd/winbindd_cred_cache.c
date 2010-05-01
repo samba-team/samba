@@ -269,7 +269,7 @@ done:
 	 * but try to regain ticket if it is possible */
 	if (entry->renew_until && expire_time
 	     && (entry->renew_until <= expire_time)) {
-		/* try to regain ticket 10 seconds beforre expiration */
+		/* try to regain ticket 10 seconds before expiration */
 		expire_time -= 10;
 		add_krb5_ticket_gain_handler_event(entry,
 					timeval_set(expire_time, 0));
