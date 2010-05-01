@@ -30,9 +30,10 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			uint16_t current_vuid, files_struct *fsp)
 {
 	const char *svcname = lp_const_servicename(SNUM(conn));
-	int jobid;
+	uint32_t jobid;
 	fstring name;
 	NTSTATUS status;
+	WERROR werr;
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {
@@ -44,16 +45,15 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 		fstrcat(name, p);
 	}
 
-	jobid = print_job_start(conn->server_info, SNUM(conn), name, NULL);
-	if (jobid == -1) {
-		status = map_nt_error_from_unix(errno);
-		return status;
+	werr = print_job_start(conn->server_info, SNUM(conn),
+				 name, fname, NULL, &jobid);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
 	}
 
 	fsp->print_file = talloc(fsp, struct print_file_data);
 	if (!fsp->print_file) {
-		status = map_nt_error_from_unix(ENOMEM);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Convert to RAP id. */

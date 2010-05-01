@@ -2316,39 +2316,54 @@ int print_queue_length(int snum, print_status_struct *pstatus)
  Allocate a jobid. Hold the lock for as short a time as possible.
 ***************************************************************************/
 
-static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char *sharename, uint32 *pjobid)
+static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
+				   const char *sharename, uint32 *pjobid)
 {
 	int i;
 	uint32 jobid;
+	enum TDB_ERROR terr;
+	int ret;
 
 	*pjobid = (uint32)-1;
 
 	for (i = 0; i < 3; i++) {
 		/* Lock the database - only wait 20 seconds. */
-		if (tdb_lock_bystring_with_timeout(pdb->tdb, "INFO/nextjob", 20) == -1) {
-			DEBUG(0,("allocate_print_jobid: failed to lock printing database %s\n", sharename));
-			return False;
+		ret = tdb_lock_bystring_with_timeout(pdb->tdb,
+						     "INFO/nextjob", 20);
+		if (ret == -1) {
+			DEBUG(0, ("allocate_print_jobid: "
+				  "Failed to lock printing database %s\n",
+				  sharename));
+			terr = tdb_error(pdb->tdb);
+			return ntstatus_to_werror(map_nt_error_from_tdb(terr));
 		}
 
 		if (!tdb_fetch_uint32(pdb->tdb, "INFO/nextjob", &jobid)) {
-			if (tdb_error(pdb->tdb) != TDB_ERR_NOEXIST) {
-				DEBUG(0, ("allocate_print_jobid: failed to fetch INFO/nextjob for print queue %s\n",
-					sharename));
+			terr = tdb_error(pdb->tdb);
+			if (terr != TDB_ERR_NOEXIST) {
+				DEBUG(0, ("allocate_print_jobid: "
+					  "Failed to fetch INFO/nextjob "
+					  "for print queue %s\n", sharename));
 				tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
-				return False;
+				return ntstatus_to_werror(map_nt_error_from_tdb(terr));
 			}
-			DEBUG(10,("allocate_print_jobid: no existing jobid in %s\n", sharename));
+			DEBUG(10, ("allocate_print_jobid: "
+				   "No existing jobid in %s\n", sharename));
 			jobid = 0;
 		}
 
-		DEBUG(10,("allocate_print_jobid: read jobid %u from %s\n", jobid, sharename));
+		DEBUG(10, ("allocate_print_jobid: "
+			   "Read jobid %u from %s\n", jobid, sharename));
 
 		jobid = NEXT_JOBID(jobid);
 
-		if (tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid)==-1) {
-			DEBUG(3, ("allocate_print_jobid: failed to store INFO/nextjob.\n"));
+		ret = tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid);
+		if (ret == -1) {
+			terr = tdb_error(pdb->tdb);
+			DEBUG(3, ("allocate_print_jobid: "
+				  "Failed to store INFO/nextjob.\n"));
 			tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
-			return False;
+			return ntstatus_to_werror(map_nt_error_from_tdb(terr));
 		}
 
 		/* We've finished with the INFO/nextjob lock. */
@@ -2357,15 +2372,16 @@ static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 		if (!print_job_exists(sharename, jobid)) {
 			break;
 		}
-		DEBUG(10,("allocate_print_jobid: found jobid %u in %s\n", jobid, sharename));
+		DEBUG(10, ("allocate_print_jobid: "
+			   "Found jobid %u in %s\n", jobid, sharename));
 	}
 
 	if (i > 2) {
-		DEBUG(0, ("allocate_print_jobid: failed to allocate a print job for queue %s\n",
-			sharename));
+		DEBUG(0, ("allocate_print_jobid: "
+			  "Failed to allocate a print job for queue %s\n",
+			  sharename));
 		/* Probably full... */
-		errno = ENOSPC;
-		return False;
+		return WERR_NO_SPOOL_SPACE;
 	}
 
 	/* Store a dummy placeholder. */
@@ -2376,14 +2392,16 @@ static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 		dum.dsize = 0;
 		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dum,
 			      TDB_INSERT) == -1) {
-			DEBUG(3, ("allocate_print_jobid: jobid (%d) failed to store placeholder.\n",
-				jobid ));
-			return False;
+			DEBUG(3, ("allocate_print_jobid: "
+				  "jobid (%d) failed to store placeholder.\n",
+				  jobid ));
+			terr = tdb_error(pdb->tdb);
+			return ntstatus_to_werror(map_nt_error_from_tdb(terr));
 		}
 	}
 
 	*pjobid = jobid;
-	return True;
+	return WERR_OK;
 }
 
 /***************************************************************************
@@ -2405,73 +2423,127 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 			   data) == 0);
 }
 
+
+/***************************************************************************
+ Do all checks needed to determine if we can start a job.
+***************************************************************************/
+
+static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
+			       int snum, int *njobs)
+{
+	const char *sharename = lp_const_servicename(snum);
+	uint64_t dspace, dsize;
+	uint64_t minspace;
+	int ret;
+
+	if (!print_access_check(server_info, snum, PRINTER_ACCESS_USE)) {
+		DEBUG(3, ("print_job_checks: "
+			  "job start denied by security descriptor\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (!print_time_access_check(server_info, sharename)) {
+		DEBUG(3, ("print_job_checks: "
+			  "job start denied by time check\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* see if we have sufficient disk space */
+	if (lp_minprintspace(snum)) {
+		minspace = lp_minprintspace(snum);
+		ret = sys_fsusage(lp_pathname(snum), &dspace, &dsize);
+		if (ret == 0 && dspace < 2*minspace) {
+			DEBUG(3, ("print_job_checks: "
+				  "disk space check failed.\n"));
+			return WERR_NO_SPOOL_SPACE;
+		}
+	}
+
+	/* for autoloaded printers, check that the printcap entry still exists */
+	if (lp_autoloaded(snum) && !pcap_printername_ok(sharename)) {
+		DEBUG(3, ("print_job_checks: printer name %s check failed.\n",
+			  sharename));
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* Insure the maximum queue size is not violated */
+	*njobs = print_queue_length(snum, NULL);
+	if (*njobs > lp_maxprintjobs(snum)) {
+		DEBUG(3, ("print_job_checks: Queue %s number of jobs (%d) "
+			  "larger than max printjobs per queue (%d).\n",
+			  sharename, *njobs, lp_maxprintjobs(snum)));
+		return WERR_NO_SPOOL_SPACE;
+	}
+
+	return WERR_OK;
+}
+
+/***************************************************************************
+ Create a job file.
+***************************************************************************/
+
+static WERROR print_job_spool_file(int snum, uint32_t jobid,
+				   fstring *filename, int *fd)
+{
+	WERROR werr;
+
+	slprintf(*filename, sizeof(*filename)-1, "%s/%s%.8u.XXXXXX",
+		 lp_pathname(snum), PRINT_SPOOL_PREFIX, (unsigned int)jobid);
+	*fd = mkstemp(*filename);
+
+	if (*fd == -1) {
+		werr = map_werror_from_unix(errno);
+		if (W_ERROR_EQUAL(werr, WERR_ACCESS_DENIED)) {
+			/* Common setup error, force a report. */
+			DEBUG(0, ("print_job_spool_file: "
+				  "insufficient permissions to open spool "
+				  "file %s.\n", *filename));
+		} else {
+			/* Normal case, report at level 3 and above. */
+			DEBUG(3, ("print_job_spool_file: "
+				  "can't open spool file %s\n", *filename));
+		}
+		return werr;
+	}
+
+	return WERR_OK;
+}
+
 /***************************************************************************
  Start spooling a job - return the jobid.
 ***************************************************************************/
 
-uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       const char *jobname, struct spoolss_DeviceMode *devmode )
+WERROR print_job_start(struct auth_serversupplied_info *server_info,
+		       int snum, const char *docname, const char *filename,
+		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid)
 {
-	uint32 jobid;
+	uint32_t jobid;
 	char *path;
 	struct printjob pjob;
 	const char *sharename = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	int njobs;
+	WERROR werr;
 
-	errno = 0;
-
-	if (!pdb)
-		return (uint32)-1;
-
-	if (!print_access_check(server_info, snum, PRINTER_ACCESS_USE)) {
-		DEBUG(3, ("print_job_start: job start denied by security descriptor\n"));
-		release_print_db(pdb);
-		return (uint32)-1;
-	}
-
-	if (!print_time_access_check(server_info, lp_servicename(snum))) {
-		DEBUG(3, ("print_job_start: job start denied by time check\n"));
-		release_print_db(pdb);
-		return (uint32)-1;
+	if (!pdb) {
+		return WERR_INTERNAL_DB_CORRUPTION;
 	}
 
 	path = lp_pathname(snum);
 
-	/* see if we have sufficient disk space */
-	if (lp_minprintspace(snum)) {
-		uint64_t dspace, dsize;
-		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
-		    dspace < 2*(uint64_t)lp_minprintspace(snum)) {
-			DEBUG(3, ("print_job_start: disk space check failed.\n"));
-			release_print_db(pdb);
-			errno = ENOSPC;
-			return (uint32)-1;
-		}
-	}
-
-	/* for autoloaded printers, check that the printcap entry still exists */
-	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_const_servicename(snum))) {
-		DEBUG(3, ("print_job_start: printer name %s check failed.\n", lp_const_servicename(snum) ));
+	werr = print_job_checks(server_info, snum, &njobs);
+	if (!W_ERROR_IS_OK(werr)) {
 		release_print_db(pdb);
-		errno = ENOENT;
-		return (uint32)-1;
-	}
-
-	/* Insure the maximum queue size is not violated */
-	if ((njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
-		DEBUG(3, ("print_job_start: Queue %s number of jobs (%d) larger than max printjobs per queue (%d).\n",
-			sharename, njobs, lp_maxprintjobs(snum) ));
-		release_print_db(pdb);
-		errno = ENOSPC;
-		return (uint32)-1;
+		return werr;
 	}
 
 	DEBUG(10,("print_job_start: Queue %s number of jobs (%d), max printjobs = %d\n",
 		sharename, njobs, lp_maxprintjobs(snum) ));
 
-	if (!allocate_print_jobid(pdb, snum, sharename, &jobid))
+	werr = allocate_print_jobid(pdb, snum, sharename, &jobid);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
+	}
 
 	/* create the database entry */
 
@@ -2487,7 +2559,7 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 	pjob.smbjob = True;
 	pjob.devmode = devmode;
 
-	fstrcpy(pjob.jobname, jobname);
+	fstrcpy(pjob.jobname, docname);
 
 	fstrcpy(pjob.user, lp_printjob_username(snum));
 	standard_sub_advanced(sharename, server_info->sanitized_username,
@@ -2501,20 +2573,8 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
 	/* we have a job entry - now create the spool file */
-	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.8u.XXXXXX",
-		 path, PRINT_SPOOL_PREFIX, (unsigned int)jobid);
-	pjob.fd = mkstemp(pjob.filename);
-
-	if (pjob.fd == -1) {
-		if (errno == EACCES) {
-			/* Common setup error, force a report. */
-			DEBUG(0, ("print_job_start: insufficient permissions \
-to open spool file %s.\n", pjob.filename));
-		} else {
-			/* Normal case, report at level 3 and above. */
-			DEBUG(3, ("print_job_start: can't open spool file %s,\n", pjob.filename));
-			DEBUGADD(3, ("errno = %d (%s).\n", errno, strerror(errno)));
-		}
+	werr = print_job_spool_file(snum, jobid, &pjob.filename, &pjob.fd);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
@@ -2528,16 +2588,19 @@ to open spool file %s.\n", pjob.filename));
 
 	release_print_db(pdb);
 
-	return jobid;
+	*_jobid = jobid;
+	return WERR_OK;
 
  fail:
-	if (jobid != -1)
+	if (jobid != -1) {
 		pjob_delete(sharename, jobid);
+	}
 
 	release_print_db(pdb);
 
-	DEBUG(3, ("print_job_start: returning fail. Error = %s\n", strerror(errno) ));
-	return (uint32)-1;
+	DEBUG(3, ("print_job_start: returning fail. "
+		  "Error = %s\n", win_errstr(werr)));
+	return werr;
 }
 
 /****************************************************************************

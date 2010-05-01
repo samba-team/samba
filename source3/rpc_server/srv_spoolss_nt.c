@@ -5121,12 +5121,20 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 	struct spoolss_DocumentInfo1 *info_1;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	WERROR werr;
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_StartDocPrinter: "
 			"Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
+	}
+
+	if (Printer->jobid) {
+		DEBUG(2, ("_spoolss_StartDocPrinter: "
+			  "StartDocPrinter called twice! "
+			  "(existing jobid = %d)\n", Printer->jobid));
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (r->in.level != 1) {
@@ -5155,15 +5163,15 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	Printer->jobid = print_job_start(p->server_info, snum,
-					 info_1->document_name,
-					 Printer->devmode);
+	werr = print_job_start(p->server_info, snum,
+				info_1->document_name, info_1->output_file,
+				Printer->devmode, &Printer->jobid);
 
 	/* An error occured in print_job_start() so return an appropriate
 	   NT error code. */
 
-	if (Printer->jobid == -1) {
-		return map_werror_from_unix(errno);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	Printer->document_started = true;
@@ -5196,6 +5204,7 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 	print_job_end(snum, Printer->jobid, NORMAL_CLOSE);
 	/* error codes unhandled so far ... */
 
+	Printer->jobid = 0;
 	return WERR_OK;
 }
 

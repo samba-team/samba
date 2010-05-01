@@ -4759,8 +4759,9 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 		      uint32 jobid, WERROR *errcode);
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
-uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       const char *jobname, struct spoolss_DeviceMode *devmode );
+WERROR print_job_start(struct auth_serversupplied_info *server_info,
+		       int snum, const char *docname, const char *filename,
+		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid);
 void print_job_endpage(int snum, uint32 jobid);
 bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum, 
