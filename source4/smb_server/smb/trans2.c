@@ -204,7 +204,7 @@ static NTSTATUS trans2_open_send(struct trans_op *op)
 
 	smbsrv_push_fnum(trans->out.params.data, VWV(0), io->t2open.out.file.ntvfs);
 	SSVAL(trans->out.params.data, VWV(1), io->t2open.out.attrib);
-	srv_push_dos_date3(req->smb_conn, trans->out.params.data, 
+	srv_push_dos_date3(req->smb_conn, trans->out.params.data,
 			   VWV(2), io->t2open.out.write_time);
 	SIVAL(trans->out.params.data, VWV(4), io->t2open.out.size);
 	SSVAL(trans->out.params.data, VWV(6), io->t2open.out.access);
@@ -239,7 +239,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 	io->t2open.in.open_mode    = SVAL(trans->in.params.data, VWV(1));
 	io->t2open.in.search_attrs = SVAL(trans->in.params.data, VWV(2));
 	io->t2open.in.file_attrs   = SVAL(trans->in.params.data, VWV(3));
-	io->t2open.in.write_time   = srv_pull_dos_date(req->smb_conn, 
+	io->t2open.in.write_time   = srv_pull_dos_date(req->smb_conn,
 						    trans->in.params.data + VWV(4));
 	io->t2open.in.open_func    = SVAL(trans->in.params.data, VWV(6));
 	io->t2open.in.size         = IVAL(trans->in.params.data, VWV(7));
@@ -300,8 +300,8 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 		return NT_STATUS_FOOBAR;
 	}
 
-	TRANS2_CHECK(ea_pull_list(&trans->in.data, io, 
-				  &io->t2mkdir.in.num_eas, 
+	TRANS2_CHECK(ea_pull_list(&trans->in.data, io,
+				  &io->t2mkdir.in.num_eas,
 				  &io->t2mkdir.in.eas));
 
 	op->op_info = io;
@@ -362,7 +362,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 					 st->ea_list.out.eas);
 		TRANS2_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
 
-		ea_put_list(blob->data, 
+		ea_put_list(blob->data,
 			    st->ea_list.out.num_eas, st->ea_list.out.eas);
 		return NT_STATUS_OK;
 
@@ -371,7 +371,7 @@ static NTSTATUS trans2_push_fileinfo(struct smbsrv_connection *smb_conn,
 						  st->all_eas.out.eas);
 		TRANS2_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, list_size));
 
-		ea_put_list(blob->data, 
+		ea_put_list(blob->data,
 			    st->all_eas.out.num_eas, st->all_eas.out.eas);
 		return NT_STATUS_OK;
 
@@ -472,7 +472,7 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct trans_op *op
 	}
 
 	if (st->generic.level == RAW_FILEINFO_EA_LIST) {
-		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req, 
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
 					       &st->ea_list.in.num_names,
 					       &st->ea_list.in.ea_names));
 	}
@@ -513,7 +513,7 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct trans_op *op
 	}
 
 	if (st->generic.level == RAW_FILEINFO_EA_LIST) {
-		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req, 
+		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
 					       &st->ea_list.in.num_names,
 					       &st->ea_list.in.ea_names));
 	}
@@ -553,8 +553,8 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_EA_SET:
-		return ea_pull_list(blob, req, 
-				    &st->ea_set.in.num_eas, 
+		return ea_pull_list(blob, req,
+				    &st->ea_set.in.num_eas,
 				    &st->ea_set.in.eas);
 
 	case SMB_SFILEINFO_BASIC_INFO:
@@ -698,7 +698,7 @@ struct find_state {
 };
 
 /*
-  fill a single entry in a trans2 find reply 
+  fill a single entry in a trans2 find reply
 */
 static NTSTATUS find_fill_info(struct find_state *state,
 			       const union smb_search_data *file)
@@ -730,7 +730,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		SIVAL(data, 12, file->standard.size);
 		SIVAL(data, 16, file->standard.alloc_size);
 		SSVAL(data, 20, file->standard.attrib);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->standard.name.s, 
+		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->standard.name.s,
 						       ofs + 22, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
 						       STR_LEN8BIT | STR_TERMINATE | STR_LEN_NOTERM));
 		break;
@@ -751,7 +751,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_size.alloc_size);
 		SSVAL(data, 20, file->ea_size.attrib);
 		SIVAL(data, 22, file->ea_size.ea_size);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->ea_size.name.s, 
+		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->ea_size.name.s,
 						       ofs + 26, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
 						       STR_LEN8BIT | STR_NOALIGN));
 		TRANS2_CHECK(smbsrv_blob_fill_data(trans, &trans->out.data, trans->out.data.length + 1));
@@ -774,7 +774,7 @@ static NTSTATUS find_fill_info(struct find_state *state,
 		SIVAL(data, 16, file->ea_list.alloc_size);
 		SSVAL(data, 20, file->ea_list.attrib);
 		ea_put_list(data+22, file->ea_list.eas.num_eas, file->ea_list.eas.eas);
-		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->ea_list.name.s, 
+		TRANS2_CHECK(smbsrv_blob_append_string(trans, &trans->out.data, file->ea_list.name.s,
 						       ofs + 22 + ea_size, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
 						       STR_LEN8BIT | STR_NOALIGN));
 		TRANS2_CHECK(smbsrv_blob_fill_data(trans, &trans->out.data, trans->out.data.length + 1));
@@ -880,7 +880,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 
 	if (search->t2ffirst.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
-					       &search->t2ffirst.in.num_names, 
+					       &search->t2ffirst.in.num_names,
 					       &search->t2ffirst.in.ea_names));
 	}
 
@@ -966,7 +966,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 
 	if (search->t2fnext.data_level == RAW_SEARCH_DATA_EA_LIST) {
 		TRANS2_CHECK(ea_pull_name_list(&trans->in.data, req,
-					       &search->t2fnext.in.num_names, 
+					       &search->t2fnext.in.num_names,
 					       &search->t2fnext.in.ea_names));
 	}
 
@@ -1133,7 +1133,7 @@ static void reply_trans_send(struct ntvfs_request *ntvfs)
 		}
 
 		/* don't destroy unless this is the last chunk */
-		if (params_left - this_param != 0 || 
+		if (params_left - this_param != 0 ||
 		    data_left - this_data != 0) {
 			this_req = smbsrv_setup_secondary_request(req);
 		} else {
@@ -1151,7 +1151,7 @@ static void reply_trans_send(struct ntvfs_request *ntvfs)
 		SSVAL(this_req->out.vwv, VWV(5), PTR_DIFF(params, trans->out.params.data));
 
 		SSVAL(this_req->out.vwv, VWV(6), this_data);
-		SSVAL(this_req->out.vwv, VWV(7), align1 + align2 + 
+		SSVAL(this_req->out.vwv, VWV(7), align1 + align2 +
 		      PTR_DIFF(this_req->out.data + this_param, this_req->out.hdr));
 		SSVAL(this_req->out.vwv, VWV(8), PTR_DIFF(data, trans->out.data.data));
 
@@ -1341,7 +1341,7 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	/* only allow contiguous requests */
 	if ((param_count != 0 &&
 	     param_disp != trans->in.params.length) ||
-	    (data_count != 0 && 
+	    (data_count != 0 &&
 	     data_disp != trans->in.data.length)) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;		
@@ -1349,9 +1349,9 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 
 	/* add to the existing request */
 	if (param_count != 0) {
-		trans->in.params.data = talloc_realloc(trans, 
-							 trans->in.params.data, 
-							 uint8_t, 
+		trans->in.params.data = talloc_realloc(trans,
+							 trans->in.params.data,
+							 uint8_t,
 							 param_disp + param_count);
 		if (trans->in.params.data == NULL) {
 			smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
@@ -1361,9 +1361,9 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	if (data_count != 0) {
-		trans->in.data.data = talloc_realloc(trans, 
-						       trans->in.data.data, 
-						       uint8_t, 
+		trans->in.data.data = talloc_realloc(trans,
+						       trans->in.data.data,
+						       uint8_t,
 						       data_disp + data_count);
 		if (trans->in.data.data == NULL) {
 			smbsrv_send_error(tp->req, NT_STATUS_NO_MEMORY);
