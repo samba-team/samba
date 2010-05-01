@@ -1407,8 +1407,10 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 
 /*
   check if any links need upgrading from w2k format
+
+  The parent_ctx is the ldb_message_element which contains the values array that dns[i].v points at, and which should be used for allocating any new value.
  */
-static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, const struct GUID *invocation_id)
+static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, struct ldb_message_element *parent_ctx, const struct GUID *invocation_id)
 {
 	uint32_t i;
 	for (i=0; i<count; i++) {
@@ -1422,7 +1424,7 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, con
 		}
 
 		/* it's an old one that needs upgrading */
-		ret = replmd_update_la_val(dns, dns[i].v, dns[i].dsdb_dn, dns[i].dsdb_dn, invocation_id,
+		ret = replmd_update_la_val(parent_ctx->values, dns[i].v, dns[i].dsdb_dn, dns[i].dsdb_dn, invocation_id,
 					   1, 1, 0, 0, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1574,8 +1576,8 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	ret = replmd_check_upgrade_links(old_dns, old_num_values, invocation_id);
+	
+	ret = replmd_check_upgrade_links(old_dns, old_num_values, old_el, invocation_id);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -1700,7 +1702,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = replmd_check_upgrade_links(old_dns, old_el->num_values, invocation_id);
+	ret = replmd_check_upgrade_links(old_dns, old_el->num_values, old_el, invocation_id);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -1818,7 +1820,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = replmd_check_upgrade_links(old_dns, old_num_values, invocation_id);
+	ret = replmd_check_upgrade_links(old_dns, old_num_values, old_el, invocation_id);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -3693,7 +3695,7 @@ linked_attributes[0]:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = replmd_check_upgrade_links(pdn_list, old_el->num_values, our_invocation_id);
+	ret = replmd_check_upgrade_links(pdn_list, old_el->num_values, old_el, our_invocation_id);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
