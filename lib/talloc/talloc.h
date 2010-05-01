@@ -520,7 +520,7 @@ void *talloc_ptrtype(const void *ctx, #type);
  * @brief Allocate a new 0-sized talloc chunk.
  *
  * This is a utility macro that creates a new memory context hanging off an
- * exiting context, automatically naming it "talloc_new: __location__" where
+ * existing context, automatically naming it "talloc_new: __location__" where
  * __location__ is the source line it is called from. It is particularly
  * useful for creating a new temporary working context.
  *
