@@ -51,8 +51,9 @@ int main(int argc, const char **argv)
 	int ret;
 	struct ldb_cmdline *options;
 	struct ldb_dn *dn1, *dn2;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	ldb = ldb_init(NULL, NULL);
+	ldb = ldb_init(mem_ctx, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
@@ -71,7 +72,7 @@ int main(int argc, const char **argv)
 			options->argv[0], options->argv[1], ldb_errstring(ldb));
 	}
 
-	talloc_free(ldb);
+	talloc_free(mem_ctx);
 	
 	return ret;
 }

@@ -271,8 +271,9 @@ int main(int argc, const char **argv)
 	struct ldb_cmdline *options;
 	int ret = -1;
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	ldb = ldb_init(NULL, NULL);
+	ldb = ldb_init(mem_ctx, NULL);
 	if (ldb == NULL) {
 		return -1;
 	}
@@ -311,6 +312,7 @@ int main(int argc, const char **argv)
 		ret = do_search(ldb, basedn, options, expression, attrs);
 	}
 
-	talloc_free(ldb);
+	talloc_free(mem_ctx);
+
 	return ret;
 }

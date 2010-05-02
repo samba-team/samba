@@ -284,8 +284,9 @@ int main(int argc, const char **argv)
 	int ret;
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 	const char * const * attrs = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	ldb = ldb_init(NULL, NULL);
+	ldb = ldb_init(mem_ctx, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
@@ -330,6 +331,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	talloc_free(ldb);
+	talloc_free(mem_ctx);
+
 	return 0;
 }

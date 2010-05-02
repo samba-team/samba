@@ -94,8 +94,9 @@ int main(int argc, const char **argv)
 	struct ldb_context *ldb;
 	int count=0;
 	int i, ret=LDB_SUCCESS;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	ldb = ldb_init(NULL, NULL);
+	ldb = ldb_init(mem_ctx, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
@@ -115,7 +116,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	talloc_free(ldb);
+	talloc_free(mem_ctx);
 
 	printf("Modified %d records with %d failures\n", count, failures);
 
