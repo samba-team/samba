@@ -37,6 +37,82 @@ from samba.provision import (ProvisionNames, provision_paths_from_lp,
     FILL_FULL, provision, ProvisioningError)
 from samba.ndr import ndr_unpack
 
+# All the ldb related to registry are commented because the path for them is relative
+# in the provisionPath object
+# And so opening them create a file in the current directory which is not what we want
+# I still keep them commented because I plan soon to make more cleaner
+
+class ProvisionLDB(object):
+    def __init__(self):
+        self.sam = None
+        self.secrets = None
+        self.idmap = None
+        self.privilege = None
+        self.hkcr = None
+        self.hkcu = None
+        self.hku = None
+        self.hklm = None
+
+    def startTransactions(self):
+        self.sam.transaction_start()
+        self.secrets.transaction_start()
+        self.idmap.transaction_start()
+        self.privilege.transaction_start()
+#        self.hkcr.transaction_start()
+#        self.hkcu.transaction_start()
+#        self.hku.transaction_start()
+#        self.hklm.transaction_start()
+
+    def groupedRollback(self):
+        self.sam.transaction_cancel()
+        self.secrets.transaction_cancel()
+        self.idmap.transaction_cancel()
+        self.privilege.transaction_cancel()
+#        self.hkcr.transaction_cancel()
+#        self.hkcu.transaction_cancel()
+#        self.hku.transaction_cancel()
+#        self.hklm.transaction_cancel()
+
+    def groupedCommit(self):
+        self.sam.transaction_prepare_commit()
+        self.secrets.transaction_prepare_commit()
+        self.idmap.transaction_prepare_commit()
+        self.privilege.transaction_prepare_commit()
+#        self.hkcr.transaction_prepare_commit()
+#        self.hkcu.transaction_prepare_commit()
+#        self.hku.transaction_prepare_commit()
+#        self.hklm.transaction_prepare_commit()
+
+        self.sam.transaction_commit()
+        self.secrets.transaction_commit()
+        self.idmap.transaction_commit()
+        self.privilege.transaction_commit()
+#        self.hkcr.transaction_commit()
+#        self.hkcu.transaction_commit()
+#        self.hku.transaction_commit()
+#        self.hklm.transaction_commit()
+
+def get_ldbs(paths, creds, session, lp):
+    """Return LDB object mapped on most important databases
+
+    :param paths: An object holding the different importants paths for provision object
+    :param creds: Credential used for openning LDB files
+    :param session: Session to use for openning LDB files
+    :param lp: A loadparam object
+    :return: A ProvisionLDB object that contains LDB object for the different LDB files of the provision"""
+
+    ldbs = ProvisionLDB()
+
+    ldbs.sam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp, options=["modules:samba_dsdb"])
+    ldbs.secrets = Ldb(paths.secrets, session_info=session, credentials=creds, lp=lp)
+    ldbs.idmap = Ldb(paths.idmapdb, session_info=session, credentials=creds, lp=lp)
+    ldbs.privilege = Ldb(paths.privilege, session_info=session, credentials=creds, lp=lp)
+#    ldbs.hkcr = Ldb(paths.hkcr, session_info=session, credentials=creds, lp=lp)
+#    ldbs.hkcu = Ldb(paths.hkcu, session_info=session, credentials=creds, lp=lp)
+#    ldbs.hku = Ldb(paths.hku, session_info=session, credentials=creds, lp=lp)
+#    ldbs.hklm = Ldb(paths.hklm, session_info=session, credentials=creds, lp=lp)
+
+    return ldbs
 
 def get_paths(param, targetdir=None, smbconf=None):
     """Get paths to important provision objects (smb.conf, ldb files, ...)
@@ -62,22 +138,19 @@ def get_paths(param, targetdir=None, smbconf=None):
     return paths
 
 
-def find_provision_key_parameters(param, credentials, session_info, paths,
-        smbconf):
+def find_provision_key_parameters(samdb, secretsdb, paths, smbconf, lp):
     """Get key provision parameters (realm, domain, ...) from a given provision
 
-    :param param: Param object
-    :param credentials: Credentials for the authentification
-    :param session_info: Session object
+    :param samdb: An LDB object connected to the sam.ldb file
+    :param secretsdb: An LDB object connected to the secrets.ldb file
     :param paths: A list of path to provision object
     :param smbconf: Path to the smb.conf file
-    :return: A list of key provision parameters
-    """
+    :param lp: A LoadParm object
+    :return: A list of key provision parameters"""
 
-    lp = param.LoadParm()
-    lp.load(paths.smbconf)
     names = ProvisionNames()
     names.adminpass = None
+
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
     names.domain = string.upper(lp.get("workgroup"))
     names.realm = lp.get("realm")
@@ -85,18 +158,11 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     names.dnsdomain = names.realm
     names.realm = string.upper(names.realm)
     # netbiosname
-    secrets_ldb = Ldb(paths.secrets, session_info=session_info,
-        credentials=credentials,lp=lp, options=["modules:samba_secrets"])
     # Get the netbiosname first (could be obtained from smb.conf in theory)
-    res = secrets_ldb.search(expression="(flatname=%s)" % names.domain,
-            base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
+    res = secretsdb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
     names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
     names.smbconf = smbconf
-    # It's important here to let ldb load with the old module or it's quite
-    # certain that the LDB won't load ...
-    samdb = Ldb(paths.samdb, session_info=session_info,
-            credentials=credentials, lp=lp, options=["modules:samba_dsdb"])
 
     # That's a bit simplistic but it's ok as long as we have only 3
     # partitions
