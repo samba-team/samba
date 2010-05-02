@@ -40,12 +40,11 @@ static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwar
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
-	PyObject *py_creds;	
-	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", "credentials", NULL };
+	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssiiO:Join", discard_const_p(char *, kwnames), 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssii:Join", discard_const_p(char *, kwnames), 
 					 &r.in.domain_name, &r.in.netbios_name, 
-					 &r.in.join_type, &r.in.level, &py_creds))
+					 &r.in.join_type, &r.in.level))
 		return NULL;
 
 	mem_ctx = talloc_new(self->mem_ctx);
