@@ -267,7 +267,7 @@ def CHECK_UNAME(conf):
     for v in "sysname machine release version".split():
         if not conf.CHECK_CODE('''
                                struct utsname n;
-                               if (uname(&n) != 0) return -1;
+                               if (uname(&n) == -1) return -1;
                                printf("%%s", n.%s);
                                ''' % v,
                                define='SYSTEM_UNAME_%s' % v.upper(),
