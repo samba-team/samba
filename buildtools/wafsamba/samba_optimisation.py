@@ -9,11 +9,16 @@
 from TaskGen import feature, after
 import preproc
 
-kak = {}
 @feature('cc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
 def apply_incpaths(self):
 	lst = []
+
+	try:
+		kak = self.bld.kak
+	except AttributeError:
+		kak = self.bld.kak = {}
+
 	# TODO move the uselib processing out of here
 	for lib in self.to_list(self.uselib):
 		for path in self.env['CPPPATH_' + lib]:
@@ -52,7 +57,6 @@ def apply_incpaths(self):
 		if node:
 			self.env.append_value('INC_PATHS', node)
 
-cac = {}
 @feature('cc')
 @after('apply_incpaths')
 def apply_obj_vars_cc(self):
@@ -63,7 +67,10 @@ def apply_obj_vars_cc(self):
 
     lss = env['_CCINCFLAGS']
 
-    global cac
+    try:
+         cac = self.bld.cac
+    except AttributeError:
+         cac = self.bld.cac = {}
 
     # local flags come first
     # set the user-defined includes paths
