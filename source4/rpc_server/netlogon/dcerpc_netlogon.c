@@ -1248,8 +1248,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
-		dce_call->conn->dce_ctx->lp_ctx,
-		system_session(dce_call->conn->dce_ctx->lp_ctx));
+				dce_call->conn->dce_ctx->lp_ctx,
+				system_session(dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
