@@ -6420,7 +6420,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.privs = talloc_zero(mem_ctx, struct lsa_PrivArray);
 			if (r->out.privs == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumPrivs(cli->pipes_struct, r);
@@ -6432,7 +6432,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.sdbuf = talloc_zero(mem_ctx, struct sec_desc_buf *);
 			if (r->out.sdbuf == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QuerySecurity(cli->pipes_struct, r);
@@ -6456,7 +6456,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenPolicy(cli->pipes_struct, r);
@@ -6468,7 +6468,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_PolicyInformation *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryInfoPolicy(cli->pipes_struct, r);
@@ -6492,7 +6492,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.acct_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.acct_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_CreateAccount(cli->pipes_struct, r);
@@ -6505,7 +6505,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
 			if (r->out.sids == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumAccounts(cli->pipes_struct, r);
@@ -6517,7 +6517,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_CreateTrustedDomain(cli->pipes_struct, r);
@@ -6530,7 +6530,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_DomainList);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumTrustDom(cli->pipes_struct, r);
@@ -6544,7 +6544,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupNames(cli->pipes_struct, r);
@@ -6558,7 +6558,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupSids(cli->pipes_struct, r);
@@ -6570,7 +6570,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.sec_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.sec_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_CreateSecret(cli->pipes_struct, r);
@@ -6582,7 +6582,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.acct_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.acct_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenAccount(cli->pipes_struct, r);
@@ -6594,7 +6594,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.privs = talloc_zero(mem_ctx, struct lsa_PrivilegeSet *);
 			if (r->out.privs == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumPrivsAccount(cli->pipes_struct, r);
@@ -6630,7 +6630,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.access_mask = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.access_mask == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_GetSystemAccessAccount(cli->pipes_struct, r);
@@ -6648,7 +6648,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenTrustedDomain(cli->pipes_struct, r);
@@ -6660,7 +6660,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryTrustedDomainInfo(cli->pipes_struct, r);
@@ -6678,7 +6678,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.sec_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.sec_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenSecret(cli->pipes_struct, r);
@@ -6707,7 +6707,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.luid = talloc_zero(mem_ctx, struct lsa_LUID);
 			if (r->out.luid == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupPrivValue(cli->pipes_struct, r);
@@ -6719,7 +6719,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.name = talloc_zero(mem_ctx, struct lsa_StringLarge *);
 			if (r->out.name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupPrivName(cli->pipes_struct, r);
@@ -6731,12 +6731,12 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.disp_name = talloc_zero(mem_ctx, struct lsa_StringLarge *);
 			if (r->out.disp_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.returned_language_id = talloc_zero(mem_ctx, uint16_t);
 			if (r->out.returned_language_id == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupPrivDisplayName(cli->pipes_struct, r);
@@ -6756,7 +6756,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
 			if (r->out.sids == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumAccountsWithUserRight(cli->pipes_struct, r);
@@ -6768,7 +6768,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.rights = talloc_zero(mem_ctx, struct lsa_RightSet);
 			if (r->out.rights == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumAccountRights(cli->pipes_struct, r);
@@ -6792,7 +6792,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryTrustedDomainInfoBySid(cli->pipes_struct, r);
@@ -6830,7 +6830,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenPolicy2(cli->pipes_struct, r);
@@ -6851,7 +6851,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_PolicyInformation *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryInfoPolicy2(cli->pipes_struct, r);
@@ -6869,7 +6869,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryTrustedDomainInfoByName(cli->pipes_struct, r);
@@ -6888,7 +6888,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_DomainListEx);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_EnumTrustedDomainsEx(cli->pipes_struct, r);
@@ -6900,7 +6900,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_CreateTrustedDomainEx(cli->pipes_struct, r);
@@ -6920,7 +6920,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_DomainInformationPolicy *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_QueryDomainInformationPolicy(cli->pipes_struct, r);
@@ -6938,7 +6938,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_OpenTrustedDomainByName(cli->pipes_struct, r);
@@ -6958,7 +6958,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupSids2(cli->pipes_struct, r);
@@ -6972,7 +6972,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupNames2(cli->pipes_struct, r);
@@ -6984,7 +6984,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_CreateTrustedDomainEx2(cli->pipes_struct, r);
@@ -7046,7 +7046,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupNames3(cli->pipes_struct, r);
@@ -7082,7 +7082,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
 			if (r->out.forest_trust_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_lsaRQueryForestTrustInformation(cli->pipes_struct, r);
@@ -7094,7 +7094,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.collision_info = talloc_zero(mem_ctx, struct lsa_ForestTrustCollisionInfo *);
 			if (r->out.collision_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_lsaRSetForestTrustInformation(cli->pipes_struct, r);
@@ -7114,7 +7114,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupSids3(cli->pipes_struct, r);
@@ -7128,7 +7128,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.count = r->in.count;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_RefDomainList *);
 			if (r->out.domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _lsa_LookupNames4(cli->pipes_struct, r);

@@ -1986,7 +1986,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.number = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.number == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_GetNumRecords(cli->pipes_struct, r);
@@ -1998,7 +1998,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.oldest_entry = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.oldest_entry == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_GetOldestRecord(cli->pipes_struct, r);
@@ -2016,7 +2016,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_OpenEventLogW(cli->pipes_struct, r);
@@ -2028,7 +2028,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.log_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.log_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_RegisterEventSourceW(cli->pipes_struct, r);
@@ -2040,7 +2040,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_OpenBackupEventLogW(cli->pipes_struct, r);
@@ -2052,17 +2052,17 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.number_of_bytes);
 			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.sent_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.sent_size == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.real_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.real_size == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_ReadEventLogW(cli->pipes_struct, r);
@@ -2143,12 +2143,12 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.bytes_needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _eventlog_GetLogInformation(cli->pipes_struct, r);

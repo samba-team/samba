@@ -1761,7 +1761,7 @@ NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.version = talloc_zero(mem_ctx, enum dfs_ManagerVersion);
 			if (r->out.version == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			_dfs_GetManagerVersion(cli->pipes_struct, r);
@@ -1791,7 +1791,7 @@ NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union dfs_Info);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _dfs_GetInfo(cli->pipes_struct, r);

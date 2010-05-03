@@ -4205,7 +4205,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetCharDevEnum(cli->pipes_struct, r);
@@ -4217,7 +4217,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetCharDevGetInfo(cli->pipes_struct, r);
@@ -4237,7 +4237,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetCharDevQEnum(cli->pipes_struct, r);
@@ -4249,7 +4249,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevQInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetCharDevQGetInfo(cli->pipes_struct, r);
@@ -4283,7 +4283,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetConnEnum(cli->pipes_struct, r);
@@ -4297,7 +4297,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetFileEnum(cli->pipes_struct, r);
@@ -4309,7 +4309,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetFileInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetFileGetInfo(cli->pipes_struct, r);
@@ -4329,7 +4329,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetSessEnum(cli->pipes_struct, r);
@@ -4357,7 +4357,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetShareEnumAll(cli->pipes_struct, r);
@@ -4369,7 +4369,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetShareInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetShareGetInfo(cli->pipes_struct, r);
@@ -4401,7 +4401,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.type = talloc_zero(mem_ctx, enum srvsvc_ShareType);
 			if (r->out.type == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetShareCheck(cli->pipes_struct, r);
@@ -4413,7 +4413,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetSrvInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetSrvGetInfo(cli->pipes_struct, r);
@@ -4435,7 +4435,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetDiskEnum(cli->pipes_struct, r);
@@ -4447,7 +4447,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.stats = talloc_zero(mem_ctx, struct srvsvc_Statistics *);
 			if (r->out.stats == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetServerStatisticsGet(cli->pipes_struct, r);
@@ -4467,7 +4467,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetTransportEnum(cli->pipes_struct, r);
@@ -4485,7 +4485,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct srvsvc_NetRemoteTODInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetRemoteTOD(cli->pipes_struct, r);
@@ -4503,7 +4503,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.pathtype = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.pathtype == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetPathType(cli->pipes_struct, r);
@@ -4516,7 +4516,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.pathtype = r->in.pathtype;
 			r->out.can_path = talloc_zero_array(mem_ctx, uint8_t, r->in.maxbuf);
 			if (r->out.can_path == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetPathCanonicalize(cli->pipes_struct, r);
@@ -4554,7 +4554,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.totalentries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.totalentries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetShareEnum(cli->pipes_struct, r);
@@ -4566,7 +4566,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.hnd = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.hnd == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetShareDelStart(cli->pipes_struct, r);
@@ -4586,7 +4586,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.sd_buf = talloc_zero(mem_ctx, struct sec_desc_buf *);
 			if (r->out.sd_buf == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _srvsvc_NetGetFileSecurity(cli->pipes_struct, r);

@@ -8659,17 +8659,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PrinterInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrinters(cli->pipes_struct, r);
@@ -8681,7 +8681,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_OpenPrinter(cli->pipes_struct, r);
@@ -8699,12 +8699,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_JobInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetJob(cli->pipes_struct, r);
@@ -8716,17 +8716,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_JobInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumJobs(cli->pipes_struct, r);
@@ -8738,7 +8738,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_AddPrinter(cli->pipes_struct, r);
@@ -8762,12 +8762,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PrinterInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinter(cli->pipes_struct, r);
@@ -8785,17 +8785,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrinterDrivers(cli->pipes_struct, r);
@@ -8807,12 +8807,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterDriver(cli->pipes_struct, r);
@@ -8824,12 +8824,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverDirectoryInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterDriverDirectory(cli->pipes_struct, r);
@@ -8853,17 +8853,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcessorInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrintProcessors(cli->pipes_struct, r);
@@ -8875,12 +8875,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcessorDirectoryInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrintProcessorDirectory(cli->pipes_struct, r);
@@ -8892,7 +8892,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.job_id = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.job_id == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_StartDocPrinter(cli->pipes_struct, r);
@@ -8910,7 +8910,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.num_written = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.num_written == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_WritePrinter(cli->pipes_struct, r);
@@ -8934,12 +8934,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.data_size);
 			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out._data_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out._data_size == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_ReadPrinter(cli->pipes_struct, r);
@@ -8958,7 +8958,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			r->out.buffer = r->in.buffer;
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_AddJob(cli->pipes_struct, r);
@@ -8976,17 +8976,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 			if (r->out.type == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterData(cli->pipes_struct, r);
@@ -9030,12 +9030,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_FormInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetForm(cli->pipes_struct, r);
@@ -9053,17 +9053,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_FormInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumForms(cli->pipes_struct, r);
@@ -9075,17 +9075,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PortInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPorts(cli->pipes_struct, r);
@@ -9097,17 +9097,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_MonitorInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumMonitors(cli->pipes_struct, r);
@@ -9137,7 +9137,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.gdi_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.gdi_handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_CreatePrinterIC(cli->pipes_struct, r);
@@ -9211,17 +9211,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcDataTypesInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrintProcDataTypes(cli->pipes_struct, r);
@@ -9239,22 +9239,22 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.server_major_version = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.server_major_version == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.server_minor_version = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.server_minor_version == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterDriver2(cli->pipes_struct, r);
@@ -9290,7 +9290,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_ReplyOpenPrinter(cli->pipes_struct, r);
@@ -9346,7 +9346,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.reply_result = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.reply_result == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_RouterReplyPrinterEx(cli->pipes_struct, r);
@@ -9358,7 +9358,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct spoolss_NotifyInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_RouterRefreshPrinterChangeNotify(cli->pipes_struct, r);
@@ -9376,7 +9376,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_OpenPrinterEx(cli->pipes_struct, r);
@@ -9388,7 +9388,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_AddPrinterEx(cli->pipes_struct, r);
@@ -9406,27 +9406,27 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.value_name = talloc_zero_array(mem_ctx, const char, r->in.value_offered / 2);
 			if (r->out.value_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.value_needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.value_needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 			if (r->out.type == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.data_offered);
 			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.data_needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.data_needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrinterData(cli->pipes_struct, r);
@@ -9468,17 +9468,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 			if (r->out.type == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterDataEx(cli->pipes_struct, r);
@@ -9490,17 +9490,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.count = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.info = talloc_zero(mem_ctx, struct spoolss_PrinterEnumValues *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrinterDataEx(cli->pipes_struct, r);
@@ -9512,17 +9512,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out._ndr_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out._ndr_size == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.key_buffer = talloc_zero(mem_ctx, union spoolss_KeyNames);
 			if (r->out.key_buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_EnumPrinterKey(cli->pipes_struct, r);
@@ -9577,12 +9577,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			r->out.status_code = r->in.status_code;
 			r->out.out_data = talloc_zero_array(mem_ctx, uint8_t, r->in.out_data_size);
 			if (r->out.out_data == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_XcvData(cli->pipes_struct, r);
@@ -9672,7 +9672,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.core_printer_drivers = talloc_zero_array(mem_ctx, struct spoolss_CorePrinterDriver, r->in.core_printer_driver_count);
 			if (r->out.core_printer_drivers == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetCorePrinterDrivers(cli->pipes_struct, r);
@@ -9691,7 +9691,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			r->out.driver_package_cab = r->in.driver_package_cab;
 			r->out.required = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.required == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _spoolss_GetPrinterDriverPackagePath(cli->pipes_struct, r);

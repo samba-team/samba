@@ -852,7 +852,7 @@ NTSTATUS rpc_dssetup_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union dssetup_DsRoleInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _dssetup_DsRoleGetPrimaryDomainInformation(cli->pipes_struct, r);

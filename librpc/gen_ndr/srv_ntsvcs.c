@@ -4896,7 +4896,7 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.version = talloc_zero(mem_ctx, uint16_t);
 			if (r->out.version == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _PNP_GetVersion(cli->pipes_struct, r);
@@ -4951,7 +4951,7 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.length = r->in.length;
 			r->out.buffer = talloc_zero_array(mem_ctx, uint16_t, *r->out.length);
 			if (r->out.buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _PNP_GetDeviceList(cli->pipes_struct, r);
@@ -4963,7 +4963,7 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.size == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _PNP_GetDeviceListSize(cli->pipes_struct, r);
@@ -4984,7 +4984,7 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.needed = r->in.needed;
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, *r->out.buffer_size);
 			if (r->out.buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _PNP_GetDeviceRegProp(cli->pipes_struct, r);
@@ -5154,7 +5154,7 @@ NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.veto_type = r->in.veto_type;
 			r->out.unknown5a = talloc_zero(mem_ctx, const char *);
 			if (r->out.unknown5a == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _PNP_HwProfFlags(cli->pipes_struct, r);

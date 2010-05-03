@@ -3911,7 +3911,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_UasInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonUasLogon(cli->pipes_struct, r);
@@ -3923,7 +3923,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_UasLogoffInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonUasLogoff(cli->pipes_struct, r);
@@ -3936,12 +3936,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
 			if (r->out.validation == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
 			if (r->out.authoritative == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonSamLogon(cli->pipes_struct, r);
@@ -3961,7 +3961,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerReqChallenge(cli->pipes_struct, r);
@@ -3973,7 +3973,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerAuthenticate(cli->pipes_struct, r);
@@ -3985,7 +3985,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerPasswordSet(cli->pipes_struct, r);
@@ -3999,7 +3999,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.sequence_num = r->in.sequence_num;
 			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
 			if (r->out.delta_enum_array == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DatabaseDeltas(cli->pipes_struct, r);
@@ -4013,7 +4013,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.sync_context = r->in.sync_context;
 			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
 			if (r->out.delta_enum_array == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DatabaseSync(cli->pipes_struct, r);
@@ -4026,22 +4026,22 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.buffer = talloc_zero(mem_ctx, struct netr_AccountBuffer);
 			if (r->out.buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.count_returned = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count_returned == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_entries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.recordid = talloc_zero(mem_ctx, struct netr_UAS_INFO_0);
 			if (r->out.recordid == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_AccountDeltas(cli->pipes_struct, r);
@@ -4055,22 +4055,22 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.recordid = r->in.recordid;
 			r->out.buffer = talloc_zero(mem_ctx, struct netr_AccountBuffer);
 			if (r->out.buffer == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.count_returned = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.count_returned == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_entries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.next_reference = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.next_reference == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_AccountSync(cli->pipes_struct, r);
@@ -4082,7 +4082,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.dcname = talloc_zero(mem_ctx, const char *);
 			if (r->out.dcname == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_GetDcName(cli->pipes_struct, r);
@@ -4094,7 +4094,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.query == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonControl(cli->pipes_struct, r);
@@ -4106,7 +4106,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.dcname = talloc_zero(mem_ctx, const char *);
 			if (r->out.dcname == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_GetAnyDCName(cli->pipes_struct, r);
@@ -4118,7 +4118,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.query == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonControl2(cli->pipes_struct, r);
@@ -4131,7 +4131,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.negotiate_flags = r->in.negotiate_flags;
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerAuthenticate2(cli->pipes_struct, r);
@@ -4145,7 +4145,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.sync_context = r->in.sync_context;
 			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
 			if (r->out.delta_enum_array == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DatabaseSync2(cli->pipes_struct, r);
@@ -4158,7 +4158,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
 			if (r->out.delta_enum_array == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DatabaseRedo(cli->pipes_struct, r);
@@ -4170,7 +4170,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.query == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonControl2Ex(cli->pipes_struct, r);
@@ -4182,7 +4182,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.trusted_domains_blob = talloc_zero(mem_ctx, struct netr_Blob);
 			if (r->out.trusted_domains_blob == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_NetrEnumerateTrustedDomains(cli->pipes_struct, r);
@@ -4194,7 +4194,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRGetDCName(cli->pipes_struct, r);
@@ -4207,7 +4207,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.capabilities = talloc_zero(mem_ctx, union netr_Capabilities);
 			if (r->out.capabilities == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonGetCapabilities(cli->pipes_struct, r);
@@ -4225,7 +4225,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.rid = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.rid == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonGetTrustRid(cli->pipes_struct, r);
@@ -4250,12 +4250,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.negotiate_flags = r->in.negotiate_flags;
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.rid = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.rid == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerAuthenticate3(cli->pipes_struct, r);
@@ -4267,7 +4267,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRGetDCNameEx(cli->pipes_struct, r);
@@ -4279,7 +4279,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.site = talloc_zero(mem_ctx, const char *);
 			if (r->out.site == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRGetSiteName(cli->pipes_struct, r);
@@ -4292,7 +4292,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.info = talloc_zero(mem_ctx, union netr_DomainInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonGetDomainInfo(cli->pipes_struct, r);
@@ -4304,7 +4304,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerPasswordSet2(cli->pipes_struct, r);
@@ -4316,12 +4316,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.password = talloc_zero(mem_ctx, struct samr_Password);
 			if (r->out.password == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerPasswordGet(cli->pipes_struct, r);
@@ -4339,7 +4339,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesWCtr *);
 			if (r->out.ctr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRAddressToSitenamesW(cli->pipes_struct, r);
@@ -4351,7 +4351,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRGetDCNameEx2(cli->pipes_struct, r);
@@ -4369,7 +4369,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.dom_trust_list = talloc_zero(mem_ctx, struct netr_DomainTrustList);
 			if (r->out.dom_trust_list == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_NetrEnumerateTrustedDomainsEx(cli->pipes_struct, r);
@@ -4381,7 +4381,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr *);
 			if (r->out.ctr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRAddressToSitenamesExW(cli->pipes_struct, r);
@@ -4393,7 +4393,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct DcSitesCtr *);
 			if (r->out.ctr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsrGetDcSiteCoverageW(cli->pipes_struct, r);
@@ -4406,12 +4406,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.flags = r->in.flags;
 			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
 			if (r->out.validation == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
 			if (r->out.authoritative == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonSamLogonEx(cli->pipes_struct, r);
@@ -4423,7 +4423,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
 			if (r->out.trusts == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsrEnumerateDomainTrusts(cli->pipes_struct, r);
@@ -4441,17 +4441,17 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.password = talloc_zero(mem_ctx, struct samr_Password);
 			if (r->out.password == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.password2 = talloc_zero(mem_ctx, struct samr_Password);
 			if (r->out.password2 == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerTrustPasswordsGet(cli->pipes_struct, r);
@@ -4463,7 +4463,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
 			if (r->out.forest_trust_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_DsRGetForestTrustInformation(cli->pipes_struct, r);
@@ -4475,12 +4475,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
 			if (r->out.forest_trust_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_GetForestTrustInformation(cli->pipes_struct, r);
@@ -4494,12 +4494,12 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.flags = r->in.flags;
 			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
 			if (r->out.validation == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
 			if (r->out.authoritative == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_LogonSamLogonWithFlags(cli->pipes_struct, r);
@@ -4511,22 +4511,22 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.new_owf_password = talloc_zero(mem_ctx, struct samr_Password);
 			if (r->out.new_owf_password == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.old_owf_password = talloc_zero(mem_ctx, struct samr_Password);
 			if (r->out.old_owf_password == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.trust_info = talloc_zero(mem_ctx, struct netr_TrustInfo *);
 			if (r->out.trust_info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _netr_ServerGetTrustInfo(cli->pipes_struct, r);

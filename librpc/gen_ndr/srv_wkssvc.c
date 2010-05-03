@@ -2419,7 +2419,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetWkstaInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetWkstaGetInfo(cli->pipes_struct, r);
@@ -2441,7 +2441,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.entries_read = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.entries_read == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetWkstaEnumUsers(cli->pipes_struct, r);
@@ -2453,7 +2453,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetrWkstaUserInfo);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrWkstaUserGetInfo(cli->pipes_struct, r);
@@ -2475,7 +2475,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_entries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetWkstaTransportEnum(cli->pipes_struct, r);
@@ -2509,7 +2509,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, union wkssvc_NetrUseGetInfoCtr);
 			if (r->out.ctr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrUseGetInfo(cli->pipes_struct, r);
@@ -2529,7 +2529,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.entries_read = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.entries_read == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrUseEnum(cli->pipes_struct, r);
@@ -2547,7 +2547,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct wkssvc_NetrWorkstationStatistics *);
 			if (r->out.info == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrWorkstationStatisticsGet(cli->pipes_struct, r);
@@ -2596,7 +2596,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.name_buffer = r->in.name_buffer;
 			r->out.name_type = talloc_zero(mem_ctx, enum wkssvc_NetJoinStatus);
 			if (r->out.name_type == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrGetJoinInformation(cli->pipes_struct, r);
@@ -2609,7 +2609,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.num_ous = r->in.num_ous;
 			r->out.ous = talloc_zero(mem_ctx, const char **);
 			if (r->out.ous == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrGetJoinableOus(cli->pipes_struct, r);
@@ -2646,7 +2646,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			r->out.num_ous = r->in.num_ous;
 			r->out.ous = talloc_zero(mem_ctx, const char **);
 			if (r->out.ous == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrGetJoinableOus2(cli->pipes_struct, r);
@@ -2676,7 +2676,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct wkssvc_ComputerNamesCtr *);
 			if (r->out.ctr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _wkssvc_NetrEnumerateComputerNames(cli->pipes_struct, r);

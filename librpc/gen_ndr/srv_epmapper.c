@@ -666,12 +666,12 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.entry_handle = r->in.entry_handle;
 			r->out.num_ents = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.num_ents == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.entries = talloc_zero_array(mem_ctx, struct epm_entry_t, r->in.max_ents);
 			if (r->out.entries == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _epm_Lookup(cli->pipes_struct, r);
@@ -684,12 +684,12 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			r->out.entry_handle = r->in.entry_handle;
 			r->out.num_towers = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.num_towers == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.towers = talloc_zero_array(mem_ctx, struct epm_twr_p_t, r->in.max_towers);
 			if (r->out.towers == NULL) {
-			return NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.result = _epm_Map(cli->pipes_struct, r);
