@@ -562,20 +562,73 @@ enum tevent_req_state {
  */
 struct tevent_req;
 
-typedef void (*tevent_req_fn)(struct tevent_req *);
+/**
+ * @brief A tevent request callback function.
+ *
+ * @param[in]  req      The tevent async request which executed this callback.
+ */
+typedef void (*tevent_req_fn)(struct tevent_req *req);
 
+/**
+ * @brief Set an async request callback.
+ *
+ * @param[in]  req      The async request to set the callback.
+ *
+ * @param[in]  fn       The callback function to set.
+ *
+ * @param[in]  pvt      A pointer to private data to pass to the async request
+ *                      callback.
+ */
 void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt);
 
+#ifdef DOXYGEN
+/**
+ * @brief Get the private data casted to the given type for a callback from
+ *        a tevent request structure.
+ *
+ * @param[in]  req      The structure to get the callback data from.
+ *
+ * @param[in]  type     The type of the private callback data to get.
+ *
+ * @return              The type casted private data set NULL if not set.
+ */
+void *tevent_req_callback_data(struct tevent_req *req, #type);
+#else
 void *_tevent_req_callback_data(struct tevent_req *req);
 #define tevent_req_callback_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_callback_data(_req), _type)
+#endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Get the private data for a callback from a tevent request structure.
+ *
+ * @param[in]  req      The structure to get the callback data from.
+ *
+ * @param[in]  req      The structure to get the data from.
+ *
+ * @return              The private data or NULL if not set.
+ */
+void *tevent_req_callback_data_void(struct tevent_req *req);
+#else
 #define tevent_req_callback_data_void(_req) \
 	_tevent_req_callback_data(_req)
+#endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Get the private data from a tevent request structure.
+ *
+ * @param[in]  req      The structure to get the private data from.
+ *
+ * @return              The private data or NULL if not set.
+ */
+void *tevent_req_data(struct tevent_req *req);
+#else
 void *_tevent_req_data(struct tevent_req *req);
 #define tevent_req_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_data(_req), _type)
+#endif
 
 typedef char *(*tevent_req_print_fn)(struct tevent_req *, TALLOC_CTX *);
 
@@ -696,13 +749,35 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 			   #_type, __location__)
 #endif
 
+/**
+ * @brief Set a timeout for an async request.
+ *
+ * @param[in]  req      The request to set the timeout for.
+ *
+ * @param[in]  ev       The event context to use for the timer.
+ *
+ * @param[in]  endtime  The endtime of the request.
+ *
+ * @return              True if succeeded, false if not.
+ */
 bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 
+#ifdef DOXYGEN
+/**
+ * @brief Call the notify callback of the given tevent request manually.
+ *
+ * @param[in]  req      The tevent request to call the notify function from.
+ *
+ * @see tevent_req_set_callback()
+ */
+void tevent_req_notify_callback(struct tevent_req *req);
+#else
 void _tevent_req_notify_callback(struct tevent_req *req, const char *location);
 #define tevent_req_notify_callback(req)		\
 	_tevent_req_notify_callback(req, __location__)
+#endif
 
 #ifdef DOXYGEN
 /**
@@ -853,6 +928,20 @@ bool tevent_req_is_in_progress(struct tevent_req *req);
 bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev);
 
+/**
+ * @brief Get the tevent request and the actual error code you've set.
+ *
+ * @param[in]  req      The tevent request to get the error from.
+ *
+ * @param[out] state    A pointer to store the tevent request error state.
+ *
+ * @param[out] error    A pointer to store the error set by tevent_req_error().
+ *
+ * @return              True if the function could set error and state, false
+ *                      otherwise.
+ *
+ * @see tevent_req_error()
+ */
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
@@ -866,9 +955,63 @@ bool tevent_req_is_error(struct tevent_req *req,
  */
 void tevent_req_received(struct tevent_req *req);
 
+/**
+ * @brief Create a tevent subrequest at a given time.
+ *
+ * The idea is that always the same syntax for tevent requests.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  ev       The event handle to setup the request.
+ *
+ * @param[in]  wakeup_time The time to wakeup and execute the request.
+ *
+ * @return              The new subrequest, NULL on error.
+ *
+ * Example:
+ * @code
+ *   static my_callback_wakeup_done(tevent_req *req)
+ *   {
+ *     struct tevent_req *req = tevent_req_callback_data(subreq,
+ *                              struct tevent_req);
+ *     bool ok;
+ *
+ *     ok = tevent_wakeup_recv(subreq);
+ *     TALLOC_FREE(subreq);
+ *     if (!ok) {
+ *         tevent_req_error(req, -1);
+ *         return;
+ *     }
+ *     ...
+ *   }
+ * @endcode
+ *
+ * @code
+ *   subreq = tevent_wakeup_send(mem_ctx, ev, wakeup_time);
+ *   if (tevent_req_nomem(subreq, req)) {
+ *     return false;
+ *   }
+ *   tevent_set_callback(subreq, my_callback_wakeup_done, req);
+ * @endcode
+ *
+ * @see tevent_wakeup_recv()
+ */
 struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct timeval wakeup_time);
+
+/**
+ * @brief Check if the wakeup has been correctly executed.
+ *
+ * This function needs to be called in the callback function set after calling
+ * tevent_wakeup_send().
+ *
+ * @param[in]  req      The tevent request to check.
+ *
+ * @return              True on success, false otherwise.
+ *
+ * @see tevent_wakeup_recv()
+ */
 bool tevent_wakeup_recv(struct tevent_req *req);
 
 /* @} */
