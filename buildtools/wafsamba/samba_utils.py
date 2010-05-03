@@ -64,9 +64,8 @@ def ADD_LD_LIBRARY_PATH(path):
 def install_rpath(bld):
     '''the rpath value for installation'''
     bld.env['RPATH'] = []
-    bld.env['RPATH_ST'] = []
     if bld.env.RPATH_ON_INSTALL:
-        return ['-Wl,-rpath=%s/lib' % bld.env.PREFIX]
+        return ['%s/lib' % bld.env.PREFIX]
     return []
 
 
@@ -74,9 +73,8 @@ def build_rpath(bld):
     '''the rpath value for build'''
     rpath = os.path.normpath('%s/%s' % (bld.env.BUILD_DIRECTORY, LIB_PATH))
     bld.env['RPATH'] = []
-    bld.env['RPATH_ST'] = []
     if bld.env.RPATH_ON_BUILD:
-        return ['-Wl,-rpath=%s' % rpath]
+        return [rpath]
     ADD_LD_LIBRARY_PATH(rpath)
     return []
 

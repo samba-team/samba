@@ -11,7 +11,7 @@ O755 = 493
 
 @feature('install_bin')
 @after('apply_core')
-@before('apply_link')
+@before('apply_link', 'apply_obj_vars')
 def install_binary(self):
     '''install a binary, taking account of the different rpath varients'''
     bld = self.bld
@@ -22,7 +22,7 @@ def install_binary(self):
 
     if not Options.is_install or not self.samba_install:
         # just need to set rpath if we are not installing
-        self.env.append_value('LINKFLAGS', build_ldflags)
+        self.env.RPATH = build_ldflags
         return
 
     # work out the install path, expanding variables
@@ -38,7 +38,7 @@ def install_binary(self):
         self.target += '.inst'
 
     # setup the right rpath link flags for the install
-    self.env.append_value('LINKFLAGS', install_ldflags)
+    self.env.RPATH = install_ldflags
 
     # tell waf to install the right binary
     bld.install_as(os.path.join(install_path, orig_target),
@@ -49,7 +49,7 @@ def install_binary(self):
 
 @feature('install_lib')
 @after('apply_core')
-@before('apply_link')
+@before('apply_link', 'apply_obj_vars')
 def install_library(self):
     '''install a library, taking account of the different rpath varients'''
     if getattr(self, 'done_install_library', False):
@@ -62,7 +62,7 @@ def install_library(self):
 
     if not Options.is_install or not self.samba_install:
         # just need to set the build rpath if we are not installing
-        self.env.append_value('LINKFLAGS', build_ldflags)
+        self.env.RPATH = build_ldflags
         return
 
     # setup the install path, expanding variables
@@ -76,11 +76,11 @@ def install_library(self):
         self.done_install_library = True
         t = self.clone('default')
         t.target += '.inst'
-        self.env.append_value('LINKFLAGS', build_ldflags)
+        self.env.RPATH = build_ldflags
     else:
         t = self
 
-    t.env.append_value('LINKFLAGS', install_ldflags)
+    t.env.RPATH = install_ldflags
 
     dev_link     = None
 
