@@ -481,6 +481,42 @@ systemOnly: FALSE
             else:
                 self.assertTrue("msDS-IntId" not in ldb_msg)
 
+class SchemaTests_msDS_isRODC(unittest.TestCase):
+
+    def setUp(self):
+        self.ldb = ldb
+        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.base_dn = res[0]["defaultNamingContext"][0]
+
+    def test_objectClass_ntdsdsa(self):
+        res = self.ldb.search(self.base_dn, expression="objectClass=nTDSDSA",
+                              attrs=["msDS-isRODC"], controls=["search_options:1:2"])
+        for ldb_msg in res:
+            self.assertTrue("msDS-isRODC" in ldb_msg)
+
+    def test_objectClass_server(self):
+        res = self.ldb.search(self.base_dn, expression="objectClass=server",
+                              attrs=["msDS-isRODC"], controls=["search_options:1:2"])
+        for ldb_msg in res:
+            ntds_search_dn = "CN=NTDS Settings,%s" % ldb_msg['dn']
+            try:
+                res_check = self.ldb.search(ntds_search_dn, attrs=["objectCategory"])
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+                print("Server entry %s doesn't have a NTDS settings object" % res[0]['dn'])
+            else:
+                self.assertTrue("objectCategory" in res_check[0])
+                self.assertTrue("msDS-isRODC" in ldb_msg)
+
+    def test_objectClass_computer(self):
+        res = self.ldb.search(self.base_dn, expression="objectClass=computer",
+                              attrs=["serverReferenceBL","msDS-isRODC"], controls=["search_options:1:2"])
+        for ldb_msg in res:
+            if "serverReferenceBL" not in ldb_msg:
+                print("Computer entry %s doesn't have a serverReferenceBL attribute" % ldb_msg['dn'])
+            else:
+                self.assertTrue("msDS-isRODC" in ldb_msg)
 
 if not "://" in host:
     if os.path.isfile(host):
@@ -506,4 +542,7 @@ if not runner.run(unittest.makeSuite(SchemaTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(SchemaTests_msDS_IntId)).wasSuccessful():
     rc = 1
+if not runner.run(unittest.makeSuite(SchemaTests_msDS_isRODC)).wasSuccessful():
+    rc = 1
+
 sys.exit(rc)
