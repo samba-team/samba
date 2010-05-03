@@ -330,6 +330,38 @@ static bool test_netprintjobgetinfo_byid(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintjobsetinfo_byid(struct torture_context *tctx,
+					 struct smbcli_state *cli,
+					 uint16_t JobID)
+{
+	struct rap_NetPrintJobSetInfo r;
+	uint16_t levels[] = { 0, 1, 2 };
+	NTSTATUS status;
+	int i;
+	const char *comment = "tortured by samba";
+
+	r.in.JobID = JobID;
+	r.in.bufsize = strlen(comment);
+	r.in.ParamNum = RAP_PARAM_JOBCOMMENT;
+	r.in.Param.string = comment;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.level = levels[i];
+
+		torture_comment(tctx, "Testing rap_NetPrintJobSetInfo(%d) level %d\n", r.in.JobID, r.in.level);
+
+		status = smbcli_rap_netprintjobsetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			torture_warning(tctx, "smbcli_rap_netprintjobsetinfo failed with %s\n", nt_errstr(status));
+			continue;
+		}
+	}
+
+	return true;
+}
+
+
 static bool test_netprintjobgetinfo_byqueue(struct torture_context *tctx,
 					    struct smbcli_state *cli,
 					    const char *PrintQueueName)
@@ -355,6 +387,30 @@ static bool test_netprintjobgetinfo_byqueue(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintjobsetinfo_byqueue(struct torture_context *tctx,
+					    struct smbcli_state *cli,
+					    const char *PrintQueueName)
+{
+	struct rap_NetPrintJobEnum r;
+	int i;
+
+	r.in.PrintQueueName = PrintQueueName;
+	r.in.bufsize = 8192;
+	r.in.level = 0;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enumerate jobs");
+
+	for (i=0; i < r.out.count; i++) {
+
+		torture_assert(tctx,
+			test_netprintjobsetinfo_byid(tctx, cli, r.out.info[i].info0.JobID),
+			"failed to set job info");
+	}
+
+	return true;
+}
 
 static bool test_netprintjobenum(struct torture_context *tctx,
 				 struct smbcli_state *cli)
@@ -406,6 +462,31 @@ static bool test_netprintjobgetinfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintjobsetinfo(struct torture_context *tctx,
+				    struct smbcli_state *cli)
+{
+	struct rap_NetPrintQEnum r;
+	int i;
+
+	r.in.level = 5;
+	r.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+
+	for (i=0; i < r.out.count; i++) {
+
+		const char *printqname = r.out.info[i].info5.PrintQueueName;
+
+		torture_assert(tctx,
+			test_netprintjobsetinfo_byqueue(tctx, cli, printqname),
+			"failed to set printjobs on print queue");
+	}
+
+	return true;
+}
+
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -431,6 +512,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "rap_printq", test_netprintq);
 	torture_suite_add_1smb_test(suite, "rap_printjob_enum", test_netprintjobenum);
 	torture_suite_add_1smb_test(suite, "rap_printjob_getinfo", test_netprintjobgetinfo);
+	torture_suite_add_1smb_test(suite, "rap_printjob_setinfo", test_netprintjobsetinfo);
 	torture_suite_add_1smb_test(suite, "rap_printjob", test_netprintjob);
 
 	return suite;
