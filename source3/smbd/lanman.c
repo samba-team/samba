@@ -936,7 +936,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		desc.errcode = ERRbuftoosmall;
 
  out:
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -1133,7 +1133,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 		subcntarr[i] = num_jobs;
 		subcnt += subcntarr[i];
 
-		if (is_valid_policy_hnd(&handle)) {
+		if (cli && is_valid_policy_hnd(&handle)) {
 			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 		}
 	}
@@ -3128,7 +3128,7 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	}
 
  out:
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -3257,7 +3257,7 @@ static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
 
  out:
 
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -3437,7 +3437,7 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 	errcode = NERR_Success;
  out:
 
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -4411,7 +4411,7 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 		*rdata_len = 0;
 	}
  out:
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -4544,7 +4544,7 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 		}
 	}
  out:
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
@@ -4742,7 +4742,7 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
  out:
-	if (is_valid_policy_hnd(&handle)) {
+	if (cli && is_valid_policy_hnd(&handle)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 	}
 
