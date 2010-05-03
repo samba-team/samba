@@ -1290,6 +1290,78 @@ NTSTATUS smbcli_rap_netprintjobgetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
+NTSTATUS smbcli_rap_netprintjobsetinfo(struct smbcli_tree *tree,
+				       struct smb_iconv_convenience *iconv_convenience,
+				       TALLOC_CTX *mem_ctx,
+				       struct rap_NetPrintJobSetInfo *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintJobSetInfo))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_word(call, r->in.JobID);
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_sendbuf(call, r->in.bufsize);
+	rap_cli_push_param(call, r->in.ParamNum);
+
+	switch (r->in.ParamNum) {
+	case RAP_PARAM_JOBNUM:
+	case RAP_PARAM_JOBPOSITION:
+	case RAP_PARAM_JOBSTATUS:
+		NDR_GOTO(ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, r->in.Param.value));
+		break;
+	case RAP_PARAM_USERNAME:
+	case RAP_PARAM_NOTIFYNAME:
+	case RAP_PARAM_DATATYPE:
+	case RAP_PARAM_PARAMETERS_STRING:
+	case RAP_PARAM_JOBSTATUSSTR:
+	case RAP_PARAM_JOBCOMMENT:
+		NDR_GOTO(ndr_push_string(call->ndr_push_param, NDR_SCALARS, r->in.Param.string));
+		break;
+	case RAP_PARAM_TIMESUBMITTED:
+	case RAP_PARAM_JOBSIZE:
+		NDR_GOTO(ndr_push_uint32(call->ndr_push_param, NDR_SCALARS, r->in.Param.value4));
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	/* not really sure if this is correct */
+	rap_cli_expect_format(call, "WB21BB16B10zWWzDDz");
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintJobSetInfo, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+
+	result = NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintJobSetInfo, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
 {
