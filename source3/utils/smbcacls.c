@@ -661,7 +661,7 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, SEC_DESC *sd)
 /***************************************************** 
 dump the acls for a file
 *******************************************************/
-static int cacl_dump(struct cli_state *cli, char *filename)
+static int cacl_dump(struct cli_state *cli, const char *filename)
 {
 	int result = EXIT_FAILED;
 	uint16_t fnum = (uint16_t)-1;
@@ -818,7 +818,7 @@ static void sort_acl(SEC_ACL *the_acl)
 set the ACLs on a file given an ascii description
 *******************************************************/
 
-static int cacl_set(struct cli_state *cli, char *filename, 
+static int cacl_set(struct cli_state *cli, const char *filename,
 		    char *the_acl, enum acl_mode mode)
 {
 	uint16_t fnum;
