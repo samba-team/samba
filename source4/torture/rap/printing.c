@@ -69,7 +69,6 @@ static bool test_netprintqenum(struct torture_context *tctx,
 	struct rap_NetPrintQEnum r;
 	int i, q;
 	uint16_t levels[] = { 0, 1, 2, 3, 4, 5 };
-	NTSTATUS status;
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
@@ -79,11 +78,9 @@ static bool test_netprintqenum(struct torture_context *tctx,
 		torture_comment(tctx,
 			"Testing rap_NetPrintQEnum level %d\n", r.in.level);
 
-		status = smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_warning(tctx, "smbcli_rap_netprintqenum failed with %s\n", nt_errstr(status));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			"smbcli_rap_netprintqenum failed");
 
 		for (q=0; q<r.out.count; q++) {
 			switch (r.in.level) {
@@ -104,7 +101,6 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	struct rap_NetPrintQEnum r_enum;
 	int i, p;
 	uint16_t levels[] = { 0, 1, 2, 3, 4, 5 };
-	NTSTATUS status;
 
 	r_enum.in.level = 5;
 	r_enum.in.bufsize = 8192;
@@ -124,11 +120,9 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 			torture_comment(tctx, "Testing rap_NetPrintQGetInfo(%s) level %d\n",
 				r.in.PrintQueueName, r.in.level);
 
-			status = smbcli_rap_netprintqgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				torture_warning(tctx, "smbcli_rap_netprintqgetinfo failed with %s\n", nt_errstr(status));
-				continue;
-			}
+			torture_assert_ntstatus_ok(tctx,
+				smbcli_rap_netprintqgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+				"smbcli_rap_netprintqgetinfo failed");
 
 			switch (r.in.level) {
 			case 0:
@@ -280,7 +274,6 @@ static bool test_netprintjobenum_one(struct torture_context *tctx,
 	struct rap_NetPrintJobEnum r;
 	int i;
 	uint16_t levels[] = { 0, 1, 2 };
-	NTSTATUS status;
 
 	r.in.PrintQueueName = PrintQueueName;
 	r.in.bufsize = 8192;
@@ -292,11 +285,9 @@ static bool test_netprintjobenum_one(struct torture_context *tctx,
 		torture_comment(tctx,
 			"Testing rap_NetPrintJobEnum(%s) level %d\n", r.in.PrintQueueName, r.in.level);
 
-		status = smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_warning(tctx, "smbcli_rap_netprintjobenum failed with %s\n", nt_errstr(status));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			"smbcli_rap_netprintjobenum failed");
 	}
 
 	return true;
@@ -308,7 +299,6 @@ static bool test_netprintjobgetinfo_byid(struct torture_context *tctx,
 {
 	struct rap_NetPrintJobGetInfo r;
 	uint16_t levels[] = { 0, 1, 2 };
-	NTSTATUS status;
 	int i;
 
 	r.in.JobID = JobID;
@@ -320,11 +310,9 @@ static bool test_netprintjobgetinfo_byid(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing rap_NetPrintJobGetInfo(%d) level %d\n", r.in.JobID, r.in.level);
 
-		status = smbcli_rap_netprintjobgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_warning(tctx, "smbcli_rap_netprintjobgetinfo failed with %s\n", nt_errstr(status));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netprintjobgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			"smbcli_rap_netprintjobgetinfo failed");
 	}
 
 	return true;
@@ -336,7 +324,6 @@ static bool test_netprintjobsetinfo_byid(struct torture_context *tctx,
 {
 	struct rap_NetPrintJobSetInfo r;
 	uint16_t levels[] = { 0, 1, 2 };
-	NTSTATUS status;
 	int i;
 	const char *comment = "tortured by samba";
 
@@ -351,11 +338,9 @@ static bool test_netprintjobsetinfo_byid(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing rap_NetPrintJobSetInfo(%d) level %d\n", r.in.JobID, r.in.level);
 
-		status = smbcli_rap_netprintjobsetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_warning(tctx, "smbcli_rap_netprintjobsetinfo failed with %s\n", nt_errstr(status));
-			continue;
-		}
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netprintjobsetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			"smbcli_rap_netprintjobsetinfo failed");
 	}
 
 	return true;
