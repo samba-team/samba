@@ -282,6 +282,49 @@ def check_orpaned_targets(bld, tgt_list):
                 Logs.warn("Target %s of type %s is unused by any other target" % (t.sname, type))
 
 
+def check_group_ordering(bld, tgt_list):
+    '''see if we have any dependencies that violate the group ordering
+
+    It is an error for a target to depend on a target from a later
+    build group
+    '''
+
+    def group_name(g):
+        tm = bld.task_manager
+        return [x for x in tm.groups_names if id(tm.groups_names[x]) == id(g)][0]
+
+    for g in bld.task_manager.groups:
+        gname = group_name(g)
+        for t in g.tasks_gen:
+            t.samba_group = gname
+
+    grp_map = {}
+    idx = 0
+    for g in bld.task_manager.groups:
+        name = group_name(g)
+        grp_map[name] = idx
+        idx += 1
+
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    ret = True
+    for t in tgt_list:
+        tdeps = getattr(t, 'add_objects', []) + getattr(t, 'uselib_local', [])
+        for d in tdeps:
+            t2 = bld.name_to_obj(d, bld.env)
+            if t2 is None:
+                continue
+            map1 = grp_map[t.samba_group]
+            map2 = grp_map[t2.samba_group]
+
+            if map2 > map1:
+                Logs.error("Target %r in build group %r depends on target %r from later build group %r" % (
+                           t.sname, t.samba_group, t2.sname, t2.samba_group))
+                ret = False
+
+    return ret
+
+
 def show_final_deps(bld, tgt_list):
     '''show the final dependencies for all targets'''
 
@@ -912,6 +955,10 @@ def check_project_rules(bld):
 
     if not check_duplicate_sources(bld, tgt_list):
         Logs.error("Duplicate sources present - aborting")
+        sys.exit(1)
+
+    if not check_group_ordering(bld, tgt_list):
+        Logs.error("Bad group ordering - aborting")
         sys.exit(1)
 
     show_final_deps(bld, tgt_list)
