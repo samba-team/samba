@@ -185,7 +185,11 @@
 
 /* sa->systemFlags on attributes */
 #define DS_FLAG_ATTR_NOT_REPLICATED    0x00000001
+#define DS_FLAG_ATTR_REQ_PARTIAL_SET_MEMBER 0x00000002
 #define DS_FLAG_ATTR_IS_CONSTRUCTED    0x00000004
+
+/* sa->systemFlagsEx on attributes */
+#define DS_FLAG_ATTR_IS_CRITICAL    0x00000001
 
 /* 7.1.1.2.2.1.2.1.1           nTDSDSA Object options flags */
 #define DS_NTDSDSA_OPT_IS_GC                    0x00000001
