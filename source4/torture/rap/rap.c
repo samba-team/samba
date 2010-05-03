@@ -141,6 +141,20 @@ static void rap_cli_push_rcvbuf(struct rap_call *call, int len)
 	call->rcv_datalen = len;
 }
 
+static void rap_cli_push_sendbuf(struct rap_call *call, int len)
+{
+	rap_cli_push_paramdesc(call, 's');
+	rap_cli_push_paramdesc(call, 'T');
+	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, len);
+	call->rcv_datalen = len;
+}
+
+static void rap_cli_push_param(struct rap_call *call, uint16_t val)
+{
+	rap_cli_push_paramdesc(call, 'P');
+	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, val);
+}
+
 static void rap_cli_expect_multiple_entries(struct rap_call *call)
 {
 	rap_cli_push_paramdesc(call, 'e');
