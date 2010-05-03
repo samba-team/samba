@@ -1737,6 +1737,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	const char		*printername;
 	union spoolss_PrinterInfo info;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo2 info2;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
 
@@ -1775,12 +1776,30 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 
 	/* Set the printer driver */
 
-	info.info2.drivername = argv[2];
-	info.info2.devmode = NULL;
-	info.info2.secdesc = NULL;
+	info2.servername	= info.info2.servername;
+	info2.printername	= info.info2.printername;
+	info2.sharename		= info.info2.sharename;
+	info2.portname		= info.info2.portname;
+	info2.drivername	= argv[2];
+	info2.comment		= info.info2.comment;
+	info2.location		= info.info2.location;
+	info2.devmode_ptr	= 0;
+	info2.sepfile		= info.info2.sepfile;
+	info2.printprocessor	= info.info2.printprocessor;
+	info2.datatype		= info.info2.datatype;
+	info2.parameters	= info.info2.parameters;
+	info2.secdesc_ptr	= 0;
+	info2.attributes	= info.info2.attributes;
+	info2.priority		= info.info2.priority;
+	info2.defaultpriority	= info.info2.defaultpriority;
+	info2.starttime		= info.info2.starttime;
+	info2.untiltime		= info.info2.untiltime;
+	info2.status		= info.info2.status;
+	info2.cjobs		= info.info2.cjobs;
+	info2.averageppm	= info.info2.averageppm;
 
 	info_ctr.level = 2;
-	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
+	info_ctr.info.info2 = &info2;
 
 	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
 					   &pol,
