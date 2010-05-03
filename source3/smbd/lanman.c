@@ -3337,6 +3337,23 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
+	*rdata_len = 0;
+
+	/* check it's a supported varient */
+	if ((strcmp(str1,"WWsTP")) ||
+	    (!check_printjob_info(&desc,uLevel,str2)))
+		return(False);
+
+	errcode = NERR_notsupported;
+
+	switch (function) {
+	case 0xb:
+		/* change print job name, data gives the name */
+		break;
+	default:
+		goto out;
+	}
+
 	ZERO_STRUCT(handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_spoolss.syntax_id,
@@ -3367,13 +3384,6 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 		goto out;
 	}
 
-	*rdata_len = 0;
-
-	/* check it's a supported varient */
-	if ((strcmp(str1,"WWsTP")) || 
-	    (!check_printjob_info(&desc,uLevel,str2)))
-		return(False);
-
 	werr = rpccli_spoolss_getjob(cli, mem_ctx,
 				     &handle,
 				     jobid,
@@ -3382,16 +3392,6 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 				     &info);
 	if (!W_ERROR_IS_OK(werr)) {
 		errcode = W_ERROR_V(werr);
-		goto out;
-	}
-
-	errcode = NERR_notsupported;
-
-	switch (function) {
-	case 0xb:
-		/* change print job name, data gives the name */
-		break;
-	default:
 		goto out;
 	}
 
