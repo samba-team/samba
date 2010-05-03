@@ -658,43 +658,57 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, SEC_DESC *sd)
 
 }
 
-/***************************************************** 
+/*****************************************************
+get sec desc for filename
+*******************************************************/
+static SEC_DESC *get_secdesc(struct cli_state *cli, const char *filename)
+{
+	uint16_t fnum = (uint16_t)-1;
+	SEC_DESC *sd;
+
+	/* The desired access below is the only one I could find that works
+	   with NT4, W2KP and Samba */
+
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
+                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+		return NULL;
+	}
+
+	sd = cli_query_secdesc(cli, fnum, talloc_tos());
+
+	cli_close(cli, fnum);
+
+	if (!sd) {
+		printf("Failed to get security descriptor\n");
+		return NULL;
+	}
+        return sd;
+}
+
+/*****************************************************
 dump the acls for a file
 *******************************************************/
 static int cacl_dump(struct cli_state *cli, const char *filename)
 {
 	int result = EXIT_FAILED;
-	uint16_t fnum = (uint16_t)-1;
 	SEC_DESC *sd;
 
-	if (test_args) 
+	if (test_args)
 		return EXIT_OK;
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		goto done;
-	}
+	sd = get_secdesc(cli, filename);
 
-	sd = cli_query_secdesc(cli, fnum, talloc_tos());
-
-	if (!sd) {
-		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
-		goto done;
-	}
-
-	if (sddl) {
-		printf("%s\n", sddl_encode(talloc_tos(), sd,
+	if (sd) {
+		if (sddl) {
+			printf("%s\n", sddl_encode(talloc_tos(), sd,
 					   get_global_sam_sid()));
-	} else {
-		sec_desc_print(cli, stdout, sd);
+		} else {
+			sec_desc_print(cli, stdout, sd);
+		}
+		result = EXIT_OK;
 	}
-
-	result = EXIT_OK;
-
-done:
-	if (fnum != (uint16_t)-1)
-		cli_close(cli, fnum);
 
 	return result;
 }
@@ -712,21 +726,12 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	SEC_DESC *sd, *old;
 	size_t sd_size;
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return EXIT_FAILED;
-	}
-
 	if (!StringToSid(cli, &sid, new_username))
 		return EXIT_PARSE_ERROR;
 
-	old = cli_query_secdesc(cli, fnum, talloc_tos());
-
-	cli_close(cli, fnum);
+	old = get_secdesc(cli, filename);
 
 	if (!old) {
-		printf("owner_set: Failed to query old descriptor\n");
 		return EXIT_FAILED;
 	}
 
@@ -836,23 +841,11 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	if (!sd) return EXIT_PARSE_ERROR;
 	if (test_args) return EXIT_OK;
 
-	/* The desired access below is the only one I could find that works
-	   with NT4, W2KP and Samba */
-
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
-		return EXIT_FAILED;
-	}
-
-	old = cli_query_secdesc(cli, fnum, talloc_tos());
+	old = get_secdesc(cli, filename);
 
 	if (!old) {
-		printf("calc_set: Failed to query old descriptor\n");
 		return EXIT_FAILED;
 	}
-
-	cli_close(cli, fnum);
 
 	/* the logic here is rather more complex than I would like */
 	switch (mode) {
