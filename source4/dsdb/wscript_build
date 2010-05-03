@@ -18,7 +18,7 @@ bld.SAMBA_SUBSYSTEM('SAMDB_COMMON',
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_SCHEMA',
-	source='schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c schema/schema_info_attr.c',
+	source='schema/schema_init.c schema/schema_set.c schema/schema_query.c schema/schema_syntax.c schema/schema_description.c schema/schema_convert_to_ol.c schema/schema_inferiors.c schema/schema_prefixmap.c schema/schema_info_attr.c schema/schema_filtered.c',
 	autoproto='schema/proto.h',
 	deps='SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS LDBSAMBA tevent'
 	)

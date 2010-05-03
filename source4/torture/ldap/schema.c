@@ -356,6 +356,22 @@ static bool test_dump_sorted_syntax(struct ldb_context *ldb, struct test_rootDSE
 	return true;
 }
 
+static bool test_dump_not_in_filtered_replica(struct ldb_context *ldb, struct test_rootDSE *root, struct dsdb_schema *schema)
+{
+	struct dsdb_attribute *a;
+	uint32_t a_i = 1;
+
+	d_printf("Dumping attributes not in filtered replica\n");
+
+	for (a=schema->attributes; a; a = a->next) {
+		if (!dsdb_attribute_is_attr_in_filtered_replica(a)) {
+			d_printf("attr[%4u]: '%s'\n", a_i++,
+				 a->lDAPDisplayName);
+		}
+	}
+	return true;
+}
+
 bool torture_ldap_schema(struct torture_context *torture)
 {
 	struct ldb_context *ldb;
@@ -384,6 +400,7 @@ bool torture_ldap_schema(struct torture_context *torture)
 	ret &= test_dump_partial(ldb, &rootDSE, schema);
 	ret &= test_dump_contructed(ldb, &rootDSE, schema);
 	ret &= test_dump_sorted_syntax(ldb, &rootDSE, schema);
+	ret &= test_dump_not_in_filtered_replica(ldb, &rootDSE, schema);
 
 failed:
 	return ret;
