@@ -2,5 +2,6 @@
 
 bld.SAMBA_SUBSYSTEM('SOCKET_WRAPPER',
                     source='socket_wrapper.c',
+                    group='base_libraries',
                     deps='replace')
 
