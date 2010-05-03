@@ -339,6 +339,18 @@ void ctdb_high_priority(struct ctdb_context *ctdb)
 	}
 }
 
+/*
+  make ourselves slightly nicer: eg. a ctdb child.
+ */
+void ctdb_reduce_priority(struct ctdb_context *ctdb)
+{
+	errno = 0;
+	if (nice(10) == -1 && errno != 0) {
+		DEBUG(DEBUG_WARNING,("Unable to lower priority: %s\n",
+				     strerror(errno)));
+	}
+}
+
 void set_nonblocking(int fd)
 {
 	unsigned v;

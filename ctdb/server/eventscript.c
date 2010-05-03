@@ -27,43 +27,12 @@
 #include "lib/events/events.h"
 #include "../common/rb_tree.h"
 
-static struct {
-	struct timeval start;
-	const char *script_running;
-} child_state;
-
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
 /*
-  ctdbd sends us a SIGTERM when we should time out the current script
+  ctdbd sends us a SIGTERM when we should die.
  */
 static void sigterm(int sig)
-{
-	char tbuf[100], buf[200];
-	time_t t;
-
-	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n", 
-		 child_state.script_running, timeval_elapsed(&child_state.start), getpid()));
-
-	t = time(NULL);
-
-	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
-	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
-		" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
-	system(buf);
-
-	DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
-
-	/* all the child processes will be running in the same process group */
-	kill(-getpgrp(), SIGKILL);
-	_exit(1);
-}
-
-/*
-  ctdbd sends us a SIGABRT when we should abort the current script.
-  we abort any active monitor script any time a different event is generated.
- */
-static void sigabrt(int sig)
 {
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
@@ -78,7 +47,6 @@ struct ctdb_event_script_state {
 	int fd[2];
 	void *private_data;
 	bool from_user;
-	bool aborted;
 	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
@@ -291,7 +259,6 @@ static int child_setup(struct ctdb_context *ctdb)
 	}
 
 	signal(SIGTERM, sigterm);
-	signal(SIGABRT, sigabrt);
 	return 0;
 }
 
@@ -368,7 +335,6 @@ static int child_run_script(struct ctdb_context *ctdb,
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
-	child_state.start = timeval_current();
 	ret = child_setup(ctdb);
 	if (ret != 0)
 		goto out;
@@ -376,7 +342,6 @@ static int child_run_script(struct ctdb_context *ctdb,
 	cmdstr = child_command_string(ctdb, tmp_ctx, from_user,
 				      current->name, call, options);
 	CTDB_NO_MEMORY(ctdb, cmdstr);
-	child_state.script_running = cmdstr;
 
 	DEBUG(DEBUG_DEBUG,("Executing event script %s\n",cmdstr));
 
@@ -518,6 +483,46 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	}
 }
 
+static void debug_timeout(struct ctdb_event_script_state *state)
+{
+	struct ctdb_script_wire *current = get_current_script(state);
+	char *cmd;
+	pid_t pid;
+	time_t t;
+	char tbuf[100], buf[200];
+
+	cmd = child_command_string(state->ctdb, state,
+				   state->from_user, current->name,
+				   state->call, state->options);
+	CTDB_NO_MEMORY_VOID(state->ctdb, cmd);
+
+	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds pid :%d\n",
+			 cmd, timeval_elapsed(&current->start), state->child));
+	talloc_free(cmd);
+
+	t = time(NULL);
+	strftime(tbuf, sizeof(tbuf)-1, "%Y%m%d%H%M%S", 	localtime(&t));
+	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
+			" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
+
+	pid = fork();
+	if (pid == 0) {
+		ctdb_reduce_priority(state->ctdb);
+		system(buf);
+		/* Now we can kill the child */
+		kill(state->child, SIGTERM);
+		exit(0);
+	}
+	if (pid == -1) {
+		DEBUG(DEBUG_ERR,("Fork for debug script failed : %s\n",
+				 strerror(errno)));
+	} else {
+		DEBUG(DEBUG_ERR,("Logged timedout eventscript : %s\n", buf));
+		/* Don't kill child until timeout done. */
+		state->child = 0;
+	}
+}
+
 /* called when child times out */
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, 
 				      struct timeval t, void *p)
@@ -543,11 +548,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 		break;
         default:
 		state->scripts->scripts[state->current].status = -ETIME;
-	}
-
-	if (kill(state->child, 0) != 0) {
-		DEBUG(DEBUG_ERR,("Event script child process already dead, errno %s(%d)\n", strerror(errno), errno));
-		state->child = 0;
+		debug_timeout(state);
 	}
 
 	talloc_free(state);
@@ -561,17 +562,10 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	int status;
 
 	if (state->child) {
-		if (state->aborted != True) {
-			DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
+		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
-			if (kill(state->child, SIGTERM) != 0) {
-				DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
-			}
-		} else {
-			DEBUG(DEBUG_INFO,(__location__ " Sending SIGABRT to script child pid:%d\n", state->child));
-			if (kill(state->child, SIGABRT) != 0) {
-				DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
-			}
+		if (kill(state->child, SIGTERM) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
 		}
 	}
 
@@ -668,7 +662,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->callback = callback;
 	state->private_data = private_data;
 	state->from_user = from_user;
-	state->aborted = False;
 	state->call = call;
 	state->options = talloc_vasprintf(state, fmt, ap);
 	state->timeout = timeval_set(ctdb->tunable.script_timeout, 0);
@@ -711,7 +704,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	/* Kill off any running monitor events to run this event. */
 	if (ctdb->current_monitor) {
 		/* Discard script status so we don't save to last_status */
-		ctdb->current_monitor->aborted = True;
 		talloc_free(ctdb->current_monitor->scripts);
 		ctdb->current_monitor->scripts = NULL;
 		talloc_free(ctdb->current_monitor);
@@ -729,6 +721,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		return -1;
 	}
 	state->current = 0;
+	state->child = 0;
 
 	if (!from_user && (call == CTDB_EVENT_MONITOR || call == CTDB_EVENT_STATUS)) {
 		ctdb->current_monitor = state;
