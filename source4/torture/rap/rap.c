@@ -836,12 +836,15 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 		break;
 	case 2:
 		rap_cli_expect_format(call, "B13BWWWzzzzzWN");
+		rap_cli_expect_extra_format(call, "WB21BB16B10zWWzDDz");
 		break;
 	case 3:
 		rap_cli_expect_format(call, "zWWWWzzzzWWzzl");
 		break;
 	case 4:
 		rap_cli_expect_format(call, "zWWWWzzzzWNzzl");
+		rap_cli_expect_extra_format(call, "WWzWWDDzz");
+		/* no mention of extra format in MS-RAP */
 		break;
 	case 5:
 		rap_cli_expect_format(call, "z");
