@@ -1223,11 +1223,10 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		"securityIdentifier", "trustPartner", NULL };
 	const char * const attrs2[] = { "dNSHostName",
 		"msDS-SupportedEncryptionTypes", NULL };
-	const char * const attrs3[] = { NULL };
 	const char *temp_str, *temp_str2;
 	const char *old_dns_hostname;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res0, **res1, **res2, **res3, *new_msg;
+	struct ldb_message **res1, **res2, **res3, *new_msg;
 	struct ldb_dn *workstation_dn;
 	struct netr_DomainInformation *domain_info;
 	struct netr_LsaPolicyInformation *lsa_policy_info;
@@ -1285,23 +1284,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		if (strcasecmp(temp_str, temp_str2) != 0) {
 			update_dns_hostname = false;
 		}
-
-		/*
-		 * Check that the DNS hostname when it should be updated
-		 * will be used only by maximum one host.
-		 */
-		ret = gendb_search(sam_ctx, mem_ctx,
-				   ldb_get_default_basedn(sam_ctx),
-				   &res0, attrs3, "(dNSHostName=%s)",
-				   r->in.query->workstation_info->dns_hostname);
-		if (ret < 0) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		if (ret >= 1) {
-			update_dns_hostname = false;
-		}
-
-		talloc_free(res0);
 
 		/* Prepare the workstation DN */
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
