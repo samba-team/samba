@@ -244,7 +244,7 @@ sub ParseDispatchFunction($)
 		indent;
 		pidl "struct $fn->{NAME} *r = (struct $fn->{NAME} *)_r;";
 		CallWithStruct("cli->pipes_struct", "mem_ctx", $fn, 
-			sub { pidl "return NT_STATUS_NO_MEMORY;"; });
+			sub { pidl "\treturn NT_STATUS_NO_MEMORY;"; });
 		pidl "return NT_STATUS_OK;";
 		deindent;
 		pidl "}";
