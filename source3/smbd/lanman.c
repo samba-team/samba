@@ -1071,12 +1071,18 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 
 		uint32_t num_jobs;
 		struct policy_handle handle;
+		const char *printername;
+
+		printername = talloc_strdup(mem_ctx, printer_info[i].info2.printername);
+		if (printername == NULL) {
+			goto err;
+		}
 
 		ZERO_STRUCT(handle);
 		ZERO_STRUCT(devmode_ctr);
 
 		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
-						    printer_info[i].info2.printername,
+						    printername,
 						    NULL,
 						    devmode_ctr,
 						    SEC_FLAG_MAXIMUM_ALLOWED,
