@@ -630,7 +630,34 @@ void *_tevent_req_data(struct tevent_req *req);
 	talloc_get_type_abort(_tevent_req_data(_req), _type)
 #endif
 
-typedef char *(*tevent_req_print_fn)(struct tevent_req *, TALLOC_CTX *);
+/**
+ * @brief The print function which can be set for a tevent async request.
+ *
+ * @param[in]  req      The tevent async request.
+ *
+ * @param[in]  ctx      A talloc memory context which can be uses to allocate
+ *                      memory.
+ *
+ * @return              An allocated string buffer to print.
+ *
+ * Example:
+ * @code
+ *   static char *my_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
+ *   {
+ *     struct my_data *data = tevent_req_data(req, struct my_data);
+ *     char *result;
+ *
+ *     result = tevent_req_default_print(mem_ctx, req);
+ *     if (result == NULL) {
+ *       return NULL;
+ *     }
+ *
+ *     return talloc_asprintf_append_buffer(result, "foo=%d, bar=%d",
+ *       data->foo, data->bar);
+ *   }
+ * @endcode
+ */
+typedef char *(*tevent_req_print_fn)(struct tevent_req *req, TALLOC_CTX *ctx);
 
 /**
  * @brief This function sets a print function for the given request.
@@ -676,7 +703,14 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
  */
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
-typedef bool (*tevent_req_cancel_fn)(struct tevent_req *);
+/**
+ * @brief A typedef for a cancel function for a tevent request.
+ *
+ * @param[in]  req      The tevent request calling this function.
+ *
+ * @return              True if the request could be canceled, false if not.
+ */
+typedef bool (*tevent_req_cancel_fn)(struct tevent_req *req);
 
 /**
  * @brief This function sets a cancel function for the given tevent request.
