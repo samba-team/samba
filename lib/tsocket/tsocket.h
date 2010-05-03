@@ -902,16 +902,23 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
  * for anything else. The file descriptor will be closed when the stream gets
  * freed. If you still want to use the fd you have have to create a duplicate.
  *
- * @param[in]  mem_ctx      The talloc memory context to use.
+ * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  fd           The non blocking fd to use!
+ * @param[in]  fd       The non blocking fd to use!
  *
- * @param[in]  stream       The filed tstream_context you allocated before.
+ * @param[out] stream   A pointer to store an allocated tstream_context.
  *
- * @return              0 on success, -1 on error with errno set.
+ * @return              0 on success, -1 on error.
  *
- * @warning You should read the tsocket_bsd.c code and unterstand it in order
- * use this function.
+ * Example:
+ * @code
+ *   fd2 = dup(fd);
+ *   rc = tstream_bsd_existing_socket(mem_ctx, fd2, &tstream);
+ *   if (rc < 0) {
+ *     stream_terminate_connection(conn, "named_pipe_accept: out of memory");
+ *     return;
+ *   }
+ * @endcode
  */
 int tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
 				int fd,
