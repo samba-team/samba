@@ -88,7 +88,7 @@ bool dsdb_attribute_is_attr_in_filtered_replica(struct dsdb_attribute *attribute
 {
 	int i, size = sizeof(never_in_filtered_attrs)/sizeof(char *);
 	if (attribute->systemOnly ||
-	    attribute->schemaFlagsEx & DS_FLAG_ATTR_IS_CRITICAL) {
+	    attribute->schemaFlagsEx & SCHEMA_FLAG_ATTR_IS_CRITICAL) {
 		return false;
 	}
 	if (attribute->systemFlags & (DS_FLAG_ATTR_NOT_REPLICATED |
