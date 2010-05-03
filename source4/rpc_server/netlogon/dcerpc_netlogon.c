@@ -1257,6 +1257,10 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	switch (r->in.level) {
 	case 1: /* Domain information */
 
+		if (r->in.query->workstation_info == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		/*
 		 * Updates the DNS hostname when the client wishes that the
 		 * server should handle this for him
