@@ -56,7 +56,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	user_info = talloc(tmp_ctx, struct auth_usersupplied_info);
+	user_info = talloc_zero(tmp_ctx, struct auth_usersupplied_info);
 	if (!user_info) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;

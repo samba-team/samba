@@ -22,6 +22,7 @@
 #define _SAMBA_AUTH_H
 
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "../auth/common_auth.h"
 
 extern const char *krbtgt_attrs[];
 extern const char *server_attrs[];
@@ -43,51 +44,9 @@ struct loadparm_context;
 /* version 0 - till samba4 is stable - metze */
 #define AUTH_INTERFACE_VERSION 0
 
-#define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
-#define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
-#define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* don't check unix account status */
-#define USER_INFO_INTERACTIVE_LOGON         0x08 /* don't check unix account status */
-
 #define AUTH_SESSION_INFO_DEFAULT_GROUPS 0x01 /* Add the user to the default world and network groups */
 #define AUTH_SESSION_INFO_AUTHENTICATED  0x02 /* Add the user to the 'authenticated users' group */
 #define AUTH_SESSION_INFO_ENTERPRISE_DC  0x04 /* Add the user to the 'enterprise DC' group */
-
-enum auth_password_state {
-	AUTH_PASSWORD_RESPONSE,
-	AUTH_PASSWORD_HASH,
-	AUTH_PASSWORD_PLAIN
-};
-
-struct auth_usersupplied_info
-{
-	const char *workstation_name;
-	const struct tsocket_address *remote_host;
-
-	uint32_t logon_parameters;
-
-	bool mapped_state;
-	/* the values the client gives us */
-	struct {
-		const char *account_name;
-		const char *domain_name;
-	} client, mapped;
-
-	enum auth_password_state password_state;
-
-	union {
-		struct {
-			DATA_BLOB lanman;
-			DATA_BLOB nt;
-		} response;
-		struct {
-			struct samr_Password *lanman;
-			struct samr_Password *nt;
-		} hash;
-
-		char *plaintext;
-	} password;
-	uint32_t flags;
-};
 
 struct auth_serversupplied_info
 {

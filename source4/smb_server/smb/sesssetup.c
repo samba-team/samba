@@ -144,7 +144,7 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 		if (!remote_machine) goto nomem;
 	}
 
-	user_info = talloc(req, struct auth_usersupplied_info);
+	user_info = talloc_zero(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 	
 	user_info->mapped_state = false;
@@ -319,7 +319,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		if (!remote_machine) goto nomem;
 	}
 
-	user_info = talloc(req, struct auth_usersupplied_info);
+	user_info = talloc_zero(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 
 	user_info->mapped_state = false;

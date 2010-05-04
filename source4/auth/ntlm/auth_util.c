@@ -74,7 +74,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
 		domain = default_domain;
 	}
 
-	*user_info_mapped = talloc(mem_ctx, struct auth_usersupplied_info);
+	*user_info_mapped = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	if (!*user_info_mapped) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -124,7 +124,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 		{
 			uint8_t chal[8];
 			DATA_BLOB chall_blob;
-			user_info_temp = talloc(mem_ctx, struct auth_usersupplied_info);
+			user_info_temp = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 			if (!user_info_temp) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -190,7 +190,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 			struct samr_Password lanman;
 			struct samr_Password nt;
 			
-			user_info_temp = talloc(mem_ctx, struct auth_usersupplied_info);
+			user_info_temp = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 			if (!user_info_temp) {
 				return NT_STATUS_NO_MEMORY;
 			}
