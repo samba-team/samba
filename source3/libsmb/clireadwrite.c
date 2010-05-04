@@ -408,7 +408,7 @@ static char *cli_pull_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 		req, struct cli_pull_state);
 	char *result;
 
-	result = tevent_req_print(mem_ctx, req);
+	result = tevent_req_default_print(mem_ctx, req);
 	if (result == NULL) {
 		return NULL;
 	}
