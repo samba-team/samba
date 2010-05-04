@@ -1157,23 +1157,91 @@ struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
 struct tevent_queue;
 
+#ifdef DOXYGEN
+/**
+ * @brief Create and start a tevent queue.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to allocate the queue.
+ *
+ * @param[in]  name     The name to use to identify the queue.
+ *
+ * @return              An allocated tevent queue on success, NULL on error.
+ *
+ * @see tevent_start()
+ * @see tevent_stop()
+ */
+struct tevent_queue *tevent_queue_create(TALLOC_CTX *mem_ctx,
+					 const char *name);
+#else
 struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
 					  const char *name,
 					  const char *location);
 
 #define tevent_queue_create(_mem_ctx, _name) \
 	_tevent_queue_create((_mem_ctx), (_name), __location__)
+#endif
 
+/**
+ * @brief A callback trigger function run by the queue.
+ *
+ * @param[in]  req      The tevent request the trigger function is executed on.
+ *
+ * @param[in]  private_data The private data pointer specified by
+ *                          tevent_queue_add().
+ *
+ * @see tevent_queue_add()
+ */
 typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
 					  void *private_data);
+
+/**
+ * @brief Add a tevent request to the queue.
+ *
+ * @param[in]  queue    The queue to add the request.
+ *
+ * @param[in]  ev       The event handle to use for the request.
+ *
+ * @param[in]  req      The tevent request to add to the queue.
+ *
+ * @param[in]  trigger  The function triggered by the queue when the request
+ *                      is called.
+ *
+ * @param[in]  private_data The private data passed to the trigger function.
+ *
+ * @return              True if the request has been successfully added, false
+ *                      otherwise.
+ */
 bool tevent_queue_add(struct tevent_queue *queue,
 		      struct tevent_context *ev,
 		      struct tevent_req *req,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
+
+/**
+ * @brief Start a tevent queue.
+ *
+ * The queue is started by default.
+ *
+ * @param[in]  queue    The queue to start.
+ */
 void tevent_queue_start(struct tevent_queue *queue);
+
+/**
+ * @brief Stop a tevent queue.
+ *
+ * The queue is started by default.
+ *
+ * @param[in]  queue    The queue to stop.
+ */
 void tevent_queue_stop(struct tevent_queue *queue);
 
+/**
+ * @brief Get the length of the queue.
+ *
+ * @param[in]  queue    The queue to get the length from.
+ *
+ * @return              The number of elements.
+ */
 size_t tevent_queue_length(struct tevent_queue *queue);
 
 typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
