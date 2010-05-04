@@ -707,7 +707,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
 
-	user_info = talloc(ntlmssp_state, struct auth_usersupplied_info);
+	user_info = talloc_zero(ntlmssp_state, struct auth_usersupplied_info);
 	if (!user_info) {
 		return NT_STATUS_NO_MEMORY;
 	}

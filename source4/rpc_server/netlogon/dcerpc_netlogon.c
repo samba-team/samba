@@ -491,12 +491,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	struct netr_SamInfo3 *sam3;
 	struct netr_SamInfo6 *sam6;
 
-	user_info = talloc(mem_ctx, struct auth_usersupplied_info);
+	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
-
-	user_info->flags = 0;
-	user_info->mapped_state = false;
-	user_info->remote_host = NULL;
 
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
