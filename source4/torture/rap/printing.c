@@ -34,15 +34,17 @@
 
 #define TORTURE_PRINT_FILE "torture_print_file"
 
-static bool test_raw_print(struct torture_context *tctx,
-			   struct smbcli_state *cli)
+static bool print_printjob(struct torture_context *tctx,
+			   struct smbcli_tree *tree)
 {
 	int fnum;
 	DATA_BLOB data;
 	ssize_t size_written;
 	const char *str;
 
-	fnum = smbcli_open(cli->tree, TORTURE_PRINT_FILE, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+	torture_comment(tctx, "creating printjob %s\n", TORTURE_PRINT_FILE);
+
+	fnum = smbcli_open(tree, TORTURE_PRINT_FILE, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
 		torture_fail(tctx, "failed to open file");
 	}
@@ -51,16 +53,22 @@ static bool test_raw_print(struct torture_context *tctx,
 
 	data = data_blob_string_const(str);
 
-	size_written = smbcli_write(cli->tree, fnum, 0, data.data, 0, data.length);
+	size_written = smbcli_write(tree, fnum, 0, data.data, 0, data.length);
 	if (size_written != data.length) {
 		torture_fail(tctx, "failed to write file");
 	}
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_close(cli->tree, fnum),
+		smbcli_close(tree, fnum),
 		"failed to close file");
 
 	return true;
+}
+
+static bool test_raw_print(struct torture_context *tctx,
+			   struct smbcli_state *cli)
+{
+	return print_printjob(tctx, cli->tree);
 }
 
 static bool test_netprintqenum(struct torture_context *tctx,
@@ -262,6 +270,36 @@ static bool test_netprintq(struct torture_context *tctx,
 		torture_assert(tctx,
 			test_netprintq_resume(tctx, cli, printqname),
 			"failed to resume print queue");
+	}
+
+	return true;
+}
+
+static bool test_netprintjobenum_args(struct torture_context *tctx,
+				      struct smbcli_state *cli,
+				      const char *PrintQueueName,
+				      uint16_t level,
+				      uint16_t *count_p,
+				      union rap_printj_info **info_p)
+{
+	struct rap_NetPrintJobEnum r;
+
+	r.in.PrintQueueName = PrintQueueName;
+	r.in.bufsize = 8192;
+	r.in.level = level;
+
+	torture_comment(tctx,
+		"Testing rap_NetPrintJobEnum(%s) level %d\n", r.in.PrintQueueName, r.in.level);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintjobenum failed");
+
+	if (count_p) {
+		*count_p = r.out.count;
+	}
+	if (info_p) {
+		*info_p = r.out.info;
 	}
 
 	return true;
@@ -551,13 +589,61 @@ static bool test_netprintdestgetinfo(struct torture_context *tctx,
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
-	/*
-	pause printer
-	print printfile
-	enumjobs printer
-	delete job
-	start printer
-	*/
+	struct rap_NetPrintQEnum r;
+	int i;
+
+	r.in.level = 5;
+	r.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+
+	for (i=0; i < r.out.count; i++) {
+
+		const char *printqname = r.out.info[i].info5.PrintQueueName;
+		struct smbcli_tree *res_queue = NULL;
+		uint16_t num_jobs;
+		union rap_printj_info *job_info;
+		int j;
+
+		torture_assert(tctx,
+			test_netprintq_pause(tctx, cli, printqname),
+			"failed to set printjobs on print queue");
+
+		torture_assert_ntstatus_ok(tctx,
+			torture_second_tcon(tctx, cli->session, printqname, &res_queue),
+			"failed to open 2nd connection");
+
+		torture_assert(tctx,
+			print_printjob(tctx, res_queue),
+			"failed to print job on 2nd connection");
+
+		talloc_free(res_queue);
+
+		torture_assert(tctx,
+			test_netprintjobenum_args(tctx, cli, printqname, 1,
+			&num_jobs, &job_info),
+			"failed to enum printjobs on print queue");
+
+		for (j=0; j < num_jobs; j++) {
+
+			uint16_t job_id = job_info[j].info1.JobID;
+
+			torture_assert(tctx,
+				test_netprintjobgetinfo_byid(tctx, cli, job_id),
+				"failed to getinfo on new printjob");
+
+			torture_assert(tctx,
+				test_netprintjob_delete(tctx, cli, job_id),
+				"failed to delete job");
+		}
+
+		torture_assert(tctx,
+			test_netprintq_resume(tctx, cli, printqname),
+			"failed to resume print queue");
+
+	}
 
 	return true;
 }
