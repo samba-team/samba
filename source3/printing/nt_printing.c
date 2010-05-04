@@ -2628,6 +2628,90 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
+				      struct spoolss_security_descriptor **secdesc)
+{
+	SEC_ACE ace[5];	/* max number of ace entries */
+	int i = 0;
+	uint32_t sa;
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+	DOM_SID adm_sid;
+	size_t sd_size;
+
+	/* Create an ACE where Everyone is allowed to print */
+
+	sa = PRINTER_ACE_PRINT;
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Add the domain admins group if we are a DC */
+
+	if ( IS_DC ) {
+		DOM_SID domadmins_sid;
+
+		sid_compose(&domadmins_sid, get_global_sam_sid(),
+			    DOMAIN_GROUP_RID_ADMINS);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &domadmins_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
+		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &adm_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+
+	/* add BUILTIN\Administrators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the BUILTIN\Administrators */
+
+	/* The ACL revision number in rpc_secdesc.h differs from the one
+	   created by NT when setting ACE entries in printer
+	   descriptors.  NT4 complains about the property being edited by a
+	   NT5 machine. */
+
+	if ((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
+		psd = make_sec_desc(mem_ctx,
+				    SEC_DESC_REVISION,
+				    SEC_DESC_SELF_RELATIVE,
+				    &global_sid_Builtin_Administrators,
+				    &global_sid_Builtin_Administrators,
+				    NULL,
+				    psa,
+				    &sd_size);
+	}
+
+	if (psd == NULL) {
+		DEBUG(0,("construct_default_printer_sd: Failed to make SEC_DESC.\n"));
+		return WERR_NOMEM;
+	}
+
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",
+		 (unsigned int)sd_size));
+
+	*secdesc = psd;
+
+	return WERR_OK;
+}
+
 /****************************************************************************
  Malloc and return an NT devicemode.
 ****************************************************************************/

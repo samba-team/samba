@@ -4865,6 +4865,8 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, const uint8 *buf, int buflen);
 WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 				      const char *devicename,
 				      struct spoolss_DeviceMode **devmode);
+WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
+				      struct spoolss_security_descriptor **secdesc);
 int add_new_printer_key( NT_PRINTER_DATA *data, const char *name );
 int delete_printer_key( NT_PRINTER_DATA *data, const char *name );
 int lookup_printerkey( NT_PRINTER_DATA *data, const char *name );
