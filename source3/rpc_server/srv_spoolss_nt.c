@@ -5188,6 +5188,7 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 			      struct spoolss_EndDocPrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	NTSTATUS status;
 	int snum;
 
 	if (!Printer) {
@@ -5201,11 +5202,15 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 	}
 
 	Printer->document_started = false;
-	print_job_end(snum, Printer->jobid, NORMAL_CLOSE);
-	/* error codes unhandled so far ... */
+	status = print_job_end(snum, Printer->jobid, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("_spoolss_EndDocPrinter: "
+			  "print_job_end failed [%s]\n",
+			  nt_errstr(status)));
+	}
 
 	Printer->jobid = 0;
-	return WERR_OK;
+	return ntstatus_to_werror(status);
 }
 
 /****************************************************************

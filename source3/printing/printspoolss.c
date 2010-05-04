@@ -275,6 +275,7 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	switch (close_type) {
 	case NORMAL_CLOSE:
 	case SHUTDOWN_CLOSE:
+		/* this also automatically calls spoolss_EndDocPrinter */
 		status = rpccli_spoolss_ClosePrinter(cli, fsp->print_file,
 						&fsp->print_file->handle,
 						&werr);

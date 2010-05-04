@@ -2483,25 +2483,64 @@ static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
 ***************************************************************************/
 
 static WERROR print_job_spool_file(int snum, uint32_t jobid,
-				   fstring *filename, int *fd)
+				   const char *output_file,
+				   struct printjob *pjob)
 {
 	WERROR werr;
+	SMB_STRUCT_STAT st;
+	const char *path;
+	int len;
 
-	slprintf(*filename, sizeof(*filename)-1, "%s/%s%.8u.XXXXXX",
-		 lp_pathname(snum), PRINT_SPOOL_PREFIX, (unsigned int)jobid);
-	*fd = mkstemp(*filename);
+	/* if this file is within the printer path, it means that smbd
+	 * is spooling it and will pass us control when it is finished.
+	 * Verify that the file name is ok, within path, and it is
+	 * already already there */
+	if (output_file) {
+		path = lp_pathname(snum);
+		len = strlen(path);
+		if (strncmp(output_file, path, len) == 0 &&
+		    (output_file[len - 1] == '/' || output_file[len] == '/')) {
 
-	if (*fd == -1) {
+			/* verify path is not too long */
+			if (strlen(output_file) >= sizeof(pjob->filename)) {
+				return WERR_INVALID_NAME;
+			}
+
+			/* verify that the file exists */
+			if (sys_stat(output_file, &st, false) != 0) {
+				return WERR_INVALID_NAME;
+			}
+
+			fstrcpy(pjob->filename, output_file);
+
+			DEBUG(3, ("print_job_spool_file:"
+				  "External spooling activated"));
+
+			/* we do not open the file until spooling is done */
+			pjob->fd = -1;
+			pjob->status = PJOB_SMBD_SPOOLING;
+
+			return WERR_OK;
+		}
+	}
+
+	slprintf(pjob->filename, sizeof(pjob->filename)-1,
+		 "%s/%s%.8u.XXXXXX", lp_pathname(snum),
+		 PRINT_SPOOL_PREFIX, (unsigned int)jobid);
+	pjob->fd = mkstemp(pjob->filename);
+
+	if (pjob->fd == -1) {
 		werr = map_werror_from_unix(errno);
 		if (W_ERROR_EQUAL(werr, WERR_ACCESS_DENIED)) {
 			/* Common setup error, force a report. */
 			DEBUG(0, ("print_job_spool_file: "
 				  "insufficient permissions to open spool "
-				  "file %s.\n", *filename));
+				  "file %s.\n", pjob->filename));
 		} else {
 			/* Normal case, report at level 3 and above. */
 			DEBUG(3, ("print_job_spool_file: "
-				  "can't open spool file %s\n", *filename));
+				  "can't open spool file %s\n",
+				  pjob->filename));
 		}
 		return werr;
 	}
@@ -2537,8 +2576,9 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 		return werr;
 	}
 
-	DEBUG(10,("print_job_start: Queue %s number of jobs (%d), max printjobs = %d\n",
-		sharename, njobs, lp_maxprintjobs(snum) ));
+	DEBUG(10, ("print_job_start: "
+		   "Queue %s number of jobs (%d), max printjobs = %d\n",
+		   sharename, njobs, lp_maxprintjobs(snum)));
 
 	werr = allocate_print_jobid(pdb, snum, sharename, &jobid);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -2573,7 +2613,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
 	/* we have a job entry - now create the spool file */
-	werr = print_job_spool_file(snum, jobid, &pjob.filename, &pjob.fd);
+	werr = print_job_spool_file(snum, jobid, filename, &pjob);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
@@ -2591,7 +2631,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 	*_jobid = jobid;
 	return WERR_OK;
 
- fail:
+fail:
 	if (jobid != -1) {
 		pjob_delete(sharename, jobid);
 	}
@@ -2629,36 +2669,61 @@ void print_job_endpage(int snum, uint32 jobid)
  error.
 ****************************************************************************/
 
-bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
+NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 	int ret;
 	SMB_STRUCT_STAT sbuf;
 	struct printif *current_printif = get_printer_fns( snum );
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	pjob = print_job_find(sharename, jobid);
 
-	if (!pjob)
-		return False;
+	if (!pjob) {
+		return NT_STATUS_PRINT_CANCELLED;
+	}
 
-	if (pjob->spooled || pjob->pid != sys_getpid())
-		return False;
+	if (pjob->spooled || pjob->pid != sys_getpid()) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
-	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
-	    (sys_fstat(pjob->fd, &sbuf, false) == 0)) {
+	if (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) {
+		if (pjob->status == PJOB_SMBD_SPOOLING) {
+			/* take over the file now, smbd is done */
+			if (sys_stat(pjob->filename, &sbuf, false) != 0) {
+				status = map_nt_error_from_unix(errno);
+				DEBUG(3, ("print_job_end: "
+					  "stat file failed for jobid %d\n",
+					  jobid));
+				goto fail;
+			}
+
+			pjob->status = LPQ_SPOOLING;
+
+		} else {
+
+			if ((sys_fstat(pjob->fd, &sbuf, false) != 0)) {
+				status = map_nt_error_from_unix(errno);
+				close(pjob->fd);
+				DEBUG(3, ("print_job_end: "
+					  "stat file failed for jobid %d\n",
+					  jobid));
+				goto fail;
+			}
+
+			close(pjob->fd);
+		}
+
 		pjob->size = sbuf.st_ex_size;
-		close(pjob->fd);
-		pjob->fd = -1;
 	} else {
 
 		/*
-		 * Not a normal close or we couldn't stat the job file,
-		 * so something has gone wrong. Cleanup.
+		 * Not a normal close, something has gone wrong. Cleanup.
 		 */
-		close(pjob->fd);
-		pjob->fd = -1;
-		DEBUG(3,("print_job_end: failed to stat file for jobid %d\n", jobid ));
+		if (pjob->fd != -1) {
+			close(pjob->fd);
+		}
 		goto fail;
 	}
 
@@ -2671,13 +2736,15 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
 		pjob_delete(sharename, jobid);
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	ret = (*(current_printif->job_submit))(snum, pjob);
 
-	if (ret)
+	if (ret) {
+		status = NT_STATUS_PRINT_CANCELLED;
 		goto fail;
+	}
 
 	/* The print job has been successfully handed over to the back-end */
 
@@ -2689,15 +2756,16 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 	if (print_cache_expired(lp_const_servicename(snum), True))
 		print_queue_update(snum, False);
 
-	return True;
+	return NT_STATUS_OK;
 
 fail:
 
 	/* The print job was not successfully started. Cleanup */
 	/* Still need to add proper error return propagation! 010122:JRR */
+	pjob->fd = -1;
 	unlink(pjob->filename);
 	pjob_delete(sharename, jobid);
-	return False;
+	return status;
 }
 
 /****************************************************************************

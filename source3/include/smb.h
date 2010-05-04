@@ -635,8 +635,23 @@ typedef struct {
 
 /* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
 
-enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
-      LPQ_OFFLINE,LPQ_PAPEROUT,LPQ_PRINTED,LPQ_DELETED,LPQ_BLOCKED,LPQ_USER_INTERVENTION};
+enum {
+	LPQ_QUEUED = 0,
+	LPQ_PAUSED,
+	LPQ_SPOOLING,
+	LPQ_PRINTING,
+	LPQ_ERROR,
+	LPQ_DELETING,
+	LPQ_OFFLINE,
+	LPQ_PAPEROUT,
+	LPQ_PRINTED,
+	LPQ_DELETED,
+	LPQ_BLOCKED,
+	LPQ_USER_INTERVENTION,
+
+	/* smbd is dooing the file spooling before passing control to spoolss */
+	PJOB_SMBD_SPOOLING
+};
 
 typedef struct _print_queue_struct {
 	int job;		/* normally the UNIX jobid -- see note in 
