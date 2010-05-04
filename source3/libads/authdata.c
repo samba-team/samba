@@ -100,6 +100,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *srv_sig_blob = NULL;
 	DATA_BLOB *kdc_sig_blob = NULL;
 
+	bool bool_ret;
+
 	*pac_data_out = NULL;
 
 	pac_data = TALLOC_ZERO_P(mem_ctx, struct PAC_DATA);
@@ -292,10 +294,14 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!smb_krb5_principal_compare_any_realm(context, client_principal, client_principal_pac)) {
+	bool_ret = smb_krb5_principal_compare_any_realm(
+		context, client_principal, client_principal_pac);
+
+	krb5_free_principal(context, client_principal_pac);
+
+	if (!bool_ret) {
 		DEBUG(2, ("Name in PAC [%s] does not match principal name in ticket\n",
 			  logon_name->account_name));
-		krb5_free_principal(context, client_principal_pac);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
