@@ -1017,6 +1017,7 @@ int ldb_search_default_callback(struct ldb_request *req, struct ldb_reply *ares)
 */
 int ldb_op_default_callback(struct ldb_request *req, struct ldb_reply *ares);
 
+int ldb_modify_default_callback(struct ldb_request *req, struct ldb_reply *ares);
 
 /**
   Helper function to build a search request

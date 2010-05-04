@@ -174,7 +174,8 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 /* create and execute a modify request */
 static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 				     const struct ldb_message *message,
-				     struct ldb_control **controls)
+				     struct ldb_control **controls,
+				     void *context)
 {
 	struct ldb_request *req;
 	int ret;
@@ -187,8 +188,8 @@ static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 	ret = ldb_build_mod_req(&req, ldb, ldb,
 					message,
 					controls,
-					NULL,
-					ldb_op_default_callback,
+					context,
+					ldb_modify_default_callback,
 					NULL);
 
 	if (ret != LDB_SUCCESS) {
@@ -313,6 +314,124 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 
 	ldapsrv_queue_reply(call, reply);
 	return NT_STATUS_OK;
+}
+
+int ldb_add_with_context(struct ldb_context *ldb,
+			 const struct ldb_message *message,
+			 void *context)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_msg_sanity_check(ldb, message);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_build_add_req(&req, ldb, ldb,
+					message,
+					NULL,
+					context,
+					ldb_modify_default_callback,
+					NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+	}
+	else {
+		ldb_transaction_cancel(ldb);
+	}
+
+	talloc_free(req);
+	return ret;
+}
+
+int ldb_delete_with_context(struct ldb_context *ldb,
+			    struct ldb_dn *dn,
+			    void *context)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_build_del_req(&req, ldb, ldb,
+					dn,
+					NULL,
+					context,
+					ldb_modify_default_callback,
+					NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+	}
+	else {
+		ldb_transaction_cancel(ldb);
+	}
+
+	talloc_free(req);
+	return ret;
+}
+
+int ldb_rename_with_context(struct ldb_context *ldb,
+	       struct ldb_dn *olddn,
+	       struct ldb_dn *newdn,
+	       void *context)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_build_rename_req(&req, ldb, ldb,
+					olddn,
+					newdn,
+					NULL,
+					context,
+					ldb_modify_default_callback,
+					NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+	}
+	else {
+		ldb_transaction_cancel(ldb);
+	}
+
+	talloc_free(req);
+	return ret;
 }
 
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
@@ -545,6 +664,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
 	unsigned int i,j;
+	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("ModifyRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -612,16 +732,24 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modify_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_mod_req_with_controls(samdb, msg, call->request->controls);
+		res = talloc_zero(local_ctx, struct ldb_result);
+		NT_STATUS_HAVE_NO_MEMORY(res);
+		ldb_ret = ldb_mod_req_with_controls(samdb, msg, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	modify_result = &modify_reply->msg->r.AddResponse;
 	modify_result->dn = NULL;
-	modify_result->resultcode = result;
-	modify_result->errormessage = (errstr?talloc_strdup(modify_reply, errstr):NULL);
-	modify_result->referral = NULL;
 
+	if (res->refs != NULL) {
+		modify_result->resultcode = map_ldb_error(local_ctx, LDB_ERR_REFERRAL, &errstr);
+		modify_result->errormessage = (errstr?talloc_strdup(modify_reply, errstr):NULL);
+		modify_result->referral = talloc_strdup(call, *res->refs);
+	} else {
+		modify_result->resultcode = result;
+		modify_result->errormessage = (errstr?talloc_strdup(modify_reply, errstr):NULL);
+		modify_result->referral = NULL;
+	}
 	talloc_free(local_ctx);
 
 	ldapsrv_queue_reply(call, modify_reply);
@@ -642,6 +770,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
 	unsigned int i,j;
+	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("AddRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -691,16 +820,23 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(add_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_add(samdb, msg);
+		res = talloc_zero(local_ctx, struct ldb_result);
+		NT_STATUS_HAVE_NO_MEMORY(res);
+		ldb_ret = ldb_add_with_context(samdb, msg, res);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	add_result = &add_reply->msg->r.AddResponse;
 	add_result->dn = NULL;
-	add_result->resultcode = result;
-	add_result->errormessage = (errstr?talloc_strdup(add_reply,errstr):NULL);
-	add_result->referral = NULL;
-
+	if (res->refs != NULL) {
+		add_result->resultcode =  map_ldb_error(local_ctx, LDB_ERR_REFERRAL, &errstr);
+		add_result->errormessage = (errstr?talloc_strdup(add_reply,errstr):NULL);
+		add_result->referral = talloc_strdup(call, *res->refs);
+	} else {
+		add_result->resultcode = result;
+		add_result->errormessage = (errstr?talloc_strdup(add_reply,errstr):NULL);
+		add_result->referral = NULL;
+	}
 	talloc_free(local_ctx);
 
 	ldapsrv_queue_reply(call, add_reply);
@@ -719,6 +855,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
+	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("DelRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -736,15 +873,23 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(del_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_delete(samdb, dn);
+		res = talloc_zero(local_ctx, struct ldb_result);
+		NT_STATUS_HAVE_NO_MEMORY(res);
+		ldb_ret = ldb_delete_with_context(samdb, dn, res);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	del_result = &del_reply->msg->r.DelResponse;
 	del_result->dn = NULL;
-	del_result->resultcode = result;
-	del_result->errormessage = (errstr?talloc_strdup(del_reply,errstr):NULL);
-	del_result->referral = NULL;
+	if (res->refs != NULL) {
+		del_result->resultcode = map_ldb_error(local_ctx, LDB_ERR_REFERRAL, &errstr);
+		del_result->errormessage = (errstr?talloc_strdup(del_reply,errstr):NULL);
+		del_result->referral = talloc_strdup(call, *res->refs);
+	} else {
+		del_result->resultcode = result;
+		del_result->errormessage = (errstr?talloc_strdup(del_reply,errstr):NULL);
+		del_result->referral = NULL;
+	}
 
 	talloc_free(local_ctx);
 
@@ -764,6 +909,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
+	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("ModifyDNRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
@@ -827,15 +973,23 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modifydn_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_rename(samdb, olddn, newdn);
+		res = talloc_zero(local_ctx, struct ldb_result);
+		NT_STATUS_HAVE_NO_MEMORY(res);
+		ldb_ret = ldb_rename_with_context(samdb, olddn, newdn, res);
 		result = map_ldb_error(local_ctx, ldb_ret, &errstr);
 	}
 
 	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
 	modifydn->dn = NULL;
-	modifydn->resultcode = result;
-	modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);
-	modifydn->referral = NULL;
+	if (res->refs != NULL) {
+		modifydn->resultcode = map_ldb_error(local_ctx, LDB_ERR_REFERRAL, &errstr);;
+		modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);
+		modifydn->referral = talloc_strdup(call, *res->refs);
+	} else {
+		modifydn->resultcode = result;
+		modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);
+		modifydn->referral = NULL;
+	}
 
 	talloc_free(local_ctx);
 

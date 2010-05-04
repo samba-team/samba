@@ -243,12 +243,18 @@ int dsdb_module_modify(struct ldb_module *module,
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
 				message,
 				NULL,
-				NULL,
-				ldb_op_default_callback,
+				res,
+				ldb_modify_default_callback,
 				NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -292,13 +298,19 @@ int dsdb_module_rename(struct ldb_module *module,
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = ldb_build_rename_req(&req, ldb, tmp_ctx,
 				   olddn,
 				   newdn,
 				   NULL,
-				   NULL,
-				   ldb_op_default_callback,
+				   res,
+				   ldb_modify_default_callback,
 				   NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -340,12 +352,18 @@ int dsdb_module_add(struct ldb_module *module,
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = ldb_build_add_req(&req, ldb, tmp_ctx,
 				message,
 				NULL,
-				NULL,
-				ldb_op_default_callback,
+				res,
+				ldb_modify_default_callback,
 				NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -717,6 +735,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	struct ldb_message *msg;
 	struct dsdb_control_current_partition *p_ctrl;
 	int ret;
+	struct ldb_result *res;
 
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
@@ -726,6 +745,11 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	msg->dn = ldb_dn_new(msg, ldb, "@REPLCHANGED");
 	if (msg->dn == NULL) {
 		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	res = talloc_zero(msg, struct ldb_result);
+	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -754,11 +778,11 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	p_ctrl->dn = dn;
-
 	ret = ldb_build_mod_req(&req, ldb, msg,
 				msg,
 				NULL,
-				NULL, ldb_op_default_callback,
+				res,
+				ldb_modify_default_callback,
 				NULL);
 again:
 	if (ret != LDB_SUCCESS) {
@@ -784,7 +808,8 @@ again:
 		ret = ldb_build_add_req(&req, ldb, msg,
 					msg,
 					NULL,
-					NULL, ldb_op_default_callback,
+					res,
+					ldb_modify_default_callback,
 					NULL);
 		goto again;
 	}

@@ -167,8 +167,7 @@ static int partition_req_callback(struct ldb_request *req,
 
 	switch (ares->type) {
 	case LDB_REPLY_REFERRAL:
-		/* ignore referrals for now */
-		break;
+		return ldb_module_send_referral(ac->req, ares->referral);
 
 	case LDB_REPLY_ENTRY:
 		if (ac->req->operation != LDB_SEARCH) {

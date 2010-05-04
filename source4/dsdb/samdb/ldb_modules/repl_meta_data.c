@@ -1076,6 +1076,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
  */
 static int replmd_update_rpmd(struct ldb_module *module, 
 			      const struct dsdb_schema *schema, 
+			      struct ldb_request *req,
 			      struct ldb_message *msg, uint64_t *seq_num,
 			      time_t t,
 			      bool *is_urgent)
@@ -1092,6 +1093,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
 	enum urgent_situation situation;
+	bool rodc;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1155,6 +1157,20 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		DEBUG(0,(__location__ ": bad version %u in replPropertyMetaData for %s\n",
 			 omd.version, ldb_dn_get_linearized(msg->dn)));
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*we have elements that will be modified*/
+	if (msg->num_elements > 0) {
+		/*if we are RODC and this is a DRSR update then its ok*/
+		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+			ret = samdb_rodc(ldb, &rodc);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
+			} else if (rodc) {
+				ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
+				return LDB_ERR_REFERRAL;
+			}
+		}
 	}
 
 	for (i=0; i<msg->num_elements; i++) {
@@ -2043,6 +2059,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	time_t t = time(NULL);
 	int ret;
 	bool is_urgent = false;
+	struct loadparm_context *lp_ctx;
+	char *referral;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -2050,6 +2068,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
 
@@ -2069,7 +2089,18 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	ldb_msg_remove_attr(msg, "whenChanged");
 	ldb_msg_remove_attr(msg, "uSNChanged");
 
-	ret = replmd_update_rpmd(module, ac->schema, msg, &ac->seq_num, t, &is_urgent);
+	ret = replmd_update_rpmd(module, ac->schema, req, msg, &ac->seq_num, t, &is_urgent);
+	if (ret == LDB_ERR_REFERRAL) {
+		talloc_free(ac);
+
+		referral = talloc_asprintf(req,
+					   "ldap://%s/%s",
+					   lp_dnsdomain(lp_ctx),
+					   ldb_dn_get_linearized(msg->dn));
+		ret = ldb_module_send_referral(req, referral);
+		return ldb_module_done(req, NULL, NULL, ret);
+	}
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;

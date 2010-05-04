@@ -141,6 +141,8 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	const char *oid_attr = NULL;
 	const char *oid = NULL;
 	WERROR status;
+	bool rodc;
+	int ret;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -159,7 +161,12 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (!schema->fsmo.we_are_master) {
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4, (__location__ ": unable to tell if we are an RODC \n"));
+	}
+
+	if (!schema->fsmo.we_are_master && !rodc) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			  "schema_data_add: we are not master: reject request\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
