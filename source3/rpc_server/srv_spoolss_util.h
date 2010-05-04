@@ -130,6 +130,44 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 			  struct spoolss_PrinterInfo2 **pinfo2);
 
 /**
+ * @brief Get the security descriptor for a printer.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  sharename  The share name.
+ *
+ * @param[out] psecdesc   A pointer to store the security descriptor.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
+				  const char *sharename,
+				  struct spoolss_security_descriptor **psecdesc);
+
+/**
+ * @brief Set the security descriptor for a printer.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  server_info The server supplied session info.
+ *
+ * @param[in]  sharename  The share name.
+ *
+ * @param[in]  secdesc  The security descriptor to save.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
+				  const char *sharename,
+				  const struct spoolss_security_descriptor *secdesc);
+
+/**
  * @internal
  *
  * @brief Set printer data over the winreg pipe.

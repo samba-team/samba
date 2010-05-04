@@ -1779,19 +1779,10 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		}
-		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, secdesc,
-				(ndr_push_flags_fn_t) ndr_push_security_descriptor);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(0, ("winreg_update_printer: Failed to marshall security descriptor\n"));
-			result = WERR_NOMEM;
-			goto done;
-		}
-
-		result = winreg_printer_write_binary(tmp_ctx,
-						     winreg_pipe,
-						     &key_hnd,
-						     "Security",
-						     blob);
+		result = winreg_set_printer_secdesc(tmp_ctx,
+						    server_info,
+						    sharename,
+						    secdesc);
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -2095,29 +2086,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 			}
 		}
 		CHECK_ERROR(result);
-
-		result = winreg_enumval_to_blob(info2,
-						v,
-						"Security",
-						&blob);
-		if (W_ERROR_IS_OK(result)) {
-			info2->secdesc = talloc_zero(mem_ctx, struct spoolss_security_descriptor);
-			if (info2->secdesc == NULL) {
-				result = WERR_NOMEM;
-				goto done;
-			}
-			ndr_err = ndr_pull_struct_blob(&blob,
-						       mem_ctx,
-						       NULL,
-						       info2->secdesc,
-						       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				DEBUG(0, ("winreg_get_printer: Failed to unmarshall security descriptor\n"));
-				result = WERR_NOMEM;
-				goto done;
-			}
-		}
-		CHECK_ERROR(result);
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -2125,6 +2093,14 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					"for %s: %s\n",
 					v->value_name,
 					win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_get_printer_secdesc(info2,
+					    server_info,
+					    printer,
+					    &info2->secdesc);
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -2144,6 +2120,285 @@ done:
 	}
 
 	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
+				  const char *sharename,
+				  struct spoolss_security_descriptor **psecdesc)
+{
+	struct spoolss_security_descriptor *secdesc;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	enum ndr_err_code ndr_err;
+	const char *path;
+	DATA_BLOB blob;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, sharename);
+	if (path == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			goto create_default;
+		}
+		goto done;
+	}
+
+	result = winreg_printer_query_binary(tmp_ctx,
+					     winreg_pipe,
+					     &key_hnd,
+					     "Security",
+					     &blob);
+	if (!W_ERROR_IS_OK(result)) {
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			goto create_default;
+		}
+		goto done;
+	}
+
+	secdesc = talloc_zero(tmp_ctx, struct spoolss_security_descriptor);
+	if (secdesc == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	ndr_err = ndr_pull_struct_blob(&blob,
+				       secdesc,
+				       NULL,
+				       secdesc,
+				       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("winreg_get_secdesc: Failed to unmarshall security descriptor\n"));
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	if (psecdesc) {
+		*psecdesc = talloc_move(mem_ctx, &secdesc);
+	}
+
+	result = WERR_OK;
+	goto done;
+
+create_default:
+	result = spoolss_create_default_secdesc(tmp_ctx, &secdesc);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
+	   this security descriptor has been created when winbindd was
+	   down.  Take ownership of security descriptor. */
+	if (sid_equal(secdesc->owner_sid, &global_sid_World)) {
+		DOM_SID owner_sid;
+
+		/* Change sd owner to workgroup administrator */
+
+		if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
+			struct spoolss_security_descriptor *new_secdesc;
+			size_t size;
+
+			/* Create new sd */
+			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+
+			new_secdesc = make_sec_desc(tmp_ctx,
+						    secdesc->revision,
+						    secdesc->type,
+						    &owner_sid,
+						    secdesc->group_sid,
+						    secdesc->sacl,
+						    secdesc->dacl,
+						    &size);
+
+			if (new_secdesc == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+
+			/* Swap with other one */
+			secdesc = new_secdesc;
+		}
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, secdesc,
+			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	result = winreg_printer_write_binary(tmp_ctx,
+					     winreg_pipe,
+					     &key_hnd,
+					     "Security",
+					     blob);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	if (psecdesc) {
+		*psecdesc = talloc_move(mem_ctx, &secdesc);
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
+
+WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
+				  struct auth_serversupplied_info *server_info,
+				  const char *sharename,
+				  const struct spoolss_security_descriptor *secdesc)
+{
+	const struct spoolss_security_descriptor *new_secdesc = secdesc;
+	struct spoolss_security_descriptor *old_secdesc;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct policy_handle hive_hnd, key_hnd;
+	enum ndr_err_code ndr_err;
+	const char *path;
+	DATA_BLOB blob;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	path = winreg_printer_data_keyname(tmp_ctx, sharename);
+	if (path == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	/*
+	 * The old owner and group sids of the security descriptor are not
+	 * present when new ACEs are added or removed by changing printer
+	 * permissions through NT.  If they are NULL in the new security
+	 * descriptor then copy them over from the old one.
+	 */
+	if (!secdesc->owner_sid || !secdesc->group_sid) {
+		DOM_SID *owner_sid, *group_sid;
+		SEC_ACL *dacl, *sacl;
+		size_t size;
+
+		result = winreg_get_printer_secdesc(tmp_ctx,
+						    server_info,
+						    sharename,
+						    &old_secdesc);
+		if (!W_ERROR_IS_OK(result)) {
+			talloc_free(tmp_ctx);
+			return result;
+		}
+
+		/* Pick out correct owner and group sids */
+		owner_sid = secdesc->owner_sid ?
+			    secdesc->owner_sid :
+			    old_secdesc->owner_sid;
+
+		group_sid = secdesc->group_sid ?
+			    secdesc->group_sid :
+			    old_secdesc->group_sid;
+
+		dacl = secdesc->dacl ?
+		       secdesc->dacl :
+		       old_secdesc->dacl;
+
+		sacl = secdesc->sacl ?
+		       secdesc->sacl :
+		       old_secdesc->sacl;
+
+		/* Make a deep copy of the security descriptor */
+		new_secdesc = make_sec_desc(tmp_ctx,
+					    secdesc->revision,
+					    secdesc->type,
+					    owner_sid,
+					    group_sid,
+					    sacl,
+					    dacl,
+					    &size);
+		if (new_secdesc == NULL) {
+			talloc_free(tmp_ctx);
+			return WERR_NOMEM;
+		}
+	}
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					&winreg_pipe,
+					path,
+					"",
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, new_secdesc,
+			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	result = winreg_printer_write_binary(tmp_ctx,
+					     winreg_pipe,
+					     &key_hnd,
+					     "Security",
+					     blob);
+
+done:
+	if (winreg_pipe != NULL) {
+		if (is_valid_policy_hnd(&key_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+		}
+	}
+
+	talloc_free(tmp_ctx);
 	return result;
 }
 
