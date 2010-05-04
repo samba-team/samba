@@ -28,7 +28,7 @@ def run_named_build_task(cmd):
 					relpath = k.relpath_gen(cwd_node)
 					if fnmatch.fnmatch(relpath, cmd):
 						t.position= [0,0]
-						print t.display()
+						print(t.display())
 						run_task(t, k)
 						return
 
