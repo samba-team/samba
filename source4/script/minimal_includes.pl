@@ -11,6 +11,7 @@ use Getopt::Long;
 my $opt_help = 0;
 my $opt_remove = 0;
 my $opt_skip_system = 0;
+my $opt_waf = 0;
 
 #####################################################################
 # write a string into a file
@@ -43,6 +44,10 @@ sub test_compile($)
 {
 	my $fname = shift;
 	my $obj;
+	if ($opt_waf) {
+		my $ret = `../buildtools/bin/waf $fname 2>&1`;
+		return $ret
+	}
 	if ($fname =~ s/(.*)\..*$/$1.o/) {
 		$obj = "$1.o";
 	} else {
@@ -142,6 +147,7 @@ sub ShowHelp()
                  --help         show help
                  --remove       remove includes, don't just list them
                  --skip-system  don't remove system/ includes
+                 --waf          use waf target conventions
 ";
 }
 
@@ -151,6 +157,7 @@ GetOptions (
 	    'h|help|?' => \$opt_help,
 	    'remove' => \$opt_remove,
 	    'skip-system' => \$opt_skip_system,
+	    'waf' => \$opt_waf,
 	    );
 
 if ($opt_help) {
