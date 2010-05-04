@@ -102,8 +102,10 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 					   lm_hash,
 					   nt_hash,
 					   user_sess_key, lm_sess_key);
+	default:
+		DEBUG(0,("user_info constructed for user '%s' was invalid - password_state=%u invalid.\n", username, user_info->password_state));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
-	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /****************************************************************************

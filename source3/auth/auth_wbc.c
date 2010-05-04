@@ -95,8 +95,11 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 		params.password.response.nt_data = user_info->password.response.nt.data;
 		params.password.response.lm_length = user_info->password.response.lanman.length;
 		params.password.response.lm_data = user_info->password.response.lanman.data;
+	default:
+		DEBUG(0,("user_info constructed for user '%s' was invalid - password_state=%u invalid.\n",user_info->mapped.account_name, user_info->password_state));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
-#if 0
+#if 0 /* If ever implemented in libwbclient */
 	case AUTH_PASSWORD_HASH:
 	{
 		DEBUG(3,("Checking logon (hash) password for %s.\n",
