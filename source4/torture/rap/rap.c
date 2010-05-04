@@ -1378,6 +1378,141 @@ NTSTATUS smbcli_rap_netprintjobsetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
+static NTSTATUS rap_pull_rap_PrintDest0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintDest0 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintDestName, 9, sizeof(uint8_t), CH_DOS));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_PrintDest1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintDest1 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->PrintDestName, 9, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->UserName, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobId));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Status));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->StatusStringName));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Time));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_PrintDest2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintDest2 *r)
+{
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrinterName));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_PrintDest3(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_PrintDest3 *r)
+{
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->PrinterName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UserName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->LogAddr));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->JobId));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Status));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->StatusStringName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Comment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Drivers));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Time));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Pad1));
+
+	return NT_STATUS_OK;
+
+}
+
+NTSTATUS smbcli_rap_netprintdestenum(struct smbcli_tree *tree,
+				     struct smb_iconv_convenience *iconv_convenience,
+				     TALLOC_CTX *mem_ctx,
+				     struct rap_NetPrintDestEnum *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int i;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintDestEnum))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_multiple_entries(call);
+
+	switch(r->in.level) {
+	case 0:
+		rap_cli_expect_format(call, "B9");
+		break;
+	case 1:
+		rap_cli_expect_format(call, "B9B21WWzW");
+		break;
+	case 2:
+		rap_cli_expect_format(call, "z");
+		break;
+	case 3:
+		rap_cli_expect_format(call, "zzzWWzzzWW");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetPrintDestEnum, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	r->out.info = talloc_zero_array(mem_ctx, union rap_printdest_info, r->out.count);
+
+	if (r->out.info == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result = NT_STATUS_OK;
+
+	for (i=0; i<r->out.count; i++) {
+		switch(r->in.level) {
+		case 0:
+			result = rap_pull_rap_PrintDest0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info0);
+			break;
+		case 1:
+			result = rap_pull_rap_PrintDest1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info1);
+			break;
+		case 2:
+			result = rap_pull_rap_PrintDest2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info2);
+			break;
+		case 3:
+			result = rap_pull_rap_PrintDest3(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info[i].info3);
+			break;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetPrintDestEnum, r);
+	}
+
+	result = NT_STATUS_OK;
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
 {
