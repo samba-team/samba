@@ -57,6 +57,10 @@ static int it_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		return ldb_module_send_referral(ac->req, ares->referral);
+	}
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);

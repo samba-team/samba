@@ -81,6 +81,10 @@ static int subtree_rename_callback(struct ldb_request *req,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		return ldb_module_send_referral(ac->req, ares->referral);
+	}
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);

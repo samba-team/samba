@@ -514,6 +514,11 @@ static int samldb_set_defaultObjectCategory_callback(struct ldb_request *req,
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
+
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		return ldb_module_send_referral(ac->req, ares->referral);
+	}
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
@@ -785,6 +790,11 @@ static int samldb_add_entry_callback(struct ldb_request *req,
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
+
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		return ldb_module_send_referral(ac->req, ares->referral);
+	}
+
 	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
@@ -1428,6 +1438,11 @@ static int samldb_group_add_del_member_callback(struct ldb_request *req,
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
+
+	if (ares->type == LDB_REPLY_REFERRAL) {
+		return ldb_module_send_referral(ac->req, ares->referral);
+	}
+
 	if (ares->error != LDB_SUCCESS) {
 		if (ares->error == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 			/* On error "NO_SUCH_ATTRIBUTE" (delete of an invalid
