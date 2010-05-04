@@ -5974,7 +5974,8 @@ static bool test_AddPrinter_wellknown(struct torture_context *tctx,
 	ZERO_STRUCT(userlevel_ctr);
 	ZERO_STRUCT(info1);
 
-	torture_comment(tctx, "Testing AddPrinter%s level 1\n", ex ? "Ex":"");
+	torture_comment(tctx, "Testing AddPrinter%s(%s) level 1\n",
+			ex ? "Ex":"", printername);
 
 	/* try to add printer to wellknown printer list (level 1) */
 
@@ -6076,7 +6077,8 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 	ZERO_STRUCT(secdesc_ctr);
 	ZERO_STRUCT(userlevel_ctr);
 
-	torture_comment(tctx, "Testing AddPrinter%s level 2\n", ex ? "Ex":"");
+	torture_comment(tctx, "Testing AddPrinter%s(%s) level 2\n",
+			ex ? "Ex":"", printername);
 
 	devmode_ctr.devmode = devmode;
 
