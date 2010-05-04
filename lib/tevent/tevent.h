@@ -1059,23 +1059,90 @@ bool tevent_wakeup_recv(struct tevent_req *req);
  * @{
  */
 
+/**
+ * @brief Compare two timeval values.
+ *
+ * @param[in]  tv1      The first timeval value to compare.
+ *
+ * @param[in]  tv2      The second timeval value to compare.
+ *
+ * @return              0 if they are equal.
+ *                      1 if the first time is greater than the second.
+ *                      -1 if the first time is smaller than the second.
+ */
 int tevent_timeval_compare(const struct timeval *tv1,
 			   const struct timeval *tv2);
 
+/**
+ * @brief Get a zero timval value.
+ *
+ * @return              A zero timval value.
+ */
 struct timeval tevent_timeval_zero(void);
 
+/**
+ * @brief Get a timeval value for the current time.
+ *
+ * @return              A timval value with the current time.
+ */
 struct timeval tevent_timeval_current(void);
 
+/**
+ * @brief Get a timeval structure with the given values.
+ *
+ * @param[in]  secs     The seconds to set.
+ *
+ * @param[in]  usecs    The milliseconds to set.
+ *
+ * @return              A timeval structure with the given values.
+ */
 struct timeval tevent_timeval_set(uint32_t secs, uint32_t usecs);
 
+/**
+ * @brief Get the difference between two timeval values.
+ *
+ * @param[in]  tv1      The first timeval.
+ *
+ * @param[in]  tv2      The second timeval.
+ *
+ * @return              A timeval structure with the difference between the
+ *                      first and the second value.
+ */
 struct timeval tevent_timeval_until(const struct timeval *tv1,
 				    const struct timeval *tv2);
 
+/**
+ * @brief Check if a given timeval structure is zero.
+ *
+ * @param[in]  tv       The timeval to check if it is zero.
+ *
+ * @return              True if it is zero, false otherwise.
+ */
 bool tevent_timeval_is_zero(const struct timeval *tv);
 
+/**
+ * @brief Add the given amount of time to a timeval structure.
+ *
+ * @param[in]  tv        The timeval structure to add the time.
+ *
+ * @param[in]  secs      The seconds to add to the timeval.
+ *
+ * @param[in]  usecs     The milliseconds to add to the timeval.
+ *
+ * @return               The timeval structure with the new time.
+ */
 struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
 				  uint32_t usecs);
 
+/**
+ * @brief Get a timeval in the future with a specified offset from now.
+ *
+ * @param[in]  secs     The seconds of the offset from now.
+ *
+ * @param[in]  usecs    The milliseconds of the offset from now.
+ *
+ * @return              A timval with the given offset in the future.
+ */
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
 /* @} */
