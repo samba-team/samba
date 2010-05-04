@@ -123,18 +123,19 @@ static PyObject *py_nttime2unix(PyObject *self, PyObject *args)
 static PyObject *py_nttime2string(PyObject *self, PyObject *args)
 {
 	PyObject *ret;
-	NTTIME nt, nt2;
+	NTTIME nt;
 	TALLOC_CTX *tmp_ctx;
 	const char *string;
-
 	if (!PyArg_ParseTuple(args, "K", &nt))
 		return NULL;
+
 	tmp_ctx = talloc_new(NULL);
 
 	string = nt_time_string(tmp_ctx, nt);
 	ret =  PyString_FromString(string);
 
 	talloc_free(tmp_ctx);
+
 	return ret;
 }
 
