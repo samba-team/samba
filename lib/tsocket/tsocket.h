@@ -919,6 +919,9 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
  *     return;
  *   }
  * @endcode
+ *
+ * @warning This is an internal function. You should read the code to fully
+ *          understand it if you plan to use it.
  */
 int tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
 				int fd,
