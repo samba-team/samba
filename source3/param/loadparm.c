@@ -5596,20 +5596,21 @@ FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 int lp_cups_encrypt(void)
 {
+	int result = 0;
 #ifdef HAVE_HTTPCONNECTENCRYPT
 	switch (Globals.CupsEncrypt) {
 		case Auto:
-			Globals.CupsEncrypt = HTTP_ENCRYPT_REQUIRED;
+			result = HTTP_ENCRYPT_REQUIRED;
 			break;
 		case True:
-			Globals.CupsEncrypt = HTTP_ENCRYPT_ALWAYS;
+			result = HTTP_ENCRYPT_ALWAYS;
 			break;
 		case False:
-			Globals.CupsEncrypt = HTTP_ENCRYPT_NEVER;
+			result = HTTP_ENCRYPT_NEVER;
 			break;
 	}
 #endif
-	return Globals.CupsEncrypt;
+	return result;
 }
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
 FN_GLOBAL_INTEGER(lp_cups_connection_timeout, &Globals.cups_connection_timeout)
