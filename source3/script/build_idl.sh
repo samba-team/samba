@@ -16,16 +16,20 @@ PIDL="$PIDL $ARGS"
 
 list=""
 for f in ${IDL_FILES}; do
-	basename=`basename $f .idl`
-	ndr="$PIDL_OUTPUTDIR/ndr_$basename.c"
+        b=`basename $f .idl`
+	outfiles="cli_$b.c $b.h ndr_$b.h srv_$b.c"
+	outfiles="$outfiles cli_$b.h ndr_$b.c srv_$b.h"
 
-	if [ -f $ndr ]; then
-		if [ "x`find $f -newer $ndr -print`" = "x$f" ]; then
-			list="$list $f"
-		fi
-	else 
+	for o in $outfiles; do
+	    [ -f $PIDL_OUTPUTDIR/$o ] || {
 		list="$list $f"
-	fi
+		break
+	    }
+	    [ $f -nt $PIDL_OUTPUTDIR/$o ] && {
+		list="$list $f"
+		break
+	    }
+	done
 done
 
 ##
