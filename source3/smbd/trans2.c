@@ -27,6 +27,7 @@
 #include "version.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/xattr.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

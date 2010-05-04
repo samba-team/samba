@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /****************************************************************************
  Run a file if it is a magic script.

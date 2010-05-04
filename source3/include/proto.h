@@ -2107,27 +2107,9 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				uint32_t flags);
 
 
-#include "librpc/gen_ndr/ndr_dfs.h"
-#include "librpc/gen_ndr/ndr_dssetup.h"
-#include "librpc/gen_ndr/ndr_echo.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "librpc/gen_ndr/ndr_lsa.h"
-#include "librpc/gen_ndr/ndr_misc.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_notify.h"
-#include "librpc/gen_ndr/ndr_ntsvcs.h"
-#include "librpc/gen_ndr/ndr_samr.h"
-#include "librpc/gen_ndr/ndr_security.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
-#include "librpc/gen_ndr/ndr_svcctl.h"
-#include "librpc/gen_ndr/ndr_winreg.h"
-#include "librpc/gen_ndr/ndr_wkssvc.h"
-#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
-#include "librpc/gen_ndr/ndr_initshutdown.h"
-
-#include "librpc/ndr/libndr.h"
 
 /* The following definitions come from librpc/ndr/util.c  */
 

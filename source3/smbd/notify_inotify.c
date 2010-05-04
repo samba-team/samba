@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/notify.h"
 
 #ifdef HAVE_INOTIFY
 

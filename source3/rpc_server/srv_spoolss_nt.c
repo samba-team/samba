@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,ic,info,level) \

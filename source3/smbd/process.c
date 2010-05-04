@@ -34,6 +34,7 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "librpc/gen_ndr/messaging.h"
 
 extern bool global_machine_password_needs_changing;
 

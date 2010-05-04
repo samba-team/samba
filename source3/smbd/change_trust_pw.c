@@ -22,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 /************************************************************************
  Change the trust account password for a domain.

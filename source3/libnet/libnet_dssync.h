@@ -18,6 +18,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../librpc/gen_ndr/drsuapi.h"
+#include "../librpc/gen_ndr/drsblobs.h"
+
 struct dssync_context;
 
 struct dssync_ops {

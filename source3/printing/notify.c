@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "librpc/gen_ndr/messaging.h"
 
 static TALLOC_CTX *send_ctx;
 

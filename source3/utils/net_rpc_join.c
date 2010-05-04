@@ -23,6 +23,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 

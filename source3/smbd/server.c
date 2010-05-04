@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "librpc/gen_ndr/messaging.h"
 
 static_decl_rpc;
 

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
 
 extern bool AllowDebugChange;
 

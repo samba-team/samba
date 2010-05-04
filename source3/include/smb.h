@@ -228,32 +228,9 @@ struct id_map {
 	enum id_mapping status;
 };
 
-#include "librpc/gen_ndr/misc.h"
-#include "librpc/gen_ndr/security.h"
-#include "librpc/ndr/libndr.h"
-#include "librpc/gen_ndr/lsa.h"
-#include "librpc/gen_ndr/dfs.h"
-#include "librpc/gen_ndr/winreg.h"
-#include "librpc/gen_ndr/initshutdown.h"
-#include "librpc/gen_ndr/eventlog.h"
-#include "librpc/gen_ndr/srvsvc.h"
-#include "librpc/gen_ndr/wkssvc.h"
-#include "librpc/gen_ndr/echo.h"
-#include "librpc/gen_ndr/svcctl.h"
-#include "librpc/gen_ndr/netlogon.h"
-#include "librpc/gen_ndr/samr.h"
-#include "librpc/gen_ndr/dssetup.h"
 #include "librpc/gen_ndr/epmapper.h"
-#include "librpc/gen_ndr/libnet_join.h"
 #include "librpc/gen_ndr/krb5pac.h"
-#include "librpc/gen_ndr/ntsvcs.h"
-#include "librpc/gen_ndr/nbt.h"
-#include "librpc/gen_ndr/drsuapi.h"
-#include "librpc/gen_ndr/drsblobs.h"
-#include "librpc/gen_ndr/spoolss.h"
 #include "librpc/gen_ndr/dcerpc.h"
-#include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "librpc/gen_ndr/ntlmssp.h"
 
 struct lsa_dom_info {
 	bool valid;

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/notify.h"
 
 struct notify_change_request {
 	struct notify_change_request *prev, *next;

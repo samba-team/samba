@@ -26,7 +26,7 @@
 #include "includes.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
-
+#include "../librpc/gen_ndr/ndr_lsa.h"
 
 /* 
  * Check a server for being alive and well.

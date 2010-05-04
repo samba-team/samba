@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
 
 /********************************************************
  Connection cachine struct. Goes away when ctx destroyed.

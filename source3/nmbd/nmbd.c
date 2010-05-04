@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/messaging.h"
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;

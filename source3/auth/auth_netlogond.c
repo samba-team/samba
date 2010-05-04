@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

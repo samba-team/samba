@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "librpc/gen_ndr/messaging.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;

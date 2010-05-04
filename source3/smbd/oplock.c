@@ -22,6 +22,7 @@
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
 #include "smbd/globals.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /****************************************************************************
  Get the number of current exclusive oplocks.

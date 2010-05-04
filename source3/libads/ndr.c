@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t r)
 {

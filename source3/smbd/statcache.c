@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /****************************************************************************
  Stat cache code used in unix_convert.

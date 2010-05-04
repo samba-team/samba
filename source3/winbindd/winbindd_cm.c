@@ -66,6 +66,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "../librpc/gen_ndr/cli_dssetup.h"
 #include "libads/sitename_cache.h"
+#include "librpc/gen_ndr/messaging.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

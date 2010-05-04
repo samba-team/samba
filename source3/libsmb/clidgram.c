@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /*
  * cli_send_mailslot, send a mailslot for client code ...
