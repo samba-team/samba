@@ -46,8 +46,7 @@ done
 
 echo "testing python portability"
 pushd lib/talloc
-#versions="python2.4 python2.5 python2.6 python3.0 python3.1"
-versions="python2.4 python2.5 python2.6"
+versions="python2.4 python2.5 python2.6 python3.0 python3.1"
 for p in $versions; do
     echo "Testing $p"
     $p ../../buildtools/bin/waf configure -C --enable-developer --prefix=$PREFIX
