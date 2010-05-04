@@ -734,6 +734,18 @@ interface rap
 		[out,switch_is(level)] rap_printdest_info info[count]
 	);
 
+	/* not documented in MS-RAP */
+	[public] void rap_NetPrintDestGetInfo(
+		[in] astring PrintDestName,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_printdest_info info
+	);
+
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
