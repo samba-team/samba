@@ -1,0 +1,129 @@
+#!/bin/sh
+# event script to integrate with gpfs cnfs
+
+. $CTDB_BASE/functions
+
+loadconfig
+
+STATEDIR=$CTDB_BASE/state/gpfs
+
+# filesystems needed by nfs
+NFS_FSS=`cat /etc/exports | egrep -v "^#" | sed -e "s/[ \t]*[^ \t]*$//"`
+
+
+
+check_if_healthy() {
+        mkdir -p $STATEDIR/fs
+        FS=`(cd $STATEDIR/fs ; ls )`
+        [ -z "$FS" ] || {
+                MISSING=`echo $FS | sed -e "s/@/\//g"`
+                logger Filesystems required for NFS are missing. Node is UNHEALTHY. [$MISSING]
+                $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS filesystems required for NFS are not mounted : [$MISSING]"
+                exit 0
+        }
+
+        logger All required GPFS resources are available. CNFS part is healthy.
+        $CTDB_BASE/events.d/62.cnfs healthy
+}
+
+case "$1" in
+    startup)
+        mkdir -p $STATEDIR
+        check_if_healthy
+        ;;
+
+
+    # This event is called from the GPFS callbacks when a filesystem is
+    # unmounted
+    gpfsumount)
+        # is this a filesystem we need for nfs?
+        echo "$NFS_FSS" | egrep "^$2" >/dev/null || {
+                # no
+                exit 0
+        }
+
+        logger "GPFS unmounted filesystem $2 used by NFS. Mark node as UNHEALTHY"
+
+        MFS=`echo $2 | sed -e "s/\//@/g"`
+        mkdir -p $STATEDIR/fs
+        touch "$STATEDIR/fs/$MFS"
+        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS unmounted filesystem $2 used by NFS"
+        ;;
+
+    # This event is called from the GPFS callbacks when a filesystem is
+    # mounted
+    gpfsmount)
+        # is this a filesystem we need for nfs?
+        echo "$NFS_FSS" | egrep "^$2" >/dev/null || {
+                # no
+                exit 0
+        }
+
+        logger "GPFS mounted filesystem $2 used by NFS."
+
+        MFS=`echo $2 | sed -e "s/\//@/g"`
+        mkdir -p $STATEDIR/fs
+        rm -f "$STATEDIR/fs/$MFS"
+
+        check_if_healthy
+        ;;
+
+
+
+    # This event is called from the gpfs callback when GPFS is being shutdown.
+    gpfsshutdown)
+        logger "GPFS is shutting down. Marking node as UNHEALTHY and trigger a CTDB failover"
+        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS was shut down!"
+        ;;
+
+
+    # This event is called from the gpfs callback when GPFS has started.
+    # It checks that all required NFS filesystems are mounted 
+    # and flags the node healthy if so.
+    gpfsstartup)
+        logger "GPFS is is started."
+        check_if_healthy
+        ;;
+
+
+
+
+
+    unhealthy)
+        # Mark the node as UNHEALTHY which means all public addresses
+        # will be migrated off the node.
+        shift
+        TMPFILE=/tmp/ctdb.cnfs.$$
+        echo "$*" > $TMPFILE
+        ctdb_setstatus unhealthy $TMPFILE
+        rm $TMPFILE
+
+        # force a monitor event so we pick up immediately that this script
+        # will now fail and make the node unhealthy.
+        ctdb eventscript monitor
+
+        # Wait until we no longer serve any ip addresses at all
+        PNN=`ctdb pnn | cut -d: -f2`
+        while `ctdb -Y ip | cut -d: -f3 | egrep "^$PNN$" >/dev/null`; do
+                sleep 1
+        done
+        ;;
+
+    healthy)
+        # mark the node as healthy
+        ctdb_setstatus healthy
+        ;;
+
+
+    monitor)
+        ctdb_checkstatus
+        exit $?
+        ;;
+
+    *)
+        ctdb_standard_event_handler "$@"
+        ;;
+esac
+
+exit 0
+
