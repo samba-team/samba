@@ -29,16 +29,20 @@ fi
 
 list=""
 for f in ${IDL_FILES}; do
-	basename=`basename $f .idl`
-	ndr="$PIDL_OUTPUTDIR/py_$basename.c"
+        b=`basename $f .idl`
+	outfiles="cli_$b.c $b.h ndr_${b}_c.c ndr_$b.h ndr_${b}_s.c srv_$b.c"
+	outfiles="$outfiles cli_$b.h ndr_$b.c ndr_${b}_c.h py_$b.c srv_$b.h"
 
-	if [ -f $ndr ]; then
-		if [ "x`find $f -newer $ndr -print`" = "x$f" ]; then
-			list="$list $f"
-		fi
-	else 
+	for o in $outfiles; do
+	    [ -f $PIDL_OUTPUTDIR/$o ] || {
 		list="$list $f"
-	fi
+		break
+	    }
+	    [ $f -nt $PIDL_OUTPUTDIR/$o ] && {
+		list="$list $f"
+		break
+	    }
+	done
 done
 
 ##
