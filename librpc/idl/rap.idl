@@ -676,6 +676,64 @@ interface rap
 		[out] uint16 convert
 	);
 
+	/* all not documented in MS-RAP */
+
+	typedef struct {
+		[charset(DOS)] uint8 PrintDestName[9];
+	} rap_PrintDest0;
+
+	typedef struct {
+		[charset(DOS)] uint8 PrintDestName[9];
+		[charset(DOS)] uint8 UserName[21];
+		uint16 JobId;
+		uint16 Status;
+		[relative_short] astring *StatusStringName;
+		uint16 PrintQueueNameHigh;
+		uint16 Time;
+	} rap_PrintDest1;
+
+	typedef struct {
+		[relative_short] astring *PrinterName;
+		uint16 PrinterNameHigh;
+	} rap_PrintDest2;
+
+	typedef struct {
+		[relative_short] astring *PrinterName;
+		uint16 PrinterNameHigh;
+		[relative_short] astring *UserName;
+		uint16 UserNameHigh;
+		[relative_short] astring *LogAddr;
+		uint16 LogAddrHigh;
+		uint16 JobId;
+		uint16 Status;
+		[relative_short] astring *StatusStringName;
+		uint16 PrintQueueNameHigh;
+		[relative_short] astring *Comment;
+		uint16 CommentHigh;
+		[relative_short] astring *Drivers;
+		uint16 DriversHigh;
+		uint16 Time;
+		uint16 Pad1;
+	} rap_PrintDest3;
+
+	typedef [public,nodiscriminant] union {
+		[case(0)] rap_PrintDest0 info0;
+		[case(1)] rap_PrintDest1 info1;
+		[case(2)] rap_PrintDest2 info2;
+		[case(3)] rap_PrintDest3 info3;
+	} rap_printdest_info;
+
+	/* not documented in MS-RAP */
+	[public] void rap_NetPrintDestEnum(
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] uint16 count,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_printdest_info info[count]
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
