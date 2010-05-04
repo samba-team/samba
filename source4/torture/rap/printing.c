@@ -495,6 +495,59 @@ static bool test_netprintdestenum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netprintdestgetinfo_bydest(struct torture_context *tctx,
+					    struct smbcli_state *cli,
+					    const char *PrintDestName)
+{
+	struct rap_NetPrintDestGetInfo r;
+	int i;
+	uint16_t levels[] = { 0, 1, 2, 3 };
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.PrintDestName = PrintDestName;
+		r.in.level = levels[i];
+		r.in.bufsize = 8192;
+
+		torture_comment(tctx,
+			"Testing rap_NetPrintDestGetInfo(%s) level %d\n", r.in.PrintDestName, r.in.level);
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netprintdestgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			"smbcli_rap_netprintdestgetinfo failed");
+	}
+
+	return true;
+}
+
+
+static bool test_netprintdestgetinfo(struct torture_context *tctx,
+				     struct smbcli_state *cli)
+{
+	struct rap_NetPrintDestEnum r;
+	int i;
+
+	r.in.level = 2;
+	r.in.bufsize = 8192;
+
+	torture_comment(tctx,
+		"Testing rap_NetPrintDestEnum level %d\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintdestenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netprintdestenum failed");
+
+	for (i=0; i < r.out.count; i++) {
+
+		torture_assert(tctx,
+			test_netprintdestgetinfo_bydest(tctx, cli, r.out.info[i].info2.PrinterName),
+			"failed to get printdest info");
+
+	}
+
+	return true;
+}
+
 static bool test_rap_print(struct torture_context *tctx,
 			   struct smbcli_state *cli)
 {
@@ -523,6 +576,7 @@ struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "rap_printjob_setinfo", test_netprintjobsetinfo);
 	torture_suite_add_1smb_test(suite, "rap_printjob", test_netprintjob);
 	torture_suite_add_1smb_test(suite, "rap_printdest_enum", test_netprintdestenum);
+	torture_suite_add_1smb_test(suite, "rap_printdest_getinfo", test_netprintdestgetinfo);
 
 	return suite;
 }
