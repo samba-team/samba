@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "printing.h"
 #include "smbd/globals.h"
 
 static bool setup_write_cache(files_struct *, SMB_OFF_T);
@@ -291,20 +292,15 @@ ssize_t write_file(struct smb_request *req,
 	int write_path = -1;
 
 	if (fsp->print_file) {
-		uint32 jobid;
+		uint32_t t;
+		int ret;
 
-		if (!rap_to_pjobid(fsp->print_file->rap_jobid, NULL, &jobid)) {
-			DEBUG(3, ("write_file: "
-                                  "Unable to map RAP jobid %u to jobid.\n",
-				  (unsigned int)fsp->print_file->rap_jobid));
-			errno = EBADF;
+		ret = print_spool_write(fsp, data, n, pos, &t);
+		if (ret) {
+			errno = ret;
 			return -1;
 		}
-
-		/* support seeks for print files bigger than 4G */
-		pos = printfile_offset(fsp, pos);
-
-		return print_job_write(SNUM(fsp->conn), jobid, data, pos, n);
+		return t;
 	}
 
 	if (!fsp->can_write) {

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "printing.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
@@ -486,11 +487,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		status = print_fsp_open(smb1req,
-					smb1req->conn,
-					in_name,
-					smb1req->vuid,
-					result);
+		status = print_spool_open(result, in_name,
+					  smb1req->vuid);
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(smb1req, result);
 			tevent_req_nterror(req, status);

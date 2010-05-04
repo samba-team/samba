@@ -210,7 +210,8 @@ done:
 	return status;
 }
 
-int print_spool_write(files_struct *fsp, const char *data, uint32_t size,
+int print_spool_write(files_struct *fsp,
+		      const char *data, uint32_t size,
 		      SMB_OFF_T offset, uint32_t *written)
 {
 	SMB_STRUCT_STAT st;

@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "printing.h"
 #include "smbd/globals.h"
 
 /****************************************************************************
@@ -5053,7 +5054,7 @@ void reply_printopen(struct smb_request *req)
 	}
 
 	/* Open for exclusive use, write only. */
-	status = print_fsp_open(req, conn, NULL, req->vuid, fsp);
+	status = print_spool_open(fsp, NULL, req->vuid);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		file_free(req, fsp);

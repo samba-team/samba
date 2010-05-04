@@ -4724,14 +4724,6 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
 void pcap_cache_reload(void);
 bool pcap_printername_ok(const char *printername);
 
-/* The following definitions come from printing/printfsp.c  */
-
-NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
-			const char *fname,
-			uint16_t current_vuid, files_struct *fsp);
-void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
-SMB_OFF_T printfile_offset(files_struct *fsp, SMB_OFF_T offset);
-
 /* The following definitions come from printing/printing.c  */
 
 uint16 pjobid_to_rap(const char* sharename, uint32 jobid);

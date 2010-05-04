@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "printing.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/ndr_security.h"
@@ -1526,8 +1527,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		return print_fsp_open(req, conn, smb_fname->base_name,
-				      req->vuid, fsp);
+		return print_spool_open(fsp, smb_fname->base_name,
+					req->vuid);
 	}
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,
