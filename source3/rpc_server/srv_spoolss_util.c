@@ -198,72 +198,6 @@ static uint32_t winreg_printer_rev_changeid(void)
 #endif
 }
 
-static struct spoolss_DeviceMode *winreg_printer_create_default_devmode(TALLOC_CTX *mem_ctx,
-		const char *default_devicename)
-{
-	char adevice[MAXDEVICENAME];
-	struct spoolss_DeviceMode *devmode;
-
-	devmode = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
-	if (devmode == NULL) {
-		return NULL;
-	}
-
-	slprintf(adevice, sizeof(adevice), "%s", default_devicename);
-	devmode->devicename = talloc_strdup(mem_ctx, adevice);
-	if (devmode->devicename == NULL) {
-		return NULL;
-	}
-
-	devmode->formname = "Letter";
-
-	devmode->specversion          = DMSPEC_NT4_AND_ABOVE;
-	devmode->driverversion        = 0x0400;
-	devmode->size                 = 0x00DC;
-	devmode->__driverextra_length = 0;
-	devmode->fields               = DEVMODE_FORMNAME |
-					DEVMODE_TTOPTION |
-					DEVMODE_PRINTQUALITY |
-					DEVMODE_DEFAULTSOURCE |
-					DEVMODE_COPIES |
-					DEVMODE_SCALE |
-					DEVMODE_PAPERSIZE |
-					DEVMODE_ORIENTATION;
-	devmode->orientation          = DMORIENT_PORTRAIT;
-	devmode->papersize            = DMPAPER_LETTER;
-	devmode->paperlength          = 0;
-	devmode->paperwidth           = 0;
-	devmode->scale                = 0x64;
-	devmode->copies               = 1;
-	devmode->defaultsource        = DMBIN_FORMSOURCE;
-	devmode->printquality         = DMRES_HIGH;           /* 0x0258 */
-	devmode->color                = DMRES_MONOCHROME;
-	devmode->duplex               = DMDUP_SIMPLEX;
-	devmode->yresolution          = 0;
-	devmode->ttoption             = DMTT_SUBDEV;
-	devmode->collate              = DMCOLLATE_FALSE;
-	devmode->icmmethod            = 0;
-	devmode->icmintent            = 0;
-	devmode->mediatype            = 0;
-	devmode->dithertype           = 0;
-
-	devmode->logpixels            = 0;
-	devmode->bitsperpel           = 0;
-	devmode->pelswidth            = 0;
-	devmode->pelsheight           = 0;
-	devmode->displayflags         = 0;
-	devmode->displayfrequency     = 0;
-	devmode->reserved1            = 0;
-	devmode->reserved2            = 0;
-	devmode->panningwidth         = 0;
-	devmode->panningheight        = 0;
-
-	devmode->driverextra_data.data = NULL;
-	devmode->driverextra_data.length = 0;
-
-	return devmode;
-}
-
 /**
  * @internal
  *
@@ -1366,13 +1300,11 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_SetPrinterInfo2 *info2;
-	struct spoolss_DeviceMode *devmode = NULL;
 	struct security_descriptor *secdesc;
 	struct winreg_String wkey, wkeyclass;
 	const char *path;
 	const char *subkeys[] = { "DsDriver", "DsSpooler", "PrinterDriverData" };
 	uint32_t i, count = ARRAY_SIZE(subkeys);
-	int snum = lp_servicenumber(sharename);
 	uint32_t info2_mask = 0;
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
@@ -1478,7 +1410,16 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	info2->printername = sharename;
+	if (servername != NULL) {
+		info2->printername = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
+						     servername, sharename);
+	} else {
+		info2->printername = sharename;
+	}
+	if (info2->printername == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
 	info2_mask |= SPOOLSS_PRINTER_INFO_PRINTERNAME;
 
 	info2->sharename = sharename;
@@ -1511,31 +1452,23 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	info2->defaultpriority = 1;
 	info2_mask |= SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY;
 
-	/* info2->setuptime = (uint32_t) time(NULL); */
-
-	if (lp_default_devmode(snum)) {
-		devmode = winreg_printer_create_default_devmode(tmp_ctx,
-								info2->printername);
-		if (devmode == NULL) {
-			result = WERR_NOMEM;
-			goto done;
-		}
-
-		info2_mask |= SPOOLSS_PRINTER_INFO_DEVMODE;
-	}
-
 	result = spoolss_create_default_secdesc(tmp_ctx, &secdesc);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 	info2_mask |= SPOOLSS_PRINTER_INFO_SECDESC;
 
+	/*
+	 * Don't write a default Device Mode to the registry! The Device Mode is
+	 * only written to disk with a SetPrinter level 2 or 8.
+	 */
+
 	result = winreg_update_printer(tmp_ctx,
 				       server_info,
 				       sharename,
 				       info2_mask,
 				       info2,
-				       devmode,
+				       NULL,
 				       secdesc);
 
 done:
@@ -1563,6 +1496,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	struct policy_handle hive_hnd, key_hnd;
+	int snum = lp_servicenumber(sharename);
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	char *path;
@@ -1656,6 +1590,19 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DEVMODE) {
+		/*
+		 * Some client drivers freak out if there is a NULL devmode
+		 * (probably the driver is not checking before accessing
+		 * the devmode pointer)   --jerry
+		 */
+		if (devmode == NULL && lp_default_devmode(snum) && info2 != NULL) {
+			result = spoolss_create_default_devmode(tmp_ctx,
+								info2->printername,
+								&devmode);
+			if (!W_ERROR_IS_OK(result)) {
+				goto done;
+			}
+		}
 		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, devmode,
 				(ndr_push_flags_fn_t) ndr_push_spoolss_DeviceMode);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1881,6 +1828,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterEnumValues *v;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+	int snum = lp_servicenumber(printer);
 	uint32_t num_values = 0;
 	uint32_t i;
 	char *path;
@@ -1957,15 +1905,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					      v,
 					      "Name",
 					      &info2->printername);
-		if (W_ERROR_IS_OK(result) && info2->servername[0] != '\0') {
-			char *p = talloc_asprintf(info2, "%s\\%s",
-						  info2->servername,
-						  info2->printername);
-			if (p == NULL) {
-				result = WERR_NOMEM;
-			}
-			info2->printername = p;
-		}
 		CHECK_ERROR(result);
 
 		result = winreg_enumval_to_sz(info2,
@@ -2063,29 +2002,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 						 "StartTime",
 						 &info2->starttime);
 		CHECK_ERROR(result);
-
-		result = winreg_enumval_to_blob(info2,
-						v,
-						"Default DevMode",
-						&blob);
-		if (W_ERROR_IS_OK(result)) {
-			info2->devmode = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
-			if (info2->devmode == NULL) {
-				result = WERR_NOMEM;
-				goto done;
-			}
-			ndr_err = ndr_pull_struct_blob(&blob,
-						       info2,
-						       NULL,
-						       info2->devmode,
-						       (ndr_pull_flags_fn_t) ndr_pull_spoolss_DeviceMode);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				DEBUG(0, ("winreg_get_printer: Failed to unmarshall device mode\n"));
-				result = WERR_NOMEM;
-				goto done;
-			}
-		}
-		CHECK_ERROR(result);
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -2094,6 +2010,72 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					v->value_name,
 					win_errstr(result)));
 		goto done;
+	}
+
+	/* Create the printername */
+	if (info2->servername[0] != '\0') {
+		if (lp_force_printername(snum)) {
+			const char *p = talloc_asprintf(info2, "%s\\%s",
+							info2->servername,
+							info2->sharename);
+				if (p == NULL) {
+					result = WERR_NOMEM;
+					goto done;
+				}
+				info2->printername = p;
+		} else {
+			char *p = talloc_asprintf(info2, "%s\\%s",
+						  info2->servername,
+						  info2->printername);
+			if (p == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+			info2->printername = p;
+		}
+	}
+
+	/* Construct the Device Mode */
+	result = winreg_printer_query_binary(tmp_ctx,
+					     winreg_pipe,
+					     &key_hnd,
+					     "Default DevMode",
+					     &blob);
+	if (W_ERROR_IS_OK(result)) {
+		info2->devmode = talloc_zero(info2, struct spoolss_DeviceMode);
+		if (info2->devmode == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		ndr_err = ndr_pull_struct_blob(&blob,
+					       info2->devmode,
+					       NULL,
+					       info2->devmode,
+					       (ndr_pull_flags_fn_t) ndr_pull_spoolss_DeviceMode);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("winreg_get_printer: Failed to unmarshall device mode\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
+	}
+
+	if (info2->devmode == NULL && lp_default_devmode(snum)) {
+		result = spoolss_create_default_devmode(info2,
+							info2->printername,
+							&info2->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (info2->devmode != NULL) {
+		info2->devmode->devicename = talloc_strdup(info2->devmode,
+							   info2->printername);
+		if (info2->devmode->devicename == NULL) {
+			DEBUG(0, ("winreg_get_printer: Failed to set devicename\n"));
+			result = WERR_NOMEM;
+			goto done;
+		}
 	}
 
 	result = winreg_get_printer_secdesc(info2,
