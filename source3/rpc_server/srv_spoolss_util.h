@@ -85,6 +85,8 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  server_info The server supplied session info.
  *
+ * @param[in]  sharename  The share name.
+ *
  * @param[in]  info2_mask A bitmask which defines which values should be set.
  *
  * @param[in]  info2    A SetPrinterInfo2 structure with the data to set.
@@ -98,6 +100,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     const char *sharename,
 			     uint32_t info2_mask,
 			     struct spoolss_SetPrinterInfo2 *info2,
 			     struct spoolss_DeviceMode *devmode,

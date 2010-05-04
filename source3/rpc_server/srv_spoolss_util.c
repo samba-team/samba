@@ -1536,6 +1536,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 
 	result = winreg_update_printer(tmp_ctx,
 				       server_info,
+				       sharename,
 				       info2_mask,
 				       info2,
 				       devmode,
@@ -1557,6 +1558,7 @@ done:
 
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     const char *sharename,
 			     uint32_t info2_mask,
 			     struct spoolss_SetPrinterInfo2 *info2,
 			     struct spoolss_DeviceMode *devmode,
@@ -1576,7 +1578,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	path = winreg_printer_data_keyname(tmp_ctx, info2->sharename);
+	path = winreg_printer_data_keyname(tmp_ctx, sharename);
 	if (path == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return WERR_NOMEM;
