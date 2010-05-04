@@ -8,7 +8,7 @@ VERSION='4.0.0-alpha13'
 
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options, samba_dist
+import wafsamba, Options, samba_dist, Scripting
 
 samba_dist.DIST_DIRS('.')
 
@@ -147,4 +147,13 @@ def distcheck():
     d = Scripting.distcheck
     d(subdir='source4')
 
+def wildcard_cmd(cmd):
+    '''called on a unknown command'''
+    from samba_wildcard import run_named_build_task
+    run_named_build_task(cmd)
+
+def main():
+    from samba_wildcard import wildcard_main
+    wildcard_main(wildcard_cmd)
+Scripting.main = main
 

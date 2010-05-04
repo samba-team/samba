@@ -25,6 +25,7 @@ import tru64cc
 import irixcc
 import generic_cc
 import samba_dist
+import samba_wildcard
 
 O644 = 420
 
