@@ -21,12 +21,12 @@ for d in $tests; do
     pushd $d
     rm -rf bin
     type waf
+    ./autogen-waf.sh
     waf dist
-    waf configure -C --enable-developer --prefix=$PREFIX
-    time waf build
-    time waf build
-    waf install
-    waf distcheck
+    ./configure -C --enable-developer --prefix=$PREFIX
+    time make
+    make install
+    make distcheck
     case $d in
 	"source4/lib/ldb")
 	    ldd bin/ldbadd
