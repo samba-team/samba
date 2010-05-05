@@ -36,7 +36,7 @@ struct wbc_lookup_name_state {
 static void wbcLookupName_done(struct tevent_req *subreq);
 
 /**
- * @brief Request a conversion of a domaind and name to a domain sid
+ * @brief Request a conversion of a domain and name to a domain sid
  *
  * @param mem_ctx	talloc context to allocate the request from
  * @param ev		tevent context to use for async operation
@@ -118,15 +118,16 @@ static void wbcLookupName_done(struct tevent_req *subreq)
 }
 
 /**
- * @brief Receive a conversion a SID to a domain and name
+ * @brief Receive a conversion of a domain and name to a domain SID.
  *
- * @param *
- * @param *pname	Resolved User or group name
- * @param *pname_type	Pointer to the resolved SID type
+ * @param req The tevent request calling this function.
+ *
+ * @param sid A pointer to store the sid looked up.
+ *
+ * @param name_type Pointer to store the resolved SID name type.
  *
  * @return #wbcErr
  */
-
 wbcErr wbcLookupName_recv(struct tevent_req *req,
 			  struct wbcDomainSid *sid,
 			  enum wbcSidType *name_type)
@@ -245,14 +246,19 @@ static void wbcLookupSid_done(struct tevent_req *subreq)
 /**
  * @brief Receive a conversion a SID to a domain and name
  *
- * @param *mem_ctx,	talloc context to move results to
- * @param *pdomain	Resolved Domain name (possibly "")
- * @param *pname	Resolved User or group name
- * @param *pname_type	Pointer to the resolved SID type
+ * @param req          The tevent request calling this function.
+ *
+ * @param mem_ctx      A talloc context to move results to.
+ *
+ * @param pdomain      A pointer to store the resolved domain name
+ *                      (possibly "").
+ *
+ * @param pname        A pointer to store the resolved user or group name.
+ *
+ * @param pname_type   A pointer to store the resolved SID type.
  *
  * @return #wbcErr
  */
-
 wbcErr wbcLookupSid_recv(struct tevent_req *req,
 			 TALLOC_CTX *mem_ctx,
 			 char **pdomain,

@@ -982,13 +982,14 @@ wbcErr wbcGetGroups(const char *account,
 /**
  * @brief Lookup the current status of a trusted domain
  *
- * @param domain      Domain to query
- * @param *info       Pointer to returned domain_info struct
+ * @param domain        The domain to query
+ *
+ * @param dinfo          A pointer to store the returned domain_info struct.
  *
  * @return #wbcErr
  **/
 wbcErr wbcDomainInfo(const char *domain,
-		     struct wbcDomainInfo **info);
+		     struct wbcDomainInfo **dinfo);
 
 /**
  * @brief Enumerate the domain trusts known by Winbind

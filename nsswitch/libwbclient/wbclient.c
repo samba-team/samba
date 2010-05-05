@@ -34,16 +34,7 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response);
 
-/** @brief Wrapper around Winbind's send/receive API call
- *
- * @param cmd       Winbind command operation to perform
- * @param request   Send structure
- * @param response  Receive structure
- *
- * @return #wbcErr
- **/
-
-/**********************************************************************
+/*
  result == NSS_STATUS_UNAVAIL: winbind not around
  result == NSS_STATUS_NOTFOUND: winbind around, but domain missing
 
@@ -54,7 +45,7 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
  (as far as I have seen) with the callers of is_trusted_domains.
 
  --Volker
-**********************************************************************/
+*/
 
 static wbcErr wbcRequestResponseInt(
 	int cmd,
@@ -89,6 +80,15 @@ static wbcErr wbcRequestResponseInt(
 	return wbc_status;
 }
 
+/**
+ * @brief Wrapper around Winbind's send/receive API call
+ *
+ * @param cmd       Winbind command operation to perform
+ * @param request   Send structure
+ * @param response  Receive structure
+ *
+ * @return #wbcErr
+ */
 wbcErr wbcRequestResponse(int cmd,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response)
