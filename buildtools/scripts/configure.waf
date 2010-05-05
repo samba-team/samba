@@ -9,6 +9,6 @@ WAF=BUILDTOOLS/bin/waf
 JOBS=1
 export JOBS
 
-cd BUILDPATH
-$WAF configure "$@"
+cd BUILDPATH || exit 1
+$WAF configure "$@" || exit 1
 cd $PREVPATH
