@@ -333,12 +333,12 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 
 	SMB_ASSERT(plock->lock_type != UNLOCK_LOCK);
 
-	for (i=0; i < br_lck->num_locks; i++) {
-		if (locks[i].start + locks[i].size < locks[i].start) {
-			/* 64-bit wrap. Error. */
-			return NT_STATUS_INVALID_LOCK_RANGE;
-		}
+	if ((plock->start + plock->size - 1 < plock->start) &&
+			plock->size != 0) {
+		return NT_STATUS_INVALID_LOCK_RANGE;
+	}
 
+	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
 		if (brl_conflict(&locks[i], plock)) {
 			/* Remember who blocked us. */
@@ -716,8 +716,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	}
 
 	/* Don't allow 64-bit lock wrap. */
-	if (plock->start + plock->size < plock->start ||
-			plock->start + plock->size < plock->size) {
+	if (plock->start + plock->size - 1 < plock->start) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

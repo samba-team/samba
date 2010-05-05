@@ -277,7 +277,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<in_lock_count; i++) {
-		uint64_t max_count;
 		bool invalid = false;
 
 		switch (in_locks[i].flags) {
@@ -345,12 +344,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			locks[i].brltype = READ_LOCK;
 		} else {
 			locks[i].brltype = UNLOCK_LOCK;
-		}
-
-		max_count = UINT64_MAX - locks[i].offset;
-		if (locks[i].count > max_count) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_LOCK_RANGE);
-			return tevent_req_post(req, ev);
 		}
 	}
 
