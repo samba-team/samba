@@ -249,7 +249,7 @@ static int rap_share_add(struct net_context *c, int argc, const char **argv)
 	strlcpy((char *)sinfo.share_name, sharename, sizeof(sinfo.share_name));
 	sinfo.reserved1 = '\0';
 	sinfo.share_type = 0;
-	sinfo.comment = smb_xstrdup(c->opt_comment);
+	sinfo.comment = c->opt_comment ? smb_xstrdup(c->opt_comment) : "";
 	sinfo.perms = 0;
 	sinfo.maximum_users = c->opt_maxusers;
 	sinfo.active_users = 0;
