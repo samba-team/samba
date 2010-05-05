@@ -709,7 +709,8 @@ void process_blocking_lock_queue(void)
 	struct blocking_lock_record *blr, *next = NULL;
 
 	if (sconn->allow_smb2) {
-		return process_blocking_lock_queue_smb2();
+		process_blocking_lock_queue_smb2();
+		return;
 	}
 
 	tv_curr = timeval_current();
