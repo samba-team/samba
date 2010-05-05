@@ -479,31 +479,40 @@ struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *s
 static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 {
 	struct smbd_smb2_request *smb2req;
-	struct timeval next_timeout = timeval_zero();
+	struct timeval next_timeout;
 	int max_brl_timeout = lp_parm_int(-1, "brl", "recalctime", 5);
 
-	/*
-	 * If we already have a timeout event, don't replace it.
-	 * It will fire before this one anyway.
-	 */
+	TALLOC_FREE(sconn->smb2.locks.brl_timeout);
 
-	if (sconn->smb2.locks.brl_timeout) {
-		DEBUG(10,("recalc_smb2_brl_timeout: timeout already exists\n"));
-		return true;
-	}
+	next_timeout = timeval_zero();
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
 		struct blocking_lock_record *blr =
 			get_pending_smb2req_blr(smb2req);
-		if (blr && blr->blocking_pid == 0xFFFFFFFF) {
+		if (!blr) {
+			continue;
+		}
+		if (timeval_is_zero(&blr->expire_time)) {
 			/*
 			 * If we're blocked on pid 0xFFFFFFFF this is
 			 * a POSIX lock, so calculate a timeout of
 			 * 10 seconds into the future.
 			 */
-			next_timeout = timeval_current_ofs(10, 0);
-			break;
+			if (blr->blocking_pid == 0xFFFFFFFF) {
+				struct timeval psx_to = timeval_current_ofs(10, 0);
+				next_timeout = timeval_brl_min(&next_timeout, &psx_to);
+			}
+
+			continue;
 		}
+
+		next_timeout = timeval_brl_min(&next_timeout, &blr->expire_time);
+	}
+
+	if (timeval_is_zero(&next_timeout)) {
+		DEBUG(10, ("recalc_smb2_brl_timeout:Next "
+			"timeout = Infinite.\n"));
+		return True;
 	}
 
         /*
@@ -525,19 +534,12 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 		next_timeout = timeval_brl_min(&next_timeout, &min_to);
 	}
 
-	if (timeval_is_zero(&next_timeout)) {
-		/* Infinite timeout - return. */
-		DEBUG(10, ("push_blocking_lock_request_smb2: Next "
-			"timeout = INFINITY\n"));
-		return true;
-	}
-
 	if (DEBUGLVL(10)) {
 		struct timeval cur, from_now;
 
 		cur = timeval_current();
 		from_now = timeval_until(&cur, &next_timeout);
-		DEBUG(10, ("push_blocking_lock_request_smb2: Next "
+		DEBUG(10, ("recalc_smb2_brl_timeout: Next "
 			"timeout = %d.%d seconds from now.\n",
 			(int)from_now.tv_sec, (int)from_now.tv_usec));
 	}
@@ -577,8 +579,6 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	struct smbd_smb2_lock_state *state = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
-	SMB_ASSERT(lock_timeout == -1);
-
 	if (!smb2req) {
 		return false;
 	}
@@ -599,8 +599,15 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 		}
 		blr = talloc_zero(state, struct blocking_lock_record);
 		blr->fsp = fsp;
-		blr->expire_time.tv_sec = 0;
-		blr->expire_time.tv_usec = 0; /* Never expire. */
+		if (lock_timeout == -1) {
+			blr->expire_time.tv_sec = 0;
+			blr->expire_time.tv_usec = 0; /* Never expire. */
+		} else {
+			blr->expire_time = timeval_current_ofs(
+				lock_timeout/1000,
+				(lock_timeout % 1000) * 1000);
+		}
+
 		blr->lock_num = lock_num;
 		blr->lock_pid = lock_pid;
 		blr->blocking_pid = blocking_pid;
@@ -839,6 +846,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 				blr);
 
 		/* Finally cancel the request. */
+		smb2req->cancelled = true;
 		tevent_req_cancel(smb2req->subreq);
 	}
 }
