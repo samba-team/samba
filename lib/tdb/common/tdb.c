@@ -989,10 +989,24 @@ int tdb_repack(struct tdb_context *tdb)
 	return 0;
 }
 
+/* Even on files, we can get partial writes due to signals. */
+bool tdb_write_all(int fd, const void *buf, size_t count)
+{
+	while (count) {
+		size_t ret;
+		ret = write(fd, buf, count);
+		if (ret < 0)
+			return false;
+		buf = (const char *)buf + ret;
+		count -= ret;
+	}
+	return true;
+}
+
 #ifdef TDB_TRACE
 static void tdb_trace_write(struct tdb_context *tdb, const char *str)
 {
-	if (write(tdb->tracefd, str, strlen(str)) != strlen(str)) {
+	if (!tdb_write_alltdb->tracefd, str, strlen(str)) {
 		close(tdb->tracefd);
 		tdb->tracefd = -1;
 	}

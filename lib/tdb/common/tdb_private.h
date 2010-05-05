@@ -266,5 +266,5 @@ void tdb_io_init(struct tdb_context *tdb);
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size);
 int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off,
 		      struct tdb_record *rec);
-
+bool tdb_write_all(int fd, const void *buf, size_t count);
 int tdb_transaction_recover(struct tdb_context *tdb);
