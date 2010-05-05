@@ -279,3 +279,27 @@ def CHECK_UNAME(conf):
                                msg="Checking uname %s type" % v):
             ret = False
     return ret
+
+@conf
+def CHECK_INLINE(conf):
+    '''check for the right value for inline'''
+    conf.COMPOUND_START('Checking for inline')
+    for i in ['inline', '__inline__', '__inline']:
+        ret = conf.CHECK_CODE('''
+        typedef int foo_t;
+        static %s foo_t static_foo () {return 0; }
+        %s foo_t foo () {return 0; }''' % (i, i),
+                              define='INLINE_MACRO',
+                              addmain=False,
+                              link=False)
+        if ret:
+            if i != 'inline':
+                conf.DEFINE('inline', i, quote=False)
+            break
+    if not ret:
+        conf.COMPOUND_END(ret)
+    else:
+        conf.COMPOUND_END(i)
+    return ret
+
+

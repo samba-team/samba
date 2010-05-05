@@ -220,6 +220,8 @@ def configure(conf):
     # we should use the PIC options in waf instead
     conf.ADD_CFLAGS('-fPIC', testflags=True)
 
+    conf.CHECK_INLINE()
+
     # check for pkgconfig
     conf.check_cfg(atleast_pkgconfig_version='0.0.0')
 
