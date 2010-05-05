@@ -1520,7 +1520,6 @@ NTSTATUS smbcli_rap_netprintdestgetinfo(struct smbcli_tree *tree,
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
 
 	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WPrintDestGetInfo))) {
 		return NT_STATUS_NO_MEMORY;
