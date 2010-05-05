@@ -1139,26 +1139,6 @@ static WERROR winreg_enumval_to_multi_sz(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR winreg_enumval_to_blob(TALLOC_CTX *mem_ctx,
-				     struct spoolss_PrinterEnumValues *v,
-				     const char *valuename,
-				     DATA_BLOB *blob)
-{
-	/* just return if it is not the one we are looking for */
-	if (strcmp(valuename, v->value_name) != 0) {
-		return WERR_NOT_FOUND;
-	}
-
-	if (v->type != REG_BINARY) {
-		return WERR_INVALID_DATATYPE;
-	}
-
-	blob->data = v->data->data;
-	blob->length = v->data_length;
-
-	return WERR_OK;
-}
-
 static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 					struct rpc_pipe_client *pipe_handle,
 					struct policy_handle *key_handle,
