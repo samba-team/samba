@@ -224,6 +224,10 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
 		return tevent_req_post(req, ev);
 	}
+	if (fsp->is_directory) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return tevent_req_post(req, ev);
+	}
 
 	state->out_data = data_blob_talloc(state, NULL, in_length);
 	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
