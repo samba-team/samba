@@ -352,6 +352,15 @@ interface rap
 		[out,switch_is(level)] rap_share_info *info
 	);
 
+	/* not documented in MS-RAP */
+	[public] void rap_NetShareAdd(
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[in,switch_is(level)] rap_share_info info,
+		[out] rap_status status,
+		[out] uint16 convert
+	);
+
 	typedef struct {
 		uint8 name[16];
 	} rap_server_info_0;
