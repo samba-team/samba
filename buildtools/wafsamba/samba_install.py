@@ -75,6 +75,7 @@ def install_library(self):
         # target, which has different ldflags
         self.done_install_library = True
         t = self.clone('default')
+        t.posted = False
         t.target += '.inst'
         self.env.RPATH = build_ldflags
     else:
