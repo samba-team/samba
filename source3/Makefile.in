@@ -1377,7 +1377,7 @@ all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) \
 	$(EXTRA_ALL_TARGETS)
 
-basics::
+basics:: samba3-idl
 
 nss_modules:: $(NSS_MODULES)
 
@@ -1522,7 +1522,7 @@ pch::
 $(PRECOMPILED_HEADER): $(srcdir)/include/includes.h
 	$(COMPILE)
 
-BINARY_PREREQS = bin/.dummy samba3-idl
+BINARY_PREREQS = bin/.dummy
 
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
