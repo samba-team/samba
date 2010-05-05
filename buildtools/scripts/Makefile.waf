@@ -20,6 +20,9 @@ quicktest:
 dist:
 	$(WAF) dist
 
+distcheck:
+	$(WAF) distcheck
+
 clean:
 	$(WAF) clean
 
