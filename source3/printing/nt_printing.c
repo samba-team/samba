@@ -2550,6 +2550,83 @@ done:
 	return ret;
 }
 
+/****************************************************************************
+ Create and allocate a default devicemode.
+****************************************************************************/
+
+WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
+				      const char *devicename,
+				      struct spoolss_DeviceMode **devmode)
+{
+	struct spoolss_DeviceMode *dm;
+	char *dname;
+
+	dm = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+	if (dm == NULL) {
+		return WERR_NOMEM;
+	}
+
+	dname = talloc_asprintf(dm, "%s", devicename);
+	if (dname == NULL) {
+		return WERR_NOMEM;
+	}
+	if (strlen(dname) > MAXDEVICENAME) {
+		dname[MAXDEVICENAME] = '\0';
+	}
+	dm->devicename = dname;
+
+	dm->formname = talloc_strdup(dm, "Letter");
+	if (dm->formname == NULL) {
+		return WERR_NOMEM;
+	}
+
+	dm->specversion          = DMSPEC_NT4_AND_ABOVE;
+	dm->driverversion        = 0x0400;
+	dm->size                 = 0x00DC;
+	dm->__driverextra_length = 0;
+	dm->fields               = DEVMODE_FORMNAME |
+				   DEVMODE_TTOPTION |
+				   DEVMODE_PRINTQUALITY |
+				   DEVMODE_DEFAULTSOURCE |
+				   DEVMODE_COPIES |
+				   DEVMODE_SCALE |
+				   DEVMODE_PAPERSIZE |
+				   DEVMODE_ORIENTATION;
+	dm->orientation          = DMORIENT_PORTRAIT;
+	dm->papersize            = DMPAPER_LETTER;
+	dm->paperlength          = 0;
+	dm->paperwidth           = 0;
+	dm->scale                = 0x64;
+	dm->copies               = 1;
+	dm->defaultsource        = DMBIN_FORMSOURCE;
+	dm->printquality         = DMRES_HIGH;           /* 0x0258 */
+	dm->color                = DMRES_MONOCHROME;
+	dm->duplex               = DMDUP_SIMPLEX;
+	dm->yresolution          = 0;
+	dm->ttoption             = DMTT_SUBDEV;
+	dm->collate              = DMCOLLATE_FALSE;
+	dm->icmmethod            = 0;
+	dm->icmintent            = 0;
+	dm->mediatype            = 0;
+	dm->dithertype           = 0;
+
+	dm->logpixels            = 0;
+	dm->bitsperpel           = 0;
+	dm->pelswidth            = 0;
+	dm->pelsheight           = 0;
+	dm->displayflags         = 0;
+	dm->displayfrequency     = 0;
+	dm->reserved1            = 0;
+	dm->reserved2            = 0;
+	dm->panningwidth         = 0;
+	dm->panningheight        = 0;
+
+	dm->driverextra_data.data = NULL;
+	dm->driverextra_data.length = 0;
+
+        *devmode = dm;
+	return WERR_OK;
+}
 
 /****************************************************************************
  Malloc and return an NT devicemode.
