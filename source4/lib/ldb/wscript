@@ -46,7 +46,7 @@ def configure(conf):
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
         # we need this for the ldap backend
-        if conf.CHECK_FUNCS_IN('ber_flush ldap_open', 'lber ldap', headers='lber.h ldap.h'):
+        if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
             conf.env.ENABLE_LDAP_BACKEND = True
 
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
