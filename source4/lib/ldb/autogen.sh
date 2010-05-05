@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "Using autotools based build"
+
 rm -rf autom4te.cache
 rm -f configure config.h.in
 
