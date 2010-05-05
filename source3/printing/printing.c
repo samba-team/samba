@@ -2040,15 +2040,13 @@ static bool is_owner(struct auth_serversupplied_info *server_info,
  Delete a print job.
 ****************************************************************************/
 
-bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
-		      uint32 jobid, WERROR *errcode)
+WERROR print_job_delete(struct auth_serversupplied_info *server_info,
+			int snum, uint32_t jobid)
 {
-	const char* sharename = lp_const_servicename( snum );
+	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 	bool 	owner;
 	char 	*fname;
-
-	*errcode = WERR_OK;
 
 	owner = is_owner(server_info, lp_const_servicename(snum), jobid);
 
@@ -2058,7 +2056,6 @@ bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
 	if (!owner &&
 	    !print_access_check(server_info, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
-		*errcode = WERR_ACCESS_DENIED;
 
 		/* BEGIN_ADMIN_LOG */
 		sys_adminlog( LOG_ERR,
@@ -2068,7 +2065,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/*
@@ -2078,19 +2075,18 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	 * spool file & return.
 	 */
 
-	if ( (fname = print_job_fname( sharename, jobid )) != NULL )
-	{
+	fname = print_job_fname(sharename, jobid);
+	if (fname != NULL) {
 		/* remove the spool file */
-		DEBUG(10,("print_job_delete: Removing spool file [%s]\n", fname ));
-		if ( unlink( fname ) == -1 ) {
-			*errcode = map_werror_from_unix(errno);
-			return False;
+		DEBUG(10, ("print_job_delete: "
+			   "Removing spool file [%s]\n", fname));
+		if (unlink(fname) == -1) {
+			return map_werror_from_unix(errno);
 		}
 	}
 
 	if (!print_job_delete1(snum, jobid)) {
-		*errcode = WERR_ACCESS_DENIED;
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* force update the database and say the delete failed if the
@@ -2099,10 +2095,11 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	print_queue_update(snum, True);
 
 	pjob = print_job_find(sharename, jobid);
-	if ( pjob && (pjob->status != LPQ_DELETING) )
-		*errcode = WERR_ACCESS_DENIED;
+	if (pjob && (pjob->status != LPQ_DELETING)) {
+		return WERR_ACCESS_DENIED;
+	}
 
-	return (pjob == NULL );
+	return WERR_PRINTER_HAS_JOBS_QUEUED;
 }
 
 /****************************************************************************
@@ -2242,6 +2239,11 @@ ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, 
 	/* don't allow another process to get this info - it is meaningless */
 	if (pjob->pid != sys_getpid())
 		return -1;
+
+	/* if SMBD is spooling this can't be allowed */
+	if (pjob->status == PJOB_SMBD_SPOOLING) {
+		return -1;
+	}
 
 	return_code = write_data_at_offset(pjob->fd, buf, size, pos);
 

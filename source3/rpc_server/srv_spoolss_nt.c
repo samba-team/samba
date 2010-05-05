@@ -5234,6 +5234,7 @@ WERROR _spoolss_WritePrinter(pipes_struct *p,
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
 		return WERR_BADFID;
 
+	/* print_job_write takes care of checking for PJOB_SMBD_SPOOLING */
 	buffer_written = print_job_write(snum, Printer->jobid,
 						   (const char *)r->in.data.data,
 						   (SMB_OFF_T)-1,
@@ -5314,7 +5315,11 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
 		return WERR_BADFID;
 
-	print_job_delete(p->server_info, snum, Printer->jobid, &errcode );
+	if (!Printer->document_started) {
+		return WERR_SPL_NO_STARTDOC;
+	}
+
+	errcode = print_job_delete(p->server_info, snum, Printer->jobid);
 
 	return errcode;
 }
@@ -6573,7 +6578,9 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 	switch (r->in.command) {
 	case SPOOLSS_JOB_CONTROL_CANCEL:
 	case SPOOLSS_JOB_CONTROL_DELETE:
-		if (print_job_delete(p->server_info, snum, r->in.job_id, &errcode)) {
+		errcode = print_job_delete(p->server_info,
+					   snum, r->in.job_id);
+		if (W_ERROR_EQUAL(errcode, WERR_PRINTER_HAS_JOBS_QUEUED)) {
 			errcode = WERR_OK;
 		}
 		break;
