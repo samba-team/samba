@@ -209,15 +209,14 @@ AC_SAMBA_PERL([true], [merged_build_possible=no])
 
 AC_CHECK_TOOL(AR, ar)
 
-dnl Check if we use GNU ld
-LD=ld
+dnl Check if we (actually our C compiler!) use GNU ld
 AC_PROG_LD_GNU
 
 dnl Certain versions of GNU ld the default is not to have the
 dnl --allow-shlib-undefined flag defined.  This causes a stackload of
 dnl warnings when building modules.
 if test "$ac_cv_prog_gnu_ld" = "yes"; then
-	ac_cv_gnu_ld_version=`$LD -v 2>/dev/null | head -1`
+	ac_cv_gnu_ld_version=`$CC -Wl,-v /dev/null 2>/dev/null | head -1`
 	AC_MSG_CHECKING(GNU ld release date)
 	changequote(,)dnl
 	ac_cv_gnu_ld_date=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([2-9][0-9][0-9][0-9]\)[-]*\([01][0-9]\)[-]*\([0-3][0-9]\).*$,\1\2\3,p'`
@@ -1553,16 +1552,17 @@ DSO_EXPORTS=""
 			;;
 		*solaris*) AC_DEFINE(SUNOS5,1,[Whether the host os is solaris])
 			BLDSHARED="true"
-			LDSHFLAGS="-G"
-			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
 				SONAMEFLAG="-Wl,-soname="
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
+				# TODO: need to add $CFLAGS here for explicit 64-bit builds?
+				LDSHFLAGS="-shared"
 			else
 				PICFLAG="-KPIC"
+				SONAMEFLAG="-h "
 				## ${CFLAGS} added for building 64-bit shared
 				## libs using Sun's Compiler
 				LDSHFLAGS="-G \${CFLAGS}"
