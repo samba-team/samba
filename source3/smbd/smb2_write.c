@@ -82,9 +82,13 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 
 	/* check the max write size */
 	if (in_data_length > lp_smb2_max_write()) {
-		DEBUG(0,("here:%s: 0x%08X: 0x%08X\n",
+		/* This is a warning. */
+		DEBUG(2,("smbd_smb2_request_process_write : "
+			"client ignored max write :%s: 0x%08X: 0x%08X\n",
 			__location__, in_data_length, lp_smb2_max_write()));
+#if 0
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+#endif
 	}
 
 	in_data_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
