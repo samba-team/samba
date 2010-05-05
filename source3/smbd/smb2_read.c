@@ -289,7 +289,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
-	if (nread == 0 && in_length != 0) {
+	if (nread == 0 && (in_length != 0 || in_minimum != 0)) {
 		DEBUG(5,("smbd_smb2_read: read_file[%s] end of file\n",
 			 fsp_str_dbg(fsp)));
 		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
