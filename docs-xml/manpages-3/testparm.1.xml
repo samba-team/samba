@@ -23,7 +23,6 @@
 		<arg choice="opt">-s</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-v</arg>
-		<arg choice="opt">-L &lt;servername&gt;</arg>
 		<arg choice="opt">-t &lt;encoding&gt;</arg>
 		<arg choice="req">config filename</arg>
 		<arg choice="opt">hostname hostIP</arg>
@@ -73,13 +72,6 @@
 		&stdarg.help;
 		&stdarg.version;
 		
-		<varlistentry>
-		<term>-L servername</term>
-		<listitem><para>Sets the value of the %L macro to <replaceable>servername</replaceable>.
-		This is useful for testing include files specified with the 
-		%L macro. </para></listitem>
-		</varlistentry>
-
 		<varlistentry>
 		<term>-v</term>
 		<listitem><para>If this option is specified, testparm 

@@ -325,7 +325,6 @@ rameter is ignored when using CUPS libraries.\n",
 	poptContext pc;
 	static char *parameter_name = NULL;
 	static const char *section_name = NULL;
-	static char *new_local_machine = NULL;
 	const char *cname;
 	const char *caddr;
 	static int show_defaults;
@@ -335,7 +334,6 @@ rameter is ignored when using CUPS libraries.\n",
 		POPT_AUTOHELP
 		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
-		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"skip-logic-checks", 'l', POPT_ARG_NONE, &skip_logic_checks, 1, "Skip the global checks"},
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
@@ -380,10 +378,6 @@ rameter is ignored when using CUPS libraries.\n",
 		printf ( "ERROR: You must specify both a machine name and an IP address.\n" );
 		ret = 1;
 		goto done;
-	}
-
-	if (new_local_machine) {
-		set_local_machine_name(new_local_machine, True);
 	}
 
 	dbf = x_stderr;
