@@ -179,6 +179,10 @@ static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f,
 {
 	NTSTATUS status;
 	struct notify_entry e;
+	
+	/* We may not fill in all the elements in this entry -
+	 * structure may in future be shared with Samba3 */
+	ZERO_STRUCT(e);
 
 	/* We may not fill in all the elements in this entry -
 	 * structure may in future be shared with Samba3 */
