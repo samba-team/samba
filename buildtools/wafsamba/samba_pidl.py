@@ -7,11 +7,13 @@ from samba_utils import *
 def SAMBA_PIDL(bld, pname, source,
                options='',
                output_dir='.',
-               symlink=False):
+               symlink=False,
+               generate_tables=True):
     '''Build a IDL file using pidl.
        This will produce up to 13 output files depending on the options used'''
 
     bname = source[0:-4]; # strip off the .idl suffix
+    bname = os.path.basename(bname)
     name = "%s_%s" % (pname, bname.upper())
 
     if not SET_TARGET_TYPE(bld, name, 'PIDL'):
@@ -86,7 +88,7 @@ def SAMBA_PIDL(bld, pname, source,
     real_outputdir = os.path.realpath(outdir)
     t.env.OUTPUTDIR = os_path_relpath(real_outputdir, os.path.dirname(bld.env.BUILD_DIRECTORY))
 
-    if table_header_idx is not None:
+    if generate_tables and table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
         pidl_headers[name] = [bld.path.find_or_declare(out_files[table_header_idx])]
 
@@ -97,10 +99,11 @@ Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 def SAMBA_PIDL_LIST(bld, name, source,
                     options='',
                     output_dir='.',
-                    symlink=False):
+                    symlink=False,
+                    generate_tables=True):
     '''A wrapper for building a set of IDL files'''
     for p in TO_LIST(source):
-        bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir, symlink=symlink)
+        bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir, symlink=symlink, generate_tables=generate_tables)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 
@@ -116,6 +119,7 @@ def collect(self):
         self.bld.ASSERT(y is not None, 'Failed to find PIDL header %s' % name)
         y.post()
         for node in hd:
+            self.bld.ASSERT(node is not None, 'Got None as build node generating PIDL table for %s' % name)
             self.source += " " + node.relpath_gen(self.path)
 
 
