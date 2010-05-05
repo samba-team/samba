@@ -29,8 +29,10 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
 
@@ -2158,11 +2160,16 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	fstring sharename;
 	fstring comment;
 	char *pathname = NULL;
-	char *command, *cmdname;
 	unsigned int offset;
-	int snum;
 	int res = ERRunsup;
 	size_t converted_size;
+
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	union srvsvc_NetShareInfo info;
+	struct srvsvc_NetShareInfo2 info2;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2184,11 +2191,6 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 	pull_ascii_fstring(sharename,data);
-	snum = find_service(sharename);
-	if (snum >= 0) { /* already exists */
-		res = ERRfilexists;
-		goto error_exit;
-	}
 
 	if (mdrcnt < 28) {
 		return False;
@@ -2202,7 +2204,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	offset = IVAL(data, 16);
 	if (offset >= mdrcnt) {
 		res = ERRinvalidparam;
-		goto error_exit;
+		goto out;
 	}
 
 	/* Do we have a string ? */
@@ -2215,7 +2217,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 
 	if (offset >= mdrcnt) {
 		res = ERRinvalidparam;
-		goto error_exit;
+		goto out;
 	}
 
 	/* Do we have a string ? */
@@ -2234,34 +2236,40 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		return false;
 	}
 
-	string_replace(sharename, '"', ' ');
-	string_replace(pathname, '"', ' ');
-	string_replace(comment, '"', ' ');
-
-	cmdname = lp_add_share_cmd();
-
-	if (!cmdname || *cmdname == '\0') {
-		return False;
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
+					rpc_srvsvc_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_RNetShareAdd: could not connect to srvsvc: %s\n",
+			  nt_errstr(status)));
+		res = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
-	if (asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-		     lp_add_share_cmd(), get_dyn_CONFIGFILE(), sharename,
-		     pathname, comment) == -1) {
-		return false;
+	info2.name		= sharename;
+	info2.type		= STYPE_DISKTREE;
+	info2.comment		= comment;
+	info2.permissions	= 0;
+	info2.max_users		= 0;
+	info2.current_users	= 0;
+	info2.path		= pathname;
+	info2.password		= NULL;
+
+	info.info2 = &info2;
+
+	status = rpccli_srvsvc_NetShareAdd(cli, mem_ctx,
+					   cli->srv_name_slash,
+					   2,
+					   &info,
+					   NULL,
+					   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		res = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
-
-	DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
-
-	if ((res = smbrun(command, NULL)) != 0) {
-		DEBUG(1,("api_RNetShareAdd: Running [%s] returned (%d)\n",
-			 command, res ));
-		SAFE_FREE(command);
-		res = ERRnoaccess;
-		goto error_exit;
-	} else {
-		SAFE_FREE(command);
-		message_send_all(smbd_messaging_context(),
-				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
+		res = W_ERROR_V(werr);
+		goto out;
 	}
 
 	*rparam_len = 6;
@@ -2276,7 +2284,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 
 	return True;
 
-  error_exit:
+  out:
 
 	*rparam_len = 4;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
