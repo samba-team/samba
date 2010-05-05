@@ -224,7 +224,7 @@ NTSTATUS gp_fetch_gpo (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 
 	/* Create the GPO dir if it does not exist */
 	if (stat(state->local_path, &st) != 0) {
-		rv = mkdir(state->local_path, 755);
+		rv = mkdir(state->local_path, 0755);
 		if (rv < 0) {
 			DEBUG(0, ("Could not create local path\n"));
 			talloc_free(mem_ctx);
