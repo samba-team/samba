@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "lib/eventlog/eventlog.h"
 
 /* maintain a list of open eventlog tdbs with reference counts */
 

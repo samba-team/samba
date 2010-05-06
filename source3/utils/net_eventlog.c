@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "lib/eventlog/eventlog.h"
 
 /**
  * Dump an *evt win32 eventlog file

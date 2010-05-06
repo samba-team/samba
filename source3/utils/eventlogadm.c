@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "lib/eventlog/eventlog.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_UTIL_EVENTLOG

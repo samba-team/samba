@@ -37,5 +37,7 @@ typedef struct elog_tdb {
 
 #define ELOG_TDB_CTX(x) ((x)->tdb)
 
-
 #define  EVENTLOG_DATABASE_VERSION_V1    1
+
+#include "../librpc/gen_ndr/ndr_eventlog.h"
+#include "lib/eventlog/proto.h"
