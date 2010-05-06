@@ -313,7 +313,7 @@ bool allow_access(const char **deny_list,
 		const char *caddr);
 bool check_access(int sock, const char **allow_list, const char **deny_list);
 
-/* The following definitions come from lib/account_pol.c  */
+/* The following definitions come from passdb/account_pol.c  */
 
 void account_policy_names_list(const char ***names, int *num_names);
 const char *decode_account_policy_name(enum pdb_policy_type type);

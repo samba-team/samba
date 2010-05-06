@@ -451,4 +451,3 @@ struct db_context *get_account_pol_db( void )
 
 	return db;
 }
-
