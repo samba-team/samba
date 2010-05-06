@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
 #include "libads/sitename_cache.h"
 
 #ifdef HAVE_LDAP

@@ -3228,8 +3228,6 @@ SMBLDAP=""
 AC_SUBST(SMBLDAP)
 SMBLDAPUTIL=""
 AC_SUBST(SMBLDAPUTIL)
-LDBLDAP=""
-AC_SUBST(LDBLDAP)
 
 if test x"$with_ldap_support" != x"no"; then
 

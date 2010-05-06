@@ -21,7 +21,11 @@
 */
 
 #include "includes.h"
+#if _SAMBA_BUILD_ == 3
+#include "lib/ldb_compat.h"
+#else
 #include "lib/ldb/include/ldb.h"
+#endif
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "libcli/ldap/ldap_ndr.h"
