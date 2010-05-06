@@ -37,7 +37,7 @@ static int numeric;
 static int sddl;
 
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
-enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
+enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP, REQUEST_INHERIT};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct perm_value {
@@ -660,6 +660,34 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, SEC_DESC *sd)
 }
 
 /*****************************************************
+get fileinfo for filename
+*******************************************************/
+static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
+{
+	uint16_t fnum = (uint16_t)-1;
+	uint16 mode;
+
+	/* The desired access below is the only one I could find that works
+	   with NT4, W2KP and Samba */
+
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
+                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+	}
+
+	if (!cli_qfileinfo(cli, fnum, &mode, NULL, NULL, NULL,
+                                             NULL, NULL, NULL)) {
+		printf("Failed to file info %s: %s\n", filename,
+                                                       cli_errstr(cli));
+        }
+
+	cli_close(cli, fnum);
+
+        return mode;
+}
+
+/*****************************************************
 get sec desc for filename
 *******************************************************/
 static SEC_DESC *get_secdesc(struct cli_state *cli, const char *filename)
@@ -958,6 +986,116 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	return result;
 }
 
+/*****************************************************
+set the inherit on a file
+*******************************************************/
+static int inherit(struct cli_state *cli, const char *filename,
+                   const char *type)
+{
+	SEC_DESC *old,*sd;
+	uint32 oldattr;
+	size_t sd_size;
+	int result = EXIT_OK;
+
+	old = get_secdesc(cli, filename);
+
+	if (!old) {
+		return EXIT_FAILED;
+	}
+
+        oldattr = get_fileinfo(cli,filename);
+
+	if (strcmp(type,"allow")==0) {
+		if ((old->type & SEC_DESC_DACL_PROTECTED) ==
+                    SEC_DESC_DACL_PROTECTED) {
+			int i;
+			char *parentname,*temp;
+			SEC_DESC *parent;
+			temp = talloc_strdup(talloc_tos(), filename);
+
+			old->type=old->type & (~SEC_DESC_DACL_PROTECTED);
+
+			/* look at parent and copy in all its inheritable ACL's. */
+			string_replace(temp, '\\', '/');
+			if (!parent_dirname(talloc_tos(),temp,&parentname,NULL)) {
+				return EXIT_FAILED;
+			}
+			string_replace(parentname, '/', '\\');
+			parent = get_secdesc(cli,parentname);
+			for (i=0;i<parent->dacl->num_aces;i++) {
+				SEC_ACE *ace=&parent->dacl->aces[i];
+				if ((oldattr & aDIR) == aDIR) {
+					if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ==
+					    SEC_ACE_FLAG_CONTAINER_INHERIT) {
+						add_ace(&old->dacl, ace);
+					}
+				} else {
+					if ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) ==
+					    SEC_ACE_FLAG_OBJECT_INHERIT) {
+						add_ace(&old->dacl, ace);
+					}
+				}
+			}
+                } else {
+			printf("Already set to inheritable permissions.\n");
+			return EXIT_FAILED;
+                }
+	} else if (strcmp(type,"remove")==0) {
+		if ((old->type & SEC_DESC_DACL_PROTECTED) !=
+                    SEC_DESC_DACL_PROTECTED) {
+			old->type=old->type | SEC_DESC_DACL_PROTECTED;
+
+			/* remove all inherited ACL's. */
+			if (old->dacl) {
+				int i;
+				SEC_ACL *temp=old->dacl;
+				old->dacl=make_sec_acl(talloc_tos(), 3, 0, NULL);
+				for (i=temp->num_aces-1;i>=0;i--) {
+					SEC_ACE *ace=&temp->aces[i];
+					/* Remove all ace with INHERITED flag set */
+					if ((ace->flags & SEC_ACE_FLAG_INHERITED_ACE) !=
+					    SEC_ACE_FLAG_INHERITED_ACE) {
+						add_ace(&old->dacl,ace);
+					}
+				}
+			}
+                } else {
+			printf("Already set to no inheritable permissions.\n");
+			return EXIT_FAILED;
+                }
+	} else if (strcmp(type,"copy")==0) {
+		if ((old->type & SEC_DESC_DACL_PROTECTED) !=
+                    SEC_DESC_DACL_PROTECTED) {
+			old->type=old->type | SEC_DESC_DACL_PROTECTED;
+
+			/* convert all inherited ACL's to non inherated ACL's. */
+			if (old->dacl) {
+				int i;
+				for (i=0;i<old->dacl->num_aces;i++) {
+					SEC_ACE *ace=&old->dacl->aces[i];
+					/* Remove INHERITED FLAG from all aces */
+					ace->flags=ace->flags&(~SEC_ACE_FLAG_INHERITED_ACE);
+				}
+			}
+                } else {
+			printf("Already set to no inheritable permissions.\n");
+			return EXIT_FAILED;
+                }
+	}
+
+	/* Denied ACE entries must come before allowed ones */
+	sort_acl(old->dacl);
+
+	sd = make_sec_desc(talloc_tos(),old->revision, old->type,
+			   old->owner_sid, old->group_sid,
+			   NULL, old->dacl, &sd_size);
+
+	if (!set_secdesc(cli, filename, sd)) {
+		result = EXIT_FAILED;
+	}
+
+	return result;
+}
 
 /*****************************************************
  Return a connection to a server.
@@ -1035,6 +1173,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
+		{ "inherit", 'I', POPT_ARG_STRING, NULL, 'I', "Inherit allow|remove|copy" },
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
 		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output and input acls in sddl format" },
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
@@ -1107,6 +1246,11 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 			owner_username = poptGetOptArg(pc);
 			change_mode = REQUEST_CHGRP;
 			break;
+
+		case 'I':
+			owner_username = poptGetOptArg(pc);
+			change_mode = REQUEST_INHERIT;
+			break;
 		}
 	}
 
@@ -1167,7 +1311,9 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	/* Perform requested action */
 
-	if (change_mode != REQUEST_NONE) {
+	if (change_mode == REQUEST_INHERIT) {
+		result = inherit(cli, filename, owner_username);
+	} else if (change_mode != REQUEST_NONE) {
 		result = owner_set(cli, change_mode, filename, owner_username);
 	} else if (the_acl) {
 		result = cacl_set(cli, filename, the_acl, mode);
