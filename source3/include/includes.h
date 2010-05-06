@@ -969,4 +969,6 @@ void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 /* samba3 doesn't use uwrap yet */
 #define uwrap_enabled() 0
 
+#define BASE_RID (0x000003E8L)
+
 #endif /* _INCLUDES_H */

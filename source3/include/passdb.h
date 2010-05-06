@@ -28,8 +28,6 @@
  * NT RIDS.
  **********************************************************************/
 
-#define BASE_RID (0x000003E8L)
-
 /* Take the bottom bit. */
 #define RID_TYPE_MASK 		1
 #define RID_MULTIPLIER 		2
