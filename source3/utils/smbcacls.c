@@ -689,6 +689,36 @@ static SEC_DESC *get_secdesc(struct cli_state *cli, const char *filename)
 }
 
 /*****************************************************
+set sec desc for filename
+*******************************************************/
+static bool set_secdesc(struct cli_state *cli, const char *filename,
+                        SEC_DESC *sd)
+{
+	uint16_t fnum = (uint16_t)-1;
+        bool result=true;
+
+	/* The desired access below is the only one I could find that works
+	   with NT4, W2KP and Samba */
+
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0,
+                                          WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS,
+                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
+		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+		return false;
+	}
+
+	if (!cli_set_secdesc(cli, fnum, sd)) {
+		printf("ERROR: security description set failed: %s\n",
+                       cli_errstr(cli));
+		result=false;
+	}
+
+	cli_close(cli, fnum);
+	return result;
+}
+
+/*****************************************************
 dump the acls for a file
 *******************************************************/
 static int cacl_dump(struct cli_state *cli, const char *filename)
@@ -722,7 +752,6 @@ because the NT docs say this can't be done :-). JRA.
 static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
 			const char *filename, const char *new_username)
 {
-	uint16_t fnum;
 	DOM_SID sid;
 	SEC_DESC *sd, *old;
 	size_t sd_size;
@@ -741,19 +770,9 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 				(change_mode == REQUEST_CHGRP) ? &sid : NULL,
 			   NULL, NULL, &sd_size);
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, WRITE_OWNER_ACCESS, 0,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+	if (!set_secdesc(cli, filename, sd)) {
 		return EXIT_FAILED;
 	}
-
-	if (!cli_set_secdesc(cli, fnum, sd)) {
-		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
-		cli_close(cli, fnum);
-		return EXIT_FAILED;
-	}
-
-	cli_close(cli, fnum);
 
 	return EXIT_OK;
 }
@@ -827,7 +846,6 @@ set the ACLs on a file given an ascii description
 static int cacl_set(struct cli_state *cli, const char *filename,
 		    char *the_acl, enum acl_mode mode)
 {
-	uint16_t fnum;
 	SEC_DESC *sd, *old;
 	uint32 i, j;
 	size_t sd_size;
@@ -933,20 +951,9 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 			   old->owner_sid, old->group_sid,
 			   NULL, old->dacl, &sd_size);
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS, 0,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
-		return EXIT_FAILED;
-	}
-
-	if (!cli_set_secdesc(cli, fnum, sd)) {
-		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
+	if (!set_secdesc(cli, filename, sd)) {
 		result = EXIT_FAILED;
 	}
-
-	/* Clean up */
-
-	cli_close(cli, fnum);
 
 	return result;
 }
