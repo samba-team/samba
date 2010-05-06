@@ -1,6 +1,6 @@
 # samba 4 bits
 
-PROG_LD = $(LD)
+PROG_LD = ld
 BNLD = $(CC)
 HOSTLD = $(CC)
 PARTLINK = $(PROG_LD) -r
