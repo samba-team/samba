@@ -754,6 +754,16 @@ interface rap
 		[out,switch_is(level)] rap_printdest_info info
 	);
 
+	[public] void rap_NetUserPasswordSet2(
+		[in] astring UserName,
+		[in] [charset(DOS)] uint8 OldPassword[16],
+		[in] [charset(DOS)] uint8 NewPassword[16],
+		[in] uint16 EncryptedPassword,
+		[in] uint16 RealPasswordLength,
+		[out] rap_status status,
+		[out] uint16 convert
+	);
+
 
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
