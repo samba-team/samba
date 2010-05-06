@@ -7,3 +7,9 @@ bld.SAMBA_LIBRARY('policy',
 	public_headers='policy.h',
 	vnum='0.0.1'
 	)
+
+bld.SAMBA_PYTHON('py_policy',
+	source='pypolicy.c',
+	public_deps='policy PYTALLOC',
+	realname='samba/policy.so'
+	)
