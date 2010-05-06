@@ -3,6 +3,7 @@
    Core SMB2 server
 
    Copyright (C) Stefan Metzmacher 2009
+   Copyright (C) Jeremy Allison 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +29,16 @@ struct smbd_smb2_lock_element {
 	uint64_t length;
 	uint32_t flags;
 };
+
+struct smbd_smb2_lock_state {
+	struct smbd_smb2_request *smb2req;
+	struct smb_request *smb1req;
+	struct blocking_lock_record *blr;
+	uint16_t lock_count;
+	struct smbd_lock_element *locks;
+};
+
+static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record *blr);
 
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -130,22 +141,32 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 
 static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 {
-	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
+	struct smbd_smb2_request *smb2req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
 	DATA_BLOB outbody;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
-	if (req->cancelled) {
+	if (smb2req->cancelled) {
 		const uint8_t *inhdr = (const uint8_t *)
-			req->in.vector[req->current_idx].iov_base;
+			smb2req->in.vector[smb2req->current_idx].iov_base;
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
+		struct smbd_smb2_lock_state *state;
 
 		DEBUG(10,("smbd_smb2_request_lock_done: cancelled mid %llu\n",
 			(unsigned long long)mid ));
-		error = smbd_smb2_request_error(req, NT_STATUS_CANCELLED);
+
+		state = tevent_req_data(smb2req->subreq,
+				struct smbd_smb2_lock_state);
+
+		SMB_ASSERT(state);
+		SMB_ASSERT(state->blr);
+
+		remove_pending_lock(state, state->blr);
+
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_CANCELLED);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(smb2req->sconn,
 				nt_errstr(error));
 			return;
 		}
@@ -155,20 +176,20 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	status = smbd_smb2_lock_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		error = smbd_smb2_request_error(req, status);
+		error = smbd_smb2_request_error(smb2req, status);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(smb2req->sconn,
 							 nt_errstr(error));
 			return;
 		}
 		return;
 	}
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
+	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x04);
 	if (outbody.data == NULL) {
-		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
+			smbd_server_connection_terminate(smb2req->sconn,
 							 nt_errstr(error));
 			return;
 		}
@@ -178,21 +199,13 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	SSVAL(outbody.data, 0x00, 0x04);	/* struct size */
 	SSVAL(outbody.data, 0x02, 0);		/* reserved */
 
-	error = smbd_smb2_request_done(req, outbody, NULL);
+	error = smbd_smb2_request_done(smb2req, outbody, NULL);
 	if (!NT_STATUS_IS_OK(error)) {
-		smbd_server_connection_terminate(req->sconn,
+		smbd_server_connection_terminate(smb2req->sconn,
 						 nt_errstr(error));
 		return;
 	}
 }
-
-struct smbd_smb2_lock_state {
-	struct smbd_smb2_request *smb2req;
-	struct smb_request *smb1req;
-	struct blocking_lock_record *blr;
-	uint16_t lock_count;
-	struct smbd_lock_element *locks;
-};
 
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -853,7 +866,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 		}
 
 		inhdr = (const uint8_t *)smb2req->in.vector[i].iov_base;
-		if (IVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
+		if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
 			/* Not a lock call. */
 			continue;
 		}
@@ -890,8 +903,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 				blr->lock_flav,
 				blr);
 
-		/* Finally cancel the request. */
-		smb2req->cancelled = true;
-		tevent_req_cancel(smb2req->subreq);
+		/* Finally end the request. */
+		tevent_req_nterror(smb2req->subreq, NT_STATUS_RANGE_NOT_LOCKED);
 	}
 }
