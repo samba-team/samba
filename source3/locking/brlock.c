@@ -997,6 +997,10 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
+		if (IS_PENDING_LOCK(lock->lock_type)) {
+			continue;
+		}
+
 		/* Only remove our own locks that match in start, size, and flavour. */
 		if (brl_same_context(&lock->context, &plock->context) &&
 					lock->fnum == plock->fnum &&
