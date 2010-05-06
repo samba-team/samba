@@ -220,6 +220,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
+	smb2req->subreq = req; /* So we can find this when going async. */
+
 	smb1req = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smb1req, req)) {
 		return tevent_req_post(req, ev);
@@ -345,6 +347,15 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		} else {
 			locks[i].brltype = UNLOCK_LOCK;
 		}
+
+		DEBUG(10,("smbd_smb2_lock_send: index %d offset=%llu, count=%llu, "
+			"pid = %u type %d\n",
+			i,
+			(unsigned long long)locks[i].offset,
+			(unsigned long long)locks[i].count,
+			(unsigned int)locks[i].smbpid,
+			(int)locks[i].brltype ));
+
 	}
 
 	state->locks = locks;
@@ -434,7 +445,7 @@ static void received_unlock_msg(struct messaging_context *msg,
 				DATA_BLOB *data)
 {
 	DEBUG(10,("received_unlock_msg (SMB2)\n"));
-	process_blocking_lock_queue_smb2();
+	process_blocking_lock_queue_smb2(timeval_current());
 }
 
 /****************************************************************
@@ -456,7 +467,7 @@ struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *s
 		return NULL;
 	}
 	inhdr = (const uint8_t *)smb2req->in.vector[smb2req->current_idx].iov_base;
-	if (IVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
+	if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
 		return NULL;
 	}
 	state = tevent_req_data(smb2req->subreq,
@@ -473,12 +484,10 @@ struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *s
 static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 {
 	struct smbd_smb2_request *smb2req;
-	struct timeval next_timeout;
+	struct timeval next_timeout = timeval_zero();
 	int max_brl_timeout = lp_parm_int(-1, "brl", "recalctime", 5);
 
 	TALLOC_FREE(sconn->smb2.locks.brl_timeout);
-
-	next_timeout = timeval_zero();
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
 		struct blocking_lock_record *blr =
@@ -506,7 +515,7 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 	if (timeval_is_zero(&next_timeout)) {
 		DEBUG(10, ("recalc_smb2_brl_timeout:Next "
 			"timeout = Infinite.\n"));
-		return True;
+		return true;
 	}
 
         /*
@@ -571,6 +580,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	struct smbd_smb2_request *smb2req = smb1req->smb2req;
 	struct tevent_req *req = NULL;
 	struct smbd_smb2_lock_state *state = NULL;
+	struct blocking_lock_record *blr = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!smb2req) {
@@ -580,41 +590,42 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	if (!req) {
 		return false;
 	}
+	if (!tevent_req_is_in_progress(smb2req->subreq)) {
+		return false;
+	}
 	state = tevent_req_data(req, struct smbd_smb2_lock_state);
 	if (!state) {
 		return false;
 	}
 
-	if (!state->blr) {
-		struct blocking_lock_record *blr = talloc_zero(state,
-					struct blocking_lock_record);
-		if (!blr) {
-			return false;
-		}
-		blr = talloc_zero(state, struct blocking_lock_record);
-		blr->fsp = fsp;
-		if (lock_timeout == -1) {
-			blr->expire_time.tv_sec = 0;
-			blr->expire_time.tv_usec = 0; /* Never expire. */
-		} else {
-			blr->expire_time = timeval_current_ofs(
-				lock_timeout/1000,
-				(lock_timeout % 1000) * 1000);
-		}
+	blr = talloc_zero(state, struct blocking_lock_record);
+	if (!blr) {
+		return false;
+	}
+	blr->fsp = fsp;
 
-		blr->lock_num = lock_num;
-		blr->lock_pid = lock_pid;
-		blr->blocking_pid = blocking_pid;
-		blr->lock_flav = lock_flav;
-		blr->lock_type = lock_type;
-		blr->offset = offset;
-		blr->count = count;
+	if (lock_timeout == -1) {
+		blr->expire_time.tv_sec = 0;
+		blr->expire_time.tv_usec = 0; /* Never expire. */
+	} else {
+		blr->expire_time = timeval_current_ofs(
+			lock_timeout/1000,
+			(lock_timeout % 1000) * 1000);
+	}
 
-		/* Specific brl_lock() implementations can fill this in. */
-		blr->blr_private = NULL;
+	blr->lock_num = lock_num;
+	blr->lock_pid = lock_pid;
+	blr->blocking_pid = blocking_pid;
+	blr->lock_flav = lock_flav;
+	blr->lock_type = lock_type;
+	blr->offset = offset;
+	blr->count = count;
 
-		/* Add a pending lock record for this. */
-		status = brl_lock(smbd_messaging_context(),
+	/* Specific brl_lock() implementations can fill this in. */
+	blr->blr_private = NULL;
+
+	/* Add a pending lock record for this. */
+	status = brl_lock(smbd_messaging_context(),
 			br_lck,
 			lock_pid,
 			procid_self(),
@@ -626,14 +637,17 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 			NULL,
 			blr);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("push_blocking_lock_request_smb2: "
-				"failed to add PENDING_LOCK record.\n"));
-			TALLOC_FREE(blr);
-			return false;
-		}
-		state->blr = blr;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("push_blocking_lock_request_smb2: "
+			"failed to add PENDING_LOCK record.\n"));
+		TALLOC_FREE(blr);
+		return false;
 	}
+	state->blr = blr;
+
+	DEBUG(10,("push_blocking_lock_request_smb2: file %s timeout %d\n",
+		fsp_str_dbg(fsp),
+		lock_timeout ));
 
 	recalc_smb2_brl_timeout(sconn);
 
@@ -651,11 +665,35 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 }
 
 /****************************************************************
+ Remove a pending lock record under lock.
+*****************************************************************/
+
+static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record *blr)
+{
+	struct byte_range_lock *br_lck = brl_get_locks(
+				mem_ctx, blr->fsp);
+
+	DEBUG(10, ("remove_pending_lock: BLR = %p\n", blr));
+
+	if (br_lck) {
+		brl_lock_cancel(br_lck,
+				blr->lock_pid,
+				procid_self(),
+				blr->offset,
+				blr->count,
+				blr->lock_flav,
+				blr);
+		TALLOC_FREE(br_lck);
+	}
+}
+
+/****************************************************************
  Re-proccess a blocking lock request.
  This is equivalent to process_lockingX() inside smbd/blocking.c
 *****************************************************************/
 
-static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req)
+static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
+				struct timeval tv_curr)
 {
 	NTSTATUS status;
 	struct blocking_lock_record *blr = NULL;
@@ -719,16 +757,29 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req)
 		 * We have other than a "can't get lock"
 		 * error. Return an error.
 		 */
+		remove_pending_lock(state, blr);
 		tevent_req_nterror(smb2req->subreq, status);
 		return;
         }
+
+	/*
+	 * We couldn't get the locks for this record on the list.
+	 * If the time has expired, return a lock error.
+	 */
+
+	if (!timeval_is_zero(&blr->expire_time) &&
+			timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
+		remove_pending_lock(state, blr);
+		tevent_req_nterror(smb2req->subreq, NT_STATUS_LOCK_NOT_GRANTED);
+		return;
+	}
 
 	/*
 	 * Still can't get all the locks - keep waiting.
 	 */
 
 	DEBUG(10,("reprocess_blocked_smb2_lock: only got %d locks of %d needed "
-		"for file %s, fnum = %d. Waiting....\n",
+		"for file %s, fnum = %d. Still waiting....\n",
 		(int)blr->lock_num,
 		(int)state->lock_count,
 		fsp_str_dbg(fsp),
@@ -743,7 +794,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req)
  the request queue.
 *****************************************************************/
 
-void process_blocking_lock_queue_smb2(void)
+void process_blocking_lock_queue_smb2(struct timeval tv_curr)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_smb2_request *smb2req, *nextreq;
@@ -763,8 +814,8 @@ void process_blocking_lock_queue_smb2(void)
 		}
 
 		inhdr = (const uint8_t *)smb2req->in.vector[smb2req->current_idx].iov_base;
-		if (IVAL(inhdr, SMB2_HDR_OPCODE) == SMB2_OP_LOCK) {
-			reprocess_blocked_smb2_lock(smb2req);
+		if (SVAL(inhdr, SMB2_HDR_OPCODE) == SMB2_OP_LOCK) {
+			reprocess_blocked_smb2_lock(smb2req, tv_curr);
 		}
 	}
 

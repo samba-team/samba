@@ -706,15 +706,14 @@ static void received_unlock_msg(struct messaging_context *msg,
 void process_blocking_lock_queue(void)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
-	struct timeval tv_curr;
+	struct timeval tv_curr = timeval_current();
 	struct blocking_lock_record *blr, *next = NULL;
 
 	if (sconn->allow_smb2) {
-		process_blocking_lock_queue_smb2();
+		process_blocking_lock_queue_smb2(tv_curr);
 		return;
 	}
 
-	tv_curr = timeval_current();
 	/*
 	 * Go through the queue and see if we can get any of the locks.
 	 */

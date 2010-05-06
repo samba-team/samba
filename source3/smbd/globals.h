@@ -318,7 +318,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t offset,
 				uint64_t count,
 				uint32_t blocking_pid);
-void process_blocking_lock_queue_smb2(void);
+void process_blocking_lock_queue_smb2(struct timeval tv_curr);
 void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			struct byte_range_lock *br_lck);
 /* From smbd/smb2_create.c */
