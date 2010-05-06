@@ -1265,7 +1265,31 @@ void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
  * @return              The duplicated string, NULL on error.
  */
 char *talloc_strdup(const void *t, const char *p);
+
+/**
+ * @brief Append a string to given string and duplicate the result.
+ *
+ * @param[in]  s        The destination to append to.
+ *
+ * @param[in]  a        The string you want to append.
+ *
+ * @return              The duplicated string, NULL on error.
+ *
+ * @see talloc_strdup()
+ */
 char *talloc_strdup_append(char *s, const char *a);
+
+/**
+ * @brief Append a string to a given buffer and duplicate the result.
+ *
+ * @param[in]  s        The destination buffer to append to.
+ *
+ * @param[in]  a        The string you want to append.
+ *
+ * @return              The duplicated string, NULL on error.
+ *
+ * @see talloc_strdup()
+ */
 char *talloc_strdup_append_buffer(char *s, const char *a);
 
 /**
@@ -1289,7 +1313,39 @@ char *talloc_strdup_append_buffer(char *s, const char *a);
  * @return              The duplicated string, NULL on error.
  */
 char *talloc_strndup(const void *t, const char *p, size_t n);
+
+/**
+ * @brief Append at most n characters of a string to given string and duplicate
+ *        the result.
+ *
+ * @param[in]  s        The destination string to append to.
+ *
+ * @param[in]  a        The source string you want to append.
+ *
+ * @param[in]  n        The number of characters you want to append from the
+ *                      string.
+ *
+ * @return              The duplicated string, NULL on error.
+ *
+ * @see talloc_strndup()
+ */
 char *talloc_strndup_append(char *s, const char *a, size_t n);
+
+/**
+ * @brief Append at most n characters of a string to given buffer and duplicate
+ *        the result.
+ *
+ * @param[in]  s        The destination buffer to append to.
+ *
+ * @param[in]  a        The source string you want to append.
+ *
+ * @param[in]  n        The number of characters you want to append from the
+ *                      string.
+ *
+ * @return              The duplicated string, NULL on error.
+ *
+ * @see talloc_strndup()
+ */
 char *talloc_strndup_append_buffer(char *s, const char *a, size_t n);
 
 /**
@@ -1314,7 +1370,37 @@ char *talloc_strndup_append_buffer(char *s, const char *a, size_t n);
  * @return              The formatted string, NULL on error.
  */
 char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
+/**
+ * @brief Format a string given a va_list and append it to the given destination
+ *        string.
+ *
+ * @param[in]  s        The destination string to append to.
+ *
+ * @param[in]  fmt      The format string.
+ *
+ * @param[in]  ap       The parameters used to fill fmt.
+ *
+ * @return              The formatted string, NULL on error.
+ *
+ * @see talloc_vasprintf()
+ */
 char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+
+/**
+ * @brief Format a string given a va_list and append it to the given destination
+ *        buffer.
+ *
+ * @param[in]  s        The destination buffer to append to.
+ *
+ * @param[in]  fmt      The format string.
+ *
+ * @param[in]  ap       The parameters used to fill fmt.
+ *
+ * @return              The formatted string, NULL on error.
+ *
+ * @see talloc_vasprintf()
+ */
 char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 /**
