@@ -82,9 +82,6 @@ struct samldb_ctx {
 	struct ldb_dn *user_dn;
 	struct ldb_dn *old_prim_group_dn, *new_prim_group_dn;
 
-	/* generic counter - used in "samldb_member_check" */
-	unsigned int cnt;
-
 	/* all the async steps necessary to complete the operation */
 	struct samldb_step *steps;
 	struct samldb_step *curstep;
@@ -1470,83 +1467,55 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 }
 
 
-static int samldb_member_check_1(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct ldb_message_element *el;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	el = ldb_msg_find_element(ac->msg, "member");
-
-	ac->user_dn = ldb_dn_from_ldb_val(ac, ldb, &el->values[ac->cnt]);
-	if (!ldb_dn_validate(ac->user_dn))
-		return LDB_ERR_OPERATIONS_ERROR;
-	ac->prim_group_rid = 0;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_member_check_2(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
-		ac->prim_group_rid);
-	if (ac->sid == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	ac->res_dn = NULL;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_member_check_3(struct samldb_ctx *ac)
-{
-	if (ldb_dn_compare(ac->res_dn, ac->msg->dn) == 0)
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
-
-	++(ac->cnt);
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_member_check_4(struct samldb_ctx *ac)
-{
-	return ldb_next_request(ac->module, ac->req);
-}
-
 static int samldb_member_check(struct samldb_ctx *ac)
 {
+	struct ldb_context *ldb;
 	struct ldb_message_element *el;
-	int i, ret;
+	struct ldb_dn *member_dn, *group_dn;
+	uint32_t prim_group_rid;
+	struct dom_sid *sid;
+	const char * const * no_attrs = { NULL };
+	struct ldb_message **res;
+	unsigned int i;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	el = ldb_msg_find_element(ac->msg, "member");
-	ac->cnt = 0;
 	for (i = 0; i < el->num_values; i++) {
 		/* Denies to add "member"s to groups which are primary ones
 		 * for them */
-		ret = samldb_add_step(ac, samldb_member_check_1);
-		if (ret != LDB_SUCCESS) return ret;
+		member_dn = ldb_dn_from_ldb_val(ac, ldb, &el->values[i]);
+		if (!ldb_dn_validate(member_dn)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-		ret = samldb_add_step(ac, samldb_user_dn_to_prim_group_rid);
-		if (ret != LDB_SUCCESS) return ret;
+		prim_group_rid = samdb_search_uint(ldb, ac, (uint32_t) -1,
+						   member_dn, "primaryGroupID",
+						   NULL);
+		if (prim_group_rid == (uint32_t) -1) {
+			/* the member hasn't to be a user account -> therefore
+			 * no check needed in this case. */
+			continue;
+		}
 
-		ret = samldb_add_step(ac, samldb_member_check_2);
-		if (ret != LDB_SUCCESS) return ret;
+		sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
+				      prim_group_rid);
+		if (sid == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-		ret = samldb_add_step(ac, samldb_dn_from_sid);
-		if (ret != LDB_SUCCESS) return ret;
+		group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
+					   dom_sid_string(ac, sid));
+		if (group_dn == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-		ret = samldb_add_step(ac, samldb_member_check_3);
-		if (ret != LDB_SUCCESS) return ret;
+		if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
+			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		}
 	}
 
-	ret = samldb_add_step(ac, samldb_member_check_4);
-	if (ret != LDB_SUCCESS) return ret;
-
-	return samldb_first_step(ac);
+	return ldb_next_request(ac->module, ac->req);
 }
 
 
