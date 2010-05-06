@@ -3218,7 +3218,7 @@ clean_libnetapi_examples:
 	cd ../source4 && ./autogen.sh
 
 samba4-configure:
-	@test -f ../source4/.lock-wscript || ( cd ../source4 && ./configure.developer --prefix="$(prefix)")
+	@$(MAKE) -C ../source4 reconfigure || ( cd ../source4 && ./configure --enable-auto-reconfigure --prefix="$(prefix)" )
 
 .PHONY: samba4-configure
 
