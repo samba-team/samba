@@ -105,6 +105,8 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }	
 
+/* Note that the validity of the _sam3 structure is only as long as
+ * the server_info it was generated from */
 NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx, 
 					   struct auth_serversupplied_info *server_info, 
 					   struct netr_SamInfo3 **_sam3)
