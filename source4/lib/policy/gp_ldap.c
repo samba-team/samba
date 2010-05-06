@@ -367,8 +367,7 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *dn_str, struct gp
 			}
 		}
 	}
-	DEBUG(0, ("Object or gPLink attribute not found.\n"));
-	return NT_STATUS_NOT_FOUND;
+	gplink_str = talloc_strdup(mem_ctx, "");
 
 	found:
 
@@ -661,14 +660,22 @@ NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = dn;
 
-	rv = ldb_msg_add_string(msg, "gPLink", gplink_str);
-	if (rv != 0) {
-		DEBUG(0, ("LDB message add string failed: %s\n", ldb_strerror(rv)));
-		talloc_free(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+	if (strcmp(gplink_str, "") == 0) {
+		rv = ldb_msg_add_empty(msg, "gPLink", LDB_FLAG_MOD_DELETE, NULL);
+		if (rv != 0) {
+			DEBUG(0, ("LDB message add empty element failed: %s\n", ldb_strerror(rv)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		rv = ldb_msg_add_string(msg, "gPLink", gplink_str);
+		if (rv != 0) {
+			DEBUG(0, ("LDB message add string failed: %s\n", ldb_strerror(rv)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	}
-	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-
 	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
 	if (rv != 0) {
 		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
@@ -739,4 +746,119 @@ NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum 
 
 	talloc_free(msg);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
+{
+	struct ldb_message *msg;
+	TALLOC_CTX *mem_ctx;
+	int rv;
+	char *dn_str;
+	struct ldb_dn *child_dn, *gpo_dn;
+
+	mem_ctx = talloc_new(gp_ctx);
+
+	/* CN={GUID} */
+	msg = ldb_msg_new(mem_ctx);
+
+	msg->dn = ldb_get_default_basedn(gp_ctx->ldb_ctx);
+	dn_str = talloc_asprintf(mem_ctx, "CN=%s,CN=Policies,CN=System", gpo->name);
+	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+	rv = ldb_dn_add_child(msg->dn, child_dn);
+	if (!rv) goto ldb_msg_add_error;
+
+	rv = ldb_msg_add_string(msg, "objectClass", "top");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "objectClass", "container");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "objectClass", "groupPolicyContainer");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "displayName", gpo->display_name);
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "name", gpo->name);
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "CN", gpo->name);
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "gPCFileSysPath", gpo->file_sys_path);
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "flags",
+			talloc_asprintf(mem_ctx, "%d", gpo->flags));
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "versionNumber",
+			talloc_asprintf(mem_ctx, "%d", gpo->version));
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "showInAdvancedViewOnly", "TRUE");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "gpCFunctionalityVersion", "2");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+
+	/* FIXME Add security descriptor as well */
+
+	rv = ldb_add(gp_ctx->ldb_ctx, msg);
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB add error: %s\n", ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	gpo_dn = msg->dn;
+
+	/* CN=User */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(mem_ctx, gpo_dn);
+	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, "CN=User");
+	rv = ldb_dn_add_child(msg->dn, child_dn);
+	if (!rv) goto ldb_msg_add_error;
+
+	rv = ldb_msg_add_string(msg, "objectClass", "top");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "objectClass", "container");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "showInAdvancedViewOnly", "TRUE");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "CN", "User");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "name", "User");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+
+	rv = ldb_add(gp_ctx->ldb_ctx, msg);
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB add error: %s\n", ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* CN=Machine */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(mem_ctx, gpo_dn);
+	child_dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, "CN=Machine");
+	rv = ldb_dn_add_child(msg->dn, child_dn);
+	if (!rv) goto ldb_msg_add_error;
+
+	rv = ldb_msg_add_string(msg, "objectClass", "top");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "objectClass", "container");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "showInAdvancedViewOnly", "TRUE");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "CN", "Machine");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+	rv = ldb_msg_add_string(msg, "name", "Machine");
+	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
+
+	rv = ldb_add(gp_ctx->ldb_ctx, msg);
+	if (rv != LDB_SUCCESS) {
+		DEBUG(0, ("LDB add error: %s\n", ldb_errstring(gp_ctx->ldb_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+
+	ldb_msg_add_error:
+	DEBUG(0, ("LDB Error adding element to ldb message\n"));
+	talloc_free(mem_ctx);
+	return NT_STATUS_UNSUCCESSFUL;
 }

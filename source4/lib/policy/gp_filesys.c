@@ -24,6 +24,8 @@
 #include "libcli/resolve/resolve.h"
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
 
 #define GP_MAX_DEPTH 25
 
@@ -184,7 +186,7 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gp_fetch_gpo (struct gp_context *gp_ctx, struct gp_object *gpo, const char **ret_local_path)
+NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **ret_local_path)
 {
 	TALLOC_CTX *mem_ctx;
 	struct gp_list_state *state;
@@ -242,6 +244,163 @@ NTSTATUS gp_fetch_gpo (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 
 	/* Return the local path to the gpo */
 	*ret_local_path = state->local_path;
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_path, const char *remote_path, int depth)
+{
+	DIR *dir;
+	struct dirent *dirent;
+	char *entry_local_path;
+	char *entry_remote_path;
+	int local_fd, remote_fd;
+	int buf[1024];
+	int nread, total_read;
+
+	dir = opendir(local_path);
+	while ((dirent = readdir(dir)) != NULL) {
+		if (strcmp(dirent->d_name, ".") == 0 || strcmp(dirent->d_name, "..") == 0) {
+			continue;
+		}
+
+		entry_local_path = talloc_asprintf(gp_ctx, "%s/%s", local_path, dirent->d_name);
+		entry_remote_path = talloc_asprintf(gp_ctx, "%s\\%s", remote_path, dirent->d_name);
+		if (dirent->d_type == DT_DIR) {
+			DEBUG(6, ("Pushing directory %s to %s on sysvol\n", entry_local_path, entry_remote_path));
+			smbcli_mkdir(gp_ctx->cli->tree, entry_remote_path);
+			if (depth < GP_MAX_DEPTH)
+				push_recursive(gp_ctx, entry_local_path, entry_remote_path, depth+1);
+		} else {
+			DEBUG(6, ("Pushing file %s to %s on sysvol\n", entry_local_path, entry_remote_path));
+			remote_fd = smbcli_open(gp_ctx->cli->tree, entry_remote_path, O_WRONLY | O_CREAT, 0);
+			if (remote_fd < 0) {
+				talloc_free(entry_local_path);
+				talloc_free(entry_remote_path);
+				DEBUG(0, ("Failed to create remote file: %s\n", entry_remote_path));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			local_fd = open(entry_local_path, O_RDONLY);
+			if (local_fd < 0) {
+				talloc_free(entry_local_path);
+				talloc_free(entry_remote_path);
+				DEBUG(0, ("Failed to open local file: %s\n", entry_local_path));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			total_read = 0;
+			while ((nread = read(local_fd, &buf, sizeof(buf)))) {
+				smbcli_write(gp_ctx->cli->tree, remote_fd, 0, &buf, total_read, nread);
+				total_read += nread;
+			}
+
+			close(local_fd);
+			smbcli_close(gp_ctx->cli->tree, remote_fd);
+		}
+		talloc_free(entry_local_path);
+		talloc_free(entry_remote_path);
+	}
+	closedir(dir);
+
+	return NT_STATUS_OK;
+}
+
+
+
+NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path, const char *file_sys_path)
+{
+	NTSTATUS status;
+	unsigned int i, bkslash_cnt;
+	char *share_path;
+
+	if (gp_ctx->cli == NULL) {
+		status = gp_cli_connect(gp_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to create cli connection to DC\n"));
+			return status;
+		}
+	}
+
+	/* Get the path from the share down (\\..\..\(this\stuff) */
+	for (i = 0, bkslash_cnt = 0; file_sys_path[i] != '\0'; i++) {
+		if (file_sys_path[i] == '\\')
+			bkslash_cnt++;
+
+		if (bkslash_cnt == 4) {
+			share_path = talloc_strdup(gp_ctx, &file_sys_path[i]);
+			break;
+		}
+	}
+
+	DEBUG(5, ("Copying %s to %s on sysvol\n", local_path, share_path));
+
+	smbcli_mkdir(gp_ctx->cli->tree, share_path);
+
+	status = push_recursive(gp_ctx, local_path, share_path, 0);
+
+	talloc_free(share_path);
+	return status;
+}
+
+NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *file_sys_path)
+{
+	TALLOC_CTX *mem_ctx;
+	const char *tmp_dir, *policy_dir, *tmp_str;
+	int rv;
+	int fd;
+	NTSTATUS status;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	tmp_dir = gp_tmpdir(mem_ctx);
+	policy_dir = talloc_asprintf(mem_ctx, "%s/%s", tmp_dir, name);
+	rv = mkdir(policy_dir, 0755);
+	if (rv < 0) {
+		DEBUG(0, ("Could not create the policy dir: %s\n", policy_dir));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tmp_str = talloc_asprintf(mem_ctx, "%s/User", policy_dir);
+	rv = mkdir(tmp_str, 0755);
+	if (rv < 0) {
+		DEBUG(0, ("Could not create the User dir: %s\n", tmp_str));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tmp_str = talloc_asprintf(mem_ctx, "%s/Machine", policy_dir);
+	rv = mkdir(tmp_str, 0755);
+	if (rv < 0) {
+		DEBUG(0, ("Could not create the Machine dir: %s\n", tmp_str));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tmp_str = talloc_asprintf(mem_ctx, "%s/GPT.INI", policy_dir);
+	fd = open(tmp_str, O_CREAT | O_WRONLY, 0644);
+	if (fd < 0) {
+		DEBUG(0, ("Could not create the GPT.INI: %s\n", tmp_str));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rv = write(fd, "[General]\r\nVersion=0\r\n", 23);
+	if (rv != 23) {
+		DEBUG(0, ("Short write in GPT.INI\n"));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	close(fd);
+
+
+	status = gp_push_gpt(gp_ctx, policy_dir, file_sys_path);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;

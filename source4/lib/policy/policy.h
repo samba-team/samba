@@ -61,17 +61,13 @@ struct gp_link {
 	const char *dn;
 };
 
-#if 0 /* Not used yet */
-NTSTATUS gp_fetch_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
-NTSTATUS gp_apply_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
-NTSTATUS gp_check_refresh_gpo(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
-#endif
 
 NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
 				struct cli_credentials *creds,
 				struct tevent_context *ev_ctx,
 				struct gp_context **gp_ctx);
+
 
 /* LDAP functions */
 NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret);
@@ -91,7 +87,13 @@ NTSTATUS gp_del_gplink(struct gp_context *gp_ctx, const char *dn_str, const char
 NTSTATUS gp_get_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance *inheritance);
 NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance inheritance);
 
+NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo);
+
 /* File system functions */
-NTSTATUS gp_fetch_gpo (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
+NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
+NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *file_sys_path);
+
+/* Managing functions */
+NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, struct gp_object **ret);
 
 #endif

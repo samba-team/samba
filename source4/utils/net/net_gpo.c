@@ -470,7 +470,7 @@ static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 		return 1;
 	}
 
-	rv = gp_fetch_gpo(gp_ctx, gpo, &path);
+	rv = gp_fetch_gpt(gp_ctx, gpo, &path);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to fetch GPO: %s\n", get_friendly_nt_error_msg(rv)));
 		return 1;
@@ -479,7 +479,38 @@ static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 
 	return 0;
 }
+static int net_gpo_create_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo create <displayname> [options]\n");
+	d_printf("For a list of available options, please type net gpo create --help\n");
+	return 0;
+}
 
+static int net_gpo_create(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	struct gp_object *gpo;
+	NTSTATUS rv;
+
+	if (argc != 1) {
+		return net_gpo_create_usage(ctx, argc, argv);
+	}
+
+	rv = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+	rv = gp_create_gpo(gp_ctx, argv[0], &gpo);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to create GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+
+	return 0;
+}
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
 	{ "list", "List all active GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
@@ -490,6 +521,7 @@ static const struct net_functable net_gpo_functable[] = {
 	{ "getinheritance", "Get inheritance flag from a container\n", net_gpo_inheritance_get, net_gpo_inheritance_get_usage },
 	{ "setinheritance", "Set inheritance flag on a container\n", net_gpo_inheritance_set, net_gpo_inheritance_set_usage },
 	{ "fetch", "Download a GPO\n", net_gpo_fetch, net_gpo_fetch_usage },
+	{ "create", "Create a GPO\n", net_gpo_create, net_gpo_create_usage },
 	{ NULL, NULL }
 };
 
