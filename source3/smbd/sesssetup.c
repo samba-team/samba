@@ -243,7 +243,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring user;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
-	struct PAC_DATA *pac_data = NULL;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	struct auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
@@ -276,7 +275,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	}
 
 	ret = ads_verify_ticket(mem_ctx, lp_realm(), 0, &ticket,
-				&client, &pac_data, &ap_rep,
+				&client, &logon_info, &ap_rep,
 				&session_key, True);
 
 	data_blob_free(&ticket);
@@ -353,11 +352,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	/* save the PAC data if we have it */
 
-	if (pac_data) {
-		logon_info = get_logon_info_from_pac(pac_data);
-		if (logon_info) {
-			netsamlogon_cache_store( client, &logon_info->info3 );
-		}
+	if (logon_info) {
+		netsamlogon_cache_store( client, &logon_info->info3 );
 	}
 
 	if (!strequal(p+1, lp_realm())) {

@@ -325,25 +325,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
-****************************************************************/
-
-struct PAC_LOGON_INFO *get_logon_info_from_pac(struct PAC_DATA *pac_data)
-{
-	int i;
-
-	for (i=0; i < pac_data->num_buffers; i++) {
-
-		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
-			continue;
-		}
-
-		return pac_data->buffers[i].info->logon_info.info;
-	}
-
-	return NULL;
-}
-
-/****************************************************************
+Given a username, password and other details, return the
+PAC_LOGON_INFO (the structure containing the important user
+information such as groups).
 ****************************************************************/
 
 NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
@@ -357,12 +341,11 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
-			     struct PAC_DATA **pac_ret)
+			     struct PAC_LOGON_INFO **logon_info)
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	DATA_BLOB tkt, ap_rep, sesskey1, sesskey2;
-	struct PAC_DATA *pac_data = NULL;
 	char *client_princ_out = NULL;
 	const char *auth_princ = NULL;
 	const char *local_service = NULL;
@@ -453,7 +436,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 				   time_offset,
 				   &tkt,
 				   &client_princ_out,
-				   &pac_data,
+				   logon_info,
 				   &ap_rep,
 				   &sesskey2,
 				   False);
@@ -463,13 +446,11 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (!pac_data) {
+	if (!*logon_info) {
 		DEBUG(1,("no PAC\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
-
-	*pac_ret = pac_data;
 
 out:
 	if (cc != cache_name) {
@@ -486,95 +467,4 @@ out:
 	return status;
 }
 
-/****************************************************************
-****************************************************************/
-
-static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
-					       const char *name,
-					       const char *pass,
-					       time_t time_offset,
-					       time_t *expire_time,
-					       time_t *renew_till_time,
-					       const char *cache_name,
-					       bool request_pac,
-					       bool add_netbios_addr,
-					       time_t renewable_time,
-					       const char *impersonate_princ_s,
-					       struct PAC_LOGON_INFO **logon_info)
-{
-	NTSTATUS status;
-	struct PAC_DATA *pac_data = NULL;
-	struct PAC_LOGON_INFO *info = NULL;
-
-	status = kerberos_return_pac(mem_ctx,
-				     name,
-				     pass,
-				     time_offset,
-				     expire_time,
-				     renew_till_time,
-				     cache_name,
-				     request_pac,
-				     add_netbios_addr,
-				     renewable_time,
-				     impersonate_princ_s,
-				     &pac_data);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!pac_data) {
-		DEBUG(3,("no pac\n"));
-		return NT_STATUS_INVALID_USER_BUFFER;
-	}
-
-	info = get_logon_info_from_pac(pac_data);
-	if (!info) {
-		DEBUG(1,("no logon_info\n"));
-		return NT_STATUS_INVALID_USER_BUFFER;
-	}
-
-	*logon_info = info;
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
-					const char *name,
-					const char *pass,
-					time_t time_offset,
-					time_t *expire_time,
-					time_t *renew_till_time,
-					const char *cache_name,
-					bool request_pac,
-					bool add_netbios_addr,
-					time_t renewable_time,
-					const char *impersonate_princ_s,
-					struct netr_SamInfo3 **info3)
-{
-	NTSTATUS status;
-	struct PAC_LOGON_INFO *logon_info = NULL;
-
-	status = kerberos_return_pac_logon_info(mem_ctx,
-						name,
-						pass,
-						time_offset,
-						expire_time,
-						renew_till_time,
-						cache_name,
-						request_pac,
-						add_netbios_addr,
-						renewable_time,
-						impersonate_princ_s,
-						&logon_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*info3 = &logon_info->info3;
-
-	return NT_STATUS_OK;
-}
 #endif

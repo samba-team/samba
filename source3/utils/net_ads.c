@@ -2379,7 +2379,6 @@ static int net_ads_kerberos_renew(struct net_context *c, int argc, const char **
 
 static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **argv)
 {
-	struct PAC_DATA *pac = NULL;
 	struct PAC_LOGON_INFO *info = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
@@ -2409,7 +2408,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 	status = kerberos_return_pac(mem_ctx,
 				     c->opt_user_name,
 				     c->opt_password,
-			     	     0,
+				     0,
 				     NULL,
 				     NULL,
 				     NULL,
@@ -2417,14 +2416,13 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 				     true,
 				     2592000, /* one month */
 				     impersonate_princ_s,
-				     &pac);
+				     &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to query kerberos PAC: %s\n"),
 			nt_errstr(status));
 		goto out;
 	}
 
-	info = get_logon_info_from_pac(pac);
 	if (info) {
 		const char *s;
 		s = NDR_PRINT_STRUCT_STRING(mem_ctx, PAC_LOGON_INFO, info);

@@ -405,7 +405,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   time_t time_offset,
 			   const DATA_BLOB *ticket,
 			   char **principal,
-			   struct PAC_DATA **pac_data,
+			   struct PAC_LOGON_INFO **logon_info,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key,
 			   bool use_replay_cache)
@@ -433,7 +433,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(auth_data);
 
 	*principal = NULL;
-	*pac_data = NULL;
+	*logon_info = NULL;
 	*ap_rep = data_blob_null;
 	*session_key = data_blob_null;
 
@@ -611,12 +611,27 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	if (got_auth_data) {
-		pac_ret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, pac_data);
+		struct PAC_DATA *pac_data;
+		pac_ret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, &pac_data);
+		data_blob_free(&auth_data);
 		if (!NT_STATUS_IS_OK(pac_ret)) {
 			DEBUG(3,("ads_verify_ticket: failed to decode PAC_DATA: %s\n", nt_errstr(pac_ret)));
-			*pac_data = NULL;
+		} else {
+			uint32_t i;
+			for (i=0; i < pac_data->num_buffers; i++) {
+
+				if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
+					continue;
+				}
+
+				*logon_info = pac_data->buffers[i].info->logon_info.info;
+			}
+
+			if (!*logon_info) {
+				DEBUG(1,("correctly decoded PAC but found no logon_info!  This should not happen\n"));
+				return NT_STATUS_INVALID_USER_BUFFER;
+			}
 		}
-		data_blob_free(&auth_data);
 	}
 
 #if 0

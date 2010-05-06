@@ -1732,7 +1732,6 @@ const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/authdata.c  */
 
-struct PAC_LOGON_INFO *get_logon_info_from_pac(struct PAC_DATA *pac_data);
 NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     const char *name,
 			     const char *pass,
@@ -1744,19 +1743,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
 			     const char *impersonate_princ_s,
-			     struct PAC_DATA **pac_ret);
-NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
-					const char *name,
-					const char *pass,
-					time_t time_offset,
-					time_t *expire_time,
-					time_t *renew_till_time,
-					const char *cache_name,
-					bool request_pac,
-					bool add_netbios_addr,
-					time_t renewable_time,
-					const char *impersonate_princ_s,
-					struct netr_SamInfo3 **info3);
+			     struct PAC_LOGON_INFO **logon_info);
 
 /* The following definitions come from libads/cldap.c  */
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
@@ -1850,7 +1837,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   time_t time_offset,
 			   const DATA_BLOB *ticket,
 			   char **principal,
-			   struct PAC_DATA **pac_data,
+			   struct PAC_LOGON_INFO **logon_info,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key,
 			   bool use_replay_cache);

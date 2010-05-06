@@ -564,8 +564,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
 	bool internal_ccache = true;
-
-	ZERO_STRUCTP(info3);
+	struct PAC_LOGON_INFO *logon_info = NULL;
 
 	*info3 = NULL;
 
@@ -623,18 +622,18 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
-	result = kerberos_return_info3_from_pac(state->mem_ctx,
-						principal_s,
-						state->request->data.auth.pass,
-						time_offset,
-						&ticket_lifetime,
-						&renewal_until,
-						cc,
-						true,
-						true,
-						WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-						NULL,
-						info3);
+	result = kerberos_return_pac(state->mem_ctx,
+				     principal_s,
+				     state->request->data.auth.pass,
+				     time_offset,
+				     &ticket_lifetime,
+				     &renewal_until,
+				     cc,
+				     true,
+				     true,
+				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+				     NULL,
+				     &logon_info);
 	if (!internal_ccache) {
 		gain_root_privilege();
 	}
@@ -644,6 +643,8 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto failed;
 	}
+
+	*info3 = &logon_info->info3;
 
 	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n",
 		principal_s));

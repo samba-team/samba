@@ -1316,7 +1316,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
-			struct PAC_DATA *pac_data = NULL;
+			struct PAC_LOGON_INFO *logon_info = NULL;
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));
@@ -1332,7 +1332,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 
 			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
 						   &request.negTokenInit.mechToken,
-						   &principal, &pac_data, &ap_rep,
+						   &principal, &logon_info, &ap_rep,
 						   &session_key, True);
 
 			/* Now in "principal" we have the name we are
