@@ -507,3 +507,13 @@ def load_file(filename):
     except:
         return None
     return r
+
+
+def reconfigure(ctx):
+    '''rerun configure if necessary'''
+    import Configure, samba_wildcard, Scripting
+    if not os.path.exists(".lock-wscript"):
+        raise Utils.WafError('configure has not been run')
+    bld = samba_wildcard.fake_build_environment()
+    Configure.autoconfig = True
+    Scripting.check_configured(bld)

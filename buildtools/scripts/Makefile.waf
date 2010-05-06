@@ -29,6 +29,9 @@ clean:
 distclean:
 	$(WAF) distclean
 
+reconfigure: configure
+	$(WAF) reconfigure
+
 # some compatibility make targets
 everything: all
 
