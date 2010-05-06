@@ -74,10 +74,6 @@ struct samldb_ctx {
 	/* used in "samldb_user_dn_to_prim_group_rid" */
 	uint32_t prim_group_rid;
 
-	/* used in conjunction with "prim_group_rid" in
-	 * "samldb_prim_group_rid_to_users_cnt" */
-	unsigned int users_cnt;
-
 	/* used in "samldb_group_add_member" and "samldb_group_del_member" */
 	struct ldb_dn *group_dn;
 	struct ldb_dn *member_dn;
@@ -1141,97 +1137,6 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 }
 
 /*
- * samldb_sid_from_dn (async)
- */
-
-static int samldb_sid_from_dn(struct samldb_ctx *ac);
-
-static int samldb_sid_from_dn_callback(struct ldb_request *req,
-	struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if (ac->res_sid != NULL) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain objects!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-		ac->res_sid = samdb_result_dom_sid(ac, ares->message,
-			"objectSid");
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-
-		/* found or not found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Finds the SID "res_sid" of an object with a given DN "dn" */
-static int samldb_sid_from_dn(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[] = { "objectSid", NULL };
-	struct ldb_request *req;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->dn == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				ac->dn,
-				LDB_SCOPE_BASE,
-				NULL, attrs,
-				NULL,
-				ac, samldb_sid_from_dn_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-/*
  * samldb_user_dn_to_prim_group_rid (async)
  */
 
@@ -1322,96 +1227,6 @@ static int samldb_user_dn_to_prim_group_rid(struct samldb_ctx *ac)
 				NULL, attrs,
 				NULL,
 				ac, samldb_user_dn_to_prim_group_rid_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-/*
- * samldb_prim_group_rid_to_users_cnt (async)
- */
-
-static int samldb_prim_group_rid_to_users_cnt(struct samldb_ctx *ac);
-
-static int samldb_prim_group_rid_to_users_cnt_callback(struct ldb_request *req,
-	struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		++(ac->users_cnt);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-
-		/* found or not found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Finds the amount of users which have the primary group "prim_group_rid" and
- * save the result in "users_cnt" */
-static int samldb_prim_group_rid_to_users_cnt(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[] = { NULL };
-	struct ldb_request *req;
-	char *filter;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if ((ac->prim_group_rid == 0) || (ac->users_cnt != 0))
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	filter = talloc_asprintf(ac, "(&(primaryGroupID=%u)(objectclass=user))",
-		ac->prim_group_rid);
-	if (filter == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				ldb_get_default_basedn(ldb),
-				LDB_SCOPE_SUBTREE,
-				filter, attrs,
-				NULL,
-				ac,
-				samldb_prim_group_rid_to_users_cnt_callback,
 				ac->req);
 	if (ret != LDB_SUCCESS)
 		return ret;
@@ -1735,70 +1550,44 @@ static int samldb_member_check(struct samldb_ctx *ac)
 }
 
 
-static int samldb_prim_group_users_check_1(struct samldb_ctx *ac)
+static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 {
-	ac->dn = ac->req->op.del.dn;
-	ac->res_sid = NULL;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_users_check_2(struct samldb_ctx *ac)
-{
-	NTSTATUS status;
+	struct ldb_context *ldb;
+	struct dom_sid *sid;
 	uint32_t rid;
+	NTSTATUS status;
+	int count;
 
-	if (ac->res_sid == NULL) {
-		/* No SID - therefore ok here */
+	ldb = ldb_module_get_ctx(ac->module);
+
+	/* Finds out the SID/RID of the SAM object */
+	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSID",
+				   NULL);
+	if (sid == NULL) {
+		/* No SID - it might not be a SAM object - therefore ok */
 		return ldb_next_request(ac->module, ac->req);
 	}
-	status = dom_sid_split_rid(ac, ac->res_sid, NULL, &rid);
-	if (!NT_STATUS_IS_OK(status))
+	status = dom_sid_split_rid(ac, sid, NULL, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
 		return LDB_ERR_OPERATIONS_ERROR;
-
+	}
 	if (rid == 0) {
 		/* Special object (security principal?) */
 		return ldb_next_request(ac->module, ac->req);
 	}
 
-	ac->prim_group_rid = rid;
-	ac->users_cnt = 0;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_users_check_3(struct samldb_ctx *ac)
-{
-	if (ac->users_cnt > 0)
+	/* Deny delete requests from groups which are primary ones */
+	count = samdb_search_count(ldb, NULL,
+				   "(&(primaryGroupID=%u)(objectClass=user))",
+				   rid);
+	if (count < 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (count > 0) {
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	}
 
 	return ldb_next_request(ac->module, ac->req);
-}
-
-static int samldb_prim_group_users_check(struct samldb_ctx *ac)
-{
-	int ret;
-
-	/* Finds out the SID/RID of the domain object */
-
-	ret = samldb_add_step(ac, samldb_prim_group_users_check_1);
-	if (ret != LDB_SUCCESS) return ret;
-
-	ret = samldb_add_step(ac, samldb_sid_from_dn);
-	if (ret != LDB_SUCCESS) return ret;
-
-	/* Deny delete requests from groups which are primary ones */
-
-	ret = samldb_add_step(ac, samldb_prim_group_users_check_2);
-	if (ret != LDB_SUCCESS) return ret;
-
-	ret = samldb_add_step(ac, samldb_prim_group_rid_to_users_cnt);
-	if (ret != LDB_SUCCESS) return ret;
-
-	ret = samldb_add_step(ac, samldb_prim_group_users_check_3);
-	if (ret != LDB_SUCCESS) return ret;
-
-	return samldb_first_step(ac);
 }
 
 
