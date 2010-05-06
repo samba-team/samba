@@ -27,6 +27,7 @@
 		<arg choice="opt">-S acls</arg>
 		<arg choice="opt">-C name</arg>
 		<arg choice="opt">-G name</arg>
+		<arg choice="opt">-I allow|romove|copy</arg>
 		<arg choice="opt">--numeric</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-U username</arg>
@@ -117,6 +118,19 @@
 		
 		
 		
+		<varlistentry>
+		<term>-I|--inherit allow|remove|copy</term>
+		<listitem><para>Set or unset the windows "Allow inheritable
+		permissions" check box using the <parameter>-I</parameter>
+		option.  To set the check box pass allow. To unset the check
+		box pass either remove or copy. Remove will remove all
+		inherited acls. Copy will copy all the inherited acls.
+		</para></listitem>
+
+		</varlistentry>
+
+
+
 		<varlistentry>
 		<term>--numeric</term>
 		<listitem><para>This option displays all ACL information in numeric 
