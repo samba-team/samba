@@ -5,8 +5,8 @@
 
    Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
-   Copyright (C) 2007-2009 Jelmer Vernooij <jelmer@samba.org>
-   Copyright (C) 2009 Matthias Dieter Wallnöfer
+   Copyright (C) 2007-2010 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2009-2010 Matthias Dieter Wallnöfer
 
 	 ** NOTE! The following LGPL license applies to the ldb
 	 ** library. This does NOT imply that all of Samba is released
@@ -2079,6 +2079,41 @@ static void py_ldb_msg_dealloc(PyLdbMessageObject *self)
 	self->ob_type->tp_free(self);
 }
 
+static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
+			      PyLdbMessageObject *py_msg2)
+{
+	struct ldb_message *msg1 = PyLdbMessage_AsMessage(py_msg1),
+			   *msg2 = PyLdbMessage_AsMessage(py_msg2);
+	unsigned int i;
+	int ret;
+
+	ret = ldb_dn_compare(msg1->dn, msg2->dn);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = msg1->num_elements - msg2->num_elements;
+	if (ret != 0) {
+		return ret;
+	}
+
+	for (i = 0; i < msg1->num_elements; i++) {
+		ret = ldb_msg_element_compare_name(&msg1->elements[i],
+						   &msg2->elements[i]);
+		if (ret != 0) {
+			return ret;
+		}
+
+		ret = ldb_msg_element_compare(&msg1->elements[i],
+					      &msg2->elements[i]);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
 PyTypeObject PyLdbMessage = {
 	.tp_name = "ldb.Message",
 	.tp_methods = py_ldb_msg_methods,
@@ -2090,6 +2125,7 @@ PyTypeObject PyLdbMessage = {
 	.tp_repr = (reprfunc)py_ldb_msg_repr,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_iter = (getiterfunc)py_ldb_msg_iter,
+	.tp_compare = (cmpfunc)py_ldb_msg_compare,
 };
 
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
