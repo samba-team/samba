@@ -36,6 +36,7 @@
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -2826,6 +2827,19 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	char *p = NULL;
 	fstring user;
 	fstring pass1,pass2;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle;
+	struct lsa_String domain_name;
+	struct dom_sid2 *domain_sid;
+	struct lsa_String names;
+	struct samr_Ids rids;
+	struct samr_Ids types;
+	struct samr_Password old_lm_hash;
+	struct samr_Password new_lm_hash;
+	int errcode = NERR_badpass;
+	uint32_t rid;
 
 	/* Skip 2 strings. */
 	p = skip_string(param,tpscnt,np);
@@ -2866,59 +2880,130 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 
 	*rdata_len = 0;
 
-	SSVAL(*rparam,0,NERR_badpass);
-	SSVAL(*rparam,2,0);		/* converter word */
-
 	DEBUG(3,("Set password for <%s>\n",user));
 
-	/*
-	 * Attempt to verify the old password against smbpasswd entries
-	 * Win98 clients send old and new password in plaintext for this call.
-	 */
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(user_handle);
 
-	{
-		struct auth_serversupplied_info *server_info = NULL;
-		DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
-
-		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
-
-			become_root();
-			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2, False, NULL))) {
-				SSVAL(*rparam,0,NERR_Success);
-			}
-			unbecome_root();
-
-			TALLOC_FREE(server_info);
-		}
-		data_blob_clear_free(&password);
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+					rpc_samr_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_SetUserPassword: could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
-	/*
-	 * If the plaintext change failed, attempt
-	 * the old encrypted method. NT will generate this
-	 * after trying the samr method. Note that this
-	 * method is done as a last resort as this
-	 * password change method loses the NT password hash
-	 * and cannot change the UNIX password as no plaintext
-	 * is received.
-	 */
+	status = rpccli_samr_Connect2(cli, mem_ctx,
+				      global_myname(),
+				      SAMR_ACCESS_CONNECT_TO_SERVER |
+				      SAMR_ACCESS_ENUM_DOMAINS |
+				      SAMR_ACCESS_LOOKUP_DOMAIN,
+				      &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
 
-	if(SVAL(*rparam,0) != NERR_Success) {
-		struct samu *hnd = NULL;
+	init_lsa_String(&domain_name, get_global_sam_name());
 
-		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
-			become_root();
-			if (change_lanman_password(hnd,(uchar *)pass2)) {
-				SSVAL(*rparam,0,NERR_Success);
-			}
-			unbecome_root();
-			TALLOC_FREE(hnd);
-		}
+	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+					  &connect_handle,
+					  &domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	init_lsa_String(&names, user);
+
+	status = rpccli_samr_LookupNames(cli, mem_ctx,
+					 &domain_handle,
+					 1,
+					 &names,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	if (rids.count != 1) {
+		errcode = W_ERROR_V(WERR_NO_SUCH_USER);
+		goto out;
+	}
+	if (rids.count != types.count) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+	if (types.ids[0] != SID_NAME_USER) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
+	rid = rids.ids[0];
+
+	status = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_CHANGE_PASSWORD,
+				      rid,
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	E_deshash(pass1, old_lm_hash.hash);
+	E_deshash(pass2, new_lm_hash.hash);
+
+	status = rpccli_samr_ChangePasswordUser(cli, mem_ctx,
+						&user_handle,
+						true, /* lm_present */
+						&old_lm_hash,
+						&new_lm_hash,
+						false, /* nt_present */
+						NULL, /* old_nt_crypted */
+						NULL, /* new_nt_crypted */
+						false, /* cross1_present */
+						NULL, /* nt_cross */
+						false, /* cross2_present */
+						NULL); /* lm_cross */
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	errcode = NERR_Success;
+ out:
+
+	if (cli && is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	}
+	if (cli && is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	}
+	if (cli && is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
 	}
 
 	memset((char *)pass1,'\0',sizeof(fstring));
 	memset((char *)pass2,'\0',sizeof(fstring));	 
 
+	SSVAL(*rparam,0,errcode);
+	SSVAL(*rparam,2,0);		/* converter word */
 	return(True);
 }
 
