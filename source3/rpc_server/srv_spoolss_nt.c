@@ -2025,19 +2025,6 @@ done:
 }
 
 
-/****************************************************************************
- Internal routine for storing printerdata
- ***************************************************************************/
-
-WERROR set_printer_dataex(NT_PRINTER_INFO_LEVEL *printer,
-			  const char *key, const char *value,
-			  uint32_t type, uint8_t *data, int real_len)
-{
-	/* the registry objects enforce uniqueness based on value name */
-
-	return add_printer_data( printer->info_2, key, value, type, data, real_len );
-}
-
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
