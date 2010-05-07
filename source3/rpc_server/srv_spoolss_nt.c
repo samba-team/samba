@@ -1688,38 +1688,6 @@ static bool printer_info2_to_nt_printer_info2(struct spoolss_SetPrinterInfo2 *r,
 	return true;
 }
 
-/****************************************************************************
-****************************************************************************/
-
-static bool convert_printer_info(struct spoolss_SetPrinterInfoCtr *info_ctr,
-				 NT_PRINTER_INFO_LEVEL *printer)
-{
-	bool ret;
-
-	switch (info_ctr->level) {
-	case 2:
-		/* allocate memory if needed.  Messy because
-		   convert_printer_info is used to update an existing
-		   printer or build a new one */
-
-		if (!printer->info_2) {
-			printer->info_2 = TALLOC_ZERO_P(printer, NT_PRINTER_INFO_LEVEL_2);
-			if (!printer->info_2) {
-				DEBUG(0,("convert_printer_info: "
-					"talloc() failed!\n"));
-				return false;
-			}
-		}
-
-		ret = printer_info2_to_nt_printer_info2(info_ctr->info.info2,
-							printer->info_2);
-		printer->info_2->setuptime = time(NULL);
-		return ret;
-	}
-
-	return false;
-}
-
 /****************************************************************
  _spoolss_ClosePrinter
 ****************************************************************/
