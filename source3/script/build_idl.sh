@@ -25,7 +25,7 @@ for f in ${IDL_FILES}; do
 		list="$list $f"
 		break
 	    }
-	    [ $f -nt $PIDL_OUTPUTDIR/$o ] && {
+	    test "`find $f -newer $PIDL_OUTPUTDIR/$o`" = "" && {
 		list="$list $f"
 		break
 	    }
