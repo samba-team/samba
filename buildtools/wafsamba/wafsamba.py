@@ -662,6 +662,7 @@ def subst_at_vars(task):
     # split on the vars
     a = re.split('(@\w+@)', s)
     out = []
+    done_var = {}
     back_sub = [ ('PREFIX', '${prefix}'), ('EXEC_PREFIX', '${exec_prefix}')]
     for v in a:
         if re.match('@\w+@', v):
@@ -676,7 +677,12 @@ def subst_at_vars(task):
             for (b, m) in back_sub:
                 s = task.env[b]
                 if s == v[0:len(s)]:
-                    v = m + v[len(s):]
+                    if not b in done_var:
+                        # we don't want to substitute the first usage
+                        done_var[b] = True
+                    else:
+                        v = m + v[len(s):]
+                    break
         out.append(v)
     contents = ''.join(out)
     f = open(tgt, 'w')
