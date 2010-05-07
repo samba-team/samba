@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/cli_spoolss.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext

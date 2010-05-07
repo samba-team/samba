@@ -112,4 +112,37 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type);
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);
 
+/* The following definitions come from printing/printing.c  */
+
+int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob );
+uint32 sysjob_to_jobid(int unix_jobid);
+void pjob_delete(const char* sharename, uint32 jobid);
+bool print_notify_register_pid(int snum);
+bool print_notify_deregister_pid(int snum);
+bool print_job_exists(const char* sharename, uint32 jobid);
+int print_job_fd(const char* sharename, uint32 jobid);
+char *print_job_fname(const char* sharename, uint32 jobid);
+struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid);
+bool print_job_set_name(const char *sharename, uint32 jobid, const char *name);
+bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name);
+WERROR print_job_delete(struct auth_serversupplied_info *server_info,
+			int snum, uint32 jobid);
+bool print_job_pause(struct auth_serversupplied_info *server_info, int snum,
+		     uint32 jobid, WERROR *errcode);
+bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
+		      uint32 jobid, WERROR *errcode);
+ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
+int print_queue_length(int snum, print_status_struct *pstatus);
+WERROR print_job_start(struct auth_serversupplied_info *server_info,
+		       int snum, const char *docname, const char *filename,
+		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid);
+void print_job_endpage(int snum, uint32 jobid);
+NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
+int print_queue_status(int snum,
+		       print_queue_struct **ppqueue,
+		       print_status_struct *status);
+WERROR print_queue_pause(struct auth_serversupplied_info *server_info, int snum);
+WERROR print_queue_resume(struct auth_serversupplied_info *server_info, int snum);
+WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum);
+
 #endif /* PRINTING_H_ */
