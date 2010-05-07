@@ -178,7 +178,9 @@ def configure(conf):
     conf.env.AUTOCONF_HOST  = Options.options.AUTOCONF_HOST
     conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
 
-    if conf.env.AUTOCONF_BUILD != conf.env.AUTOCONF_HOST:
+    if (conf.env.AUTOCONF_HOST and
+        conf.env.AUTOCONF_BUILD and
+        conf.env.AUTOCONF_BUILD != conf.env.AUTOCONF_HOST):
         Logs.error('ERROR: Mismatch between --build and --host. Please use --cross-compile instead')
         sys.exit(1)
     if conf.env.AUTOCONF_PROGRAM_PREFIX:
