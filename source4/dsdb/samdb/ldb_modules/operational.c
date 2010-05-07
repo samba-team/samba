@@ -68,6 +68,7 @@
 #include "ldb_module.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
@@ -437,6 +438,62 @@ static int construct_msds_isrodc(struct ldb_module *module, struct ldb_message *
 	return LDB_SUCCESS;
 }
 
+
+/*
+  construct msDS-keyVersionNumber attr
+
+  TODO:  Make this based on the 'win2k' DS huristics bit...
+
+*/
+static int construct_msds_keyversionnumber(struct ldb_module *module, struct ldb_message *msg)
+{
+	uint32_t i;
+	enum ndr_err_code ndr_err;
+	const struct ldb_val *omd_value;
+	struct replPropertyMetaDataBlob *omd;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	omd_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
+	if (!omd_value) {
+		/* We can't make up a key version number without meta data */
+		return LDB_SUCCESS;
+	}
+	if (!omd_value) {
+		return LDB_SUCCESS;
+	}
+
+	omd = talloc(msg, struct replPropertyMetaDataBlob);
+	if (!omd) {
+		ldb_module_oom(module);
+		return LDB_SUCCESS;
+	}
+
+	ndr_err = ndr_pull_struct_blob(omd_value, omd,
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       omd,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s when trying to add msDS-KeyVersionNumber\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (omd->version != 1) {
+		DEBUG(0,(__location__ ": bad version %u in replPropertyMetaData for %s when trying to add msDS-KeyVersionNumber\n",
+			 omd->version, ldb_dn_get_linearized(msg->dn)));
+		talloc_free(omd);
+		return LDB_SUCCESS;
+	}
+	for (i=0; i<omd->ctr.ctr1.count; i++) {
+		if (omd->ctr.ctr1.array[i].attid == DRSUAPI_ATTRIBUTE_unicodePwd) {
+			ldb_msg_add_fmt(msg, "msDS-KeyVersionNumber", "%u", omd->ctr.ctr1.array[i].version);
+			break;
+		}
+	}
+	return LDB_SUCCESS;
+
+}
+
 /*
   a list of attribute names that should be substituted in the parse
   tree before the search is done
@@ -468,7 +525,8 @@ static const struct {
 	{ "tokenGroups", "objectSid", "primaryGroupID", construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
-	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc }
+	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc },
+	{ "msDS-KeyVersionNumber", "replPropertyMetaData", NULL, construct_msds_keyversionnumber }
 };
 
 
@@ -481,12 +539,15 @@ enum op_remove {
 /*
   a list of attributes that may need to be removed from the
   underlying db return
+
+  Some of these are attributes that were once stored, but are now calculated
 */
 static const struct {
 	const char *attr;
 	enum op_remove op;
 } operational_remove[] = {
 	{ "nTSecurityDescriptor",    OPERATIONAL_SD_FLAGS },
+	{ "msDS-KeyVersionNumber",   OPERATIONAL_REMOVE_ALWAYS  },
 	{ "parentGUID",              OPERATIONAL_REMOVE_ALWAYS  },
 	{ "replPropertyMetaData",    OPERATIONAL_REMOVE_UNASKED },
 	{ "unicodePwd",              OPERATIONAL_REMOVE_UNASKED },
@@ -505,7 +566,8 @@ static const struct {
 */
 static int operational_search_post_process(struct ldb_module *module,
 					   struct ldb_message *msg,
-					   const char * const *attrs,
+					   const char * const *attrs_from_user,
+					   const char * const *attrs_searched_for,
 					   bool sd_flags_set)
 {
 	struct ldb_context *ldb;
@@ -518,7 +580,10 @@ static int operational_search_post_process(struct ldb_module *module,
 	for (i=0; i<ARRAY_SIZE(operational_remove); i++) {
 		switch (operational_remove[i].op) {
 		case OPERATIONAL_REMOVE_UNASKED:
-			if (ldb_attr_in_list(attrs, operational_remove[i].attr)) {
+			if (ldb_attr_in_list(attrs_from_user, operational_remove[i].attr)) {
+				continue;
+			}
+			if (ldb_attr_in_list(attrs_searched_for, operational_remove[i].attr)) {
 				continue;
 			}
 		case OPERATIONAL_REMOVE_ALWAYS:
@@ -526,7 +591,7 @@ static int operational_search_post_process(struct ldb_module *module,
 			break;
 		case OPERATIONAL_SD_FLAGS:
 			if (sd_flags_set ||
-			    ldb_attr_in_list(attrs, operational_remove[i].attr)) {
+			    ldb_attr_in_list(attrs_from_user, operational_remove[i].attr)) {
 				continue;
 			}
 			ldb_msg_remove_attr(msg, operational_remove[i].attr);
@@ -534,9 +599,9 @@ static int operational_search_post_process(struct ldb_module *module,
 		}
 	}
 
-	for (a=0;attrs && attrs[a];a++) {
+	for (a=0;attrs_from_user && attrs_from_user[a];a++) {
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			if (ldb_attr_cmp(attrs[a], search_sub[i].attr) != 0) {
+			if (ldb_attr_cmp(attrs_from_user[a], search_sub[i].attr) != 0) {
 				continue;
 			}
 
@@ -559,16 +624,16 @@ static int operational_search_post_process(struct ldb_module *module,
 	 * - we generated constructed attributes and
 	 * - we aren't requesting all attributes
 	 */
-	if ((constructed_attributes) && (!ldb_attr_in_list(attrs, "*"))) {
+	if ((constructed_attributes) && (!ldb_attr_in_list(attrs_from_user, "*"))) {
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
 			/* remove the added search helper attributes, unless
 			 * they were asked for by the user */
 			if (search_sub[i].replace != NULL && 
-			    !ldb_attr_in_list(attrs, search_sub[i].replace)) {
+			    !ldb_attr_in_list(attrs_from_user, search_sub[i].replace)) {
 				ldb_msg_remove_attr(msg, search_sub[i].replace);
 			}
 			if (search_sub[i].extra_attr != NULL && 
-			    !ldb_attr_in_list(attrs, search_sub[i].extra_attr)) {
+			    !ldb_attr_in_list(attrs_from_user, search_sub[i].extra_attr)) {
 				ldb_msg_remove_attr(msg, search_sub[i].extra_attr);
 			}
 		}
@@ -579,7 +644,7 @@ static int operational_search_post_process(struct ldb_module *module,
 failed:
 	ldb_debug_set(ldb, LDB_DEBUG_WARNING,
 		      "operational_search_post_process failed for attribute '%s'",
-		      attrs[a]);
+		      attrs_from_user[a]);
 	return -1;
 }
 
@@ -619,6 +684,7 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 		ret = operational_search_post_process(ac->module,
 						      ares->message,
 						      ac->attrs,
+						      req->op.search.attrs,
 						      ac->sd_flags_set);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
