@@ -3222,7 +3222,7 @@ samba4-configure:
 
 .PHONY: samba4-configure
 
-bin/smbtorture4: samba4-configure
+bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
 	cd ../source4 && ../buildtools/bin/waf build --targets=smbtorture   
 	cp ../source4/bin/smbtorture bin/smbtorture4
 
