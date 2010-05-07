@@ -1653,41 +1653,6 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
-
-static bool printer_info2_to_nt_printer_info2(struct spoolss_SetPrinterInfo2 *r,
-					      NT_PRINTER_INFO_LEVEL_2 *d)
-{
-	DEBUG(7,("printer_info2_to_nt_printer_info2\n"));
-
-	if (!r || !d) {
-		return false;
-	}
-
-	d->attributes		= r->attributes;
-	d->priority		= r->priority;
-	d->default_priority	= r->defaultpriority;
-	d->starttime		= r->starttime;
-	d->untiltime		= r->untiltime;
-	d->status		= r->status;
-	d->cjobs		= r->cjobs;
-
-	fstrcpy(d->servername,	r->servername);
-	fstrcpy(d->printername, r->printername);
-	fstrcpy(d->sharename,	r->sharename);
-	fstrcpy(d->portname,	r->portname);
-	fstrcpy(d->drivername,	r->drivername);
-	slprintf(d->comment, sizeof(d->comment)-1, "%s", r->comment);
-	fstrcpy(d->location,	r->location);
-	fstrcpy(d->sepfile,	r->sepfile);
-	fstrcpy(d->printprocessor, r->printprocessor);
-	fstrcpy(d->datatype,	r->datatype);
-	fstrcpy(d->parameters,	r->parameters);
-
-	return true;
-}
-
 /****************************************************************
  _spoolss_ClosePrinter
 ****************************************************************/
