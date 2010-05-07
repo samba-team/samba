@@ -5241,7 +5241,7 @@ void reply_printwrite(struct smb_request *req)
                 return;
         }
 
-	if (!CAN_PRINT(conn)) {
+	if (!fsp->print_file) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		END_PROFILE(SMBsplwr);
 		return;
