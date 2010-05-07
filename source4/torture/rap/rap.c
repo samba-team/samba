@@ -1760,6 +1760,7 @@ NTSTATUS torture_rap_init(void)
 	torture_suite_add_suite(suite, suite_basic);
 	torture_suite_add_suite(suite, torture_rap_rpc(suite));
 	torture_suite_add_suite(suite, torture_rap_printing(suite));
+	torture_suite_add_suite(suite, torture_rap_sam(suite));
 
 	torture_suite_add_1smb_test(suite_basic, "netserverenum", 
 				    test_netserverenum);
