@@ -1815,21 +1815,6 @@ bool print_job_exists(const char* sharename, uint32 jobid)
 }
 
 /****************************************************************************
- Give the fd used for a jobid.
-****************************************************************************/
-
-int print_job_fd(const char* sharename, uint32 jobid)
-{
-	struct printjob *pjob = print_job_find(sharename, jobid);
-	if (!pjob)
-		return -1;
-	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != sys_getpid())
-		return -1;
-	return pjob->fd;
-}
-
-/****************************************************************************
  Give the filename used for a jobid.
  Only valid for the process doing the spooling and when the job
  has not been spooled.

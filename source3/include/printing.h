@@ -120,7 +120,6 @@ void pjob_delete(const char* sharename, uint32 jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
 bool print_job_exists(const char* sharename, uint32 jobid);
-int print_job_fd(const char* sharename, uint32 jobid);
 char *print_job_fname(const char* sharename, uint32 jobid);
 struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid);
 bool print_job_set_name(const char *sharename, uint32 jobid, const char *name);
