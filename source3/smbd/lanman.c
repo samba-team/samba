@@ -2936,10 +2936,19 @@ static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	fstring user;
 	char *p = get_safe_str_ptr(param,tpscnt,param,2);
-	*rparam_len = 2;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct lsa_AsciiString server, account;
+	struct samr_CryptPassword password;
+	struct samr_Password hash;
+	int errcode = NERR_badpass;
+	int bufsize;
+
+	*rparam_len = 4;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
 		return False;
@@ -2989,16 +2998,47 @@ static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 
 	DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-
-	(void)map_username(sconn, user);
-
-	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL, NULL))) {
-		SSVAL(*rparam,0,NERR_Success);
+	if (tdscnt != 532) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
 	}
+
+	bufsize = get_safe_SVAL(param,tpscnt,p,0,-1);
+	if (bufsize != 532) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
+	memcpy(password.data, data, 516);
+	memcpy(hash.hash, data+516, 16);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+					rpc_samr_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_SamOEMChangePassword: could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	init_lsa_AsciiString(&server, global_myname());
+	init_lsa_AsciiString(&account, user);
+
+	status = rpccli_samr_OemChangePasswordUser2(cli, mem_ctx,
+						    &server,
+						    &account,
+						    &password,
+						    &hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	errcode = NERR_Success;
+ out:
+	SSVAL(*rparam,0,errcode);
+	SSVAL(*rparam,2,0);		/* converter word */
 
 	return(True);
 }
