@@ -817,14 +817,18 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 # made on the current host
                 att = hash_oid_name[samdb.get_oid_from_attid(o.attid)]
                 if str(o.originating_invocation_id) == str(invocationid):
+                # Note we could just use 1 here
                     hash_attr_usn[att] = o.originating_usn
                 else:
                     hash_attr_usn[att] = -1
 
         isFirst = 0
         txt = ""
+
         for att in delta:
             if usns != None:
+                # We have updated by provision usn information so let's exploit
+                # replMetadataProperties
                 if forwardlinked.has_key(att):
                     handle_links(samdb, att, basedn, current[0]["dn"],
                                     current[0][att], reference[0][att], delta)
@@ -833,6 +837,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                     isFirst = 1
                     txt = "%s\n" % (str(dn))
                 if att == "dn":
+                    # There is always a dn attribute after a msg_diff
                     continue
                 if att == "rIDAvailablePool":
                     delta.remove(att)
@@ -847,6 +852,8 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                     delta.remove(att)
                     continue
                 if att == "msDs-KeyVersionNumber":
+                # This is the kvno of the computer/user it's a very bad
+                # idea to change it
                     delta.remove(att)
                     continue
                 if handle_special_case(att, delta, reference, current, usns):
@@ -1354,12 +1361,145 @@ def updateOEMInfo(samdb, names):
 def setup_path(file):
     return os.path.join(setup_dir, file)
 
+# Synopsis for updateprovision
+# 1) get path related to provision to be update (called current)
+# 2) open current provision ldbs
+# 3) fetch the key provision parameter (domain sid, domain guid, invocationid
+#    of the DC ....)
+# 4) research of lastProvisionUSN in order to get ranges of USN modified
+#    by either upgradeprovision or provision
+# 5) creation of a new provision the latest version of provision script
+#    (called reference)
+# 6) get reference provision paths
+# 7) open reference provision ldbs
+# 8) setup helpers data that will help the update process
+# 9) update the privilege ldb by copying the one of referecence provision to
+#    the current provision
+# 10)get the oemInfo field, this field contains information about the different
+#    provision that have been done
+# 11)Depending  on whether oemInfo has the string "alpha9" or alphaxx (x as an
+#    integer) or none of this the following things are done
+#    A) When alpha9 or alphaxx is present
+#       The base sam.ldb file is updated by looking at the difference between
+#       referrence one and the current one. Everything is copied with the
+#       exception of lastProvisionUSN attributes. The highest used USN
+#       is fetched so that changed by upgradeprovision usn can be tracked
+#    B) Other case (it reflect that that provision was done before alpha9)
+#       The base sam.ldb of the reference provision is copied over
+#       the current one, if necessary ldb related to partitions are moved
+#       and renamed
+# 12)A Schema object is created, it will be used to provide a complete
+#    schema to current provision during update (as the schema of the
+#    current provision might not be complete and so won't allow some
+#    object to be created)
+# 13)Proceed to full update of sam DB (see the separate paragraph about i)
+# 14)The secrets db is updated by pull all the difference from the reference
+#    provision into the current provision
+# 15)As the previous step has most probably modified the password stored in
+#    in secret for the current DC, a new password is generated,
+#    the kvno is bumped and the entry in samdb is also updated
+# 16)For current provision older than alpha9, we must fix the SD a little bit
+#    administrator to update them because SD used to be generated with the
+#    system account before alpha9.
+# 17)The highest usn modified so far is searched in the database it will be
+#    the upper limit for usn modified during provision.
+#    This is done before potential SD recalculation because we do not want
+#    SD modified during recalculation to be marked as modified during provision
+#    (and so possibly remplaced at next upgradeprovision)
+# 18)Rebuilt SD if the flag indicate to do so
+# 19)Check difference between SD of reference provision and those of the
+#    current provision. The check is done by getting the sddl representation
+#    of the SD. Each sddl in chuncked into parts (user,group,dacl,sacl)
+#    Each part is verified separetly, for dacl and sacl ACL is splited into
+#    ACEs and each ACE is verified separately (so that a permutation in ACE
+#    didn't raise as an error).
+# 20)The oemInfo field is updated to add information about the fact that the
+#    provision has been updated by the upgradeprovision version xxx
+#    (the version is the one obtained when starting samba with the --version
+#    parameter)
+# 21)Check if the current provision has all the settings needed for dynamic
+#    DNS update to work (that is to say the provision is newer than
+#    january 2010). If not dns configuration file from reference provision
+#    are copied in a sub folder and the administrator is invited to
+#    do what is needed.
+# 22)If the lastProvisionUSN attribute was present it is updated to add
+#    the range of usns modified by the current upgradeprovision
+
+
+# About updating the sam DB
+# The update takes place in update_partition function
+# This function read both current and reference provision and list all
+# the available DN of objects
+# If the string representation of a DN in reference provision is
+# equal to the string representation of a DN in current provision
+# (without taking care of case) then the object is flaged as being
+# present. If the object is not present in current provision the object
+# is being flaged as missing in current provision. Object present in current
+# provision but not in reference provision are ignored.
+# Once the list of objects present and missing is done, the deleted object
+# containers are created in the differents partitions (if missing)
+#
+# Then the function add_missing_entries is called
+# This function will go through the list of missing entries by calling
+# add_missing_object for the given object. If this function returns 0
+# it means that the object needs some other object in order to be created
+# The object is reappended at the end of the list to be created later
+# (and preferably after all the needed object have been created)
+# The function keeps on looping on the list of object to be created until
+# it's empty or that the number of defered creation is equal to the number
+# of object that still needs to be created.
+
+# The function add_missing_object will first check if the object can be created.
+# That is to say that it didn't depends other not yet created objects
+# If requisit can't be fullfilled it exists with 0
+# Then it will try to create the missing entry by creating doing
+# an ldb_message_diff between the object in the reference provision and
+# an empty object.
+# This resulting object is filtered to remove all the back link attribute
+# (ie. memberOf) as they will be created by the other linked object (ie.
+# the one with the member attribute)
+# All attributes specified in the hashAttrNotCopied associative array are
+# also removed it's most of the time generated attributes
+
+# After missing entries have been added the update_partition function will
+# take care of object that exist but that need some update.
+# In order to do so the function update_present is called with the list
+# of object that are present in both provision and that might need an update.
+
+# This function handle first case mismatch so that the DN in the current
+# provision have the same case as in reference provision
+
+# It will then construct an associative array consiting of attributes as
+# key and invocationid as value( if the originating invocation id is
+# different from the invocation id of the current DC the value is -1 instead).
+
+# If the range of provision modified attributes is present, the function will
+# use the replMetadataProperty update method which is the following:
+#  Removing attributes that should not be updated: rIDAvailablePool, objectSid,
+#   creationTime, msDs-KeyVersionNumber, oEMInformation
+#  Check for each attribute if its usn is within one of the modified by
+#   provision range and if its originating id is the invocation id of the
+#   current DC, then validate the update from reference to current.
+#   If not or if there is no replMetatdataProperty for this attribute then we
+#   do not update it.
+# Otherwise (case the range of provision modified attribute is not present) it
+# use the following process:
+#  All attributes that need to be added are accepted at the exeption of those
+#   listed in hashOverwrittenAtt, in this case the attribute needs to have the
+#   correct flags specified.
+#  For attributes that need to be modified or removed, a check is performed
+#  in OverwrittenAtt, if the attribute is present and the modification flag
+#  (remove, delete) is one of those listed for this attribute then modification
+#  is accepted. For complicated handling of attribute update, the control is passed
+#  to handle_special_case
+
+
 
 if __name__ == '__main__':
     global defSDmodified
     defSDmodified = 0
     # From here start the big steps of the program
-    # First get files paths
+    # 1) First get files paths
     paths = get_paths(param, smbconf=smbconf)
     paths.setup = setup_dir
     # Get ldbs with the system session, it is needed for searching
@@ -1368,14 +1508,15 @@ if __name__ == '__main__':
 
     # This variable will hold the last provision USN once if it exists.
     minUSN = 0
-
+    # 2)
     ldbs = get_ldbs(paths, creds, session, lp)
     ldbs.startTransactions()
 
-    # Guess all the needed names (variables in fact) from the current
+    # 3) Guess all the needed names (variables in fact) from the current
     # provision.
     names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, paths,
                                             smbconf, lp)
+    # 4)
     lastProvisionUSNs = getLastProvisionUSN(ldbs.sam)
     if lastProvisionUSNs != None:
         message(CHANGE,
@@ -1404,6 +1545,7 @@ if __name__ == '__main__':
                     provision_logger)
 
     # TODO
+    # 6) and 7)
     # We need to get a list of object which SD is directly computed from
     # defaultSecurityDescriptor.
     # This will allow us to know which object we can rebuild the SD in case
@@ -1413,17 +1555,20 @@ if __name__ == '__main__':
     new_ldbs = get_ldbs(newpaths, creds, session, lp)
     new_ldbs.startTransactions()
 
-    # Populate some associative array to ease the update process
+    # 8) Populate some associative array to ease the update process
     # List of attribute which are link and backlink
     populate_links(new_ldbs.sam, names.schemadn)
     # List of attribute with ASN DN synthax)
     populate_dnsyntax(new_ldbs.sam, names.schemadn)
-
+    # 9)
     update_privilege(newpaths.private_dir, paths.private_dir)
+    # 10)
     oem = getOEMInfo(ldbs.sam, names.rootdn)
     # Do some modification on sam.ldb
     ldbs.groupedCommit()
+    # 11)
     if re.match(".*alpha((9)|(\d\d+)).*", str(oem)):
+        # 11) A
         # Starting from alpha9 we can consider that the structure is quite ok
         # and that we should do only dela
         new_ldbs.groupedCommit()
@@ -1432,14 +1577,16 @@ if __name__ == '__main__':
         minUSN = get_max_usn(ldbs.sam, str(names.rootdn)) + 1
         new_ldbs.startTransactions()
     else:
+        # 11) B
         simple_update_basesamdb(newpaths, paths, names)
         ldbs = get_ldbs(paths, creds, session, lp)
         ldbs.startTransactions()
         removeProvisionUSN(ldbs.sam)
 
+    # 12)
     schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn),
                     serverdn=str(names.serverdn))
-
+    # 13)
     if opts.full:
         if not update_samdb(new_ldbs.sam, ldbs.sam, names, lastProvisionUSNs,
                             schema):
@@ -1451,11 +1598,12 @@ if __name__ == '__main__':
             new_ldbs.groupedRollback()
             shutil.rmtree(provisiondir)
             sys.exit(1)
-
+    # 14)
     update_secrets(new_ldbs.secrets, ldbs.secrets)
+    # 15)
     update_machine_account_password(ldbs.sam, ldbs.secrets, names)
 
-    # SD should be created with admin but as some previous acl were so wrong
+    # 16) SD should be created with admin but as some previous acl were so wrong
     # that admin can't modify them we have first to recreate them with the good
     # form but with system account and then give the ownership to admin ...
     if not re.match(r'.*alpha(9|\d\d+)', str(oem)):
@@ -1468,9 +1616,10 @@ if __name__ == '__main__':
     # want that the next upgradeprovision thinks that it has a green light
     # to modify them
 
+    # 17)
     maxUSN = get_max_usn(ldbs.sam, str(names.rootdn))
 
-    # We rebuild SD only if defaultSecurityDescriptor is modified
+    # 18) We rebuild SD only if defaultSecurityDescriptor is modified
     # But in fact we should do it also if one object has its SD modified as
     # child might need rebuild
     if defSDmodified == 1:
@@ -1481,6 +1630,7 @@ if __name__ == '__main__':
             fix_partition_sd(ldbs.sam, names)
         rebuild_sd(ldbs.sam, names)
 
+    # 19)
     # Now we are quite confident in the recalculate process of the SD, we make
     # it optional.
     # Also the check must be done in a clever way as for the moment we just
@@ -1488,8 +1638,11 @@ if __name__ == '__main__':
     if opts.debugchangesd:
         check_updated_sd(new_ldbs.sam, ldbs.sam, names)
 
+    # 20)
     updateOEMInfo(ldbs.sam, names)
+    # 21)
     check_for_DNS(newpaths.private_dir, paths.private_dir)
+    # 22)
     if lastProvisionUSNs != None:
         updateProvisionUSN(ldbs.sam, minUSN, maxUSN)
     ldbs.groupedCommit()
