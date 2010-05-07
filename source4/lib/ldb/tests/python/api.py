@@ -509,6 +509,25 @@ class LdbMsgTests(unittest.TestCase):
         self.assertRaises(KeyError, lambda: msgdiff["foo"])
         self.assertEquals(1, len(msgdiff))
 
+    def test_equal_empty(self):
+        msg1 = ldb.Message()
+        msg2 = ldb.Message()
+        self.assertEquals(msg1, msg2)
+
+    def test_equal_simplel(self):
+        db = ldb.Ldb("foo.tdb")
+        msg1 = ldb.Message()
+        msg1.dn = ldb.Dn(db, "foo=bar")
+        msg2 = ldb.Message()
+        msg2.dn = ldb.Dn(db, "foo=bar")
+        self.assertEquals(msg1, msg2)
+        msg1['foo'] = 'bar'
+        msg2['foo'] = 'bar'
+        self.assertEquals(msg1, msg2)
+        msg2['foo'] = 'blie'
+        self.assertNotEquals(msg1, msg2)
+        msg2['foo'] = 'blie'
+
 
 
 class MessageElementTests(unittest.TestCase):
