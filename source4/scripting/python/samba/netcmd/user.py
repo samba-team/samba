@@ -29,7 +29,7 @@ from samba.netcmd import (
 
 class cmd_user_add(Command):
     """Create a new user."""
-    synopsis = "%prog user add <name>"
+    synopsis = "%prog user add <name> [<password>]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -37,13 +37,15 @@ class cmd_user_add(Command):
         "versionopts": options.VersionOptions,
         }
 
-    takes_args = ["name"]
+    takes_args = ["name", "password?"]
 
-    def run(self, name, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, name, password=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp)
         net.create_user(name)
+        if password is not None:
+            net.set_password(name, creds.get_domain(), password, creds)
 
 
 class cmd_user_delete(Command):
