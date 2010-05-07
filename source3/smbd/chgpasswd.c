@@ -49,14 +49,6 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 
-static NTSTATUS check_oem_password(const char *user,
-				   uchar password_encrypted_with_lm_hash[516],
-				   const uchar old_lm_hash_encrypted[16],
-				   uchar password_encrypted_with_nt_hash[516],
-				   const uchar old_nt_hash_encrypted[16],
-				   struct samu *sampass,
-				   char **pp_new_passwd);
-
 #if ALLOW_CHANGE_PASSWORD
 
 static int findpty(char **slave)
@@ -635,197 +627,6 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 #endif /* ALLOW_CHANGE_PASSWORD */
 
 /***********************************************************
- Code to check the lanman hashed password.
-************************************************************/
-
-bool check_lanman_password(char *user, uchar * pass1,
-			   uchar * pass2, struct samu **hnd)
-{
-	uchar unenc_new_pw[16];
-	uchar unenc_old_pw[16];
-	struct samu *sampass = NULL;
-	uint32 acct_ctrl;
-	const uint8 *lanman_pw;
-	bool ret;
-
-	if ( !(sampass = samu_new(NULL)) ) {
-		DEBUG(0, ("samu_new() failed!\n"));
-		return False;
-	}
-
-	become_root();
-	ret = pdb_getsampwnam(sampass, user);
-	unbecome_root();
-
-	if (ret == False) {
-		DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	acct_ctrl = pdb_get_acct_ctrl     (sampass);
-	lanman_pw = pdb_get_lanman_passwd (sampass);
-
-	if (acct_ctrl & ACB_DISABLED) {
-		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	if (lanman_pw == NULL) {
-		if (acct_ctrl & ACB_PWNOTREQ) {
-			/* this saves the pointer for the caller */
-			*hnd = sampass;
-			return True;
-		} else {
-			DEBUG(0, ("check_lanman_password: no lanman password !\n"));
-			TALLOC_FREE(sampass);
-			return False;
-		}
-	}
-
-	/* Get the new lanman hash. */
-	D_P16(lanman_pw, pass2, unenc_new_pw);
-
-	/* Use this to get the old lanman hash. */
-	D_P16(unenc_new_pw, pass1, unenc_old_pw);
-
-	/* Check that the two old passwords match. */
-	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
-		DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	/* this saves the pointer for the caller */
-	*hnd = sampass;
-	return True;
-}
-
-/***********************************************************
- Code to change the lanman hashed password.
- It nulls out the NT hashed password as it will
- no longer be valid.
- NOTE this function is designed to be called as root. Check the old password
- is correct before calling. JRA.
-************************************************************/
-
-bool change_lanman_password(struct samu *sampass, uchar *pass2)
-{
-	uchar null_pw[16];
-	uchar unenc_new_pw[16];
-	bool ret;
-	uint32 acct_ctrl;
-	const uint8 *pwd;
-
-	if (sampass == NULL) {
-		DEBUG(0,("change_lanman_password: no smb password entry.\n"));
-		return False;
-	}
-
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	pwd = pdb_get_lanman_passwd(sampass);
-
-	if (acct_ctrl & ACB_DISABLED) {
-		DEBUG(0,("change_lanman_password: account %s disabled.\n",
-		       pdb_get_username(sampass)));
-		return False;
-	}
-
-	if (pwd == NULL) { 
-		if (acct_ctrl & ACB_PWNOTREQ) {
-			uchar no_pw[14];
-
-			ZERO_STRUCT(no_pw);
-
-			E_P16(no_pw, null_pw);
-
-			pwd = null_pw;
-		} else {
-			DEBUG(0,("change_lanman_password: no lanman password !\n"));
-			return False;
-		}
-	}
-
-	/* Get the new lanman hash. */
-	D_P16(pwd, pass2, unenc_new_pw);
-
-	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw, PDB_CHANGED)) {
-		return False;
-	}
-
-	if (!pdb_set_nt_passwd    (sampass, NULL, PDB_CHANGED)) {
-		return False;	/* We lose the NT hash. Sorry. */
-	}
-
-	if (!pdb_set_pass_last_set_time  (sampass, time(NULL), PDB_CHANGED)) {
-		TALLOC_FREE(sampass);
-		/* Not quite sure what this one qualifies as, but this will do */
-		return False;
-	}
-
-	/* Now flush the sam_passwd struct to persistent storage */
-	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
-
-	return ret;
-}
-
-/***********************************************************
- Code to check and change the OEM hashed password.
-************************************************************/
-
-NTSTATUS pass_oem_change(char *user,
-			 uchar password_encrypted_with_lm_hash[516],
-			 const uchar old_lm_hash_encrypted[16],
-			 uchar password_encrypted_with_nt_hash[516],
-			 const uchar old_nt_hash_encrypted[16],
-			 enum samPwdChangeReason *reject_reason)
-{
-	char *new_passwd = NULL;
-	struct samu *sampass = NULL;
-	NTSTATUS nt_status;
-	bool ret = false;
-
-	if (!(sampass = samu_new(NULL))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwnam(sampass, user);
-	unbecome_root();
-
-	if (ret == false) {
-		DEBUG(0,("pass_oem_change: getsmbpwnam returned NULL\n"));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	nt_status = check_oem_password(user,
-				       password_encrypted_with_lm_hash,
-				       old_lm_hash_encrypted,
-				       password_encrypted_with_nt_hash,
-				       old_nt_hash_encrypted,
-				       sampass,
-				       &new_passwd);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(sampass);
-		return nt_status;
-	}
-
-	/* We've already checked the old password here.... */
-	become_root();
-	nt_status = change_oem_password(sampass, NULL, new_passwd, True, reject_reason);
-	unbecome_root();
-
-	memset(new_passwd, 0, strlen(new_passwd));
-
-	TALLOC_FREE(sampass);
-
-	return nt_status;
-}
-
-/***********************************************************
  Decrypt and verify a user password change.
 
  The 516 byte long buffers are encrypted with the old NT and
@@ -1010,9 +811,9 @@ static NTSTATUS check_oem_password(const char *user,
 	return NT_STATUS_WRONG_PASSWORD;
 }
 
-bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
-			 uint32_t pw_history_len,
-			 const uint8_t *pw_history)
+static bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
+				uint32_t pw_history_len,
+				const uint8_t *pw_history)
 {
 	static const uint8_t zero_md5_nt_pw[SALTED_MD5_HASH_LEN] = { 0, };
 	int i;
@@ -1157,7 +958,7 @@ NTSTATUS check_password_complexity(const char *username,
  is correct before calling. JRA.
 ************************************************************/
 
-NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason)
+static NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason)
 {
 	uint32 min_len;
 	uint32 refuse;
@@ -1263,4 +1064,59 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 	/* Now write it into the file. */
 	return pdb_update_sam_account (hnd);
+}
+
+/***********************************************************
+ Code to check and change the OEM hashed password.
+************************************************************/
+
+NTSTATUS pass_oem_change(char *user,
+			 uchar password_encrypted_with_lm_hash[516],
+			 const uchar old_lm_hash_encrypted[16],
+			 uchar password_encrypted_with_nt_hash[516],
+			 const uchar old_nt_hash_encrypted[16],
+			 enum samPwdChangeReason *reject_reason)
+{
+	char *new_passwd = NULL;
+	struct samu *sampass = NULL;
+	NTSTATUS nt_status;
+	bool ret = false;
+
+	if (!(sampass = samu_new(NULL))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	ret = pdb_getsampwnam(sampass, user);
+	unbecome_root();
+
+	if (ret == false) {
+		DEBUG(0,("pass_oem_change: getsmbpwnam returned NULL\n"));
+		TALLOC_FREE(sampass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	nt_status = check_oem_password(user,
+				       password_encrypted_with_lm_hash,
+				       old_lm_hash_encrypted,
+				       password_encrypted_with_nt_hash,
+				       old_nt_hash_encrypted,
+				       sampass,
+				       &new_passwd);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(sampass);
+		return nt_status;
+	}
+
+	/* We've already checked the old password here.... */
+	become_root();
+	nt_status = change_oem_password(sampass, NULL, new_passwd, True, reject_reason);
+	unbecome_root();
+
+	memset(new_passwd, 0, strlen(new_passwd));
+
+	TALLOC_FREE(sampass);
+
+	return nt_status;
 }

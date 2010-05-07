@@ -5369,24 +5369,15 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 
 bool chgpasswd(const char *name, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root);
-bool chgpasswd(const char *name, const struct passwd *pass, 
-	       const char *oldpass, const char *newpass, bool as_root);
-bool check_lanman_password(char *user, uchar * pass1,
-			   uchar * pass2, struct samu **hnd);
-bool change_lanman_password(struct samu *sampass, uchar *pass2);
 NTSTATUS pass_oem_change(char *user,
 			 uchar password_encrypted_with_lm_hash[516],
 			 const uchar old_lm_hash_encrypted[16],
 			 uchar password_encrypted_with_nt_hash[516],
 			 const uchar old_nt_hash_encrypted[16],
 			 enum samPwdChangeReason *reject_reason);
-bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
-			 uint32_t pw_history_len,
-			 const uint8_t *pw_history);
 NTSTATUS check_password_complexity(const char *username,
 				   const char *password,
 				   enum samPwdChangeReason *samr_reject_reason);
-NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason);
 
 /* The following definitions come from smbd/close.c  */
 
