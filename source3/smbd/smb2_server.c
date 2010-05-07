@@ -1097,10 +1097,18 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	case SMB2_OP_LOCK:
 		if (!NT_STATUS_IS_OK(session_status)) {
+			/* Too ugly to live ? JRA. */
+			if (NT_STATUS_EQUAL(session_status,NT_STATUS_USER_SESSION_DELETED)) {
+				session_status = NT_STATUS_FILE_CLOSED;
+			}
 			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
+			/* Too ugly to live ? JRA. */
+			if (NT_STATUS_EQUAL(status,NT_STATUS_NETWORK_NAME_DELETED)) {
+				status = NT_STATUS_FILE_CLOSED;
+			}
 			return smbd_smb2_request_error(req, status);
 		}
 		return smbd_smb2_request_process_lock(req);

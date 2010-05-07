@@ -320,7 +320,8 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint32_t blocking_pid);
 void process_blocking_lock_queue_smb2(struct timeval tv_curr);
 void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
-			struct byte_range_lock *br_lck);
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type);
 /* From smbd/smb2_create.c */
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
 uint8_t map_samba_oplock_levels_to_smb2(int oplock_type);

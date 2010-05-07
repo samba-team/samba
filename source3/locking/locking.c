@@ -396,7 +396,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 ****************************************************************************/
 
 void locking_close_file(struct messaging_context *msg_ctx,
-			files_struct *fsp)
+			files_struct *fsp,
+			enum file_close_type close_type)
 {
 	struct byte_range_lock *br_lck;
 
@@ -415,7 +416,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 	br_lck = brl_get_locks(talloc_tos(),fsp);
 
 	if (br_lck) {
-		cancel_pending_lock_requests_by_fid(fsp, br_lck);
+		cancel_pending_lock_requests_by_fid(fsp, br_lck, close_type);
 		brl_close_fnum(msg_ctx, br_lck);
 		TALLOC_FREE(br_lck);
 	}

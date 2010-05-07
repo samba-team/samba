@@ -571,13 +571,17 @@ static bool blocking_lock_record_process(struct blocking_lock_record *blr)
  Called when a file is closed.
 *****************************************************************************/
 
-void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck)
+void cancel_pending_lock_requests_by_fid(files_struct *fsp,
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *blr_cancelled, *next = NULL;
 
 	if (sconn->allow_smb2) {
-		cancel_pending_lock_requests_by_fid_smb2(fsp, br_lck);
+		cancel_pending_lock_requests_by_fid_smb2(fsp,
+					br_lck,
+					close_type);
 		return;
 	}
 

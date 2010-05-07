@@ -840,7 +840,8 @@ void process_blocking_lock_queue_smb2(struct timeval tv_curr)
 ****************************************************************************/
 
 void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
-			struct byte_range_lock *br_lck)
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_smb2_request *smb2req, *nextreq;
@@ -904,6 +905,11 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 				blr);
 
 		/* Finally end the request. */
-		tevent_req_nterror(smb2req->subreq, NT_STATUS_RANGE_NOT_LOCKED);
+		if (close_type == SHUTDOWN_CLOSE) {
+			tevent_req_done(smb2req->subreq);
+		} else {
+			tevent_req_nterror(smb2req->subreq,
+				NT_STATUS_RANGE_NOT_LOCKED);
+		}
 	}
 }

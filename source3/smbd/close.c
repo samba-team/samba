@@ -623,7 +623,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		status = ntstatus_keeperror(status, tmp);
 	}
 
-	locking_close_file(smbd_messaging_context(), fsp);
+	locking_close_file(smbd_messaging_context(), fsp, close_type);
 
 	tmp = fd_close(fsp);
 	status = ntstatus_keeperror(status, tmp);

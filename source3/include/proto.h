@@ -3473,7 +3473,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			enum brl_flavour lock_flav,
 			struct blocking_lock_record *blr);
 void locking_close_file(struct messaging_context *msg_ctx,
-			files_struct *fsp);
+			files_struct *fsp,
+			enum file_close_type close_type);
 bool locking_init(void);
 bool locking_init_readonly(void);
 bool locking_end(void);
@@ -6002,7 +6003,9 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t offset,
 		uint64_t count,
 		uint32 blocking_pid);
-void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck);
+void cancel_pending_lock_requests_by_fid(files_struct *fsp,
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type);
 void remove_pending_lock_requests_by_mid_smb1(uint64_t mid);
 bool blocking_lock_was_deferred_smb1(uint64_t mid);
 struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
