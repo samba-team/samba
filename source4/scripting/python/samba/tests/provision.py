@@ -27,6 +27,19 @@ def setup_path(file):
     return os.path.join(setup_dir, file)
 
 
+def create_dummy_secretsdb(path, lp=None):
+    """Create a dummy secrets database for use in tests.
+
+    :param path: Path to store the secrets db
+    :param lp: Optional loadparm context. A simple one will
+        be generated if not specified.
+    """
+    if lp is None:
+        lp = env_loadparm()
+    secrets_ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
+    secrets_ldb.transaction_commit()
+    return secrets_ldb
+
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     """Some simple tests for individual functions in the provisioning code.
     """
