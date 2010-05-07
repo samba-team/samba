@@ -181,6 +181,13 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 		/* SMB2 */
 		if (sconn->smb2.sessions.list &&
 				sconn->smb2.sessions.list->tcons.list) {
+			struct smbd_smb2_tcon *tcon, *tc_next;
+
+			for (tcon = sconn->smb2.sessions.list->tcons.list;
+					tcon; tcon = tc_next) {
+				tc_next = tcon->next;
+				TALLOC_FREE(tcon);
+			}
 			return true;
 		}
 		return false;

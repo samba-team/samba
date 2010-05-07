@@ -128,6 +128,7 @@ static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
 	DLIST_REMOVE(tcon->session->tcons.list, tcon);
 
 	if (tcon->compat_conn) {
+		set_current_service(tcon->compat_conn, 0, true);
 		close_cnum(tcon->compat_conn, tcon->session->vuid);
 	}
 
