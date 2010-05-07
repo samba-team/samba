@@ -14,6 +14,9 @@ uninstall:
 test:
 	$(WAF) test
 
+testenv:
+	$(WAF) test --testenv
+
 quicktest:
 	$(WAF) test --quick
 
