@@ -59,11 +59,6 @@
  * Once this is done (which could update anything at all), we
  * calculate the password hashes.
  *
- * This function must not only update the unicodePwd, dBCSPwd and
- * supplementalCredentials fields, it must also atomicly increment the
- * msDS-KeyVersionNumber.  We should be in a transaction, so all this
- * should be quite safe...
- *
  * Finally, if the administrator has requested that a password history
  * be maintained, then this should also be written out.
  *
@@ -121,7 +116,6 @@ struct setup_password_fields_io {
 		struct samr_Password *lm_history;
 		const struct ldb_val *supplemental;
 		struct supplementalCredentialsBlob scb;
-		uint32_t kvno;
 	} o;
 
 	/* generated credentials */
@@ -139,7 +133,6 @@ struct setup_password_fields_io {
 		DATA_BLOB des_crc;
 		struct ldb_val supplemental;
 		NTTIME last_set;
-		uint32_t kvno;
 	} g;
 };
 
@@ -1291,14 +1284,6 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
-static int setup_kvno_field(struct setup_password_fields_io *io)
-{
-	/* increment by one */
-	io->g.kvno = io->o.kvno + 1;
-
-	return LDB_SUCCESS;
-}
-
 static int setup_password_fields(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
@@ -1417,11 +1402,6 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	}
 
 	ret = setup_last_set_field(io);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = setup_kvno_field(io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1788,8 +1768,6 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	ldb_msg_remove_attr(msg, "unicodePwd");
 	ldb_msg_remove_attr(msg, "dBCSPwd");
 	ldb_msg_remove_attr(msg, "pwdLastSet");
-	io.o.kvno = samdb_result_uint(msg, "msDs-KeyVersionNumber", 1) - 1;
-	ldb_msg_remove_attr(msg, "msDs-KeyVersionNumber");
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -1840,12 +1818,6 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	ret = samdb_msg_add_uint64(ldb, ac, msg,
 				   "pwdLastSet",
 				   io.g.last_set);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	ret = samdb_msg_add_uint(ldb, ac, msg,
-				 "msDs-KeyVersionNumber",
-				 io.g.kvno);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2070,7 +2042,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "userAccountControl", "lmPwdHistory", 
 					      "ntPwdHistory", 
-					      "objectSid", "msDS-KeyVersionNumber", 
+					      "objectSid",
 					      "objectClass", "userPrincipalName",
 					      "sAMAccountName", 
 					      "dBCSPwd", "unicodePwd",
@@ -2129,7 +2101,6 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	searched_msg = ac->search_res->message;
 
 	/* Fill in some final details (only relevent once the password has been set) */
-	io.o.kvno			= samdb_result_uint(searched_msg, "msDs-KeyVersionNumber", 0);
 	io.o.nt_history_len		= samdb_result_hashes(io.ac, searched_msg, "ntPwdHistory", &io.o.nt_history);
 	io.o.lm_history_len		= samdb_result_hashes(io.ac, searched_msg, "lmPwdHistory", &io.o.lm_history);
 	io.o.supplemental		= ldb_msg_find_ldb_val(searched_msg, "supplementalCredentials");
@@ -2146,7 +2117,6 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	ret = ldb_msg_add_empty(msg, "lmPwdHistory", LDB_FLAG_MOD_REPLACE, NULL);
 	ret = ldb_msg_add_empty(msg, "supplementalCredentials", LDB_FLAG_MOD_REPLACE, NULL);
 	ret = ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "msDs-KeyVersionNumber", LDB_FLAG_MOD_REPLACE, NULL);
 
 	if (io.g.nt_hash) {
 		ret = samdb_msg_add_hash(ldb, ac, msg,
@@ -2190,12 +2160,6 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	ret = samdb_msg_add_uint64(ldb, ac, msg,
 				   "pwdLastSet",
 				   io.g.last_set);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	ret = samdb_msg_add_uint(ldb, ac, msg,
-				 "msDs-KeyVersionNumber",
-				 io.g.kvno);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
