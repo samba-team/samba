@@ -1607,7 +1607,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	const struct ldb_val *val;
 	const char *site_name = NULL, *l_subnet_name = NULL;
 	const char *allow_list[2] = { NULL, NULL };
-	unsigned int i;
+	unsigned int i, count;
 	int cnt, ret;
 
 	/*
@@ -1632,13 +1632,17 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	ret = ldb_search(ldb, mem_ctx, &res, subnets_dn, LDB_SCOPE_ONELEVEL,
 			 attrs, NULL);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		count = 0;
+	} else if (ret != LDB_SUCCESS) {
 		talloc_free(sites_container_dn);
 		talloc_free(subnets_dn);
 		return NULL;
+	} else {
+		count = res->count;
 	}
 
-	for (i = 0; i < res->count; i++) {
+	for (i = 0; i < count; i++) {
 		l_subnet_name = ldb_msg_find_attr_as_string(res->msgs[i], "cn",
 							    NULL);
 
