@@ -811,7 +811,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/vfs.o smbd/perfcount.o smbd/statcache.o smbd/seal.o \
                smbd/posix_acls.o lib/sysacls.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
-	       printing/printfsp.o printing/printspoolss.o \
+	       printing/printspoolss.o \
 	       lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       smbd/fake_file.o \
