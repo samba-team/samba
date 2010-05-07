@@ -1593,6 +1593,61 @@ NTSTATUS smbcli_rap_netprintdestgetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
+NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
+					struct smb_iconv_convenience *iconv_convenience,
+					TALLOC_CTX *mem_ctx,
+					struct rap_NetUserPasswordSet2 *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WUserPasswordSet2))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_string(call, r->in.UserName);
+	rap_cli_push_paramdesc(call, 'b');
+	rap_cli_push_paramdesc(call, '1');
+	rap_cli_push_paramdesc(call, '6');
+	ndr_push_bytes(call->ndr_push_param, (uint8_t *)r->in.OldPassword, 16);
+	rap_cli_push_paramdesc(call, 'b');
+	rap_cli_push_paramdesc(call, '1');
+	rap_cli_push_paramdesc(call, '6');
+	ndr_push_bytes(call->ndr_push_param, (uint8_t *)r->in.NewPassword, 16);
+	rap_cli_push_word(call, r->in.EncryptedPassword);
+	rap_cli_push_word(call, r->in.RealPasswordLength);
+
+	rap_cli_expect_format(call, "");
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetUserPasswordSet2, r);
+	}
+
+	result = rap_cli_do_call(tree, iconv_convenience, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+
+	result = NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetUserPasswordSet2, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
 {
