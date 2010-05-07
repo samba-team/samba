@@ -254,7 +254,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	}
 
 	init_strict_lock_struct(fsp,
-				in_smbpid,
+				in_file_id_volatile,
 				in_offset,
 				in_data.length,
 				WRITE_LOCK,
