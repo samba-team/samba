@@ -1562,10 +1562,14 @@ DSO_EXPORTS=""
 				LDSHFLAGS="-shared"
 			else
 				PICFLAG="-KPIC"
-				SONAMEFLAG="-h "
 				## ${CFLAGS} added for building 64-bit shared
 				## libs using Sun's Compiler
 				LDSHFLAGS="-G \${CFLAGS}"
+			fi
+			if test "$ac_cv_prog_gnu_ld" = "yes"; then
+				SONAMEFLAG="-Wl,-soname="
+			else
+				SONAMEFLAG="-Wl,-h,"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
