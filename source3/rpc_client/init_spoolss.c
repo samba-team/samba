@@ -41,6 +41,21 @@ bool init_systemtime(struct spoolss_Time *r,
 	return true;
 }
 
+time_t spoolss_Time_to_time_t(const struct spoolss_Time *r)
+{
+	struct tm unixtime;
+
+	unixtime.tm_year	= r->year - 1900;
+	unixtime.tm_mon		= r->month - 1;
+	unixtime.tm_wday	= r->day_of_week;
+	unixtime.tm_mday	= r->day;
+	unixtime.tm_hour	= r->hour;
+	unixtime.tm_min		= r->minute;
+	unixtime.tm_sec		= r->second;
+
+	return mktime(&unixtime);
+}
+
 /*******************************************************************
  ********************************************************************/
 
