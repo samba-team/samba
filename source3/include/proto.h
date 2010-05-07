@@ -5451,6 +5451,7 @@ void reply_transs(struct smb_request *req);
 
 /* The following definitions come from smbd/lanman.c  */
 
+time_t spoolss_Time_to_time_t(const struct spoolss_Time *r);
 void api_reply(connection_struct *conn, uint16 vuid,
 	       struct smb_request *req,
 	       char *data, char *params,

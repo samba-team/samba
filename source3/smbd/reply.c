@@ -28,6 +28,7 @@
 #include "printing.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "rpc_client/cli_spoolss.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -5163,38 +5164,100 @@ void reply_printqueue(struct smb_request *req)
 		 start_index, max_count));
 
 	{
-		print_queue_struct *queue = NULL;
-		print_status_struct status;
-		int count = print_queue_status(SNUM(conn), &queue, &status);
-		int num_to_get = ABS(max_count);
-		int first = (max_count>0?start_index:start_index+max_count+1);
-		int i;
+		TALLOC_CTX *mem_ctx = talloc_tos();
+		NTSTATUS status;
+		WERROR werr;
+		const char *sharename = lp_servicename(SNUM(conn));
+		struct rpc_pipe_client *cli = NULL;
+		struct policy_handle handle;
+		struct spoolss_DevmodeContainer devmode_ctr;
+		union spoolss_JobInfo *info;
+		uint32_t count;
+		uint32_t num_to_get;
+		uint32_t first;
+		uint32_t i;
 
-		if (first >= count)
-			num_to_get = 0;
-		else
-			num_to_get = MIN(num_to_get,count-first);
+		ZERO_STRUCT(handle);
 
+		status = rpc_connect_spoolss_pipe(conn, &cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("reply_printqueue: "
+				  "could not connect to spoolss: %s\n",
+				  nt_errstr(status)));
+			reply_nterror(req, status);
+			goto out;
+		}
 
-		for (i=first;i<first+num_to_get;i++) {
+		ZERO_STRUCT(devmode_ctr);
+
+		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+						sharename,
+						NULL, devmode_ctr,
+						SEC_FLAG_MAXIMUM_ALLOWED,
+						&handle,
+						&werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			reply_nterror(req, werror_to_ntstatus(werr));
+			goto out;
+		}
+
+		werr = rpccli_spoolss_enumjobs(cli, mem_ctx,
+					       &handle,
+					       0, /* firstjob */
+					       0xff, /* numjobs */
+					       2, /* level */
+					       0, /* offered */
+					       &count,
+					       &info);
+		if (!W_ERROR_IS_OK(werr)) {
+			reply_nterror(req, werror_to_ntstatus(werr));
+			goto out;
+		}
+
+		if (max_count > 0) {
+			first = start_index;
+		} else {
+			first = start_index + max_count + 1;
+		}
+
+		if (first >= count) {
+			num_to_get = first;
+		} else {
+			num_to_get = first + MIN(ABS(max_count), count - first);
+		}
+
+		for (i = first; i < num_to_get; i++) {
 			char blob[28];
 			char *p = blob;
+			time_t qtime = spoolss_Time_to_time_t(&info[i].info2.submitted);
+			int qstatus;
+			uint16_t qrapjobid = pjobid_to_rap(sharename,
+							info[i].info2.job_id);
 
-			srv_put_dos_date2(p,0,queue[i].time);
-			SCVAL(p,4,(queue[i].status==LPQ_PRINTING?2:3));
-			SSVAL(p,5, queue[i].job);
-			SIVAL(p,7,queue[i].size);
-			SCVAL(p,11,0);
+			if (info[i].info2.status == JOB_STATUS_PRINTING) {
+				qstatus = 2;
+			} else {
+				qstatus = 3;
+			}
+
+			srv_put_dos_date2(p, 0, qtime);
+			SCVAL(p, 4, qstatus);
+			SSVAL(p, 5, qrapjobid);
+			SIVAL(p, 7, info[i].info2.size);
+			SCVAL(p, 11, 0);
 			srvstr_push(blob, req->flags2, p+12,
-				    queue[i].fs_user, 16, STR_ASCII);
+				    info[i].info2.notify_name, 16, STR_ASCII);
 
 			if (message_push_blob(
 				    &req->outbuf,
 				    data_blob_const(
 					    blob, sizeof(blob))) == -1) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBsplretq);
-				return;
+				goto out;
 			}
 		}
 
@@ -5206,9 +5269,15 @@ void reply_printqueue(struct smb_request *req)
 			SSVAL(smb_buf(req->outbuf),1,28*count);
 		}
 
-		SAFE_FREE(queue);
 
-		DEBUG(3,("%d entries returned in queue\n",count));
+		DEBUG(3, ("%u entries returned in queue\n",
+			  (unsigned)count));
+
+out:
+		if (cli && is_valid_policy_hnd(&handle)) {
+			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+		}
+
 	}
 
 	END_PROFILE(SMBsplretq);
