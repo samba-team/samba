@@ -36,7 +36,7 @@ enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
    this client */
 
 struct lock_context {
-	uint32 smbpid;
+	uint64_t smblctx;
 	uint16 tid;
 	struct server_id pid;
 };
@@ -88,8 +88,8 @@ struct blocking_lock_record {
 	int lock_num;
 	uint64_t offset;
 	uint64_t count;
-	uint32_t lock_pid;
-	uint32_t blocking_pid; /* PID that blocks us. */
+	uint64_t smblctx;
+	uint64_t blocking_smblctx; /* Context that blocks us. */
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	struct smb_request *req;
@@ -97,7 +97,7 @@ struct blocking_lock_record {
 };
 
 struct smbd_lock_element {
-	uint32_t smbpid;
+	uint64_t smblctx;
 	enum brl_type brltype;
 	uint64_t offset;
 	uint64_t count;

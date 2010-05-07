@@ -341,7 +341,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		locks[i].smbpid = in_smbpid;
+		locks[i].smblctx = in_smbpid;
 		locks[i].offset = in_locks[i].offset;
 		locks[i].count  = in_locks[i].length;
 
@@ -362,11 +362,11 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		}
 
 		DEBUG(10,("smbd_smb2_lock_send: index %d offset=%llu, count=%llu, "
-			"pid = %u type %d\n",
+			"smblctx = %llu type %d\n",
 			i,
 			(unsigned long long)locks[i].offset,
 			(unsigned long long)locks[i].count,
-			(unsigned int)locks[i].smbpid,
+			(unsigned long long)locks[i].smblctx,
 			(int)locks[i].brltype ));
 
 	}
@@ -510,11 +510,11 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 		}
 		if (timeval_is_zero(&blr->expire_time)) {
 			/*
-			 * If we're blocked on pid 0xFFFFFFFF this is
+			 * If we're blocked on pid 0xFFFFFFFFFFFFFFFFLL this is
 			 * a POSIX lock, so calculate a timeout of
 			 * 10 seconds into the future.
 			 */
-			if (blr->blocking_pid == 0xFFFFFFFF) {
+			if (blr->blocking_smblctx == 0xFFFFFFFFFFFFFFFFLL) {
 				struct timeval psx_to = timeval_current_ofs(10, 0);
 				next_timeout = timeval_brl_min(&next_timeout, &psx_to);
 			}
@@ -582,12 +582,12 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				files_struct *fsp,
 				int lock_timeout,
 				int lock_num,
-				uint32_t lock_pid,
+				uint64_t smblctx,
 				enum brl_type lock_type,
 				enum brl_flavour lock_flav,
 				uint64_t offset,
 				uint64_t count,
-				uint32_t blocking_pid)
+				uint64_t blocking_smblctx)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_smb2_request *smb2req = smb1req->smb2req;
@@ -627,8 +627,8 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	}
 
 	blr->lock_num = lock_num;
-	blr->lock_pid = lock_pid;
-	blr->blocking_pid = blocking_pid;
+	blr->smblctx = smblctx;
+	blr->blocking_smblctx = blocking_smblctx;
 	blr->lock_flav = lock_flav;
 	blr->lock_type = lock_type;
 	blr->offset = offset;
@@ -640,7 +640,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	/* Add a pending lock record for this. */
 	status = brl_lock(smbd_messaging_context(),
 			br_lck,
-			lock_pid,
+			smblctx,
 			procid_self(),
 			offset,
 			count,
@@ -690,7 +690,7 @@ static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record
 
 	if (br_lck) {
 		brl_lock_cancel(br_lck,
-				blr->lock_pid,
+				blr->smblctx,
 				procid_self(),
 				blr->offset,
 				blr->count,
@@ -732,14 +732,14 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 
 		br_lck = do_lock(smbd_messaging_context(),
 				fsp,
-				e->smbpid,
+				e->smblctx,
 				e->count,
 				e->offset,
 				e->brltype,
 				WINDOWS_LOCK,
 				true,
 				&status,
-				&blr->blocking_pid,
+				&blr->blocking_smblctx,
 				blr);
 
 		TALLOC_FREE(br_lck);
@@ -897,7 +897,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 
 		/* Remove the entries from the lock db. */
 		brl_lock_cancel(br_lck,
-				blr->lock_pid,
+				blr->smblctx,
 				procid_self(),
 				blr->offset,
 				blr->count,

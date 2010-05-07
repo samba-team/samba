@@ -77,7 +77,7 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
 ****************************************************************************/
 
 void init_strict_lock_struct(files_struct *fsp,
-				uint32 smbpid,
+				uint64_t smblctx,
 				br_off start,
 				br_off size,
 				enum brl_type lock_type,
@@ -85,7 +85,7 @@ void init_strict_lock_struct(files_struct *fsp,
 {
 	SMB_ASSERT(lock_type == READ_LOCK || lock_type == WRITE_LOCK);
 
-	plock->context.smbpid = smbpid;
+	plock->context.smblctx = smblctx;
         plock->context.tid = fsp->conn->cnum;
         plock->context.pid = procid_self();
         plock->start = start;
@@ -124,7 +124,7 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 				return True;
 			}
 			ret = brl_locktest(br_lck,
-					plock->context.smbpid,
+					plock->context.smblctx,
 					plock->context.pid,
 					plock->start,
 					plock->size,
@@ -139,7 +139,7 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 			return True;
 		}
 		ret = brl_locktest(br_lck,
-				plock->context.smbpid,
+				plock->context.smblctx,
 				plock->context.pid,
 				plock->start,
 				plock->size,
@@ -166,7 +166,7 @@ void strict_unlock_default(files_struct *fsp, struct lock_struct *plock)
 ****************************************************************************/
 
 NTSTATUS query_lock(files_struct *fsp,
-			uint32 *psmbpid,
+			uint64_t *psmblctx,
 			uint64_t *pcount,
 			uint64_t *poffset,
 			enum brl_type *plock_type,
@@ -188,7 +188,7 @@ NTSTATUS query_lock(files_struct *fsp,
 	}
 
 	return brl_lockquery(br_lck,
-			psmbpid,
+			psmblctx,
 			procid_self(),
 			poffset,
 			pcount,
@@ -230,14 +230,14 @@ static void decrement_current_lock_count(files_struct *fsp,
 
 struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
-			uint32 lock_pid,
+			uint64_t smblctx,
 			uint64_t count,
 			uint64_t offset,
 			enum brl_type lock_type,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
-			uint32 *plock_pid,
+			uint64_t *psmblctx,
 			struct blocking_lock_record *blr)
 {
 	struct byte_range_lock *br_lck = NULL;
@@ -274,14 +274,14 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 	*perr = brl_lock(msg_ctx,
 			br_lck,
-			lock_pid,
+			smblctx,
 			procid_self(),
 			offset,
-			count, 
+			count,
 			lock_type,
 			lock_flav,
 			blocking_lock,
-			plock_pid,
+			psmblctx,
 			blr);
 
 	DEBUG(10, ("do_lock: returning status=%s\n", nt_errstr(*perr)));
@@ -296,7 +296,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
-			uint32 lock_pid,
+			uint64_t smblctx,
 			uint64_t count,
 			uint64_t offset,
 			enum brl_flavour lock_flav)
@@ -323,7 +323,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 
 	ok = brl_unlock(msg_ctx,
 			br_lck,
-			lock_pid,
+			smblctx,
 			procid_self(),
 			offset,
 			count,
@@ -345,7 +345,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 ****************************************************************************/
 
 NTSTATUS do_lock_cancel(files_struct *fsp,
-			uint32 lock_pid,
+			uint64 smblctx,
 			uint64_t count,
 			uint64_t offset,
 			enum brl_flavour lock_flav,
@@ -373,7 +373,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 	}
 
 	ok = brl_lock_cancel(br_lck,
-			lock_pid,
+			smblctx,
 			procid_self(),
 			offset,
 			count,

@@ -4877,7 +4877,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			uint64_t count;
 			uint64_t offset;
-			uint32 lock_pid;
+			uint64_t smblctx;
 			enum brl_type lock_type;
 
 			/* We need an open file with a real fd for this. */
@@ -4902,7 +4902,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 					return NT_STATUS_INVALID_PARAMETER;
 			}
 
-			lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+			smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 			offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 					((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
@@ -4914,7 +4914,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 #endif /* HAVE_LONGLONG */
 
 			status = query_lock(fsp,
-					&lock_pid,
+					&smblctx,
 					&count,
 					&offset,
 					&lock_type,
@@ -4926,7 +4926,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 				SSVAL(pdata, POSIX_LOCK_TYPE_OFFSET, lock_type);
 				SSVAL(pdata, POSIX_LOCK_FLAGS_OFFSET, 0);
-				SIVAL(pdata, POSIX_LOCK_PID_OFFSET, lock_pid);
+				SIVAL(pdata, POSIX_LOCK_PID_OFFSET, (uint32_t)smblctx);
 #if defined(HAVE_LONGLONG)
 				SIVAL(pdata, POSIX_LOCK_START_OFFSET, (uint32)(offset & 0xFFFFFFFF));
 				SIVAL(pdata, POSIX_LOCK_START_OFFSET + 4, (uint32)((offset >> 32) & 0xFFFFFFFF));
@@ -6235,7 +6235,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 {
 	uint64_t count;
 	uint64_t offset;
-	uint32 lock_pid;
+	uint64_t smblctx;
 	bool blocking_lock = False;
 	enum brl_type lock_type;
 
@@ -6279,7 +6279,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		blocking_lock = False;
 	}
 
-	lock_pid = IVAL(pdata, POSIX_LOCK_PID_OFFSET);
+	smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
 #if defined(HAVE_LONGLONG)
 	offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
 			((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
@@ -6291,33 +6291,33 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 #endif /* HAVE_LONGLONG */
 
 	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
-			"lock_pid = %u, count = %.0f, offset = %.0f\n",
+			"smblctx = %llu, count = %.0f, offset = %.0f\n",
 		fsp_str_dbg(fsp),
 		(unsigned int)lock_type,
-		(unsigned int)lock_pid,
+		(unsigned long long)smblctx,
 		(double)count,
 		(double)offset ));
 
 	if (lock_type == UNLOCK_LOCK) {
 		status = do_unlock(smbd_messaging_context(),
 				fsp,
-				lock_pid,
+				smblctx,
 				count,
 				offset,
 				POSIX_LOCK);
 	} else {
-		uint32 block_smbpid;
+		uint64_t block_smblctx;
 
 		struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
 							fsp,
-							lock_pid,
+							smblctx,
 							count,
 							offset,
 							lock_type,
 							POSIX_LOCK,
 							blocking_lock,
 							&status,
-							&block_smbpid,
+							&block_smblctx,
 							NULL);
 
 		if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
@@ -6331,12 +6331,12 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 						fsp,
 						-1, /* infinite timeout. */
 						0,
-						lock_pid,
+						smblctx,
 						lock_type,
 						POSIX_LOCK,
 						offset,
 						count,
-						block_smbpid)) {
+						block_smblctx)) {
 				TALLOC_FREE(br_lck);
 				return status;
 			}

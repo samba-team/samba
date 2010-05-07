@@ -206,7 +206,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	srv_set_message(aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
+	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
 		&aio_ex->lock);
 
@@ -315,7 +315,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	srv_set_message(aio_ex->outbuf, 6, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
+	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 		(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		&aio_ex->lock);
 
