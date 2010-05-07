@@ -243,8 +243,18 @@ sub ParseDispatchFunction($)
 		pidl "case $op: {";
 		indent;
 		pidl "struct $fn->{NAME} *r = (struct $fn->{NAME} *)_r;";
+
+		pidl "if (DEBUGLEVEL >= 10) {";
+		pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, r);";
+		pidl "}";
+
 		CallWithStruct("cli->pipes_struct", "mem_ctx", $fn, 
 			sub { pidl "\treturn NT_STATUS_NO_MEMORY;"; });
+
+		pidl "if (DEBUGLEVEL >= 10) {";
+		pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
+		pidl "}";
+
 		pidl "return NT_STATUS_OK;";
 		deindent;
 		pidl "}";
