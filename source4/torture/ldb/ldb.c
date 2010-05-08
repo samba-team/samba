@@ -587,6 +587,7 @@ static bool torture_ldb_dn(struct torture_context *torture)
 	struct ldb_dn *dn;
 	struct ldb_dn *child_dn;
 	struct ldb_dn *typo_dn;
+	struct ldb_dn *special_dn;
 	struct ldb_val val;
 
 	torture_assert(torture, 
@@ -655,6 +656,23 @@ static bool torture_ldb_dn(struct torture_context *torture)
 	torture_assert(torture, 
 		       ldb_dn_compare_base(dn, typo_dn) != 0,
 		       "Base Comparison on dc=samba,dc=org and c=samba,dc=org should != 0");
+
+	/* Check comparisons with a special DN */
+	torture_assert(torture,
+		       special_dn = ldb_dn_new(mem_ctx, ldb, "@special_dn"),
+		       "Failed to create 'special' DN");
+
+	torture_assert(torture,
+		       ldb_dn_compare(dn, special_dn) != 0,
+		       "Comparison on dc=samba,dc=org and @special_dn should != 0");
+
+	torture_assert(torture,
+		       ldb_dn_compare_base(special_dn, dn) > 0,
+		       "Base Comparison of @special_dn and dc=samba,dc=org should > 0");
+
+	torture_assert(torture,
+		       ldb_dn_compare_base(dn, special_dn) < 0,
+		       "Base Comparison on dc=samba,dc=org and @special_dn should < 0");
 
 	/* Check DN based on MS-ADTS:3.1.1.5.1.2 Naming Constraints*/
 	torture_assert(torture,
