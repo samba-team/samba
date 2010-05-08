@@ -18,13 +18,13 @@ net="./bin/net"
 
 CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
 
-testit "newuser" $net newuser $CONFIG testuser testpass
+testit "newuser" $net newuser $CONFIG testuser testp@ssw0Rd
 
 # check the enable account script
 testit "enableaccount" $net enableaccount $CONFIG testuser
 
 # check the enable account script
-testit "setpassword" $net setpassword $CONFIG testuser --newpassword=testpass2
+testit "setpassword" $net setpassword $CONFIG testuser --newpassword=testp@ssw0Rd2
 
 # check the setexpiry script
 testit "noexpiry" $net setexpiry $CONFIG testuser --noexpiry
