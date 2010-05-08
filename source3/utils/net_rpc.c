@@ -794,8 +794,11 @@ static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 		if (ret == -1) {
 			return -1;
 		}
-		u1003.usri1003_password = getpass(prompt);
+		u1003.usri1003_password = talloc_strdup(c, getpass(prompt));
 		SAFE_FREE(prompt);
+		if (u1003.usri1003_password == NULL) {
+			return -1;
+		}
 	}
 
 	status = NetUserSetInfo(c->opt_host, argv[0], 1003, (uint8_t *)&u1003, &parm_err);
