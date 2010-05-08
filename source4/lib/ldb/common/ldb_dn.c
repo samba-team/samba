@@ -1065,7 +1065,7 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 		return (dn->comp_num - base->comp_num);
 	}
 
-	if (dn->comp_num == 0) {
+	if ((dn->comp_num == 0) || (base->comp_num == 0)) {
 		if (dn->special && base->special) {
 			return strcmp(base->linearized, dn->linearized);
 		} else if (dn->special) {
