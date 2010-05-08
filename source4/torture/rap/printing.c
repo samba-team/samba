@@ -89,6 +89,8 @@ static bool test_netprintqenum(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 			"smbcli_rap_netprintqenum failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"failed to enum printq");
 
 		for (q=0; q<r.out.count; q++) {
 			switch (r.in.level) {
@@ -115,6 +117,8 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r_enum),
+		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r_enum.out.status),
 		"failed to enum printq");
 
 	for (p=0; p < r_enum.out.count; p++) {
@@ -225,6 +229,8 @@ static bool test_netprintq_pause(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqueuepause(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"smbcli_rap_netprintqueuepause failed");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"smbcli_rap_netprintqueuepause failed");
 
 	return true;
 }
@@ -242,6 +248,8 @@ static bool test_netprintq_resume(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqueueresume(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"smbcli_rap_netprintqueueresume failed");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"smbcli_rap_netprintqueueresume failed");
 
 	return true;
 }
@@ -257,6 +265,8 @@ static bool test_netprintq(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
 
 	for (i=0; i < r.out.count; i++) {
@@ -447,6 +457,8 @@ static bool test_netprintjobenum(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"failed to enum printq");
 
 	for (i=0; i < r.out.count; i++) {
 
@@ -472,6 +484,8 @@ static bool test_netprintjobgetinfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"failed to enum printq");
 
 	for (i=0; i < r.out.count; i++) {
 
@@ -496,6 +510,8 @@ static bool test_netprintjobsetinfo(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
 
 	for (i=0; i < r.out.count; i++) {
@@ -597,6 +613,8 @@ static bool test_rap_print(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"failed to enum printq");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
 
 	for (i=0; i < r.out.count; i++) {
