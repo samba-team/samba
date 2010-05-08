@@ -1039,6 +1039,7 @@ int ctdb_socket_connect(struct ctdb_context *ctdb);
 void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t);
 void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *latency, double l);
 
+#define CTDB_BAD_REQID ((uint32_t)-1)
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
 void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);

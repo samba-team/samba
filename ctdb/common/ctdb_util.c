@@ -159,18 +159,14 @@ void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *l
 
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
-	uint32_t id;
-
-	id  = ctdb->idr_cnt++ & 0xFFFF;
-	id |= (idr_get_new(ctdb->idr, state, 0xFFFF)<<16);
-	return id;
+	return idr_get_new(ctdb->idr, state, INT_MAX);
 }
 
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location)
 {
 	void *p;
 
-	p = _idr_find_type(ctdb->idr, (reqid>>16)&0xFFFF, type, location);
+	p = _idr_find_type(ctdb->idr, reqid, type, location);
 	if (p == NULL) {
 		DEBUG(DEBUG_WARNING, ("Could not find idr:%u\n",reqid));
 	}
@@ -183,7 +179,7 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 {
 	int ret;
 
-	ret = idr_remove(ctdb->idr, (reqid>>16)&0xFFFF);
+	ret = idr_remove(ctdb->idr, reqid);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Removing idr that does not exist\n"));
 	}
