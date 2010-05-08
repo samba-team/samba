@@ -50,6 +50,12 @@ def set_options(opt):
     gr.add_option('--gdbtest',
                   help=("run the testsuite within a gdb xterm window"),
                   action="store_true", dest='GDBTEST', default=False)
+    gr.add_option('--socket-wrapper-pcap',
+                  help=("create a pcap file for each failing test"),
+                  action="store_true", dest='SOCKET_WRAPPER_PCAP', default=False)
+    gr.add_option('--socket-wrapper-keep-pcap',
+                  help=("create a pcap file for all individual test"),
+                  action="store_true", dest='SOCKET_WRAPPER_KEEP_PCAP', default=False)
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
@@ -80,6 +86,10 @@ def cmd_testonly(opt):
         env.OPTIONS += ' --load-list=%s' % Options.options.LOAD_LIST
     if Options.options.TESTENV:
         env.OPTIONS += ' --testenv'
+    if Options.options.SOCKET_WRAPPER_PCAP:
+        env.OPTIONS += ' --socket-wrapper-pcap'
+    if Options.options.SOCKET_WRAPPER_KEEP_PCAP:
+        env.OPTIONS += ' --socket-wrapper-keep-pcap'
 
     if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
         env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
