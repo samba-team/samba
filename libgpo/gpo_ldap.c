@@ -18,8 +18,8 @@
  */
 
 #include "includes.h"
-#if _SAMBA_BUILD_ == 4
 #include "libgpo/gpo.h"
+#if _SAMBA_BUILD_ == 4
 #include "libgpo/gpo_s4.h"
 #include "source4/libgpo/ads_convenience.h"
 #endif

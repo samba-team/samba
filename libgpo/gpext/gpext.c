@@ -18,9 +18,13 @@
  */
 
 #include "includes.h"
+#include "../libgpo/gpo.h"
 #include "../libgpo/gpext/gpext.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/dlinklist.h"
+#if _SAMBA_BUILD_ == 3
+#include "libgpo/gpo_proto.h"
+#endif
 
 static struct gp_extension *extensions = NULL;
 

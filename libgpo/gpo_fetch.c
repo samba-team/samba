@@ -32,6 +32,8 @@
 #include "libgpo/ads_convenience.h"
 #include "libgpo/gpo_s4.h"
 #include "lib/util/util.h"
+#else
+#include "libgpo/gpo_proto.h"
 #endif
 
 /****************************************************************

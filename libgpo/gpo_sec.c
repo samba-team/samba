@@ -19,12 +19,12 @@
 
 #include "includes.h"
 #include "libcli/security/dom_sid.h"
+#include "../libgpo/gpo.h"
 #if _SAMBA_BUILD_ == 4
 #include "libgpo/ads_convenience.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "../libcli/security/secace.h"
-#include "../libgpo/gpo.h"
 #endif
 
 /****************************************************************

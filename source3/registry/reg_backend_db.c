@@ -65,7 +65,7 @@ static const char *builtin_registry_paths[] = {
 	KEY_HKCU,
 	KEY_GP_USER_POLICY,
 	KEY_GP_USER_WIN_POLICY,
-	KEY_WINLOGON_GPEXT_PATH,
+	"HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\GPExtensions",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
 	KEY_PROD_OPTIONS,
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\DefaultUserConfiguration",

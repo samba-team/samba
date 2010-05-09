@@ -18,6 +18,8 @@
  */
 
 #include "includes.h"
+#include "../libgpo/gpo.h"
+#include "libgpo/gpo_proto.h"
 
 struct sync_context {
 	TALLOC_CTX *mem_ctx;

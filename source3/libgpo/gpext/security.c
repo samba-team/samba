@@ -18,7 +18,9 @@
  */
 
 #include "includes.h"
-#include "libgpo/gpo_ini.h"
+#include "../libgpo/gpo_ini.h"
+#include "../libgpo/gpo.h"
+#include "libgpo/gpo_proto.h"
 
 #define GP_EXT_NAME "security"
 

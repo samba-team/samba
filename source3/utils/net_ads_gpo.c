@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../libgpo/gpo.h"
+#include "libgpo/gpo_proto.h"
 
 #ifdef HAVE_ADS
 
