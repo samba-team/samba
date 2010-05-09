@@ -40,7 +40,6 @@ class cmd_newuser(Command):
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
-        Option("--unixname", help="Unix Username", type=str),
         Option("--must-change-at-next-login",
             help="Force password to be changed on next login",
             action="store_true"),
@@ -49,21 +48,17 @@ class cmd_newuser(Command):
     takes_args = ["username", "password?"]
 
     def run(self, username, password=None, credopts=None, sambaopts=None,
-            versionopts=None, H=None, unixname=None,
-            must_change_at_next_login=None):
+            versionopts=None, H=None, must_change_at_next_login=None):
         if password is None:
             password = getpass("New Password: ")
-
-        if unixname is None:
-            unixname = username
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
         try:
-            samdb = SamDB(url=H, session_info=system_session(), credentials=creds,
-                          lp=lp)
-            samdb.newuser(username, unixname, password,
+            samdb = SamDB(url=H, session_info=system_session(),
+                          credentials=creds, lp=lp)
+            samdb.newuser(username, password,
                           force_password_change_at_next_login_req=must_change_at_next_login)
         except ldb.LdbError, (num, msg):
             print('Failed to create user "%s" : %s' % (username, msg))
