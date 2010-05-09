@@ -160,7 +160,7 @@ sub ParseFunction($$)
 	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "pull = ndr_pull_init_blob(&blob, r, NULL);";
+	pidl "pull = ndr_pull_init_blob(&blob, r);";
 	pidl "if (pull == NULL) {";
 	pidl "\ttalloc_free(r);";
 	pidl "\treturn false;";
@@ -196,7 +196,7 @@ sub ParseFunction($$)
 	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
 	pidl "}";
 	pidl "";
-	pidl "push = ndr_push_init_ctx(r, NULL);";
+	pidl "push = ndr_push_init_ctx(r);";
 	pidl "if (push == NULL) {";
 	pidl "\ttalloc_free(r);";
 	pidl "\treturn false;";

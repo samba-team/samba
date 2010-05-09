@@ -183,7 +183,7 @@ static void nmbd_proxy_logon(struct nmbd_proxy_logon_context *ctx,
 	state->p = p;
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, state, NULL, &state->req,
+		&blob, state, &state->req,
 		(ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -269,7 +269,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	DATA_BLOB response = data_blob_null;
 
-	status = cldap_netlogon_recv(subreq, NULL, state, &state->io);
+	status = cldap_netlogon_recv(subreq, state, &state->io);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("failed to recv cldap netlogon call: %s\n",
 			nt_errstr(status)));
@@ -277,7 +277,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = push_netlogon_samlogon_response(&response, state, NULL,
+	status = push_netlogon_samlogon_response(&response, state, 
 						 &state->io.out.netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("failed to push netlogon_samlogon_response: %s\n",

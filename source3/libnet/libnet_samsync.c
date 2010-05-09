@@ -396,7 +396,7 @@ NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 
 	blob = data_blob_const(r->array, r->length);
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, str,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, str,
 		       (ndr_pull_flags_fn_t)ndr_pull_netr_AcctLockStr);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -276,7 +276,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 				break;
 			}
 
-			ndr = ndr_pull_init_blob(&blob, mem_ctx, NULL);
+			ndr = ndr_pull_init_blob(&blob, mem_ctx);
 			if (ndr == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				break;

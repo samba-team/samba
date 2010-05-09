@@ -1049,8 +1049,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	req.level = 1;
 	req.info.info1 = *info3;
 
-	ndr_err = ndr_push_struct_blob(
-		&req_blob, talloc_tos(), NULL, &req,
+	ndr_err = ndr_push_struct_blob(&req_blob, talloc_tos(), &req,
 		(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1080,8 +1079,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("name_pipe_auth_rep(client)[%u]\n", (uint32_t)rep_blob.length));
 	dump_data(10, rep_blob.data, rep_blob.length);
 
-	ndr_err = ndr_pull_struct_blob(
-		&rep_blob, talloc_tos(), NULL, &rep,
+	ndr_err = ndr_pull_struct_blob(&rep_blob, talloc_tos(), &rep,
 		(ndr_pull_flags_fn_t)ndr_pull_named_pipe_auth_rep);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

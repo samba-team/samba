@@ -33,7 +33,6 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   struct smb_iconv_convenience *ic,
 				   krb5_pac *pac, DATA_BLOB *pac_blob);
 
 void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data);

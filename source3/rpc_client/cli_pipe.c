@@ -1786,7 +1786,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 	r.oem_netbios_domain.a		= cli->auth->domain;
 	r.oem_netbios_computer.a	= global_myname();
 
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &r,
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &r,
 		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));

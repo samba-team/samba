@@ -206,11 +206,11 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 	}
 
 	if (dst->owner_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->owner_sid, NULL, 0);
+		offset += ndr_size_dom_sid(dst->owner_sid, 0);
 	}
 
 	if (dst->group_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->group_sid, NULL, 0);
+		offset += ndr_size_dom_sid(dst->group_sid, 0);
 	}
 
 	*sd_size = (size_t)offset;
@@ -249,7 +249,7 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, NULL, secdesc,
+		&blob, mem_ctx, secdesc,
 		(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -275,7 +275,7 @@ NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, NULL, secdesc_buf,
+		&blob, mem_ctx, secdesc_buf,
 		(ndr_push_flags_fn_t)ndr_push_sec_desc_buf);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -310,8 +310,7 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 
 	blob = data_blob_const(data, len);
 
-	ndr_err = ndr_pull_struct_blob(
-		&blob, result, NULL, result,
+	ndr_err = ndr_pull_struct_blob(&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -347,8 +346,7 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 
 	blob = data_blob_const(data, len);
 
-	ndr_err = ndr_pull_struct_blob(
-		&blob, result, NULL, result,
+	ndr_err = ndr_pull_struct_blob(&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_sec_desc_buf);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -92,7 +92,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	io.in.version		= nt_version;
 	io.in.map_response	= false;
 
-	status = cldap_netlogon(cldap, NULL, reply, &io);
+	status = cldap_netlogon(cldap, reply, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("cldap_netlogon() failed: %s\n", nt_errstr(status)));
 		goto failed;

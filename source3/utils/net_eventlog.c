@@ -55,7 +55,7 @@ static int net_eventlog_dump(struct net_context *c, int argc,
 		goto done;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, ctx, NULL, &evt,
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, &evt,
 		   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOG_EVT_FILE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		d_fprintf(stderr, _("evt pull failed: %s\n"),
@@ -113,7 +113,7 @@ static int net_eventlog_import(struct net_context *c, int argc,
 	}
 
 	/* dump_data(0, blob.data, blob.length); */
-	ndr_err = ndr_pull_struct_blob(&blob, ctx, NULL, &evt_header,
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, &evt_header,
 		   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOGHEADER);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		d_fprintf(stderr, _("evt header pull failed: %s\n"),
@@ -126,7 +126,7 @@ static int net_eventlog_import(struct net_context *c, int argc,
 		goto done;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, ctx, NULL, &evt,
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, &evt,
 		   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOG_EVT_FILE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		d_fprintf(stderr, _("evt pull failed: %s\n"),

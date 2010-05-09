@@ -191,7 +191,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 	r->sockaddr.sockaddr_family = 2; /* AF_INET */
 	r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, addr);
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, r,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, r,
 		       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
@@ -342,7 +342,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &r,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 		      (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX);
 
 	data_blob_free(&blob);

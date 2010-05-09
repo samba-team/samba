@@ -425,7 +425,7 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 		DATA_BLOB blob;
 		enum ndr_err_code ndr_err;
 
-		ndr_err = ndr_push_struct_blob(&blob, values, NULL, devmode,
+		ndr_err = ndr_push_struct_blob(&blob, values, devmode,
 				(ndr_push_flags_fn_t)ndr_push_spoolss_DeviceMode);
 
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -579,7 +579,7 @@ static int find_valuename_index( const char *valuename )
 static void pull_reg_sz_fstring(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, fstring s)
 {
 	const char *str;
-	pull_reg_sz(mem_ctx, NULL, blob, &str);
+	pull_reg_sz(mem_ctx, blob, &str);
 	fstrcpy(s, str);
 }
 
@@ -929,7 +929,7 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 				break;
 			}
 
-			push_reg_sz(talloc_tos(), NULL, &data, filename);
+			push_reg_sz(talloc_tos(), &data, filename);
 			memcpy( buffer+buffer_size, (char*)data.data, data.length);
 
 			buffer_size += (length + 1)*sizeof(uint16);

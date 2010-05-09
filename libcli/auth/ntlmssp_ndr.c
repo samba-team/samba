@@ -36,10 +36,10 @@ do { \
 	return NT_STATUS_OK; \
 } while(0);
 
-#define NTLMSSP_PUSH_MESSAGE(type, blob, mem_ctx, ic, r) \
+#define NTLMSSP_PUSH_MESSAGE(type, blob, mem_ctx, r) \
 do { \
 	enum ndr_err_code __ndr_err; \
-	__ndr_err = ndr_push_struct_blob(blob, mem_ctx, ic, r, \
+	__ndr_err = ndr_push_struct_blob(blob, mem_ctx, r, \
 			(ndr_push_flags_fn_t)ndr_push_ ##type); \
 	if (!NDR_ERR_CODE_IS_SUCCESS(__ndr_err)) { \
 		return ndr_map_error2ntstatus(__ndr_err); \
@@ -52,7 +52,6 @@ do { \
  * Pull NTLMSSP NEGOTIATE_MESSAGE struct from a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP NEGOTIATE_MESSAGE structure
  */
 
@@ -67,7 +66,6 @@ NTSTATUS ntlmssp_pull_NEGOTIATE_MESSAGE(const DATA_BLOB *blob,
  * Pull NTLMSSP CHALLENGE_MESSAGE struct from a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP CHALLENGE_MESSAGE structure
  */
 
@@ -82,7 +80,6 @@ NTSTATUS ntlmssp_pull_CHALLENGE_MESSAGE(const DATA_BLOB *blob,
  * Pull NTLMSSP AUTHENTICATE_MESSAGE struct from a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP AUTHENTICATE_MESSAGE structure
  */
 
@@ -97,7 +94,6 @@ NTSTATUS ntlmssp_pull_AUTHENTICATE_MESSAGE(const DATA_BLOB *blob,
  * Push NTLMSSP NEGOTIATE_MESSAGE struct into a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP NEGOTIATE_MESSAGE structure
  */
 
@@ -112,7 +108,6 @@ NTSTATUS ntlmssp_push_NEGOTIATE_MESSAGE(DATA_BLOB *blob,
  * Push NTLMSSP CHALLENGE_MESSAGE struct into a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP CHALLENGE_MESSAGE structure
  */
 
@@ -127,7 +122,6 @@ NTSTATUS ntlmssp_push_CHALLENGE_MESSAGE(DATA_BLOB *blob,
  * Push NTLMSSP AUTHENTICATE_MESSAGE struct into a blob
  * @param blob The plain packet blob
  * @param mem_ctx A talloc context
- * @param ic Iconv convenience structure
  * @param r Pointer to a NTLMSSP AUTHENTICATE_MESSAGE structure
  */
 

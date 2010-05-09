@@ -31,7 +31,6 @@ struct samba_kdc_seq;
 struct samba_kdc_db_context {
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp_ctx;
-	struct smb_iconv_convenience *ic_ctx;
 	struct ldb_context *samdb;
 	struct samba_kdc_seq *seq_ctx;
 };

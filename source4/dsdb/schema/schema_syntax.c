@@ -1417,8 +1417,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	ok = convert_string_talloc_convenience(ldb,
-					       schema->iconv_convenience,
+	ok = convert_string_talloc(ldb,
 					       CH_UNIX, CH_UTF16,
 					       val->data,
 					       val->length,

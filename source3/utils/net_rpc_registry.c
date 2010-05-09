@@ -961,7 +961,7 @@ static void dump_values( REGF_NK_REC *nk )
 		switch ( nk->values[i].type ) {
 			case REG_SZ:
 				blob = data_blob_const(nk->values[i].data, data_size);
-				pull_reg_sz(talloc_tos(), NULL, &blob, &data_str);
+				pull_reg_sz(talloc_tos(), &blob, &data_str);
 				if (!data_str) {
 					break;
 				}
@@ -1250,7 +1250,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 	blob.data = sd->data;
 	blob.length = sd->size;
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &sec_desc,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &sec_desc,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

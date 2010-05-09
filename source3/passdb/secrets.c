@@ -498,7 +498,7 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	}
 
 	/* unpack trusted domain password */
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &pass,
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
@@ -557,7 +557,7 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	/* domain sid */
 	sid_copy(&pass.domain_sid, sid);
 
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &pass,
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_push_flags_fn_t)ndr_push_TRUSTED_DOM_PASS);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
@@ -789,7 +789,7 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 
 	blob = data_blob_const(rec->value.dptr, rec->value.dsize);
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &pass,
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;

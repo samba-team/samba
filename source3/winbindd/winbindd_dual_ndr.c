@@ -73,7 +73,7 @@ static struct tevent_req *wb_ndr_dispatch_send(TALLOC_CTX *mem_ctx,
 	state->transport = transport;
 	state->opnum = opnum;
 
-	push = ndr_push_init_ctx(state, NULL);
+	push = ndr_push_init_ctx(state);
 	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -148,7 +148,7 @@ static NTSTATUS wb_ndr_dispatch_recv(struct tevent_req *req,
 		return status;
 	}
 
-	pull = ndr_pull_init_blob(&state->resp_blob, mem_ctx, NULL);
+	pull = ndr_pull_init_blob(&state->resp_blob, mem_ctx);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

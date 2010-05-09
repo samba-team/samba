@@ -526,7 +526,7 @@ NTSTATUS _eventlog_ReadEventLogW(pipes_struct *p,
 			break;
 		}
 
-		ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, e,
+		ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, e,
 			      (ndr_push_flags_fn_t)ndr_push_EVENTLOGRECORD);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
@@ -648,7 +648,7 @@ NTSTATUS _eventlog_GetLogInformation(pipes_struct *p,
 	/* FIXME: this should be retrieved from the handle */
 	f.full = false;
 
-	ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, &f,
+	ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &f,
 		      (ndr_push_flags_fn_t)ndr_push_EVENTLOG_FULL_INFORMATION);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);

@@ -195,7 +195,6 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 	io->in.credentials  = cmdline_credentials;
 	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lp_workgroup(state->tctx->lp_ctx);
-	io->in.iconv_convenience = lp_iconv_convenience(state->tctx->lp_ctx);
 	lp_smbcli_options(state->tctx->lp_ctx, &io->in.options);
 	lp_smbcli_session_options(state->tctx->lp_ctx, &io->in.session_options);
 

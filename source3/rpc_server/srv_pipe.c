@@ -1453,7 +1453,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	blob = data_blob_const(prs_data_p(rpc_in_p) + prs_offset(rpc_in_p),
 			       prs_data_size(rpc_in_p));
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &neg,
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &neg,
 			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
@@ -1476,9 +1476,8 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	 */
 
 	become_root();
-	status = schannel_get_creds_state(p, NULL, lp_private_dir(),
-					    neg.oem_netbios_computer.a,
-					    &creds);
+	status = schannel_get_creds_state(p, lp_private_dir(),
+					    neg.oem_netbios_computer.a, &creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1539,7 +1538,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 						      * this has any meaning
 						      * here - gd */
 
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), NULL, &reply,
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &reply,
 		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));

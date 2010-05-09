@@ -883,7 +883,6 @@ static struct composite_context *torture_connect_async(
 	smb->in.service_type=NULL;
 	smb->in.credentials=cmdline_credentials;
 	smb->in.fallback_to_anonymous=false;
-	smb->in.iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
 	smb->in.gensec_settings = lp_gensec_settings(mem_ctx, tctx->lp_ctx);
 	smb->in.workgroup=workgroup;
 	lp_smbcli_options(tctx->lp_ctx, &smb->in.options);

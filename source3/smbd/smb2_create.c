@@ -566,7 +566,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			}
 
 			ndr_err = ndr_pull_struct_blob(&secd->data,
-				sec_desc, NULL, sec_desc,
+				sec_desc, sec_desc,
 				(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				DEBUG(2,("ndr_pull_security_descriptor failed: %s\n",

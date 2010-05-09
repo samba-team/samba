@@ -778,7 +778,7 @@ static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
 	if (data == NULL) {
 		blob = data_blob_string_const("");
 	} else {
-		if (!push_reg_sz(mem_ctx, NULL, &blob, data)) {
+		if (!push_reg_sz(mem_ctx, &blob, data)) {
 			DEBUG(0, ("winreg_printer_write_sz: Could not marshall string %s for %s\n",
 				data, wvalue.name));
 			return WERR_NOMEM;
@@ -1026,7 +1026,7 @@ static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	wvalue.name = value;
-	if (!push_reg_multi_sz(mem_ctx, NULL, &blob, data)) {
+	if (!push_reg_multi_sz(mem_ctx, &blob, data)) {
 		return WERR_NOMEM;
 	}
 	status = rpccli_winreg_SetValue(pipe_handle,
@@ -1111,7 +1111,7 @@ static WERROR winreg_enumval_to_sz(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
-	if (!pull_reg_sz(mem_ctx, NULL, v->data, _str)) {
+	if (!pull_reg_sz(mem_ctx, v->data, _str)) {
 		return WERR_NOMEM;
 	}
 
@@ -1132,7 +1132,7 @@ static WERROR winreg_enumval_to_multi_sz(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
-	if (!pull_reg_multi_sz(mem_ctx, NULL, v->data, array)) {
+	if (!pull_reg_multi_sz(mem_ctx, v->data, array)) {
 		return WERR_NOMEM;
 	}
 
@@ -1162,7 +1162,7 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 	}
 
 	wvalue.name = value;
-	if (!push_reg_sz(mem_ctx, NULL, &blob, str)) {
+	if (!push_reg_sz(mem_ctx, &blob, str)) {
 		return WERR_NOMEM;
 	}
 	status = rpccli_winreg_SetValue(pipe_handle,
@@ -1229,7 +1229,7 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 	}
 
 	wvalue.name = value;
-	if (!push_reg_sz(mem_ctx, NULL, &blob, str)) {
+	if (!push_reg_sz(mem_ctx, &blob, str)) {
 		return WERR_NOMEM;
 	}
 	status = rpccli_winreg_SetValue(pipe_handle,
@@ -1696,7 +1696,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		}
-		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, devmode,
+		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, devmode,
 				(ndr_push_flags_fn_t) ndr_push_spoolss_DeviceMode);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(0, ("winreg_update_printer: Failed to marshall device mode\n"));
@@ -2142,7 +2142,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		}
 		ndr_err = ndr_pull_struct_blob(&blob,
 					       info2->devmode,
-					       NULL,
 					       info2->devmode,
 					       (ndr_pull_flags_fn_t) ndr_pull_spoolss_DeviceMode);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2262,7 +2261,6 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	}
 	ndr_err = ndr_pull_struct_blob(&blob,
 				       secdesc,
-				       NULL,
 				       secdesc,
 				       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2318,7 +2316,7 @@ create_default:
 		}
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, secdesc,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, secdesc,
 			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));
@@ -2449,7 +2447,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, new_secdesc,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, new_secdesc,
 			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));

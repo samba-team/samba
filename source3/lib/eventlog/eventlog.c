@@ -691,7 +691,7 @@ struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 
 	blob = data_blob_const(data.dptr, data.dsize);
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, r,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, r,
 			   (ndr_pull_flags_fn_t)ndr_pull_eventlog_Record_tdb);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -741,7 +741,7 @@ struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	r->Length = r->Length2 = ndr_size_EVENTLOGRECORD(r, NULL, 0);
+	r->Length = r->Length2 = ndr_size_EVENTLOGRECORD(r, 0);
 
 	return r;
 }
@@ -785,7 +785,7 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 	/* read */
 	r->record_number = tdb_fetch_int32(tdb, EVT_NEXT_RECORD);
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, r,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, r,
 		      (ndr_push_flags_fn_t)ndr_push_eventlog_Record_tdb);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
@@ -1007,7 +1007,7 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		endoffset += ndr_size_EVENTLOGRECORD(&e, NULL, 0);
+		endoffset += ndr_size_EVENTLOGRECORD(&e, 0);
 
 		ADD_TO_ARRAY(mem_ctx, struct EVENTLOGRECORD, e, &evt.records, &num_records);
 		count++;
@@ -1034,7 +1034,7 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(EVENTLOGEOF, &evt.eof);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &evt,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &evt,
 		   (ndr_push_flags_fn_t)ndr_push_EVENTLOG_EVT_FILE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

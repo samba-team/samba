@@ -419,7 +419,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 		}
 	}
 
-	if (!push_reg_multi_sz(trusted_domains, NULL, &blob, trusted_domains)) {
+	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
 		TALLOC_FREE(trusted_domains);
 		return WERR_NOMEM;
 	}
@@ -726,8 +726,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
-	status = schannel_save_creds_state(p->mem_ctx,
-					   NULL, lp_private_dir(), creds);
+	status = schannel_save_creds_state(p->mem_ctx, lp_private_dir(), creds);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -820,12 +819,9 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 		}
 	}
 
-	status = schannel_check_creds_state(mem_ctx, NULL,
-					    lp_private_dir(),
-					    computer_name,
-					    received_authenticator,
-					    return_authenticator,
-					    creds_out);
+	status = schannel_check_creds_state(mem_ctx, lp_private_dir(),
+					    computer_name, received_authenticator,
+					    return_authenticator, creds_out);
 
 	return status;
 }
@@ -1396,8 +1392,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds = NULL;
 
 	become_root();
-	status = schannel_get_creds_state(p->mem_ctx,
-					  NULL, lp_private_dir(),
+	status = schannel_get_creds_state(p->mem_ctx, lp_private_dir(),
 					  r->in.computer_name, &creds);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {

@@ -303,7 +303,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 	}
 
 	if (psd) {
-		*psize = ndr_size_security_descriptor(psd, NULL, 0);
+		*psize = ndr_size_security_descriptor(psd, 0);
 	} else {
 		return get_share_security_default(ctx, psize,
 						  GENERIC_ALL_ACCESS);

@@ -1809,7 +1809,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	    security_info_wanted & DACL_SECURITY_INFORMATION)
 		psd->type |= SEC_DESC_DACL_PRESENT;
 
-	*psd_size = ndr_size_security_descriptor(psd, NULL, 0);
+	*psd_size = ndr_size_security_descriptor(psd, 0);
 
 	DEBUG(3,("smbd_do_query_security_desc: sd_size = %lu.\n",
 		(unsigned long)*psd_size));

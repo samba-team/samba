@@ -110,7 +110,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 
 		blob = data_blob_const(data, length);
 
-		if (!pull_reg_multi_sz(mem_ctx, NULL, &blob, &vals)) {
+		if (!pull_reg_multi_sz(mem_ctx, &blob, &vals)) {
 			err = WERR_NOMEM;
 			goto error;
 		}
@@ -156,7 +156,7 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 	}
 	case REG_SZ:
 	case REG_EXPAND_SZ: {
-		if (!push_reg_sz(mem_ctx, NULL, presult, value->v.sz.str))
+		if (!push_reg_sz(mem_ctx, presult, value->v.sz.str))
 		{
 			return WERR_NOMEM;
 		}
@@ -178,7 +178,7 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 		}
 		array[i] = NULL;
 
-		if (!push_reg_multi_sz(mem_ctx, NULL, presult, array)) {
+		if (!push_reg_multi_sz(mem_ctx, presult, array)) {
 			talloc_free(array);
 			return WERR_NOMEM;
 		}

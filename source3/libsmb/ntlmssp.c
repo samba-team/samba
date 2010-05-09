@@ -469,7 +469,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		if (DEBUGLEVEL >= 10) {
 			if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(&request,
 						       ntlmssp_state,
-						       NULL,
 						       &negotiate)))
 			{
 				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
@@ -541,7 +540,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		if (DEBUGLEVEL >= 10) {
 			if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(reply,
 						       ntlmssp_state,
-						       NULL,
 						       &challenge)))
 			{
 				NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
@@ -645,7 +643,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	if (DEBUGLEVEL >= 10) {
 		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(&request,
 						  ntlmssp_state,
-						  NULL,
 						  &authenticate)))
 		{
 			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);
@@ -935,7 +932,6 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	if (DEBUGLEVEL >= 10) {
 		if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(next_request,
 					       ntlmssp_state,
-					       NULL,
 					       &negotiate)))
 		{
 			NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
@@ -1040,7 +1036,6 @@ noccache:
 	if (DEBUGLEVEL >= 10) {
 		if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(&reply,
 					       ntlmssp_state,
-					       NULL,
 					       &challenge)))
 		{
 			NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
@@ -1229,7 +1224,6 @@ noccache:
 	if (DEBUGLEVEL >= 10) {
 		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(next_request,
 						  ntlmssp_state,
-						  NULL,
 						  &authenticate)))
 		{
 			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);

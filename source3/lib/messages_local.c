@@ -201,7 +201,7 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 	blob = data_blob_const(data.dptr, data.dsize);
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, result, NULL, result,
+		&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_array);
 
 	SAFE_FREE(data.dptr);
@@ -243,8 +243,7 @@ static NTSTATUS messaging_tdb_store(TDB_CONTEXT *msg_tdb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, NULL, array,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, array,
 		(ndr_push_flags_fn_t)ndr_push_messaging_array);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

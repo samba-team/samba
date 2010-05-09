@@ -261,7 +261,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	blob.data = (uint8_t *)attrstr;
 	blob.length = sizeret;
 
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), NULL, &dosattrib,
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -378,7 +378,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 		smb_fname_str_dbg(smb_fname) ));
 
 	ndr_err = ndr_push_struct_blob(
-			&blob, talloc_tos(), NULL, &dosattrib,
+			&blob, talloc_tos(), &dosattrib,
 			(ndr_push_flags_fn_t)ndr_push_xattr_DOSATTRIB);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -215,8 +215,6 @@ struct dsdb_schema {
 		struct ldb_dn *master_dn;
 	} fsmo;
 
-	struct smb_iconv_convenience *iconv_convenience;
-
 	/* Was this schema loaded from ldb (if so, then we will reload it when we detect a change in ldb) */
 	struct ldb_module *loaded_from_module;
 	struct dsdb_schema *(*refresh_fn)(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema);

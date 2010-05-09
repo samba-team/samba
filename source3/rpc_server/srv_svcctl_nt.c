@@ -442,7 +442,7 @@ WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
 	}
 
         for ( i=0; i<num_services; i++ ) {
-		buffer_size += ndr_size_ENUM_SERVICE_STATUSW(&services[i], NULL, 0);
+		buffer_size += ndr_size_ENUM_SERVICE_STATUSW(&services[i], 0);
 	}
 
 	buffer_size += buffer_size % 4;
@@ -457,7 +457,7 @@ WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
 		enum ndr_err_code ndr_err;
 		struct ndr_push *ndr;
 
-		ndr = ndr_push_init_ctx(p->mem_ctx, NULL);
+		ndr = ndr_push_init_ctx(p->mem_ctx);
 		if (ndr == NULL) {
 			return WERR_INVALID_PARAM;
 		}
@@ -605,8 +605,7 @@ WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
 			svc_stat_proc.process_id     = sys_getpid();
 			svc_stat_proc.service_flags  = 0x0;
 
-			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
-						       &svc_stat_proc,
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &svc_stat_proc,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_STATUS_PROCESS);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_INVALID_PARAM;
@@ -715,7 +714,7 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 
-	buffer_size = ndr_size_QUERY_SERVICE_CONFIG(r->out.query, NULL, 0);
+	buffer_size = ndr_size_QUERY_SERVICE_CONFIG(r->out.query, 0);
 	*r->out.needed = (buffer_size > r->in.offered) ? buffer_size : r->in.offered;
 
         if (buffer_size > r->in.offered ) {
@@ -761,14 +760,13 @@ WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p,
 
 			desc_buf.description = description;
 
-			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
-						       &desc_buf,
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &desc_buf,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_DESCRIPTION);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_INVALID_PARAM;
 			}
 
-			buffer_size = ndr_size_SERVICE_DESCRIPTION(&desc_buf, NULL, 0);
+			buffer_size = ndr_size_SERVICE_DESCRIPTION(&desc_buf, 0);
 			r->out.buffer = blob.data;
 
 			break;
@@ -784,14 +782,13 @@ WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p,
 
 			ZERO_STRUCT( actions );
 
-			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
-						       &actions,
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &actions,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_FAILURE_ACTIONS);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_INVALID_PARAM;
 			}
 
-			buffer_size = ndr_size_SERVICE_FAILURE_ACTIONS(&actions, NULL, 0);
+			buffer_size = ndr_size_SERVICE_FAILURE_ACTIONS(&actions, 0);
 			r->out.buffer = blob.data;
 
 			break;
@@ -883,7 +880,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
                 return WERR_NOMEM;
 
-	*r->out.needed = ndr_size_security_descriptor( sec_desc, NULL, 0 );
+	*r->out.needed = ndr_size_security_descriptor(sec_desc, 0);
 
 	if ( *r->out.needed > r->in.offered) {
 		return WERR_INSUFFICIENT_BUFFER;

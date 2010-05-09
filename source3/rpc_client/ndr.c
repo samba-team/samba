@@ -64,7 +64,7 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 					 state->call->name, NDR_IN, r);
 	}
 
-	push = ndr_push_init_ctx(talloc_tos(), NULL);
+	push = ndr_push_init_ctx(talloc_tos());
 	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -131,7 +131,7 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
+	pull = ndr_pull_init_blob(&blob, mem_ctx);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

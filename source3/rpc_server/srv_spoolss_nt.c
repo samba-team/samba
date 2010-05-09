@@ -33,14 +33,14 @@
 #include "registry.h"
 
 /* macros stolen from s4 spoolss server */
-#define SPOOLSS_BUFFER_UNION(fn,ic,info,level) \
-	((info)?ndr_size_##fn(info, level, ic, 0):0)
+#define SPOOLSS_BUFFER_UNION(fn,info,level) \
+	((info)?ndr_size_##fn(info, level, 0):0)
 
-#define SPOOLSS_BUFFER_UNION_ARRAY(mem_ctx,fn,ic,info,level,count) \
-	((info)?ndr_size_##fn##_info(mem_ctx, ic, level, count, info):0)
+#define SPOOLSS_BUFFER_UNION_ARRAY(mem_ctx,fn,info,level,count) \
+	((info)?ndr_size_##fn##_info(mem_ctx, level, count, info):0)
 
-#define SPOOLSS_BUFFER_ARRAY(mem_ctx,fn,ic,info,count) \
-	((info)?ndr_size_##fn##_info(mem_ctx, ic, count, info):0)
+#define SPOOLSS_BUFFER_ARRAY(mem_ctx,fn,info,count) \
+	((info)?ndr_size_##fn##_info(mem_ctx, count, info):0)
 
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= *r->out.needed)?val_true:val_false)
 
@@ -2253,7 +2253,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		os.build		= 2195;	/* build */
 		os.extra_string		= "";	/* leave extra string empty */
 
-		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &os,
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os,
 			(ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
@@ -4335,7 +4335,7 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrinters, NULL,
+						     spoolss_EnumPrinters, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -4425,7 +4425,7 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo, NULL,
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo, 
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -5147,7 +5147,7 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverInfo, NULL,
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverInfo, 
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -5805,7 +5805,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	 */
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment)) {
-		push_reg_sz(talloc_tos(), NULL, &buffer, printer->info_2->comment);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->comment);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "description",
 			REG_SZ, buffer.data, buffer.length);
 
@@ -5813,7 +5813,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename)) {
-		push_reg_sz(talloc_tos(), NULL, &buffer, printer->info_2->sharename);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->sharename);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shareName",
 			REG_SZ, buffer.data, buffer.length);
 
@@ -5829,7 +5829,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 			pname = printer->info_2->printername;
 
 
-		push_reg_sz(talloc_tos(), NULL, &buffer, pname);
+		push_reg_sz(talloc_tos(), &buffer, pname);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "printerName",
 			REG_SZ, buffer.data, buffer.length);
 
@@ -5837,7 +5837,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname)) {
-		push_reg_sz(talloc_tos(), NULL, &buffer, printer->info_2->portname);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->portname);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "portName",
 			REG_SZ, buffer.data, buffer.length);
 
@@ -5845,7 +5845,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	}
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location)) {
-		push_reg_sz(talloc_tos(), NULL, &buffer, printer->info_2->location);
+		push_reg_sz(talloc_tos(), &buffer, printer->info_2->location);
 		set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "location",
 			REG_SZ, buffer.data, buffer.length);
 
@@ -5855,7 +5855,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	/* here we need to update some more DsSpooler keys */
 	/* uNCName, serverName, shortServerName */
 
-	push_reg_sz(talloc_tos(), NULL, &buffer, global_myname());
+	push_reg_sz(talloc_tos(), &buffer, global_myname());
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "serverName",
 		REG_SZ, buffer.data, buffer.length);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "shortServerName",
@@ -5863,7 +5863,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 
 	slprintf( asc_buffer, sizeof(asc_buffer)-1, "\\\\%s\\%s",
                  global_myname(), printer->info_2->sharename );
-	push_reg_sz(talloc_tos(), NULL, &buffer, asc_buffer);
+	push_reg_sz(talloc_tos(), &buffer, asc_buffer);
 	set_printer_dataex( printer, SPOOL_DSSPOOLER_KEY, "uNCName",
 		REG_SZ, buffer.data, buffer.length);
 
@@ -6414,7 +6414,7 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumJobs, NULL,
+						     spoolss_EnumJobs, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -6725,7 +6725,7 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrinterDrivers, NULL,
+						     spoolss_EnumPrinterDrivers, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -6868,7 +6868,7 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumForms, NULL,
+						     spoolss_EnumForms, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -6958,7 +6958,7 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, NULL,
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, 
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -7206,7 +7206,7 @@ WERROR _spoolss_EnumPorts(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPorts, NULL,
+						     spoolss_EnumPorts, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -7722,7 +7722,7 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 		return werror;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, NULL,
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, 
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -8289,7 +8289,7 @@ WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrintProcessors, NULL,
+						     spoolss_EnumPrintProcessors,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -8376,7 +8376,7 @@ WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrintProcDataTypes, NULL,
+						     spoolss_EnumPrintProcDataTypes, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -8549,7 +8549,7 @@ WERROR _spoolss_EnumMonitors(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumMonitors, NULL,
+						     spoolss_EnumMonitors, 
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -8710,8 +8710,8 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_JobInfo, NULL,
-					       r->out.info, r->in.level);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_JobInfo, r->out.info,
+										   r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -9072,7 +9072,7 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 		}
 	}
 
-	if (!push_reg_multi_sz(p->mem_ctx, NULL, &blob, array)) {
+	if (!push_reg_multi_sz(p->mem_ctx, &blob, array)) {
 		result = WERR_NOMEM;
 		goto done;
 	}
@@ -9307,7 +9307,7 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_ARRAY(p->mem_ctx,
-					       spoolss_EnumPrinterDataEx, NULL,
+					       spoolss_EnumPrinterDataEx, 
 					       *r->out.info,
 					       *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -9378,8 +9378,8 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrintProcessorDirectoryInfo, NULL,
-					       r->out.info, r->in.level);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrintProcessorDirectoryInfo,
+										   r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -9396,7 +9396,7 @@ static bool push_monitorui_buf(TALLOC_CTX *mem_ctx, DATA_BLOB *buf,
 
 	ui.dll_name = dllname;
 
-	ndr_err = ndr_push_struct_blob(buf, mem_ctx, NULL, &ui,
+	ndr_err = ndr_push_struct_blob(buf, mem_ctx, &ui,
 		       (ndr_push_flags_fn_t)ndr_push_spoolss_MonitorUi);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
 		NDR_PRINT_DEBUG(spoolss_MonitorUi, &ui);
@@ -9435,7 +9435,7 @@ static bool pull_port_data_1(TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB *buf)
 {
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, NULL, port1,
+	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, port1,
 		       (ndr_pull_flags_fn_t)ndr_pull_spoolss_PortData1);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
 		NDR_PRINT_DEBUG(spoolss_PortData1, port1);
@@ -9451,7 +9451,7 @@ static bool pull_port_data_2(TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB *buf)
 {
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, NULL, port2,
+	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, port2,
 		       (ndr_pull_flags_fn_t)ndr_pull_spoolss_PortData2);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
 		NDR_PRINT_DEBUG(spoolss_PortData2, port2);

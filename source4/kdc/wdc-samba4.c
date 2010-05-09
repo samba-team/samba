@@ -85,7 +85,6 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	}
 
 	nt_status = samba_kdc_update_pac_blob(mem_ctx, context,
-					      p->kdc_db_ctx->ic_ctx,
 					      pac, pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",

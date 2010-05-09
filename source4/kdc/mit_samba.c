@@ -98,8 +98,6 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 	cli_credentials_set_kerberos_state(ctx->session_info->credentials,
 					   CRED_DONT_USE_KERBEROS);
 
-	ctx->db_ctx->ic_ctx = lp_iconv_convenience(ctx->db_ctx->lp_ctx);
-
 	ctx->db_ctx->samdb = samdb_connect(ctx,
 					   ctx->db_ctx->ev_ctx,
 					   ctx->db_ctx->lp_ctx,
@@ -275,7 +273,6 @@ static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
 	}
 
 	nt_status = samba_kdc_update_pac_blob(tmp_ctx, ctx->context,
-					      ctx->db_ctx->ic_ctx,
 					      &pac, logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",

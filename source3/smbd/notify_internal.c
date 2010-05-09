@@ -212,7 +212,7 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	status = NT_STATUS_OK;
 	if (blob.length > 0) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(&blob, notify->array, NULL, notify->array,
+		ndr_err = ndr_pull_struct_blob(&blob, notify->array, notify->array,
 					       (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			/* 1. log that we got a corrupt notify_array
@@ -275,7 +275,7 @@ static NTSTATUS notify_save(struct notify_context *notify, struct db_record *rec
 	tmp_ctx = talloc_new(notify);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL, notify->array,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, notify->array,
 				      (ndr_push_flags_fn_t)ndr_push_notify_array);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -313,7 +313,7 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, NULL, &ev,
+	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, &ev,
 				       (ndr_pull_flags_fn_t)ndr_pull_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -429,8 +429,7 @@ static void notify_add_onelevel(struct notify_context *notify,
 	blob.length = rec->value.dsize;
 
 	if (blob.length > 0) {
-		ndr_err = ndr_pull_struct_blob(
-			&blob, array, NULL, array,
+		ndr_err = ndr_pull_struct_blob(&blob, array, array,
 			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",
@@ -456,8 +455,7 @@ static void notify_add_onelevel(struct notify_context *notify,
 	array->entries[array->num_entries].server = notify->server;
 	array->num_entries += 1;
 
-	ndr_err = ndr_push_struct_blob(
-		&blob, rec, NULL, array,
+	ndr_err = ndr_push_struct_blob(&blob, rec, array,
 		(ndr_push_flags_fn_t)ndr_push_notify_entry_array);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(10, ("ndr_push_notify_entry_array failed: %s\n",
@@ -609,8 +607,7 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 	blob.length = rec->value.dsize;
 
 	if (blob.length > 0) {
-		ndr_err = ndr_pull_struct_blob(
-			&blob, array, NULL, array,
+		ndr_err = ndr_pull_struct_blob(&blob, array, array,
 			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",
@@ -646,8 +643,7 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 		return NT_STATUS_OK;
 	}
 
-	ndr_err = ndr_push_struct_blob(
-		&blob, rec, NULL, array,
+	ndr_err = ndr_push_struct_blob(&blob, rec, array,
 		(ndr_push_flags_fn_t)ndr_push_notify_entry_array);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(10, ("ndr_push_notify_entry_array failed: %s\n",
@@ -809,7 +805,7 @@ static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *
 
 	tmp_ctx = talloc_new(notify);
 
-	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, NULL, &ev,
+	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, &ev,
 				       (ndr_push_flags_fn_t)ndr_push_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -853,8 +849,7 @@ void notify_onelevel(struct notify_context *notify, uint32_t action,
 
 	if (blob.length > 0) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(
-			&blob, array, NULL, array,
+		ndr_err = ndr_pull_struct_blob(&blob, array, array,
 			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",

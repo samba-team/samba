@@ -412,7 +412,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* store it back */
 
-	sd_size = ndr_size_security_descriptor(sd_store->sd, NULL, 0)
+	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
 		+ sizeof(SEC_DESC_BUF);
 
 	status = marshall_sec_desc_buf(ctx, sd_store, &data.dptr, &data.dsize);
@@ -3526,7 +3526,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 		case REG_SZ:
 			blob = data_blob_const(regval_data_p(guid_val),
 					       regval_size(guid_val));
-			pull_reg_sz(talloc_tos(), NULL, &blob, (const char **)&guid_str);
+			pull_reg_sz(talloc_tos(), &blob, (const char **)&guid_str);
 			ret = NT_STATUS_IS_OK(GUID_from_string( guid_str, guid ));
 			talloc_free(guid_str);
 			break;
@@ -4584,7 +4584,7 @@ static bool convert_driver_init(TALLOC_CTX *mem_ctx, NT_DEVICEMODE *nt_devmode,
 
 	blob = data_blob_const(data, data_len);
 
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &devmode,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &devmode,
 			(ndr_pull_flags_fn_t)ndr_pull_spoolss_DeviceMode);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(10,("convert_driver_init: error parsing spoolss_DeviceMode\n"));

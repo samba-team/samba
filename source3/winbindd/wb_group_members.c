@@ -413,7 +413,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 
 			sid = &members[i].sid;
 			key = data_blob_const(
-				sid, ndr_size_dom_sid(sid, NULL, 0));
+				sid, ndr_size_dom_sid(sid, 0));
 
 			if (!talloc_dict_set(state->users, key, &m)) {
 				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
