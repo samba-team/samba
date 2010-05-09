@@ -194,9 +194,14 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		WERROR werr;
+		unsigned int msg_debug_level = 0;
 		werr = ntstatus_to_werror(status);
+		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+			msg_debug_level = 1;
+		}
 
-		DEBUG(0,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
+		DEBUG(msg_debug_level,
+			("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
 			 nt_errstr(status), win_errstr(werr)));
