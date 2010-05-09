@@ -99,6 +99,13 @@ TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.
 
 $(eval $(call proto_header_template,$(torturesrcdir)/ndr/proto.h,$(TORTURE_NDR_OBJ_FILES:.o=.c)))
 
+[SUBSYSTEM::TORTURE_DFS]
+PRIVATE_DEPENDENCIES = torture LIBCLI_SMB NDR_DFSBLOBS TORTURE_UTIL
+
+TORTURE_DFS_OBJ_FILES = $(addprefix $(torturesrcdir)/dfs/, common.o domaindfs.o)
+
+$(eval $(call proto_header_template,$(torturesrcdir)/dfs/proto.h,$(TORTURE_DFS_OBJ_FILES:.o=.c)))
+
 [MODULE::torture_rpc]
 OUTPUT_TYPE = MERGED_OBJ
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
@@ -112,7 +119,7 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER LIBSAMBA-NET \
-		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
+		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP TORTURE_DFS \
 		dcerpc_server service process_model ntvfs SERVICE_SMB RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_LDB_MODULE
 
 torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
