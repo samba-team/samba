@@ -109,15 +109,11 @@ pwdLastSet: 0
 """ % (user_dn)
         self.modify_ldif(mod)
 
-    def newuser(self, username, unixname, password,
+    def newuser(self, username, password,
                 force_password_change_at_next_login_req=False):
         """Adds a new user
 
-        Note: This call adds also the ID mapping for winbind; therefore it works
-        *only* on SAMBA 4.
-        
         :param username: Name of the new user
-        :param unixname: Name of the unix user to map to
         :param password: Password for the new user
         :param force_password_change_at_next_login_req: Force password change
         """
@@ -135,23 +131,6 @@ pwdLastSet: 0
             self.setpassword("(dn=" + user_dn + ")", password,
               force_password_change_at_next_login_req)
 
-            # Gets the user SID (for the account mapping setup)
-            res = self.search(user_dn, scope=ldb.SCOPE_BASE,
-                              expression="objectclass=*",
-                              attrs=["objectSid"])
-            assert len(res) == 1
-            user_sid = self.schema_format_value("objectSid", res[0]["objectSid"][0])
-            
-            try:
-                idmap = IDmapDB(lp=self.lp)
-
-                user = pwd.getpwnam(unixname)
-
-                # setup ID mapping for this UID
-                idmap.setup_name_mapping(user_sid, idmap.TYPE_UID, user[2])
-
-            except KeyError:
-                pass
         except:
             self.transaction_cancel()
             raise
