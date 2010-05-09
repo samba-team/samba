@@ -3062,6 +3062,7 @@ void flush_negative_conn_cache_for_domain(const char *domain);
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
+NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
 /* The following definitions come from libsmb/dsgetdcname.c  */
 
