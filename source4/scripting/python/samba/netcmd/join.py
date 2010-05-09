@@ -26,7 +26,7 @@ from samba.dcerpc.netr import SEC_CHAN_WKSTA, SEC_CHAN_BDC
 
 
 class cmd_join(Command):
-    """Joins domain as either member or backup domain controller."""
+    """Joins domain as either member or backup domain controller [server connection needed]"""
 
     synopsis = "%prog join <domain> [BDC | MEMBER] [options]"
 

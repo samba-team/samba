@@ -28,7 +28,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 
 class cmd_setpassword(Command):
-    """Change the password of a user."""
+    """(Re)sets the password on a user account"""
 
     synopsis = "setpassword [username] [options]"
 

@@ -27,7 +27,7 @@ from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
 
 class cmd_enableaccount(Command):
-    """Enable an account."""
+    """Enables a user"""
 
     synopsis = "enableaccount [username] [options]"
 

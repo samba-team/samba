@@ -196,8 +196,8 @@ int net_run_usage(struct net_context *ctx,
 
 /* main function table */
 static const struct net_functable net_functable[] = {
-	{"password", "change password\n", net_password, net_password_usage},
-	{"join", "join a domain\n", net_join, net_join_usage},
+	{"password", "Changes/Sets the password on a user account [server connection needed]\n", net_password, net_password_usage},
+	{"join", "Joins a domain [server connection needed]\n", net_join, net_join_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"drs", "Implements functionality offered by repadmin.exe utility in Windows\n", net_drs, net_drs_usage},

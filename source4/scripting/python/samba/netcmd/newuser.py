@@ -28,7 +28,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 
 class cmd_newuser(Command):
-    """Create a new user."""
+    """Creates a new user"""
 
     synopsis = "newuser [options] <username> [<password>]"
 

@@ -27,7 +27,7 @@ from samba.netcmd import (
     )
 
 class cmd_time(Command):
-    """Retrieve the time on a remote server."""
+    """Retrieve the time on a remote server [server connection needed]"""
     synopsis = "%prog time <server-name>"
 
     takes_optiongroups = {

@@ -29,7 +29,7 @@ from samba.netcmd import (
     )
 
 class cmd_vampire(Command):
-    """Join and synchronise a remote AD domain to the local server."""
+    """Join and synchronise a remote AD domain to the local server [server connection needed]"""
     synopsis = "%prog vampire [options] <domain>"
 
     takes_optiongroups = {

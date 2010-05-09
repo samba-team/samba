@@ -47,7 +47,7 @@ from samba.dsdb import (
     )
 
 class cmd_domainlevel(Command):
-    """Raises domain and forest function levels."""
+    """Raises domain and forest function levels"""
 
     synopsis = "(show | raise <options>)"
 

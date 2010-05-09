@@ -25,7 +25,7 @@ from samba.netcmd import Command, CommandError
 
 
 class cmd_machinepw(Command):
-    """Get a machine password out of our SAM."""
+    """Gets a machine password out of our SAM"""
 
     synopsis = "%prog machinepw <accountname>"
 

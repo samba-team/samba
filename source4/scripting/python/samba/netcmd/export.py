@@ -28,7 +28,7 @@ from samba.netcmd import (
     )
 
 class cmd_export_keytab(Command):
-    """Dumps kerberos keys of the domain into a keytab."""
+    """Dumps kerberos keys of the domain into a keytab"""
     synopsis = "%prog export keytab <keytab>"
 
     takes_optiongroups = {
@@ -50,7 +50,7 @@ class cmd_export_keytab(Command):
 
 
 class cmd_export(SuperCommand):
-    """Dumps the sam of the domain we are joined to."""
+    """Dumps the sam of the domain we are joined to [server connection needed]"""
 
     subcommands = {}
     subcommands["keytab"] = cmd_export_keytab()

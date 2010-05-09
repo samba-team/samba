@@ -31,7 +31,7 @@ from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX
 from samba.netcmd import Command, CommandError, Option
 
 class cmd_pwsettings(Command):
-    """Sets password settings.
+    """Sets password settings
 
     Password complexity, history length, minimum password length, the minimum 
     and maximum password age) on a Samba4 server.

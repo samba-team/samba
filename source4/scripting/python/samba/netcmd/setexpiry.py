@@ -28,7 +28,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 
 class cmd_setexpiry(Command):
-    """Set the expiration of a user account."""
+    """Sets the expiration of a user account"""
 
     synopsis = "setexpiry [username] [options]"
 

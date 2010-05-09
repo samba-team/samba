@@ -32,7 +32,7 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 
 class cmd_fsmo(Command):
-    """Makes the targer DC transfer or seize a fsmo role"""
+    """Makes the targer DC transfer or seize a fsmo role [server connection needed]"""
 
     synopsis = "(show | transfer <options> | seize <options>)"
 

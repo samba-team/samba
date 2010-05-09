@@ -68,7 +68,7 @@ class cmd_user_delete(Command):
 
 
 class cmd_user(SuperCommand):
-    """User management."""
+    """User management [server connection needed]"""
 
     subcommands = {}
     subcommands["add"] = cmd_user_add()
