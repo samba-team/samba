@@ -66,9 +66,9 @@ test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $fa
 testit "domain join with kerberos ccache" $VALGRIND $net join $DOMAIN $CONFIGURATION  -W "$DOMAIN" -k yes $@ || failed=`expr $failed + 1`
 testit "check time with kerberos ccache" $VALGRIND $net $CONFIGURATION -W "$DOMAIN" -k yes $@ time $SERVER || failed=`expr $failed + 1`
 
-testit "add user with kerberos ccache" $VALGRIND $net user add nettestuser $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 USERPASS=testPass@12%
 echo $USERPASS > ./tmpuserpassfile
+testit "add user with kerberos ccache" $VALGRIND $net user add nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
 BASEDN=`$ldbsearch $options --basedn='' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
