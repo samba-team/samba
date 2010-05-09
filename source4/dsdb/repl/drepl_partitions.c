@@ -153,7 +153,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	W_ERROR_HAVE_NO_MEMORY(source);
 
 	ndr_err = ndr_pull_struct_blob(val, source, 
-				       lp_iconv_convenience(s->task->lp_ctx), &source->_repsFromBlob,
+				       &source->_repsFromBlob,
 				       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);

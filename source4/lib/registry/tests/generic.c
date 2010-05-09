@@ -65,7 +65,7 @@ static bool test_reg_val_data_string_dword(struct torture_context *ctx)
 	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00 };
 	DATA_BLOB db = { d, 4 };
 	torture_assert_str_equal(ctx, "0x00000020",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD, db),
+				 reg_val_data_string(ctx, REG_DWORD, db),
 				 "dword failed");
 	return true;
 }
@@ -75,7 +75,7 @@ static bool test_reg_val_data_string_dword_big_endian(struct torture_context *ct
 	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00 };
 	DATA_BLOB db = { d, 4 };
 	torture_assert_str_equal(ctx, "0x00000020",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_DWORD_BIG_ENDIAN, db),
+				 reg_val_data_string(ctx, REG_DWORD_BIG_ENDIAN, db),
 				 "dword failed");
 	return true;
 }
@@ -85,7 +85,7 @@ static bool test_reg_val_data_string_qword(struct torture_context *ctx)
 	uint8_t d[] = { 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	DATA_BLOB db = { d, 8 };
 	torture_assert_str_equal(ctx, "0x0000000000000020",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_QWORD, db),
+				 reg_val_data_string(ctx, REG_QWORD, db),
 				 "qword failed");
 	return true;
 }
@@ -93,14 +93,14 @@ static bool test_reg_val_data_string_qword(struct torture_context *ctx)
 static bool test_reg_val_data_string_sz(struct torture_context *ctx)
 {
 	DATA_BLOB db;
-	convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
+	convert_string_talloc(ctx, CH_UTF8, CH_UTF16,
 					  "bla", 3, (void **)&db.data, &db.length, false);
 	torture_assert_str_equal(ctx, "bla",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_SZ, db),
+				 reg_val_data_string(ctx, REG_SZ, db),
 				 "sz failed");
 	db.length = 4;
 	torture_assert_str_equal(ctx, "bl",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_SZ, db),
+				 reg_val_data_string(ctx, REG_SZ, db),
 				 "sz failed");
 	return true;
 }
@@ -110,7 +110,7 @@ static bool test_reg_val_data_string_binary(struct torture_context *ctx)
 	uint8_t x[] = { 0x1, 0x2, 0x3, 0x4 };
 	DATA_BLOB db = { x, 4 };
 	torture_assert_str_equal(ctx, "01020304",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_BINARY, db),
+				 reg_val_data_string(ctx, REG_BINARY, db),
 				 "binary failed");
 	return true;
 }
@@ -120,7 +120,7 @@ static bool test_reg_val_data_string_empty(struct torture_context *ctx)
 {
 	DATA_BLOB db = { NULL, 0 };
 	torture_assert_str_equal(ctx, "",
-				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_BINARY, db),
+				 reg_val_data_string(ctx, REG_BINARY, db),
 				 "empty failed");
 	return true;
 }
@@ -128,12 +128,12 @@ static bool test_reg_val_data_string_empty(struct torture_context *ctx)
 static bool test_reg_val_description(struct torture_context *ctx)
 {
 	DATA_BLOB data;
-	convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
+	convert_string_talloc(ctx, CH_UTF8, CH_UTF16,
 					    "stationary traveller",
 					    strlen("stationary traveller"),
 					    (void **)&data.data, &data.length, false);
 	torture_assert_str_equal(ctx, "camel = REG_SZ : stationary traveller",
-				 reg_val_description(ctx, lp_iconv_convenience(ctx->lp_ctx), "camel", REG_SZ, data),
+				 reg_val_description(ctx, "camel", REG_SZ, data),
 				 "reg_val_description failed");
 	return true;
 }
@@ -142,12 +142,12 @@ static bool test_reg_val_description(struct torture_context *ctx)
 static bool test_reg_val_description_nullname(struct torture_context *ctx)
 {
 	DATA_BLOB data;
-	convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
+	convert_string_talloc(ctx, CH_UTF8, CH_UTF16,
 					    "west berlin",
 					    strlen("west berlin"),
 					    (void **)&data.data, &data.length, false);
 	torture_assert_str_equal(ctx, "<No Name> = REG_SZ : west berlin",
-				 reg_val_description(ctx, lp_iconv_convenience(ctx->lp_ctx), NULL, REG_SZ, data),
+				 reg_val_description(ctx, NULL, REG_SZ, data),
 				 "description with null name failed");
 	return true;
 }

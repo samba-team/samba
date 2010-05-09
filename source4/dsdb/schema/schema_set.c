@@ -589,7 +589,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 		goto nomem;
 	}
 
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")));
+	schema = dsdb_new_schema(mem_ctx);
 
 	schema->fsmo.we_are_master = true;
 	schema->fsmo.master_dn = ldb_dn_new_fmt(schema, ldb, "@PROVISION_SCHEMA_MASTER");

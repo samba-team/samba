@@ -486,7 +486,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, NULL);
+	status = ncacn_push_auth(&rep->blob, call, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -531,7 +531,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, NULL);
+	status = ncacn_push_auth(&rep->blob, call, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -732,7 +732,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
+	status = ncacn_push_auth(&rep->blob, call, &pkt,
+							 call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call->context);
 		call->context = NULL;
@@ -923,7 +924,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
+	status = ncacn_push_auth(&rep->blob, call, &pkt, call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -962,8 +963,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
 	}
 
-	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call,
-				  lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
+	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
 	NT_STATUS_HAVE_NO_MEMORY(pull);
 
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -1023,7 +1023,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	}
 
 	/* form the reply NDR */
-	push = ndr_push_init_ctx(call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
+	push = ndr_push_init_ctx(call);
 	NT_STATUS_HAVE_NO_MEMORY(push);
 
 	/* carry over the pointer count to the reply in case we are

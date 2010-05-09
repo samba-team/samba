@@ -438,7 +438,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 		blob.length = r.in.offered;
 		blob.data = talloc_steal(tctx, r.out.service);
 
-		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
+		ndr = ndr_pull_init_blob(&blob, tctx);
 
 		service = talloc_array(tctx, struct ENUM_SERVICE_STATUSW, services_returned);
 		if (!service) {

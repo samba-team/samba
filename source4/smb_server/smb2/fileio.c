@@ -109,7 +109,7 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 				smb2srv_send_error(req,  NT_STATUS_NO_MEMORY);
 				return;
 			}
-			ndr_err = ndr_pull_struct_blob(&io->smb2.in.blobs.blobs[i].data, io, NULL,
+			ndr_err = ndr_pull_struct_blob(&io->smb2.in.blobs.blobs[i].data, io, 
 						       io->smb2.in.sec_desc,
 						       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

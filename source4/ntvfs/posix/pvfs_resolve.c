@@ -186,8 +186,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 /*
   parse a alternate data stream name
 */
-static NTSTATUS parse_stream_name(struct smb_iconv_convenience *ic,
-				  struct pvfs_filename *name,
+static NTSTATUS parse_stream_name(struct pvfs_filename *name,
 				  const char *s)
 {
 	char *p, *stream_name;
@@ -203,7 +202,7 @@ static NTSTATUS parse_stream_name(struct smb_iconv_convenience *ic,
 
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(ic, p, &c_size);
+		codepoint_t c = next_codepoint(p, &c_size);
 
 		switch (c) {
 		case '/':
@@ -259,7 +258,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       unsigned int flags, struct pvfs_filename *name)
 {
 	char *ret, *p, *p_start;
-	struct smb_iconv_convenience *ic = NULL;
 	NTSTATUS status;
 
 	name->original_name = talloc_strdup(name, cifs_name);
@@ -300,10 +298,9 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	   for legal characters */
 	p_start = p;
 
-	ic = lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx);
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(ic, p, &c_size);
+		codepoint_t c = next_codepoint(p, &c_size);
 
 		if (c <= 0x1F) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
@@ -336,7 +333,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			if (name->has_wildcard) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
-			status = parse_stream_name(ic, name, p);
+			status = parse_stream_name(name, p);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -388,7 +385,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
   return NULL if it can't be reduced
 */
 static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, 
-				 struct smb_iconv_convenience *iconv_convenience, 
 				 const char **fname, unsigned int flags)
 {
 	codepoint_t c;
@@ -401,7 +397,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 	if (s == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (num_components=1, p=s; *p; p += c_size) {
-		c = next_codepoint_convenience(iconv_convenience, p, &c_size);
+		c = next_codepoint(p, &c_size);
 		if (c == '\\') num_components++;
 	}
 
@@ -413,7 +409,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 
 	components[0] = s;
 	for (i=0, p=s; *p; p += c_size) {
-		c = next_codepoint_convenience(iconv_convenience, p, &c_size);
+		c = next_codepoint(p, &c_size);
 		if (c == '\\') {
 			*p = 0;
 			components[++i] = p+1;
@@ -539,7 +535,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
 		/* it might contain .. components which need to be reduced */
-		status = pvfs_reduce_name(*name, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), &cifs_name, flags);
+		status = pvfs_reduce_name(*name, &cifs_name, flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

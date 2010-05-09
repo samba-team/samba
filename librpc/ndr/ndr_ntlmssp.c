@@ -108,7 +108,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AV_PAIR_LIST(struct ndr_pull *ndr, int ndr_f
 }
 
 _PUBLIC_ void ndr_print_ntlmssp_nt_response(TALLOC_CTX *mem_ctx,
-					    struct smb_iconv_convenience *ic,
 					    const DATA_BLOB *nt_response,
 					    bool ntlmv2)
 {
@@ -117,7 +116,7 @@ _PUBLIC_ void ndr_print_ntlmssp_nt_response(TALLOC_CTX *mem_ctx,
 	if (ntlmv2) {
 		struct NTLMv2_RESPONSE nt;
 		if (nt_response->length > 24) {
-			ndr_err = ndr_pull_struct_blob(nt_response, mem_ctx, ic, &nt,
+			ndr_err = ndr_pull_struct_blob(nt_response, mem_ctx, &nt,
 					(ndr_pull_flags_fn_t)ndr_pull_NTLMv2_RESPONSE);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				NDR_PRINT_DEBUG(NTLMv2_RESPONSE, &nt);
@@ -126,7 +125,7 @@ _PUBLIC_ void ndr_print_ntlmssp_nt_response(TALLOC_CTX *mem_ctx,
 	} else {
 		struct NTLM_RESPONSE nt;
 		if (nt_response->length == 24) {
-			ndr_err = ndr_pull_struct_blob(nt_response, mem_ctx, ic, &nt,
+			ndr_err = ndr_pull_struct_blob(nt_response, mem_ctx, &nt,
 					(ndr_pull_flags_fn_t)ndr_pull_NTLM_RESPONSE);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				NDR_PRINT_DEBUG(NTLM_RESPONSE, &nt);
@@ -136,7 +135,6 @@ _PUBLIC_ void ndr_print_ntlmssp_nt_response(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ void ndr_print_ntlmssp_lm_response(TALLOC_CTX *mem_ctx,
-					    struct smb_iconv_convenience *ic,
 					    const DATA_BLOB *lm_response,
 					    bool ntlmv2)
 {
@@ -145,7 +143,7 @@ _PUBLIC_ void ndr_print_ntlmssp_lm_response(TALLOC_CTX *mem_ctx,
 	if (ntlmv2) {
 		struct LMv2_RESPONSE lm;
 		if (lm_response->length == 24) {
-			ndr_err = ndr_pull_struct_blob(lm_response, mem_ctx, ic, &lm,
+			ndr_err = ndr_pull_struct_blob(lm_response, mem_ctx, &lm,
 					(ndr_pull_flags_fn_t)ndr_pull_LMv2_RESPONSE);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				NDR_PRINT_DEBUG(LMv2_RESPONSE, &lm);
@@ -154,7 +152,7 @@ _PUBLIC_ void ndr_print_ntlmssp_lm_response(TALLOC_CTX *mem_ctx,
 	} else {
 		struct LM_RESPONSE lm;
 		if (lm_response->length == 24) {
-			ndr_err = ndr_pull_struct_blob(lm_response, mem_ctx, ic, &lm,
+			ndr_err = ndr_pull_struct_blob(lm_response, mem_ctx, &lm,
 					(ndr_pull_flags_fn_t)ndr_pull_LM_RESPONSE);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				NDR_PRINT_DEBUG(LM_RESPONSE, &lm);

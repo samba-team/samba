@@ -182,7 +182,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ndr_err = ndr_pull_struct_blob(v, result, NULL, result,
+	ndr_err = ndr_pull_struct_blob(v, result, result,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		*errstring = talloc_asprintf(mem_ctx, "Failed to parse SID on record for %s in %s", 

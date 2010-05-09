@@ -75,7 +75,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		r->out.error_string = NULL;
 		return status;
 	}
-	status = cldap_netlogon(cldap, lp_iconv_convenience(lctx->lp_ctx), tmp_ctx, &search);
+	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)
 	    || !search.out.netlogon.data.nt5_ex.client_site) {
 		/*

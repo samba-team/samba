@@ -73,7 +73,6 @@ struct tevent_req;
 
 struct gensec_settings {
 	struct loadparm_context *lp_ctx;
-	struct smb_iconv_convenience *iconv_convenience;
 	const char *target_hostname;
 };
 

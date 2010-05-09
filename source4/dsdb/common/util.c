@@ -385,7 +385,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	if (sid == NULL) {
 		return NULL;
 	}
-	ndr_err = ndr_pull_struct_blob(v, sid, NULL, sid,
+	ndr_err = ndr_pull_struct_blob(v, sid, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
@@ -816,7 +816,6 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_blob(&v, mem_ctx, 
-				       lp_iconv_convenience(ldb_get_opaque(sam_ldb, "loadparm")),
 				       sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2494,7 +2493,7 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	for (i=0; i<(*count); i++) {
 		enum ndr_err_code ndr_err;
 		ndr_err = ndr_pull_struct_blob(&el->values[i], 
-					       mem_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+					       mem_ctx, 
 					       &(*r)[i], 
 					       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2535,7 +2534,7 @@ WERROR dsdb_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 		struct ldb_val v;
 		enum ndr_err_code ndr_err;
 
-		ndr_err = ndr_push_struct_blob(&v, tmp_ctx, lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")),
+		ndr_err = ndr_push_struct_blob(&v, tmp_ctx, 
 					       &r[i], 
 					       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2981,7 +2980,7 @@ NTSTATUS dsdb_get_extended_dn_sid(struct ldb_dn *dn, struct dom_sid *sid, const 
 
 	tmp_ctx = talloc_new(NULL);
 
-	ndr_err = ndr_pull_struct_blob_all(sid_blob, tmp_ctx, NULL, sid,
+	ndr_err = ndr_pull_struct_blob_all(sid_blob, tmp_ctx, sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -3243,8 +3242,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		enum ndr_err_code ndr_err;
 		struct replUpToDateVectorBlob ouv;
 
-		ndr_err = ndr_pull_struct_blob(ouv_value, r,
-					       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), &ouv,
+		ndr_err = ndr_pull_struct_blob(ouv_value, r, &ouv,
 					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(r);

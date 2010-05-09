@@ -97,11 +97,9 @@ NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_dat
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 const char *dir,
 					 struct server_id server_id, 
-					 struct smb_iconv_convenience *iconv_convenience,
 					 struct tevent_context *ev);
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
 					 const char *dir,
-					 struct smb_iconv_convenience *iconv_convenience,
 					 struct tevent_context *ev);
 NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id server, 
 			    uint32_t msg_type, void *ptr);

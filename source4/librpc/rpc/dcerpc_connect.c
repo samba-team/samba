@@ -121,7 +121,6 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	conn->in.service_type           = NULL;
 	conn->in.workgroup		= lp_workgroup(lp_ctx);
 	conn->in.gensec_settings = lp_gensec_settings(conn, lp_ctx);
-	conn->in.iconv_convenience = lp_iconv_convenience(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &conn->in.options);
 	lp_smbcli_session_options(lp_ctx, &conn->in.session_options);
@@ -743,7 +742,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	c->private_data = s;
 
 	/* initialise dcerpc pipe structure */
-	s->pipe = dcerpc_pipe_init(c, ev, lp_iconv_convenience(lp_ctx));
+	s->pipe = dcerpc_pipe_init(c, ev);
 	if (composite_nomem(s->pipe, c)) return c;
 
 	if (DEBUGLEVEL >= 10)

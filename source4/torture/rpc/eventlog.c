@@ -171,8 +171,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 			blob = data_blob_const(r.out.data + pos, size);
 			dump_data(0, blob.data, blob.length);
 
-			ndr_err = ndr_pull_struct_blob_all(&blob, tctx,
-				lp_iconv_convenience(tctx->lp_ctx), &rec,
+			ndr_err = ndr_pull_struct_blob_all(&blob, tctx, &rec,
 				(ndr_pull_flags_fn_t)ndr_pull_EVENTLOGRECORD);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				status = ndr_map_error2ntstatus(ndr_err);

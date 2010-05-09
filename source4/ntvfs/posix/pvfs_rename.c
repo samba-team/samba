@@ -95,7 +95,6 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs,
   resolve a wildcard rename pattern. This works on one component of the name
 */
 static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx, 
-						   struct smb_iconv_convenience *iconv_convenience,
 						   const char *fname, 
 						   const char *pattern)
 {
@@ -115,16 +114,16 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	while (*p2) {
 		codepoint_t c1, c2;
 		size_t c_size1, c_size2;
-		c1 = next_codepoint_convenience(iconv_convenience, p1, &c_size1);
-		c2 = next_codepoint_convenience(iconv_convenience, p2, &c_size2);
+		c1 = next_codepoint(p1, &c_size1);
+		c2 = next_codepoint(p2, &c_size2);
 		if (c2 == '?') {
-			d += push_codepoint_convenience(iconv_convenience, d, c1);
+			d += push_codepoint(d, c1);
 		} else if (c2 == '*') {
 			memcpy(d, p1, strlen(p1));
 			d += strlen(p1);
 			break;
 		} else {
-			d += push_codepoint_convenience(iconv_convenience, d, c2);
+			d += push_codepoint(d, c2);
 		}
 
 		p1 += c_size1;
@@ -142,7 +141,6 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
   resolve a wildcard rename pattern.
 */
 static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx, 
-					 struct smb_iconv_convenience *iconv_convenience,
 					 const char *fname, 
 					 const char *pattern)
 {
@@ -175,8 +173,8 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	base1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, base1, base2);
-	ext1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, ext1, ext2);
+	base1 = pvfs_resolve_wildcard_component(mem_ctx, base1, base2);
+	ext1 = pvfs_resolve_wildcard_component(mem_ctx, ext1, ext2);
 	if (base1 == NULL || ext1 == NULL) {
 		return NULL;
 	}
@@ -283,7 +281,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	NTSTATUS status;
 
 	/* resolve the wildcard pattern for this name */
-	fname2 = pvfs_resolve_wildcard(mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), fname1, fname2);
+	fname2 = pvfs_resolve_wildcard(mem_ctx, fname1, fname2);
 	if (fname2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

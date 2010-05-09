@@ -383,7 +383,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* non-signed packets are simple */
 	if (sig_size == 0) {
-		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
+		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
 
@@ -397,18 +397,18 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		 * TODO: let the gensec mech decide if it wants to generate a signature
 		 *       that might be needed for schannel...
 		 */
-		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
+		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 
 	case DCERPC_AUTH_LEVEL_NONE:
-		status = ncacn_push_auth(blob, call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx), pkt, NULL);
+		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 
 	default:
 		return false;
 	}
 
-	ndr = ndr_push_init_ctx(call, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx));
+	ndr = ndr_push_init_ctx(call);
 	if (!ndr) {
 		return false;
 	}

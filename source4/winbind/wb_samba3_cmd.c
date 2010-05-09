@@ -54,7 +54,6 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 
 	ndr_err = ndr_pull_struct_blob(&info3b,
 				       mem_ctx,
-				       lp_iconv_convenience(s3call->wbconn->lp_ctx), 
 				       info3,
 				       (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

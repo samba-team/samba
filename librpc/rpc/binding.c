@@ -376,7 +376,7 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
 
-	ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx, NULL);
+	ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx);
 	if (ndr == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -405,7 +405,7 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
 	DATA_BLOB blob;
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, NULL);
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
@@ -421,7 +421,7 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 static DATA_BLOB dcerpc_floor_pack_rhs_if_version_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
 	DATA_BLOB blob;
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx, NULL);
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 

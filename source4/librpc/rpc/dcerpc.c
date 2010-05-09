@@ -55,8 +55,7 @@ static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
    the event context is optional
 */
 static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
-						 struct tevent_context *ev,
-						 struct smb_iconv_convenience *ic)
+						 struct tevent_context *ev)
 {
 	struct dcerpc_connection *c;
 
@@ -64,8 +63,6 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	if (!c) {
 		return NULL;
 	}
-
-	c->iconv_convenience = talloc_reference(c, ic);
 
 	c->event_ctx = ev;
 
@@ -90,8 +87,7 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 }
 
 /* initialise a dcerpc pipe. */
-_PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-				     struct smb_iconv_convenience *ic)
+_PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev)
 {
 	struct dcerpc_pipe *p;
 
@@ -100,7 +96,7 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 		return NULL;
 	}
 
-	p->conn = dcerpc_connection_init(p, ev, ic);
+	p->conn = dcerpc_connection_init(p, ev);
 	if (p->conn == NULL) {
 		talloc_free(p);
 		return NULL;
@@ -177,7 +173,7 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c, 
 					    DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
-	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx, c->iconv_convenience);
+	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);
 
 	if (ndr == NULL) return ndr;
 
@@ -328,7 +324,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 
 	/* non-signed packets are simpler */
 	if (sig_size == 0) {
-		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
 	}
 
 	switch (c->security_state.auth_info->auth_level) {
@@ -338,16 +334,16 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
 		/* TODO: let the gensec mech decide if it wants to generate a signature */
-		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
 
 	case DCERPC_AUTH_LEVEL_NONE:
-		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, NULL);
+		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
 
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	ndr = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
+	ndr = ndr_push_init_ctx(mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -718,7 +714,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&blob, c, p->conn->iconv_convenience, &pkt,
+	c->status = ncacn_push_auth(&blob, c, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!composite_is_ok(c)) return c;
 
@@ -789,7 +785,6 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 
 	/* construct the NDR form of the packet */
 	status = ncacn_push_auth(&blob, mem_ctx,
-				 p->conn->iconv_convenience,
 				 &pkt,
 				 p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1049,7 +1044,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	if (req->object) {
 		pkt.u.request.object.object = *req->object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_OBJECT_UUID;
-		chunk_size -= ndr_size_GUID(req->object,NULL,0);
+		chunk_size -= ndr_size_GUID(req->object,0);
 	}
 
 	/* we send a series of pdus without waiting for a reply */
@@ -1202,7 +1197,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
+	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1260,7 +1255,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	}
 	memcpy(st, struct_ptr, struct_size);
 
-	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
+	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1291,7 +1286,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
+	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1363,7 +1358,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	call = &table->calls[opnum];
 
 	/* setup for a ndr_push_* call */
-	push = ndr_push_init_ctx(mem_ctx, p->conn->iconv_convenience);
+	push = ndr_push_init_ctx(mem_ctx);
 	if (!push) {
 		return NULL;
 	}
@@ -1666,7 +1661,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&blob, mem_ctx, p->conn->iconv_convenience, &pkt,
+	c->status = ncacn_push_auth(&blob, mem_ctx, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!composite_is_ok(c)) return c;
 

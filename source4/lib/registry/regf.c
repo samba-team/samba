@@ -49,7 +49,6 @@ struct regf_data {
 	int fd;
 	struct hbin_block **hbins;
 	struct regf_hdr *header;
-	struct smb_iconv_convenience *iconv_convenience;
 };
 
 static WERROR regf_save_hbin(struct regf_data *data);
@@ -134,7 +133,7 @@ static DATA_BLOB hbin_get(const struct regf_data *data, uint32_t offset)
 static bool hbin_get_tdr(struct regf_data *regf, uint32_t offset,
 			 TALLOC_CTX *ctx, tdr_pull_fn_t pull_fn, void *p)
 {
-	struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+	struct tdr_pull *pull = tdr_pull_init(regf);
 
 	pull->data = hbin_get(regf, offset);
 	if (!pull->data.data) {
@@ -272,7 +271,7 @@ static uint32_t hbin_store (struct regf_data *data, DATA_BLOB blob)
 static uint32_t hbin_store_tdr(struct regf_data *data,
 			       tdr_push_fn_t push_fn, void *p)
 {
-	struct tdr_push *push = tdr_push_init(data, data->iconv_convenience);
+	struct tdr_push *push = tdr_push_init(data);
 	uint32_t ret;
 
 	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
@@ -399,7 +398,7 @@ static uint32_t hbin_store_tdr_resize(struct regf_data *regf,
 				      tdr_push_fn_t push_fn,
 				      uint32_t orig_offset, void *p)
 {
-	struct tdr_push *push = tdr_push_init(regf, regf->iconv_convenience);
+	struct tdr_push *push = tdr_push_init(regf);
 	uint32_t ret;
 
 	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
@@ -615,7 +614,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 	if (!strncmp((char *)data.data, "li", 2)) {
 		struct li_block li;
-		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive);
 
 		DEBUG(10, ("Subkeys in LI list\n"));
 		pull->data = data;
@@ -636,7 +635,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
-		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive);
 
 		DEBUG(10, ("Subkeys in LF list\n"));
 		pull->data = data;
@@ -657,7 +656,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 		key_off = lf.hr[idx].nk_offset;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
-		struct tdr_pull *pull = tdr_pull_init(private_data->hive, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(private_data->hive);
 
 		DEBUG(10, ("Subkeys in LH list\n"));
 		pull->data = data;
@@ -677,7 +676,7 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 		key_off = lh.hr[idx].nk_offset;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
-		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(ctx);
 		uint16_t i;
 		uint16_t sublist_count = 0;
 
@@ -811,7 +810,7 @@ static WERROR regf_match_subkey_by_name(TALLOC_CTX *ctx,
 		return WERR_GENERAL_FAILURE;
 	}
 
-	pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+	pull = tdr_pull_init(ctx);
 
 	pull->data = subkey_data;
 
@@ -854,7 +853,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 
 	if (!strncmp((char *)data.data, "li", 2)) {
 		struct li_block li;
-		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(ctx);
 		uint16_t i;
 
 		DEBUG(10, ("Subkeys in LI list\n"));
@@ -885,7 +884,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
-		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(ctx);
 		uint16_t i;
 
 		DEBUG(10, ("Subkeys in LF list\n"));
@@ -920,7 +919,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
-		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(ctx);
 		uint16_t i;
 		uint32_t hash;
 
@@ -957,7 +956,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
-		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(ctx);
 		uint16_t i, j;
 
 		DEBUG(10, ("Subkeys in RI list\n"));
@@ -1062,7 +1061,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		     (tdr_pull_fn_t) tdr_pull_nk_block, &root);
 
 	/* Push the security descriptor to a blob */
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, NULL, 
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, 
 							  sec_desc, (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
 		DEBUG(0, ("Unable to push security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
@@ -1215,7 +1214,7 @@ static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, const struct hive_key *key,
 
 	data.data = sk.sec_desc;
 	data.length = sk.rec_size;
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_pull_struct_blob(&data, ctx, NULL, *sd,
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_pull_struct_blob(&data, ctx, *sd,
 						  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor))) {
 		DEBUG(0, ("Error parsing security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
@@ -1299,7 +1298,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	}
 
 	if (!strncmp((char *)data.data, "li", 2)) {
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct li_block li;
 
 		pull->data = data;
@@ -1328,7 +1327,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 
 		talloc_free(li.nk_offset);
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct lf_block lf;
 
 		pull->data = data;
@@ -1354,7 +1353,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 
 		talloc_free(lf.hr);
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct lh_block lh;
 
 		pull->data = data;
@@ -1403,7 +1402,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 
 	if (strncmp((char *)data.data, "li", 2) == 0) {
 		struct li_block li;
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		uint16_t i;
 		bool found_offset = false;
 
@@ -1447,7 +1446,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 					     list_offset, &li);
 	} else if (strncmp((char *)data.data, "lf", 2) == 0) {
 		struct lf_block lf;
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		uint16_t i;
 		bool found_offset = false;
 
@@ -1493,7 +1492,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 					     list_offset, &lf);
 	} else if (strncmp((char *)data.data, "lh", 2) == 0) {
 		struct lh_block lh;
-		struct tdr_pull *pull = tdr_pull_init(regf, regf->iconv_convenience);
+		struct tdr_pull *pull = tdr_pull_init(regf);
 		uint16_t i;
 		bool found_offset = false;
 
@@ -1889,7 +1888,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 
 static WERROR regf_save_hbin(struct regf_data *regf)
 {
-	struct tdr_push *push = tdr_push_init(regf, regf->iconv_convenience);
+	struct tdr_push *push = tdr_push_init(regf);
 	unsigned int i;
 
 	W_ERROR_HAVE_NO_MEMORY(push);
@@ -1907,7 +1906,7 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 	regf->header->chksum = regf_hdr_checksum(push->data.data);
 	talloc_free(push);
 
-	if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, regf->iconv_convenience,
+	if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd,
 					    (tdr_push_fn_t)tdr_push_regf_hdr,
 					    regf->header))) {
 		DEBUG(0, ("Error writing registry file header\n"));
@@ -1920,7 +1919,7 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 	}
 
 	for (i = 0; regf->hbins[i]; i++) {
-		if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, regf->iconv_convenience,
+		if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, 
 						    (tdr_push_fn_t)tdr_push_hbin_block,
 						    regf->hbins[i]))) {
 			DEBUG(0, ("Error writing HBIN block\n"));
@@ -1932,7 +1931,6 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 }
 
 WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, 
-			    struct smb_iconv_convenience *iconv_convenience,
 			    const char *location,
 			    int minor_version, struct hive_key **key)
 {
@@ -1946,8 +1944,6 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	uint32_t sk_offset;
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
-
-	regf->iconv_convenience = iconv_convenience;
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 
@@ -2017,7 +2013,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 					 NULL);
 	
 	/* Push the security descriptor to a blob */
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, NULL, 
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, 
 				     sd, (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
 		DEBUG(0, ("Unable to push security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
@@ -2060,7 +2056,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 }
 
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location, 
-			  struct smb_iconv_convenience *iconv_convenience, struct hive_key **key)
+			  struct hive_key **key)
 {
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
@@ -2068,8 +2064,6 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	unsigned int i;
 
 	regf = (struct regf_data *)talloc_zero(parent_ctx, struct regf_data);
-
-	regf->iconv_convenience = iconv_convenience;
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 
@@ -2085,7 +2079,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 		return WERR_GENERAL_FAILURE;
 	}
 
-	pull = tdr_pull_init(regf, regf->iconv_convenience);
+	pull = tdr_pull_init(regf);
 
 	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, 0, regf);
 

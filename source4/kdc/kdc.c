@@ -589,9 +589,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	/* There is no reply to this request */
 	r->out.generic_reply = data_blob(NULL, 0);
 
-	ndr_err = ndr_pull_struct_blob(&r->in.generic_request, msg,
-				       lp_iconv_convenience(kdc->task->lp_ctx),
-				       &pac_validate,
+	ndr_err = ndr_pull_struct_blob(&r->in.generic_request, msg, &pac_validate,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_Validate);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NT_STATUS_INVALID_PARAMETER;

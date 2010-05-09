@@ -137,7 +137,6 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	
 	ndr_err = ndr_push_struct_blob(&sign_req_blob,
 				       mem_ctx,
-				       NULL,
 				       &sign_req,
 				       (ndr_push_flags_fn_t)ndr_push_sign_request);
 	torture_assert(tctx,
@@ -246,7 +245,6 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	torture_comment(tctx, "Validating the reply buffer\n");
 	ndr_err = ndr_pull_struct_blob_all(&signd_client->reply,
 					   mem_ctx,
-					   lp_iconv_convenience(tctx->lp_ctx),
 					   &signed_reply,
 					   (ndr_pull_flags_fn_t)ndr_pull_signed_reply);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err),

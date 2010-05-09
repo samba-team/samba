@@ -209,10 +209,6 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 }
 
 void *cmdline_lp_ctx;
-struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx)
-{
-	return NULL;
-}
 
 const struct ndr_syntax_id null_ndr_syntax_id =
 { { 0, 0, 0, { 0, 0 }, { 0, 0, 0, 0, 0, 0 } }, 0 };

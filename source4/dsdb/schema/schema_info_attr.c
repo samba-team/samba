@@ -100,7 +100,7 @@ WERROR dsdb_schema_info_from_blob(const DATA_BLOB *blob,
 	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
 
 	ndr_err = ndr_pull_struct_blob_all(blob, temp_ctx,
-	                                   lp_iconv_convenience(NULL), &schema_info_blob,
+	                                   &schema_info_blob,
 	                                   (ndr_pull_flags_fn_t)ndr_pull_schemaInfoBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -140,7 +140,7 @@ WERROR dsdb_blob_from_schema_info(const struct dsdb_schema_info *schema_info,
 	schema_info_blob.invocation_id  = schema_info->invocation_id;
 
 	ndr_err = ndr_push_struct_blob(blob, mem_ctx,
-	                               lp_iconv_convenience(NULL), &schema_info_blob,
+	                               &schema_info_blob,
 	                               (ndr_push_flags_fn_t)ndr_push_schemaInfoBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);

@@ -75,13 +75,12 @@ _PUBLIC_ int regtype_by_string(const char *str)
  push a string in unix charset into a REG_SZ UCS2 null terminated blob
  ********************************************************************/
 
-bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		 DATA_BLOB *blob, const char *s)
+bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s)
 {
 	union winreg_Data data;
 	enum ndr_err_code ndr_err;
 	data.string = s;
-	ndr_err = ndr_push_union_blob(blob, mem_ctx, ic, &data, REG_SZ,
+	ndr_err = ndr_push_union_blob(blob, mem_ctx, &data, REG_SZ,
 			(ndr_push_flags_fn_t)ndr_push_winreg_Data);
 	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
 }
@@ -91,13 +90,12 @@ bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
  terminated blob
  ********************************************************************/
 
-bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		       DATA_BLOB *blob, const char **a)
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a)
 {
 	union winreg_Data data;
 	enum ndr_err_code ndr_err;
 	data.string_array = a;
-	ndr_err = ndr_push_union_blob(blob, mem_ctx, ic, &data, REG_MULTI_SZ,
+	ndr_err = ndr_push_union_blob(blob, mem_ctx, &data, REG_MULTI_SZ,
 			(ndr_push_flags_fn_t)ndr_push_winreg_Data);
 	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
 }
@@ -106,12 +104,11 @@ bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
  pull a string in unix charset out of a REG_SZ UCS2 null terminated blob
  ********************************************************************/
 
-bool pull_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		 const DATA_BLOB *blob, const char **s)
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s)
 {
 	union winreg_Data data;
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_union_blob(blob, mem_ctx, ic, &data, REG_SZ,
+	ndr_err = ndr_pull_union_blob(blob, mem_ctx, &data, REG_SZ,
 			(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
@@ -125,12 +122,12 @@ bool pull_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
  terminated blob
  ********************************************************************/
 
-bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, 
 		       const DATA_BLOB *blob, const char ***a)
 {
 	union winreg_Data data;
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_union_blob(blob, mem_ctx, ic, &data, REG_MULTI_SZ,
+	ndr_err = ndr_pull_union_blob(blob, mem_ctx, &data, REG_MULTI_SZ,
 			(ndr_pull_flags_fn_t)ndr_pull_winreg_Data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;

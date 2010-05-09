@@ -489,8 +489,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			const char *winbind_method[] = { "winbind", NULL };
 			struct auth_context *auth_context;
 
-			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), 
-						    lp_iconv_convenience(lp_ctx), ev);
+			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), ev);
 			if (!msg) {
 				talloc_free(mem_ctx);
 				exit(1);

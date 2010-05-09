@@ -122,7 +122,7 @@ static WERROR get_repl_prop_metadata_ctr(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(omd_value, mem_ctx,
-				       lp_iconv_convenience(ldb_get_opaque(samdb, "loadparm")), obj_metadata_ctr,
+				        obj_metadata_ctr,
 				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",

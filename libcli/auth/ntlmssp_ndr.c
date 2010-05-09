@@ -22,10 +22,10 @@
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../libcli/auth/ntlmssp_ndr.h"
 
-#define NTLMSSP_PULL_MESSAGE(type, blob, mem_ctx, ic, r) \
+#define NTLMSSP_PULL_MESSAGE(type, blob, mem_ctx, r) \
 do { \
 	enum ndr_err_code __ndr_err; \
-	__ndr_err = ndr_pull_struct_blob(blob, mem_ctx, ic, r, \
+	__ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r, \
 			(ndr_pull_flags_fn_t)ndr_pull_ ##type); \
 	if (!NDR_ERR_CODE_IS_SUCCESS(__ndr_err)) { \
 		return ndr_map_error2ntstatus(__ndr_err); \
@@ -58,10 +58,9 @@ do { \
 
 NTSTATUS ntlmssp_pull_NEGOTIATE_MESSAGE(const DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					struct NEGOTIATE_MESSAGE *r)
 {
-	NTLMSSP_PULL_MESSAGE(NEGOTIATE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PULL_MESSAGE(NEGOTIATE_MESSAGE, blob, mem_ctx, r);
 }
 
 /**
@@ -74,10 +73,9 @@ NTSTATUS ntlmssp_pull_NEGOTIATE_MESSAGE(const DATA_BLOB *blob,
 
 NTSTATUS ntlmssp_pull_CHALLENGE_MESSAGE(const DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					struct CHALLENGE_MESSAGE *r)
 {
-	NTLMSSP_PULL_MESSAGE(CHALLENGE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PULL_MESSAGE(CHALLENGE_MESSAGE, blob, mem_ctx, r);
 }
 
 /**
@@ -90,10 +88,9 @@ NTSTATUS ntlmssp_pull_CHALLENGE_MESSAGE(const DATA_BLOB *blob,
 
 NTSTATUS ntlmssp_pull_AUTHENTICATE_MESSAGE(const DATA_BLOB *blob,
 					   TALLOC_CTX *mem_ctx,
-					   struct smb_iconv_convenience *ic,
 					   struct AUTHENTICATE_MESSAGE *r)
 {
-	NTLMSSP_PULL_MESSAGE(AUTHENTICATE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PULL_MESSAGE(AUTHENTICATE_MESSAGE, blob, mem_ctx, r);
 }
 
 /**
@@ -106,10 +103,9 @@ NTSTATUS ntlmssp_pull_AUTHENTICATE_MESSAGE(const DATA_BLOB *blob,
 
 NTSTATUS ntlmssp_push_NEGOTIATE_MESSAGE(DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					const struct NEGOTIATE_MESSAGE *r)
 {
-	NTLMSSP_PUSH_MESSAGE(NEGOTIATE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PUSH_MESSAGE(NEGOTIATE_MESSAGE, blob, mem_ctx, r);
 }
 
 /**
@@ -122,10 +118,9 @@ NTSTATUS ntlmssp_push_NEGOTIATE_MESSAGE(DATA_BLOB *blob,
 
 NTSTATUS ntlmssp_push_CHALLENGE_MESSAGE(DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					const struct CHALLENGE_MESSAGE *r)
 {
-	NTLMSSP_PUSH_MESSAGE(CHALLENGE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PUSH_MESSAGE(CHALLENGE_MESSAGE, blob, mem_ctx, r);
 }
 
 /**
@@ -138,8 +133,7 @@ NTSTATUS ntlmssp_push_CHALLENGE_MESSAGE(DATA_BLOB *blob,
 
 NTSTATUS ntlmssp_push_AUTHENTICATE_MESSAGE(DATA_BLOB *blob,
 					   TALLOC_CTX *mem_ctx,
-					   struct smb_iconv_convenience *ic,
 					   const struct AUTHENTICATE_MESSAGE *r)
 {
-	NTLMSSP_PUSH_MESSAGE(AUTHENTICATE_MESSAGE, blob, mem_ctx, ic, r);
+	NTLMSSP_PUSH_MESSAGE(AUTHENTICATE_MESSAGE, blob, mem_ctx, r);
 }

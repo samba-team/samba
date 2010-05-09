@@ -39,7 +39,6 @@ struct tstream_npa {
 struct tstream_npa_connect_state {
 	struct {
 		struct tevent_context *ev;
-		struct smb_iconv_convenience *smb_iconv_c;
 	} caller;
 
 	const char *unix_path;
@@ -59,7 +58,6 @@ static void tstream_npa_connect_unix_done(struct tevent_req *subreq);
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
-					struct smb_iconv_convenience *smb_iconv_c,
 					const char *directory,
 					const char *npipe,
 					const struct tsocket_address *client,
@@ -83,7 +81,6 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->caller.ev = ev;
-	state->caller.smb_iconv_c = smb_iconv_c;
 
 	state->unix_path = talloc_asprintf(state, "%s/%s",
 					   directory,
@@ -161,7 +158,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_push_struct_blob(&state->auth_req_blob,
-			state, smb_iconv_c, &state->auth_req,
+			state, &state->auth_req,
 			(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		tevent_req_error(req, EINVAL);
@@ -343,7 +340,7 @@ static void tstream_npa_connect_readv_done(struct tevent_req *subreq)
 
 	ndr_err = ndr_pull_struct_blob(
 		&state->auth_rep_blob, state,
-		state->caller.smb_iconv_c, &state->auth_rep,
+		&state->auth_rep,
 		(ndr_pull_flags_fn_t)ndr_pull_named_pipe_auth_rep);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

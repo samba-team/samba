@@ -45,8 +45,6 @@ struct wrepl_socket {
 #define WREPL_SOCKET_REQUEST_TIMEOUT	(60)
 	uint32_t request_timeout;
 
-	struct smb_iconv_convenience *iconv_convenience;
-
 	struct tevent_queue *request_queue;
 
 	struct tstream_context *stream;
@@ -70,8 +68,7 @@ bool wrepl_socket_is_connected(struct wrepl_socket *wrepl_sock)
   operations will use that event context
 */
 struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *event_ctx,
-				       struct smb_iconv_convenience *iconv_convenience)
+				       struct tevent_context *event_ctx)
 {
 	struct wrepl_socket *wrepl_socket;
 
@@ -90,8 +87,6 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 	if (wrepl_socket->request_queue == NULL) {
 		goto failed;
 	}
-
-	wrepl_socket->iconv_convenience = iconv_convenience;
 
 	wrepl_socket->request_timeout	= WREPL_SOCKET_REQUEST_TIMEOUT;
 
@@ -370,7 +365,6 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 
 	state->req.wrap.packet = *packet;
 	ndr_err = ndr_push_struct_blob(&state->req.blob, state,
-				       wrepl_socket->iconv_convenience,
 				       &state->req.wrap,
 				       (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -540,7 +534,6 @@ static void wrepl_request_read_pdu_done(struct tevent_req *subreq)
 	/* we have a full request - parse it */
 	ndr_err = ndr_pull_struct_blob(&blob,
 				       state->rep.packet,
-				       state->caller.wrepl_socket->iconv_convenience,
 				       state->rep.packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

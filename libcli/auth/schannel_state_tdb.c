@@ -103,7 +103,6 @@ static struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 static
 NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					struct netlogon_creds_CredentialState *creds)
 {
 	enum ndr_err_code ndr_err;
@@ -125,7 +124,7 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, ic, creds,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, creds,
 			(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(keystr);
@@ -161,7 +160,6 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
 static
 NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					const char *computer_name,
 					struct netlogon_creds_CredentialState **pcreds)
 {
@@ -203,7 +201,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 
 	blob = data_blob_const(value.dptr, value.dsize);
 
-	ndr_err = ndr_pull_struct_blob(&blob, creds, ic, creds,
+	ndr_err = ndr_pull_struct_blob(&blob, creds, creds,
 			(ndr_pull_flags_fn_t)ndr_pull_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -240,7 +238,6 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 *******************************************************************************/
 
 NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
-				  struct smb_iconv_convenience *ic,
 				  const char *db_priv_dir,
 				  const char *computer_name,
 				  struct netlogon_creds_CredentialState **_creds)
@@ -260,7 +257,7 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, ic,
+	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, 
 						computer_name, &creds);
 	if (NT_STATUS_IS_OK(status)) {
 		*_creds = talloc_steal(mem_ctx, creds);
@@ -279,7 +276,6 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 *******************************************************************************/
 
 NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
-				   struct smb_iconv_convenience *ic,
 				   const char *db_priv_dir,
 				   struct netlogon_creds_CredentialState *creds)
 {
@@ -297,7 +293,7 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, ic, creds);
+	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, creds);
 
 	talloc_free(tmpctx);
 	return status;
@@ -314,7 +310,6 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
-				    struct smb_iconv_convenience *ic,
 				    const char *db_priv_dir,
 				    const char *computer_name,
 				    struct netr_Authenticator *received_authenticator,
@@ -348,7 +343,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	 * disconnects) we must update the database every time we
 	 * update the structure */
 
-	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, ic,
+	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, 
 						computer_name, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		tdb_transaction_cancel(tdb_sc->tdb);
@@ -363,7 +358,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, ic, creds);
+	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		tdb_transaction_cancel(tdb_sc->tdb);
 		goto done;

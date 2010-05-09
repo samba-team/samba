@@ -33,14 +33,13 @@
 #include "../lib/util/asn1.h"
 
 
-struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
+struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx)
 {
 	struct dsdb_schema *schema = talloc_zero(mem_ctx, struct dsdb_schema);
 	if (!schema) {
 		return NULL;
 	}
 
-	schema->iconv_convenience = iconv_convenience;
 	return schema;
 }
 
@@ -66,7 +65,6 @@ WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 }
 
 static WERROR _dsdb_prefixmap_from_ldb_val(const struct ldb_val *pfm_ldb_val,
-					   struct smb_iconv_convenience *iconv_convenience,
 					   TALLOC_CTX *mem_ctx,
 					   struct dsdb_schema_prefixmap **_pfm)
 {
@@ -78,7 +76,7 @@ static WERROR _dsdb_prefixmap_from_ldb_val(const struct ldb_val *pfm_ldb_val,
 	W_ERROR_HAVE_NO_MEMORY(temp_ctx);
 
 	ndr_err = ndr_pull_struct_blob(pfm_ldb_val, temp_ctx,
-				iconv_convenience, &pfm_blob,
+				&pfm_blob,
 				(ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -119,7 +117,6 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 
 	/* fetch prefixMap */
 	werr = _dsdb_prefixmap_from_ldb_val(prefixMap,
-					    schema->iconv_convenience,
 					    mem_ctx, &pfm);
 	W_ERROR_NOT_OK_GOTO(werr, DONE);
 
@@ -173,7 +170,7 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
-	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm,
+	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
 					(ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	talloc_free(ctr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -286,7 +283,6 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	pfm_blob.ctr.dsdb	= *ctr;
 
 	ndr_err = ndr_push_struct_blob(&ndr_blob, temp_ctx,
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &pfm_blob,
 				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -326,7 +322,6 @@ WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	int ldb_ret;
 	const struct ldb_val *prefix_val;
-	struct smb_iconv_convenience *iconv_convenience;
 	struct ldb_dn *schema_dn;
 	struct ldb_result *schema_res = NULL;
 	static const char *schema_attrs[] = {
@@ -358,10 +353,7 @@ WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		return WERR_FOOBAR;
 	}
 
-	iconv_convenience = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
-
 	werr = _dsdb_prefixmap_from_ldb_val(prefix_val,
-					    iconv_convenience,
 					    mem_ctx,
 					    _pfm);
 	talloc_free(schema_res);
@@ -704,7 +696,6 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 */
 
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
-				 struct smb_iconv_convenience *iconv_convenience, 
 				 struct ldb_result *schema_res,
 				 struct ldb_result *attrs_res, struct ldb_result *objectclass_res, 
 				 struct dsdb_schema **schema_out,
@@ -717,7 +708,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	struct ldb_val info_val_default;
 	struct dsdb_schema *schema;
 
-	schema = dsdb_new_schema(mem_ctx, iconv_convenience);
+	schema = dsdb_new_schema(mem_ctx);
 	if (!schema) {
 		dsdb_oom(error_string, mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -892,7 +883,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 	if (_a && _a->value_ctr.num_values >= 1) { \
 		size_t _ret; \
-		if (!convert_string_talloc_convenience(mem_ctx, s->iconv_convenience, CH_UTF16, CH_UNIX, \
+		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, \
 					     _a->value_ctr.values[0].blob->data, \
 					     _a->value_ctr.values[0].blob->length, \
 					     (void **)discard_const(&(p)->elem), &_ret, false)) { \
@@ -1123,7 +1114,7 @@ WERROR dsdb_class_from_drsuapi(struct ldb_context *ldb,
 	}
 
 	status = dsdb_syntax_one_DN_drsuapi_to_ldb(mem_ctx, ldb, find_syntax_map_by_standard_oid(LDB_SYNTAX_DN), 
-						   schema->iconv_convenience, attr->value_ctr.values[0].blob, &blob);
+						   attr->value_ctr.values[0].blob, &blob);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}

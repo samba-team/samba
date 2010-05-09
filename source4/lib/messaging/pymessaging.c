@@ -99,12 +99,10 @@ PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwa
 		ret->msg_ctx = messaging_init(ret->mem_ctx, 
 					    messaging_path,
 					    server_id,
-				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	} else {
 		ret->msg_ctx = messaging_client_init(ret->mem_ctx, 
 					    messaging_path,
-				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	}
 
@@ -355,12 +353,10 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 		ret->msg_ctx = messaging_init(ret->mem_ctx, 
 					    messaging_path,
 					    server_id,
-				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	} else {
 		ret->msg_ctx = messaging_client_init(ret->mem_ctx, 
 					    messaging_path,
-				        py_iconv_convenience(ret->mem_ctx),
 					    ev);
 	}
 

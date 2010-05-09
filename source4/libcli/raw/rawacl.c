@@ -77,7 +77,7 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 
 	nt.out.data.length = IVAL(nt.out.params.data, 0);
 
-	ndr = ndr_pull_init_blob(&nt.out.data, mem_ctx, NULL);
+	ndr = ndr_pull_init_blob(&nt.out.data, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -135,7 +135,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
 
-	ndr = ndr_push_init_ctx(NULL, NULL);
+	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return NULL;
 
 	ndr_err = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);

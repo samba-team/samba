@@ -348,7 +348,7 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 
 	if (parms->ntcreatex.in.sec_desc) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_push_struct_blob(&sd_blob, mem_ctx, NULL,
+		ndr_err = ndr_push_struct_blob(&sd_blob, mem_ctx, 
 					       parms->ntcreatex.in.sec_desc,
 					       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

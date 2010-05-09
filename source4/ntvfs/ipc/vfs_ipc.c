@@ -244,8 +244,6 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	struct ipc_private *ipriv = talloc_get_type_abort(ntvfs->private_data,
 				    struct ipc_private);
-	struct smb_iconv_convenience *smb_ic
-		= lp_iconv_convenience(ipriv->ntvfs->ctx->lp_ctx);
 	struct ntvfs_handle *h;
 	struct ipc_open_state *state;
 	struct tevent_req *subreq;
@@ -352,7 +350,6 @@ skip:
 
 	subreq = tstream_npa_connect_send(p,
 					  ipriv->ntvfs->ctx->event_ctx,
-					  smb_ic,
 					  directory,
 					  fname,
 					  client_addr,

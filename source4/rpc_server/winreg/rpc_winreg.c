@@ -141,7 +141,7 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 			if (sdblob.data == NULL) {
 				return WERR_INVALID_PARAM;
 			}
-			ndr_err = ndr_pull_struct_blob_all(&sdblob, mem_ctx, NULL, &sd,
+			ndr_err = ndr_pull_struct_blob_all(&sdblob, mem_ctx, &sd,
 							   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_INVALID_PARAM;

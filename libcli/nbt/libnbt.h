@@ -95,7 +95,6 @@ struct nbt_name_request {
 struct nbt_name_socket {
 	struct socket_context *sock;
 	struct tevent_context *event_ctx;
-	struct smb_iconv_convenience *iconv_convenience;
 
 	/* a queue of requests pending to be sent */
 	struct nbt_name_request *send_queue;
@@ -275,8 +274,7 @@ struct nbt_name_release {
 };
 
 struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
-					     struct tevent_context *event_ctx,
-					     struct smb_iconv_convenience *iconv_convenience);
+					     struct tevent_context *event_ctx);
 void nbt_name_socket_handle_response_packet(struct nbt_name_request *req,
 					    struct nbt_name_packet *packet,
 					    struct socket_address *src);
@@ -294,7 +292,7 @@ NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
 
 NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
-NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, DATA_BLOB *blob, struct nbt_name *name);
+NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name);
 NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
 void nbt_choose_called_name(TALLOC_CTX *mem_ctx, struct nbt_name *n, const char *name, int type);
 char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name);

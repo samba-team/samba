@@ -102,8 +102,8 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 
 	torture_comment(tctx, "Test if assoc_ctx is only valid on the conection it was created on\n");
 
-	wrepl_socket1 = wrepl_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
-	wrepl_socket2 = wrepl_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	wrepl_socket1 = wrepl_socket_init(tctx, tctx->ev);
+	wrepl_socket2 = wrepl_socket_init(tctx, tctx->ev);
 
 	torture_comment(tctx, "Setup 2 wrepl connections\n");
 	status = wrepl_connect(wrepl_socket1, wrepl_best_ip(tctx->lp_ctx, address), address);
@@ -193,7 +193,7 @@ static bool test_assoc_ctx2(struct torture_context *tctx)
 
 	torture_comment(tctx, "Test if we always get back the same assoc_ctx\n");
 
-	wrepl_socket = wrepl_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	wrepl_socket = wrepl_socket_init(tctx, tctx->ev);
 	
 	torture_comment(tctx, "Setup wrepl connections\n");
 	status = wrepl_connect(wrepl_socket, wrepl_best_ip(tctx->lp_ctx, address), address);
@@ -262,7 +262,7 @@ static bool test_wins_replication(struct torture_context *tctx)
 
 	torture_comment(tctx, "Test one pull replication cycle\n");
 
-	wrepl_socket = wrepl_socket_init(tctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	wrepl_socket = wrepl_socket_init(tctx, tctx->ev);
 	
 	torture_comment(tctx, "Setup wrepl connections\n");
 	status = wrepl_connect(wrepl_socket, wrepl_best_ip(tctx->lp_ctx, address), address);
@@ -555,7 +555,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	if (!ctx) return NULL;
 
 	ctx->address	= address;
-	ctx->pull	= wrepl_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	ctx->pull	= wrepl_socket_init(ctx, tctx->ev);
 	if (!ctx->pull) return NULL;
 
 	torture_comment(tctx, "Setup wrepl conflict pull connection\n");
@@ -612,7 +612,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 
 	talloc_free(pull_table.out.partners);
 
-	ctx->nbtsock = nbt_name_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	ctx->nbtsock = nbt_name_socket_init(ctx, tctx->ev);
 	if (!ctx->nbtsock) return NULL;
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
@@ -630,7 +630,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	status = socket_listen(ctx->nbtsock->sock, ctx->myaddr, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) return NULL;
 
-	ctx->nbtsock_srv = nbt_name_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	ctx->nbtsock_srv = nbt_name_socket_init(ctx, tctx->ev);
 	if (!ctx->nbtsock_srv) return NULL;
 
 	/* Make a port 137 version of ctx->myaddr */
@@ -647,13 +647,13 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	}
 
 	if (ctx->myaddr2 && ctx->nbtsock_srv) {
-		ctx->nbtsock2 = nbt_name_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+		ctx->nbtsock2 = nbt_name_socket_init(ctx, tctx->ev);
 		if (!ctx->nbtsock2) return NULL;
 
 		status = socket_listen(ctx->nbtsock2->sock, ctx->myaddr2, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) return NULL;
 
-		ctx->nbtsock_srv2 = nbt_name_socket_init(ctx, ctx->nbtsock_srv->event_ctx, lp_iconv_convenience(tctx->lp_ctx));
+		ctx->nbtsock_srv2 = nbt_name_socket_init(ctx, ctx->nbtsock_srv->event_ctx);
 		if (!ctx->nbtsock_srv2) return NULL;
 
 		/* Make a port 137 version of ctx->myaddr2 */
@@ -724,7 +724,7 @@ static bool test_wrepl_update_one(struct torture_context *tctx,
 	uint32_t assoc_ctx;
 	NTSTATUS status;
 
-	wrepl_socket = wrepl_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	wrepl_socket = wrepl_socket_init(ctx, tctx->ev);
 
 	status = wrepl_connect(wrepl_socket, wrepl_best_ip(tctx->lp_ctx, ctx->address), ctx->address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);

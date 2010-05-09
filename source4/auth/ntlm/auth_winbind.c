@@ -33,7 +33,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "libcli/security/dom_sid.h"
 
-static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, struct winbindd_response *response, struct netr_SamInfo3 *info3)
+static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, struct netr_SamInfo3 *info3)
 {
 	size_t len = response->length - sizeof(struct winbindd_response);
 	if (len > 4) {
@@ -43,7 +43,7 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct smb_iconv_conveni
 		blob.data = (uint8_t *)(((char *)response->extra_data.data) + 4);
 
 		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, 
-			       iconv_convenience, info3,
+			       info3,
 			      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
@@ -57,7 +57,6 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct smb_iconv_conveni
 }
 
 static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
-					       struct smb_iconv_convenience *ic,
 					       struct wbcAuthUserInfo *info,
 					       struct netr_SamInfo3 *info3)
 {
@@ -197,7 +196,7 @@ static NTSTATUS winbind_check_password_samba3(struct auth_method_context *ctx,
 	if (result == NSS_STATUS_SUCCESS && response.extra_data.data) {
 		union netr_Validation validation;
 
-		nt_status = get_info3_from_ndr(mem_ctx, lp_iconv_convenience(ctx->auth_ctx->lp_ctx), &response, &info3);
+		nt_status = get_info3_from_ndr(mem_ctx, &response, &info3);
 		SAFE_FREE(response.extra_data.data);
 		NT_STATUS_NOT_OK_RETURN(nt_status); 
 
@@ -389,9 +388,7 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 		wbcFreeMemory(err);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 	}
-	nt_status = get_info3_from_wbcAuthUserInfo(mem_ctx,
-				lp_iconv_convenience(ctx->auth_ctx->lp_ctx),
-				info, &info3);
+	nt_status = get_info3_from_wbcAuthUserInfo(mem_ctx, info, &info3);
 	wbcFreeMemory(info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 

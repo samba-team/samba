@@ -187,7 +187,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 
 	wreplconn->service	= service;
 	wreplconn->partner	= partner;
-	wreplconn->sock		= wrepl_socket_init(wreplconn, service->task->event_ctx, lp_iconv_convenience(service->task->lp_ctx));
+	wreplconn->sock		= wrepl_socket_init(wreplconn, service->task->event_ctx);
 	if (!wreplconn->sock) goto failed;
 
 	state->stage	= WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET;

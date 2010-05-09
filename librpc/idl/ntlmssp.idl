@@ -162,7 +162,7 @@ interface ntlmssp
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		ntlmssp_AvId AvId;
-		[value(ndr_size_ntlmssp_AvValue(&r->Value, r->AvId, ndr->iconv_convenience, 0))] uint16 AvLen;
+		[value(ndr_size_ntlmssp_AvValue(&r->Value, r->AvId, 0))] uint16 AvLen;
 		[subcontext(0),subcontext_size(AvLen),switch_is(AvId)] ntlmssp_AvValue Value;
 	} AV_PAIR;
 
@@ -182,7 +182,7 @@ interface ntlmssp
 		NEGOTIATE NegotiateFlags;
 		uint8 ServerChallenge[8];
 		uint8 Reserved[8];
-		[value(ndr_size_AV_PAIR_LIST(TargetInfo, ndr->iconv_convenience, ndr->flags))] uint16 TargetInfoLen;
+		[value(ndr_size_AV_PAIR_LIST(TargetInfo, ndr->flags))] uint16 TargetInfoLen;
 		[value(TargetInfoLen)] uint16 TargetNameInfoMaxLen;
 		[relative] [subcontext(0),subcontext_size(TargetInfoLen)] AV_PAIR_LIST *TargetInfo;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;

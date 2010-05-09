@@ -195,9 +195,7 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!reg_string_to_val(ctx, lp_iconv_convenience(cmdline_lp_ctx), 
-			       argv[2], argv[3], &val.data_type,
-			       &val.data)) {
+	if (!reg_string_to_val(ctx, argv[2], argv[3], &val.data_type, &val.data)) {
 		fprintf(stderr, "Unable to interpret data\n");
 		return WERR_INVALID_PARAM;
 	}
@@ -259,7 +257,7 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, char **argv)
 	}
 
 	printf("%s\n%s\n", str_regtype(value_type),
-		   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), value_type, value_data));
+		   reg_val_data_string(ctx, value_type, value_data));
 
 	return WERR_OK;
 }
@@ -290,7 +288,7 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(ctx,
 		ctx->current, i, &name, &valuetype, &valuedata)); i++)
 		printf("V \"%s\" %s %s\n", name, str_regtype(valuetype),
-			   reg_val_data_string(ctx, lp_iconv_convenience(cmdline_lp_ctx), valuetype, valuedata));
+			   reg_val_data_string(ctx, valuetype, valuedata));
 
 	return WERR_OK;
 }

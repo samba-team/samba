@@ -361,7 +361,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	search.in.acct_control = -1;
 	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
-	status = cldap_netlogon(cldap, lp_iconv_convenience(tctx->lp_ctx), ctx, &search);
+	status = cldap_netlogon(cldap, ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
@@ -407,7 +407,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		struct ldb_result *a_res;
 		struct ldb_result *c_res;
 		struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
-		ldap_schema = dsdb_new_schema(ctx, lp_iconv_convenience(tctx->lp_ctx));
+		ldap_schema = dsdb_new_schema(ctx);
 		if (!ldap_schema) {
 			return false;
 		}
@@ -727,8 +727,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				if (pull_fn) {
 					/* Can't use '_all' because of PIDL bugs with relative pointers */
 					ndr_err = ndr_pull_struct_blob(&plain_data, ptr,
-								       lp_iconv_convenience(tctx->lp_ctx), ptr,
-								       pull_fn);
+								       ptr, pull_fn);
 					if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 						ndr_print_debug(print_fn, name, ptr);
 					} else {

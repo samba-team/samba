@@ -276,7 +276,7 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 			return LDB_ERR_INVALID_DN_SYNTAX;
         	}
 
-        	ndr_err = ndr_push_struct_blob(&sid_blob, NULL, NULL, sid,
+        	ndr_err = ndr_push_struct_blob(&sid_blob, NULL, sid,
 						(ndr_push_flags_fn_t)ndr_push_dom_sid);
         	talloc_free(sid);
         	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

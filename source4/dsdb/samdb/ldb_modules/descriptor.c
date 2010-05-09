@@ -230,7 +230,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 		if (!user_descriptor) {
 			return NULL;
 		}
-		ndr_err = ndr_pull_struct_blob(object, user_descriptor, NULL,
+		ndr_err = ndr_pull_struct_blob(object, user_descriptor, 
 					       user_descriptor,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
@@ -247,7 +247,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 		if (!old_descriptor) {
 			return NULL;
 		}
-		ndr_err = ndr_pull_struct_blob(old_sd, old_descriptor, NULL,
+		ndr_err = ndr_pull_struct_blob(old_sd, old_descriptor, 
 					       old_descriptor,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
@@ -262,7 +262,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 		if (!parent_descriptor) {
 			return NULL;
 		}
-		ndr_err = ndr_pull_struct_blob(parent, parent_descriptor, NULL,
+		ndr_err = ndr_pull_struct_blob(parent, parent_descriptor, 
 					       parent_descriptor,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
@@ -305,7 +305,6 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	}
 
 	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx,
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       final_sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -323,13 +322,12 @@ static DATA_BLOB *descr_get_descriptor_to_show(struct ldb_module *module,
 	struct security_descriptor *old_sd, *final_sd;
 	DATA_BLOB *linear_sd;
 	enum ndr_err_code ndr_err;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	old_sd = talloc(mem_ctx, struct security_descriptor);
 	if (!old_sd) {
 		return NULL;
 	}
-	ndr_err = ndr_pull_struct_blob(sd, old_sd, NULL,
+	ndr_err = ndr_pull_struct_blob(sd, old_sd, 
 				       old_sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
@@ -350,7 +348,6 @@ static DATA_BLOB *descr_get_descriptor_to_show(struct ldb_module *module,
 	}
 
 	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx,
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       final_sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

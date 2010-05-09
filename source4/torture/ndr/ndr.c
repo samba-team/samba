@@ -38,7 +38,7 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 	bool (*check_fn) (struct torture_context *ctx, void *data) = test->fn;
 	const struct ndr_pull_test_data *data = (const struct ndr_pull_test_data *)test->data;
 	void *ds = talloc_zero_size(tctx, data->struct_size);
-	struct ndr_pull *ndr = ndr_pull_init_blob(&(data->data), tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct ndr_pull *ndr = ndr_pull_init_blob(&(data->data), tctx);
 
 	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
@@ -97,7 +97,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 	/* Simple test */
 	blob = strhex_to_data_blob(tctx, "0000");
 	
-	ndr = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
 	torture_assert_ndr_success(tctx, ndr_check_string_terminator(ndr, 1, 2),
 				   "simple check_string_terminator test failed");
@@ -115,7 +115,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 	talloc_free(ndr);
 
 	blob = strhex_to_data_blob(tctx, "11220000");
-	ndr = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
 	torture_assert_ndr_success(tctx,
 		ndr_check_string_terminator(ndr, 4, 1),

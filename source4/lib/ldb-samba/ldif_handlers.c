@@ -57,7 +57,6 @@ static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
 	}
 	p = talloc_size(mem_ctx, struct_size);
 	err = ndr_pull_struct_blob(in, mem_ctx, 
-				   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 				   p, pull_fn);
 	if (err != NDR_ERR_SUCCESS) {
 		/* fail in not in mask_error mode */
@@ -90,7 +89,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sid,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -112,7 +111,7 @@ int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_pull_struct_blob_all(in, sid, NULL, sid,
+	ndr_err = ndr_pull_struct_blob_all(in, sid, sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
@@ -209,7 +208,7 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 				     (const char *)in->data, in->length);
 
 	/* Check it looks like a SID */
-	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &sid,
+	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, &sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
@@ -365,7 +364,7 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 		return -1;
 	}
 
-	ndr_err = ndr_pull_struct_blob(in, sd, NULL, sd,
+	ndr_err = ndr_pull_struct_blob(in, sd, sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		/* If this does not parse, then it is probably SDDL, and we should try it that way */
@@ -378,7 +377,7 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 		}
 	}
 
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sd,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	talloc_free(sd);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -411,7 +410,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 		return -1;
 	}
 	/* We can't use ndr_pull_struct_blob_all because this contains relative pointers */
-	ndr_err = ndr_pull_struct_blob(in, sd, NULL, sd,
+	ndr_err = ndr_pull_struct_blob(in, sd, sd,
 					   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sd);
@@ -588,7 +587,6 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	}
 
 	ndr_err = ndr_push_struct_blob(out, mem_ctx, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 				       blob,
 				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	talloc_free(tmp_ctx);
@@ -633,7 +631,6 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 	ndr_err = ndr_pull_struct_blob_all(in, blob, 
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 					   blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -219,9 +219,7 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 
 	msg = messaging_init(talloc_autofree_context(), 
 			     lp_messaging_path(event_ctx, lp_ctx),
-			     cluster_id(0, SAMBA_PARENT_TASKID),
-			     lp_iconv_convenience(lp_ctx),
-			     event_ctx);
+			     cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	irpc_add_name(msg, "samba");

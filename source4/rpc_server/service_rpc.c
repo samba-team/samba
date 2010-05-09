@@ -135,7 +135,6 @@ static void dcesrv_sock_reply_done(struct tevent_req *subreq)
 
 struct dcerpc_read_ncacn_packet_state {
 	struct {
-		struct smb_iconv_convenience *smb_iconv_c;
 	} caller;
 	DATA_BLOB buffer;
 	struct ncacn_packet *pkt;
@@ -150,8 +149,7 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq);
 
 static struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 struct tstream_context *stream,
-						 struct smb_iconv_convenience *ic)
+						 struct tstream_context *stream)
 {
 	struct tevent_req *req;
 	struct dcerpc_read_ncacn_packet_state *state;
@@ -163,7 +161,6 @@ static struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->caller.smb_iconv_c = ic;
 	state->buffer = data_blob_const(NULL, 0);
 	state->pkt = talloc(state, struct ncacn_packet);
 	if (tevent_req_nomem(state->pkt, req)) {
@@ -260,9 +257,7 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ndr = ndr_pull_init_blob(&state->buffer,
-				 state->pkt,
-				 state->caller.smb_iconv_c);
+	ndr = ndr_pull_init_blob(&state->buffer, state->pkt);
 	if (tevent_req_nomem(ndr, req)) {
 		return;
 	}
@@ -392,8 +387,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	subreq = dcerpc_read_ncacn_packet_send(dcesrv_conn,
 					       dcesrv_conn->event_ctx,
-					       dcesrv_conn->stream,
-					       lp_iconv_convenience(lp_ctx));
+					       dcesrv_conn->stream);
 	if (!subreq) {
 		status = NT_STATUS_NO_MEMORY;
 		DEBUG(0,("dcesrv_sock_accept: dcerpc_read_fragment_buffer_send(%s)\n",
@@ -413,7 +407,6 @@ static void dcesrv_read_fragment_done(struct tevent_req *subreq)
 	struct ncacn_packet *pkt;
 	DATA_BLOB buffer;
 	NTSTATUS status;
-	struct loadparm_context *lp_ctx = dce_conn->dce_ctx->lp_ctx;
 
 	status = dcerpc_read_ncacn_packet_recv(subreq, dce_conn,
 					       &pkt, &buffer);
@@ -431,8 +424,7 @@ static void dcesrv_read_fragment_done(struct tevent_req *subreq)
 
 	subreq = dcerpc_read_ncacn_packet_send(dce_conn,
 					       dce_conn->event_ctx,
-					       dce_conn->stream,
-					       lp_iconv_convenience(lp_ctx));
+					       dce_conn->stream);
 	if (!subreq) {
 		status = NT_STATUS_NO_MEMORY;
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));

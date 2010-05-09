@@ -749,7 +749,6 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 
 	arcfour_crypt_blob(auth_blob->data, auth_blob->length, &session_key);
 	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
-				       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 				       auth_struct,
 				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -797,7 +796,6 @@ static NTSTATUS get_trustauth_inout_blob(struct dcesrv_call_state *dce_call,
 		ioblob.previous->array[i].AuthType = 0;
 	}
 	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
-				       lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx),
 				       &ioblob,
 				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -3920,7 +3918,6 @@ static int dns_cmp(const char *s1, size_t l1,
 
 /* decode all TDOs forest trust info blobs */
 static NTSTATUS get_ft_info(TALLOC_CTX *mem_ctx,
-			    struct smb_iconv_convenience *ic,
 			    struct ldb_message *msg,
 			    struct ForestTrustInfo *info)
 {
@@ -3932,8 +3929,7 @@ static NTSTATUS get_ft_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 	/* ldb_val is equivalent to DATA_BLOB */
-	ndr_err = ndr_pull_struct_blob_all(ft_blob, mem_ctx, ic,
-					   info,
+	ndr_err = ndr_pull_struct_blob_all(ft_blob, mem_ctx, info,
 					   (ndr_pull_flags_fn_t)ndr_pull_ForestTrustInfo);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NT_STATUS_INVALID_DOMAIN_STATE;
@@ -4242,8 +4238,6 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *p_state;
-	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct smb_iconv_convenience *ic = lp_iconv_convenience(lp_ctx);
 	const char *trust_attrs[] = { "trustPartner", "trustAttributes",
 				      "msDS-TrustForestTrustInfo", NULL };
 	struct ldb_message **dom_res = NULL;
@@ -4356,7 +4350,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		nt_status = get_ft_info(mem_ctx, ic, dom_res[i], fti);
+		nt_status = get_ft_info(mem_ctx, dom_res[i], fti);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_EQUAL(nt_status,
 			    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -4385,8 +4379,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 
 	/* not just a check, write info back */
 
-	ndr_err = ndr_push_struct_blob(&ft_blob, mem_ctx, ic,
-				       nfti,
+	ndr_err = ndr_push_struct_blob(&ft_blob, mem_ctx, nfti,
 				       (ndr_push_flags_fn_t)ndr_push_ForestTrustInfo);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NT_STATUS_INVALID_PARAMETER;

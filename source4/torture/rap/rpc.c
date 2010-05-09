@@ -58,7 +58,7 @@ static bool test_rpc_netservergetinfo(struct torture_context *tctx,
 	r.in.level = 0;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netservergetinfo(cli->tree, tctx, &r),
 		"rap_netservergetinfo level 0 failed");
 	torture_assert_int_equal(tctx, r.out.status, 0,
 		"rap_netservergetinfo level 0 failed");
@@ -70,7 +70,7 @@ static bool test_rpc_netservergetinfo(struct torture_context *tctx,
 	r.in.level = 1;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netservergetinfo(cli->tree, tctx, &r),
 		"rap_netservergetinfo level 1 failed");
 	torture_assert_int_equal(tctx, r.out.status, 0,
 		"rap_netservergetinfo level 1 failed");

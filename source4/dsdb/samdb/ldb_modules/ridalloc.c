@@ -72,7 +72,6 @@ static void ridalloc_poke_rid_manager(struct ldb_module *module)
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 
 	msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, lp_ctx),
-				    lp_iconv_convenience(lp_ctx),
 				    ldb_get_event_context(ldb));
 	if (!msg) {
 		DEBUG(3,(__location__ ": Failed to create messaging context\n"));

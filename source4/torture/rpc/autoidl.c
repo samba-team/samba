@@ -81,7 +81,7 @@ static void fill_blob_handle(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		return;
 	}
 
-	ndr_push_struct_blob(&b2, mem_ctx, NULL, handle, (ndr_push_flags_fn_t)ndr_push_policy_handle);
+	ndr_push_struct_blob(&b2, mem_ctx, handle, (ndr_push_flags_fn_t)ndr_push_policy_handle);
 
 	memcpy(blob->data, b2.data, 20);
 }

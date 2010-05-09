@@ -946,7 +946,6 @@ static void cldap_netlogon_state_done(struct tevent_req *subreq)
   receive a cldap netlogon reply
 */
 NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
-			     struct smb_iconv_convenience *iconv_convenience,
 			     TALLOC_CTX *mem_ctx,
 			     struct cldap_netlogon *io)
 {
@@ -974,7 +973,6 @@ NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
 	data = state->search.out.response->attributes[0].values;
 
 	status = pull_netlogon_samlogon_response(data, mem_ctx,
-						 iconv_convenience,
 						 &io->out.netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
@@ -994,7 +992,6 @@ failed:
   sync cldap netlogon search
 */
 NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
-			struct smb_iconv_convenience *iconv_convenience,
 			TALLOC_CTX *mem_ctx,
 			struct cldap_netlogon *io)
 {
@@ -1017,7 +1014,7 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = cldap_netlogon_recv(req, iconv_convenience, mem_ctx, io);
+	status = cldap_netlogon_recv(req, mem_ctx, io);
 	talloc_free(req);
 
 	return status;
@@ -1081,7 +1078,6 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
   send a netlogon reply 
 */
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
-			      struct smb_iconv_convenience *iconv_convenience,
 			      uint32_t message_id,
 			      struct tsocket_address *dest,
 			      uint32_t version,
@@ -1095,7 +1091,6 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	DATA_BLOB blob;
 
 	status = push_netlogon_samlogon_response(&blob, tmp_ctx,
-						 iconv_convenience,
 						 netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);

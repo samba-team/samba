@@ -85,7 +85,7 @@ void dump_NL_AUTH_SIGNATURE(TALLOC_CTX *mem_ctx,
 	switch (signature_algorithm) {
 	case NL_SIGN_HMAC_MD5: {
 		struct NL_AUTH_SIGNATURE r;
-		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, &r,
+		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, &r,
 		       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SIGNATURE);
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NDR_PRINT_DEBUG(NL_AUTH_SIGNATURE, &r);
@@ -94,7 +94,7 @@ void dump_NL_AUTH_SIGNATURE(TALLOC_CTX *mem_ctx,
 	}
 	case NL_SIGN_HMAC_SHA256: {
 		struct NL_AUTH_SHA2_SIGNATURE r;
-		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, &r,
+		ndr_err = ndr_pull_struct_blob(blob, mem_ctx, &r,
 		       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_SHA2_SIGNATURE);
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NDR_PRINT_DEBUG(NL_AUTH_SHA2_SIGNATURE, &r);

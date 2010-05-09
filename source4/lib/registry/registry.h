@@ -23,7 +23,6 @@
 
 struct registry_context;
 struct loadparm_context;
-struct smb_iconv_convenience;
 
 #include <talloc.h>
 #include "libcli/util/werror.h"
@@ -206,8 +205,7 @@ WERROR hive_key_flush(struct hive_key *key);
 WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 			  const char *location, struct hive_key **key);
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
-			  const char *location, struct smb_iconv_convenience *iconv_convenience,
-			  struct hive_key **key);
+			  const char *location, struct hive_key **key);
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
 			 struct cli_credentials *credentials,
@@ -219,7 +217,6 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
 			    const char *location, struct hive_key **key);
 WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
-			    struct smb_iconv_convenience *iconv_convenience,
 			    const char *location,
 			    int major_version,
 			    struct hive_key **key);
@@ -453,19 +450,15 @@ WERROR reg_create_key(TALLOC_CTX *mem_ctx,
 
 /* Utility functions */
 const char *str_regtype(int type);
-bool push_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		 DATA_BLOB *blob, const char *s);
-bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		       DATA_BLOB *blob, const char **a);
-bool pull_reg_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		 const DATA_BLOB *blob, const char **s);
-bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic,
-		       const DATA_BLOB *blob, const char ***a);
+bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s);
+bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
+bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
+bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a);
 int regtype_by_string(const char *str);
-char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t type, const DATA_BLOB data);
-char *reg_val_description(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const char *name,
+char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, const DATA_BLOB data);
+char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
 			  uint32_t type, const DATA_BLOB data);
-bool reg_string_to_val(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const char *type_str,
+bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 		       const char *data_str, uint32_t *type, DATA_BLOB *data);
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle,
 			const char *name, struct registry_key **result);
@@ -502,18 +495,16 @@ struct reg_diff_callbacks {
 };
 
 WERROR reg_diff_apply(struct registry_context *ctx, 
-					  struct smb_iconv_convenience *ic, const char *filename);
+					  const char *filename);
 
 WERROR reg_generate_diff(struct registry_context *ctx1,
 			 struct registry_context *ctx2,
 			 const struct reg_diff_callbacks *callbacks,
 			 void *callback_data);
 WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
-			    struct smb_iconv_convenience *iconv_convenience,
 			    struct reg_diff_callbacks **callbacks,
 			    void **callback_data);
 WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
-			  struct smb_iconv_convenience *ic,
 			  struct reg_diff_callbacks **callbacks,
 			  void **callback_data);
 WERROR reg_generate_diff_key(struct registry_key *oldkey,
@@ -522,17 +513,14 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			     const struct reg_diff_callbacks *callbacks,
 			     void *callback_data);
 WERROR reg_diff_load(const char *filename,
-	             struct smb_iconv_convenience *iconv_convenience,
 		     const struct reg_diff_callbacks *callbacks,
 		     void *callback_data);
 
 WERROR reg_dotreg_diff_load(int fd,
-				     struct smb_iconv_convenience *iconv_convenience,
 				     const struct reg_diff_callbacks *callbacks,
 				     void *callback_data);
 
 WERROR reg_preg_diff_load(int fd,
-		   struct smb_iconv_convenience *iconv_convenience, 
 				   const struct reg_diff_callbacks *callbacks,
 				   void *callback_data);
 

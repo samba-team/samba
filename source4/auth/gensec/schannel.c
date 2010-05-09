@@ -87,8 +87,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel.oem_netbios_computer.a = cli_credentials_get_workstation(gensec_security->credentials);
 #endif
 
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx,
-					       gensec_security->settings->iconv_convenience, &bind_schannel,
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
 					       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -111,9 +110,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 
 		/* parse the schannel startup blob */
-		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx,
-			gensec_security->settings->iconv_convenience,
-			&bind_schannel,
+		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel,
 			(ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -137,7 +134,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 
 		status = schannel_get_creds_state(out_mem_ctx,
-						  gensec_security->settings->iconv_convenience,
 						  lp_private_dir(gensec_security->settings->lp_ctx),
 						  workstation, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -158,8 +154,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 							    * any meaning here
 							    * - gd */
 
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx,
-					       gensec_security->settings->iconv_convenience, &bind_schannel_ack,
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack,
 					       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);

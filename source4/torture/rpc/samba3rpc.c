@@ -84,7 +84,6 @@ bool torture_bind_authcontext(struct torture_context *torture)
 					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx),
 					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(torture, "smbcli_full_connection failed: %s\n",
@@ -92,8 +91,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, cli->transport->socket->event.ctx,
-				    lp_iconv_convenience(torture->lp_ctx));
+	lsa_pipe = dcerpc_pipe_init(mem_ctx, cli->transport->socket->event.ctx);
 	if (lsa_pipe == NULL) {
 		torture_comment(torture, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -224,8 +222,7 @@ static bool bindtest(struct torture_context *tctx,
 	}
 
 	lsa_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx,
-				    lp_iconv_convenience(tctx->lp_ctx));
+				    cli->transport->socket->event.ctx); 
 	if (lsa_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -336,7 +333,6 @@ static bool torture_bind_samba3(struct torture_context *torture)
 					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx),
 					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(torture, "smbcli_full_connection failed: %s\n",
@@ -397,8 +393,7 @@ static bool get_usr_handle(struct torture_context *tctx,
 	uint32_t user_rid,access_granted;
 
 	samr_pipe = dcerpc_pipe_init(mem_ctx,
-				     cli->transport->socket->event.ctx,
-				     lp_iconv_convenience(tctx->lp_ctx));
+				     cli->transport->socket->event.ctx);
 	torture_assert(tctx, samr_pipe, "dcerpc_pipe_init failed");
 
 	samr_handle = samr_pipe->binding_handle;
@@ -953,8 +948,7 @@ static bool auth2(struct torture_context *tctx,
 	}
 
 	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx,
-				    lp_iconv_convenience(tctx->lp_ctx));
+				    cli->transport->socket->event.ctx);
 	if (net_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -1070,8 +1064,7 @@ static bool schan(struct torture_context *tctx,
 	}
 
 	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx,
-				    lp_iconv_convenience(tctx->lp_ctx));
+				    cli->transport->socket->event.ctx);
 	if (net_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -1342,7 +1335,6 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 					anon_creds,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx),
 					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(torture, "smbcli_full_connection failed: %s\n",
@@ -1432,7 +1424,6 @@ static bool test_join3(struct torture_context *tctx,
 					"IPC$", NULL, lp_socket_options(tctx->lp_ctx),
 					smb_creds, lp_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
-					lp_iconv_convenience(tctx->lp_ctx),
 					lp_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status,
 		"smbcli_full_connection failed");
@@ -1541,8 +1532,7 @@ static NTSTATUS pipe_bind_smb(struct torture_context *tctx,
 	NTSTATUS status;
 
 	if (!(result = dcerpc_pipe_init(
-		      mem_ctx, tree->session->transport->socket->event.ctx,
-		      lp_iconv_convenience(tctx->lp_ctx)))) {
+		      mem_ctx, tree->session->transport->socket->event.ctx))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1809,10 +1799,8 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, lp_socket_options(torture->lp_ctx), cmdline_credentials,
-		lp_resolve_context(torture->lp_ctx),
-		torture->ev, &options, &session_options,
-		lp_iconv_convenience(torture->lp_ctx),
-		lp_gensec_settings(torture, torture->lp_ctx));
+		lp_resolve_context(torture->lp_ctx), torture->ev, &options,
+		&session_options, lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1839,7 +1827,6 @@ static bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_socket_options(torture->lp_ctx), anon_creds,
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
-		lp_iconv_convenience(torture->lp_ctx),
 		lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "anon smbcli_full_connection failed: %s\n",
@@ -2154,8 +2141,7 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	}
 
 	if (!(net_pipe = dcerpc_pipe_init(
-		      mem_ctx, cli->transport->socket->event.ctx,
-		      lp_iconv_convenience(torture->lp_ctx)))) {
+		      mem_ctx, cli->transport->socket->event.ctx))) {
 		torture_comment(torture, "dcerpc_pipe_init failed\n");
 		goto done;
 	}
@@ -2556,7 +2542,6 @@ static bool torture_samba3_rpc_lsa(struct torture_context *torture)
 }
 
 static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
-			       struct smb_iconv_convenience *iconv_convenience,
 			       char **name)
 {
 	struct rap_WserverGetInfo r;
@@ -2566,7 +2551,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	r.in.level = 0;
 	r.in.bufsize = 0xffff;
 
-	status = smbcli_rap_netservergetinfo(tree, iconv_convenience, mem_ctx, &r);
+	status = smbcli_rap_netservergetinfo(tree, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2592,7 +2577,7 @@ static bool rap_get_servername(struct torture_context *tctx,
 		"IPC$ connection failed");
 
 	torture_assert_ntstatus_ok(tctx,
-		get_servername(tctx, cli->tree, lp_iconv_convenience(tctx->lp_ctx), servername),
+		get_servername(tctx, cli->tree, servername),
 		"get_servername failed");
 
 	talloc_free(cli);
@@ -3241,7 +3226,7 @@ static bool torture_samba3_setconfig(struct torture_context *tctx,
 		"OpenKey failed");
 
 	torture_assert(tctx,
-		reg_string_to_val(tctx, lp_iconv_convenience(tctx->lp_ctx), "REG_SZ", value, &type, &val),
+		reg_string_to_val(tctx, "REG_SZ", value, &type, &val),
 		"reg_string_to_val failed");
 
 	s.in.handle = &key_handle;

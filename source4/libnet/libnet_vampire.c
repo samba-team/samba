@@ -423,7 +423,7 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 	}
 
 	if (!s->schema) {
-		s->self_made_schema = dsdb_new_schema(s, lp_iconv_convenience(s->lp_ctx));
+		s->self_made_schema = dsdb_new_schema(s);
 
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
 

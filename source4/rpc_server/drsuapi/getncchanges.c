@@ -136,8 +136,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		return WERR_OK;
 	}
 
-	ndr_err = ndr_pull_struct_blob(md_value, obj,
-				       lp_iconv_convenience(ldb_get_opaque(sam_ctx, "loadparm")), &md,
+	ndr_err = ndr_pull_struct_blob(md_value, obj, &md,
 				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return WERR_DS_DRA_INTERNAL_ERROR;

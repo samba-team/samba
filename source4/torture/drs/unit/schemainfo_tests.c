@@ -513,7 +513,7 @@ static bool torture_drs_unit_schemainfo_setup(struct torture_context *tctx,
 	torture_assert(tctx, priv->ldb_module, "Not enough memory!");
 
 	/* create schema mockup object */
-	priv->schema = dsdb_new_schema(priv, lp_iconv_convenience(tctx->lp_ctx));
+	priv->schema = dsdb_new_schema(priv);
 
 	/* pre-cache invocationId for samdb_ntds_invocation_id()
 	 * to work with our mock ldb */

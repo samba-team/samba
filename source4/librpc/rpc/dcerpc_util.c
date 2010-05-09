@@ -51,14 +51,13 @@ const struct ndr_interface_call *dcerpc_iface_find_call(const struct ndr_interfa
    push a ncacn_packet into a blob, potentially with auth info
 */
 NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			 struct smb_iconv_convenience *iconv_convenience,
 			 struct ncacn_packet *pkt,
 			 struct dcerpc_auth *auth_info)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code ndr_err;
 
-	ndr = ndr_push_init_ctx(mem_ctx, iconv_convenience);
+	ndr = ndr_push_init_ctx(mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -827,7 +826,7 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 
 	*auth_length = pkt_auth_blob->length - pad;
 
-	ndr = ndr_pull_init_blob(pkt_auth_blob, mem_ctx, NULL);
+	ndr = ndr_pull_init_blob(pkt_auth_blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}

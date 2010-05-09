@@ -52,7 +52,7 @@ static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *
 		return NULL;
 
 	ev = s4_event_context_init(ret->mem_ctx);
-	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev, py_iconv_convenience(ret->mem_ctx));
+	ret->socket = nbt_name_socket_init(ret->mem_ctx, ev);
 	return (PyObject *)ret;
 }
 
@@ -124,7 +124,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 	return false;
 }
 
-static PyObject *PyObject_FromNBTName(struct nbt_name_socket *name_socket, struct smb_iconv_convenience *ic,
+static PyObject *PyObject_FromNBTName(struct nbt_name_socket *name_socket, 
 				      struct nbt_name *name)
 {
 	if (name->scope) {
@@ -175,7 +175,7 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(node->socket), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 
@@ -233,7 +233,7 @@ static PyObject *py_nbt_name_status(PyObject *self, PyObject *args, PyObject *kw
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 
@@ -296,7 +296,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 
@@ -351,7 +351,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
 
-	py_name = PyObject_FromNBTName(node->socket, py_iconv_convenience(NULL), &io.out.name);
+	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
 		return NULL;
 

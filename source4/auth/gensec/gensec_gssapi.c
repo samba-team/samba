@@ -1268,7 +1268,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	 */
 	if (pac_blob.length) {
 		nt_status = kerberos_pac_blob_to_server_info(mem_ctx, 
-							     gensec_security->settings->iconv_convenience,
 							     pac_blob, 
 							     gensec_gssapi_state->smb_krb5_context->krb5_context,
 							     &server_info);

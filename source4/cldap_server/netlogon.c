@@ -137,7 +137,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			enum ndr_err_code ndr_err;
 			
 			/* Rather than go via the string, just push into the NDR form */
-			ndr_err = ndr_push_struct_blob(&sid_val, mem_ctx, NULL, &sid,
+			ndr_err = ndr_push_struct_blob(&sid_val, mem_ctx, &sid,
 						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return NT_STATUS_INVALID_PARAMETER;
@@ -427,8 +427,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 				goto failed;
 			}
 			ndr_err = ndr_pull_struct_blob(&t->u.equality.value,
-						       domain_sid, NULL,
-						       domain_sid,
+						       domain_sid, domain_sid,
 						       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				talloc_free(domain_sid);
@@ -472,10 +471,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	status = cldap_netlogon_reply(cldap,
-				      lp_iconv_convenience(cldapd->task->lp_ctx),
-				      message_id, src, version,
-				      &netlogon);
+	status = cldap_netlogon_reply(cldap, message_id, src, version, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

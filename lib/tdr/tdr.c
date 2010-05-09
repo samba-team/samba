@@ -163,7 +163,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	if (!convert_string_talloc_convenience(ctx, tdr->iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v), &ret, false)) {
+	if (!convert_string_talloc(ctx, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v), &ret, false)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -183,7 +183,8 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	if (!convert_string_convenience(tdr->iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required, &ret, false)) {
+	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required, false);
+	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -343,33 +344,29 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, TALLOC_CTX *ctx, DATA_BLOB *bl
 	return NT_STATUS_OK;
 }
 
-struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic)
+struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdr_push *push = talloc_zero(mem_ctx, struct tdr_push);
 
 	if (push == NULL)
 		return NULL;
 
-	push->iconv_convenience = talloc_reference(push, ic);
-
 	return push;
 }
 
-struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *ic)
+struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdr_pull *pull = talloc_zero(mem_ctx, struct tdr_pull);
 
 	if (pull == NULL)
 		return NULL;
 
-	pull->iconv_convenience = talloc_reference(pull, ic);
-
 	return pull;
 }
 
-NTSTATUS tdr_push_to_fd(int fd, struct smb_iconv_convenience *iconv_convenience, tdr_push_fn_t push_fn, const void *p)
+NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p)
 {
-	struct tdr_push *push = tdr_push_init(NULL, iconv_convenience);
+	struct tdr_push *push = tdr_push_init(NULL);
 
 	if (push == NULL)
 		return NT_STATUS_NO_MEMORY;

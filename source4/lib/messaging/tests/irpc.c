@@ -222,7 +222,6 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx), 
 				      cluster_id(0, MSG_ID1),
-				      lp_iconv_convenience(tctx->lp_ctx),
 				      data->ev),
 		       "Failed to init first messaging context");
 
@@ -230,7 +229,6 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID2), 
-				      lp_iconv_convenience(tctx->lp_ctx),
 				      data->ev),
 		       "Failed to init second messaging context");
 

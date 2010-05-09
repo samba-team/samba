@@ -211,7 +211,6 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 	ndr_err = ndr_pull_struct_blob_all(
 			&call->in,
 			pipe_conn,
-			lp_iconv_convenience(conn->lp_ctx),
 			&pipe_request,
 			(ndr_pull_flags_fn_t) ndr_pull_named_pipe_auth_req);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -480,7 +479,6 @@ static void named_pipe_auth_request(struct tevent_req *subreq)
 reply:
 	/* create the output */
 	ndr_err = ndr_push_struct_blob(&call->out, pipe_conn,
-			lp_iconv_convenience(conn->lp_ctx),
 			&pipe_reply,
 			(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_rep);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

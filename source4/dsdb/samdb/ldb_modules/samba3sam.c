@@ -94,7 +94,7 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(sidval, sid, NULL, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	ndr_err = ndr_pull_struct_blob(sidval, sid, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
 		return;
@@ -188,7 +188,6 @@ static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 	}
 
 	ndr_err = ndr_push_struct_blob(&out, ctx, 
-				       NULL,
 				       sid, (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -210,7 +209,7 @@ static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 		return out;
 	}
 
-	ndr_err = ndr_pull_struct_blob(val, sid, NULL, sid,
+	ndr_err = ndr_pull_struct_blob(val, sid, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		goto done;

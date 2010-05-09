@@ -81,8 +81,7 @@ static void print_tree(unsigned int level, struct registry_key *p,
 			unsigned int j;
 			for(j = 0; j < level+1; j++) putchar(' ');
 			printf("%s\n",  reg_val_description(mem_ctx,
-				lp_iconv_convenience(cmdline_lp_ctx), valuename,
-				valuetype, valuedata));
+				valuename, valuetype, valuedata));
 		}
 		talloc_free(mem_ctx);
 

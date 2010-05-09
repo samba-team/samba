@@ -72,9 +72,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	ev = tctx->ev;
 
 	msg_server_ctx = messaging_init(tctx, 
-					lp_messaging_path(tctx, tctx->lp_ctx), 
-					cluster_id(0, 1), 
-				        lp_iconv_convenience(tctx->lp_ctx),
+					lp_messaging_path(tctx, tctx->lp_ctx), cluster_id(0, 1), 
 					ev);
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init ping messaging context");
@@ -85,7 +83,6 @@ static bool test_ping_speed(struct torture_context *tctx)
 	msg_client_ctx = messaging_init(tctx, 
 					lp_messaging_path(tctx, tctx->lp_ctx), 
 					cluster_id(0, 2), 
-				        lp_iconv_convenience(tctx->lp_ctx),
 					ev);
 
 	torture_assert(tctx, msg_client_ctx != NULL, 

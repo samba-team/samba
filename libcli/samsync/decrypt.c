@@ -79,7 +79,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		user->user_private_info.SensitiveData = data.data;
 		user->user_private_info.DataLength = data.length;
 
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, NULL, &keys,
+		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, &keys,
 			(ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			dump_data(10, data.data, data.length);

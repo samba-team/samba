@@ -188,9 +188,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	/* setup to receive internal messages on this connection */
 	srv_conn->msg_ctx = messaging_init(srv_conn, 
 					   lp_messaging_path(srv_conn, lp_ctx),
-					   srv_conn->server_id, 
-				           lp_iconv_convenience(lp_ctx),
-					   ev);
+					   srv_conn->server_id, ev);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "messaging_init() failed");
 		return;

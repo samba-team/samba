@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
 	poptFreeContext(pc);
 
-	reg_diff_apply(h, lp_iconv_convenience(cmdline_lp_ctx), patch);
+	reg_diff_apply(h, patch);
 
 	return 0;
 }

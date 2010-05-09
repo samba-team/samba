@@ -69,7 +69,7 @@ int dsdb_get_sd_from_ldb_message(TALLOC_CTX *mem_ctx,
 	if(!*sd) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ndr_err = ndr_pull_struct_blob(&sd_element->values[0], *sd, NULL, *sd,
+	ndr_err = ndr_pull_struct_blob(&sd_element->values[0], *sd, *sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

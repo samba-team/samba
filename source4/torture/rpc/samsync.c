@@ -598,7 +598,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		enum ndr_err_code ndr_err;
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, lp_iconv_convenience(tctx->lp_ctx), &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
 				lm_hash_p = &lm_hash;

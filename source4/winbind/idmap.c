@@ -97,9 +97,7 @@ static int idmap_msg_add_dom_sid(struct idmap_context *idmap_ctx,
 	struct ldb_val val;
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&val, mem_ctx,
-				       lp_iconv_convenience(idmap_ctx->lp_ctx),
-				       sid,
+	ndr_err = ndr_push_struct_blob(&val, mem_ctx, sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -134,7 +132,7 @@ static struct dom_sid *idmap_msg_get_dom_sid(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ndr_err = ndr_pull_struct_blob(val, sid, NULL, sid,
+	ndr_err = ndr_pull_struct_blob(val, sid, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);

@@ -87,7 +87,7 @@ static bool test_netprintqenum(struct torture_context *tctx,
 			"Testing rap_NetPrintQEnum level %d\n", r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 			"smbcli_rap_netprintqenum failed");
 		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 			"failed to enum printq");
@@ -116,7 +116,7 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	r_enum.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r_enum),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r_enum),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r_enum.out.status),
 		"failed to enum printq");
@@ -133,7 +133,7 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 				r.in.PrintQueueName, r.in.level);
 
 			torture_assert_ntstatus_ok(tctx,
-				smbcli_rap_netprintqgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+				smbcli_rap_netprintqgetinfo(cli->tree, tctx, &r),
 				"smbcli_rap_netprintqgetinfo failed");
 
 			switch (r.in.level) {
@@ -158,7 +158,7 @@ static bool test_netprintjob_pause(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetPrintJobPause(%d)\n", r.in.JobID);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobpause(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobpause(cli->tree, tctx, &r),
 		"smbcli_rap_netprintjobpause failed");
 
 	return true;
@@ -175,7 +175,7 @@ static bool test_netprintjob_continue(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetPrintJobContinue(%d)\n", r.in.JobID);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobcontinue(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobcontinue(cli->tree, tctx, &r),
 		"smbcli_rap_netprintjobcontinue failed");
 
 	return true;
@@ -192,7 +192,7 @@ static bool test_netprintjob_delete(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetPrintJobDelete(%d)\n", r.in.JobID);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobdelete(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobdelete(cli->tree, tctx, &r),
 		"smbcli_rap_netprintjobdelete failed");
 
 	return true;
@@ -227,7 +227,7 @@ static bool test_netprintq_pause(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetPrintQueuePause(%s)\n", r.in.PrintQueueName);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqueuepause(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqueuepause(cli->tree, tctx, &r),
 		"smbcli_rap_netprintqueuepause failed");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"smbcli_rap_netprintqueuepause failed");
@@ -246,7 +246,7 @@ static bool test_netprintq_resume(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetPrintQueueResume(%s)\n", r.in.PrintQueueName);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqueueresume(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqueueresume(cli->tree, tctx, &r),
 		"smbcli_rap_netprintqueueresume failed");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"smbcli_rap_netprintqueueresume failed");
@@ -264,7 +264,7 @@ static bool test_netprintq(struct torture_context *tctx,
 	r.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
@@ -302,7 +302,7 @@ static bool test_netprintjobenum_args(struct torture_context *tctx,
 		"Testing rap_NetPrintJobEnum(%s) level %d\n", r.in.PrintQueueName, r.in.level);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobenum(cli->tree, tctx, &r),
 		"smbcli_rap_netprintjobenum failed");
 
 	if (count_p) {
@@ -334,7 +334,7 @@ static bool test_netprintjobenum_one(struct torture_context *tctx,
 			"Testing rap_NetPrintJobEnum(%s) level %d\n", r.in.PrintQueueName, r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintjobenum(cli->tree, tctx, &r),
 			"smbcli_rap_netprintjobenum failed");
 	}
 
@@ -359,7 +359,7 @@ static bool test_netprintjobgetinfo_byid(struct torture_context *tctx,
 		torture_comment(tctx, "Testing rap_NetPrintJobGetInfo(%d) level %d\n", r.in.JobID, r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintjobgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintjobgetinfo(cli->tree, tctx, &r),
 			"smbcli_rap_netprintjobgetinfo failed");
 	}
 
@@ -387,7 +387,7 @@ static bool test_netprintjobsetinfo_byid(struct torture_context *tctx,
 		torture_comment(tctx, "Testing rap_NetPrintJobSetInfo(%d) level %d\n", r.in.JobID, r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintjobsetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintjobsetinfo(cli->tree, tctx, &r),
 			"smbcli_rap_netprintjobsetinfo failed");
 	}
 
@@ -407,7 +407,7 @@ static bool test_netprintjobgetinfo_byqueue(struct torture_context *tctx,
 	r.in.level = 0;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobenum(cli->tree, tctx, &r),
 		"failed to enumerate jobs");
 
 	for (i=0; i < r.out.count; i++) {
@@ -432,7 +432,7 @@ static bool test_netprintjobsetinfo_byqueue(struct torture_context *tctx,
 	r.in.level = 0;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintjobenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintjobenum(cli->tree, tctx, &r),
 		"failed to enumerate jobs");
 
 	for (i=0; i < r.out.count; i++) {
@@ -455,7 +455,7 @@ static bool test_netprintjobenum(struct torture_context *tctx,
 	r.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
@@ -482,7 +482,7 @@ static bool test_netprintjobgetinfo(struct torture_context *tctx,
 	r.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
@@ -509,7 +509,7 @@ static bool test_netprintjobsetinfo(struct torture_context *tctx,
 	r.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");
@@ -542,7 +542,7 @@ static bool test_netprintdestenum(struct torture_context *tctx,
 			"Testing rap_NetPrintDestEnum level %d\n", r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintdestenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintdestenum(cli->tree, tctx, &r),
 			"smbcli_rap_netprintdestenum failed");
 	}
 
@@ -567,7 +567,7 @@ static bool test_netprintdestgetinfo_bydest(struct torture_context *tctx,
 			"Testing rap_NetPrintDestGetInfo(%s) level %d\n", r.in.PrintDestName, r.in.level);
 
 		torture_assert_ntstatus_ok(tctx,
-			smbcli_rap_netprintdestgetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+			smbcli_rap_netprintdestgetinfo(cli->tree, tctx, &r),
 			"smbcli_rap_netprintdestgetinfo failed");
 	}
 
@@ -588,7 +588,7 @@ static bool test_netprintdestgetinfo(struct torture_context *tctx,
 		"Testing rap_NetPrintDestEnum level %d\n", r.in.level);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintdestenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintdestenum(cli->tree, tctx, &r),
 		"smbcli_rap_netprintdestenum failed");
 
 	for (i=0; i < r.out.count; i++) {
@@ -612,7 +612,7 @@ static bool test_rap_print(struct torture_context *tctx,
 	r.in.bufsize = 8192;
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netprintqenum(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netprintqenum(cli->tree, tctx, &r),
 		"failed to enum printq");
 	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"failed to enum printq");

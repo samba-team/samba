@@ -80,9 +80,7 @@ static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
 	signed_reply.packet_id = packet_id;
 	signed_reply.signed_packet = data_blob(NULL, 0);
 	
-	ndr_err = ndr_push_struct_blob(output, mem_ctx,
-				       lp_iconv_convenience(ntp_signdconn->ntp_signd->task->lp_ctx),
-				       &signed_reply,
+	ndr_err = ndr_push_struct_blob(output, mem_ctx, &signed_reply,
 				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -114,7 +112,6 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	int ret;
 
 	ndr_err = ndr_pull_struct_blob_all(input, mem_ctx,
-					   lp_iconv_convenience(ntp_signd_conn->ntp_signd->task->lp_ctx),
 					   &sign_request,
 					   (ndr_pull_flags_fn_t)ndr_pull_sign_request);
 
@@ -244,9 +241,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 
 
 	/* Place it into the packet for the wire */
-	ndr_err = ndr_push_struct_blob(output, mem_ctx,
-				       lp_iconv_convenience(ntp_signd_conn->ntp_signd->task->lp_ctx),
-				       &signed_reply,
+	ndr_err = ndr_push_struct_blob(output, mem_ctx, &signed_reply,
 				       (ndr_push_flags_fn_t)ndr_push_signed_reply);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

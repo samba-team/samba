@@ -519,7 +519,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		}
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		ndr_err = ndr_pull_struct_blob(&blob, io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), &_old_pkb,
+		ndr_err = ndr_pull_struct_blob(&blob, io->ac, &_old_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -636,7 +636,6 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
 		ndr_err = ndr_pull_struct_blob(&blob, io->ac,
-					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 					       &_old_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1068,7 +1067,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/* if there's an old supplementaCredentials blob then parse it */
 	if (io->o.supplemental) {
 		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac,
-						   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 						   &_old_scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1148,7 +1146,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		}
 
 		ndr_err = ndr_push_struct_blob(&pknb_blob, io->ac,
-					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 					       &pknb,
 					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1180,7 +1177,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	}
 
 	ndr_err = ndr_push_struct_blob(&pkb_blob, io->ac, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &pkb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1211,7 +1207,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	}
 
 	ndr_err = ndr_push_struct_blob(&pdb_blob, io->ac, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &pdb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1240,7 +1235,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		pcb.cleartext	= *io->n.cleartext_utf16;
 
 		ndr_err = ndr_push_struct_blob(&pcb_blob, io->ac, 
-					       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 					       &pcb,
 					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1266,7 +1260,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 */
 	pb.names = names;
 	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 				       &pb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1294,7 +1287,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	scb.sub.packages	= packages;
 
 	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &scb,
 				       (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1335,8 +1327,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (!convert_string_talloc_convenience(io->ac,
-						       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+		if (!convert_string_talloc(io->ac,
 						       CH_UTF8, CH_UTF16,
 						       g->cleartext_utf8->data,
 						       g->cleartext_utf8->length,
@@ -1361,7 +1352,6 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (!convert_string_talloc_convenience(io->ac,
-						       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 						       CH_UTF16MUNGED, CH_UTF8,
 						       g->cleartext_utf16->data,
 						       g->cleartext_utf16->length,

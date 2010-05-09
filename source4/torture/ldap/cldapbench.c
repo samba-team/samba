@@ -40,9 +40,7 @@ static void request_netlogon_handler(struct tevent_req *req)
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	io.in.version = 6;
-	status = cldap_netlogon_recv(req,
-				     lp_iconv_convenience(state->tctx->lp_ctx),
-				     tmp_ctx, &io);
+	status = cldap_netlogon_recv(req, tmp_ctx, &io);
 	talloc_free(req);
 	if (NT_STATUS_IS_OK(status)) {
 		state->pass_count++;

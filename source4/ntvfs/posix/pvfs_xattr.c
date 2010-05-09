@@ -117,8 +117,8 @@ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 	}
 
 	/* pull the blob */
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), 
-				       p, (ndr_pull_flags_fn_t)pull_fn);
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, p,
+								   (ndr_pull_flags_fn_t)pull_fn);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
@@ -140,7 +140,7 @@ NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, (ndr_push_flags_fn_t)push_fn);
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, p, (ndr_push_flags_fn_t)push_fn);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(mem_ctx);
 		return ndr_map_error2ntstatus(ndr_err);

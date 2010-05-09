@@ -20,25 +20,19 @@
 
 NTSTATUS ntlmssp_pull_NEGOTIATE_MESSAGE(const DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					struct NEGOTIATE_MESSAGE *r);
 NTSTATUS ntlmssp_pull_CHALLENGE_MESSAGE(const DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					struct CHALLENGE_MESSAGE *r);
 NTSTATUS ntlmssp_pull_AUTHENTICATE_MESSAGE(const DATA_BLOB *blob,
 					   TALLOC_CTX *mem_ctx,
-					   struct smb_iconv_convenience *ic,
 					   struct AUTHENTICATE_MESSAGE *r);
 NTSTATUS ntlmssp_push_NEGOTIATE_MESSAGE(DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					const struct NEGOTIATE_MESSAGE *r);
 NTSTATUS ntlmssp_push_CHALLENGE_MESSAGE(DATA_BLOB *blob,
 					TALLOC_CTX *mem_ctx,
-					struct smb_iconv_convenience *ic,
 					const struct CHALLENGE_MESSAGE *r);
 NTSTATUS ntlmssp_push_AUTHENTICATE_MESSAGE(DATA_BLOB *blob,
 					   TALLOC_CTX *mem_ctx,
-					   struct smb_iconv_convenience *ic,
 					   const struct AUTHENTICATE_MESSAGE *r);

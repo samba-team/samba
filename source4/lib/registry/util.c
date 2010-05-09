@@ -21,9 +21,7 @@
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
 
-_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, 
-				   struct smb_iconv_convenience *iconv_convenience,
-				   uint32_t type,
+_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 				   const DATA_BLOB data)
 {
 	char *ret = NULL;
@@ -34,13 +32,9 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			convert_string_talloc_convenience(mem_ctx,
-							  iconv_convenience,
-							  CH_UTF16, CH_UNIX,
-							  data.data,
-							  data.length,
-							  (void **)&ret,
-							  NULL, false);
+			convert_string_talloc(mem_ctx,
+							  CH_UTF16, CH_UNIX, data.data, data.length,
+							  (void **)&ret, NULL, false);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
@@ -73,21 +67,17 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 
 /** Generate a string that describes a registry value */
 _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, 
-				   struct smb_iconv_convenience *iconv_convenience, 
 				   const char *name,
 				   uint32_t data_type,
 				   const DATA_BLOB data)
 {
 	return talloc_asprintf(mem_ctx, "%s = %s : %s", name?name:"<No Name>",
 			       str_regtype(data_type),
-			       reg_val_data_string(mem_ctx, iconv_convenience, data_type, data));
+			       reg_val_data_string(mem_ctx, data_type, data));
 }
 
-_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, 
-				struct smb_iconv_convenience *iconv_convenience,
-				const char *type_str,
-				const char *data_str, uint32_t *type,
-				DATA_BLOB *data)
+_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
+				const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
 	*type = regtype_by_string(type_str);
 
@@ -99,10 +89,8 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 	switch (*type) {
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-			return convert_string_talloc_convenience(mem_ctx,
-								 iconv_convenience,
-								 CH_UNIX, CH_UTF16,
-								 data_str,
+			return convert_string_talloc(mem_ctx,
+								 CH_UNIX, CH_UTF16, data_str,
 								 strlen(data_str)+1,
 								 (void **)&data->data,
 								 &data->length, false);

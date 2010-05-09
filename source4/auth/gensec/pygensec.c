@@ -70,7 +70,6 @@ static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObjec
 	
 	s->target_hostname = PyString_AsString(py_hostname);
 	s->lp_ctx = lp_from_py_object(s, py_lp_ctx);
-	s->iconv_convenience = py_iconv_convenience(s);
 	return s;
 }
 

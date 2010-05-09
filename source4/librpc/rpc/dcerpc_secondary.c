@@ -73,7 +73,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	s->binding  = b;
 
 	/* initialise second dcerpc pipe based on primary pipe's event context */
-	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx, s->pipe->conn->iconv_convenience);
+	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx);
 	if (composite_nomem(s->pipe2, c)) return c;
 
 	if (DEBUGLEVEL >= 10)

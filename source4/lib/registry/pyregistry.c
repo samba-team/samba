@@ -22,7 +22,6 @@
 #include <tevent.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
-#include "scripting/python/modules.h" /* for py_iconv_convenience() */
 #include "lib/talloc/pytalloc.h"
 #include "auth/credentials/pycredentials.h"
 #include "param/pyparam.h"
@@ -91,7 +90,7 @@ static PyObject *py_diff_apply(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &filename))
 		return NULL;
 
-	result = reg_diff_apply(ctx, py_iconv_convenience(NULL), filename);
+	result = reg_diff_apply(ctx, filename);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	Py_RETURN_NONE; 

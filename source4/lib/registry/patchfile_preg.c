@@ -164,7 +164,6 @@ static WERROR reg_preg_diff_done(void *_data)
  * Save registry diff
  */
 _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
-				   struct smb_iconv_convenience *ic,
 				   struct reg_diff_callbacks **callbacks,
 				   void **callback_data)
 {
@@ -209,7 +208,6 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
  * Load diff file
  */
 _PUBLIC_ WERROR reg_preg_diff_load(int fd,
-				   struct smb_iconv_convenience *iconv_convenience, 
 				   const struct reg_diff_callbacks *callbacks,
 				   void *callback_data)
 {

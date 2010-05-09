@@ -215,7 +215,6 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	}
 
 	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
-					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 					   schema_res, a_res, c_res, schema, &error_string);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 

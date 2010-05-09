@@ -116,16 +116,13 @@ struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
 				       struct cldap_socket *cldap,
 				       const struct cldap_netlogon *io);
 NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
-			     struct smb_iconv_convenience *iconv_convenience,
 			     TALLOC_CTX *mem_ctx,
 			     struct cldap_netlogon *io);
 NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
-			struct smb_iconv_convenience *iconv_convenience,
 			TALLOC_CTX *mem_ctx,
 			struct cldap_netlogon *io);
 
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
-			      struct smb_iconv_convenience *iconv_convenience,
 			      uint32_t message_id,
 			      struct tsocket_address *dst,
 			      uint32_t version,

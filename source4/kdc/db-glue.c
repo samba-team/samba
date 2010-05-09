@@ -192,7 +192,6 @@ static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 }
 
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
-					      struct smb_iconv_convenience *iconv_convenience,
 					      TALLOC_CTX *mem_ctx,
 					      struct ldb_message *msg,
 					      unsigned int userAccountControl,
@@ -228,7 +227,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	/* supplementalCredentials if present */
 	if (sc_val) {
-		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, iconv_convenience, &scb,
+		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			dump_data(0, sc_val->data, sc_val->length);
@@ -277,7 +276,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 
 		/* we cannot use ndr_pull_struct_blob_all() here, as w2k and w2k3 add padding bytes */
-		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			ret = EINVAL;
@@ -701,8 +700,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = samba_kdc_message2entry_keys(context, p->kdc_db_ctx->ic_ctx, p,
-					    msg, userAccountControl, entry_ex);
+	ret = samba_kdc_message2entry_keys(context, p, msg, userAccountControl,
+									   entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
@@ -808,7 +807,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, p->kdc_db_ctx->ic_ctx, &password_blob,
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ret = EINVAL;

@@ -84,11 +84,9 @@ enum ndr_err_code ndr_pull_frsrpc_CommPktChunkCtr(struct ndr_pull *ndr,
 }
 
 size_t ndr_size_frsrpc_CommPktChunkCtr(const struct frsrpc_CommPktChunkCtr *r,
-				       struct smb_iconv_convenience *ic,
 				       int flags)
 {
 	flags |= LIBNDR_FLAG_NOALIGN;
 	return ndr_size_struct(r, flags,
-			(ndr_push_flags_fn_t)ndr_push_frsrpc_CommPktChunkCtr,
-			ic);
+			(ndr_push_flags_fn_t)ndr_push_frsrpc_CommPktChunkCtr);
 }

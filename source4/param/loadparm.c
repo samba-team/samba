@@ -520,6 +520,7 @@ struct loadparm_context {
 	struct loadparm_global *globals;
 	struct loadparm_service **services;
 	struct loadparm_service *sDefault;
+	struct smb_iconv_convenience *iconv_convenience;
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
@@ -530,7 +531,6 @@ struct loadparm_context {
 		time_t modtime;
 	} *file_lists;
 	unsigned int flags[NUMPARAMETERS];
-	struct smb_iconv_convenience *iconv_convenience;
 };
 
 
@@ -2782,7 +2782,6 @@ struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_
 		return NULL;
 	SMB_ASSERT(lp_ctx != NULL);
 	settings->lp_ctx = talloc_reference(settings, lp_ctx);
-	settings->iconv_convenience = lp_iconv_convenience(lp_ctx);
 	settings->target_hostname = lp_parm_string(lp_ctx, NULL, "gensec", "target_hostname");
 	return settings;
 }

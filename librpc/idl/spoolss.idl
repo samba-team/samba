@@ -29,7 +29,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_Time;
 
 	typedef struct {
-		[value(ndr_size_spoolss_Time(time, ndr->iconv_convenience, ndr->flags))] uint32 size;
+		[value(ndr_size_spoolss_Time(time, ndr->flags))] uint32 size;
 		[unique] spoolss_Time *time;
 	} spoolss_TimeCtr;
 
@@ -333,7 +333,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint16 caColorfulness;
 		uint16 caRedGreenTint;
 		uint16 wCoreJTExpSize;
-		[value(ndr_size_spoolss_PSDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		[value(ndr_size_spoolss_PSDRVEXTRA(r, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
 		uint32 fxScrFreq;
 		uint32 fxScrAngle;
 		spoolss_DMPS_Dialect iDialect;
@@ -404,7 +404,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[value(SPOOLSS_DM_SIGNATURE_UNIDRVEXTRA)] spoolss_DM_Signature dwSignature;
 		[value(0x0022)] uint16 wVer;
 		uint16 wCoreJTExpSize;
-		[value(ndr_size_spoolss_UNIDRVEXTRA(r, ndr->iconv_convenience, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
+		[value(ndr_size_spoolss_UNIDRVEXTRA(r, ndr->flags) + wCoreJTExpSize)] uint16 wCoreFullSize;
 		uint16 wOEMExtra;
 		uint32 dwChecksum32;
 		spoolss_DMUNI_Flags dwFlags;
@@ -884,7 +884,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	/******************/
 	/* Function: 0x01 */
 	typedef struct {
-		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->iconv_convenience, ndr->flags))] uint32 _ndr_size;
+		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->flags))] uint32 _ndr_size;
 		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
@@ -1291,7 +1291,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	/* Function: 0x09 */
 
 	typedef [public] struct {
-		[value((ndr_size_spoolss_StringArray(r, ndr->iconv_convenience, ndr->flags)-4)/2)] uint32 _ndr_size;
+		[value((ndr_size_spoolss_StringArray(r, ndr->flags)-4)/2)] uint32 _ndr_size;
 		/*[subcontext(0),subcontext_size(_ndr_size*2)]*/ nstring_array string;
 	} spoolss_StringArray;
 
@@ -1325,7 +1325,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *help_file;
 		[string,charset(UTF16)] uint16 *monitor_name;
 		[string,charset(UTF16)] uint16 *default_datatype;
-		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
 		spoolss_StringArray *dependent_files;
 	} spoolss_AddDriverInfo3;
 
@@ -1339,9 +1339,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *help_file;
 		[string,charset(UTF16)] uint16 *monitor_name;
 		[string,charset(UTF16)] uint16 *default_datatype;
-		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
 		spoolss_StringArray *dependent_files;
-		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
+		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
 	} spoolss_AddDriverInfo4;
 
@@ -1371,9 +1371,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *help_file;
 		[string,charset(UTF16)] uint16 *monitor_name;
 		[string,charset(UTF16)] uint16 *default_datatype;
-		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
 		spoolss_StringArray *dependent_files;
-		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
+		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
 		NTTIME driver_date;
 		hyper driver_version;
@@ -1393,9 +1393,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *help_file;
 		[string,charset(UTF16)] uint16 *monitor_name;
 		[string,charset(UTF16)] uint16 *default_datatype;
-		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
 		spoolss_StringArray *dependent_files;
-		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
+		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
 		NTTIME driver_date;
 		hyper driver_version;
@@ -1405,11 +1405,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *provider;
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *vendor_setup;
-		[value(((ndr_size_spoolss_StringArray(color_profiles, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_color_profiles;
+		[value(((ndr_size_spoolss_StringArray(color_profiles, ndr->flags)-4)/2))] uint32 _ndr_size_color_profiles;
 		spoolss_StringArray *color_profiles;
 		[string,charset(UTF16)] uint16 *inf_path;
 		uint32 printer_driver_attributes;
-		[value(((ndr_size_spoolss_StringArray(core_driver_dependencies, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_core_driver_dependencies;
+		[value(((ndr_size_spoolss_StringArray(core_driver_dependencies, ndr->flags)-4)/2))] uint32 _ndr_size_core_driver_dependencies;
 		spoolss_StringArray *core_driver_dependencies;
 		NTTIME min_inbox_driver_ver_date;
 		hyper min_inbox_driver_ver_version;
@@ -1826,7 +1826,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
-		[value(ndr_size_spoolss_OSVersion(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
+		[value(ndr_size_spoolss_OSVersion(r,ndr->flags))] uint32 _ndr_size;
 		uint32 major;
 		uint32 minor;
 		uint32 build;
@@ -1835,7 +1835,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_OSVersion;
 
 	typedef [public,gensize] struct {
-		[value(ndr_size_spoolss_OSVersionEx(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
+		[value(ndr_size_spoolss_OSVersionEx(r,ndr->flags))] uint32 _ndr_size;
 		uint32 major;
 		uint32 minor;
 		uint32 build;

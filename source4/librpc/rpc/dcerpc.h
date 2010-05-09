@@ -64,7 +64,6 @@ struct dcerpc_connection {
 	struct dcerpc_security security_state;
 	const char *binding_string;
 	struct tevent_context *event_ctx;
-	struct smb_iconv_convenience *iconv_convenience;
 
 	/** Directory in which to save ndrdump-parseable files */
 	const char *packet_log_dir;
@@ -271,8 +270,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						TALLOC_CTX *mem_ctx, 
 						void *r);
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
-struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-				     struct smb_iconv_convenience *ic);
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev);
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name);

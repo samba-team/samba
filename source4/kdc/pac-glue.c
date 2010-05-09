@@ -34,7 +34,6 @@
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
-				       struct smb_iconv_convenience *ic,
 				       struct auth_serversupplied_info *info,
 				       DATA_BLOB *pac_data)
 {
@@ -59,7 +58,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 	pac_info.logon_info.info->info3 = *info3;
 
-	ndr_err = ndr_push_union_blob(pac_data, mem_ctx, ic, &pac_info,
+	ndr_err = ndr_push_union_blob(pac_data, mem_ctx, &pac_info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -154,9 +153,7 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(mem_ctx,
-						  p->kdc_db_ctx->ic_ctx,
-						  server_info, pac_blob);
+	nt_status = samba_get_logon_info_pac_blob(mem_ctx, server_info, pac_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",
 			  nt_errstr(nt_status)));
@@ -169,20 +166,19 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   struct smb_iconv_convenience *ic,
 				   krb5_pac *pac, DATA_BLOB *pac_blob)
 {
 	struct auth_serversupplied_info *server_info;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 
-	ret = kerberos_pac_to_server_info(mem_ctx, ic, *pac,
+	ret = kerberos_pac_to_server_info(mem_ctx, *pac,
 					  context, &server_info);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(mem_ctx, ic,
+	nt_status = samba_get_logon_info_pac_blob(mem_ctx, 
 						  server_info, pac_blob);
 
 	return nt_status;

@@ -26,7 +26,6 @@ struct netr_SamInfo3;
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
-					struct smb_iconv_convenience *smb_iconv_c,
 					const char *directory,
 					const char *npipe,
 					const struct tsocket_address *client,

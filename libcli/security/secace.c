@@ -63,7 +63,7 @@ void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum securi
 {
 	t->type = type;
 	t->flags = flag;
-	t->size = ndr_size_dom_sid(sid, NULL, 0) + 8;
+	t->size = ndr_size_dom_sid(sid, 0) + 8;
 	t->access_mask = mask;
 
 	t->trustee = *sid;
@@ -89,7 +89,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct s
 
 	(*pp_new)[i].type  = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	(*pp_new)[i].flags = 0;
-	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, NULL, 0);
+	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, 0);
 	(*pp_new)[i].access_mask = mask;
 	(*pp_new)[i].trustee = *sid;
 	return NT_STATUS_OK;

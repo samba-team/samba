@@ -51,7 +51,7 @@ char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	char *ret;
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, sid,
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;
@@ -89,7 +89,7 @@ NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldb_val val, struct GU
 
 	blob.data = val.data;
 	blob.length = val.length;
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, guid,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, guid,
 				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(val.data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -52,7 +52,6 @@ static NTSTATUS wreplsrv_process(struct wreplsrv_in_connection *wrepl_conn,
 	struct wreplsrv_in_call *call = *_call;
 
 	ndr_err = ndr_pull_struct_blob(&call->in, call,
-				       lp_iconv_convenience(wrepl_conn->service->task->lp_ctx),
 				       &call->req_packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -78,7 +77,6 @@ static NTSTATUS wreplsrv_process(struct wreplsrv_in_connection *wrepl_conn,
 	/* and now encode the reply */
 	packet_out_wrap.packet = call->rep_packet;
 	ndr_err = ndr_push_struct_blob(&call->out, call,
-				       lp_iconv_convenience(wrepl_conn->service->task->lp_ctx),
 				       &packet_out_wrap,
 				       (ndr_push_flags_fn_t) ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

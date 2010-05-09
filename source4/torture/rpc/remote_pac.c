@@ -139,7 +139,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	       session_info->server_info->pac_kdc_sig.signature.data, 
 	       pac_wrapped_struct.SignatureLength);
 
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, lp_iconv_convenience(tctx->lp_ctx), &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 		
@@ -245,7 +245,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	       session_info->server_info->pac_kdc_sig.signature.data, 
 	       pac_wrapped_struct.SignatureLength);
 	
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, lp_iconv_convenience(tctx->lp_ctx), &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 	
@@ -293,7 +293,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	/* Break the signature length */
 	pac_wrapped_struct.SignatureLength++;
 
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, lp_iconv_convenience(tctx->lp_ctx), &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 	

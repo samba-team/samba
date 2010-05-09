@@ -92,13 +92,13 @@ interface drsblobs {
 
 	typedef [public,gensize,flag(NDR_PAHEX)] struct {
 		/* this includes the 8 bytes of the repsFromToBlob header */
-		[value(ndr_size_repsFromTo1(this, ndr->iconv_convenience, ndr->flags)+8)] uint32 blobsize;
+		[value(ndr_size_repsFromTo1(this, ndr->flags)+8)] uint32 blobsize;
 		uint32 consecutive_sync_failures;
 		NTTIME_1sec last_success;
 		NTTIME_1sec last_attempt;
 		WERROR result_last_attempt;
 		[relative] repsFromTo1OtherInfo *other_info;
-		[value(ndr_size_repsFromTo1OtherInfo(other_info, ndr->iconv_convenience, ndr->flags))] uint32 other_info_length;
+		[value(ndr_size_repsFromTo1OtherInfo(other_info, ndr->flags))] uint32 other_info_length;
 		drsuapi_DrsOptions replica_flags;
 		uint8 schedule[84];
 		[value(0)] uint32 reserved;
@@ -109,7 +109,7 @@ interface drsblobs {
 	} repsFromTo1;
 
 	typedef [public,relative_base,gensize] struct {
-		[value(ndr_size_repsFromTo2OtherInfo(this,ndr->iconv_convenience, ndr->flags))]
+		[value(ndr_size_repsFromTo2OtherInfo(this,ndr->flags))]
 			uint32 __ndr_size;
 		[relative] nstring *dns_name1;
 		uint32 unknown1;
@@ -119,13 +119,13 @@ interface drsblobs {
 
 	typedef [public,gensize,flag(NDR_PAHEX)] struct {
 		/* this includes the 8 bytes of the repsFromToBlob header */
-		[value(ndr_size_repsFromTo2(this, ndr->iconv_convenience, ndr->flags)+8)] uint32 blobsize;
+		[value(ndr_size_repsFromTo2(this, ndr->flags)+8)] uint32 blobsize;
 		uint32 consecutive_sync_failures;
 		NTTIME_1sec last_success;
 		NTTIME_1sec last_attempt;
 		WERROR result_last_attempt;
 		[relative] repsFromTo2OtherInfo *other_info;
-		[value(ndr_size_repsFromTo2OtherInfo(other_info, ndr->iconv_convenience, ndr->flags))] uint32 other_info_length;
+		[value(ndr_size_repsFromTo2OtherInfo(other_info, ndr->flags))] uint32 other_info_length;
 		drsuapi_DrsOptions replica_flags;
 		uint8 schedule[84];
 		[value(0)] uint32 reserved;
@@ -209,7 +209,7 @@ interface drsblobs {
 
 	typedef [public,gensize] struct {
 		uint32 num_entries;
-		[value(ndr_size_drsuapi_MSPrefixMap_Ctr(r, ndr->iconv_convenience, ndr->flags))] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_MSPrefixMap_Ctr(r, ndr->flags))] uint32 __ndr_size;
 		drsuapi_MSPrefixMap_Entry entries[num_entries];
 	} drsuapi_MSPrefixMap_Ctr;
 
@@ -255,7 +255,7 @@ interface drsblobs {
 		NTTIME time;
 		uint32 u2;
 		uint32 u3;
-		[value(ndr_size_ldapControlDirSyncExtra(&extra, extra.uptodateness_vector.version, ndr->iconv_convenience, 0))] 
+		[value(ndr_size_ldapControlDirSyncExtra(&extra, extra.uptodateness_vector.version, 0))] 
 			uint32 extra_length;
 		drsuapi_DsReplicaHighWaterMark highwatermark;
 		GUID guid1;
@@ -316,7 +316,7 @@ interface drsblobs {
 
 	typedef [public] struct {
 		[value(0)] uint32 unknown1;
-		[value(ndr_size_supplementalCredentialsSubBlob(&sub, ndr->iconv_convenience, ndr->flags))] uint32 __ndr_size;
+		[value(ndr_size_supplementalCredentialsSubBlob(&sub, ndr->flags))] uint32 __ndr_size;
 		[value(0)] uint32 unknown2;
 		[subcontext(0),subcontext_size(__ndr_size)] supplementalCredentialsSubBlob sub;
 		[value(0)] uint8 unknown3;
@@ -499,8 +499,8 @@ interface drsblobs {
 		uint8 confounder[512];
 		[subcontext(0),subcontext_size(outgoing_size)] trustCurrentPasswords outgoing;
 		[subcontext(0),subcontext_size(incoming_size)] trustCurrentPasswords incoming;
-		[value(ndr_size_trustCurrentPasswords(&outgoing, ndr->iconv_convenience, ndr->flags))] uint32 outgoing_size;
-		[value(ndr_size_trustCurrentPasswords(&incoming, ndr->iconv_convenience, ndr->flags))] uint32 incoming_size;
+		[value(ndr_size_trustCurrentPasswords(&outgoing, ndr->flags))] uint32 outgoing_size;
+		[value(ndr_size_trustCurrentPasswords(&incoming, ndr->flags))] uint32 incoming_size;
 	} trustDomainPasswords;
 
 	[nopython] void decode_trustDomainPasswords(
@@ -631,7 +631,7 @@ interface drsblobs {
 	} ForestTrustInfoRecord;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		[value(ndr_size_ForestTrustInfoRecord(&record, ndr->iconv_convenience, ndr->flags))] uint32 record_size;
+		[value(ndr_size_ForestTrustInfoRecord(&record, ndr->flags))] uint32 record_size;
 		ForestTrustInfoRecord record;
 	} ForestTrustInfoRecordArmor;
 

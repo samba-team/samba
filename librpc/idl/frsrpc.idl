@@ -338,7 +338,7 @@ interface frsrpc
 		[value(1)] uint32 cs_id;
 		[value(pkt_len+12)] uint32 memory_len;
 		[value(ndr_size_frsrpc_CommPktChunkCtr(r->ctr,
-			ndr->iconv_convenience, ndr->flags))]
+			ndr->flags))]
 		[range(0, 262144)]
 			uint32 pkt_len;
 		[value(0)] uint32 upk_len;

@@ -359,8 +359,8 @@ static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
 	wrepl_out->assoc_ctx.our_ctx	= wrepl_in->assoc_ctx.our_ctx;
 	wrepl_out->assoc_ctx.peer_ctx	= wrepl_in->assoc_ctx.peer_ctx;
 	wrepl_out->sock			= wrepl_socket_init(wrepl_out,
-							    wrepl_in->conn->event.ctx,
-							    lp_iconv_convenience(wrepl_in->service->task->lp_ctx));
+							    wrepl_in->conn->event.ctx);
+							    
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(wrepl_out->sock, update_state);
 
 	TALLOC_FREE(wrepl_in->send_queue);

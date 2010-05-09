@@ -131,8 +131,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	if (io->in.sec_desc) {
 		enum ndr_err_code ndr_err;
 		DATA_BLOB sd_blob;
-		ndr_err = ndr_push_struct_blob(&sd_blob, req, NULL,
-					       io->in.sec_desc,
+		ndr_err = ndr_push_struct_blob(&sd_blob, req, io->in.sec_desc,
 					       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(req);

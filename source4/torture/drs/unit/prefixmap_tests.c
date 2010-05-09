@@ -500,7 +500,7 @@ static bool torture_drs_unit_pfm_to_from_ldb_val(struct torture_context *tctx, s
 	mem_ctx = talloc_new(tctx);
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
 
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	schema = dsdb_new_schema(mem_ctx);
 	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
 
 	/* set priv->pfm_full as prefixMap for new schema object */
@@ -552,7 +552,7 @@ static bool torture_drs_unit_pfm_read_write_ldb(struct torture_context *tctx, st
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
 
 	/* makeup a dsdb_schema to test with */
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	schema = dsdb_new_schema(mem_ctx);
 	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
 	/* set priv->pfm_full as prefixMap for new schema object */
 	schema->prefixmap = priv->pfm_full;
@@ -606,7 +606,7 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
 
 	/* makeup a dsdb_schema to test with */
-	schema = dsdb_new_schema(mem_ctx, lp_iconv_convenience(tctx->lp_ctx));
+	schema = dsdb_new_schema(mem_ctx);
 	torture_assert(tctx, schema, "Unexpected: failed to allocate schema object");
 	/* set priv->pfm_full as prefixMap for new schema object */
 	schema->schema_info = priv->schi_default_str;

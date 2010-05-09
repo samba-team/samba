@@ -227,7 +227,6 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 					      const char *socket_options,
 					      struct smbcli_options *options,
 					      struct smbcli_session_options *session_options,
-					      struct smb_iconv_convenience *iconv_convenience,
 					      struct gensec_settings *gensec_settings)
 {
 	NTSTATUS		ret;
@@ -242,7 +241,6 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 				     cmdline_credentials, resolve_ctx,
 				     ev, options,
 				     session_options,
-				     iconv_convenience,
 				     gensec_settings);
 
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -312,7 +310,6 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 					const char *socket_options,
 					struct smbcli_options *smb_options,
 					struct smbcli_session_options *smb_session_options,
-					struct smb_iconv_convenience *iconv_convenience,
 					struct gensec_settings *gensec_settings)
 {
 	struct cifs_handle * smbh;
@@ -336,7 +333,6 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, ports, share,
 					  socket_options,
 					  smb_options, smb_session_options,
-					  iconv_convenience,
 					  gensec_settings)) == NULL) {
 		return(NULL);
 	}
@@ -361,7 +357,6 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				const char *socket_options,
 				struct smbcli_options *smb_options,
 				struct smbcli_session_options *smb_session_options,
-				struct smb_iconv_convenience *iconv_convenience,
 				struct gensec_settings *gensec_settings)
 {
 	if (file_exist(path)) {
@@ -382,7 +377,6 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 						io_size, options, 
 						socket_options, smb_options,
 						smb_session_options,
-						iconv_convenience,
 						gensec_settings));
 		}
 

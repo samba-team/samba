@@ -2438,7 +2438,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		auth_struct.outgoing.count = 0;
 		auth_struct.incoming.count = 0;
 
-		ndr_err = ndr_push_struct_blob(&auth_blob, tctx, lp_iconv_convenience(tctx->lp_ctx), &auth_struct,
+		ndr_err = ndr_push_struct_blob(&auth_blob, tctx, &auth_struct,
 					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			torture_comment(tctx, "ndr_push_struct_blob of trustDomainPasswords structure failed");

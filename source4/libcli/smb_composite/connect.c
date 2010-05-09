@@ -323,7 +323,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 
 	/* the socket is up - we can initialise the smbcli transport layer */
 	state->transport = smbcli_transport_init(state->sock, state, true, 
-						 &io->in.options, io->in.iconv_convenience);
+						 &io->in.options);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	if (is_ipaddress(state->sock->hostname) &&

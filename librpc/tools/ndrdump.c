@@ -294,7 +294,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		blob.data = data;
 		blob.length = size;
 
-		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
+		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 		if (assume_ndr64) {
 			ndr_pull->flags |= LIBNDR_FLAG_NDR64;
@@ -330,7 +330,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	blob.data = data;
 	blob.length = size;
 
-	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	if (assume_ndr64) {
 		ndr_pull->flags |= LIBNDR_FLAG_NDR64;
@@ -372,7 +372,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		uint8_t byte_a, byte_b;
 		bool differ;
 
-		ndr_v_push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
+		ndr_v_push = ndr_push_init_ctx(mem_ctx);
 		
 		ndr_err = f->ndr_push(ndr_v_push, flags, st);
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -389,7 +389,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 			ndrdump_data(v_blob.data, v_blob.length, dumpdata);
 		}
 
-		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx, lp_iconv_convenience(cmdline_lp_ctx));
+		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);

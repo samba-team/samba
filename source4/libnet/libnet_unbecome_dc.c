@@ -298,9 +298,7 @@ static void unbecomeDC_recv_cldap(struct tevent_req *req)
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 
-	c->status = cldap_netlogon_recv(req,
-					lp_iconv_convenience(s->libnet->lp_ctx),
-					s, &s->cldap.io);
+	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
 	talloc_free(req);
 	if (!composite_is_ok(c)) return;
 

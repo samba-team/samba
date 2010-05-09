@@ -66,7 +66,6 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
  NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
-			      struct smb_iconv_convenience *iconv_convenience,
 			      struct PAC_DATA **pac_data_out,
 			      DATA_BLOB blob,
 			      krb5_context context,
@@ -114,8 +113,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, pac_data,
-			iconv_convenience, pac_data,
-		       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+			pac_data, (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC: %s\n",
@@ -130,7 +128,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, pac_data_raw,
-				       iconv_convenience, pac_data_raw,
+				       pac_data_raw,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -211,7 +209,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
 	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe,
-				       iconv_convenience, kdc_sig_wipe,
+				       kdc_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -221,7 +219,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe,
-				       iconv_convenience, srv_sig_wipe,
+				       srv_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -236,7 +234,6 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* and reencode, back into the same place it came from */
 	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw,
-				       iconv_convenience,
 				       kdc_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -246,7 +243,6 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw,
-				       iconv_convenience,
 				       srv_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -258,7 +254,6 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* push out the whole structure, but now with zero'ed signatures */
 	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw,
-				       iconv_convenience,
 				       pac_data_raw,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -340,7 +335,6 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
-				  struct smb_iconv_convenience *iconv_convenience,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
 				  krb5_context context,
@@ -354,7 +348,6 @@ _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 	struct PAC_DATA *pac_data;
 	int i;
 	nt_status = kerberos_decode_pac(mem_ctx,
-					iconv_convenience,
 					&pac_data,
 					blob,
 					context,
@@ -426,7 +419,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
-				     struct smb_iconv_convenience *iconv_convenience,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
 				    const krb5_keyblock *krbtgt_keyblock,
@@ -489,7 +481,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	memset(srv_checksum->signature.data, '\0', srv_checksum->signature.length);
 
 	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx,
-				       iconv_convenience,
 				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -514,7 +505,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
 	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx,
-				       iconv_convenience,
 				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -531,7 +521,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 
  krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
-				     struct smb_iconv_convenience *iconv_convenience,
 				     struct auth_serversupplied_info *server_info,
 				     krb5_context context,
 				     const krb5_keyblock *krbtgt_keyblock,
@@ -644,7 +633,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&LOGON_NAME->logon_time, tgs_authtime);
 
 	ret = kerberos_encode_pac(mem_ctx,
-				  iconv_convenience,
 				  pac_data,
 				  context,
 				  krbtgt_keyblock,
@@ -655,7 +643,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
 krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
-						struct smb_iconv_convenience *iconv_convenience,
 						krb5_pac pac,
 						krb5_context context,
 						struct auth_serversupplied_info **server_info)
@@ -685,7 +672,7 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 
 	pac_logon_info_in = data_blob_const(k5pac_logon_info_in.data, k5pac_logon_info_in.length);
 
-	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, iconv_convenience, &info,
+	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, &info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 	krb5_data_free(&k5pac_logon_info_in);
@@ -716,7 +703,7 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 	pac_srv_checksum_in = data_blob_const(k5pac_srv_checksum_in.data, k5pac_srv_checksum_in.length);
 
 	ndr_err = ndr_pull_struct_blob(&pac_srv_checksum_in, server_info_out,
-				       iconv_convenience, &server_info_out->pac_srv_sig,
+				       &server_info_out->pac_srv_sig,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	krb5_data_free(&k5pac_srv_checksum_in);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -735,7 +722,7 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 	pac_kdc_checksum_in = data_blob_const(k5pac_kdc_checksum_in.data, k5pac_kdc_checksum_in.length);
 
 	ndr_err = ndr_pull_struct_blob(&pac_kdc_checksum_in, server_info_out,
-				       iconv_convenience, &server_info_out->pac_kdc_sig,
+				       &server_info_out->pac_kdc_sig,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	krb5_data_free(&k5pac_kdc_checksum_in);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -752,7 +739,6 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 
 
 NTSTATUS kerberos_pac_blob_to_server_info(TALLOC_CTX *mem_ctx,
-						     struct smb_iconv_convenience *iconv_convenience,
 						     DATA_BLOB pac_blob,
 						     krb5_context context,
 						     struct auth_serversupplied_info **server_info)
@@ -767,7 +753,7 @@ NTSTATUS kerberos_pac_blob_to_server_info(TALLOC_CTX *mem_ctx,
 	}
 
 
-	ret = kerberos_pac_to_server_info(mem_ctx, iconv_convenience, pac, context, server_info);
+	ret = kerberos_pac_to_server_info(mem_ctx, pac, context, server_info);
 	krb5_pac_free(context, pac);
 	if (ret) {
 		return map_nt_error_from_unix(ret);
