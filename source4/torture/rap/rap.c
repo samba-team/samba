@@ -1621,11 +1621,11 @@ NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
 	rap_cli_push_paramdesc(call, 'b');
 	rap_cli_push_paramdesc(call, '1');
 	rap_cli_push_paramdesc(call, '6');
-	ndr_push_bytes(call->ndr_push_param, (uint8_t *)r->in.OldPassword, 16);
+	ndr_push_charset(call->ndr_push_param, NDR_SCALARS, r->in.OldPassword, 16, sizeof(uint8_t), CH_DOS);
 	rap_cli_push_paramdesc(call, 'b');
 	rap_cli_push_paramdesc(call, '1');
 	rap_cli_push_paramdesc(call, '6');
-	ndr_push_bytes(call->ndr_push_param, (uint8_t *)r->in.NewPassword, 16);
+	ndr_push_charset(call->ndr_push_param, NDR_SCALARS, r->in.NewPassword, 16, sizeof(uint8_t), CH_DOS);
 	rap_cli_push_word(call, r->in.EncryptedPassword);
 	rap_cli_push_word(call, r->in.RealPasswordLength);
 
