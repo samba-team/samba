@@ -3217,13 +3217,14 @@ clean_libnetapi_examples:
 ../source4/configure: ../buildtools/scripts/configure.waf
 	cd ../source4 && ./autogen.sh
 
-samba4-configure:
-	@$(MAKE) -C ../source4 reconfigure || ( cd ../source4 && ./configure --enable-auto-reconfigure --prefix="$(prefix)" )
+samba4-configure: ../source4/configure
+	@$(MAKE) -C ../source4 reconfigure || ( cd ../source4 && ./configure --enable-auto-reconfigure )
 
 .PHONY: samba4-configure
 
 bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
-	cd ../source4 && ../buildtools/bin/waf build --targets=smbtorture   
+	cd ../source4 && ../buildtools/bin/waf build --targets=asn1_compile,compile_et
+	cd ../source4 && ../buildtools/bin/waf build --targets=smbtorture
 	cp ../source4/bin/smbtorture bin/smbtorture4
 
 .PHONY: bin/smbtorture4
