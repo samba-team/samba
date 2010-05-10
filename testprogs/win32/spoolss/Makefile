@@ -3,7 +3,7 @@ LIBS = kernel32.lib gdi32.lib user32.lib shell32.lib \
 	advapi32.lib ole32.lib ws2_32.lib rpcrt4.lib
 WINSPOOL_LIBS = winspool.lib
 
-all: spoolss.exe
+all: testspoolss.exe
 
 .cpp.obj:
 	cl /c $(CFLAGS) $*.cpp
@@ -32,9 +32,9 @@ torture.obj: torture.c
 # binaries
 ###############################
 
-spoolss.obj: spoolss.c
+testspoolss.obj: testspoolss.c
 
-spoolss.exe: spoolss.obj printlib.obj error.obj torture.obj
-	cl $(CFLAGS) /Fe$@ spoolss.obj printlib.obj error.obj torture.obj \
+testspoolss.exe: testspoolss.obj printlib.obj error.obj torture.obj
+	cl $(CFLAGS) /Fe$@ testspoolss.obj printlib.obj error.obj torture.obj \
 	/link /incremental:no /subsystem:console $(LIBS) $(WINSPOOL_LIBS)
 
