@@ -1152,6 +1152,15 @@ struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
  * @defgroup tevent_queue The tevent queue functions
  * @ingroup tevent
  *
+ * A tevent_queue is used to queue up async requests that must be
+ * serialized. For example writing buffers into a socket must be
+ * serialized. Writing a large lump of data into a socket can require
+ * multiple write(2) or send(2) system calls. If more than one async
+ * request is outstanding to write large buffers into a socket, every
+ * request must individually be completed before the next one begins,
+ * even if multiple syscalls are required.
+ *
+ * Take a look at @ref tevent_queue_tutorial for more details.
  * @{
  */
 
