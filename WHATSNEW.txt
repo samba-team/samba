@@ -8,16 +8,92 @@ This is the latest stable release of Samba 3.4.
 
 Major enhancements in Samba 3.4.8 include:
 
-o 
+   o Fix Winbind reconnection to it's own domain (bug #7295).
+   o Fix an uninitialized variable read in smbd (bug #7254).
+   o Fix smbd crash with CUPS printers and no [printers] share defined
+     (bug #7297).
+   o Fix NULL pointer dereference in smbd (bug #7229).
 
 
 Changes since 3.4.7
 -------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 7231: Fix automatic building of vfs_tsmsm if gpfs and dmapi are
+      present.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7159: Fix handling of bad server data returns in client rpc_transport.
+    * BUG 7255: Fix "printer admin" functionality.
+    * BUG 7288: Fix SMB job IDs in CUPS job names.
+    * BUG 7297: Fix smbd crash with CUPS printers and no [printers] share
+      defined.
+    * BUG 7310: Fix DOS attribute inconsistency with MS Office.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 7290: Fix core dump in 'ntlm_auth'.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6727: Fix printing issues.
+    * BUG 7176: Fix incorrect format of device mode strings.
+    * BUG 7256: Fix value-needed calculation in_spoolss_EnumPrinterData().
+    * BUG 7277: Fix exporting printers via 'cupsaddsmb' command.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7352: Fix different definitions of TIME_T_MAX.
+
+
+o   Michael Karcher <samba@mkarcher.dialup.fu-berlin.de>
+    * BUG 7269: Fix job management commands for CUPS queues.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 6853: Fix race condition in mount.cifs that allows user to replace
+      mountpoint with a symlink.
+
+
 o   Volker Lendecke <vl@samba.org>
+    * BUG 5198: Fix parsing of the gecos field.
+    * BUG 5626: Fix build on AIX.
+    * BUG 7229: Fix NULL pointer dereference in smbd.
     * BUG 7254: Fix an uninitialized variable read in smbd found by Laurent
       Gaffié from Stratsec.
+    * BUG 7326: Fix writing with vfs_full_audit.
+
+
+o   Derrell Lipman <derrell@dworkin.(none)>
+    * BUG 7345: Fix incomplete description of function return values in
+      libsmbclient.h.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7378:  Display an error on 'net conf import' failures.
+
+
+o   Roel van Meer <rolek@alt001.com>
+    * BUG 6814: Fix valgrind warning.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7159: Fix handling of bad server data returns in client rpc_transport.
+    * BUG 7170: Never mark external domains as internal.
+    * BUG 7295: Fix Winbind reconnection to it's own domain.
+    * BUG 7316: Make sure we don't try rpc requests against unaccessable
+      domains.
+    * BUG 7317: Fix problems with SIGCHLD handling in Winbind.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 1206: Fix segfault in vfs_netatalk.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 7206: Fix duplicate signal handler.
 
 
 ######################################################################
