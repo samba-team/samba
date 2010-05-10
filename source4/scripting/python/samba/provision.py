@@ -840,7 +840,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                 names, message, 
                 domainsid, domainguid, policyguid, policyguid_dc,
                 fill, adminpass, krbtgtpass, 
-                machinepass, invocationid, dnspass, ntdsguid,
+                machinepass, invocationid, ntds_guid, dnspass, ntdsguid,
                 serverrole, dom_for_fun_level=None,
                 schema=None):
     """Setup a complete SAM Database.
@@ -901,6 +901,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
         samdb.set_domain_sid(str(domainsid))
         samdb.set_invocation_id(invocationid)
+        samdb.set_ntds_GUID(ntds_guid)
         samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
 
         message("Adding DomainDN: %s" % names.domaindn)
@@ -1228,6 +1229,8 @@ def provision(setup_dir, message, session_info,
     if invocationid is None:
         invocationid = str(uuid.uuid4())
 
+    ntds_guid = str(uuid.uuid4())
+
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
     if not os.path.exists(os.path.join(paths.private_dir,"tls")):
@@ -1321,6 +1324,7 @@ def provision(setup_dir, message, session_info,
                         fill=samdb_fill, 
                         adminpass=adminpass, krbtgtpass=krbtgtpass,
                         invocationid=invocationid, 
+                        ntds_guid=ntds_guid,
                         machinepass=machinepass, dnspass=dnspass, 
                         ntdsguid=ntdsguid, serverrole=serverrole,
                         dom_for_fun_level=dom_for_fun_level)

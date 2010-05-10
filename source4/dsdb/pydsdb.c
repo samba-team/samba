@@ -309,6 +309,26 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *py_dsdb_set_ntds_objectGUID(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *py_guid;
+	bool ret;
+	struct GUID guid;
+	struct ldb_context *ldb;
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_guid))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	GUID_from_string(PyString_AsString(py_guid), &guid);
+
+	ret = samdb_set_ntds_objectGUID(ldb, &guid);
+	if (!ret) {
+		PyErr_SetString(PyExc_RuntimeError, "set_ntds_objectGUID failed");
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -399,6 +419,9 @@ static PyMethodDef py_dsdb_methods[] = {
 		NULL },
 	{ "samdb_ntds_objectGUID", (PyCFunction)py_samdb_ntds_objectGUID,
 		METH_VARARGS, "get the NTDS objectGUID as a string"},
+	{ "dsdb_set_ntds_objectGUID",
+		(PyCFunction)py_dsdb_set_ntds_objectGUID, METH_VARARGS,
+		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema,
 		METH_VARARGS, NULL },
 	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn,
