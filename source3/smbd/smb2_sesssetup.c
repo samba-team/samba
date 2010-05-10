@@ -332,6 +332,8 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	}
 
 	*out_session_id = session->vuid;
+
+	global_client_caps |= (CAP_LEVEL_II_OPLOCKS|CAP_STATUS32);
 	return status;
 }
 

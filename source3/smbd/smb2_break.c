@@ -252,7 +252,9 @@ static NTSTATUS smbd_smb2_oplock_break_recv(struct tevent_req *req,
 
 void send_break_message_smb2(files_struct *fsp, int level)
 {
-	uint8_t smb2_oplock_level = map_samba_oplock_levels_to_smb2(level);
+	uint8_t smb2_oplock_level = (level == OPLOCKLEVEL_II) ?
+				SMB2_OPLOCK_LEVEL_II :
+				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
 
 	DEBUG(10,("send_break_message_smb2: sending oplock break "

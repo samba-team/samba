@@ -46,7 +46,7 @@ int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level)
 	}
 }
 
-uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
+static uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
 {
 	if (BATCH_OPLOCK_TYPE(oplock_type)) {
 		return SMB2_OPLOCK_LEVEL_BATCH;

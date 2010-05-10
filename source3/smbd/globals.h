@@ -324,7 +324,6 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			enum file_close_type close_type);
 /* From smbd/smb2_create.c */
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
-uint8_t map_samba_oplock_levels_to_smb2(int oplock_type);
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval *p_request_time,
 			void **pp_state);
