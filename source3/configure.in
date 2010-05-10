@@ -1331,6 +1331,22 @@ if test x"$samba_cv_stat_dos_flags" = x"yes" ; then
     AC_DEFINE(HAVE_STAT_DOS_FLAGS, 1, [whether there is DOS flags support in the stat struct])
 fi
 
+AC_CACHE_CHECK([whether we can compile with __attribute__((destructor))],
+	       samba_cv_function_attribute_destructor,
+	       [
+	         AC_COMPILE_IFELSE(
+			[
+				__attribute__((destructor))
+				static void cleanup(void) { }
+			],
+			samba_cv_function_attribute_destructor=yes)
+		])
+
+if test x"$samba_cv_function_attribute_destructor" = xyes ; then
+   AC_DEFINE(HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR, 1,
+	     [whether we can compile with __attribute__((destructor))])
+fi
+
 #####################################
 # needed for SRV lookups
 AC_CHECK_LIB(resolv, dn_expand)
