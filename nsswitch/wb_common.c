@@ -62,6 +62,9 @@ static void init_response(struct winbindd_response *response)
 
 /* Close established socket */
 
+#if HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR
+__attribute__((destructor))
+#endif
 static void winbind_close_sock(void)
 {
 	if (winbindd_fd != -1) {
