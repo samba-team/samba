@@ -2690,7 +2690,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	/* Get the old password from the database */
 	status = samdb_result_passwords(io.ac,
 					ldb_get_opaque(ldb, "loadparm"),
-					searched_msg,
+					discard_const_p(struct ldb_message, searched_msg),
 					&io.o.lm_hash, &io.o.nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return LDB_ERR_OPERATIONS_ERROR;
