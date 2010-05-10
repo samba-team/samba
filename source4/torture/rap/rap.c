@@ -148,7 +148,6 @@ static void rap_cli_push_sendbuf(struct rap_call *call, int len)
 	rap_cli_push_paramdesc(call, 's');
 	rap_cli_push_paramdesc(call, 'T');
 	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, len);
-	call->rcv_datalen = len;
 }
 
 static void rap_cli_push_param(struct rap_call *call, uint16_t val)
@@ -224,7 +223,9 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 {
 	NTSTATUS result;
 	DATA_BLOB param_blob;
+	DATA_BLOB data_blob;
 	struct ndr_push *params;
+	struct ndr_push *data;
 	struct smb_trans2 trans;
 
 	params = ndr_push_init_ctx(call, iconv_convenience);
@@ -233,6 +234,13 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 		return NT_STATUS_NO_MEMORY;
 
 	params->flags = RAPNDR_FLAGS;
+
+	data = ndr_push_init_ctx(call, iconv_convenience);
+
+	if (data == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	data->flags = RAPNDR_FLAGS;
 
 	trans.in.max_param = call->rcv_paramlen;
 	trans.in.max_data = call->rcv_datalen;
@@ -253,11 +261,15 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 	NDR_RETURN(ndr_push_bytes(params, param_blob.data,
 				 param_blob.length));
 
+	data_blob = ndr_push_blob(call->ndr_push_data);
+	NDR_RETURN(ndr_push_bytes(data, data_blob.data,
+				 data_blob.length));
+
 	if (call->auxdatadesc)
 		NDR_RETURN(ndr_push_string(params, NDR_SCALARS, call->auxdatadesc));
 
 	trans.in.params = ndr_push_blob(params);
-	trans.in.data = data_blob(NULL, 0);
+	trans.in.data = ndr_push_blob(data);
 
 	result = smb_raw_trans(tree, call, &trans);
 
