@@ -116,6 +116,7 @@ struct setup_password_fields_io {
 		const char *sAMAccountName;
 		const char *user_principal_name;
 		bool is_computer;
+		uint32_t restrictions;
 	} u;
 
 	/* new credentials and old given credentials */
@@ -1462,6 +1463,179 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
+static int check_password_restrictions(struct setup_password_fields_io *io)
+{
+	struct ldb_context *ldb;
+	int ret;
+	enum samr_ValidationStatus stat;
+
+	ldb = ldb_module_get_ctx(io->ac->module);
+
+	/* First check the old password is correct, for password changes */
+	if (!io->ac->pwd_reset && !io->ac->change_old_pw_checked) {
+		/* we need to old nt or lm hash given by the client */
+		if (!io->og.nt_hash && !io->og.lm_hash) {
+			ldb_asprintf_errstring(ldb,
+				"check_password_restrictions: "
+				"You need to provide the old password "
+				"in order to change your password!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		if (io->og.nt_hash) {
+			if (!io->o.nt_hash) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"There's no old nt_hash, which is needed "
+					"in order to change your password!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+
+			/* The password modify through the NT hash is encouraged
+			   and has no problems at all */
+			if (memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"The old password specified doesn't match!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		} else if (io->og.lm_hash) {
+			struct loadparm_context *lp_ctx =
+				(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
+
+			if (!lp_lanman_auth(lp_ctx)) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"The password change through the LM hash is deactivated!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+
+			if (!io->o.lm_hash) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"There's no old lm_hash, which is needed "
+					"in order to change your password!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+
+			if (memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"The old password specified doesn't match!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		}
+	}
+
+	if (io->u.restrictions == 0) {
+		/* FIXME: Is this right? */
+		return LDB_SUCCESS;
+	}
+
+	/*
+	 * Fundamental password checks done by the call "samdb_check_password".
+	 * It is also in use by "dcesrv_samr_ValidatePassword".
+	 */
+	stat = samdb_check_password(io->n.cleartext_utf8,
+				    io->ac->status->domain_data.pwdProperties,
+				    io->ac->status->domain_data.minPwdLength);
+	switch (stat) {
+	case SAMR_VALIDATION_STATUS_SUCCESS:
+		/* perfect -> proceed! */
+		break;
+
+	case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"the password is too short. It should be equal or longer than %i characters!",
+			io->ac->status->domain_data.minPwdLength);
+
+		io->ac->status->reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+
+	case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"the password does not meet the complexity criterias!");
+		io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
+
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+
+	default:
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"the password doesn't fit by a certain reason!");
+
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (io->ac->pwd_reset) {
+		return LDB_SUCCESS;
+	}
+
+	if (io->n.nt_hash) {
+		uint32_t i;
+
+		/* checks the NT hash password history */
+		for (i = 0; i < io->o.nt_history_len; i++) {
+			ret = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
+			if (ret == 0) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"the password was already used (in history)!");
+
+				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
+
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
+	}
+
+	if (io->n.lm_hash) {
+		uint32_t i;
+
+		/* checks the LM hash password history */
+		for (i = 0; i < io->o.lm_history_len; i++) {
+			ret = memcmp(io->n.nt_hash, io->o.lm_history[i].hash, 16);
+			if (ret == 0) {
+				ldb_asprintf_errstring(ldb,
+					"check_password_restrictions: "
+					"the password was already used (in history)!");
+
+				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
+
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
+	}
+
+	/* are all password changes disallowed? */
+	if (io->ac->status->domain_data.pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"password changes disabled!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* can this user change the password? */
+	if (io->u.userAccountControl & UF_PASSWD_CANT_CHANGE) {
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"password can't be changed on this account!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
+	if (io->u.pwdLastSet - io->ac->status->domain_data.minPwdAge > io->g.last_set) {
+		ldb_asprintf_errstring(ldb,
+			"check_password_restrictions: "
+			"password is too young to change!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int setup_io(struct ph_context *ac, 
 		    const struct ldb_message *orig_msg,
 		    const struct ldb_message *searched_msg, 
@@ -1496,6 +1670,17 @@ static int setup_io(struct ph_context *ac,
 				       ldb_dn_get_linearized(searched_msg->dn));
 
 		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* Only non-trust accounts have restrictions (possibly this test is the
+	 * wrong way around, but we like to be restrictive if possible */
+	io->u.restrictions = !(io->u.userAccountControl
+		& (UF_INTERDOMAIN_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT
+			| UF_SERVER_TRUST_ACCOUNT));
+
+	if ((io->u.userAccountControl & UF_PASSWD_NOTREQD) != 0) {
+		/* see [MS-ADTS] 2.2.15 */
+		io->u.restrictions = 0;
 	}
 
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "userPassword",
@@ -2113,6 +2298,11 @@ static int password_hash_add_do_add(struct ph_context *ac)
 		return ret;
 	}
 
+	ret = check_password_restrictions(&io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	if (io.g.nt_hash) {
 		ret = samdb_msg_add_hash(ldb, ac, msg,
 					 "unicodePwd", io.g.nt_hash);
@@ -2504,6 +2694,11 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	io.o.supplemental		= ldb_msg_find_ldb_val(searched_msg, "supplementalCredentials");
 
 	ret = setup_password_fields(&io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = check_password_restrictions(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
