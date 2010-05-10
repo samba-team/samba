@@ -11,6 +11,7 @@ auditingPolicy:: AAE=
 replace: creationTime
 creationTime: ${CREATTIME}
 -
+# "dSCorePropagationDate" should contain the provision data
 replace: forceLogoff
 forceLogoff: -9223372036854775808
 -
@@ -57,6 +58,9 @@ replace: ms-DS-MachineAccountQuota
 ms-DS-MachineAccountQuota: 10
 -
 # "msDs-masteredBy" filled in later
+replace: msDS-NcType
+msDS-NcType: 0
+-
 replace: msDS-PerUserTrustQuota
 msDS-PerUserTrustQuota: 1
 -
@@ -72,7 +76,7 @@ nTMixedDomain: 0
 replace: objectSid
 objectSid: ${DOMAINSID}
 -
-# This exists only in SAMBA
+# This does only exist in SAMBA
 replace: oEMInformation
 oEMInformation: Provisioned by SAMBA ${SAMBA_VERSION_STRING}
 -
