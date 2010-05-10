@@ -4,7 +4,7 @@ LDFLAGS=-L/usr/i686-pc-mingw32/sys-root/mingw/lib
 CC=/usr/bin/i686-pc-mingw32-gcc
 LIBS=-lwinspool
 
-all: spoolss.exe
+all: testspoolss.exe
 
 clean:
 	rm -vf *.exe tags
@@ -17,7 +17,7 @@ proto:
 	mkproto.pl printlib.c --private=printlib_proto.h --public=printlib_proto_pub.h --srcdir=. --builddir=.
 	mkproto.pl torture.c --private=torture_proto.h --public=torture_proto_pub.h --srcdir=. --builddir=.
 
-spoolss.exe: spoolss.c printlib.c torture.c error.c
-	@echo Compiling spoolss.exe
-	@$(CC) $(CFLAGS) $(LDFLAGS) spoolss.c printlib.c torture.c error.c $(LIBS) -o spoolss.exe
+testspoolss.exe: testspoolss.c printlib.c torture.c error.c
+	@echo Compiling testspoolss.exe
+	@$(CC) $(CFLAGS) $(LDFLAGS) testspoolss.c printlib.c torture.c error.c $(LIBS) -o testspoolss.exe
 
