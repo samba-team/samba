@@ -1533,40 +1533,43 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	}
 
 	/*
-	 * Fundamental password checks done by the call "samdb_check_password".
+	 * Fundamental password checks done by the call
+	 * "samdb_check_password".
 	 * It is also in use by "dcesrv_samr_ValidatePassword".
 	 */
-	stat = samdb_check_password(io->n.cleartext_utf8,
-				    io->ac->status->domain_data.pwdProperties,
-				    io->ac->status->domain_data.minPwdLength);
-	switch (stat) {
-	case SAMR_VALIDATION_STATUS_SUCCESS:
-		/* perfect -> proceed! */
-		break;
+	if (io->n.cleartext_utf8 != NULL) {
+		stat = samdb_check_password(io->n.cleartext_utf8,
+					    io->ac->status->domain_data.pwdProperties,
+					    io->ac->status->domain_data.minPwdLength);
+		switch (stat) {
+		case SAMR_VALIDATION_STATUS_SUCCESS:
+				/* perfect -> proceed! */
+			break;
 
-	case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
-		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"the password is too short. It should be equal or longer than %i characters!",
-			io->ac->status->domain_data.minPwdLength);
+		case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
+			ldb_asprintf_errstring(ldb,
+				"check_password_restrictions: "
+				"the password is too short. It should be equal or longer than %i characters!",
+				io->ac->status->domain_data.minPwdLength);
 
-		io->ac->status->reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			io->ac->status->reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 
-	case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
-		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"the password does not meet the complexity criterias!");
-		io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
+		case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
+			ldb_asprintf_errstring(ldb,
+				"check_password_restrictions: "
+				"the password does not meet the complexity criterias!");
+			io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
 
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 
-	default:
-		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"the password doesn't fit by a certain reason!");
+		default:
+			ldb_asprintf_errstring(ldb,
+				"check_password_restrictions: "
+				"the password doesn't fit by a certain reason!");
 
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 	}
 
 	if (io->ac->pwd_reset) {
