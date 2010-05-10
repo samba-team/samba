@@ -5411,11 +5411,6 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 /********************************************************************
  Canonicalize printer info from a client
-
- ATTN: It does not matter what we set the servername to hear
- since we do the necessary work in get_a_printer() to set it to
- the correct value based on what the client sent in the
- _spoolss_open_printer_ex().
  ********************************************************************/
 
 static bool check_printer_ok(TALLOC_CTX *mem_ctx,
