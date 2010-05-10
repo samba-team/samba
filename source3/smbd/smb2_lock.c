@@ -38,7 +38,8 @@ struct smbd_smb2_lock_state {
 	struct smbd_lock_element *locks;
 };
 
-static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record *blr);
+static void remove_pending_lock(struct smbd_smb2_lock_state *state,
+				struct blocking_lock_record *blr);
 
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -681,10 +682,12 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
  Remove a pending lock record under lock.
 *****************************************************************/
 
-static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record *blr)
+static void remove_pending_lock(struct smbd_smb2_lock_state *state,
+			struct blocking_lock_record *blr)
 {
+	int i;
 	struct byte_range_lock *br_lck = brl_get_locks(
-				mem_ctx, blr->fsp);
+				state, blr->fsp);
 
 	DEBUG(10, ("remove_pending_lock: BLR = %p\n", blr));
 
@@ -697,6 +700,19 @@ static void remove_pending_lock(TALLOC_CTX *mem_ctx, struct blocking_lock_record
 				blr->lock_flav,
 				blr);
 		TALLOC_FREE(br_lck);
+	}
+
+	/* Remove the locks we already got. */
+
+	for(i = blr->lock_num - 1; i >= 0; i--) {
+		struct smbd_lock_element *e = &state->locks[i];
+
+		do_unlock(smbd_messaging_context(),
+			blr->fsp,
+			e->smblctx,
+			e->count,
+			e->offset,
+			WINDOWS_LOCK);
 	}
 }
 
