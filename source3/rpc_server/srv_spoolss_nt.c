@@ -28,6 +28,7 @@
    up, all the errors returned are DOS errors, not NT status codes. */
 
 #include "includes.h"
+#include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"

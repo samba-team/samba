@@ -22,6 +22,9 @@
 #ifndef NT_PRINTING_H_
 #define NT_PRINTING_H_
 
+#include "client.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
+
 /* container for a single registry key */
 
 typedef struct {
@@ -219,5 +222,49 @@ struct print_architecture_table_node {
 	const char 	*short_archi;
 	int	version;
 };
+
+WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
+				      const char *devicename,
+				      struct spoolss_DeviceMode **devmode);
+
+WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
+				      struct spoolss_security_descriptor **secdesc);
+
+WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername);
+
+const char *get_short_archi(const char *long_archi);
+
+bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+		      struct spoolss_SetPrinterInfo2 *info2);
+
+bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
+			int access_type);
+
+WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  struct spoolss_PrinterInfo2 *pinfo2,
+			  int action);
+
+bool is_printer_published(TALLOC_CTX *mem_ctx,
+			  struct auth_serversupplied_info *server_info,
+			  char *servername, char *printer, struct GUID *guid,
+			  struct spoolss_PrinterInfo2 **info2);
+
+bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
+			   struct auth_serversupplied_info *server_info,
+			   const struct spoolss_DriverInfo8 *r);
+bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info *server_info,
+				 struct spoolss_DriverInfo8 *r);
+bool delete_driver_files(struct auth_serversupplied_info *server_info,
+			 const struct spoolss_DriverInfo8 *r);
+
+WERROR move_driver_to_download_area(struct pipes_struct *p,
+				    struct spoolss_AddDriverInfoCtr *r,
+				    WERROR *perr);
+
+WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
+			      struct pipes_struct *rpc_pipe,
+			      struct spoolss_AddDriverInfoCtr *r);
 
 #endif /* NT_PRINTING_H_ */

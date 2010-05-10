@@ -4731,37 +4731,16 @@ int write_ntforms(nt_forms_struct **list, int number);
 bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count);
 bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret);
 void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count);
-const char *get_short_archi(const char *long_archi);
-WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct pipes_struct *rpc_pipe,
-			      struct spoolss_AddDriverInfoCtr *r);
-WERROR move_driver_to_download_area(struct pipes_struct *p,
-				    struct spoolss_AddDriverInfoCtr *r,
-				    WERROR *perr);
 int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
 int unpack_devicemode(TALLOC_CTX *mem_ctx,
 		      const uint8 *buf, int buflen,
 		      struct spoolss_DeviceMode **devmode);
 uint32 del_a_printer(const char *sharename);
-WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
-				      const char *devicename,
-				      struct spoolss_DeviceMode **devmode);
-WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
-				      struct spoolss_security_descriptor **secdesc);
-WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername);
 int add_new_printer_key( NT_PRINTER_DATA *data, const char *name );
 int delete_printer_key( NT_PRINTER_DATA *data, const char *name );
 int lookup_printerkey( NT_PRINTER_DATA *data, const char *name );
 int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys );
-WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  struct auth_serversupplied_info *server_info,
-			  struct spoolss_PrinterInfo2 *pinfo2,
-			  int action);
 WERROR check_published_printers(void);
-bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  struct auth_serversupplied_info *server_info,
-			  char *servername, char *printer, struct GUID *guid,
-			  struct spoolss_PrinterInfo2 **info2);
 WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key );
 WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value, 
@@ -4779,20 +4758,10 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);
-bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
-			   struct auth_serversupplied_info *server_info,
-			   const struct spoolss_DriverInfo8 *r);
-bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
-				 struct spoolss_DriverInfo8 *r);
-bool delete_driver_files(struct auth_serversupplied_info *server_info,
-			 const struct spoolss_DriverInfo8 *r);
 WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr);
 void map_printer_permissions(struct security_descriptor *sd);
 void map_job_permissions(struct security_descriptor *sd);
-bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
-			int access_type);
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
 			     const char *servicename);
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
@@ -5140,8 +5109,6 @@ void reset_all_printerdata(struct messaging_context *msg,
 			   uint32_t msg_type,
 			   struct server_id server_id,
 			   DATA_BLOB *data);
-bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
-		      struct spoolss_SetPrinterInfo2 *info2);
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 

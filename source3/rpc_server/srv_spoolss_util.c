@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
