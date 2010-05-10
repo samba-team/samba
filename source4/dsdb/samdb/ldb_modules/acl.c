@@ -766,7 +766,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					     sid);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Object %s nas no write property access\n",
+			DEBUG(10, ("Object %s has no write property access\n",
 				   ldb_dn_get_linearized(req->op.mod.message->dn)));
 			dsdb_acl_debug(sd,
 				  acl_user_token(module),
@@ -785,7 +785,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					     sid);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Object %s nas no write dacl access\n",
+			DEBUG(10, ("Object %s has no write dacl access\n",
 				   ldb_dn_get_linearized(req->op.mod.message->dn)));
 			dsdb_acl_debug(sd,
 				  acl_user_token(module),
@@ -944,7 +944,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				     sid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Object %s nas no wp on name\n",
+		DEBUG(10, ("Object %s has no wp on name\n",
 			   ldb_dn_get_linearized(req->op.rename.olddn)));
 		dsdb_acl_debug(sd,
 			  acl_user_token(module),
