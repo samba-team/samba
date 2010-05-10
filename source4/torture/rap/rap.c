@@ -1594,7 +1594,7 @@ NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WUserPasswordSet2))) {
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_WUserPasswordSet2))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1616,7 +1616,7 @@ NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
 		NDR_PRINT_IN_DEBUG(rap_NetUserPasswordSet2, r);
 	}
 
-	result = rap_cli_do_call(tree, iconv_convenience, call);
+	result = rap_cli_do_call(tree, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

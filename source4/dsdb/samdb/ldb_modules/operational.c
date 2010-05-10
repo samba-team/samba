@@ -468,9 +468,7 @@ static int construct_msds_keyversionnumber(struct ldb_module *module, struct ldb
 		return LDB_SUCCESS;
 	}
 
-	ndr_err = ndr_pull_struct_blob(omd_value, omd,
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
-				       omd,
+	ndr_err = ndr_pull_struct_blob(omd_value, omd, omd,
 				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s when trying to add msDS-KeyVersionNumber\n",
