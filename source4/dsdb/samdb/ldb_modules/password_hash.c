@@ -1672,6 +1672,9 @@ static int setup_io(struct ph_context *ac,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	/* FIXME: fix to don't break provision */
+	io->ac->hash_values = true;
+
 	/* Only non-trust accounts have restrictions (possibly this test is the
 	 * wrong way around, but we like to be restrictive if possible */
 	io->u.restrictions = !(io->u.userAccountControl
