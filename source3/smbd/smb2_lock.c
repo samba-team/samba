@@ -298,12 +298,11 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		switch (in_locks[i].flags) {
 		case SMB2_LOCK_FLAG_SHARED:
 		case SMB2_LOCK_FLAG_EXCLUSIVE:
-			if (i > 0) {
-				tevent_req_nterror(req,
-						   NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
-			}
 			if (isunlock) {
+				invalid = true;
+				break;
+			}
+			if (i > 0) {
 				tevent_req_nterror(req,
 						   NT_STATUS_INVALID_PARAMETER);
 				return tevent_req_post(req, ev);
@@ -313,9 +312,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		case SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY:
 		case SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY:
 			if (isunlock) {
-				tevent_req_nterror(req,
-						   NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				invalid = true;
 			}
 			break;
 
@@ -369,7 +366,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			(unsigned long long)locks[i].count,
 			(unsigned long long)locks[i].smblctx,
 			(int)locks[i].brltype ));
-
 	}
 
 	state->locks = locks;
