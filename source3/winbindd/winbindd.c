@@ -1166,10 +1166,6 @@ int main(int argc, char **argv, char **envp)
 		return False;
 	}
 
-	/* Enable netbios namecache */
-
-	namecache_enable();
-
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 
