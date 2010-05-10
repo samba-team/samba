@@ -224,7 +224,6 @@ static int printer_entry_destructor(Printer_entry *Printer)
 	Printer->notify.client_connected = false;
 
 	TALLOC_FREE(Printer->devmode);
-	free_a_printer( &Printer->printer_info, 2 );
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);

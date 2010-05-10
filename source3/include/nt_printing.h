@@ -193,8 +193,8 @@ typedef struct _Printer{
 	/* devmode sent in the OpenPrinter() call */
 	struct spoolss_DeviceMode *devmode;
 
-	/* cache the printer info */
-	NT_PRINTER_INFO_LEVEL *printer_info;
+	/* TODO cache the printer info2 structure */
+	struct spoolss_PrinterInfo2 *info2;
 	
 } Printer_entry;
 
