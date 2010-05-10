@@ -373,6 +373,7 @@ struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	struct timed_event *te;
+	struct tevent_immediate *im;
 	struct timeval request_time;
 	struct file_id id;
 	DATA_BLOB private_data;
@@ -950,6 +951,8 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 
 	/* Ensure we don't have any outstanding timer event. */
 	TALLOC_FREE(state->te);
+	/* Ensure we don't have any outstanding immediate event. */
+	TALLOC_FREE(state->im);
 }
 
 void remove_deferred_open_message_smb2(uint64_t mid)
@@ -965,9 +968,29 @@ void remove_deferred_open_message_smb2(uint64_t mid)
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
 }
 
+static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *ctx,
+					struct tevent_immediate *im,
+					void *private_data)
+{
+	struct smbd_smb2_request *smb2req = talloc_get_type_abort(private_data,
+					struct smbd_smb2_request);
+	struct smbd_server_connection *sconn = smb2req->sconn;
+	uint64_t mid = get_mid_from_smb2req(smb2req);
+	NTSTATUS status;
+
+	DEBUG(10,("smbd_smb2_create_request_dispatch_immediate: "
+		"re-dispatching mid %llu\n",
+		(unsigned long long)mid ));
+
+	status = smbd_smb2_request_dispatch(smb2req);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		return;
+	}
+}
+
 void schedule_deferred_open_message_smb2(uint64_t mid)
 {
-	struct tevent_immediate *im = NULL;
 	struct smbd_smb2_create_state *state = NULL;
 	struct smbd_smb2_request *smb2req = find_open_smb2req(mid);
 
@@ -988,8 +1011,11 @@ void schedule_deferred_open_message_smb2(uint64_t mid)
 	if (!state) {
 		return;
 	}
+
 	/* Ensure we don't have any outstanding timer event. */
 	TALLOC_FREE(state->te);
+	/* Ensure we don't have any outstanding immediate event. */
+	TALLOC_FREE(state->im);
 
 	/*
 	 * This is subtle. We must null out the callback
@@ -1000,8 +1026,8 @@ void schedule_deferred_open_message_smb2(uint64_t mid)
 	 */
 	tevent_req_set_callback(smb2req->subreq, NULL, NULL);
 
-	im = tevent_create_immediate(smb2req);
-	if (!im) {
+	state->im = tevent_create_immediate(smb2req);
+	if (!state->im) {
 		smbd_server_connection_terminate(smb2req->sconn,
 			nt_errstr(NT_STATUS_NO_MEMORY));
 	}
@@ -1010,9 +1036,9 @@ void schedule_deferred_open_message_smb2(uint64_t mid)
 		"re-processing mid %llu\n",
 		(unsigned long long)mid ));
 
-	tevent_schedule_immediate(im,
+	tevent_schedule_immediate(state->im,
 			smb2req->sconn->smb2.event_ctx,
-			smbd_smb2_request_dispatch_immediate,
+			smbd_smb2_create_request_dispatch_immediate,
 			smb2req);
 }
 
@@ -1045,6 +1071,8 @@ static void smb2_deferred_open_timer(struct event_context *ev,
 	 * this returns.
 	 */
 	state->te = NULL;
+	/* Ensure we don't have any outstanding immediate event. */
+	TALLOC_FREE(state->im);
 
 	/*
 	 * This is subtle. We must null out the callback
