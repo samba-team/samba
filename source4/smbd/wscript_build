@@ -59,6 +59,13 @@ bld.SAMBA_MODULE('process_model_prefork',
 	deps='LIBEVENTS SETPROCTITLE'
 	)
 
+bld.SAMBA_MODULE('process_model_onefork',
+	source='process_onefork.c',
+	subsystem='process_model',
+	init_function='process_model_onefork_init',
+	deps='LIBEVENTS SETPROCTITLE'
+	)
+
 
 bld.SAMBA_SUBSYSTEM('process_model',
 	source='process_model.c',

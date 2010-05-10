@@ -86,6 +86,7 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 	extern NTSTATUS process_model_thread_init(void);
 	extern NTSTATUS process_model_standard_init(void);
 	extern NTSTATUS process_model_prefork_init(void);
+	extern NTSTATUS process_model_onefork_init(void);
 	extern NTSTATUS process_model_single_init(void);
 	init_module_fn static_init[] = { STATIC_process_model_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, lp_ctx, "process_model");
