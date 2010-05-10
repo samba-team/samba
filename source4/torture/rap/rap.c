@@ -1674,11 +1674,10 @@ NTSTATUS smbcli_rap_netoemchangepassword(struct smbcli_tree *tree,
 
 	rap_cli_push_string(call, r->in.UserName);
 	rap_cli_push_sendbuf(call, 532);
-	ndr_push_bytes(call->ndr_push_param, r->in.crypt_password, 516);
-	ndr_push_bytes(call->ndr_push_param, r->in.password_hash, 16);
+	ndr_push_array_uint8(call->ndr_push_data, NDR_SCALARS, r->in.crypt_password, 516);
+	ndr_push_array_uint8(call->ndr_push_data, NDR_SCALARS, r->in.password_hash, 16);
 
-	rap_cli_expect_format(call, "");
-	rap_cli_expect_extra_format(call, "B516B16");
+	rap_cli_expect_format(call, "B516B16");
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(rap_NetOEMChangePassword, r);
