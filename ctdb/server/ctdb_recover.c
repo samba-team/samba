@@ -938,6 +938,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
 
 	ctdb_enable_monitoring(ctdb);
+	ctdb->statistics.num_recoveries++;
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " recovered event script failed (status %d)\n", status));

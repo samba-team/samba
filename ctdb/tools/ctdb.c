@@ -167,6 +167,7 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(num_clients),
 		STATISTICS_FIELD(frozen),
 		STATISTICS_FIELD(recovering),
+		STATISTICS_FIELD(num_recoveries),
 		STATISTICS_FIELD(client_packets_sent),
 		STATISTICS_FIELD(client_packets_recv),
 		STATISTICS_FIELD(node_packets_sent),
