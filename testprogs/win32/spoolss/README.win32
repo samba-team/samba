@@ -12,11 +12,11 @@ Use the Microsoft "nmake" command to build the *.exe. This command is in your
 %path% if you start the "Visual Studio 2008 Command Prompt" from your Start
 menu.
 
-Currently the real build target is (misleadingly) named "spoolss.exe". Run
+Currently the real build target is named "testspoolss.exe". Run
 
     nmake /f Makefile
 
-to build the spoolss.exe. After a successfull build you may want to clean up
+to build the testspoolss.exe. After a successfull build you may want to clean up
 temporary files:
 
     nmake /f Makefile cleantmp
@@ -25,10 +25,10 @@ temporary files:
 How to use
 ----------
 
-Running spoolss.exe with no additional params displays a short usage info.
+Running testspoolss.exe with no additional params displays a short usage info.
 
 ..............................................................................
-usage: spoolss.exe <name> [print] [samba3] [architecture=ARCHITECTURE]
+usage: testspoolss.exe <name> [print] [samba3] [architecture=ARCHITECTURE]
 
         <name>           can be a server or printer name URI
         [print]          will print all data that has been retrieved
@@ -44,16 +44,16 @@ The utility may be most useful if you use the "print" parameter to output all
 data received from the print server. You may re-direct the data into log files
 for later evaluation like this:
 
-   spoolss.exe \\smbserver print samba3 1>smbserver.log 2>smbserver.err
-   spoolss.exe \\smbserver print        1>smbserver.log 2>smbserver.err
-   spoolss.exe \\winserver print        1>winserver.log 2>winserver.err
+   testspoolss.exe \\smbserver print samba3 1>smbserver.log 2>smbserver.err
+   testspoolss.exe \\smbserver print        1>smbserver.log 2>smbserver.err
+   testspoolss.exe \\winserver print        1>winserver.log 2>winserver.err
 
 One interesting source of learning could be to compare the output for (maybe
 "the same") printers/drivers as installed on a Windows and on a Samba print
 server:
 
-   spoolss.exe \\winserver\printername print 1>winprinter.log 2>winprinter.err
-   spoolss.exe \\smbserver\printername print 1>smbprinter.log 2>smbprinter.err
+   testspoolss.exe \\winserver\printername print 1>winprinter.log 2>winprinter.err
+   testspoolss.exe \\smbserver\printername print 1>smbprinter.log 2>smbprinter.err
 
 and then compare the respective log files with a diff utility of your choice.
 To install "the same" printer/driver on a Samba server as on a Windows server,
