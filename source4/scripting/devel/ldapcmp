@@ -47,10 +47,30 @@ class LDAPBase(object):
             self.host = "ldap://" + host + ":389"
         self.ldb = Ldb(self.host, credentials=creds, lp=lp,
                              options=["modules:paged_searches"])
+        self.host = host
         self.base_dn = self.find_basedn()
-        self.netbios_name = self.find_netbios()
+        self.domain_netbios = self.find_netbios()
+        self.server_names = self.find_servers()
         self.domain_name = re.sub("[Dd][Cc]=", "", self.base_dn).replace(",", ".")
         self.domain_sid_bin = self.get_object_sid(self.base_dn)
+        #
+        #print "@", self.host
+        #print "@", self.base_dn
+        #print "@", self.domain_netbios
+        #print "@", self.server_names
+        #print "@", self.domain_name
+        #print "@", self.domain_sid_bin
+
+    def find_servers(self):
+        """
+        """
+        res = self.ldb.search(base="OU=Domain Controllers,%s" % self.base_dn, \
+                scope=SCOPE_SUBTREE, expression="(objectClass=computer)", attrs=["cn"])
+        assert len(res) > 0
+        srv = []
+        for x in res:
+            srv.append(x["cn"][0])
+        return srv
 
     def find_netbios(self):
         res = self.ldb.search(base="CN=Partitions,CN=Configuration,%s" % self.base_dn, \
@@ -105,40 +125,86 @@ class LDAPBase(object):
         return res[0]["nTSecurityDescriptor"][0]
 
 
-class AdObject(object):
-    def __init__(self, con, dn, summary):
-        self.con = con
+class LDAPObject(object):
+    def __init__(self, connection, dn, summary, cmd_opts):
+        self.con = connection
+        self.two_domains = cmd_opts.two
+        self.quiet = cmd_opts.quiet
+        self.verbose = cmd_opts.verbose
         self.summary = summary
         self.dn = dn.replace("${DOMAIN_DN}", self.con.base_dn)
+        self.dn = self.dn.replace("CN=${DOMAIN_NETBIOS}", "CN=%s" % self.con.domain_netbios)
+        for x in self.con.server_names:
+            self.dn = self.dn.replace("CN=${SERVERNAME}", "CN=%s" % x)
         self.attributes = self.con.get_attributes(self.dn)
-        # attributes that are considered always to be different e.g based on timestamp etc.
-        self.ignore_attributes =  ["objectCategory", "objectGUID", \
-                "whenChanged", "objectSid", "whenCreated", "uSNChanged", "pwdLastSet", \
-                "uSNCreated", "logonCount", "badPasswordTime", "lastLogon", "creationTime", \
-                "modifiedCount", "priorSetTime", "rIDManagerReference", "gPLink", "ipsecNFAReference", \
-                "fRSPrimaryMember", "fSMORoleOwner", "masteredBy", "ipsecOwnersReference", "wellKnownObjects", \
-                "badPwdCount", "ipsecISAKMPReference", "ipsecFilterReference", "msDs-masteredBy", "lastSetTime", \
-                "ipsecNegotiationPolicyReference", "subRefs", "gPCFileSysPath", "accountExpires", "dSCorePropagationData", \
+        # Attributes that are considered always to be different e.g based on timestamp etc.
+        #
+        # One domain - two domain controllers
+        self.ignore_attributes =  [
+                # Default Naming Context
+                "lastLogon", "lastLogoff", "badPwdCount", "logonCount", "badPasswordTime", "modifiedCount",
+                "operatingSystemVersion","oEMInformation",
+                # Configuration Naming Context
+                "repsFrom", "dSCorePropagationData", "msExchServer1HighestUSN",
+                "replUpToDateVector", "repsTo", "whenChanged", "uSNChanged", "uSNCreated",
+                # Schema Naming Context
+                "prefixMap",]
+        self.dn_attributes = []
+        self.domain_attributes = []
+        self.servername_attributes = []
+        self.netbios_attributes = []
+        self.other_attributes = []
+        # Two domains - two domain controllers
+
+        if self.two_domains:
+            self.ignore_attributes +=  [
+                "objectCategory", "objectGUID", "objectSid", "whenCreated", "pwdLastSet", "uSNCreated", "creationTime",
+                "modifiedCount", "priorSetTime", "rIDManagerReference", "gPLink", "ipsecNFAReference",
+                "fRSPrimaryMember", "fSMORoleOwner", "masteredBy", "ipsecOwnersReference", "wellKnownObjects",
+                "badPwdCount", "ipsecISAKMPReference", "ipsecFilterReference", "msDs-masteredBy", "lastSetTime",
+                "ipsecNegotiationPolicyReference", "subRefs", "gPCFileSysPath", "accountExpires", "invocationId",
                 # After Exchange preps
                 "targetAddress", "msExchMailboxGuid", "siteFolderGUID"]
-
-        #self.ignore_attributes =  []
-        self.ignore_attributes = [x.upper() for x in self.ignore_attributes]
-        #
-        # Attributes that contain the unique DN tail part e.g. 'DC=samba,DC=org'
-        self.dn_attributes = ["distinguishedName", "defaultObjectCategory", \
-                "member", "memberOf", "siteList", "nCName", "homeMDB", "homeMTA", "interSiteTopologyGenerator", \
+            #
+            # Attributes that contain the unique DN tail part e.g. 'DC=samba,DC=org'
+            self.dn_attributes = [
+                "distinguishedName", "defaultObjectCategory", "member", "memberOf", "siteList", "nCName",
+                "homeMDB", "homeMTA", "interSiteTopologyGenerator", "serverReference",
+                "msDS-HasInstantiatedNCs", "hasMasterNCs", "msDS-hasMasterNCs", "msDS-HasDomainNCs", "dMDLocation",
+                "msDS-IsDomainFor", "rIDSetReferences", "serverReferenceBL",
                 # After Exchange preps
-                "msExchHomeRoutingGroup", "msExchResponsibleMTAServer", "siteFolderServer", "msExchRoutingMasterDN", \
-                "msExchRoutingGroupMembersBL", "homeMDBBL", "msExchHomePublicMDB", "msExchOwningServer", "templateRoots", \
-                "addressBookRoots", "msExchPolicyRoots", "globalAddressList", "msExchOwningPFTree", \
+                "msExchHomeRoutingGroup", "msExchResponsibleMTAServer", "siteFolderServer", "msExchRoutingMasterDN",
+                "msExchRoutingGroupMembersBL", "homeMDBBL", "msExchHomePublicMDB", "msExchOwningServer", "templateRoots",
+                "addressBookRoots", "msExchPolicyRoots", "globalAddressList", "msExchOwningPFTree",
                 "msExchResponsibleMTAServerBL", "msExchOwningPFTreeBL",]
-        self.dn_attributes = [x.upper() for x in self.dn_attributes]
+            self.dn_attributes = [x.upper() for x in self.dn_attributes]
+            #
+            # Attributes that contain the Domain name e.g. 'samba.org'
+            self.domain_attributes = [
+                "proxyAddresses", "mail", "userPrincipalName", "msExchSmtpFullyQualifiedDomainName",
+                "dnsHostName", "networkAddress", "dnsRoot", "servicePrincipalName",]
+            self.domain_attributes = [x.upper() for x in self.domain_attributes]
+            #
+            # May contain DOMAIN_NETBIOS and SERVERNAME
+            self.servername_attributes = [ "distinguishedName", "name", "CN", "sAMAccountName", "dNSHostName",
+                "servicePrincipalName", "rIDSetReferences", "serverReference", "serverReferenceBL",
+                "msDS-IsDomainFor", "interSiteTopologyGenerator",]
+            self.servername_attributes = [x.upper() for x in self.servername_attributes]
+            #
+            self.netbios_attributes = [ "servicePrincipalName", "CN", "distinguishedName", "nETBIOSName", "name",]
+            self.netbios_attributes = [x.upper() for x in self.netbios_attributes]
+            #
+            self.other_attributes = [ "name", "DC",]
+            self.other_attributes = [x.upper() for x in self.other_attributes]
         #
-        # Attributes that contain the Domain name e.g. 'samba.org'
-        self.domain_attributes = ["proxyAddresses", "mail", "userPrincipalName", "msExchSmtpFullyQualifiedDomainName", \
-                "dnsHostName", "networkAddress", "dnsRoot", "servicePrincipalName"]
-        self.domain_attributes = [x.upper() for x in self.domain_attributes]
+        self.ignore_attributes = [x.upper() for x in self.ignore_attributes]
+
+    def log(self, msg):
+        """
+        Log on the screen if there is no --quiet oprion set
+        """
+        if not self.quiet:
+            print msg
 
     def fix_dn(self, s):
         res = "%s" % s
@@ -148,43 +214,48 @@ class AdObject(object):
 
     def fix_domain_name(self, s):
         res = "%s" % s
-        if res.upper().endswith(self.con.domain_name.upper()):
-            res = res[:len(res)-len(self.con.domain_name)] + "${DOMAIN_NAME}"
+        res = res.replace(self.con.domain_name.lower(), self.con.domain_name.upper())
+        res = res.replace(self.con.domain_name.upper(), "${DOMAIN_NAME}")
         return res
 
-    def fix_netbios_name(self, s):
+    def fix_domain_netbios(self, s):
         res = "%s" % s
-        if res.upper().endswith(self.con.netbios_name.upper()):
-            res = res[:len(res)-len(self.con.netbios_name)] + "${NETBIOS_NAME}"
+        res = res.replace(self.con.domain_netbios.lower(), self.con.domain_netbios.upper())
+        res = res.replace(self.con.domain_netbios.upper(), "${DOMAIN_NETBIOS}")
+        return res
+
+    def fix_server_name(self, s):
+        res = "%s" % s
+        for x in self.con.server_names:
+            res = res.upper().replace(x, "${SERVERNAME}")
         return res
 
     def __eq__(self, other):
-        res = True
+        res = ""
         self.unique_attrs = []
         self.df_value_attrs = []
         other.unique_attrs = []
         if self.attributes.keys() != other.attributes.keys():
-            print 4*" " + "Different number of attributes!"
             #
-            title = 4*" " + "Attributes found only in %s:" % self.con.base_dn
+            title = 4*" " + "Attributes found only in %s:" % self.con.host
             for x in self.attributes.keys():
-                if not x.upper() in [q.upper() for q in other.attributes.keys()]:
+                if not x in other.attributes.keys() and \
+                not x.upper() in [q.upper() for q in other.ignore_attributes]:
                     if title:
-                        print title
+                        res += title + "\n"
                         title = None
-                    print 8*" " + x
+                    res += 8*" " + x + "\n"
                     self.unique_attrs.append(x)
             #
-            title = 4*" " + "Attributes found only in %s:" % other.con.base_dn
+            title = 4*" " + "Attributes found only in %s:" % other.con.host
             for x in other.attributes.keys():
-                if not x.upper() in [q.upper() for q in self.attributes.keys()]:
+                if not x in self.attributes.keys() and \
+                not x.upper() in [q.upper() for q in self.ignore_attributes]:
                     if title:
-                        print title
+                        res += title + "\n"
                         title = None
-                    print 8*" " + x
+                    res += 8*" " + x + "\n"
                     other.unique_attrs.append(x)
-            #
-            res = False
         #
         missing_attrs = [x.upper() for x in self.unique_attrs]
         missing_attrs += [x.upper() for x in other.unique_attrs]
@@ -198,34 +269,70 @@ class AdObject(object):
             if self.attributes[x] != other.attributes[x]:
                 p = None
                 q = None
-                # Attribute values that are list that contain DN based values that may differ
-                if x.upper() in self.dn_attributes:
-                    p = [self.fix_dn(j) for j in self.attributes[x]]
-                    q = [other.fix_dn(j) for j in other.attributes[x]]
-                    if p == q:
-                        continue
-                elif x.upper() in ["DC",]:
-                    # Usually displayed as the first part of the Domain DN
+                m = None
+                n = None
+                # First check if the difference can be fixed but shunting the first part
+                # of the DomainHostName e.g. 'mysamba4.test.local' => 'mysamba4'
+                if x.upper() in self.other_attributes:
                     p = [self.con.domain_name.split(".")[0] == j for j in self.attributes[x]]
                     q = [other.con.domain_name.split(".")[0] == j for j in other.attributes[x]]
                     if p == q:
                         continue
+                # Attribute values that are list that contain DN based values that may differ
+                elif x.upper() in self.dn_attributes:
+                    m = p
+                    n = q
+                    if not p and not q:
+                        m = self.attributes[x]
+                        n = other.attributes[x]
+                    p = [self.fix_dn(j) for j in m]
+                    q = [other.fix_dn(j) for j in n]
+                    if p == q:
+                        continue
                 # Attributes that contain the Domain name in them
-                elif x.upper() in self.domain_attributes:
-                    p = [self.fix_domain_name(j) for j in self.attributes[x]]
-                    q = [other.fix_domain_name(j) for j in other.attributes[x]]
+                if x.upper() in self.domain_attributes:
+                    m = p
+                    n = q
+                    if not p and not q:
+                        m = self.attributes[x]
+                        n = other.attributes[x]
+                    p = [self.fix_domain_name(j) for j in m]
+                    q = [other.fix_domain_name(j) for j in n]
+                    if p == q:
+                        continue
+                #
+                if x.upper() in self.servername_attributes:
+                    # Attributes with SERVERNAME
+                    m = p
+                    n = q
+                    if not p and not q:
+                        m = self.attributes[x]
+                        n = other.attributes[x]
+                    p = [self.fix_server_name(j) for j in m]
+                    q = [other.fix_server_name(j) for j in n]
+                    if p == q:
+                        continue
+                #
+                if x.upper() in self.netbios_attributes:
+                    # Attributes with NETBIOS Domain name
+                    m = p
+                    n = q
+                    if not p and not q:
+                        m = self.attributes[x]
+                        n = other.attributes[x]
+                    p = [self.fix_domain_netbios(j) for j in m]
+                    q = [other.fix_domain_netbios(j) for j in n]
                     if p == q:
                         continue
                 #
                 if title:
-                    print title
+                    res += title + "\n"
                     title = None
                 if p and q:
-                    print 8*" " + x + " -> \n* %s\n* %s" % (p, q)
+                    res += 8*" " + x + " => \n%s\n%s" % (p, q) + "\n"
                 else:
-                    print 8*" " + x + " -> \n* %s\n* %s" % (self.attributes[x], other.attributes[x])
+                    res += 8*" " + x + " => \n%s\n%s" % (self.attributes[x], other.attributes[x]) + "\n"
                 self.df_value_attrs.append(x)
-                res = False
         #
         if self.unique_attrs + other.unique_attrs != []:
             assert self.unique_attrs != other.unique_attrs
@@ -234,12 +341,19 @@ class AdObject(object):
         other.summary["unique_attrs"] += other.unique_attrs
         other.summary["df_value_attrs"] += self.df_value_attrs # they are the same
         #
-        return res
+        self.screen_output = res[:-1]
+        other.screen_output = res[:-1]
+        #
+        return res == ""
 
 
-class AdBundel(object):
-    def __init__(self, con, context=None, dn_list=None):
-        self.con = con
+class LDAPBundel(object):
+    def __init__(self, connection, context, cmd_opts, dn_list=None):
+        self.con = connection
+        self.cmd_opts = cmd_opts
+        self.two_domains = cmd_opts.two
+        self.quiet = cmd_opts.quiet
+        self.verbose = cmd_opts.verbose
         self.summary = {}
         self.summary["unique_attrs"] = []
         self.summary["df_value_attrs"] = []
@@ -251,11 +365,27 @@ class AdBundel(object):
             self.context = context.upper()
             self.dn_list = self.get_dn_list(context)
         else:
-            raise Exception("Unknown initialization data for AdBundel().")
-        self.dn_list = [x[:len(x)-len(self.con.base_dn)] + "${DOMAIN_DN}" for x in self.dn_list]
+            raise Exception("Unknown initialization data for LDAPBundel().")
+        counter = 0
+        while counter < len(self.dn_list):
+            # Use alias reference
+            tmp = self.dn_list[counter]
+            tmp = tmp[:len(tmp)-len(self.con.base_dn)] + "${DOMAIN_DN}"
+            tmp = tmp.replace("CN=%s" % self.con.domain_netbios, "CN=${DOMAIN_NETBIOS}")
+            for x in self.con.server_names:
+                tmp = tmp.replace("CN=%s" % x, "CN=${SERVERNAME}")
+            self.dn_list[counter] = tmp
+            counter += 1
         self.dn_list = list(set(self.dn_list))
         self.dn_list = sorted(self.dn_list)
         self.size = len(self.dn_list)
+
+    def log(self, msg):
+        """
+        Log on the screen if there is no --quiet oprion set
+        """
+        if not self.quiet:
+            print msg
 
     def update_size(self):
         self.size = len(self.dn_list)
@@ -264,94 +394,75 @@ class AdBundel(object):
     def __eq__(self, other):
         res = True
         if self.size != other.size:
-            print "Lists have different size: %s != %s" % (self.size, other.size)
+            self.log( "\n* Lists have different size: %s != %s" % (self.size, other.size) )
             res = False
         #
-        print "\n* DNs found only in %s:" % self.con.base_dn
+        title= "\n* DNs found only in %s:" % self.con.host
         for x in self.dn_list:
             if not x.upper() in [q.upper() for q in other.dn_list]:
-                print "    %s" % x
+                if title:
+                    self.log( title )
+                    title = None
+                self.log( 4*" " + x )
                 self.dn_list[self.dn_list.index(x)] = ""
         self.dn_list = [x for x in self.dn_list if x]
         #
-        print "\n* DNs found only in %s:" % other.con.base_dn
+        title= "\n* DNs found only in %s:" % other.con.host
         for x in other.dn_list:
             if not x.upper() in [q.upper() for q in self.dn_list]:
-                print "    %s" % x
+                if title:
+                    self.log( title )
+                    title = None
+                self.log( 4*" " + x )
                 other.dn_list[other.dn_list.index(x)] = ""
         other.dn_list = [x for x in other.dn_list if x]
         #
         self.update_size()
         other.update_size()
-        print "%s == %s" % (self.size, other.size)
         assert self.size == other.size
         assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
+        self.log( "\n* Objets to be compared: %s" % self.size )
 
         index = 0
         while index < self.size:
             skip = False
             try:
-                object1 = AdObject(self.con, self.dn_list[index], self.summary)
+                object1 = LDAPObject(connection=self.con,
+                        dn=self.dn_list[index],
+                        summary=self.summary,
+                        cmd_opts = self.cmd_opts)
             except LdbError, (ERR_NO_SUCH_OBJECT, _):
-                print "\n!!! Object not found:", self.dn_list[index]
+                self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
                 skip = True
             try:
-                object2 = AdObject(other.con, other.dn_list[index], other.summary)
+                object2 = LDAPObject(connection=other.con,
+                        dn=other.dn_list[index],
+                        summary=other.summary,
+                        cmd_opts = self.cmd_opts)
             except LdbError, (ERR_NO_SUCH_OBJECT, _):
-                print "\n!!! Object not found:", other.dn_list[index]
+                self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
                 skip = True
             if skip:
                 index += 1
                 continue
-            print "\nComparing:\n'%s'\n'%s'" % (object1.dn, object2.dn)
             if object1 == object2:
-                print 4*" " + "OK"
+                if self.verbose:
+                    self.log( "\nComparing:" )
+                    self.log( "'%s' [%s]" % (object1.dn, object1.con.host) )
+                    self.log( "'%s' [%s]" % (object2.dn, object2.con.host) )
+                    self.log( 4*" " + "OK" )
             else:
-                print 4*" " + "FAILED"
+                self.log( "\nComparing:" )
+                self.log( "'%s' [%s]" % (object1.dn, object1.con.host) )
+                self.log( "'%s' [%s]" % (object2.dn, object2.con.host) )
+                self.log( object1.screen_output )
+                self.log( 4*" " + "FAILED" )
                 res = False
             self.summary = object1.summary
             other.summary = object2.summary
             index += 1
         #
         return res
-
-    def is_ignored(self, dn):
-        ignore_list = {
-            "DOMAIN" : [
-                # Default naming context
-                "^CN=BCKUPKEY_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} Secret,CN=System,",
-                "^CN=BCKUPKEY_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} Secret,CN=System,",
-                "^CN=Domain System Volume (SYSVOL share),CN=NTFRS Subscriptions,CN=.+?,OU=Domain Controllers,",
-                "^CN=NTFRS Subscriptions,CN=.+?,OU=Domain Controllers,",
-                "^CN=RID Set,CN=.+?,OU=Domain Controllers,",
-                "^CN=.+?,CN=Domain System Volume \(SYSVOL share\),CN=File Replication Service,CN=System,",
-                "^CN=.+?,OU=Domain Controllers,",
-                # After Exchange preps
-                "^CN=OWAScratchPad.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.,CN=Microsoft Exchange System Objects,",
-                "^CN=StoreEvents.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.,CN=Microsoft ExchangeSystem Objects,",
-                "^CN=SystemMailbox.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.,CN=Microsoft Exchange System Objects,",
-
-            ],
-            # Configuration naming context
-            "CONFIGURATION" : [
-                "^CN=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},CN=Partitions,CN=Configuration,",
-                "^CN=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},CN=Partitions,CN=Configuration,",
-                "^CN=NTDS Settings,CN=.+?,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,",
-                "^CN=.+?,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,",
-                "^CN=%s,CN=Partitions,CN=Configuration," % self.con.netbios_name,
-                # This one has to be investigated
-                "^CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=WindowsNT,CN=Services,CN=Configuration,",
-                # After Exchange preps
-                "^CN=SMTP \(.+?-\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}\),CN=Connections,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,", # x 3 times
-            ],
-            "SCHEMA" : [
-            ],
-        }
-        #ignore_list = {}
-        for x in ignore_list[self.context]:
-            if re.match(x.upper(), dn.upper()):
-                return True
-        return False
 
     def get_dn_list(self, context):
         """ Query LDAP server about the DNs of certain naming self.con.ext Domain (or Default), Configuration, Schema.
@@ -372,20 +483,16 @@ class AdBundel(object):
         #
         global summary
         #
-        print "\nIgnored (strange) DNs in %s:" % self.con.base_dn
+        title = "\n* Ignored (DNS related) DNs in %s:" % self.con.host
         for x in dn_list:
             xx = "".join(re.findall("[Cc][Nn]=.*?,", x)) \
                     + "".join(re.findall("[Oo][Uu]=.*?,", x)) \
-                    + "".join(re.findall("[Dd][Cc]=.*?,", x)) + re.search("([Dd][Cc]=[\w^=]*?$)", x).group()
+                    + "".join(re.findall("[Dd][Cc]=.*?,", x)) + re.search("([Dd][Cc]=[\w]+$)", x).group()
             if x != xx:
-                print 4*" " + x
-                dn_list[dn_list.index(x)] = ""
-        #
-
-        print "\nKnown DN ignore list for %s" % self.con.base_dn
-        for x in dn_list:
-            if self.is_ignored(x):
-                print 4*" " + x
+                if title:
+                    self.log( title )
+                    title = None
+                self.log( 4*" " + x )
                 dn_list[dn_list.index(x)] = ""
         #
         dn_list = [x for x in dn_list if x]
@@ -395,12 +502,14 @@ class AdBundel(object):
         self.summary["unique_attrs"] = list(set(self.summary["unique_attrs"]))
         self.summary["df_value_attrs"] = list(set(self.summary["df_value_attrs"]))
         #
-        print "\nAttributes found only in %s:" % self.con.base_dn
-        print "".join([str("\n" + 4*" " + x) for x in self.summary["unique_attrs"]])
+        if self.summary["unique_attrs"]:
+            self.log( "\nAttributes found only in %s:" % self.con.host )
+            self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["unique_attrs"]]) )
         #
-        print "\nAttributes with different values:"
-        print "".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]])
-        self.summary["df_value_attrs"] = []
+        if self.summary["df_value_attrs"]:
+            self.log( "\nAttributes with different values:" )
+            self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]) )
+            self.summary["df_value_attrs"] = []
 
 ###
 
@@ -418,10 +527,19 @@ if __name__ == "__main__":
                               help="IP of the first LDAP server",)
     parser.add_option("", "--host2", dest="host2",
                               help="IP of the second LDAP server",)
+    parser.add_option("-w", "--two", dest="two", action="store_true", default=False,
+                              help="Hosts are in two different domains",)
+    parser.add_option("-q", "--quiet", dest="quiet", action="store_true", default=False,
+                              help="Do not print anything but relay on just exit code",)
+    parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
+                              help="Print all DN pairs that have been compared",)
     (options, args) = parser.parse_args()
 
     if not (len(args) == 1 and args[0].upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]):
         parser.error("Incorrect arguments")
+
+    if options.verbose and options.quiet:
+        parser.error("You cannot set --verbose and --quiet together")
 
     con1 = LDAPBase(options.host, creds, lp)
     assert len(con1.base_dn) > 0
@@ -429,21 +547,25 @@ if __name__ == "__main__":
     con2 = LDAPBase(options.host2, creds2, lp)
     assert len(con2.base_dn) > 0
 
-    b1 = AdBundel(con1, args[0])
-    b2 = AdBundel(con2, args[0])
+    b1 = LDAPBundel(con1, context=args[0], cmd_opts=options)
+    b2 = LDAPBundel(con2, context=args[0], cmd_opts=options)
 
     if b1 == b2:
-        print "\n\nFinal result: SUCCESS!"
+        if not options.quiet:
+            print "\n* Final result: SUCCESS"
         status = 0
     else:
-        print "\n\nFinal result: FAILURE!"
-        status = 1
+        if not options.quiet:
+            print "\n* Final result: FAILURE"
+            print "\nSUMMARY"
+            print "---------"
+        status = -1
 
     assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
+    b2.summary["df_value_attrs"] = []
 
-    print "\nSUMMARY"
-    print "---------"
-    b1.print_summary()
-    b2.print_summary()
+    if not options.quiet:
+        b1.print_summary()
+        b2.print_summary()
 
     sys.exit(status)
