@@ -795,6 +795,110 @@ objectClass: container
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
+    def test_sam_attributes(self):
+        """Test the behaviour of special attributes of SAM objects"""
+        print "Testing the behaviour of special attributes of SAM objects\n"""
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement("0", FLAG_MOD_ADD,
+          "groupType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement([], FLAG_MOD_DELETE,
+          "groupType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement("0", FLAG_MOD_ADD,
+          "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement([], FLAG_MOD_DELETE,
+          "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement("0", FLAG_MOD_ADD,
+          "userAccountControl")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement([], FLAG_MOD_DELETE,
+          "userAccountControl")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountType"] = MessageElement("0", FLAG_MOD_ADD,
+          "sAMAccountType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountType"] = MessageElement([], FLAG_MOD_REPLACE,
+          "sAMAccountType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountType"] = MessageElement([], FLAG_MOD_DELETE,
+          "sAMAccountType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
     def test_primary_group_token_constructed(self):
         """Test the primary group token behaviour (hidden-generated-readonly attribute on groups) and some other constructed attributes"""
         print "Testing primary group token behaviour and other constructed attributes\n"
