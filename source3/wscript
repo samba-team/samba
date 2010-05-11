@@ -277,22 +277,41 @@ updwtmp updwtmpx utimensat vsyslog _write __write __xstat
     conf.DEFINE('STRING_STATIC_MODULES', ' '.join(default_static_modules), quote=True)
 
     static_list = {}
+    shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap']
+    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap', 'gpext']
     for p in prefixes:
         for m in default_static_modules:
             if m.find(p) == 0:
                 if not p in static_list:
                     static_list[p] = []
                 static_list[p].append(m)
+        for m in default_shared_modules:
+            if m.find(p) == 0:
+                if not p in shared_list:
+                    shared_list[p] = []
+                shared_list[p].append(m)
 
     for p in prefixes:
-        conf.env['%s_STATIC' % p.upper()] = ''
-        conf.env['%s_SHARED' % p.upper()] = ''
+        static_env = "%s_STATIC" % p.upper()
+        shared_env = "%s_SHARED" % p.upper()
+        conf.env[static_env] = []
+        conf.env[shared_env] = []
         if p in static_list:
-            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init(); '.join(static_list[p]))
+            decl_list=""
+            for entry in static_list[p]:
+                decl_list += "extern NTSTATUS %s_init(void); " % entry
+                conf.env[static_env].append('%s' % entry.upper())
+            decl_list = decl_list.rstrip()
+            conf.DEFINE('static_decl_%s' % p, decl_list)
+            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
         else:
+            conf.DEFINE('static_decl_%s' % p, '')
             conf.DEFINE('static_init_%s' % p, '{}')
+        if p in shared_list:
+            for entry in shared_list[p]:
+                conf.DEFINE('%s_init' % entry, 'init_samba_module')
+                conf.env[shared_env].append('%s' % entry.upper())
 
     if Options.options.with_winbind:
         conf.DEFINE('WITH_WINBIND', '1')
