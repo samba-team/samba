@@ -48,6 +48,11 @@ echo "testing python portability"
 pushd lib/talloc
 versions="python2.4 python2.5 python2.6 python3.0 python3.1"
 for p in $versions; do
+    ret=$(which $p || echo "failed")
+    if [ $ret == "failed" ]; then
+        echo "$p not found, skipping"
+        continue
+    fi
     echo "Testing $p"
     $p ../../buildtools/bin/waf configure -C --enable-developer --prefix=$PREFIX
     $p ../../buildtools/bin/waf build install
@@ -56,6 +61,11 @@ popd
 
 echo "testing cross compiling"
 pushd lib/talloc
-CC=arm-linux-gnueabi-gcc ./configure -C --prefix=$PREFIX  --cross-compile --cross-execute='runarm'
-make && make install
+ret=$(which arm-linux-gnueabi-gcc || echo "failed")
+if [ $ret != "failed" ]; then
+    CC=arm-linux-gnueabi-gcc ./configure -C --prefix=$PREFIX  --cross-compile --cross-execute='runarm'
+    make && make install
+else
+    echo "Cross-compiler not installed, skipping test"
+fi
 popd
