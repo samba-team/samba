@@ -2509,7 +2509,7 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 	addrs[0].size = 10;
 	addrs[0].buffer[0] = AF_UNSPEC;
 	addrs[1].size = 10;
-	addrs[1].buffer[0] = AF_LOCAL;
+	addrs[1].buffer[0] = AF_UNIX; /* AF_LOCAL = AF_UNIX */
 	addrs[2].size = 10;
 	addrs[2].buffer[0] = AF_UNIX;
 
@@ -2688,7 +2688,7 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	addrs[0].size = 10;
 	addrs[0].buffer[0] = AF_UNSPEC;
 	addrs[1].size = 10;
-	addrs[1].buffer[0] = AF_LOCAL;
+	addrs[1].buffer[0] = AF_UNIX; /* AF_LOCAL = AF_UNIX */
 	addrs[2].size = 10;
 	addrs[2].buffer[0] = AF_UNIX;
 
