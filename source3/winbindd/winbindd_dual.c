@@ -422,13 +422,13 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	SMB_ASSERT(child->rpccli != NULL);
 }
 
-struct winbindd_child *children = NULL;
+static struct winbindd_child *winbindd_children = NULL;
 
 void winbind_child_died(pid_t pid)
 {
 	struct winbindd_child *child;
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = winbindd_children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
 			break;
 		}
@@ -441,7 +441,7 @@ void winbind_child_died(pid_t pid)
 
 	/* This will be re-added in fork_domain_child() */
 
-	DLIST_REMOVE(children, child);
+	DLIST_REMOVE(winbindd_children, child);
 
 	close(child->sock);
 	child->sock = -1;
@@ -476,7 +476,7 @@ void winbind_msg_debug(struct messaging_context *msg_ctx,
 
 	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = winbindd_children; child != NULL; child = child->next) {
 
 		DEBUG(10,("winbind_msg_debug: sending message to pid %u.\n",
 			(unsigned int)child->pid));
@@ -521,7 +521,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 		set_domain_offline(domain);
 	}
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = winbindd_children; child != NULL; child = child->next) {
 		/* Don't send message to internal children.  We've already
 		   done so above. */
 		if (!child->domain || winbindd_internal_child(child)) {
@@ -596,7 +596,7 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 		}
 	}
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = winbindd_children; child != NULL; child = child->next) {
 		/* Don't send message to internal childs. */
 		if (!child->domain || winbindd_internal_child(child)) {
 			continue;
@@ -694,7 +694,7 @@ void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
 
 	dump_event_list(winbind_event_context());
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = winbindd_children; child != NULL; child = child->next) {
 
 		DEBUG(10,("winbind_msg_dump_event_list: sending message to pid %u\n",
 			(unsigned int)child->pid));
@@ -1164,7 +1164,7 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	ccache_remove_all_after_fork();
 
 	/* Destroy all possible events in child list. */
-	for (cl = children; cl != NULL; cl = cl->next) {
+	for (cl = winbindd_children; cl != NULL; cl = cl->next) {
 		TALLOC_FREE(cl->lockout_policy_event);
 		TALLOC_FREE(cl->machine_password_change_event);
 
@@ -1243,7 +1243,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		/* Parent */
 		close(fdpair[0]);
 		child->next = child->prev = NULL;
-		DLIST_ADD(children, child);
+		DLIST_ADD(winbindd_children, child);
 		child->sock = fdpair[1];
 		return True;
 	}
