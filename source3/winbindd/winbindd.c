@@ -763,11 +763,49 @@ void request_ok(struct winbindd_cli_state *state)
 
 /* Process a new connection by adding it to the client connection list */
 
+void winbindd_accepted_new_connection(int accepted_sock, bool privileged)
+{
+	struct winbindd_cli_state *state;
+	struct tevent_req *req;
+
+	/* Create new connection structure */
+
+	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
+		close(accepted_sock);
+		return;
+	}
+
+	state->sock = accepted_sock;
+
+	state->out_queue = tevent_queue_create(state, "winbind client reply");
+	if (state->out_queue == NULL) {
+		close(accepted_sock);
+		TALLOC_FREE(state);
+		return;
+	}
+
+	state->last_access = time(NULL);	
+
+	state->privileged = privileged;
+
+	req = wb_req_read_send(state, winbind_event_context(), state->sock,
+			       WINBINDD_MAX_EXTRA_DATA);
+	if (req == NULL) {
+		TALLOC_FREE(state);
+		close(accepted_sock);
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_request_read, state);
+
+	/* Add to connection list */
+
+	/* Once the client is added here, we can be sure something will close it eventually */
+	winbindd_add_client(state);
+}
+
 static void new_connection(int listen_sock, bool privileged)
 {
 	struct sockaddr_un sunaddr;
-	struct winbindd_cli_state *state;
-	struct tevent_req *req;
 	socklen_t len;
 	int sock;
 
@@ -785,38 +823,7 @@ static void new_connection(int listen_sock, bool privileged)
 
 	DEBUG(6,("accepted socket %d\n", sock));
 
-	/* Create new connection structure */
-
-	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
-		close(sock);
-		return;
-	}
-
-	state->sock = sock;
-
-	state->out_queue = tevent_queue_create(state, "winbind client reply");
-	if (state->out_queue == NULL) {
-		close(sock);
-		TALLOC_FREE(state);
-		return;
-	}
-
-	state->last_access = time(NULL);	
-
-	state->privileged = privileged;
-
-	req = wb_req_read_send(state, winbind_event_context(), state->sock,
-			       WINBINDD_MAX_EXTRA_DATA);
-	if (req == NULL) {
-		TALLOC_FREE(state);
-		close(sock);
-		return;
-	}
-	tevent_req_set_callback(req, winbind_client_request_read, state);
-
-	/* Add to connection list */
-
-	winbindd_add_client(state);
+	winbindd_accepted_new_connection(sock, privileged);
 }
 
 static void winbind_client_request_read(struct tevent_req *req)

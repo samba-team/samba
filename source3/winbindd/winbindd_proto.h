@@ -44,6 +44,7 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 struct event_context *winbind_event_context(void);
 
 /* The following definitions come from winbindd/winbindd.c  */
+void winbindd_accepted_new_connection(int accepted_sock, bool privileged);
 struct messaging_context *winbind_messaging_context(void);
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
