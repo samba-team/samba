@@ -1475,7 +1475,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	/* TODO: do not modify original request, create a new one */
 
 	el = ldb_msg_find_element(req->op.mod.message, "groupType");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t group_type;
 
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
@@ -1492,9 +1492,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		el2 = ldb_msg_find_element(msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 	}
+	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		struct samldb_ctx *ac;
 
 		ac = samldb_ctx_init(module, req);
@@ -1506,9 +1509,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 		return samldb_prim_group_change(ac);
 	}
+	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "userAccountControl");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t user_account_control;
 
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
@@ -1546,6 +1552,9 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 				el2->flags = LDB_FLAG_MOD_REPLACE;
 			}
 		}
+	}
+	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "member");
