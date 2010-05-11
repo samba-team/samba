@@ -1720,14 +1720,14 @@ static bool test_netservergetinfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"rap_netservergetinfo level 0 failed");
-
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping netservergetinfo level 1 against samba3");
-	}
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"rap_netservergetinfo level 0 failed");
 
 	r.in.level = 1;
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netservergetinfo(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"rap_netservergetinfo level 1 failed");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
 		"rap_netservergetinfo level 1 failed");
 
 	return res;

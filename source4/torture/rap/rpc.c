@@ -67,10 +67,6 @@ static bool test_rpc_netservergetinfo(struct torture_context *tctx,
 
 	torture_assert_str_equal(tctx, (const char *)r.out.info.info0.name, server_name, "server name");
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping netservergetinfo level 1 against samba3");
-	}
-
 	r.in.level = 1;
 
 	torture_assert_ntstatus_ok(tctx,
