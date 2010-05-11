@@ -185,21 +185,76 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 		return NULL;
 	}
 
-	printf("Opening domain %s\n", domain);
+	if (domain) {
+		printf("Opening domain %s\n", domain);
 
-	name.string = domain;
-	l.in.connect_handle = &handle;
-	l.in.domain_name = &name;
-	l.out.sid = &sid;
+		name.string = domain;
+		l.in.connect_handle = &handle;
+		l.in.domain_name = &name;
+		l.out.sid = &sid;
 
-	status = dcerpc_samr_LookupDomain_r(b, join, &l);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		goto failed;
-	}
-	if (!NT_STATUS_IS_OK(l.out.result)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(l.out.result));
-		goto failed;
+		status = dcerpc_samr_LookupDomain_r(b, join, &l);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LookupDomain failed - %s\n", nt_errstr(status));
+			goto failed;
+		}
+		if (!NT_STATUS_IS_OK(l.out.result)) {
+			printf("LookupDomain failed - %s\n", nt_errstr(l.out.result));
+			goto failed;
+		}
+	} else {
+		struct samr_EnumDomains e;
+		uint32_t resume_handle = 0, num_entries;
+		struct samr_SamArray *sam;
+		int i;
+
+		e.in.connect_handle = &handle;
+		e.in.buf_size = (uint32_t)-1;
+		e.in.resume_handle = &resume_handle;
+		e.out.sam = &sam;
+		e.out.num_entries = &num_entries;
+		e.out.resume_handle = &resume_handle;
+
+		status = dcerpc_samr_EnumDomains_r(b, join, &e);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumDomains failed - %s\n", nt_errstr(status));
+			goto failed;
+		}
+		if (!NT_STATUS_IS_OK(e.out.result)) {
+			printf("EnumDomains failed - %s\n", nt_errstr(e.out.result));
+			goto failed;
+		}
+		if ((num_entries != 2) || (sam && sam->count != 2)) {
+			printf("unexpected number of domains\n");
+			goto failed;
+		}
+		for (i=0; i < 2; i++) {
+			if (!strequal(sam->entries[i].name.string, "builtin")) {
+				domain = sam->entries[i].name.string;
+				break;
+			}
+		}
+		if (domain) {
+			printf("Opening domain %s\n", domain);
+
+			name.string = domain;
+			l.in.connect_handle = &handle;
+			l.in.domain_name = &name;
+			l.out.sid = &sid;
+
+			status = dcerpc_samr_LookupDomain_r(b, join, &l);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("LookupDomain failed - %s\n", nt_errstr(status));
+				goto failed;
+			}
+			if (!NT_STATUS_IS_OK(l.out.result)) {
+				printf("LookupDomain failed - %s\n", nt_errstr(l.out.result));
+				goto failed;
+			}
+		} else {
+			printf("cannot proceed without domain name\n");
+			goto failed;
+		}
 	}
 
 	talloc_steal(join, *l.out.sid);
