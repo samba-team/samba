@@ -223,9 +223,17 @@ struct print_architecture_table_node {
 	int	version;
 };
 
+bool nt_printing_init(struct messaging_context *msg_ctx);
+
 WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 				      const char *devicename,
 				      struct spoolss_DeviceMode **devmode);
+
+int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
+
+int unpack_devicemode(TALLOC_CTX *mem_ctx,
+		      const uint8 *buf, int buflen,
+		      struct spoolss_DeviceMode **devmode);
 
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc);
@@ -250,6 +258,11 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2);
 
+WERROR check_published_printers(void);
+
+bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
+			      struct spoolss_DriverInfo8 *_info8);
+
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			   struct auth_serversupplied_info *server_info,
 			   const struct spoolss_DriverInfo8 *r);
@@ -266,5 +279,16 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      struct pipes_struct *rpc_pipe,
 			      struct spoolss_AddDriverInfoCtr *r);
+
+void map_printer_permissions(struct security_descriptor *sd);
+
+void map_job_permissions(struct security_descriptor *sd);
+
+bool print_time_access_check(struct auth_serversupplied_info *server_info,
+			     const char *servicename);
+
+void nt_printer_remove(TALLOC_CTX *mem_ctx,
+			struct auth_serversupplied_info *server_info,
+			const char *printer);
 
 #endif /* NT_PRINTING_H_ */

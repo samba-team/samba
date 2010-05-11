@@ -4719,24 +4719,6 @@ void notify_printer_port(int snum, const char *port_name);
 void notify_printer_location(int snum, const char *location);
 void notify_printer_byname( const char *printername, uint32 change, const char *value );
 
-/* The following definitions come from printing/nt_printing.c  */
-
-bool nt_printing_init(struct messaging_context *msg_ctx);
-int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
-int unpack_devicemode(TALLOC_CTX *mem_ctx,
-		      const uint8 *buf, int buflen,
-		      struct spoolss_DeviceMode **devmode);
-WERROR check_published_printers(void);
-bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
-			      struct spoolss_DriverInfo8 *_info8);
-void map_printer_permissions(struct security_descriptor *sd);
-void map_job_permissions(struct security_descriptor *sd);
-bool print_time_access_check(struct auth_serversupplied_info *server_info,
-			     const char *servicename);
-void nt_printer_remove(TALLOC_CTX *mem_ctx,
-			struct auth_serversupplied_info *server_info,
-			const char *printer);
-
 /* The following definitions come from printing/pcap.c  */
 
 void pcap_cache_reload(void);
