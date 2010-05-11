@@ -3298,32 +3298,6 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername)
 }
 
 /****************************************************************************
- Deletes a NT_PRINTER_INFO_LEVEL struct.
-****************************************************************************/
-
-uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
-{
-	NT_PRINTER_INFO_LEVEL *printer = *pp_printer;
-
-	if ( !printer )
-		return 0;
-
-	switch (level) {
-		case 2:
-                        TALLOC_FREE(printer->info_2);
-			break;
-
-		default:
-			DEBUG(0,("free_a_printer: unknown level! [%d]\n", level ));
-			return 1;
-	}
-
-	TALLOC_FREE(*pp_printer);
-
-	return 0;
-}
-
-/****************************************************************************
 ****************************************************************************/
 
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
