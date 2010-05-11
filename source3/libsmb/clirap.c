@@ -500,7 +500,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
                     PIPE_LANMAN,                          /* name */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
-                    param,param_len,2,                    /* param, length, max */
+                    param,param_len,4,                    /* param, length, max */
                     (char *)data,data_len,0                       /* data, length, max */
                    ) == False) {
 		DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
