@@ -160,7 +160,7 @@ int ldb_msg_add(struct ldb_message *msg,
 	/* We have to copy this, just in case *el is a pointer into
 	 * what ldb_msg_add_empty() is about to realloc() */
 	struct ldb_message_element el_copy = *el;
-	if (ldb_msg_add_empty(msg, el->name, flags, NULL) != 0) {
+	if (ldb_msg_add_empty(msg, el->name, flags, NULL) != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
