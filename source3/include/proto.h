@@ -4747,14 +4747,6 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
                            uint32 type, uint8 *data, int real_len );
 struct regval_blob* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
-WERROR get_a_printer( Printer_entry *print_hnd,
-			NT_PRINTER_INFO_LEVEL **pp_printer,
-			uint32 level,
-			const char *sharename);
-WERROR get_a_printer_search( Printer_entry *print_hnd,
-			NT_PRINTER_INFO_LEVEL **pp_printer,
-			uint32 level,
-			const char *sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);
