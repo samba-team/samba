@@ -223,7 +223,13 @@ for bindoptions in connect $VALIDATE ; do
    done
  done
 done
+# Tests for the DFS referral calls implementation
 
+dfsc=`$smb4torture --list | grep "^DFS-" | xargs`
+
+for t in $dfsc; do
+    plansmbtorturetestsuite "$t" dc $ADDARGS //\$SERVER/ipc$ -U"\$USERNAME"%"\$PASSWORD"
+done
 
 # Tests for the NET API
 

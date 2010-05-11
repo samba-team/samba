@@ -732,12 +732,14 @@ sub provision($$$$$$$)
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test1");
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test2");
-
+	my $msdfs = "no";
+	$msdfs = "yes" if ($server_role eq "domain controller");
 	$ctx->{smb_conf_extra_options} = "
 
 	max xmit = 32K
 	server max protocol = SMB2
         $extra_smbconf_options
+	host msdfs = $msdfs
 
 [tmp]
 	path = $ctx->{tmpdir}
