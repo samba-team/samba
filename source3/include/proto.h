@@ -4735,7 +4735,6 @@ int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
 int unpack_devicemode(TALLOC_CTX *mem_ctx,
 		      const uint8 *buf, int buflen,
 		      struct spoolss_DeviceMode **devmode);
-uint32 del_a_printer(const char *sharename);
 int add_new_printer_key( NT_PRINTER_DATA *data, const char *name );
 int delete_printer_key( NT_PRINTER_DATA *data, const char *name );
 int lookup_printerkey( NT_PRINTER_DATA *data, const char *name );
@@ -4746,7 +4745,6 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const 
 WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value, 
                            uint32 type, uint8 *data, int real_len );
 struct regval_blob* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
-WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);
