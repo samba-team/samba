@@ -29,15 +29,29 @@
 #include "param/param.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "torture/rpc/torture_rpc.h"
 
-static bool test_userpasswordset2(struct torture_context *tctx,
-				  struct smbcli_state *cli)
+#define TEST_RAP_USER "torture_rap_user"
+
+static char *samr_rand_pass(TALLOC_CTX *mem_ctx, int min_len)
+{
+	size_t len = MAX(8, min_len);
+	char *s = generate_random_password(mem_ctx, len, len+6);
+	printf("Generated password '%s'\n", s);
+	return s;
+}
+
+static bool test_userpasswordset2_args(struct torture_context *tctx,
+				       struct smbcli_state *cli,
+				       const char *username,
+				       const char **password)
 {
 	struct rap_NetUserPasswordSet2 r;
+	char *newpass = samr_rand_pass(tctx, 8);
 
-	r.in.UserName = "gd";
-	r.in.OldPassword = "secret";
-	r.in.NewPassword = "newpwd";
+	r.in.UserName = username;
+	r.in.OldPassword = *password;
+	r.in.NewPassword = newpass;
 	r.in.EncryptedPassword = 0;
 	r.in.RealPasswordLength = strlen(r.in.NewPassword);
 
@@ -46,21 +60,51 @@ static bool test_userpasswordset2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netuserpasswordset2(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"smbcli_rap_netuserpasswordset2 failed");
+	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
+		torture_warning(tctx, "RAP NetUserPasswordSet2 gave: %s\n",
+			win_errstr(W_ERROR(r.out.status)));
+	} else {
+		*password = newpass;
+	}
 
 	return true;
 }
 
-static bool test_oemchangepassword(struct torture_context *tctx,
-				   struct smbcli_state *cli)
+static bool test_userpasswordset2(struct torture_context *tctx,
+				  struct smbcli_state *cli)
+{
+	struct test_join *join_ctx;
+	const char *password;
+	bool ret;
+
+	join_ctx = torture_create_testuser_max_pwlen(tctx, TEST_RAP_USER,
+						     torture_setting_string(tctx, "workgroup", NULL),
+						     ACB_NORMAL,
+						     &password, 14);
+	if (join_ctx == NULL) {
+		torture_fail(tctx, "failed to create user\n");
+	}
+
+	ret = test_userpasswordset2_args(tctx, cli, TEST_RAP_USER, &password);
+
+	torture_leave_domain(tctx, join_ctx);
+
+	return ret;
+}
+
+static bool test_oemchangepassword_args(struct torture_context *tctx,
+					struct smbcli_state *cli,
+					const char *username,
+					const char **password)
 {
 	struct rap_NetOEMChangePassword r;
 
-	const char *oldpass = "secret";
-	const char *newpass = "newpwd";
+	const char *oldpass = *password;
+	char *newpass = samr_rand_pass(tctx, 9);
 	uint8_t old_pw_hash[16];
 	uint8_t new_pw_hash[16];
 
-	r.in.UserName = "gd";
+	r.in.UserName = username;
 
 	E_deshash(oldpass, old_pw_hash);
 	E_deshash(newpass, new_pw_hash);
@@ -74,8 +118,37 @@ static bool test_oemchangepassword(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netoemchangepassword(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
 		"smbcli_rap_netoemchangepassword failed");
+	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
+		torture_warning(tctx, "RAP NetOEMChangePassword gave: %s\n",
+			win_errstr(W_ERROR(r.out.status)));
+	} else {
+		*password = newpass;
+	}
 
 	return true;
+}
+
+static bool test_oemchangepassword(struct torture_context *tctx,
+				   struct smbcli_state *cli)
+{
+
+	struct test_join *join_ctx;
+	const char *password;
+	bool ret;
+
+	join_ctx = torture_create_testuser_max_pwlen(tctx, TEST_RAP_USER,
+						     torture_setting_string(tctx, "workgroup", NULL),
+						     ACB_NORMAL,
+						     &password, 14);
+	if (join_ctx == NULL) {
+		torture_fail(tctx, "failed to create user\n");
+	}
+
+	ret = test_oemchangepassword_args(tctx, cli, TEST_RAP_USER, &password);
+
+	torture_leave_domain(tctx, join_ctx);
+
+	return ret;
 }
 
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
