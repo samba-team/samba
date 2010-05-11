@@ -1155,6 +1155,7 @@ IDMAP_ADEX_OBJ = \
 
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
+		winbindd/winbindd_event.o \
 		winbindd/winbindd_group.o \
 		winbindd/winbindd_util.o  \
 		winbindd/winbindd_cache.o \

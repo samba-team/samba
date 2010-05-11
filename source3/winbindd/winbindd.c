@@ -37,16 +37,6 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
-struct event_context *winbind_event_context(void)
-{
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init winbind event context");
-	}
-	return ctx;
-}
-
 struct messaging_context *winbind_messaging_context(void)
 {
 	static struct messaging_context *ctx;
