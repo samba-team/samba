@@ -416,6 +416,17 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
         conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
 
+    # FIXME: these should be tests for features, but the old build system just
+    # checks for OSes.
+    host_os = conf.env['SYSTEM_UNAME_SYSNAME'].lower()
+
+    # Python doesn't have case switches... :/
+    # FIXME: original was *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
+    if host_os in ("linux"):
+        # obviously once this hook checks for more than just linux this needs to be adapted
+        conf.DEFINE('LINUX', '1')
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def ctags(ctx):

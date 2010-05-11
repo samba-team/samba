@@ -186,6 +186,9 @@ LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
 LIBADDNS_SRC = '''${LIBADDNS_SRC0} ${SOCKET_WRAPPER_SRC}'''
 
 GPEXT_STATIC = ''
+GPEXT_REGISTRY_SRC = 'libgpo/gpext/registry.c'
+GPEXT_SCRIPTS_SRC = 'libgpo/gpext/scripts.c'
+GPEXT_SECURITY_SRC = 'libgpo/gpext/security.c'
 
 GPEXT_SRC = '''../libgpo/gpext/gpext.c ${GPEXT_STATIC}'''
 
@@ -493,8 +496,6 @@ VFS_ONEFS_SRC = '''modules/vfs_onefs.c modules/onefs_acl.c modules/onefs_system.
                 modules/onefs_open.c modules/onefs_streams.c modules/onefs_dir.c
                 modules/onefs_cbrl.c modules/onefs_notify.c modules/onefs_config.c'''
 VFS_ONEFS_SHADOW_COPY_SRC = 'modules/vfs_onefs_shadow_copy.c modules/onefs_shadow_copy.c'
-PERFCOUNT_ONEFS_SRC = 'modules/perfcount_onefs.c'
-PERFCOUNT_TEST_SRC = 'modules/perfcount_test.c'
 VFS_DIRSORT_SRC = 'modules/vfs_dirsort.c'
 VFS_SCANNEDONLY_SRC = 'modules/vfs_scannedonly.c'
 VFS_CROSSRENAME_SRC = 'modules/vfs_crossrename.c'
@@ -541,6 +542,8 @@ IDMAP_ADEX_SRC = '''winbindd/idmap_adex/idmap_adex.c
                     winbindd/idmap_adex/domain_util.c'''
 
 PERFCOUNT_STATIC = ''
+PERFCOUNT_ONEFS_SRC = 'modules/perfcount_onefs.c'
+PERFCOUNT_TEST_SRC = 'modules/perfcount_test.c'
 
 WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_group.c
@@ -822,8 +825,6 @@ bld.SAMBA_MKVERSION('include/version.h')
 for prefix in bld.env.MODULE_PREFIXES:
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
-    #print "static %s modules %s" % (prefix, bld.env[static_key])
-    #print "shared %s modules %s" % (prefix, bld.env[shared_key])
 
     # Set up the static modules
     static_src = locals()[static_key]
@@ -832,10 +833,12 @@ for prefix in bld.env.MODULE_PREFIXES:
     # for some reason static_src doesn't seem to be a reference, so save it
     # back to the locals
     locals()[static_key] = static_src
-    #print "%s = '%s'" % (static_key, static_src)
 
     # Set up subsystems for the shared modules
-    # FIXME: implement shared modules
+    for module in bld.env[shared_key]:
+        bld.SAMBA_SUBSYSTEM(module,
+                            source="${%s_SRC}" % module,
+                            vars=locals())
 
 ######################## SUBSYSTEMS #################################
 
