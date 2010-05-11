@@ -103,7 +103,7 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
-void send_start_messages(struct ctdb_context *ctdb, int incr)
+static void send_start_messages(struct ctdb_context *ctdb, int incr)
 {
 	/* two messages are injected into the ring, moving
 	   in opposite directions */
@@ -212,6 +212,11 @@ int main(int argc, const char *argv[])
 	if (extra_argv) {
 		extra_argv++;
 		while (extra_argv[extra_argc]) extra_argc++;
+	}
+
+	if (num_nodes == 0) {
+		printf("You must specify the number of nodes\n");
+		exit(1);
 	}
 
 	ev = event_context_init(NULL);
