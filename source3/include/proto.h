@@ -4722,13 +4722,6 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
 /* The following definitions come from printing/nt_printing.c  */
 
 bool nt_printing_init(struct messaging_context *msg_ctx);
-int get_builtin_ntforms(nt_forms_struct **list);
-bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form);
-int get_ntforms(nt_forms_struct **list);
-int write_ntforms(nt_forms_struct **list, int number);
-bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count);
-bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret);
-void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count);
 int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
 int unpack_devicemode(TALLOC_CTX *mem_ctx,
 		      const uint8 *buf, int buflen,
