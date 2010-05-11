@@ -122,11 +122,7 @@ CRYPTO_SRC = '''../lib/crypto/crc32.c ../lib/crypto/md5.c
 
 LIBTEVENT_SRC0 = ''
 
-CHARSET_STATIC = ''
-
 PTHREADPOOL_SRC = ''
-
-AUTH_STATIC = ''
 
 LIBREPLACE_SRCS = ''
 
@@ -177,8 +173,6 @@ LIB_NONSMBD_SRC = '''${LIB_DUMMY_SRC}'''
 
 READLINE_SRC = '''lib/readline.c'''
 
-# Also depends on  ${SECRETS_SRC} ${LIBSAMBA_SRC}
-# Be sure to include them into your application
 POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c lib/sharesec.c lib/ldap_debug_handler.c'''
@@ -190,6 +184,8 @@ KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
                libaddns/dnsgss.c libaddns/dnsmarshall.c'''
 LIBADDNS_SRC = '''${LIBADDNS_SRC0} ${SOCKET_WRAPPER_SRC}'''
+
+GPEXT_STATIC = ''
 
 GPEXT_SRC = '''../libgpo/gpext/gpext.c ${GPEXT_STATIC}'''
 
@@ -353,6 +349,8 @@ REG_FULL_SRC = '''${REG_SMBCONF_SRC}
 
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
+RPC_STATIC = ''
+
 RPC_LSA_SRC = '''rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c'''
 
 RPC_NETLOG_SRC = '''rpc_server/srv_netlog_nt.c
@@ -412,33 +410,28 @@ PRIVILEGES_SRC = '''lib/privileges.c'''
 
 PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 
-#FIXME: Hack around the missing AC_MODULE
-PDB_STATIC = 'passdb/pdb_tdb.c'
+PDB_STATIC =        ''
+PDB_TDBSAM_SRC =    'passdb/pdb_tdb.c'
+PDB_LDAP_SRC =      'passdb/pdb_ldap.c'
+PDB_ADS_SRC =       'passdb/pdb_ads.c'
+PDB_SMBPASSWD_SRC = 'passdb/pdb_smbpasswd.c'
+PDB_WBC_SAM_SRC =   'passdb/pdb_wbc_sam.c'
 
-PASSDB_MODULES_SRC = '''passdb/pdb_wbc_sam.c passdb/pdb_ads.c
-passdb/pdb_smbpasswd.c passdb/secrets.c passdb/machine_sid.c'''
-#passdb/pdb_ldap.c passdb/pdb_nds.c'''
+SECRETS_SRC = 'passdb/secrets.c passdb/machine_sid.c librpc/gen_ndr/ndr_secrets.c'
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
                 passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
                 passdb/util_unixsids.c passdb/lookup_sid.c
                 passdb/login_cache.c ${PDB_STATIC}
-                lib/account_pol.c ${PRIVILEGES_SRC} ${PASSDB_MODULES_SRC}
+                lib/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
-
-
-EXTRA_SRC = ''
-
-AUTH_SRC1 = '''${AUTH_BUILTIN_SRC} ${AUTH_DOMAIN_SRC} ${AUTH_SAM_SRC}
-${AUTH_SERVER_SRC} ${AUTH_UNIX_SRC} ${AUTH_WINBIND_SRC}
-${AUTH_WBC_SRC} ${AUTH_SCRIPT_SRC} ${AUTH_NETLOGOND_SRC}'''
-
-DEVEL_HELP_WEIRD_SRC = '''modules/weird.c'''
-CP850_SRC = '''modules/CP850.c'''
-CP437_SRC = '''modules/CP437.c'''
-CHARSET_MACOSXFS_SRC = '''modules/charset_macosxfs.c'''
+CHARSET_STATIC = ''
+CHARSET_WEIRD_SRC = 'modules/weird.c'
+CHARSET_CP850_SRC = 'modules/CP850.c'
+CHARSET_CP437_SRC = 'modules/CP437.c'
+CHARSET_MACOSXFS_SRC = 'modules/charset_macosxfs.c'
 
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
 
@@ -455,6 +448,7 @@ NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
 
 FNAME_UTIL_SRC = '''smbd/filename_util.c'''
 
+VFS_STATIC = ''
 VFS_DEFAULT_SRC = '''modules/vfs_default.c'''
 VFS_AUDIT_SRC = '''modules/vfs_audit.c'''
 VFS_EXTD_AUDIT_SRC = '''modules/vfs_extd_audit.c'''
@@ -521,18 +515,19 @@ AUTH_WBC_SRC = 'auth/auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth/auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
 
-AUTH_SRC = '''${AUTH_SRC1} auth/auth.c ${AUTH_STATIC} auth/auth_util.c auth/token_util.c
+AUTH_STATIC = ''
+AUTH_SRC = '''${AUTH_STATIC} auth/auth.c auth/auth_util.c auth/token_util.c
            auth/auth_compat.c auth/auth_ntlmssp.c auth/user_info.c auth/check_samsec.c
            auth/server_info.c auth/server_info_sam.c
            ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
 
 #FIXME: set IDMAP_STATIC during configuration
 IDMAP_STATIC=''
-
 IDMAP_SRC = 'winbindd/idmap.c winbindd/idmap_util.c ${IDMAP_STATIC}'
 
 #FIXME: set NSS_INFO_STATIC during configuration
 NSS_INFO_STATIC = ''
+NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
 NSS_INFO_SRC = 'winbindd/nss_info.c ${NSS_INFO_STATIC}'
 
 IDMAP_HASH_SRC = '''winbindd/idmap_hash/idmap_hash.c
@@ -544,6 +539,8 @@ IDMAP_ADEX_SRC = '''winbindd/idmap_adex/idmap_adex.c
                     winbindd/idmap_adex/provider_unified.c
                     winbindd/idmap_adex/gc_util.c
                     winbindd/idmap_adex/domain_util.c'''
+
+PERFCOUNT_STATIC = ''
 
 WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_group.c
@@ -631,7 +628,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_logoff.c
                    winbindd/winbindd_pam_chauthtok.c
                    winbindd/winbindd_pam_auth_crap.c
-                   winbindd/nss_info_template.c
                    auth/token_util.c
                    auth/check_samsec.c
                    auth/server_info.c
@@ -730,7 +726,7 @@ SMBD_SRC_SRV = '''smbd/files.c smbd/chgpasswd.c smbd/connection.c
                smbd/smb2_setinfo.c
                smbd/smb2_break.c
                ../libcli/smb/smb2_create_blob.c
-               ${MANGLE_SRC} ${VFS_DEFAULT_SRC}'''
+               ${MANGLE_SRC} ${VFS_STATIC}'''
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC} ${RPC_PARSE_SRC}
@@ -822,6 +818,24 @@ print "SBINDIR=%s" % bld.env.SBINDIR
 bld.RECURSE('build')
 
 bld.SAMBA_MKVERSION('include/version.h')
+
+for prefix in bld.env.MODULE_PREFIXES:
+    static_key = "%s_STATIC" % prefix.upper()
+    shared_key = "%s_SHARED" % prefix.upper()
+    #print "static %s modules %s" % (prefix, bld.env[static_key])
+    #print "shared %s modules %s" % (prefix, bld.env[shared_key])
+
+    # Set up the static modules
+    static_src = locals()[static_key]
+    for module in bld.env[static_key]:
+        static_src += "${%s_SRC} " % module
+    # for some reason static_src doesn't seem to be a reference, so save it
+    # back to the locals
+    locals()[static_key] = static_src
+    #print "%s = '%s'" % (static_key, static_src)
+
+    # Set up subsystems for the shared modules
+    # FIXME: implement shared modules
 
 ######################## SUBSYSTEMS #################################
 

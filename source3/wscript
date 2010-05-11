@@ -279,7 +279,8 @@ updwtmp updwtmpx utimensat vsyslog _write __write __xstat
     static_list = {}
     shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap', 'gpext']
+    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
+    conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
         for m in default_static_modules:
             if m.find(p) == 0:
