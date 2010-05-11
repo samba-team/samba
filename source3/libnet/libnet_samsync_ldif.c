@@ -57,7 +57,7 @@ struct samsync_ldif_context {
 	const char *add_template;
 	const char *mod_template;
 	char *add_name;
-	char *mod_name;
+	char *module_name;
 	FILE *add_file;
 	FILE *mod_file;
 	FILE *ldif_file;
@@ -941,8 +941,8 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	}
 
 	r->add_name = talloc_strdup(mem_ctx, add_template);
-	r->mod_name = talloc_strdup(mem_ctx, mod_template);
-	if (!r->add_name || !r->mod_name) {
+	r->module_name = talloc_strdup(mem_ctx, mod_template);
+	if (!r->add_name || !r->module_name) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -953,8 +953,8 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(r->mod_file = fdopen(mkstemp(r->mod_name),"w"))) {
-		DEBUG(1, ("Could not open %s\n", r->mod_name));
+	if (!(r->mod_file = fdopen(mkstemp(r->module_name),"w"))) {
+		DEBUG(1, ("Could not open %s\n", r->module_name));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1027,10 +1027,10 @@ static void ldif_free_context(struct samsync_ldif_context *r)
 		fclose(r->mod_file);
 	}
 
-	if ((r->mod_name != NULL) &&
-	    strcmp(r->mod_name, r->mod_template) && (unlink(r->mod_name))) {
+	if ((r->module_name != NULL) &&
+	    strcmp(r->module_name, r->mod_template) && (unlink(r->module_name))) {
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
-			 r->mod_name, strerror(errno)));
+			 r->module_name, strerror(errno)));
 	}
 
 	if (r->ldif_file && (r->ldif_file != stdout)) {
