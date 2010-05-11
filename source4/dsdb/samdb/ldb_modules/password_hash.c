@@ -1781,11 +1781,9 @@ static int setup_io(struct ph_context *ac,
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		if (quoted_utf16 != NULL) {
-			io->n.nt_hash = talloc(io->ac, struct samr_Password);
-			memcpy(io->n.nt_hash->hash, quoted_utf16->data,
-			       MIN(quoted_utf16->length, sizeof(io->n.nt_hash->hash)));
-		}
+		io->n.nt_hash = talloc(io->ac, struct samr_Password);
+		memcpy(io->n.nt_hash->hash, quoted_utf16->data,
+		       MIN(quoted_utf16->length, sizeof(io->n.nt_hash->hash)));
 	}
 
 	/* Checks and converts the previous "unicodePwd" attribute */
@@ -1832,11 +1830,9 @@ static int setup_io(struct ph_context *ac,
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
-		if (old_quoted_utf16 != NULL) {
-			io->og.nt_hash = talloc(io->ac, struct samr_Password);
-			memcpy(io->og.nt_hash->hash, old_quoted_utf16->data,
-			       MIN(old_quoted_utf16->length, sizeof(io->og.nt_hash->hash)));
-		}
+		io->og.nt_hash = talloc(io->ac, struct samr_Password);
+		memcpy(io->og.nt_hash->hash, old_quoted_utf16->data,
+		       MIN(old_quoted_utf16->length, sizeof(io->og.nt_hash->hash)));
 	}
 
 	/* Handles the "dBCSPwd" attribute (LM hash) */
