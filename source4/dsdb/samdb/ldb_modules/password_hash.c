@@ -1762,7 +1762,7 @@ static int setup_io(struct ph_context *ac,
 		io->n.cleartext_utf16 = quoted_utf16_2;
 		io->n.nt_hash = NULL;
 
-	} else {
+	} else if (quoted_utf16) {
 		/* We have only the hash available -> so no plaintext here */
 		if (!ac->hash_values) {
 			/* refuse the change if someone wants to change
@@ -1821,7 +1821,7 @@ static int setup_io(struct ph_context *ac,
 
 		io->og.cleartext_utf16 = old_quoted_utf16_2;
 		io->og.nt_hash = NULL;
-	} else {
+	} else if (old_quoted_utf16) {
 		/* We have only the hash available -> so no plaintext here */
 		if (!ac->hash_values) {
 			/* refuse the change if someone wants to change
