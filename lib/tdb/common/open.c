@@ -51,7 +51,6 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	struct tdb_header *newdb;
 	size_t size;
 	int ret = -1;
-	ssize_t written;
 
 	/* We make it up in memory, then write it out if not internal */
 	size = sizeof(struct tdb_header) + (hash_size+1)*sizeof(tdb_off_t);
