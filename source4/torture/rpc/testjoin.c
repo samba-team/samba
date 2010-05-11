@@ -114,11 +114,12 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_binding_handle *b,
   when finished
 */
 
-struct test_join *torture_create_testuser(struct torture_context *torture,
-					  const char *username, 
-					  const char *domain,
-					  uint16_t acct_type,
-					  const char **random_password)
+struct test_join *torture_create_testuser_max_pwlen(struct torture_context *torture,
+						    const char *username,
+						    const char *domain,
+						    uint16_t acct_type,
+						    const char **random_password,
+						    int max_pw_len)
 {
 	NTSTATUS status;
 	struct samr_Connect c;
@@ -317,7 +318,7 @@ again:
 		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 
-	random_pw = generate_random_password(join, MAX(8, policy_min_pw_len), 255);
+	random_pw = generate_random_password(join, MAX(8, policy_min_pw_len), max_pw_len);
 
 	printf("Setting account password '%s'\n", random_pw);
 
@@ -393,6 +394,15 @@ failed:
 	return NULL;
 }
 
+
+struct test_join *torture_create_testuser(struct torture_context *torture,
+					  const char *username,
+					  const char *domain,
+					  uint16_t acct_type,
+					  const char **random_password)
+{
+	return torture_create_testuser_max_pwlen(torture, username, domain, acct_type, random_password, 255);
+}
 
 _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 					       const char *machine_name, 
