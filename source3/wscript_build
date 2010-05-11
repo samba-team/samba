@@ -635,6 +635,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_logoff.c
                    winbindd/winbindd_pam_chauthtok.c
                    winbindd/winbindd_pam_auth_crap.c
+                   winbindd/nss_info_template.c
                    auth/token_util.c
                    auth/check_samsec.c
                    auth/server_info.c
@@ -840,6 +841,7 @@ bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
                               ../nsswitch/libwbclient/wbc_sid.c
                               ../nsswitch/libwbclient/wbc_util.c''',
                     public_deps='talloc WBCOMMON')
+
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
