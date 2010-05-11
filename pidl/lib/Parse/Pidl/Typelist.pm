@@ -57,6 +57,7 @@ my %scalars = (
 	"nbt_string"	=> "const char *",
 	"wrepl_nbt_name"=> "struct nbt_name *",
 	"ipv4address"	=> "const char *",
+	"dnsp_name"	=> "const char *",
 );
 
 my %aliases = (

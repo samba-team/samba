@@ -883,6 +883,11 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		return;
 		}
 
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "dnsp_name") {
+		$self->pidl("$target = PyString_AsString($cvar);");
+		return;
+		}
+
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
 		$self->pidl("$target = NT_STATUS(PyInt_AsLong($cvar));");
@@ -1018,6 +1023,7 @@ sub ConvertScalarToPython($$$)
 	# Not yet supported
 	if ($ctypename eq "string_array") { return "PyCObject_FromTallocPtr($cvar)"; }
 	if ($ctypename eq "ipv4address") { return "PyString_FromString($cvar)"; }
+	if ($ctypename eq "dnsp_name") { return "PyString_FromString($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromTallocPtr($cvar)";
 	}
