@@ -968,7 +968,7 @@ bld.SAMBA_BINARY('testparm',
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tdb tevent POPT_SAMBA DYNCONFIG LIBS PARAM
-                 LIB_NONSMBD LIBSMB_ERR PASSDB''',
+                 LIB_NONSMBD LIBSMB_ERR PASSDB LIBWBCLIENT''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
