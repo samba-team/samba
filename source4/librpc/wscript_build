@@ -336,7 +336,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NTLMSSP',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DNSP',
-	source='../../librpc/gen_ndr/ndr_dnsp.c',
+	source='../../librpc/gen_ndr/ndr_dnsp.c ../../librpc/ndr/ndr_dnsp.c',
 	public_deps='LIBNDR'
 	)
 
