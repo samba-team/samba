@@ -8,35 +8,37 @@ Quick Start
 ===========
 
 Coding style guidelines are about reducing the number of unnecessary
-reformatting patches and making things easier for developers to work together.
+reformatting patches and making things easier for developers to work
+together.
 You don't have to like them or even agree with them, but once put in place
 we all have to abide by them (or vote to change them).  However, coding
 style should never outweigh coding itself and so the guidelines
 described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
-The basic style, also mentioned in prog_guide4.txt, is the Linux kernel coding
-style (See Documentation/CodingStyle in the kernel source tree). This closely
-matches what most Samba developers use already anyways, with a few exceptions as
-mentioned below.
+The basic style, also mentioned in prog_guide4.txt, is the Linux kernel
+coding style (See Documentation/CodingStyle in the kernel source tree). This
+closely matches what most Samba developers use already anyways, with a few
+exceptions as mentioned below.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
 
 * Maximum Line Width is 80 Characters
-  The reason is not for people with low-res screens but rather sticking
+  The reason is not about people with low-res screens but rather sticking
   to 80 columns prevents you from easily nesting more than one level of
   if statements or other code blocks.  Use source3/script/count_80_col.pl
   to check your changes.
 
 * Use 8 Space Tabs to Indent
-  No whitespace filler.
+  No whitespace fillers.
 
 * No Trailing Whitespace
-  Use source3/script/strip_trail_ws.pl to clean you files before committing.
+  Use source3/script/strip_trail_ws.pl to clean up your files before
+  committing.
 
-* Follow the K&R guidelines.  We won't go throw them all here.  You have
-  a copy of "The C Programming Language" anyways right?  You can also use
+* Follow the K&R guidelines.  We won't go through all of them here. Do you
+  have a copy of "The C Programming Language" anyways right? You can also use
   the format_indent.sh script found in source3/script/ if all else fails.
 
 
@@ -65,8 +67,8 @@ following to $HOME/.exrc:
   set tabstop=8
   set shiftwidth=8
 
-For Vim, the following settings in $HOME/.vimrc will also deal with 
-displaying trailing whitespace::
+For Vim, the following settings in $HOME/.vimrc will also deal with
+displaying trailing whitespace:
 
   if has("syntax") && (&t_Co > 2 || has("gui_running"))
 	syntax on
@@ -91,24 +93,24 @@ FAQ & Statement Reference
 Comments
 --------
 
-Comments should always use the standard C syntax.  C++ 
+Comments should always use the standard C syntax.  C++
 style comments are not currently allowed.
 
 
 Indention & Whitespace & 80 columns
 -----------------------------------
 
-To avoid confusion, indentations are to be 8 character with tab (not 
-8 ' ' characters.  When wrapping parameters for function calls, 
+To avoid confusion, indentations have to be tabs with length 8 (not 8
+' ' characters).  When wrapping parameters for function calls,
 align the parameter list with the first parameter on the previous line.
-Use tabs to get as close as possible and then fill in the final 7 
+Use tabs to get as close as possible and then fill in the final 7
 characters or less with whitespace.  For example,
 
 	var1 = foo(arg1, arg2,
 		   arg3);
 
-The previous example is intended to illustrate alignment of function 
-parameters across lines and not as encourage for gratuitous line 
+The previous example is intended to illustrate alignment of function
+parameters across lines and not as encourage for gratuitous line
 splitting.  Never split a line before columns 70 - 79 unless you
 have a really good reason.  Be smart about formatting.
 
@@ -137,7 +139,7 @@ Braces for code blocks used by for, if, switch, while, do..while, etc.
 should begin on the same line as the statement keyword and end on a line
 of their own. You should always include braces, even if the block only
 contains one statement.  NOTE: Functions are different and the beginning left
-brace should begin on a line of its own.
+brace should be located in the first column on the next line.
 
 If the beginning statement has to be broken across lines due to length,
 the beginning brace should be on a line of its own.
@@ -146,7 +148,7 @@ The exception to the ending rule is when the closing brace is followed by
 another language keyword such as else or the closing while in a do..while
 loop.
 
-Good examples::
+Good examples:
 
 	if (x == 1) {
 		printf("good\n");
@@ -167,7 +169,7 @@ Good examples::
 		printf("also good\n");
 	} while (1);
 
-Bad examples::
+Bad examples:
 
 	while (1)
 	{
@@ -187,12 +189,13 @@ Bad examples::
 Goto
 ----
 
-While many people have been academically taught that goto's are fundamentally
-evil, they can greatly enhance readability and reduce memory leaks when used
-as the single exit point from a function.  But in no Samba world what so ever 
-is a goto outside of a function or block of code a good idea.
+While many people have been academically taught that "goto"s are
+fundamentally evil, they can greatly enhance readability and reduce memory
+leaks when used as the single exit point from a function. But in no Samba
+world what so ever is a goto outside of a function or block of code a good
+idea.
 
-Good Examples::
+Good Examples:
 
 	int function foo(int y)
 	{
@@ -209,7 +212,7 @@ Good Examples::
 
 		print("Allocated %d elements.\n", y);
 
-	 done: 
+	 done:
 		if (z) {
 			free(z);
 		}
@@ -221,15 +224,15 @@ Good Examples::
 Checking Pointer Values
 -----------------------
 
-When invoking functions that return pointer values, either of the following 
-are acceptable.  Use you best judgement and choose the more readable option.
-Remember that many other people will review it.::
+When invoking functions that return pointer values, either of the following
+are acceptable. Use your best judgement and choose the more readable option.
+Remember that many other persons will review it:
 
 	if ((x = malloc(sizeof(short)*10)) == NULL ) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
 
-or::
+or:
 
 	x = malloc(sizeof(short)*10);
 	if (!x) {
@@ -240,12 +243,12 @@ or::
 Primitive Data Types
 --------------------
 
-Samba has large amounts of historical code which makes use of data types 
-commonly supported by the C99 standard. However, at the time such types 
-as boolean and exact width integers did not exist and Samba developers 
-were forced to provide their own.  Now that these types are guaranteed to 
-be available either as part of the compiler C99 support or from lib/replace/, 
-new code should adhere to the following conventions:
+Samba has large amounts of historical code which makes use of data types
+commonly supported by the C99 standard. However, at the time such types
+as boolean and exact width integers did not exist and Samba developers
+were forced to provide their own.  Now that these types are guaranteed to
+be available either as part of the compiler C99 support or from
+lib/replace/, new code should adhere to the following conventions:
 
   * Booleans are of type "bool" (not BOOL)
   * Boolean values are "true" and "false" (not True or False)
@@ -255,9 +258,9 @@ new code should adhere to the following conventions:
 Typedefs
 --------
 
-Samba tries to avoid "typedef struct { .. } x_t;", we always use
-"struct x { .. };". We know there are still those typedefs in the code,
-but for new code, please don't do that.
+Samba tries to avoid "typedef struct { .. } x_t;" so we do always try to use
+"struct x { .. };". We know there are still such typedefs in the code,
+but for new code, please don't do that anymore.
 
 Make use of helper variables
 ----------------------------
@@ -266,7 +269,7 @@ Please try to avoid passing function calls as function parameters
 in new code. This makes the code much easier to read and
 it's also easier to use the "step" command within gdb.
 
-Good Example::
+Good Example:
 
 	char *name;
 
@@ -279,7 +282,7 @@ Good Example::
 	...
 
 
-Bad Example::
+Bad Example:
 
 	ret = some_function_my_name(get_some_name());
 	...
