@@ -659,6 +659,29 @@ objectClass: container
 #            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 #        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
+        # Test to see how we should behave when the user account doesn't
+        # exist
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement("0", FLAG_MOD_REPLACE,
+          "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        # Test to see how we should behave when the account isn't a user
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement("0", FLAG_MOD_REPLACE,
+          "primaryGroupID")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": ["user", "person"]})
