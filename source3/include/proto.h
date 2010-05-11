@@ -4738,8 +4738,6 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 struct regval_blob* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);
-WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr);
-bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr);
 void map_printer_permissions(struct security_descriptor *sd);
 void map_job_permissions(struct security_descriptor *sd);
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
