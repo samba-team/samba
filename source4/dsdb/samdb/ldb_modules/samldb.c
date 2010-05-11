@@ -1474,8 +1474,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	struct ldb_dn *member_dn, *group_dn;
 	uint32_t prim_group_rid;
 	struct dom_sid *sid;
-	const char * const * no_attrs = { NULL };
-	struct ldb_message **res;
 	unsigned int i;
 
 	ldb = ldb_module_get_ctx(ac->module);
