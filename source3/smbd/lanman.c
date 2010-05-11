@@ -2840,6 +2840,8 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	struct samr_Password new_lm_hash;
 	int errcode = NERR_badpass;
 	uint32_t rid;
+	int encrypted;
+	int min_pwd_length;
 
 	/* Skip 2 strings. */
 	p = skip_string(param,tpscnt,np);
@@ -2872,6 +2874,18 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 	memcpy(pass1,p,16);
 	memcpy(pass2,p+16,16);
 
+	encrypted = get_safe_SVAL(param,tpscnt,p+32,0,-1);
+	if (encrypted == -1) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
+	min_pwd_length = get_safe_SVAL(param,tpscnt,p+34,0,-1);
+	if (min_pwd_length == -1) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
 	*rparam_len = 4;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
@@ -2880,7 +2894,8 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 
 	*rdata_len = 0;
 
-	DEBUG(3,("Set password for <%s>\n",user));
+	DEBUG(3,("Set password for <%s> (encrypted: %d, min_pwd_length: %d)\n",
+		user, encrypted, min_pwd_length));
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -2966,8 +2981,15 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 		goto out;
 	}
 
-	E_deshash(pass1, old_lm_hash.hash);
-	E_deshash(pass2, new_lm_hash.hash);
+	if (encrypted == 0) {
+		E_deshash(pass1, old_lm_hash.hash);
+		E_deshash(pass2, new_lm_hash.hash);
+	} else {
+		ZERO_STRUCT(old_lm_hash);
+		ZERO_STRUCT(new_lm_hash);
+		memcpy(old_lm_hash.hash, pass1, MIN(strlen(pass1), 16));
+		memcpy(new_lm_hash.hash, pass1, MIN(strlen(pass2), 16));
+	}
 
 	status = rpccli_samr_ChangePasswordUser(cli, mem_ctx,
 						&user_handle,
