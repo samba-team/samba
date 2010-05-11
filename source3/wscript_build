@@ -913,7 +913,6 @@ bld.SAMBA_BINARY('smbd/smbd',
                  deps='''tdb DYNCONFIG tevent dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB LDB
                  PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT''',
-                 includes='lib',
                  install_path='${SBINDIR}',
                  vars=locals())
 
@@ -922,7 +921,6 @@ bld.SAMBA_BINARY('nmbd/nmbd',
                  deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT dl
                  NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
-                 includes='lib ../lib/tdb/include',
                  install_path='${SBINDIR}',
                  vars=locals())
 
@@ -931,7 +929,6 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl DYNCONFIG ZLIB NSS_WRAPPER
                  LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
-                 includes='lib',
                  enabled=Options.options.with_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -940,7 +937,6 @@ bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
                  LIB_NONSMBD resolv LDB PASSDB POPT_SAMBA KRBCLIENT''',
-                 includes='lib',
                  enabled=Options.options.with_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -950,7 +946,6 @@ bld.SAMBA_BINARY('wbinfo',
                  deps='''talloc LIBWBCLIENT DYNCONFIG tevent cap
                  NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
                  LIBSAMBA POPT_SAMBA''',
-                 includes='lib ../lib/tdb/include',
                  vars=locals())
 
 bld.SAMBA_BINARY('testparm',
