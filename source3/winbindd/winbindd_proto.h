@@ -52,6 +52,7 @@ bool winbindd_setup_sig_term_handler(bool parent);
 bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
+void winbindd_register_handlers(void);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
