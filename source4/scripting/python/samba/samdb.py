@@ -262,10 +262,6 @@ accountExpires: %u
         "Get the NTDS objectGUID"
         return dsdb.samdb_ntds_objectGUID(self)
 
-    def set_ntds_GUID(self, object_guid):
-        "Set the NTDS objectGUID"
-        return dsdb.dsdb_set_ntds_objectGUID(self, object_guid)
-
     def server_site_name(self):
         "Get the server site name"
         return dsdb.samdb_server_site_name(self)
