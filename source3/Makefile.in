@@ -3218,7 +3218,8 @@ clean_libnetapi_examples:
 	cd ../source4 && ./autogen.sh
 
 samba4-configure: ../source4/configure
-	@$(MAKE) -C ../source4 reconfigure || ( cd ../source4 && ./configure --enable-auto-reconfigure )
+	@$(MAKE) -C ../source4 reconfigure || ( cd ../source4 && \
+		./configure.developer --nonshared-binary=smbtorture --enable-auto-reconfigure )
 
 .PHONY: samba4-configure
 
