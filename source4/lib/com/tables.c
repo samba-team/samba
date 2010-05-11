@@ -51,16 +51,16 @@ static struct IUnknown *get_com_class_running(const struct GUID *clsid)
 
 static struct IUnknown *get_com_class_so(TALLOC_CTX *mem_ctx, const struct GUID *clsid)
 {
-	char *mod_name;
+	char *module_name;
 	char *clsid_str;
 	void *mod;
 	get_class_object_function f;
 
 	clsid_str = GUID_string(mem_ctx, clsid);
-	mod_name = talloc_asprintf(mem_ctx, "%s.so", clsid_str);
+	module_name = talloc_asprintf(mem_ctx, "%s.so", clsid_str);
 	talloc_free(clsid_str);
 
-	mod = dlopen(mod_name, 0);
+	mod = dlopen(module_name, 0);
 
 	if (!mod) {
 		return NULL;
