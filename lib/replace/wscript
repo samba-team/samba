@@ -29,6 +29,10 @@ def configure(conf):
 
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
+    # on Tru64 certain features are only available with _OSF_SOURCE
+    if conf.env['SYSTEM_UNAME_SYSNAME'] == 'OSF1':
+        conf.DEFINE('_OSF_SOURCE', 1, add_to_cflags=True)
+
     conf.CHECK_HEADERS('crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
