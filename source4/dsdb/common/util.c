@@ -2705,11 +2705,39 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 {
 	const struct GUID *objectGUID;
+	int ret;
+	bool *cached;
+
+	/* see if we have a cached copy */
+	cached = (bool *)ldb_get_opaque(sam_ctx, "cache.am_rodc");
+	if (cached) {
+		*am_rodc = *cached;
+		return LDB_SUCCESS;
+	}
+
 	objectGUID = samdb_ntds_objectGUID(sam_ctx);
 	if (!objectGUID) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	return samdb_is_rodc(sam_ctx, objectGUID, am_rodc);
+
+	ret = samdb_is_rodc(sam_ctx, objectGUID, am_rodc);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	cached = talloc(sam_ctx, bool);
+	if (cached == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	*cached = *am_rodc;
+
+	ret = ldb_set_opaque(sam_ctx, "cache.am_rodc", cached);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(cached);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
 }
 
 
