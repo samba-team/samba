@@ -210,8 +210,9 @@ Good Examples::
 		print("Allocated %d elements.\n", y);
 
 	 done: 
-		if (z)
+		if (z) {
 			free(z);
+		}
 
 		return ret;
 	}
