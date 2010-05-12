@@ -377,7 +377,7 @@ sub Parse($$$$)
 		$res .= "#include <core/ntstatus.h>\n";
 	}
 	$res .= "#include <tevent.h>\n";
-	$res .= "#include \"lib/util/tevent_ntstatus.h\"\n";
+	$res .= choose_header("lib/util/tevent_ntstatus.h", "util/tevent_ntstatus.h")."\n";
 	$res .= "#include \"$ndr_header\"\n";
 	$res .= "#include \"$client_header\"\n";
 	$res .= "\n";
