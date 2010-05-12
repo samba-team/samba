@@ -204,6 +204,12 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 		fsp_str_dbg(fsp),
 		fsp->fnum ));
 
+	/* Are we awaiting a break message ? */
+	if (fsp->oplock_timeout == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_OPLOCK_PROTOCOL);
+		return tevent_req_post(req, ev);
+	}
+
 	if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
 			(break_to_none)) {
 		result = remove_oplock(fsp);
