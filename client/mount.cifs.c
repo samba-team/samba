@@ -1648,7 +1648,7 @@ mount_retry:
 		}
 	}
 
-	if (addr->ai_addr->sa_family == AF_INET6 && addr6->sin6_scope_id) {
+	if (addr && addr->ai_addr->sa_family == AF_INET6 && addr6->sin6_scope_id) {
 		strlcat(options, "%", options_size);
 		current_len = strnlen(options, options_size);
 		optionstail = options + current_len;
