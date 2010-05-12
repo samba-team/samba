@@ -1650,24 +1650,42 @@ DSO_EXPORTS=""
 			AC_DEFINE(BROKEN_STRNDUP,1,[Does strndup work correctly])
 			;;
 		*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
-			# Use special PIC flags for the native HP-UX compiler.
-				BLDSHARED="true"
-				SHLD="cc"
-				LDSHFLAGS="-b -Wl,-B,symbolic,-b,-z"
-				SONAMEFLAG="-Wl,+h "
-				PICFLAG="+z"
+			# ia64: 64bit build using gcc with CFLAGS="-mpl64"
+			#       64bit build using HP's cc with CFLAGS="+DD64"
+			# hppa: 64bit build unsupported by gcc
+			#       64bit build using HP's cc with CFLAGS="+DA2.0w"
+			# HP-UX 11.00 ld needs PHSS_33034
+			BLDSHARED="true"
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
+				LDSHFLAGS="-shared"
 			else
-				PICFLAG="+z +ESnolit"
+				PICFLAG="+z"
+				LDSHFLAGS="-Wl,-B,symbolic,-b"
+				if test "$host_cpu" != "ia64"; then
+					# "don't store literals in read-only memory" (?):
+					PICFLAG="$PICFLAG +ESnolit"
+				fi
 			fi
 			if test "$host_cpu" = "ia64"; then
 				SHLIBEXT="so"
-			      PICFLAG="+z"
-				DYNEXP="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
+				# TODO: does the linker find the right 32/64 bit version of the libs? :
+				DYNEXP="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32:/usr/local/lib/hpux64:/usr/lib/hpux64"
 			else
 				SHLIBEXT="sl"
 				DYNEXP="-Wl,-E,+b/usr/local/lib:/usr/lib"
+			fi
+			if test "$ac_cv_prog_gnu_ld" = "yes"; then
+				SONAMEFLAG="-Wl,-soname="
+			else
+				SONAMEFLAG="-Wl,+h,"
+			fi
+			# PIE/PIC flags at link time are required on HP-UX because
+			# linking requires a temporary source file, which is being
+			# compiled with the indicated flags - which need to contain
+			# PIC flags when we don't support PIE flags:
+			if test "$PIE_LDFLAGS" = "" ; then
+				PIE_LDFLAGS=\${PICFLAG}
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
