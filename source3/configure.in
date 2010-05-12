@@ -1577,13 +1577,10 @@ DSO_EXPORTS=""
 				if test "${ac_cv_prog_gnu_ld}" = "yes"; then
 					DYNEXP="-Wl,-E"
 				fi
-				# TODO: need to add $CFLAGS here for explicit 64-bit builds?
 				LDSHFLAGS="-shared"
 			else
 				PICFLAG="-KPIC"
-				## ${CFLAGS} added for building 64-bit shared
-				## libs using Sun's Compiler
-				LDSHFLAGS="-G \${CFLAGS}"
+				LDSHFLAGS="-G"
 			fi
 			if test "$ac_cv_prog_gnu_ld" = "yes"; then
 				SONAMEFLAG="-Wl,-soname="
