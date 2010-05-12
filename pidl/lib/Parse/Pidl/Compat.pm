@@ -19,6 +19,7 @@ my %supported_properties = (
 	"uuid"			=> ["INTERFACE"],
 	"endpoint"		=> ["INTERFACE"],
 	"pointer_default"	=> ["INTERFACE"],
+	"no_srv_register"	=> ["INTERFACE"],
 
 	# dcom
 	"object"		=> ["INTERFACE"],

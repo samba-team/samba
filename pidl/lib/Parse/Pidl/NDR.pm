@@ -882,7 +882,8 @@ my %property_list = (
 	"helper"		=> ["INTERFACE"],
 	"pyhelper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
-	"restricted"	=> ["INTERFACE"],
+	"restricted"	        => ["INTERFACE"],
+        "no_srv_register"       => ["INTERFACE"],
 
 	# dcom
 	"object"		=> ["INTERFACE"],

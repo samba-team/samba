@@ -313,12 +313,13 @@ sub ParseInterface($)
 
 	ParseDispatchFunction($if);
 
-	pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";
-	pidl "NTSTATUS rpc_$if->{NAME}_init(void)";
-	pidl "{";
-	pidl "\treturn rpc_srv_register(SMB_RPC_INTERFACE_VERSION, \"$if->{NAME}\", \"$if->{NAME}\", \&ndr_table_$if->{NAME}, api_$if->{NAME}_cmds, sizeof(api_$if->{NAME}_cmds) / sizeof(struct api_struct));";
-	pidl "}";
-
+	if (not has_property($if, "no_srv_register")) {
+	    pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";
+	    pidl "NTSTATUS rpc_$if->{NAME}_init(void)";
+	    pidl "{";
+	    pidl "\treturn rpc_srv_register(SMB_RPC_INTERFACE_VERSION, \"$if->{NAME}\", \"$if->{NAME}\", \&ndr_table_$if->{NAME}, api_$if->{NAME}_cmds, sizeof(api_$if->{NAME}_cmds) / sizeof(struct api_struct));";
+	    pidl "}";
+	}
 	pidl_hdr "#endif /* __SRV_$uif\__ */";
 }
 
