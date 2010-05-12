@@ -6,7 +6,8 @@ import "lsa.idl", "netlogon.idl";
     endpoint("ncalrpc:"),
     pointer_default(unique),
     version(1.0),
-    helpstring("winbind parent-child protocol")
+    helpstring("winbind parent-child protocol"),
+    no_srv_register
 ]
 interface wbint
 {
