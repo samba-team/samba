@@ -791,6 +791,9 @@ bld.RECURSE('../lib/replace')
 print "SBINDIR=%s" % bld.env.SBINDIR
 bld.RECURSE('build')
 
+bld.RECURSE('../librpc/idl')
+bld.RECURSE('librpc/idl')
+
 bld.SAMBA_MKVERSION('include/version.h')
 
 for prefix in bld.env.MODULE_PREFIXES:
