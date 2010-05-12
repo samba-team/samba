@@ -267,7 +267,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	int secword=0;
 	char *p, *q;
 	bool negotiate_spnego = False;
-	time_t t = time(NULL);
+	struct timespec ts;
 	ssize_t ret;
 	struct smbd_server_connection *sconn = req->sconn;
 
@@ -359,8 +359,9 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	SIVAL(req->outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
 	SIVAL(req->outbuf,smb_vwv7+1,sys_getpid()); /* session key */
 	SIVAL(req->outbuf,smb_vwv9+1,capabilities); /* capabilities */
-	put_long_date((char *)req->outbuf+smb_vwv11+1,t);
-	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(t)/60);
+	clock_gettime(CLOCK_REALTIME,&ts);
+	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,ts);
+	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(ts.tv_sec)/60);
 	
 	p = q = smb_buf(req->outbuf);
 	if (!negotiate_spnego) {
