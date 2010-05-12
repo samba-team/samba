@@ -182,28 +182,22 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 
 	ret = krb5_cc_get_principal(ccc->smb_krb5_context->krb5_context, ccc->ccache, &princ);
 
-	if (ret) {
-		(*error_string) = talloc_asprintf(cred, "failed to get principal from default ccache: %s\n",
-						  smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context,
-									     ret, ccc));
-		talloc_free(ccc);
-		return ret;
+	if (ret == 0) {
+		krb5_free_principal(ccc->smb_krb5_context->krb5_context, princ);
+		ret = cli_credentials_set_from_ccache(cred, ccc, obtained, error_string);
+
+		if (ret) {
+			(*error_string) = error_message(ret);
+			return ret;
+		}
+
+		cred->ccache = ccc;
+		cred->ccache_obtained = obtained;
+		talloc_steal(cred, ccc);
+
+		cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
+		return 0;
 	}
-
-	krb5_free_principal(ccc->smb_krb5_context->krb5_context, princ);
-
-	ret = cli_credentials_set_from_ccache(cred, ccc, obtained, error_string);
-
-	if (ret) {
-		(*error_string) = error_message(ret);
-		return ret;
-	}
-
-	cred->ccache = ccc;
-	cred->ccache_obtained = obtained;
-	talloc_steal(cred, ccc);
-
-	cli_credentials_invalidate_client_gss_creds(cred, cred->ccache_obtained);
 	return 0;
 }
 
