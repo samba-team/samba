@@ -1790,6 +1790,46 @@ This example would connect to a computer named XP as the local administrator usi
 </refsect2>
 
 <refsect2>
+<title>G_LOCK</title>
+
+<para>Manage global locks.</para>
+
+<refsect3>
+<title>G_LOCK DO <replaceable>lockname</replaceable> <replaceable>timeout</replaceable> <replaceable>command</replaceable></title>
+
+<para>
+Execute a shell command under a global lock. This might be useful to define the
+order in which serveral shell commands will be executed. The locking information
+is stored in a file called <filename>g_lock.tdb</filename>. In setups with CTDB
+running, the locking information will be available on all cluster nodes.
+</para>
+
+<itemizedlist>
+<listitem><para><replaceable>LOCKNAME</replaceable> defines the name of the global lock.</para></listitem>
+<listitem><para><replaceable>TIMEOUT</replaceable> defines the timeout.</para></listitem>
+<listitem><para><replaceable>COMMAND</replaceable> defines the shell command to execute.</para></listitem>
+</itemizedlist>
+</refsect3>
+
+<refsect3>
+<title>G_LOCK locks</title>
+
+<para>
+Print a list of all currently existing locknames.
+</para>
+</refsect3>
+
+<refsect3>
+<title>G_LOCK dump <replaceable>lockname</replaceable></title>
+
+<para>
+Dump the locking table of a certain global lock.
+</para>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
