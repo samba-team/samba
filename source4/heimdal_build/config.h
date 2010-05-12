@@ -28,4 +28,9 @@
 #define LIBINTL
 #endif
 
+/* we do not want any __APPLE__ magic */
+#ifdef __APPLE__
+#undef __APPLE__
+#endif
+
 #endif
