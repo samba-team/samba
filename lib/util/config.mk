@@ -49,6 +49,8 @@ PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
 				 time.h \
 				 util_ldb.h \
 				 talloc_stack.h \
+				 tevent_ntstatus.h \
+				 tevent_unix.h	\
 				 xfile.h)
 
 [SUBSYSTEM::ASN1_UTIL]

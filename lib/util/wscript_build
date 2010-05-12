@@ -3,7 +3,7 @@
 bld.SAMBA_LIBRARY('LIBSAMBA-UTIL',
 	source='xfile.c debug.c fault.c signal.c system.c time.c genrand.c dprintf.c util_str.c rfc1738.c substitute.c util_strlist.c util_file.c data_blob.c util.c blocking.c util_net.c fsusage.c ms_fnmatch.c mutex.c idtree.c become_daemon.c rbtree.c talloc_stack.c smb_threads.c params.c parmlist.c util_id.c',
 	public_deps='talloc LIBCRYPTO CHARSET execinfo UID_WRAPPER tevent',
-	public_headers='attr.h byteorder.h data_blob.h debug.h memory.h mutex.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
+	public_headers='attr.h byteorder.h data_blob.h debug.h memory.h mutex.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h tevent_ntstatus.h tevent_unix.h',
         header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],
         local_include=False,
 	vnum='0.0.1'

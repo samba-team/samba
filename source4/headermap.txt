@@ -40,6 +40,8 @@ lib/cmdline/popt_common.h: samba/popt.h
 ../lib/util/dlinklist.h: dlinklist.h
 ../lib/util/data_blob.h: util/data_blob.h
 ../lib/util/time.h: util/time.h
+../lib/util/tevent_ntstatus.h: util/tevent_ntstatus.h
+../lib/util/tevent_unix.h: util/tevent_unix.h
 version.h: samba/version.h
 param/param.h: param.h
 ../lib/util/asn1.h: samba/asn1.h
@@ -54,6 +56,7 @@ param/share.h: share.h
 ../libcli/ldap/ldap_message.h: ldap_message.h
 ../libcli/ldap/ldap_errors.h: ldap_errors.h
 ../libcli/ldap/ldap_ndr.h: ldap_ndr.h
+../tevent/tevent.h: tevent.h
 ../lib/tevent/tevent.h: tevent.h
 ../lib/tevent/tevent_internal.h: tevent_internal.h
 auth/session.h: samba/session.h
