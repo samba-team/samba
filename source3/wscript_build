@@ -303,7 +303,7 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
 #
 # registry-related objects
 #
-UTIL_REG_SRC = '''lib/util_reg.c'''
+UTIL_REG_SRC = '''../libcli/registry/util_reg.c'''
 UTIL_REG_API_SRC = '''lib/util_reg_api.c'''
 
 REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
@@ -426,7 +426,7 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
                 passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
                 passdb/util_unixsids.c passdb/lookup_sid.c
                 passdb/login_cache.c ${PDB_STATIC}
-                lib/account_pol.c ${PRIVILEGES_SRC}
+                passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
