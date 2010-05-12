@@ -1812,7 +1812,7 @@ running, the locking information will be available on all cluster nodes.
 </refsect3>
 
 <refsect3>
-<title>G_LOCK locks</title>
+<title>G_LOCK LOCKS</title>
 
 <para>
 Print a list of all currently existing locknames.
@@ -1820,7 +1820,7 @@ Print a list of all currently existing locknames.
 </refsect3>
 
 <refsect3>
-<title>G_LOCK dump <replaceable>lockname</replaceable></title>
+<title>G_LOCK DUMP <replaceable>lockname</replaceable></title>
 
 <para>
 Dump the locking table of a certain global lock.
