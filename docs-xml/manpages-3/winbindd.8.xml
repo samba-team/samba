@@ -80,16 +80,6 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-D</term>
-		<listitem><para>If specified, this parameter causes
-		the server to operate as a daemon. That is, it detaches
-		itself and runs in the background on the appropriate port. 
-		This switch is assumed if <command>winbindd</command> is 
-		executed on the command line of a shell.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>hosts</term>
 		<listitem><para>This feature is only available on IRIX.
 		User information traditionally stored in
@@ -146,6 +136,16 @@ hosts:		files wins
 	<title>OPTIONS</title>
 
 	<variablelist>
+		<varlistentry>
+		<term>-D</term>
+		<listitem><para>If specified, this parameter causes
+		the server to operate as a daemon. That is, it detaches
+		itself and runs in the background on the appropriate port.
+		This switch is assumed if <command>winbindd</command> is
+		executed on the command line of a shell.
+		</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-F</term>
 		<listitem><para>If specified, this parameter causes
