@@ -1,0 +1,173 @@
+/*
+   Unix SMB/CIFS implementation.
+   Main SMB server routines
+   Copyright (C) Andrew Tridgell		1992-1998
+   Copyright (C) Martin Pool			2002
+   Copyright (C) Jelmer Vernooij		2002-2003
+   Copyright (C) Volker Lendecke		1993-2007
+   Copyright (C) Jeremy Allison			1993-2007
+   Copyright (C) Andrew Bartlett                2010
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "smbd/globals.h"
+#include "librpc/gen_ndr/messaging.h"
+
+static struct files_struct *log_writeable_file_fn(
+	struct files_struct *fsp, void *private_data)
+{
+	bool *found = (bool *)private_data;
+	char *path;
+
+	if (!fsp->can_write) {
+		return NULL;
+	}
+	if (!(*found)) {
+		DEBUG(0, ("Writable files open at exit:\n"));
+		*found = true;
+	}
+
+	path = talloc_asprintf(talloc_tos(), "%s/%s", fsp->conn->connectpath,
+			       smb_fname_str_dbg(fsp->fsp_name));
+	if (path == NULL) {
+		DEBUGADD(0, ("<NOMEM>\n"));
+	}
+
+	DEBUGADD(0, ("%s\n", path));
+
+	TALLOC_FREE(path);
+	return NULL;
+}
+
+/****************************************************************************
+ Exit the server.
+****************************************************************************/
+
+/* Reasons for shutting down a server process. */
+enum server_exit_reason { SERVER_EXIT_NORMAL, SERVER_EXIT_ABNORMAL };
+
+static void exit_server_common(enum server_exit_reason how,
+	const char *const reason) _NORETURN_;
+
+static void exit_server_common(enum server_exit_reason how,
+	const char *const reason)
+{
+	bool had_open_conn = false;
+	struct smbd_server_connection *sconn = smbd_server_conn;
+
+	if (!exit_firsttime)
+		exit(0);
+	exit_firsttime = false;
+
+	change_to_root_user();
+
+	if (sconn && sconn->smb1.negprot.auth_context) {
+		struct auth_context *a = sconn->smb1.negprot.auth_context;
+		a->free(&sconn->smb1.negprot.auth_context);
+	}
+
+	if (lp_log_writeable_files_on_exit()) {
+		bool found = false;
+		files_forall(log_writeable_file_fn, &found);
+	}
+
+	if (sconn) {
+		had_open_conn = conn_close_all(sconn);
+		invalidate_all_vuids(sconn);
+	}
+
+	/* 3 second timeout. */
+	print_notify_send_messages(smbd_messaging_context(), 3);
+
+	/* delete our entry in the serverid database. */
+	serverid_deregister_self();
+
+#ifdef WITH_DFS
+	if (dcelogin_atmost_once) {
+		dfs_unlogin();
+	}
+#endif
+
+#ifdef USE_DMAPI
+	/* Destroy Samba DMAPI session only if we are master smbd process */
+	if (am_parent) {
+		if (!dmapi_destroy_session()) {
+			DEBUG(0,("Unable to close Samba DMAPI session\n"));
+		}
+	}
+#endif
+
+	locking_end();
+	printing_end();
+
+	/*
+	 * we need to force the order of freeing the following,
+	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
+	 */
+	sconn = NULL;
+	TALLOC_FREE(smbd_server_conn);
+	TALLOC_FREE(smbd_msg_ctx);
+	TALLOC_FREE(smbd_event_ctx);
+
+	if (how != SERVER_EXIT_NORMAL) {
+		int oldlevel = DEBUGLEVEL;
+
+		DEBUGLEVEL = 10;
+
+		DEBUGSEP(0);
+		DEBUG(0,("Abnormal server exit: %s\n",
+			reason ? reason : "no explanation provided"));
+		DEBUGSEP(0);
+
+		log_stack_trace();
+
+		DEBUGLEVEL = oldlevel;
+		dump_core();
+
+	} else {
+		DEBUG(3,("Server exit (%s)\n",
+			(reason ? reason : "normal exit")));
+		if (am_parent) {
+			pidfile_unlink();
+		}
+		gencache_stabilize();
+	}
+
+	/* if we had any open SMB connections when we exited then we
+	   need to tell the parent smbd so that it can trigger a retry
+	   of any locks we may have been holding or open files we were
+	   blocking */
+	if (had_open_conn) {
+		exit(1);
+	} else {
+		exit(0);
+	}
+}
+
+void exit_server(const char *const explanation)
+{
+	exit_server_common(SERVER_EXIT_ABNORMAL, explanation);
+}
+
+void exit_server_cleanly(const char *const explanation)
+{
+	exit_server_common(SERVER_EXIT_NORMAL, explanation);
+}
+
+void exit_server_fault(void)
+{
+	exit_server("critical server fault");
+}
