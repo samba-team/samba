@@ -642,7 +642,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC} ${RPC_PARSE_SRC}
-                  ${PROFILE_SRC} ${SLCACHE_SRC} ${SMBLDAP_SRC}
+                  ${PROFILE_SRC} ${SLCACHE_SRC}
                   ${LIBADS_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
@@ -711,7 +711,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBMSRPC_SRC}
                 ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC} ${LIBADS_SRC}
                 ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
-                ${BUILDOPT_SRC} ${SMBLDAP_SRC}
+                ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${RPC_LSA_SRC}
                 ${RPC_NETLOG_SRC} ${RPC_SAMR_SRC}
@@ -754,7 +754,7 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
 SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
            ${LOCKING_SRC}
            ${PLAINTEXT_AUTH_SRC}
-           ${SMBLDAP_SRC} ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
+           ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}'''
 
 WBINFO_SRC = '../nsswitch/wbinfo.c ${AFS_SETTOKEN_SRC}'
@@ -876,7 +876,7 @@ bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB_ERR',
                     source=LIBSMB_ERR_SRC,
-                    deps='SECRETS',
+                    deps='SECRETS SMBLDAP',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA',
@@ -891,6 +891,11 @@ bld.SAMBA_SUBSYSTEM('LIBSMB',
 
 bld.SAMBA_SUBSYSTEM('SECRETS',
                     source=SECRETS_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('SMBLDAP',
+                    source=SMBLDAP_SRC,
+                    deps='ldap lber',
                     vars=locals())
 
 ########################## BINARIES #################################
