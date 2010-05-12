@@ -244,7 +244,7 @@ LIBCLI_LDAP_MESSAGE_SRC = '''../libcli/ldap/ldap_message.c'''
 LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c'''
 
 CLDAP_SRC = '''libads/cldap.c
-        ../libcli/cldap/cldap.c
+        ../libcli/cldap/cldap.c lib/ldb_compat.c
         ../lib/util/idtree.c
         ${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC}'''
 
@@ -648,35 +648,6 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${LIBADS_SERVER_SRC}
                   ${TDB_VALIDATE_SRC}'''
 
-LDB_COMMON_SRC = '''lib/ldb/common/ldb.c lib/ldb/common/ldb_ldif.c lib/ldb/common/ldb_parse.c
-                    lib/ldb/common/ldb_msg.c lib/ldb/common/ldb_utf8.c lib/ldb/common/ldb_debug.c
-                    lib/ldb/common/ldb_modules.c lib/ldb/common/ldb_dn.c lib/ldb/common/ldb_match.c
-                    lib/ldb/common/ldb_attributes.c lib/ldb/common/attrib_handlers.c
-                    lib/ldb/common/ldb_controls.c lib/ldb/common/qsort.c'''
-
-LDB_TDB_SRC = '''lib/ldb/ldb_tdb/ldb_tdb.c lib/ldb/ldb_tdb/ldb_pack.c lib/ldb/ldb_tdb/ldb_search.c
-                 lib/ldb/ldb_tdb/ldb_index.c lib/ldb/ldb_tdb/ldb_cache.c lib/ldb/ldb_tdb/ldb_tdb_wrap.c'''
-
-LDB_MODULES_SRC = '''lib/ldb/modules/operational.c lib/ldb/modules/rdn_name.c
-                     lib/ldb/modules/objectclass.c lib/ldb/modules/paged_results.c
-                     lib/ldb/modules/sort.c lib/ldb/modules/asq.c'''
-
-# Todo, check for this during configuration
-LDB_LDAP_SRC = ''
-
-LDB_SRC = '${LDB_COMMON_SRC} ${LDB_TDB_SRC} ${LDB_LDAP_SRC} ${LDB_MODULES_SRC}'
-
-LDB_CMDLINE_SRC = '''${PARAM_SRC} ${LIB_SRC} ${LIB_DUMMY_SRC} ${LIBSMB_ERR_SRC0}
-                     ${LIBSMB_ERR_SRC1} ${RPC_PARSE_SRC1} ${SECRETS_SRC} ${LDB_SRC}
-                     lib/ldb/tools/cmdline.c'''
-
-LDBEDIT_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbedit.c'
-LDBSEARCH_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbsearch.c'
-LDBADD_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbadd.c'
-LDBDEL_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbdel.c'
-LDBMODIFY_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbmodify.c'
-LDBRENAME_SRC = '${LDB_CMDLINE_SRC} lib/ldb/tools/ldbrename.c'
-
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
 
 LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
@@ -873,11 +844,6 @@ bld.SAMBA_SUBSYSTEM('PASSDB',
                     deps='GROUPDB TLDAP SECRETS',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('LDB',
-                    source=LDB_SRC,
-                    includes='lib',
-                    vars=locals())
-
 bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC)
 
@@ -928,7 +894,7 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB LDB
+                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB
                  PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT''',
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -936,7 +902,7 @@ bld.SAMBA_BINARY('smbd/smbd',
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT dl
-                 NSS_WRAPPER DYNCONFIG PASSDB LDB PARAM ldap LIB_NONSMBD LIBSMB
+                 NSS_WRAPPER DYNCONFIG PASSDB PARAM ldap LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -944,7 +910,7 @@ bld.SAMBA_BINARY('nmbd/nmbd',
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl DYNCONFIG ZLIB NSS_WRAPPER
-                 LIBWBCLIENT PASSDB ldap resolv LDB PARAM LIB_NONSMBD LIBSMB
+                 LIBWBCLIENT PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
                  enabled=Options.options.with_winbind,
                  install_path='${SBINDIR}',
@@ -953,7 +919,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
-                 LIB_NONSMBD resolv LDB PASSDB POPT_SAMBA KRBCLIENT''',
+                 LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT''',
                  enabled=Options.options.with_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
