@@ -630,18 +630,25 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
 {
 	struct samr_LogonHours hours;
-	const int units_per_week = 168;
+	size_t units_per_week = 168;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
+
 	ZERO_STRUCT(hours);
-	hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
+
+	if (val) {
+		units_per_week = val->length * 8;
+	}
+
+	hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week/8);
 	if (!hours.bits) {
 		return hours;
 	}
 	hours.units_per_week = units_per_week;
-	memset(hours.bits, 0xFF, units_per_week);
+	memset(hours.bits, 0xFF, units_per_week/8);
 	if (val) {
-		memcpy(hours.bits, val->data, MIN(val->length, units_per_week));
+		memcpy(hours.bits, val->data, val->length);
 	}
+
 	return hours;
 }
 
