@@ -431,7 +431,6 @@ HEIMDAL_HCRYPTO_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/hcrypto/ui.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp.o \
 	$(heimdalsrcdir)/lib/hcrypto/evp-hcrypto.o \
-	$(heimdalsrcdir)/lib/hcrypto/evp-cc.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs5.o \
 	$(heimdalsrcdir)/lib/hcrypto/pkcs12.o \
 	$(heimdalsrcdir)/lib/hcrypto/rand.o \
