@@ -311,4 +311,6 @@ NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value);
 bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value);
 
+NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal);
+
 #endif /* __GENSEC_H__ */

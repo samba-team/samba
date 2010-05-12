@@ -299,7 +299,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	}
 	in_data.length = 0;
 	
-	if (principal && lp_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
+	if (principal) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
 				      &target_principal);

@@ -1302,7 +1302,7 @@ _PUBLIC_ const struct tsocket_address *gensec_get_remote_address(struct gensec_s
  *
  */
 
-NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal) 
+_PUBLIC_ NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal)
 {
 	gensec_security->target.principal = talloc_strdup(gensec_security, principal);
 	if (!gensec_security->target.principal) {
