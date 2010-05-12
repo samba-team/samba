@@ -719,6 +719,14 @@ static struct functable net_func[] = {
 		N_("  Use 'net help eventlog' to get more information about "
 		   "'net eventlog' commands.")
 	},
+	{	"printing",
+		net_printing,
+		NET_TRANSPORT_LOCAL,
+		N_("Process tdb printer files"),
+		N_("  Use 'net help printing' to get more information about "
+		   "'net printing' commands.")
+	},
+
 	{	"serverid",
 		net_serverid,
 		NET_TRANSPORT_LOCAL,

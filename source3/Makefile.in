@@ -1020,7 +1020,10 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   auth/token_util.o utils/net_dom.o utils/net_share.o \
 	   utils/net_g_lock.o \
 	   utils/net_serverid.o \
-	   utils/net_eventlog.o
+	   utils/net_eventlog.o \
+	   utils/net_printing.o \
+	   librpc/gen_ndr/ndr_ntprinting.o \
+	   ../librpc/ndr/ndr_ntprinting.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
