@@ -949,7 +949,7 @@ bld.SAMBA_BINARY('testparm',
 
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
-                 deps='''talloc tevent POPT_SAMBA DYNCONFIG LIBS PARAM
+                 deps='''talloc tevent cap POPT_SAMBA DYNCONFIG LIBS PARAM
                  LIB_NONSMBD LIBSMB_ERR PASSDB LIBWBCLIENT''',
                  vars=locals())
 
