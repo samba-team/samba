@@ -112,7 +112,6 @@ char *sparse_buf = NULL;
 /* Current number of oplocks we have outstanding. */
 int32_t exclusive_oplocks_open = 0;
 int32_t level_II_oplocks_open = 0;
-bool global_client_failed_oplock_break = false;
 struct kernel_oplocks *koplocks = NULL;
 
 int am_parent = 1;

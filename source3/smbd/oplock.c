@@ -320,10 +320,6 @@ static void oplock_timeout_handler(struct event_context *ctx,
 	TALLOC_FREE(fsp->oplock_timeout);
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n",
 		  fsp_str_dbg(fsp)));
-	/* Only set this for SMB1.. */
-	if (!smbd_server_conn->allow_smb2) {
-		global_client_failed_oplock_break = True;
-	}
 	remove_oplock(fsp);
 	reply_to_oplock_break_requests(fsp);
 }

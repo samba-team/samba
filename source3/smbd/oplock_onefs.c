@@ -380,7 +380,6 @@ static void oplock_revoked_handler(uint64_t id)
 	DEBUG(0,("Level 1 oplock break failed for file %s. Forcefully "
 		 "revoking oplock\n", fsp_str_dbg(fsp)));
 
-	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
 
 	/*

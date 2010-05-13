@@ -122,7 +122,6 @@ extern char *sparse_buf;
 /* Current number of oplocks we have outstanding. */
 extern int32_t exclusive_oplocks_open;
 extern int32_t level_II_oplocks_open;
-extern bool global_client_failed_oplock_break;
 extern struct kernel_oplocks *koplocks;
 
 extern int am_parent;

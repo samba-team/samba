@@ -591,7 +591,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	}
 
 	/* Ignore oplock requests if oplocks are disabled. */
-	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break ||
+	if (!lp_oplocks(SNUM(conn)) ||
 	    IS_VETO_OPLOCK_PATH(conn, smb_fname->base_name)) {
 		/* Mask off everything except the private Samba bits. */
 		oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
