@@ -55,6 +55,7 @@
 
 
 #include "includes.h"
+#include "pcap.h"
 
 /* handle standard printcap - moved from pcap_printer_fn() */
 bool std_pcap_cache_reload(const char *pcap_name)

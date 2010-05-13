@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "pcap.h"
 
 #ifdef HAVE_IPRINT
 #include <cups/cups.h>

@@ -334,7 +334,6 @@ struct idle_event;
 struct share_mode_entry;
 struct uuid;
 struct named_mutex;
-struct pcap_cache;
 struct wb_context;
 struct rpc_cli_smbd_conn;
 struct fncall_context;
