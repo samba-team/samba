@@ -1523,6 +1523,16 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	off = (int)PTR_DIFF(pdata, base_data);
 	pad = (off + (align-1)) & ~(align-1);
 	pad -= off;
+
+	if (pad && pad > space_remaining) {
+		*out_of_space = true;
+		DEBUG(9,("smbd_marshall_dir_entry: out of space "
+			"for padding (wanted %u, had %d)\n",
+			(unsigned int)pad,
+			space_remaining ));
+		return false; /* Not finished - just out of space */
+	}
+
 	off += pad;
 	/* initialize padding to 0 */
 	if (pad) {

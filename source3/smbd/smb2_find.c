@@ -373,7 +373,11 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	state->out_output_buffer.length = 0;
 	pdata = (char *)state->out_output_buffer.data;
 	base_data = pdata;
-	end_data = pdata + in_output_buffer_length;
+	/*
+	 * end_data must include the safety margin as it's what is
+	 * used to determine if pushed strings have been truncated.
+	 */
+	end_data = pdata + in_output_buffer_length + DIR_ENTRY_SAFETY_MARGIN - 1;
 	last_entry_off = 0;
 	off = 0;
 	num = 0;
