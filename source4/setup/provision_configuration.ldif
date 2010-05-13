@@ -1017,11 +1017,6 @@ objectClass: top
 objectClass: site
 systemFlags: 1107296256
 
-dn: CN=Licensing Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-objectClass: top
-objectClass: applicationSiteSettings
-objectClass: licensingSiteSettings
-
 dn: CN=Inter-Site Transports,CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: interSiteTransportContainer
@@ -1039,6 +1034,7 @@ objectClass: top
 objectClass: siteLink
 cost: 100
 replInterval: 180
+showInAdvancedViewOnly: TRUE
 siteList: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 systemFlags: 1073741824
 
@@ -1062,4 +1058,4 @@ systemFlags: 33554432
 dn: CN=Subnets,CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: subnetContainer
-systemFlags: -1073741824
+systemFlags: -2147483648
