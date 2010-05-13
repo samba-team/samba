@@ -200,7 +200,7 @@ class cmd_domainlevel(Command):
                     try:
                         samdb.modify(m)
                     except LdbError, (num, _):
-                        pass
+                        self.assertEquals(num, ldb.ERR_UNWILLING_TO_PERFORM)
 
                 # Directly on the base DN
                 m = ldb.Message()
@@ -219,7 +219,7 @@ class cmd_domainlevel(Command):
                 try:
                     samdb.modify(m)
                 except LdbError, (num, _):
-                    pass
+                    self.assertEquals(num, ldb.ERR_UNWILLING_TO_PERFORM)
 
                 level_domain = new_level_domain
                 msgs.append("Domain function level changed!")
