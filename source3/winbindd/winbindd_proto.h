@@ -424,7 +424,6 @@ int open_winbindd_priv_socket(void);
 struct winbindd_cli_state *winbindd_client_list(void);
 void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);
-void winbindd_kill_all_clients(void);
 int winbindd_num_clients(void);
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,

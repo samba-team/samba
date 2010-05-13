@@ -1101,23 +1101,6 @@ void winbindd_remove_client(struct winbindd_cli_state *cli)
 	_num_clients--;
 }
 
-/* Close all open clients */
-
-void winbindd_kill_all_clients(void)
-{
-	struct winbindd_cli_state *cl = winbindd_client_list();
-
-	DEBUG(10, ("winbindd_kill_all_clients: going postal\n"));
-
-	while (cl) {
-		struct winbindd_cli_state *next;
-
-		next = cl->next;
-		winbindd_remove_client(cl);
-		cl = next;
-	}
-}
-
 /* Return number of open clients */
 
 int winbindd_num_clients(void)
