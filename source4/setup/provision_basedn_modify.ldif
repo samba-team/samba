@@ -33,9 +33,9 @@ lockoutThreshold: 0
 -
 # "masteredBy" filled in later
 replace: maxPwdAge
-maxPwdAge: -37108517437440
+maxPwdAge: -36288000000000
 -
-# FIXME: This should be "-864000000000" when we fully comply with passwords pol.
+# "minPwdAge" is "0" in order to let the password change tests pass
 replace: minPwdAge
 minPwdAge: 0
 -
