@@ -2747,6 +2747,35 @@ int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 	return LDB_SUCCESS;
 }
 
+bool samdb_set_am_rodc(struct ldb_context *ldb, bool am_rodc)
+{
+	TALLOC_CTX *tmp_ctx;
+	bool *cached;
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	cached = talloc(tmp_ctx, bool);
+	if (!cached) {
+		goto failed;
+	}
+
+	*cached = am_rodc;
+	if (ldb_set_opaque(ldb, "cache.am_rodc", cached) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, cached);
+	talloc_free(tmp_ctx);
+	return true;
+
+failed:
+	DEBUG(1,("Failed to set our own cached am_rodc in the ldb!\n"));
+	talloc_free(tmp_ctx);
+	return false;
+}
 
 
 /*

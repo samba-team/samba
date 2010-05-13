@@ -371,6 +371,25 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 	return result;
 }
 
+static PyObject *py_dsdb_set_am_rodc(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	bool ret;
+	struct ldb_context *ldb;
+	int py_val;
+
+	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &py_val))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	ret = samdb_set_am_rodc(ldb, (bool)py_val);
+	if (!ret) {
+		PyErr_SetString(PyExc_RuntimeError, "set_am_rodc failed");
+		return NULL;
+	}
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_dsdb_methods[] = {
 	{ "samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
@@ -404,6 +423,9 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "dsdb_load_partition_usn", (PyCFunction)py_dsdb_load_partition_usn,
 		METH_VARARGS,
 		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
+	{ "dsdb_set_am_rodc",
+		(PyCFunction)py_dsdb_set_am_rodc, METH_VARARGS,
+		NULL },
 	{ NULL }
 };
 
