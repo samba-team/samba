@@ -976,7 +976,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             "SCHEMADN": names.schemadn,
             "DOMAINDN": names.domaindn,
             "SERVERDN": names.serverdn,
-            "FOREST_FUNCTIONALALITY": str(forestFunctionality)
+            "FOREST_FUNCTIONALALITY": str(forestFunctionality),
+            "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
             })
 
         message("Setting up display specifiers")

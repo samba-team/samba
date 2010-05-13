@@ -1039,6 +1039,7 @@ dn: CN=${DOMAIN},CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
 dnsRoot: ${DNSDOMAIN}
+msDS-Behavior-Version: ${DOMAIN_FUNCTIONALITY}
 nCName: ${DOMAINDN}
 nETBIOSName: ${DOMAIN}
 nTMixedDomain: 0
