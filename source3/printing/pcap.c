@@ -38,15 +38,13 @@
 
 #include "includes.h"
 #include "printing/pcap.h"
+#include "printer_list.h"
 
 struct pcap_cache {
 	char *name;
 	char *comment;
 	struct pcap_cache *next;
 };
-
-/* The systemwide printcap cache. */
-static struct pcap_cache *pcap_cache = NULL;
 
 bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment)
 {
@@ -83,19 +81,26 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 
 bool pcap_cache_add(const char *name, const char *comment)
 {
-	return pcap_cache_add_specific(&pcap_cache, name, comment);
+	NTSTATUS status;
+	time_t t = time(NULL);
+
+	status = printer_list_set_printer(talloc_tos(), name, comment, t);
+	return NT_STATUS_IS_OK(status);
 }
 
 bool pcap_cache_loaded(void)
 {
-	return (pcap_cache != NULL);
+	NTSTATUS status;
+	time_t last;
+
+	status = printer_list_get_last_refresh(&last);
+	return NT_STATUS_IS_OK(status);
 }
 
 void pcap_cache_replace(const struct pcap_cache *pcache)
 {
 	const struct pcap_cache *p;
 
-	pcap_cache_destroy_specific(&pcap_cache);
 	for (p = pcache; p; p = p->next) {
 		pcap_cache_add(p->name, p->comment);
 	}
@@ -106,7 +111,7 @@ void pcap_cache_reload(struct tevent_context *ev,
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
-	struct pcap_cache *tmp_cache = NULL;
+	NTSTATUS status;
 
 	DEBUG(3, ("reloading printcap cache\n"));
 
@@ -116,8 +121,11 @@ void pcap_cache_reload(struct tevent_context *ev,
 		return;
 	}
 
-	tmp_cache = pcap_cache;
-	pcap_cache = NULL;
+	status = printer_list_mark_reload();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to mark printer list for reload!\n"));
+		return;
+	}
 
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
@@ -152,11 +160,14 @@ void pcap_cache_reload(struct tevent_context *ev,
 done:
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
 
-	if (pcap_reloaded)
-		pcap_cache_destroy_specific(&tmp_cache);
-	else {
-		pcap_cache_destroy_specific(&pcap_cache);
-		pcap_cache = tmp_cache;
+	if (pcap_reloaded) {
+		/* cleanup old entries only if the operation was successful,
+		 * otherwise keep around the old entries until we can
+		 * successfuly reaload */
+		status = printer_list_clean_old();
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to cleanup printer list!\n"));
+		}
 	}
 
 	return;
@@ -165,13 +176,10 @@ done:
 
 bool pcap_printername_ok(const char *printername)
 {
-	struct pcap_cache *p;
+	NTSTATUS status;
 
-	for (p = pcap_cache; p != NULL; p = p->next)
-		if (strequal(p->name, printername))
-			return True;
-
-	return False;
+	status = printer_list_get_printer(talloc_tos(), printername, NULL, 0);
+	return NT_STATUS_IS_OK(status);
 }
 
 /***************************************************************************
@@ -192,5 +200,11 @@ void pcap_printer_fn_specific(const struct pcap_cache *pc,
 
 void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *pdata)
 {
-	pcap_printer_fn_specific(pcap_cache, fn, pdata);
+	NTSTATUS status;
+
+	status = printer_list_run_fn(fn, pdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Failed to run fn for all printers!\n"));
+	}
+	return;
 }
