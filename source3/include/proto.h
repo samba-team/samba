@@ -4928,6 +4928,10 @@ bool iprint_cache_reload(void);
 
 bool sysv_cache_reload(void);
 
+/* The following definitions come from printing/print_standard.c  */
+
+bool std_pcap_cache_reload(const char *pcap_name);
+
 /* The following definitions come from printing/printfsp.c  */
 
 NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
