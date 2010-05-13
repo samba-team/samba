@@ -203,11 +203,6 @@ objectClass: top
 objectClass: foreignSecurityPrincipal
 objectSid: S-1-5-17
 
-dn: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
-objectClass: top
-objectClass: foreignSecurityPrincipal
-objectSid: S-1-5-20
-
 # Add builtin objects
 
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
@@ -359,7 +354,6 @@ dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group may schedule logging of performance counters, enable trace providers, and collect event traces both locally and via remote access to this computer
-member: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
 systemFlags: -1946157056
