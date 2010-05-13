@@ -3419,6 +3419,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
+	bool stream_name = false;
 
 	DEBUG(10,("create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -3453,7 +3454,8 @@ NTSTATUS create_file_default(connection_struct *conn,
 	 * Check to see if this is a mac fork of some kind.
 	 */
 
-	if (is_ntfs_stream_smb_fname(smb_fname)) {
+	stream_name = is_ntfs_stream_smb_fname(smb_fname);
+	if (stream_name) {
 		enum FAKE_FILE_TYPE fake_file_type;
 
 		fake_file_type = is_fake_file(smb_fname);
@@ -3493,6 +3495,26 @@ NTSTATUS create_file_default(connection_struct *conn,
 	status = check_name(conn, smb_fname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
+	}
+
+	if (stream_name && is_ntfs_default_stream_smb_fname(smb_fname)) {
+		int ret;
+		smb_fname->stream_name = NULL;
+		/* We have to handle this error here. */
+		if (create_options & FILE_DIRECTORY_FILE) {
+			status = NT_STATUS_NOT_A_DIRECTORY;
+			goto fail;
+		}
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(conn, smb_fname);
+		} else {
+			ret = SMB_VFS_STAT(conn, smb_fname);
+		}
+
+		if (ret == 0 && VALID_STAT_OF_DIR(smb_fname->st)) {
+			status = NT_STATUS_FILE_IS_A_DIRECTORY;
+			goto fail;
+		}
 	}
 
 	status = create_file_unixpath(

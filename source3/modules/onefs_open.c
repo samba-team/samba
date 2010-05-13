@@ -2106,6 +2106,33 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		goto fail;
 	}
 
+	if (is_ntfs_stream_smb_fname(smb_fname)) {
+		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			goto fail;
+		}
+
+		if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+			int ret;
+			smb_fname->stream_name = NULL;
+			/* We have to handle this error here. */
+			if (create_options & FILE_DIRECTORY_FILE) {
+				status = NT_STATUS_NOT_A_DIRECTORY;
+				goto fail;
+			}
+			if (lp_posix_pathnames()) {
+				ret = SMB_VFS_LSTAT(conn, smb_fname);
+			} else {
+				ret = SMB_VFS_STAT(conn, smb_fname);
+			}
+
+			if (ret == 0 && VALID_STAT_OF_DIR(smb_fname->st)) {
+				status = NT_STATUS_FILE_IS_A_DIRECTORY;
+				goto fail;
+			}
+		}
+	}
+
 	status = onefs_create_file_unixpath(
 		conn,					/* conn */
 		req,					/* req */
