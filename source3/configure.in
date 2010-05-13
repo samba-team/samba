@@ -6680,6 +6680,8 @@ if test x$enable_merged_build = xyes; then
 	AC_SUBST(smbtorture4_path)
 	AC_SUBST(smbtorture4_option)
 	USESHARED="$saved_USESHARED"
+	SMBTORTURE4="bin/smbtorture4"
+	AC_SUBST(SMBTORTURE4)
 fi
 
 AC_SUBST(ZLIB_LIBS)

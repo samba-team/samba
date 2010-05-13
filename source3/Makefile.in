@@ -1355,7 +1355,7 @@ pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 gpext_modules:: $(GPEXT_MODULES)
 
-torture:: SHOWFLAGS basics $(TORTURE_PROGS) 
+torture:: SHOWFLAGS basics $(TORTURE_PROGS) @SMBTORTURE4@
 
 smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
 
@@ -3225,7 +3225,6 @@ samba4-configure: ../source4/configure
 .PHONY: samba4-configure
 
 bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
-	cd ../source4 && ../buildtools/bin/waf build --targets=asn1_compile,compile_et
 	cd ../source4 && ../buildtools/bin/waf build --targets=smbtorture
 	cp ../source4/bin/smbtorture bin/smbtorture4
 
