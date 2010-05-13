@@ -238,6 +238,7 @@ def ENFORCE_GROUP_ORDERING(bld):
        a target with --target'''
     if Options.options.compile_targets:
         @feature('*')
+        @before('exec_rule', 'apply_core', 'collect')
         def force_previous_groups(self):
             if getattr(self.bld, 'enforced_group_ordering', False) == True:
                 return
@@ -262,12 +263,14 @@ def ENFORCE_GROUP_ORDERING(bld):
             if stop is None:
                 return
 
-            for g in bld.task_manager.groups:
+            for i in xrange(len(bld.task_manager.groups)):
+                g = bld.task_manager.groups[i]
+                bld.task_manager.current_group = i
                 if id(g) == stop:
                     break
                 debug('group: Forcing group %s', group_name(g))
                 for t in g.tasks_gen:
-                    if getattr(t, 'forced_groups', False) != True:
+                    if not getattr(t, 'forced_groups', False):
                         debug('group: Posting %s', t.name or t.target)
                         t.forced_groups = True
                         t.post()
