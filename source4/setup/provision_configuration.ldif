@@ -825,6 +825,7 @@ dn: CN=NTDS Quotas,${CONFIGDN}
 objectClass: top
 objectClass: msDS-QuotaContainer
 description: Quota specifications container
+isCriticalSystemObject: TRUE
 msDS-TombstoneQuotaFactor: 100
 systemFlags: -2147483648
 
