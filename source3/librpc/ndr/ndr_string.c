@@ -452,7 +452,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		return NDR_ERR_SUCCESS;
 	}
 
-	switch (flags & LIBNDR_STRING_FLAGS) {
+	switch (flags & (LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_NOTERM)) {
 	case LIBNDR_FLAG_STR_NULLTERM:
 		/* 
 		 * here the strings are null terminated
