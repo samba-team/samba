@@ -185,17 +185,42 @@ class cmd_domainlevel(Command):
 
                 # Deactivate mixed/interim domain support
                 if level_domain_mixed != 0:
+                    # Directly on the base DN
                     m = ldb.Message()
                     m.dn = ldb.Dn(samdb, domain_dn)
                     m["nTMixedDomain"] = ldb.MessageElement("0",
                       ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     samdb.modify(m)
+                    # Under partitions
+                    m = ldb.Message()
+                    m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
+                      + ",CN=Partitions,CN=Configuration," + domain_dn)
+                    m["nTMixedDomain"] = ldb.MessageElement("0",
+                      ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
+                    try:
+                        samdb.modify(m)
+                    except LdbError, (num, _):
+                        pass
+
+                # Directly on the base DN
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, domain_dn)
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                   str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
                 samdb.modify(m)
+                # Under partitions
+                m = ldb.Message()
+                m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
+                  + ",CN=Partitions,CN=Configuration," + domain_dn)
+                m["msDS-Behavior-Version"]= ldb.MessageElement(
+                  str(new_level_domain), ldb.FLAG_MOD_REPLACE,
+                          "msDS-Behavior-Version")
+                try:
+                    samdb.modify(m)
+                except LdbError, (num, _):
+                    pass
+
                 level_domain = new_level_domain
                 msgs.append("Domain function level changed!")
 
