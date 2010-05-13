@@ -75,7 +75,7 @@ isCriticalSystemObject: TRUE
 
 # Add other groups
 
-dn: CN=Enterprise Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+dn: CN=Enterprise Read-only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group are Read-Only Domain Controllers in the enterprise
@@ -97,7 +97,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Cert Publishers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members of this group are permitted to publish certificates to the Active Directory
+description: Members of this group are permitted to publish certificates to the directory
 objectSid: ${DOMAINSID}-517
 sAMAccountName: Cert Publishers
 groupType: -2147483644
@@ -134,7 +134,7 @@ objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
 isCriticalSystemObject: TRUE
 
-dn: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+dn: CN=Read-only Domain Controllers,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
 description: Members of this group are Read-Only Domain Controllers in the domain
@@ -155,7 +155,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Allowed RODC Password Replication Group,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members in this group can have their passwords replicated to all read-only domain controllers in the domain.
+description: Members in this group can have their passwords replicated to all read-only domain controllers in the domain
 objectSid: ${DOMAINSID}-571
 sAMAccountName: Allowed RODC Password Replication Group
 groupType: -2147483644
@@ -164,8 +164,8 @@ isCriticalSystemObject: TRUE
 dn: CN=Denied RODC Password Replication Group,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members in this group cannot have their passwords replicated to any read-only domain controllers in the domain.
-member: CN=Read-Only Domain Controllers,CN=Users,${DOMAINDN}
+description: Members in this group cannot have their passwords replicated to any read-only domain controllers in the domain
+member: CN=Read-only Domain Controllers,CN=Users,${DOMAINDN}
 member: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 member: CN=Domain Admins,CN=Users,${DOMAINDN}
 member: CN=Cert Publishers,CN=Users,${DOMAINDN}
@@ -227,7 +227,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
+description: Users are prevented from making accidental or intentional system-wide changes and can run most applications
 member: CN=Domain Users,CN=Users,${DOMAINDN}
 member: CN=S-1-5-4,CN=ForeignSecurityPrincipals,${DOMAINDN}
 member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,${DOMAINDN}
@@ -348,7 +348,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Performance Monitor Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members of this group have remote access to monitor this computer
+description: Members of this group can access performance counter data locally and remotely
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
 systemFlags: -1946157056
@@ -358,7 +358,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Performance Log Users,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members of this group have remote access to schedule logging of performance counters on this computer
+description: Members of this group may schedule logging of performance counters, enable trace providers, and collect event traces both locally and via remote access to this computer
 member: CN=S-1-5-20,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
@@ -380,7 +380,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Terminal Server License Servers,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Terminal Server License Servers
+description: Members of this group can update user accounts in Active Directory with information about license issuance, for the purpose of tracking and reporting TS Per User CAL usage
 objectSid: S-1-5-32-561
 sAMAccountName: Terminal Server License Servers
 systemFlags: -1946157056
@@ -400,7 +400,7 @@ isCriticalSystemObject: TRUE
 dn: CN=IIS_IUSRS,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Integrated group used by the IIS
+description: Built-in group used by Internet Information Services.
 member: CN=S-1-5-17,CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectSid: S-1-5-32-568
 sAMAccountName: IIS_IUSRS
@@ -421,7 +421,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Event Log Readers,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members of this group can read event logs from local machine.
+description: Members of this group can read event logs from local machine
 objectSid: S-1-5-32-573
 sAMAccountName: Event Log Readers
 systemFlags: -1946157056
@@ -431,7 +431,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Certificate Service DCOM Access,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members of this group are allowed to connect to Certification Authorities in the enterprise.
+description: Members of this group are allowed to connect to Certification Authorities in the enterprise
 objectSid: S-1-5-32-574
 sAMAccountName: Certificate Service DCOM Access
 systemFlags: -1946157056
