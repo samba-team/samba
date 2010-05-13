@@ -1022,18 +1022,6 @@ bool winbindd_use_cache(void)
 void winbindd_register_handlers(void)
 {
 	struct tevent_timer *te;
-	/* Don't use winbindd_reinit_after_fork here as
-	 * we're just starting up and haven't created any
-	 * winbindd-specific resources we must free yet. JRA.
-	 */
-
-	if (!NT_STATUS_IS_OK(reinit_after_fork(winbind_messaging_context(),
-					       winbind_event_context(),
-					       false))) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		exit(1);
-	}
-
 	/* Setup signal handlers */
 
 	if (!winbindd_setup_sig_term_handler(true))
@@ -1297,6 +1285,18 @@ int main(int argc, char **argv, char **envp)
 #endif
 
 	TimeInit();
+
+	/* Don't use winbindd_reinit_after_fork here as
+	 * we're just starting up and haven't created any
+	 * winbindd-specific resources we must free yet. JRA.
+	 */
+
+	if (!NT_STATUS_IS_OK(reinit_after_fork(winbind_messaging_context(),
+					       winbind_event_context(),
+					       false))) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
+		exit(1);
+	}
 
 	winbindd_register_handlers();
 
