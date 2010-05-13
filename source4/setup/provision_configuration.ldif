@@ -810,6 +810,126 @@ dn: CN=7dd09ca6-f0d6-43bf-b7f8-ef348f435617,CN=Operations,CN=ForestUpdates,${CON
 objectClass: top
 objectClass: container
 
+dn: CN=002fb291-0d00-4b0c-8c00-fe7f50ce6f8d,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=07e57d28-ad40-44fc-8334-8a0dc119b3f4,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=0fc5a978-0059-4b0a-9dc2-9896e8e389a1,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=10338d31-2423-4dff-b4b5-ef025144b01f,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=2a858903-5696-4364-b4e5-4cac027ca7a6,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=2b9e0609-6d75-498a-9727-c9fcc93f0e42,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=3b3adbdb-4485-4559-aed8-9811c4bf90e4,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=429a6334-1a00-4515-bf48-676deb55954a,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=4c022fd1-adab-4d84-a7f1-9580f03da856,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=4c0672a2-437c-4944-b953-5db8f111d665,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=4d753a29-26ac-4d1a-bc80-311f947e4f0a,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=56040c71-fe93-4037-8fe9-1a4d1a283009,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=560cf82d-9572-48a3-9024-6f2b56f1f866,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=613bd063-e8e9-4a62-8f4c-cda566f7eb6f,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6eb8eaf9-3403-4ba5-8b4b-ce349a4680ad,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=6fd48655-1698-497a-ac8d-8267ce01c80b,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=782370ce-3d38-438d-8b0c-464220a3039d,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=8f86b825-c322-4101-adc4-579f12d445db,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=96541a16-910a-4b66-acde-720a0dff03c7,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=9fea28ff-387f-4d57-866d-3893c50f373f,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=a96e2ed5-7a7c-4d5c-9d5d-965eca0051da,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=abd97102-88dd-4013-a009-0e2c2f967ff6,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bd3413c0-9559-469b-9f3d-51d7faabd81a,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=c03b1f37-c240-4910-93c8-1544a452b4b5,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=caa2bfad-0cca-483b-8d00-347f943292a8,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=d668ad1f-cedd-4565-ab02-9385926ce4f5,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=dcb3c95d-deb7-4c51-ad13-43a7d5d06fc7,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ea08c04c-f474-4212-b19e-5e754f9210d4,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=ef010a1e-bd88-48c8-a7af-2affd250d77d,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=f814097b-3e3d-49ba-8a3a-092c25085f06,CN=Operations,CN=ForestUpdates,CN=Configuration,${DOMAINDN}
+objectClass: top
+objectClass: container
+
 dn: CN=Windows2003Update,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
