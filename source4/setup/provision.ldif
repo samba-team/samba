@@ -435,6 +435,7 @@ dn: CN=Password Settings Container,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: msDS-PasswordSettingsContainer
 systemFlags: -1946157056
+showInAdvancedViewOnly: TRUE
 
 dn: CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
