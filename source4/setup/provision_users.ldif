@@ -40,7 +40,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Administrator,CN=Users,${DOMAINDN}
 objectClass: user
 description: Built-in account for administering the computer/domain
-userAccountControl: 66048
+userAccountControl: 512
 objectSid: ${DOMAINSID}-500
 adminCount: 1
 accountExpires: 9223372036854775807
