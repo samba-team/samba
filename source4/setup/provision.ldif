@@ -76,7 +76,7 @@ objectClass: top
 objectClass: msDS-QuotaContainer
 description: Quota specifications container
 msDS-TombstoneQuotaFactor: 100
-systemFlags: -1946157056
+systemFlags: -2147483648
 isCriticalSystemObject: TRUE
 
 dn: CN=Program Data,${DOMAINDN}
