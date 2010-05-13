@@ -639,6 +639,66 @@ appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 localizationDisplayId: 28
 validAccesses: 256
 
+dn: CN=DS-Replication-Get-Changes-In-Filtered-Set,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: Replicating Directory Changes In Filtered Set
+rightsGuid: 89e95b76-444d-4c62-991a-0facbeda640c
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+localizationDisplayId: 77
+validAccesses: 256
+
+dn: CN=MS-TS-GatewayAccess,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: MS-TS-GatewayAccess
+rightsGuid: ffa6f046-ca4b-4feb-b40d-04dfee722543
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+localizationDisplayId: 74
+validAccesses: 48
+
+dn: CN=Private-Information,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: Private Information
+rightsGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
+localizationDisplayId: 72
+validAccesses: 48
+
+dn: CN=Read-Only-Replication-Secret-Synchronization,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: Read Only Replication Secret Synchronization
+rightsGuid: 1131f6ae-9c07-11d1-f79f-00c04fc2dcd2
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+localizationDisplayId: 73
+validAccesses: 256
+
+dn: CN=Reload-SSL-Certificate,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: Reload SSL/TLS Certificate
+rightsGuid: 1a60ea8d-58a6-4b20-bcdc-fb71eb8a9ff8
+appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
+localizationDisplayId: 76
+validAccesses: 256
+
+dn: CN=Terminal-Server-License-Server,CN=Extended-Rights,${CONFIGDN}
+objectClass: top
+objectClass: controlAccessRight
+displayName: Terminal Server License Server
+rightsGuid: 5805bc62-bdc9-4428-a5e2-856a0f4c185e
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
+localizationDisplayId: 75
+validAccesses: 48
+
 # End extended rights
 
 # Forest updates
