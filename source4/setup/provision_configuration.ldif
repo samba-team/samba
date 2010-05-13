@@ -680,6 +680,7 @@ objectClass: container
 dn: CN=94fdebc6-8eeb-4640-80de-ec52b9ca17fa,CN=Operations,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
+objectVersion: 3
 
 dn: CN=1a3f6b15-55f2-4752-ba27-3d38a8232c4d,CN=Operations,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
