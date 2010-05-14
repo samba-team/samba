@@ -249,45 +249,36 @@ backend:
 	map.xid.type = ID_TYPE_GID;
 
 	ret = idmap_backends_sid_to_unixid(domname, &map);
-	if (NT_STATUS_IS_OK(ret) && (map.status == ID_MAPPED)) {
-		if (map.xid.type != ID_TYPE_GID) {
-			DEBUG(10, ("sid [%s] not mapped to a gid "
-				   "[%u,%u,%u]\n",
-				   sid_string_dbg(sid),
-				   map.status,
-				   map.xid.type,
-				   map.xid.id));
-			if (winbindd_use_idmap_cache()) {
-				idmap_cache_set_sid2gid(sid, -1);
-			}
-			return NT_STATUS_NONE_MAPPED;
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(10, ("idmap_backends_sid_to_unixid failed: %s\n",
+			   nt_errstr(ret)));
+		if (winbindd_use_idmap_cache()) {
+			idmap_cache_set_sid2uid(sid, -1);
 		}
-		goto done;
+		return ret;
 	}
 
-	if (domname[0] != '\0') {
-		/*
-		 * We had the task to go to a specific domain which
-		 * could not answer our request. Fail.
-		 */
+	if (map.status != ID_MAPPED) {
 		if (winbindd_use_idmap_cache()) {
 			idmap_cache_set_sid2uid(sid, -1);
 		}
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	ret = idmap_new_mapping(sid, ID_TYPE_GID, &map.xid);
-
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(10, ("idmap_new_mapping failed: %s\n",
-			   nt_errstr(ret)));
+	if (map.xid.type != ID_TYPE_GID) {
+		DEBUG(10, ("sid [%s] not mapped to a gid "
+			   "[%u,%u,%u]\n",
+			   sid_string_dbg(sid),
+			   map.status,
+			   map.xid.type,
+			   map.xid.id));
 		if (winbindd_use_idmap_cache()) {
 			idmap_cache_set_sid2gid(sid, -1);
 		}
-		return ret;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
-done:
 	*gid = map.xid.id;
 	if (winbindd_use_idmap_cache()) {
 		idmap_cache_set_sid2gid(sid, *gid);
