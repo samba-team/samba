@@ -229,6 +229,7 @@ def configure(conf):
 
     conf.DEFINE('_GNU_SOURCE', 1, add_to_cflags=True)
     conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
+    conf.DEFINE('_XOPEN_SOURCE', 700, add_to_cflags=True)
 
     # get the base headers we'll use for the rest of the tests
     conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h',
