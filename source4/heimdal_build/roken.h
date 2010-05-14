@@ -170,4 +170,9 @@
 extern const char *heimdal_version;
 extern const char *heimdal_long_version;
 
+/* we do not want any __APPLE__ magic */
+#ifdef __APPLE__
+#undef __APPLE__
+#endif
+
 #endif
