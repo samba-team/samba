@@ -2933,13 +2933,19 @@ static bool test_raw_oplock_batch22(struct torture_context *tctx, struct smbcli_
 	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+#if 0
+	/* Samba 3.6.0 and above behave as Windows. */
 	if (TARGET_IS_SAMBA3(tctx)) {
 		/* samba3 doesn't grant additional oplocks to bad clients. */
 		CHECK_VAL(io.ntcreatex.out.oplock_level, NO_OPLOCK_RETURN);
 	} else {
 		CHECK_VAL(io.ntcreatex.out.oplock_level,
-			  LEVEL_II_OPLOCK_RETURN);
+			LEVEL_II_OPLOCK_RETURN);
 	}
+#else
+	CHECK_VAL(io.ntcreatex.out.oplock_level,
+		  LEVEL_II_OPLOCK_RETURN);
+#endif
 	torture_wait_for_oplock_break(tctx);
 	te = (int)timeval_elapsed(&tv);
 	/* it should come in without delay */
