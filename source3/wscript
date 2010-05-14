@@ -420,14 +420,21 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
 
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
-    host_os = conf.env['SYSTEM_UNAME_SYSNAME'].lower()
+    import sys
+    host_os = sys.platform
 
     # Python doesn't have case switches... :/
     # FIXME: original was *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
-    if host_os in ("linux"):
-        # obviously once this hook checks for more than just linux this needs to be adapted
-        conf.DEFINE('LINUX', '1')
+    # the search for .rfind('gnu') covers gnu* and *-gnu is that too broad?
+    if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('qnx') > -1):
+        if host_os.rfind('linux') > -1:
+            conf.DEFINE('LINUX', '1')
+        elif host_os.rfind('qnx') > -1:
+            conf.DEFINE('QNX', '1')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+    # FIXME: Add more checks here.
+    else:
+        print "Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
