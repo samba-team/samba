@@ -121,6 +121,12 @@ void pcap_cache_reload(struct tevent_context *ev,
 		return;
 	}
 
+	if (!printer_list_need_refresh()) {
+		/* has been just refeshed, skip */
+		DEBUG(5, ("Refresh just happend, skipping.\n"));
+		return;
+	}
+
 	status = printer_list_mark_reload();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to mark printer list for reload!\n"));

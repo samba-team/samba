@@ -39,4 +39,6 @@ NTSTATUS printer_list_clean_old(void);
 NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, void *),
 			     void *private_data);
 
+bool printer_list_need_refresh(void);
+
 #endif /* _PRINTER_LIST_H_ */

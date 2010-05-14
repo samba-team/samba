@@ -215,6 +215,32 @@ done:
 	return status;
 }
 
+bool printer_list_need_refresh(void)
+{
+	NTSTATUS status;
+	time_t now = time(NULL);
+	time_t last_refresh;
+
+	status = printer_list_get_last_refresh(&last_refresh);
+	if (!NT_STATUS_IS_OK(status)) {
+		return true;
+	}
+
+	if (now > last_refresh) {
+		/* if refresh occurred last than 1 seconds ago,
+		 * then we probably don't need to refresh */
+		if ((now - last_refresh) < 1) {
+			return false;
+		}
+	} else {
+		/* last_refresh newer than now, wow, someone just updated the
+		 * cache under our nose, do not do again. */
+		return false;
+	}
+
+	return true;
+}
+
 NTSTATUS printer_list_mark_reload(void)
 {
 	struct db_context *db;
