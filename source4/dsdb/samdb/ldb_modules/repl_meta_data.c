@@ -122,7 +122,7 @@ static const char *urgent_attrs[] = {
 static bool replmd_check_urgent_objectclass(const struct ldb_message_element *objectclass_el,
 					enum urgent_situation situation)
 {
-	int i, j;
+	unsigned int i, j;
 	for (i=0; urgent_objects[i].update_name; i++) {
 
 		if ((situation & urgent_objects[i].repl_situation) == 0) {
