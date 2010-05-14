@@ -46,26 +46,32 @@ NTSTATUS wbsrv_samba3_packet_full_request(void *private_data, DATA_BLOB blob, si
 
 NTSTATUS wbsrv_samba3_pull_request(struct wbsrv_samba3_call *call)
 {
-	if (call->in.length != sizeof(call->request)) {
+	if (call->in.length != sizeof(*call->request)) {
 		DEBUG(0,("wbsrv_samba3_pull_request: invalid blob length %lu should be %lu\n"
 			 " make sure you use the correct winbind client tools!\n",
-			 (long)call->in.length, (long)sizeof(call->request)));
+			 (long)call->in.length, (long)sizeof(*call->request)));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	call->request = talloc_zero(call, struct winbindd_request);
+	NT_STATUS_HAVE_NO_MEMORY(call->request);
+
 	/* the packet layout is the same as the in memory layout of the request, so just copy it */
-	memcpy(&call->request, call->in.data, sizeof(call->request));
+	memcpy(call->request, call->in.data, sizeof(*call->request));
 
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 {
-	DEBUG(10, ("Got winbind samba3 request %d\n", s3call->request.cmd));
+	DEBUG(10, ("Got winbind samba3 request %d\n", s3call->request->cmd));
 
-	s3call->response.length = sizeof(s3call->response);
+	s3call->response = talloc_zero(s3call, struct winbindd_response);
+	NT_STATUS_HAVE_NO_MEMORY(s3call->request);
 
-	switch(s3call->request.cmd) {
+	s3call->response->length = sizeof(*s3call->response);
+
+	switch(s3call->request->cmd) {
 	case WINBINDD_INTERFACE_VERSION:
 		return wbsrv_samba3_interface_version(s3call);
 
@@ -200,11 +206,11 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_CCACHE_NTLMAUTH:
 	case WINBINDD_NUM_CMDS:
 		DEBUG(10, ("Unimplemented winbind samba3 request %d\n", 
-			   s3call->request.cmd));
+			   s3call->request->cmd));
 		break;
 	}
 
-	s3call->response.result = WINBINDD_ERROR;
+	s3call->response->result = WINBINDD_ERROR;
 	return NT_STATUS_OK;
 }
 
@@ -213,25 +219,26 @@ static NTSTATUS wbsrv_samba3_push_reply(struct wbsrv_samba3_call *call)
 	uint8_t *extra_data;
 	size_t extra_data_len = 0;
 
-	extra_data = (uint8_t *)call->response.extra_data.data;
+	extra_data = (uint8_t *)call->response->extra_data.data;
 	if (extra_data != NULL) {
-		extra_data_len = call->response.length -
-			sizeof(call->response);
+		extra_data_len = call->response->length -
+			sizeof(*call->response);
 	}
 
-	call->out = data_blob_talloc(call, NULL, call->response.length);
+	call->out = data_blob_talloc(call, NULL, call->response->length);
 	NT_STATUS_HAVE_NO_MEMORY(call->out.data);
 
 	/* don't push real pointer values into sockets */
 	if (extra_data) {
-		call->response.extra_data.data = (void *)0xFFFFFFFF;
+		call->response->extra_data.data = (void *)0xFFFFFFFF;
 	}
-	memcpy(call->out.data, &call->response, sizeof(call->response));
+
+	memcpy(call->out.data, call->response, sizeof(*call->response));
 	/* set back the pointer */
-	call->response.extra_data.data = extra_data;
+	call->response->extra_data.data = extra_data;
 
 	if (extra_data) {
-		memcpy(call->out.data + sizeof(call->response),
+		memcpy(call->out.data + sizeof(*call->response),
 		       extra_data,
 		       extra_data_len);
 	}

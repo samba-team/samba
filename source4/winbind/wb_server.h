@@ -161,10 +161,10 @@ struct wbsrv_samba3_call {
 	void *private_data;
 
 	/* the request structure of the samba3 protocol */
-	struct winbindd_request request;
+	struct winbindd_request *request;
 	
 	/* the response structure of the samba3 protocol*/
-	struct winbindd_response response;
+	struct winbindd_response *response;
 
 	DATA_BLOB in;
 	DATA_BLOB out;

@@ -61,48 +61,48 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	s3call->response.data.auth.info3.logon_time =
+	s3call->response->data.auth.info3.logon_time =
 		nt_time_to_unix(info3->base.last_logon);
-	s3call->response.data.auth.info3.logoff_time =
+	s3call->response->data.auth.info3.logoff_time =
 		nt_time_to_unix(info3->base.last_logoff);
-	s3call->response.data.auth.info3.kickoff_time =
+	s3call->response->data.auth.info3.kickoff_time =
 		nt_time_to_unix(info3->base.acct_expiry);
-	s3call->response.data.auth.info3.pass_last_set_time =
+	s3call->response->data.auth.info3.pass_last_set_time =
 		nt_time_to_unix(info3->base.last_password_change);
-	s3call->response.data.auth.info3.pass_can_change_time =
+	s3call->response->data.auth.info3.pass_can_change_time =
 		nt_time_to_unix(info3->base.allow_password_change);
-	s3call->response.data.auth.info3.pass_must_change_time =
+	s3call->response->data.auth.info3.pass_must_change_time =
 		nt_time_to_unix(info3->base.force_password_change);
 
-	s3call->response.data.auth.info3.logon_count = info3->base.logon_count;
-	s3call->response.data.auth.info3.bad_pw_count = info3->base.bad_password_count;
+	s3call->response->data.auth.info3.logon_count = info3->base.logon_count;
+	s3call->response->data.auth.info3.bad_pw_count = info3->base.bad_password_count;
 
-	s3call->response.data.auth.info3.user_rid = info3->base.rid;
-	s3call->response.data.auth.info3.group_rid = info3->base.primary_gid;
-	fstrcpy(s3call->response.data.auth.info3.dom_sid, dom_sid_string(mem_ctx, info3->base.domain_sid));
+	s3call->response->data.auth.info3.user_rid = info3->base.rid;
+	s3call->response->data.auth.info3.group_rid = info3->base.primary_gid;
+	fstrcpy(s3call->response->data.auth.info3.dom_sid, dom_sid_string(mem_ctx, info3->base.domain_sid));
 
-	s3call->response.data.auth.info3.num_groups = info3->base.groups.count;
-	s3call->response.data.auth.info3.user_flgs = info3->base.user_flags;
+	s3call->response->data.auth.info3.num_groups = info3->base.groups.count;
+	s3call->response->data.auth.info3.user_flgs = info3->base.user_flags;
 
-	s3call->response.data.auth.info3.acct_flags = info3->base.acct_flags;
-	s3call->response.data.auth.info3.num_other_sids = info3->sidcount;
+	s3call->response->data.auth.info3.acct_flags = info3->base.acct_flags;
+	s3call->response->data.auth.info3.num_other_sids = info3->sidcount;
 
-	fstrcpy(s3call->response.data.auth.info3.user_name,
+	fstrcpy(s3call->response->data.auth.info3.user_name,
 		info3->base.account_name.string);
-	fstrcpy(s3call->response.data.auth.info3.full_name,
+	fstrcpy(s3call->response->data.auth.info3.full_name,
 		info3->base.full_name.string);
-	fstrcpy(s3call->response.data.auth.info3.logon_script,
+	fstrcpy(s3call->response->data.auth.info3.logon_script,
 		info3->base.logon_script.string);
-	fstrcpy(s3call->response.data.auth.info3.profile_path,
+	fstrcpy(s3call->response->data.auth.info3.profile_path,
 		info3->base.profile_path.string);
-	fstrcpy(s3call->response.data.auth.info3.home_dir,
+	fstrcpy(s3call->response->data.auth.info3.home_dir,
 		info3->base.home_directory.string);
-	fstrcpy(s3call->response.data.auth.info3.dir_drive,
+	fstrcpy(s3call->response->data.auth.info3.dir_drive,
 		info3->base.home_drive.string);
 
-	fstrcpy(s3call->response.data.auth.info3.logon_srv,
+	fstrcpy(s3call->response->data.auth.info3.logon_srv,
 		info3->base.logon_server.string);
-	fstrcpy(s3call->response.data.auth.info3.logon_dom,
+	fstrcpy(s3call->response->data.auth.info3.logon_dom,
 		info3->base.domain.string);
 
 	ex = talloc_strdup(mem_ctx, "");
@@ -129,8 +129,8 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 		talloc_free(sid);
 	}
 
-	s3call->response.extra_data.data = ex;
-	s3call->response.length += talloc_get_size(ex);
+	s3call->response->extra_data.data = ex;
+	s3call->response->length += talloc_get_size(ex);
 
 	return NT_STATUS_OK;
 }
@@ -142,7 +142,7 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 					     struct wbsrv_samba3_call *s3call)
 {
-	struct winbindd_response *resp = &s3call->response;
+	struct winbindd_response *resp = s3call->response;
 	if (!NT_STATUS_IS_OK(status)) {
 		resp->result = WINBINDD_ERROR;
 	} else {
@@ -167,7 +167,7 @@ static void wbsrv_samba3_async_auth_epilogue(NTSTATUS status,
 static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 					struct wbsrv_samba3_call *s3call)
 {
-	struct winbindd_response *resp = &s3call->response;
+	struct winbindd_response *resp = s3call->response;
 	if (NT_STATUS_IS_OK(status)) {
 		resp->result = WINBINDD_OK;
 	} else {
@@ -183,32 +183,32 @@ static void wbsrv_samba3_async_epilogue(NTSTATUS status,
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
-	s3call->response.data.interface_version	= WINBIND_INTERFACE_VERSION;
+	s3call->response->result			= WINBINDD_OK;
+	s3call->response->data.interface_version	= WINBIND_INTERFACE_VERSION;
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
-	s3call->response.data.info.winbind_separator = *lp_winbind_separator(s3call->wbconn->lp_ctx);
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version,
+	s3call->response->result			= WINBINDD_OK;
+	s3call->response->data.info.winbind_separator = *lp_winbind_separator(s3call->wbconn->lp_ctx);
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.info.samba_version,
 				SAMBA_VERSION_STRING);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name,
+	s3call->response->result			= WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.domain_name,
 				lp_workgroup(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name,
+	s3call->response->result			= WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.netbios_name,
 				lp_netbios_name(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
@@ -218,31 +218,31 @@ NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 	struct loadparm_context *lp_ctx = s3call->wbconn->listen_socket->service->task->lp_ctx;
 	const char *priv_socket_dir = lp_winbindd_privileged_socket_directory(lp_ctx);
 
-	s3call->response.result		 = WINBINDD_OK;
-	s3call->response.extra_data.data = discard_const(priv_socket_dir);
+	s3call->response->result		 = WINBINDD_OK;
+	s3call->response->extra_data.data = discard_const(priv_socket_dir);
 
-	s3call->response.length += strlen(priv_socket_dir) + 1;
+	s3call->response->length += strlen(priv_socket_dir) + 1;
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 {
-	s3call->response.result			= WINBINDD_OK;
+	s3call->response->result			= WINBINDD_OK;
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_domain_info(struct wbsrv_samba3_call *s3call)
 {
 	DEBUG(5, ("wbsrv_samba3_domain_info called, stub\n"));
-	s3call->response.result = WINBINDD_OK;
-	fstrcpy(s3call->response.data.domain_info.name,
-		s3call->request.domain_name);
-	fstrcpy(s3call->response.data.domain_info.alt_name,
-		s3call->request.domain_name);
-	fstrcpy(s3call->response.data.domain_info.sid, "S-1-2-3-4");
-	s3call->response.data.domain_info.native_mode = false;
-	s3call->response.data.domain_info.active_directory = false;
-	s3call->response.data.domain_info.primary = false;
+	s3call->response->result = WINBINDD_OK;
+	fstrcpy(s3call->response->data.domain_info.name,
+		s3call->request->domain_name);
+	fstrcpy(s3call->response->data.domain_info.alt_name,
+		s3call->request->domain_name);
+	fstrcpy(s3call->response->data.domain_info.sid, "S-1-2-3-4");
+	s3call->response->data.domain_info.native_mode = false;
+	s3call->response->data.domain_info.active_directory = false;
+	s3call->response->data.domain_info.primary = false;
 
 	return NT_STATUS_OK;
 }
@@ -323,7 +323,7 @@ NTSTATUS wbsrv_samba3_getdcname(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_getdcname called\n"));
 
 	ctx = wb_cmd_getdcname_send(s3call, service,
-				    s3call->request.domain_name);
+				    s3call->request->domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getdcname_recv_dc;
@@ -343,8 +343,8 @@ static void getdcname_recv_dc(struct composite_context *ctx)
 	status = wb_cmd_getdcname_recv(ctx, s3call, &dcname);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	s3call->response.result = WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.dc_name, dcname);
+	s3call->response->result = WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.dc_name, dcname);
 
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -363,10 +363,10 @@ NTSTATUS wbsrv_samba3_userdomgroups(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_userdomgroups called\n"));
 
-	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	sid = dom_sid_parse_talloc(s3call, s3call->request->data.sid);
 	if (sid == NULL) {
 		DEBUG(5, ("Could not parse sid %s\n",
-			  s3call->request.data.sid));
+			  s3call->request->data.sid));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -409,10 +409,10 @@ static void userdomgroups_recv_groups(struct composite_context *ctx)
 		goto done;
 	}
 
-	s3call->response.result = WINBINDD_OK;
-	s3call->response.extra_data.data = sids_string;
-	s3call->response.length += strlen(sids_string)+1;
-	s3call->response.data.num_entries = num_sids;
+	s3call->response->result = WINBINDD_OK;
+	s3call->response->extra_data.data = sids_string;
+	s3call->response->length += strlen(sids_string)+1;
+	s3call->response->data.num_entries = num_sids;
 
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -430,10 +430,10 @@ NTSTATUS wbsrv_samba3_usersids(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_usersids called\n"));
 
-	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	sid = dom_sid_parse_talloc(s3call, s3call->request->data.sid);
 	if (sid == NULL) {
 		DEBUG(5, ("Could not parse sid %s\n",
-			  s3call->request.data.sid));
+			  s3call->request->data.sid));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -475,10 +475,10 @@ static void usersids_recv_sids(struct composite_context *ctx)
 		}
 	}
 
-	s3call->response.result = WINBINDD_OK;
-	s3call->response.extra_data.data = sids_string;
-	s3call->response.length += strlen(sids_string);
-	s3call->response.data.num_entries = num_sids;
+	s3call->response->result = WINBINDD_OK;
+	s3call->response->extra_data.data = sids_string;
+	s3call->response->length += strlen(sids_string);
+	s3call->response->data.num_entries = num_sids;
 
 	/* Hmmmm. Nasty protocol -- who invented the zeros between the
 	 * SIDs? Hmmm. Could have been me -- vl */
@@ -509,8 +509,8 @@ NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
 
 	ctx = wb_cmd_lookupname_send(s3call, service,
-				     s3call->request.data.name.dom_name,
-				     s3call->request.data.name.name);
+				     s3call->request->data.name.dom_name,
+				     s3call->request->data.name.name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	/* setup the callbacks */
@@ -531,9 +531,9 @@ static void lookupname_recv_sid(struct composite_context *ctx)
 	status = wb_cmd_lookupname_recv(ctx, s3call, &sid);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	s3call->response.result = WINBINDD_OK;
-	s3call->response.data.sid.type = sid->type;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.sid.sid,
+	s3call->response->result = WINBINDD_OK;
+	s3call->response->data.sid.type = sid->type;
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.sid.sid,
 				dom_sid_string(s3call, sid->sid));
 
  done:
@@ -555,10 +555,10 @@ NTSTATUS wbsrv_samba3_lookupsid(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_lookupsid called\n"));
 
-	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	sid = dom_sid_parse_talloc(s3call, s3call->request->data.sid);
 	if (sid == NULL) {
 		DEBUG(5, ("Could not parse sid %s\n",
-			  s3call->request.data.sid));
+			  s3call->request->data.sid));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -583,11 +583,11 @@ static void lookupsid_recv_name(struct composite_context *ctx)
 	status = wb_cmd_lookupsid_recv(ctx, s3call, &sid);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	s3call->response.result = WINBINDD_OK;
-	s3call->response.data.name.type = sid->type;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.name.dom_name,
+	s3call->response->result = WINBINDD_OK;
+	s3call->response->data.name.type = sid->type;
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.name.dom_name,
 				sid->domain);
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.name.name, sid->name);
+	WBSRV_SAMBA3_SET_STRING(s3call->response->data.name.name, sid->name);
 
  done:
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -599,7 +599,7 @@ static void lookupsid_recv_name(struct composite_context *ctx)
 NTSTATUS wbsrv_samba3_pam_logoff(struct wbsrv_samba3_call *s3call)
 {
 	NTSTATUS status;
-	struct winbindd_response *resp = &s3call->response;
+	struct winbindd_response *resp = s3call->response;
 
 	status = NT_STATUS_OK;
 
@@ -640,19 +640,19 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
 
-	chal.data       = s3call->request.data.auth_crap.chal;
-	chal.length     = sizeof(s3call->request.data.auth_crap.chal);
-	nt_resp.data    = (uint8_t *)s3call->request.data.auth_crap.nt_resp;
-	nt_resp.length  = s3call->request.data.auth_crap.nt_resp_len;
-	lm_resp.data    = (uint8_t *)s3call->request.data.auth_crap.lm_resp;
-	lm_resp.length  = s3call->request.data.auth_crap.lm_resp_len;
+	chal.data       = s3call->request->data.auth_crap.chal;
+	chal.length     = sizeof(s3call->request->data.auth_crap.chal);
+	nt_resp.data    = (uint8_t *)s3call->request->data.auth_crap.nt_resp;
+	nt_resp.length  = s3call->request->data.auth_crap.nt_resp_len;
+	lm_resp.data    = (uint8_t *)s3call->request->data.auth_crap.lm_resp;
+	lm_resp.length  = s3call->request->data.auth_crap.lm_resp_len;
 
 	ctx = wb_cmd_pam_auth_crap_send(
 		s3call, service,
-		s3call->request.data.auth_crap.logon_parameters,
-		s3call->request.data.auth_crap.domain,
-		s3call->request.data.auth_crap.user,
-		s3call->request.data.auth_crap.workstation,
+		s3call->request->data.auth_crap.logon_parameters,
+		s3call->request->data.auth_crap.domain,
+		s3call->request->data.auth_crap.user,
+		s3call->request->data.auth_crap.workstation,
 		chal, nt_resp, lm_resp);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
@@ -677,13 +677,13 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 					   &user_session_key, &lm_key, &unix_username);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	if (s3call->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
-		memcpy(s3call->response.data.auth.user_session_key, 
+	if (s3call->request->flags & WBFLAG_PAM_USER_SESSION_KEY) {
+		memcpy(s3call->response->data.auth.user_session_key,
 		       &user_session_key.key,
-		       sizeof(s3call->response.data.auth.user_session_key));
+		       sizeof(s3call->response->data.auth.user_session_key));
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_INFO3_TEXT) {
+	if (s3call->request->flags & WBFLAG_PAM_INFO3_TEXT) {
 		status = wb_samba3_append_info3_as_txt(ctx, s3call, info3);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
@@ -692,19 +692,19 @@ static void pam_auth_crap_recv(struct composite_context *ctx)
 		}
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_INFO3_NDR) {
-		s3call->response.extra_data.data = info3.data;
-		s3call->response.length += info3.length;
+	if (s3call->request->flags & WBFLAG_PAM_INFO3_NDR) {
+		s3call->response->extra_data.data = info3.data;
+		s3call->response->length += info3.length;
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_LMKEY) {
-		memcpy(s3call->response.data.auth.first_8_lm_hash, 
+	if (s3call->request->flags & WBFLAG_PAM_LMKEY) {
+		memcpy(s3call->response->data.auth.first_8_lm_hash,
 		       lm_key.key,
-		       sizeof(s3call->response.data.auth.first_8_lm_hash));
+		       sizeof(s3call->response->data.auth.first_8_lm_hash));
 	}
 	
-	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
-		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.unix_username,unix_username);
+	if (s3call->request->flags & WBFLAG_PAM_UNIX_NAME) {
+		WBSRV_SAMBA3_SET_STRING(s3call->response->data.auth.unix_username,unix_username);
 	}
 
  done:
@@ -729,7 +729,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 	char *user, *domain;
 
 	if (!wb_samba3_split_username(s3call, s3call->wbconn->lp_ctx,
-				 s3call->request.data.auth.user,
+				 s3call->request->data.auth.user,
 				 &domain, &user)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -742,7 +742,7 @@ NTSTATUS wbsrv_samba3_pam_auth(struct wbsrv_samba3_call *s3call)
 	cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
 	cli_credentials_set_username(credentials, user, CRED_SPECIFIED);
 
-	cli_credentials_set_password(credentials, s3call->request.data.auth.pass, CRED_SPECIFIED);
+	cli_credentials_set_password(credentials, s3call->request->data.auth.pass, CRED_SPECIFIED);
 
 	ctx = wb_cmd_pam_auth_send(s3call, service, credentials);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
@@ -769,13 +769,13 @@ static void pam_auth_recv(struct composite_context *ctx)
 
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	if (s3call->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
-		memcpy(s3call->response.data.auth.user_session_key, 
+	if (s3call->request->flags & WBFLAG_PAM_USER_SESSION_KEY) {
+		memcpy(s3call->response->data.auth.user_session_key,
 		       &user_session_key.key,
-		       sizeof(s3call->response.data.auth.user_session_key));
+		       sizeof(s3call->response->data.auth.user_session_key));
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_INFO3_TEXT) {
+	if (s3call->request->flags & WBFLAG_PAM_INFO3_TEXT) {
 		status = wb_samba3_append_info3_as_txt(ctx, s3call, info3);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
@@ -784,19 +784,19 @@ static void pam_auth_recv(struct composite_context *ctx)
 		}
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_INFO3_NDR) {
-		s3call->response.extra_data.data = info3.data;
-		s3call->response.length += info3.length;
+	if (s3call->request->flags & WBFLAG_PAM_INFO3_NDR) {
+		s3call->response->extra_data.data = info3.data;
+		s3call->response->length += info3.length;
 	}
 
-	if (s3call->request.flags & WBFLAG_PAM_LMKEY) {
-		memcpy(s3call->response.data.auth.first_8_lm_hash, 
+	if (s3call->request->flags & WBFLAG_PAM_LMKEY) {
+		memcpy(s3call->response->data.auth.first_8_lm_hash,
 		       lm_key.key,
-		       sizeof(s3call->response.data.auth.first_8_lm_hash));
+		       sizeof(s3call->response->data.auth.first_8_lm_hash));
 	}
 	
-	if (s3call->request.flags & WBFLAG_PAM_UNIX_NAME) {
-		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.unix_username,unix_username);
+	if (s3call->request->flags & WBFLAG_PAM_UNIX_NAME) {
+		WBSRV_SAMBA3_SET_STRING(s3call->response->data.auth.unix_username,unix_username);
 	}
 	
 
@@ -859,11 +859,11 @@ static void list_trustdom_recv_doms(struct composite_context *ctx)
 		goto done;
 	}
 
-	s3call->response.result = WINBINDD_OK;
+	s3call->response->result = WINBINDD_OK;
 	if (num_domains > 0) {
-		s3call->response.extra_data.data = result;
-		s3call->response.length += strlen(result)+1;
-		s3call->response.data.num_entries = num_domains;
+		s3call->response->extra_data.data = result;
+		s3call->response->length += strlen(result)+1;
+		s3call->response->data.num_entries = num_domains;
 	}
 
  done:
@@ -881,7 +881,7 @@ NTSTATUS wbsrv_samba3_list_groups(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba4_list_groups called\n"));
 
 	ctx = wb_cmd_list_groups_send(s3call, service,
-				      s3call->request.domain_name);
+				      s3call->request->domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = list_groups_recv;
@@ -906,11 +906,11 @@ static void list_groups_recv(struct composite_context *ctx)
 			&extra_data, &num_groups);
 
 	if (NT_STATUS_IS_OK(status)) {
-		s3call->response.extra_data.data = extra_data;
-		s3call->response.length += extra_data_len;
+		s3call->response->extra_data.data = extra_data;
+		s3call->response->length += extra_data_len;
 		if (extra_data) {
-			s3call->response.length += 1;
-			s3call->response.data.num_entries = num_groups;
+			s3call->response->length += 1;
+			s3call->response->data.num_entries = num_groups;
 		}
 	}
 
@@ -930,7 +930,7 @@ NTSTATUS wbsrv_samba3_list_users(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_list_users called\n"));
 
 	ctx = wb_cmd_list_users_send(s3call, service,
-			s3call->request.domain_name);
+			s3call->request->domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = list_users_recv;
@@ -955,11 +955,11 @@ static void list_users_recv(struct composite_context *ctx)
 			&extra_data, &num_users);
 
 	if (NT_STATUS_IS_OK(status)) {
-		s3call->response.extra_data.data = extra_data;
-		s3call->response.length += extra_data_len;
+		s3call->response->extra_data.data = extra_data;
+		s3call->response->length += extra_data_len;
 		if (extra_data) {
-			s3call->response.length += 1;
-			s3call->response.data.num_entries = num_users;
+			s3call->response->length += 1;
+			s3call->response->data.num_entries = num_users;
 		}
 	}
 
@@ -979,7 +979,7 @@ NTSTATUS wbsrv_samba3_getpwnam(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_getpwnam called\n"));
 
 	ctx = wb_cmd_getpwnam_send(s3call, service,
-			s3call->request.data.username);
+			s3call->request->data.username);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getpwnam_recv;
@@ -1000,7 +1000,7 @@ static void getpwnam_recv(struct composite_context *ctx)
 
 	status = wb_cmd_getpwnam_recv(ctx, s3call, &pw);
 	if(NT_STATUS_IS_OK(status))
-		s3call->response.data.pw = *pw;
+		s3call->response->data.pw = *pw;
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1015,7 +1015,7 @@ NTSTATUS wbsrv_samba3_getpwuid(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_getpwuid called\n"));
 
 	ctx = wb_cmd_getpwuid_send(s3call, service,
-			s3call->request.data.uid);
+			s3call->request->data.uid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getpwuid_recv;
@@ -1036,7 +1036,7 @@ static void getpwuid_recv(struct composite_context *ctx)
 
 	status = wb_cmd_getpwuid_recv(ctx, s3call, &pw);
 	if (NT_STATUS_IS_OK(status))
-		s3call->response.data.pw = *pw;
+		s3call->response->data.pw = *pw;
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1094,7 +1094,7 @@ NTSTATUS wbsrv_samba3_getpwent(struct wbsrv_samba3_call *s3call)
 	NT_STATUS_HAVE_NO_MEMORY(pwent);
 
 	ctx = wb_cmd_getpwent_send(s3call, service, pwent,
-			s3call->request.data.num_entries);
+			s3call->request->data.num_entries);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getpwent_recv;
@@ -1118,9 +1118,9 @@ static void getpwent_recv(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(status)) {
 		uint32_t extra_len = sizeof(struct winbindd_pw) * num_users;
 
-		s3call->response.data.num_entries = num_users;
-		s3call->response.extra_data.data = pw;
-		s3call->response.length += extra_len;
+		s3call->response->data.num_entries = num_users;
+		s3call->response->extra_data.data = pw;
+		s3call->response->length += extra_len;
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -1136,7 +1136,7 @@ NTSTATUS wbsrv_samba3_endpwent(struct wbsrv_samba3_call *s3call)
 	talloc_free(pwent);
 
 	s3call->wbconn->protocol_private_data = NULL;
-	s3call->response.result = WINBINDD_OK;
+	s3call->response->result = WINBINDD_OK;
 	return NT_STATUS_OK;
 }
 
@@ -1152,7 +1152,7 @@ NTSTATUS wbsrv_samba3_getgrnam(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_getgrnam called\n"));
 
 	ctx = wb_cmd_getgrnam_send(s3call, service,
-			s3call->request.data.groupname);
+			s3call->request->data.groupname);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getgrnam_recv;
@@ -1173,7 +1173,7 @@ static void getgrnam_recv(struct composite_context *ctx)
 
 	status = wb_cmd_getgrnam_recv(ctx, s3call, &gr);
 	if(NT_STATUS_IS_OK(status))
-		s3call->response.data.gr = *gr;
+		s3call->response->data.gr = *gr;
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1188,7 +1188,7 @@ NTSTATUS wbsrv_samba3_getgrgid(struct wbsrv_samba3_call *s3call)
 	DEBUG(5, ("wbsrv_samba3_getgrgid called\n"));
 
 	ctx = wb_cmd_getgrgid_send(s3call, service,
-			s3call->request.data.gid);
+			s3call->request->data.gid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getgrgid_recv;
@@ -1209,7 +1209,7 @@ static void getgrgid_recv(struct composite_context *ctx)
 
 	status = wb_cmd_getgrgid_recv(ctx, s3call, &gr);
 	if (NT_STATUS_IS_OK(status))
-		s3call->response.data.gr = *gr;
+		s3call->response->data.gr = *gr;
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1223,8 +1223,8 @@ NTSTATUS wbsrv_samba3_getgroups(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_getgroups called\n"));
 	/* S3 code do the same so why not ... */
-	s3call->request.data.username[sizeof(s3call->request.data.username)-1]='\0';
-	ctx = wb_cmd_getgroups_send(s3call, service, s3call->request.data.username);
+	s3call->request->data.username[sizeof(s3call->request->data.username)-1]='\0';
+	ctx = wb_cmd_getgroups_send(s3call, service, s3call->request->data.username);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getgroups_recv;
@@ -1247,11 +1247,11 @@ static void getgroups_recv(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(status)) {
 		uint32_t extra_len = sizeof(gid_t) * num_groups;
 
-		s3call->response.data.num_entries = num_groups;
-		s3call->response.extra_data.data = gids;
-		s3call->response.length += extra_len;
+		s3call->response->data.num_entries = num_groups;
+		s3call->response->extra_data.data = gids;
+		s3call->response->length += extra_len;
 	} else {
-		s3call->response.result = WINBINDD_ERROR;
+		s3call->response->result = WINBINDD_ERROR;
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -1310,7 +1310,7 @@ NTSTATUS wbsrv_samba3_getgrent(struct wbsrv_samba3_call *s3call)
 	NT_STATUS_HAVE_NO_MEMORY(grent);
 
 	ctx = wb_cmd_getgrent_send(s3call, service, grent,
-			s3call->request.data.num_entries);
+			s3call->request->data.num_entries);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = getgrent_recv;
@@ -1334,9 +1334,9 @@ static void getgrent_recv(struct composite_context *ctx)
 	if (NT_STATUS_IS_OK(status)) {
 		uint32_t extra_len = sizeof(struct winbindd_gr) * num_groups;
 
-		s3call->response.data.num_entries = num_groups;
-		s3call->response.extra_data.data = gr;
-		s3call->response.length += extra_len;
+		s3call->response->data.num_entries = num_groups;
+		s3call->response->extra_data.data = gr;
+		s3call->response->length += extra_len;
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -1345,7 +1345,7 @@ static void getgrent_recv(struct composite_context *ctx)
 NTSTATUS wbsrv_samba3_endgrent(struct wbsrv_samba3_call *s3call)
 {
 	DEBUG(5, ("wbsrv_samba3_endgrent called\n"));
-	s3call->response.result = WINBINDD_OK;
+	s3call->response->result = WINBINDD_OK;
 	return NT_STATUS_OK;
 }
 
@@ -1360,7 +1360,7 @@ NTSTATUS wbsrv_samba3_sid2uid(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_sid2uid called\n"));
 
-	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	sid = dom_sid_parse_talloc(s3call, s3call->request->data.sid);
 	NT_STATUS_HAVE_NO_MEMORY(sid);
 
 	ctx = wb_sid2uid_send(s3call, service, sid);
@@ -1382,7 +1382,7 @@ static void sid2uid_recv(struct composite_context *ctx)
 
 	DEBUG(5, ("sid2uid_recv called\n"));
 
-	status = wb_sid2uid_recv(ctx, &s3call->response.data.uid);
+	status = wb_sid2uid_recv(ctx, &s3call->response->data.uid);
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1398,7 +1398,7 @@ NTSTATUS wbsrv_samba3_sid2gid(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_sid2gid called\n"));
 
-	sid = dom_sid_parse_talloc(s3call, s3call->request.data.sid);
+	sid = dom_sid_parse_talloc(s3call, s3call->request->data.sid);
 	NT_STATUS_HAVE_NO_MEMORY(sid);
 
 	ctx = wb_sid2gid_send(s3call, service, sid);
@@ -1420,7 +1420,7 @@ static void sid2gid_recv(struct composite_context *ctx)
 
 	DEBUG(5, ("sid2gid_recv called\n"));
 
-	status = wb_sid2gid_recv(ctx, &s3call->response.data.gid);
+	status = wb_sid2gid_recv(ctx, &s3call->response->data.gid);
 
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
@@ -1435,7 +1435,7 @@ NTSTATUS wbsrv_samba3_uid2sid(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_uid2sid called\n"));
 
-	ctx = wb_uid2sid_send(s3call, service, s3call->request.data.uid);
+	ctx = wb_uid2sid_send(s3call, service, s3call->request->data.uid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = uid2sid_recv;
@@ -1466,8 +1466,8 @@ static void uid2sid_recv(struct composite_context *ctx)
 
 		/* But we assume this worked, so we'll set the string. Work
 		 * done. */
-		WBSRV_SAMBA3_SET_STRING(s3call->response.data.sid.sid, sid_str);
-		s3call->response.data.sid.type = SID_NAME_USER;
+		WBSRV_SAMBA3_SET_STRING(s3call->response->data.sid.sid, sid_str);
+		s3call->response->data.sid.type = SID_NAME_USER;
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
@@ -1483,7 +1483,7 @@ NTSTATUS wbsrv_samba3_gid2sid(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_gid2sid called\n"));
 
-	ctx = wb_gid2sid_send(s3call, service, s3call->request.data.gid);
+	ctx = wb_gid2sid_send(s3call, service, s3call->request->data.gid);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = gid2sid_recv;
@@ -1511,8 +1511,8 @@ static void gid2sid_recv(struct composite_context *ctx)
 		if (sid_str == NULL)
 			wbsrv_samba3_async_epilogue(NT_STATUS_NO_MEMORY,s3call);
 
-		WBSRV_SAMBA3_SET_STRING(s3call->response.data.sid.sid, sid_str);
-		s3call->response.data.sid.type = SID_NAME_DOMAIN;
+		WBSRV_SAMBA3_SET_STRING(s3call->response->data.sid.sid, sid_str);
+		s3call->response->data.sid.type = SID_NAME_DOMAIN;
 	}
 
 	wbsrv_samba3_async_epilogue(status, s3call);
