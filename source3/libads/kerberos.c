@@ -715,7 +715,8 @@ int kerberos_kinit_password(const char *principal,
 
 static char *print_kdc_line(char *mem_ctx,
 			const char *prev_line,
-			const struct sockaddr_storage *pss)
+			const struct sockaddr_storage *pss,
+			const char *kdc_name)
 {
 	char *kdc_str = NULL;
 
@@ -772,14 +773,15 @@ static char *print_kdc_line(char *mem_ctx,
 static char *get_kdc_ip_string(char *mem_ctx,
 		const char *realm,
 		const char *sitename,
-		struct sockaddr_storage *pss)
+		struct sockaddr_storage *pss,
+		const char *kdc_name)
 {
 	int i;
 	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite = NULL;
 	int count_site = 0;
 	int count_nonsite;
-	char *kdc_str = print_kdc_line(mem_ctx, "", pss);
+	char *kdc_str = print_kdc_line(mem_ctx, "", pss, kdc_name);
 
 	if (kdc_str == NULL) {
 		return NULL;
@@ -803,7 +805,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 			 * but not done often. */
 			kdc_str = print_kdc_line(mem_ctx,
 						kdc_str,
-						&ip_srv_site[i].ss);
+						&ip_srv_site[i].ss,
+						NULL);
 			if (!kdc_str) {
 				SAFE_FREE(ip_srv_site);
 				return NULL;
@@ -840,7 +843,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		/* Append to the string - inefficient but not done often. */
 		kdc_str = print_kdc_line(mem_ctx,
 				kdc_str,
-				&ip_srv_nonsite[i].ss);
+				&ip_srv_nonsite[i].ss,
+				NULL);
 		if (!kdc_str) {
 			SAFE_FREE(ip_srv_site);
 			SAFE_FREE(ip_srv_nonsite);
@@ -868,7 +872,8 @@ static char *get_kdc_ip_string(char *mem_ctx,
 bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *domain,
 						const char *sitename,
-						struct sockaddr_storage *pss)
+						struct sockaddr_storage *pss,
+						const char *kdc_name)
 {
 	char *dname;
 	char *tmpname = NULL;
@@ -912,7 +917,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	realm_upper = talloc_strdup(fname, realm);
 	strupper_m(realm_upper);
 
-	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss);
+	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss, kdc_name);
 	if (!kdc_ip_string) {
 		goto done;
 	}
