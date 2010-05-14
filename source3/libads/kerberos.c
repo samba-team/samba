@@ -728,6 +728,9 @@ static char *print_kdc_line(char *mem_ctx,
 		char addr[INET6_ADDRSTRLEN];
 		uint16_t port = get_sockaddr_port(pss);
 
+		DEBUG(10,("print_kdc_line: IPv6 case for kdc_name: %s, port: %d\n",
+			kdc_name, port));
+
 		if (port != 0 && port != DEFAULT_KRB5_PORT) {
 			/* Currently for IPv6 we can't specify a non-default
 			   krb5 port with an address, as this requires a ':'.
@@ -744,6 +747,7 @@ static char *print_kdc_line(char *mem_ctx,
 					"Error %s\n.",
 					print_canonical_sockaddr(mem_ctx, pss),
 					gai_strerror(ret)));
+				return NULL;
 			}
 			/* Success, use host:port */
 			kdc_str = talloc_asprintf(mem_ctx,
@@ -752,11 +756,22 @@ static char *print_kdc_line(char *mem_ctx,
 					hostname,
 					(unsigned int)port);
 		} else {
-			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-					prev_line,
-					print_sockaddr(addr,
-						sizeof(addr),
-						pss));
+
+			/* no krb5 lib currently supports "kdc = ipv6 address"
+			 * at all, so just fill in just the kdc_name if we have
+			 * it and let the krb5 lib figure out the appropriate
+			 * ipv6 address - gd */
+
+			if (kdc_name) {
+				kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+						prev_line, kdc_name);
+			} else {
+				kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+						prev_line,
+						print_sockaddr(addr,
+							sizeof(addr),
+							pss));
+			}
 		}
 	}
 	return kdc_str;
