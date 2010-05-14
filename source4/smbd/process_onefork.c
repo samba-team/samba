@@ -98,9 +98,6 @@ static void onefork_new_task(struct tevent_context *ev,
 			     void *private_data)
 {
 	pid_t pid;
-	int i, num_children;
-
-	struct tevent_context *ev2, *ev_parent;
 
 	pid = fork();
 
@@ -111,31 +108,20 @@ static void onefork_new_task(struct tevent_context *ev,
 
 	pid = getpid();
 
-	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = s4_event_context_init(NULL);
-
-	/* setup this as the default context */
-	s4_event_context_set_default(ev2);
-
-	/* the service has given us a private pointer that
-	   encapsulates the context it needs for this new connection -
-	   everything else will be freed */
-	talloc_steal(ev2, private_data);
-
-	/* this will free all the listening sockets and all state that
-	   is not associated with this new connection */
-	talloc_free(ev);
+	if (tevent_re_initialise(ev) != 0) {
+		smb_panic("Failed to re-initialise tevent after fork");
+	}
 
 	setproctitle("task %s server_id[%d]", service_name, pid);
 
 	onefork_reload_after_fork();
 
 	/* setup this new connection: process will bind to it's sockets etc */
-	new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data);
+	new_task_fn(ev, lp_ctx, cluster_id(pid, 0), private_data);
 
-	event_loop_wait(ev2);
+	event_loop_wait(ev);
 
-	talloc_free(ev2);
+	talloc_free(ev);
 	exit(0);
 
 }

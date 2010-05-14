@@ -80,7 +80,6 @@ static void standard_accept_connection(struct tevent_context *ev,
 	NTSTATUS status;
 	struct socket_context *sock2;
 	pid_t pid;
-	struct tevent_context *ev2;
 	struct socket_address *c, *s;
 
 	/* accept an incoming connection. */
@@ -106,23 +105,14 @@ static void standard_accept_connection(struct tevent_context *ev,
 	pid = getpid();
 
 	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = s4_event_context_init(NULL);
 
-	/* setup this as the default context */
-	s4_event_context_set_default(ev2);
-
-	/* the service has given us a private pointer that
-	   encapsulates the context it needs for this new connection -
-	   everything else will be freed */
-	talloc_steal(ev2, private_data);
-	talloc_steal(private_data, sock2);
+	if (tevent_re_initialise(ev) != 0) {
+		smb_panic("Failed to re-initialise tevent after fork");
+	}
 
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
 	talloc_free(sock);
-	if (tevent_re_initialise(ev) != 0) {
-		smb_panic("Failed to re-initialise tevent after fork");
-	}
 
 	/* we don't care if the dup fails, as its only a select()
 	   speed optimisation */
@@ -131,7 +121,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* tdb needs special fork handling */
 	ldb_wrap_fork_hook();
 
-	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
+	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	close(child_pipe[1]);
 
@@ -139,8 +129,8 @@ static void standard_accept_connection(struct tevent_context *ev,
 	set_need_random_reseed();
 
 	/* setup the process title */
-	c = socket_get_peer_addr(sock2, ev2);
-	s = socket_get_my_addr(sock2, ev2);
+	c = socket_get_peer_addr(sock2, ev);
+	s = socket_get_my_addr(sock2, ev);
 	if (s && c) {
 		setproctitle("conn c[%s:%u] s[%s:%u] server_id[%d]",
 			     c->addr, c->port, s->addr, s->port, pid);
@@ -149,14 +139,14 @@ static void standard_accept_connection(struct tevent_context *ev,
 	talloc_free(s);
 
 	/* setup this new connection.  Cluster ID is PID based for this process modal */
-	new_conn(ev2, lp_ctx, sock2, cluster_id(pid, 0), private_data);
+	new_conn(ev, lp_ctx, sock2, cluster_id(pid, 0), private_data);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
 	   more to process */	   
-	event_loop_wait(ev2);
+	event_loop_wait(ev);
 
-	talloc_free(ev2);
+	talloc_free(ev);
 	exit(0);
 }
 
@@ -170,7 +160,6 @@ static void standard_new_task(struct tevent_context *ev,
 			      void *private_data)
 {
 	pid_t pid;
-	struct tevent_context *ev2;
 
 	pid = fork();
 
@@ -181,17 +170,6 @@ static void standard_new_task(struct tevent_context *ev,
 
 	pid = getpid();
 
-	/* This is now the child code. We need a completely new event_context to work with */
-	ev2 = s4_event_context_init(NULL);
-
-	/* setup this as the default context */
-	s4_event_context_set_default(ev2);
-
-	/* the service has given us a private pointer that
-	   encapsulates the context it needs for this new connection -
-	   everything else will be freed */
-	talloc_steal(ev2, private_data);
-
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
 	if (tevent_re_initialise(ev) != 0) {
@@ -201,7 +179,7 @@ static void standard_new_task(struct tevent_context *ev,
 	/* ldb/tdb need special fork handling */
 	ldb_wrap_fork_hook();
 
-	tevent_add_fd(ev2, ev2, child_pipe[0], TEVENT_FD_READ,
+	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	close(child_pipe[1]);
 
@@ -211,14 +189,14 @@ static void standard_new_task(struct tevent_context *ev,
 	setproctitle("task %s server_id[%d]", service_name, pid);
 
 	/* setup this new task.  Cluster ID is PID based for this process modal */
-	new_task(ev2, lp_ctx, cluster_id(pid, 0), private_data);
+	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
 	   more to process */	   
-	event_loop_wait(ev2);
+	event_loop_wait(ev);
 
-	talloc_free(ev2);
+	talloc_free(ev);
 	exit(0);
 }
 
