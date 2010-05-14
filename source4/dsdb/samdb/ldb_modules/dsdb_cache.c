@@ -2,7 +2,7 @@
    Unix SMB/CIFS mplementation.
 
    The Module that loads some DSDB related things
-   into memory. E.g. it loads the dsdb_schema struture
+   into memory. E.g. it loads the dsdb_schema structure
    
    Copyright (C) Stefan Metzmacher 2007
     
