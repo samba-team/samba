@@ -32,7 +32,7 @@
 
 
 #include "includes.h"
-#include "pcap.h"
+#include "printing/pcap.h"
 
 #if defined(SYSV) || defined(HPUX)
 bool sysv_cache_reload(void)

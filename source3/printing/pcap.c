@@ -37,7 +37,7 @@
  */
 
 #include "includes.h"
-#include "pcap.h"
+#include "printing/pcap.h"
 
 struct pcap_cache {
 	char *name;

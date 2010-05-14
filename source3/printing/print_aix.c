@@ -25,7 +25,7 @@
  */
 
 #include "includes.h"
-#include "pcap.h"
+#include "printing/pcap.h"
 
 #ifdef AIX
 bool aix_cache_reload(void)
