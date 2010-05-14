@@ -108,12 +108,14 @@ static bool ads_dc_name(const char *domain,
 				create_local_private_krb5_conf_for_domain(realm,
 									domain,
 									sitename,
-									&ads->ldap.ss);
+									&ads->ldap.ss,
+									ads->config.ldap_server_name);
 			} else {
 				create_local_private_krb5_conf_for_domain(realm,
 									domain,
 									NULL,
-									&ads->ldap.ss);
+									&ads->ldap.ss,
+									ads->config.ldap_server_name);
 			}
 		}
 #endif
