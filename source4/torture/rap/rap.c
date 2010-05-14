@@ -234,7 +234,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_tree *tree,
 
 	params->flags = RAPNDR_FLAGS;
 
-	data = ndr_push_init_ctx(call, iconv_convenience);
+	data = ndr_push_init_ctx(call);
 
 	if (data == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -1649,7 +1649,7 @@ NTSTATUS smbcli_rap_netoemchangepassword(struct smbcli_tree *tree,
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_SamOEMChgPasswordUser2_P))) {
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_SamOEMChgPasswordUser2_P))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1664,7 +1664,7 @@ NTSTATUS smbcli_rap_netoemchangepassword(struct smbcli_tree *tree,
 		NDR_PRINT_IN_DEBUG(rap_NetOEMChangePassword, r);
 	}
 
-	result = rap_cli_do_call(tree, iconv_convenience, call);
+	result = rap_cli_do_call(tree, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

@@ -1351,7 +1351,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (!convert_string_talloc_convenience(io->ac,
+		if (!convert_string_talloc(io->ac,
 						       CH_UTF16MUNGED, CH_UTF8,
 						       g->cleartext_utf16->data,
 						       g->cleartext_utf16->length,
