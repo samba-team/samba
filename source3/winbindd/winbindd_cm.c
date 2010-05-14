@@ -1136,7 +1136,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									sitename,
-									pss);
+									pss,
+									name);
 
 					SAFE_FREE(sitename);
 				} else {
@@ -1144,7 +1145,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 					create_local_private_krb5_conf_for_domain(domain->alt_name,
 									domain->name,
 									NULL,
-									pss);
+									pss,
+									name);
 				}
 				winbindd_set_locator_kdc_envs(domain);
 
