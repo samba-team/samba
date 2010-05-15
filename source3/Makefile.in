@@ -3177,6 +3177,8 @@ selftestdir = ../selftest
 
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
+SUBUNIT_FORMATTER = $(PYTHON) $(selftestdir)/format-subunit --immediate
+
 selftest:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
@@ -3189,7 +3191,7 @@ selftest:: all torture timelimit
 		--socket-wrapper $(TESTS) | \
 		$(PYTHON) $(selftestdir)/filter-subunit \
 		--expected-failures=$(srcdir)/selftest/knownfail | \
-		$(PYTHON) $(selftestdir)/format-subunit --immediate
+		$(SUBUNIT_FORMATTER)
 
 selftest-%:
 	$(MAKE) selftest TESTS=$*
