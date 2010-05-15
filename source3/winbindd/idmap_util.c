@@ -261,6 +261,7 @@ backend:
 	}
 
 	if (map.status != ID_MAPPED) {
+		DEBUG(10, ("sid [%s] is not mapped\n", sid_string_dbg(sid)));
 		if (winbindd_use_idmap_cache()) {
 			idmap_cache_set_sid2uid(sid, -1);
 		}
