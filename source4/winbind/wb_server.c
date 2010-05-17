@@ -284,11 +284,14 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
+	service->priv_pipe_dir = lp_winbindd_privileged_socket_directory(task->lp_ctx);
+	service->pipe_dir = lp_winbindd_socket_directory(task->lp_ctx);
+
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
 	listen_socket->socket_path	= talloc_asprintf(listen_socket, "%s/%s", 
-							  lp_winbindd_socket_directory(task->lp_ctx), 
+							  service->pipe_dir, 
 							  WINBINDD_SOCKET_NAME);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
@@ -305,7 +308,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!listen_socket) goto nomem;
 	listen_socket->socket_path 
 		= talloc_asprintf(listen_socket, "%s/%s", 
-				  lp_winbindd_privileged_socket_directory(task->lp_ctx),
+				  service->priv_pipe_dir,
 				  WINBINDD_SOCKET_NAME);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
