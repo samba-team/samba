@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/srv_samr_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

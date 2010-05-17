@@ -5716,46 +5716,6 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 		      bool *is_data_outstanding);
 
-/* The following definitions come from rpc_server/srv_samr_util.c  */
-
-void copy_id2_to_sam_passwd(struct samu *to,
-			    struct samr_UserInfo2 *from);
-void copy_id4_to_sam_passwd(struct samu *to,
-			    struct samr_UserInfo4 *from);
-void copy_id6_to_sam_passwd(struct samu *to,
-			    struct samr_UserInfo6 *from);
-void copy_id8_to_sam_passwd(struct samu *to,
-			    struct samr_UserInfo8 *from);
-void copy_id10_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo10 *from);
-void copy_id11_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo11 *from);
-void copy_id12_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo12 *from);
-void copy_id13_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo13 *from);
-void copy_id14_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo14 *from);
-void copy_id16_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo16 *from);
-void copy_id17_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo17 *from);
-void copy_id18_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo18 *from);
-void copy_id20_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo20 *from);
-void copy_id21_to_sam_passwd(const char *log_prefix,
-			     struct samu *to,
-			     struct samr_UserInfo21 *from);
-void copy_id23_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo23 *from);
-void copy_id24_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo24 *from);
-void copy_id25_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo25 *from);
-void copy_id26_to_sam_passwd(struct samu *to,
-			     struct samr_UserInfo26 *from);
-
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
 void do_drv_upgrade_printer(struct messaging_context *msg,
