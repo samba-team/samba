@@ -696,13 +696,6 @@ struct ntlmssp_state;
 #include "lib/smbconf/smbconf_reg.h"
 #include "lib/smbconf/smbconf_txt.h"
 
-/* Defines for wisXXX functions. */
-#define UNI_UPPER    0x1
-#define UNI_LOWER    0x2
-#define UNI_DIGIT    0x4
-#define UNI_XDIGIT   0x8
-#define UNI_SPACE    0x10
-
 #include "nsswitch/winbind_nss.h"
 
 /* forward declaration from printing.h to get around 
