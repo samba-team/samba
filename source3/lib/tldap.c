@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "tldap.h"
 
 bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr)
 {

@@ -680,8 +680,6 @@ struct ntlmssp_state;
 #include "talloc_dict.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
-#include "tldap.h"
-#include "tldap_util.h"
 
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
