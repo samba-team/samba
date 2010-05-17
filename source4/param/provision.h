@@ -48,7 +48,6 @@ struct provision_store_self_join_settings {
 	const char *domain_name;
 	const char *realm;
 	const char *netbios_name;
-	const char *account_name;
 	enum netr_SchannelType secure_channel_type;
 	const char *machine_password;
 	int key_version_number;

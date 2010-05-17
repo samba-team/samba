@@ -944,7 +944,6 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	ZERO_STRUCTP(set_secrets);
 	set_secrets->domain_name = r2->out.domain_name;
 	set_secrets->realm = r2->out.realm;
-	set_secrets->account_name = account_name;
 	set_secrets->netbios_name = netbios_name;
 	set_secrets->secure_channel_type = r->in.join_type;
 	set_secrets->machine_password = r2->out.join_password;

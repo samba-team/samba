@@ -766,7 +766,6 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(set_secrets);
 	set_secrets->domain_name = join->out.domain_name;
 	set_secrets->realm = join->out.realm;
-	set_secrets->account_name = account_name;
 	set_secrets->netbios_name = netbios_name;
 	set_secrets->secure_channel_type = SEC_CHAN_BDC;
 	set_secrets->machine_password = join->out.join_password;
