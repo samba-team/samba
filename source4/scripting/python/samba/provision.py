@@ -841,7 +841,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                 domainsid, domainguid, policyguid, policyguid_dc,
                 fill, adminpass, krbtgtpass, 
                 machinepass, invocationid, dnspass, ntdsguid,
-                serverrole, dom_for_fun_level=None,
+                serverrole, am_rodc, dom_for_fun_level=None,
                 schema=None):
     """Setup a complete SAM Database.
     
@@ -870,11 +870,13 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         names=names, serverrole=serverrole, schema=schema)
 
     if schema is None:
-        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
+        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
+                        am_rodc=am_rodc)
 
     # Load the database, but don's load the global schema and don't connect quite yet
     samdb = SamDB(session_info=session_info, url=None, auto_connect=False,
-                  credentials=provision_backend.credentials, lp=lp, global_schema=False)
+                  credentials=provision_backend.credentials, lp=lp, global_schema=False,
+                  am_rodc=am_rodc)
 
     message("Pre-loading the Samba 4 and AD schema")
 
@@ -960,7 +962,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
 
     samdb = SamDB(session_info=admin_session_info,
                 credentials=provision_backend.credentials, lp=lp,
-                global_schema=False)
+                global_schema=False, am_rodc=am_rodc)
     samdb.connect(path)
     samdb.transaction_start()
     try:
@@ -1116,7 +1118,7 @@ def provision(setup_dir, message, session_info,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
-              ldap_dryrun_mode=False,useeadb=False):
+              ldap_dryrun_mode=False,useeadb=False, am_rodc=False):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
@@ -1237,8 +1239,8 @@ def provision(setup_dir, message, session_info,
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
  
     schema = Schema(setup_path, domainsid, invocationid=invocationid, schemadn=names.schemadn,
-                    serverdn=names.serverdn)
-    
+                    serverdn=names.serverdn, am_rodc=am_rodc)
+
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
@@ -1324,7 +1326,7 @@ def provision(setup_dir, message, session_info,
                         invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass, 
                         ntdsguid=ntdsguid, serverrole=serverrole,
-                        dom_for_fun_level=dom_for_fun_level)
+                        dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc)
 
     if serverrole == "domain controller":
         if paths.netlogon is None:

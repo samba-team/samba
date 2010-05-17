@@ -54,7 +54,7 @@ def get_schema_descriptor(domain_sid):
 class Schema(object):
 
     def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
-                 serverdn=None, files=None, prefixmap=None):
+                 serverdn=None, files=None, prefixmap=None, am_rodc=False):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.
@@ -66,7 +66,7 @@ class Schema(object):
         """
 
         self.schemadn = schemadn
-        self.ldb = SamDB(global_schema=False)
+        self.ldb = SamDB(global_schema=False, am_rodc=am_rodc)
         if serverdn is not None:
             self.ldb.set_ntds_settings_dn("CN=NTDS Settings,%s" % serverdn)
         if invocationid is not None:
