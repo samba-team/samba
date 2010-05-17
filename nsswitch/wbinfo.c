@@ -47,7 +47,7 @@ static struct wbcInterfaceDetails *init_interface_details(void)
 	wbc_status = wbcInterfaceDetails(&details);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "could not obtain winbind interface "
-				  "details!\n");
+				  "details: %s\n", wbcErrorString(wbc_status));
 	}
 
 	return details;
@@ -172,6 +172,8 @@ static bool wbinfo_get_userinfo(char *user)
 
 	wbc_status = wbcGetpwnam(user, &pwd);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetpwnam: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -195,6 +197,8 @@ static bool wbinfo_get_uidinfo(int uid)
 
 	wbc_status = wbcGetpwuid(uid, &pwd);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetpwuid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -219,6 +223,8 @@ static bool wbinfo_get_user_sidinfo(const char *sid_str)
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	wbc_status = wbcGetpwsid(&sid, &pwd);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetpwsid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -244,6 +250,8 @@ static bool wbinfo_get_groupinfo(const char *group)
 
 	wbc_status = wbcGetgrnam(group, &grp);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetgrnam: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -273,6 +281,8 @@ static bool wbinfo_get_gidinfo(int gid)
 
 	wbc_status = wbcGetgrgid(gid, &grp);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetgrgid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -306,6 +316,8 @@ static bool wbinfo_get_usergroups(const char *user)
 
 	wbc_status = wbcGetGroups(user, &num_groups, &groups);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetGroups: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -331,11 +343,15 @@ static bool wbinfo_get_usersids(const char *user_sid_str)
 
 	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcLookupUserSids(&user_sid, false, &num_sids, &sids);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcLookupUserSids: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -343,6 +359,8 @@ static bool wbinfo_get_usersids(const char *user_sid_str)
 		char *str = NULL;
 		wbc_status = wbcSidToString(&sids[i], &str);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "failed to call wbcSidToString: %s",
+				  wbcErrorString(wbc_status));
 			wbcFreeMemory(sids);
 			return false;
 		}
@@ -366,11 +384,15 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 
 	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToString: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcLookupUserSids(&user_sid, true, &num_sids, &sids);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcLookupUserSids: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -378,6 +400,8 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 		char *str = NULL;
 		wbc_status = wbcSidToString(&sids[i], &str);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "failed to call wbcSidToString: %s",
+				  wbcErrorString(wbc_status));
 			wbcFreeMemory(sids);
 			return false;
 		}
@@ -411,8 +435,8 @@ static bool wbinfo_get_sidaliases(const char *domain,
 
 	wbc_status = wbcDomainInfo(domain, &dinfo);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_printf("wbcDomainInfo(%s) failed: %s\n", domain,
-			 wbcErrorString(wbc_status));
+		d_fprintf(stderr, "wbcDomainInfo(%s) failed: %s\n", domain,
+			  wbcErrorString(wbc_status));
 		goto done;
 	}
 	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
@@ -457,6 +481,8 @@ static bool wbinfo_wins_byname(const char *name)
 
 	wbc_status = wbcResolveWinsByName(name, &ip);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcResolveWinsByName: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -478,6 +504,8 @@ static bool wbinfo_wins_byip(const char *ip)
 
 	wbc_status = wbcResolveWinsByIP(ip, &name);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcResolveWinsByIP: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -502,6 +530,8 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 
 	wbc_status = wbcListTrusts(&domain_list, &num_domains);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcListTrusts: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -588,6 +618,8 @@ static bool wbinfo_show_onlinestatus(const char *domain)
 
 	wbc_status = wbcListTrusts(&domain_list, &num_domains);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcListTrusts: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -628,11 +660,15 @@ static bool wbinfo_domain_info(const char *domain)
 
 	wbc_status = wbcDomainInfo(domain, &dinfo);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcDomainInfo: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToString(&dinfo->sid, &sid_str);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToString: %s",
+			  wbcErrorString(wbc_status));
 		wbcFreeMemory(dinfo);
 		return false;
 	}
@@ -742,6 +778,8 @@ static bool wbinfo_check_secret(const char *domain)
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcCheckTrustCredentials: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -774,6 +812,8 @@ static bool wbinfo_change_secret(const char *domain)
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcChangeTrustCredentials: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -798,6 +838,8 @@ static bool wbinfo_ping_dc(void)
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcPingDc: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -816,11 +858,15 @@ static bool wbinfo_uid_to_sid(uid_t uid)
 
 	wbc_status = wbcUidToSid(uid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcUidToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToString(&sid, &sid_str);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToString: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -845,11 +891,15 @@ static bool wbinfo_gid_to_sid(gid_t gid)
 
 	wbc_status = wbcGidToSid(gid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGidToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToString(&sid, &sid_str);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToString: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -874,11 +924,15 @@ static bool wbinfo_sid_to_uid(const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToUid(&sid, &uid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToUid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -899,11 +953,15 @@ static bool wbinfo_sid_to_gid(const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToGid(&sid, &gid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToGid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -923,6 +981,8 @@ static bool wbinfo_allocate_uid(void)
 
 	wbc_status = wbcAllocateUid(&uid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcAllocateUid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -942,6 +1002,8 @@ static bool wbinfo_allocate_gid(void)
 
 	wbc_status = wbcAllocateGid(&gid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcAllocateGid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -961,11 +1023,15 @@ static bool wbinfo_set_uid_mapping(uid_t uid, const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSetUidMapping(uid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSetUidMapping: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -986,11 +1052,15 @@ static bool wbinfo_set_gid_mapping(gid_t gid, const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSetGidMapping(gid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSetGidMapping: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1011,11 +1081,15 @@ static bool wbinfo_remove_uid_mapping(uid_t uid, const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcRemoveUidMapping(uid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcRemoveUidMapping: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1036,11 +1110,15 @@ static bool wbinfo_remove_gid_mapping(gid_t gid, const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcRemoveGidMapping(gid, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcRemoveGidMapping: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1066,11 +1144,15 @@ static bool wbinfo_lookupsid(const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcLookupSid(&sid, &domain, &name, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcLookupSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1096,11 +1178,15 @@ static bool wbinfo_lookupsid_fullname(const char *sid_str)
 
 	wbc_status = wbcStringToSid(sid_str, &sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcGetDisplayName(&sid, &domain, &name, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcGetDisplayName: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1219,11 +1305,15 @@ static bool wbinfo_lookupname(const char *full_name)
 	wbc_status = wbcLookupName(domain_name, account_name,
 				   &sid, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcLookupName: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
 	wbc_status = wbcSidToString(&sid, &sid_str);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcSidToString: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
@@ -1311,6 +1401,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 				     (uint8_t *)&flags,
 				     sizeof(flags));
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcAddNamedBlob: %s",
+			  wbcErrorString(wbc_status));
 		goto done;
 	}
 
@@ -1321,6 +1413,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 				     (uint8_t *)&uid,
 				     sizeof(uid));
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcAddNamedBlob: %s",
+			  wbcErrorString(wbc_status));
 		goto done;
 	}
 
@@ -1331,6 +1425,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 				     (uint8_t *)local_cctype,
 				     strlen(cctype)+1);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcAddNamedBlob: %s",
+			  wbcErrorString(wbc_status));
 		goto done;
 	}
 
@@ -1752,6 +1848,8 @@ static bool print_domain_groups(const char *domain)
 
 	wbc_status = wbcListGroups(domain, &num_groups, &groups);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcListGroups: %s",
+			  wbcErrorString(wbc_status));
 		return false;
 	}
 
