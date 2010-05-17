@@ -193,7 +193,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	/* Special case for the guest account which must have a RID of 501 */
 
 	if ( strequal( pwd->pw_name, guest_account ) ) {
-		if ( !pdb_set_user_sid_from_rid(user, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
+		if ( !pdb_set_user_sid_from_rid(user, DOMAIN_RID_GUEST, PDB_DEFAULT)) {
 			return NT_STATUS_NO_SUCH_USER;
 		}
 		return NT_STATUS_OK;
@@ -565,10 +565,10 @@ bool algorithmic_pdb_rid_is_user(uint32 rid)
 {
 	if ( rid_is_well_known(rid) ) {
 		/*
-		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
-		 * and DOMAIN_USER_RID_GUEST.
+		 * The only well known user RIDs are DOMAIN_RID_ADMINISTRATOR
+		 * and DOMAIN_RID_GUEST.
 		 */
-		if(rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
+		if(rid == DOMAIN_RID_ADMINISTRATOR || rid == DOMAIN_RID_GUEST)
 			return True;
 	} else if((rid & RID_TYPE_MASK) == USER_RID_TYPE) {
 		return True;
@@ -592,7 +592,7 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	   the group already exists. */
 
 	if ( strequal( name, "None" ) ) {
-		*rid = DOMAIN_GROUP_RID_USERS;
+		*rid = DOMAIN_RID_USERS;
 		*type = SID_NAME_DOM_GRP;
 
 		return True;

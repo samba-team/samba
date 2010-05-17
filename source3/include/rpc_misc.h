@@ -30,26 +30,6 @@
  * well-known RIDs - Relative IDs
  **********************************************************************/
 
-/* RIDs - Well-known users ... */
-#define DOMAIN_USER_RID_ADMIN          (0x000001F4L)
-#define DOMAIN_USER_RID_GUEST          (0x000001F5L)
-#define DOMAIN_USER_RID_KRBTGT         (0x000001F6L)
-
-/* RIDs - well-known groups ... */
-#define DOMAIN_GROUP_RID_ADMINS        (0x00000200L)
-#define DOMAIN_GROUP_RID_USERS         (0x00000201L)
-#define DOMAIN_GROUP_RID_GUESTS        (0x00000202L)
-#define DOMAIN_GROUP_RID_COMPUTERS     (0x00000203L)
-
-#define DOMAIN_GROUP_RID_CONTROLLERS   (0x00000204L)
-#define DOMAIN_GROUP_RID_CERT_ADMINS   (0x00000205L)
-#define DOMAIN_GROUP_RID_SCHEMA_ADMINS (0x00000206L)
-#define DOMAIN_GROUP_RID_ENTERPRISE_ADMINS (0x00000207L)
-
-/* is the following the right number? I bet it is  --simo
-#define DOMAIN_GROUP_RID_POLICY_ADMINS (0x00000208L)
-*/
-
 /* RIDs - well-known aliases ... */
 #define BUILTIN_ALIAS_RID_ADMINS        (0x00000220L)
 #define BUILTIN_ALIAS_RID_USERS         (0x00000221L)

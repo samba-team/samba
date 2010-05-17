@@ -200,10 +200,10 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrnCaseCmp(argv[i], "rid", strlen("rid")) ) {
 			rid = get_int_param(argv[i]);
-			if ( rid < DOMAIN_GROUP_RID_ADMINS ) {
+			if ( rid < DOMAIN_RID_ADMINS ) {
 				d_fprintf(stderr,
 					  _("RID must be greater than %d\n"),
-					  (uint32)DOMAIN_GROUP_RID_ADMINS-1);
+					  (uint32)DOMAIN_RID_ADMINS-1);
 				return -1;
 			}
 		}

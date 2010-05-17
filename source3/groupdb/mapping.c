@@ -126,7 +126,7 @@ bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 		sid_peek_rid( &sid, &rid );
 
-		if ( rid == DOMAIN_GROUP_RID_USERS ) {
+		if ( rid == DOMAIN_RID_USERS ) {
 			fstrcpy( map->nt_name, "None" );
 			fstrcpy( map->comment, "Ordinary Users" );
 			sid_copy( &map->sid, &sid );

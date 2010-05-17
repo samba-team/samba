@@ -697,7 +697,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sid_compose(&guest_sid, get_global_sam_sid(), DOMAIN_USER_RID_GUEST);
+	sid_compose(&guest_sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
 	become_root();
 	ret = pdb_getsampwsid(sampass, &guest_sid);

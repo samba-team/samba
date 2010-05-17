@@ -1195,7 +1195,7 @@ static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 		rid = pdb_get_user_rid(sampass);
 
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
-		if (rid == DOMAIN_USER_RID_GUEST) {
+		if (rid == DOMAIN_RID_GUEST) {
 			struct passwd *passwd = getpwnam_alloc(NULL, lp_guestaccount());
 			if (!passwd) {
 				DEBUG(0, ("Could not find guest account via getpwnam()! (%s)\n", lp_guestaccount()));
@@ -1332,7 +1332,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* More special case 'guest account' hacks... */
-	if (rid == DOMAIN_USER_RID_GUEST) {
+	if (rid == DOMAIN_RID_GUEST) {
 		const char *guest_account = lp_guestaccount();
 		if (!(guest_account && *guest_account)) {
 			DEBUG(1, ("Guest account not specfied!\n"));

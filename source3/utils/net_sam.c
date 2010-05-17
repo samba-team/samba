@@ -1639,7 +1639,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 
 	d_printf(_("Checking for Domain Users group.\n"));
 
-	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS);
+	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_RID_USERS);
 
 	if (!pdb_getgrsid(&gmap, gsid)) {
 		LDAPMod **mods = NULL;
@@ -1696,7 +1696,7 @@ domu_done:
 
 	d_printf(_("Checking for Domain Admins group.\n"));
 
-	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_ADMINS);
+	sid_compose(&gsid, get_global_sam_sid(), DOMAIN_RID_ADMINS);
 
 	if (!pdb_getgrsid(&gmap, gsid)) {
 		LDAPMod **mods = NULL;
@@ -1803,7 +1803,7 @@ doma_done:
 			goto failed;
 		}
 
-		sid_compose(&sid, get_global_sam_sid(), DOMAIN_USER_RID_ADMIN);
+		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_ADMINISTRATOR);
 
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_ACCOUNT);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXACCOUNT);
@@ -1880,7 +1880,7 @@ doma_done:
 			}
 		}
 
-		sid_compose(&sid, get_global_sam_sid(), DOMAIN_USER_RID_GUEST);
+		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
 		dn = talloc_asprintf(tc, "uid=%s,%s", pwd->pw_name, lp_ldap_user_suffix ());
 		uidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_uid);
@@ -1959,7 +1959,7 @@ doma_done:
 			goto failed;
 		}
 
-		sid_compose(&gsid, get_global_sam_sid(), DOMAIN_GROUP_RID_GUESTS);
+		sid_compose(&gsid, get_global_sam_sid(), DOMAIN_RID_GUESTS);
 
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXGROUP);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);

@@ -124,7 +124,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   something like that. */
 
 			sid_compose(&dst->group_sid, &domain->sid,
-				    DOMAIN_GROUP_RID_USERS);
+				    DOMAIN_RID_USERS);
 		}
 
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));

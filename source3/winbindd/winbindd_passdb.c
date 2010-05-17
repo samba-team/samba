@@ -467,7 +467,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 		   something like that. */
 
 		sid_compose(&(*info)[i].group_sid, &domain->sid,
-				DOMAIN_GROUP_RID_USERS);
+				DOMAIN_RID_USERS);
 	}
 
 	TALLOC_FREE(ps);

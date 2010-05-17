@@ -1039,7 +1039,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			DEBUG(10,("winbindd_dual_pam_auth_cached: failed to get password properties.\n"));
 		}
 
-		if ((my_info3->base.rid != DOMAIN_USER_RID_ADMIN) ||
+		if ((my_info3->base.rid != DOMAIN_RID_ADMINISTRATOR) ||
 		    (password_properties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)) {
 			my_info3->base.acct_flags |= ACB_AUTOLOCK;
 		}

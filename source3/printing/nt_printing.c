@@ -2653,7 +2653,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 		DOM_SID domadmins_sid;
 
 		sid_compose(&domadmins_sid, get_global_sam_sid(),
-			    DOMAIN_GROUP_RID_ADMINS);
+			    DOMAIN_RID_ADMINS);
 
 		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &domadmins_sid,
@@ -2663,7 +2663,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 	}
 	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
-		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
+		sid_append_rid(&adm_sid, DOMAIN_RID_ADMINISTRATOR);
 
 		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &adm_sid,
@@ -5606,7 +5606,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		DOM_SID domadmins_sid;
 
 		sid_compose(&domadmins_sid, get_global_sam_sid(),
-			    DOMAIN_GROUP_RID_ADMINS);
+			    DOMAIN_RID_ADMINS);
 
 		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &domadmins_sid,
@@ -5616,7 +5616,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 	}
 	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
-		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
+		sid_append_rid(&adm_sid, DOMAIN_RID_ADMINISTRATOR);
 
 		sa = PRINTER_ACE_FULL_CONTROL;
 		init_sec_ace(&ace[i++], &adm_sid,
@@ -5725,7 +5725,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 			/* Create new sd */
 
-			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+			sid_append_rid(&owner_sid, DOMAIN_RID_ADMINISTRATOR);
 
 			psd = make_sec_desc(ctx, (*secdesc_ctr)->sd->revision, (*secdesc_ctr)->sd->type,
 					    &owner_sid,

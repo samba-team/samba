@@ -2297,7 +2297,7 @@ create_default:
 			size_t size;
 
 			/* Create new sd */
-			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+			sid_append_rid(&owner_sid, DOMAIN_RID_ADMINISTRATOR);
 
 			new_secdesc = make_sec_desc(tmp_ctx,
 						    secdesc->revision,

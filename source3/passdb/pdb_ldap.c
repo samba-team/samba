@@ -5402,7 +5402,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		DEBUG(3,("ldapsam_create_user: Creating new posix user\n"));
 
 		/* retrieve the Domain Users group gid */
-		if (!sid_compose(&group_sid, get_global_sam_sid(), DOMAIN_GROUP_RID_USERS) ||
+		if (!sid_compose(&group_sid, get_global_sam_sid(), DOMAIN_RID_USERS) ||
 		    !sid_to_gid(&group_sid, &gid)) {
 			DEBUG (0, ("ldapsam_create_user: Unable to get the Domain Users gid: bailing out!\n"));
 			return NT_STATUS_INVALID_PRIMARY_GROUP;

@@ -189,7 +189,7 @@ static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
 	} else {
 		sid_copy(&domadm, dom_sid);
 	}
-	sid_append_rid( &domadm, DOMAIN_GROUP_RID_ADMINS );
+	sid_append_rid( &domadm, DOMAIN_RID_ADMINS );
 
 	/* Add Administrators if the user beloongs to Domain Admins */
 
@@ -280,7 +280,7 @@ NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 
 	/* add domain users */
 	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& sid_compose(&dom_users, dom_sid, DOMAIN_GROUP_RID_USERS))
+		&& sid_compose(&dom_users, dom_sid, DOMAIN_RID_USERS))
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Users,
 					    &dom_users);
@@ -309,7 +309,7 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 
 	/* add domain admins */
 	if ((IS_DC || (lp_server_role() == ROLE_DOMAIN_MEMBER))
-		&& sid_compose(&dom_admins, dom_sid, DOMAIN_GROUP_RID_ADMINS))
+		&& sid_compose(&dom_admins, dom_sid, DOMAIN_RID_ADMINS))
 	{
 		status = add_sid_to_builtin(&global_sid_Builtin_Administrators,
 					    &dom_admins);
@@ -765,7 +765,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		sid_copy(&group_sids[0], &user_sid);
 		sid_split_rid(&group_sids[0], &dummy);
-		sid_append_rid(&group_sids[0], DOMAIN_GROUP_RID_USERS);
+		sid_append_rid(&group_sids[0], DOMAIN_RID_USERS);
 
 		if (!sid_to_gid(&group_sids[0], gid)) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",

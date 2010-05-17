@@ -146,7 +146,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 	if ( IS_DC ) {
 		sid_compose(&domadmin_sid, get_global_sam_sid(),
-			    DOMAIN_GROUP_RID_ADMINS);
+			    DOMAIN_RID_ADMINS);
 		init_sec_ace(&ace[i++], &domadmin_sid,
 			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
 	}
@@ -267,7 +267,7 @@ void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
 	if ( IS_DC ) {
 		DOM_SID domadmin_sid;
 		sid_compose(&domadmin_sid, get_global_sam_sid(),
-			    DOMAIN_GROUP_RID_ADMINS);
+			    DOMAIN_RID_ADMINS);
 		if (is_sid_in_token(nt_token, &domadmin_sid)) {
 			*pacc_requested |= GENERIC_ALL_ACCESS;
 			return;
@@ -2319,13 +2319,13 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 		}
 		/*
 		 * Cheat - allow GENERIC_RIGHTS_USER_WRITE if pipe user is
-		 * in DOMAIN_GROUP_RID_ADMINS. This is almost certainly not
+		 * in DOMAIN_RID_ADMINS. This is almost certainly not
 		 * what Windows does but is a hack for people who haven't
 		 * set up privileges on groups in Samba.
 		 */
 		if (acb_info & (ACB_SVRTRUST|ACB_DOMTRUST)) {
 			if (lp_enable_privileges() && nt_token_check_domain_rid(p->server_info->ptok,
-							DOMAIN_GROUP_RID_ADMINS)) {
+							DOMAIN_RID_ADMINS)) {
 				des_access &= ~GENERIC_RIGHTS_USER_WRITE;
 				extra_access = GENERIC_RIGHTS_USER_WRITE;
 				DEBUG(4,("_samr_OpenUser: Allowing "
@@ -3811,7 +3811,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 		se_priv_copy(&se_rights, &se_priv_none);
 		can_add_account = nt_token_check_domain_rid(
 			p->server_info->ptok,
-			DOMAIN_GROUP_RID_ADMINS );
+			DOMAIN_RID_ADMINS );
 	}
 
 	DEBUG(5, ("_samr_CreateUser2: %s can add this account : %s\n",

@@ -1292,7 +1292,7 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p,
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 		( ! nt_token_check_domain_rid(p->server_info->ptok,
-					      DOMAIN_GROUP_RID_ADMINS))) {
+					      DOMAIN_RID_ADMINS))) {
 
 		goto done;
 	}

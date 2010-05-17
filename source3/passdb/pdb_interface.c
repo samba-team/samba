@@ -281,7 +281,7 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 	if ( !sid_peek_check_rid( get_global_sam_sid(), sid, &rid ) )
 		return False;
 
-	if ( rid == DOMAIN_USER_RID_GUEST ) {
+	if ( rid == DOMAIN_RID_GUEST ) {
 		DEBUG(6,("pdb_getsampwsid: Building guest account\n"));
 		return guest_user_info( sam_acct );
 	}
@@ -702,7 +702,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 
 		sid_peek_rid( sid, &rid );
 
-		if ( rid == DOMAIN_GROUP_RID_USERS ) {
+		if ( rid == DOMAIN_RID_USERS ) {
 			*p_num_members = 0;
 			*pp_member_rids = NULL;
 
@@ -1536,7 +1536,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		return False;
 	}
 
-	if ( rid == DOMAIN_GROUP_RID_USERS ) {
+	if ( rid == DOMAIN_RID_USERS ) {
 		*name = talloc_strdup(mem_ctx, "None" );
 		*psid_name_use = SID_NAME_DOM_GRP;
 

@@ -506,7 +506,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 		/* Assume "Domain Users" for the primary group */
 
-		sid_compose(&info->group_sid, &domain->sid, DOMAIN_GROUP_RID_USERS );
+		sid_compose(&info->group_sid, &domain->sid, DOMAIN_RID_USERS );
 
 		/* Try to fill in what the nss_info backend can do */
 
