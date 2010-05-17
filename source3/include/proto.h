@@ -4341,10 +4341,10 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid);
 
 /* The following definitions come from passdb/machine_sid.c  */
 
-DOM_SID *get_global_sam_sid(void);
+struct dom_sid  *get_global_sam_sid(void);
 void reset_global_sam_sid(void) ;
-bool sid_check_is_domain(const DOM_SID *sid);
-bool sid_check_is_in_our_domain(const DOM_SID *sid);
+bool sid_check_is_domain(const struct dom_sid  *sid);
+bool sid_check_is_in_our_domain(const struct dom_sid  *sid);
 
 /* The following definitions come from passdb/passdb.c  */
 
@@ -4612,8 +4612,8 @@ void secrets_shutdown(void);
 void *secrets_fetch(const char *key, size_t *size);
 bool secrets_store(const char *key, const void *data, size_t size);
 bool secrets_delete(const char *key);
-bool secrets_store_domain_sid(const char *domain, const DOM_SID *sid);
-bool secrets_fetch_domain_sid(const char *domain, DOM_SID *sid);
+bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
+bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
 bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
 void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
@@ -4626,9 +4626,9 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time,
 					  enum netr_SchannelType *channel);
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
-                                           DOM_SID *sid, time_t *pass_last_set_time);
+                                           struct dom_sid  *sid, time_t *pass_last_set_time);
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
-                                           const DOM_SID *sid);
+                                           const struct dom_sid  *sid);
 bool secrets_delete_machine_password(const char *domain);
 bool secrets_delete_machine_password_ex(const char *domain);
 bool secrets_delete_domain_sid(const char *domain);
