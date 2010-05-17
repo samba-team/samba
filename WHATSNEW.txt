@@ -15,6 +15,58 @@ Changes since 3.5.2
 -------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7288: Fix SMB job IDs in CUPS job names.
+    * BUG 7339: Fix MS-DFS functionality.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 7354: Fix CLDAP tsocket problem on Solaris.
+
+
+o   Ira Cooper <samba@ira.wakeful.net>
+    * BUG 7384: Fix bitmap leak in dptr_Close.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7277: Fix exporting printers via 'cupsaddsmb' command.
+    * BUG 7417: Fix setting of passwords via 'net rpc user password' command.
+    * BUG 7418: Fix 'net rpc printer list' command.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 7421: Rename mod_name to module_name.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7352: Make TIME_T_MAX defines consistent.
+    * BUG 7385: Fix building with Solaris' gcc.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 7315: Fix segfault in mount.cifs.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7357: Re-fix a bug with smbd serving a windows terminal server.
+    * BUG 7389: Fix a Winbind crash when scanning trusts.
+    * BUG 7398: Fix rename problems with full_audit VFS module.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7378: Display an error on 'net conf import' failures.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7196: Add replacement for IPV6_V6ONLY on linux systems with broken
+      headers.
+    * BUG 7317: Fix problems with SIGCHLD handling in Winbind.
+    * BUG 7354: Fix CLDAP tsocket problem on Solaris.
+
+
+o   Luca Olivetti <luca@wetron.es>
+    * BUG 7263: Fix cups encryption setting.
+
 
 ######################################################################
 Reporting bugs & Development Discussion
