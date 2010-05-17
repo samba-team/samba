@@ -1029,49 +1029,6 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 }
 
 /*
- * Winbindd socket accessor functions
- */
-
-const char *get_winbind_pipe_dir(void)
-{
-	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
-}
-
-char *get_winbind_priv_pipe_dir(void)
-{
-	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
-}
-
-/* Open the winbindd socket */
-
-static int _winbindd_socket = -1;
-static int _winbindd_priv_socket = -1;
-
-int open_winbindd_socket(void)
-{
-	if (_winbindd_socket == -1) {
-		_winbindd_socket = create_pipe_sock(
-			get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
-		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
-			   _winbindd_socket));
-	}
-
-	return _winbindd_socket;
-}
-
-int open_winbindd_priv_socket(void)
-{
-	if (_winbindd_priv_socket == -1) {
-		_winbindd_priv_socket = create_pipe_sock(
-			get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
-		DEBUG(10, ("open_winbindd_priv_socket: opened socket fd %d\n",
-			   _winbindd_priv_socket));
-	}
-
-	return _winbindd_priv_socket;
-}
-
-/*
  * Client list accessor functions
  */
 

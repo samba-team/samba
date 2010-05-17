@@ -52,6 +52,8 @@ bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
 void winbindd_register_handlers(void);
+const char *get_winbind_pipe_dir(void);
+char *get_winbind_priv_pipe_dir(void);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
@@ -416,10 +418,6 @@ char *fill_domain_username_talloc(TALLOC_CTX *ctx,
 				  const char *domain,
 				  const char *user,
 				  bool can_assume);
-const char *get_winbind_pipe_dir(void) ;
-char *get_winbind_priv_pipe_dir(void) ;
-int open_winbindd_socket(void);
-int open_winbindd_priv_socket(void);
 struct winbindd_cli_state *winbindd_client_list(void);
 void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);

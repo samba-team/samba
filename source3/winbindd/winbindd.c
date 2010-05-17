@@ -938,6 +938,20 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 	new_connection(s->fd, s->privileged);
 }
 
+/*
+ * Winbindd socket accessor functions
+ */
+
+const char *get_winbind_pipe_dir(void)
+{
+	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
+}
+
+char *get_winbind_priv_pipe_dir(void)
+{
+	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+}
+
 static bool winbindd_setup_listeners(void)
 {
 	struct winbindd_listen_state *pub_state = NULL;
@@ -951,7 +965,8 @@ static bool winbindd_setup_listeners(void)
 	}
 
 	pub_state->privileged = false;
-	pub_state->fd = open_winbindd_socket();
+	pub_state->fd = create_pipe_sock(
+		get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
 	if (pub_state->fd == -1) {
 		goto failed;
 	}
@@ -972,7 +987,8 @@ static bool winbindd_setup_listeners(void)
 	}
 
 	priv_state->privileged = true;
-	priv_state->fd = open_winbindd_priv_socket();
+	priv_state->fd = create_pipe_sock(
+		get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
 	if (priv_state->fd == -1) {
 		goto failed;
 	}
