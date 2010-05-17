@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "services.h"
 
 struct rcinit_file_information {
 	char *description;

@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
+#include "services.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

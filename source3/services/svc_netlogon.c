@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "services.h"
 
 /* Implementation for internal netlogon service */
 

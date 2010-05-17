@@ -684,7 +684,6 @@ struct ntlmssp_state;
 #include "async_smb.h"
 #include "../lib/async_req/async_sock.h"
 #include "talloc_dict.h"
-#include "services.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 #include "tldap.h"
