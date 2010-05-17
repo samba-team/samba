@@ -652,11 +652,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "passdb.h"
 #include "rpc_secdes.h"
 #include "msdfs.h"
-#include "../lib/crypto/md5.h"
-#include "../lib/crypto/md4.h"
-#include "../lib/crypto/arcfour.h"
-#include "../lib/crypto/crc32.h"
-#include "../lib/crypto/hmacmd5.h"
 
 struct ntlmssp_state;
 

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../lib/crypto/md5.h"
 
 /* Used by the SMB signing functions. */
 

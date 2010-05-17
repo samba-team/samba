@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "smb_krb5.h"
+#include "../lib/crypto/arcfour.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

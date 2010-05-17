@@ -30,6 +30,7 @@
 #include "ntlmssp.h"
 #include "smb_krb5.h"
 #include <iniparser.h>
+#include "../lib/crypto/arcfour.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"

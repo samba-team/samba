@@ -47,6 +47,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../lib/crypto/arcfour.h"
 
 static NTSTATUS check_oem_password(const char *user,
 				   uchar password_encrypted_with_lm_hash[516],

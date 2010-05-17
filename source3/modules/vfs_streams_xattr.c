@@ -22,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "../lib/crypto/md5.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

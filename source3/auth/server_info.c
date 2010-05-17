@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/crypto/arcfour.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../lib/crypto/md5.h"
+#include "../lib/crypto/arcfour.h"
 
 /*************************************************************************
  inits a samr_CryptPasswordEx structure

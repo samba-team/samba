@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../lib/crypto/arcfour.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

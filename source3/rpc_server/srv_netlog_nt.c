@@ -28,6 +28,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/srv_netlogon.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "../lib/crypto/md4.h"
 
 extern userdom_struct current_user_info;
 
