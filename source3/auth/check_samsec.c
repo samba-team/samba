@@ -509,3 +509,40 @@ done:
 	data_blob_free(&lm_sess_key);
 	return nt_status;
 }
+
+/* This helper function for winbindd returns a very similar value to
+ * what a NETLOGON call would give, without the indirection */
+NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
+				  TALLOC_CTX *mem_ctx,
+				  const struct auth_usersupplied_info *user_info,
+				  struct netr_SamInfo3 **pinfo3)
+{
+	struct auth_serversupplied_info *server_info = NULL;
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = check_sam_security(challenge, tmp_ctx, user_info, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("check_sam_security failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
+	if (info3 == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("serverinfo_to_SamInfo3 failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+	*pinfo3 = info3;
+	return NT_STATUS_OK;
+}

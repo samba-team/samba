@@ -1133,8 +1133,6 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  struct netr_SamInfo3 **pinfo3)
 {
 	struct auth_usersupplied_info *user_info = NULL;
-	struct auth_serversupplied_info *server_info = NULL;
-	struct netr_SamInfo3 *info3;
 	NTSTATUS status;
 
 	status = make_user_info(&user_info, user, user, domain, domain,
@@ -1145,30 +1143,13 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = check_sam_security(challenge, talloc_tos(), user_info,
-				    &server_info);
+	/* We don't want any more mapping of the username */
+	user_info->mapped_state = True;
+
+	status = check_sam_security_info3(challenge, talloc_tos(), user_info,
+					  pinfo3);
 	free_user_info(&user_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("check_ntlm_password failed: %s\n",
-			   nt_errstr(status)));
-		return status;
-	}
-
-	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
-	if (info3 == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("serverinfo_to_SamInfo3 failed: %s\n",
-			   nt_errstr(status)));
-		return status;
-	}
-
 	DEBUG(10, ("Authenticated user %s\\%s successfully\n", domain, user));
-	*pinfo3 = info3;
 	return NT_STATUS_OK;
 }
 

@@ -66,6 +66,10 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 			    TALLOC_CTX *mem_ctx,
 			    const struct auth_usersupplied_info *user_info,
 			    struct auth_serversupplied_info **server_info);
+NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
+				  TALLOC_CTX *mem_ctx,
+				  const struct auth_usersupplied_info *user_info,
+				  struct netr_SamInfo3 **pinfo3);
 NTSTATUS auth_sam_init(void);
 
 /* The following definitions come from auth/auth_server.c  */
