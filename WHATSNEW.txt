@@ -8,7 +8,9 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.3 include:
 
-  o
+  o Fix MS-DFS functionality (bug #7339).
+  o Fix a Winbind crash when scanning trusts (bug #7389).
+  o Fix problems with SIGCHLD handling in Winbind (bug #7317).
 
 
 Changes since 3.5.2
