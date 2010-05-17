@@ -157,7 +157,8 @@ class PlainFormatter(object):
 
             for suite in self.suitesfailed:
                 f.write("== %s ==\n" % suite)
-                f.write(self.test_output[suite]+"\n\n")
+                if suite in self.test_output:
+                    f.write(self.test_output[suite]+"\n\n")
 
             f.write("\n")
 
@@ -165,7 +166,8 @@ class PlainFormatter(object):
             for suite in self.suitesfailed:
                 print "=" * 78
                 print "FAIL: %s" % suite
-                print self.test_output[suite]
+                if suite in self.test_output:
+                    print self.test_output[suite]
                 print ""
 
         f.write("= Skipped tests =\n")
