@@ -1125,15 +1125,18 @@ bool nt_time_is_set(const NTTIME *nt);
 char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);
 struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
+/* The following definitions come from lib/util_names.c  */
+void gfree_netbios_names(void);
+bool set_global_myname(const char *myname);
+const char *global_myname(void);
+bool set_global_myworkgroup(const char *myworkgroup);
+const char *lp_workgroup(void);
+
 /* The following definitions come from lib/util.c  */
 
 enum protocol_types get_Protocol(void);
 void set_Protocol(enum protocol_types  p);
 bool all_zero(const uint8_t *ptr, size_t size);
-bool set_global_myname(const char *myname);
-const char *global_myname(void);
-bool set_global_myworkgroup(const char *myworkgroup);
-const char *lp_workgroup(void);
 bool set_global_scope(const char *scope);
 const char *global_scope(void);
 void gfree_names(void);
