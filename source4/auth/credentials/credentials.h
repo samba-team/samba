@@ -107,6 +107,7 @@ struct cli_credentials {
 	struct netlogon_creds_CredentialState *netlogon_creds;
 	enum netr_SchannelType secure_channel_type;
 	int kvno;
+	time_t password_last_changed_time;
 
 	struct smb_krb5_context *smb_krb5_context;
 
@@ -218,6 +219,8 @@ bool cli_credentials_set_realm(struct cli_credentials *cred,
 			       enum credentials_obtained obtained);
 void cli_credentials_set_secure_channel_type(struct cli_credentials *cred,
 				     enum netr_SchannelType secure_channel_type);
+void cli_credentials_set_password_last_changed_time(struct cli_credentials *cred,
+							     time_t last_change_time);
 void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
 					struct netlogon_creds_CredentialState *netlogon_creds);
 NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
@@ -239,6 +242,7 @@ const char *cli_credentials_get_unparsed_name(struct cli_credentials *credential
 bool cli_credentials_set_password_callback(struct cli_credentials *cred,
 					   const char *(*password_cb) (struct cli_credentials *));
 enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred);
+time_t cli_credentials_get_password_last_changed_time(struct cli_credentials *cred);
 void cli_credentials_set_kvno(struct cli_credentials *cred,
 			      int kvno);
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,

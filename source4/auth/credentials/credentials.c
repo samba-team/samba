@@ -752,6 +752,25 @@ _PUBLIC_ void cli_credentials_set_secure_channel_type(struct cli_credentials *cr
  * Return NETLOGON secure chanel type
  */
 
+_PUBLIC_ time_t cli_credentials_get_password_last_changed_time(struct cli_credentials *cred)
+{
+	return cred->password_last_changed_time;
+}
+
+/** 
+ * Set NETLOGON secure channel type
+ */
+
+_PUBLIC_ void cli_credentials_set_password_last_changed_time(struct cli_credentials *cred,
+							     time_t last_changed_time)
+{
+	cred->password_last_changed_time = last_changed_time;
+}
+
+/**
+ * Return NETLOGON secure chanel type
+ */
+
 _PUBLIC_ enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred)
 {
 	return cred->secure_channel_type;

@@ -210,7 +210,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	enum netr_SchannelType sct;
 	const char *salt_principal;
 	const char *keytab;
-	
+	const struct ldb_val *whenChanged;
+
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = false;
 
@@ -314,6 +315,14 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	cli_credentials_set_kvno(cred, ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0));
 
+	whenChanged = ldb_msg_find_ldb_val(msg, "whenChanged");
+	if (whenChanged) {
+		time_t lct;
+		if (ldb_val_to_time(whenChanged, &lct) == LDB_SUCCESS) {
+			cli_credentials_set_password_last_changed_time(cred, lct);
+		}
+	}
+	
 	/* If there was an external keytab specified by reference in
 	 * the LDB, then use this.  Otherwise we will make one up
 	 * (chewing CPU time) from the password */
