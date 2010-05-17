@@ -634,7 +634,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ntioctl.h"
 #include "../lib/util/charset/charset.h"
 #include "dynconfig.h"
-#include "util_getent.h"
 #include "debugparse.h"
 #include "privileges.h"
 #include "messages.h"
