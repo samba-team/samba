@@ -109,7 +109,7 @@ class PlainFormatter(object):
             if reason is not None:
                 self.output_msg("REASON: %s\n" % (reason,))
             self.suitesfailed.append(name)
-            if self.immediate and not self.verbose:
+            if self.immediate and not self.verbose and name in self.test_output:
                 out += self.test_output[name]
             unexpected = True
 
