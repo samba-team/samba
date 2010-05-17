@@ -272,7 +272,7 @@ NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 	NTSTATUS status;
 	DOM_SID dom_users;
 
-	status = create_builtin(BUILTIN_ALIAS_RID_USERS);
+	status = create_builtin(BUILTIN_RID_USERS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_users: Failed to create Users\n"));
 		return status;
@@ -301,7 +301,7 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 	TALLOC_CTX *ctx;
 	bool ret;
 
-	status = create_builtin(BUILTIN_ALIAS_RID_ADMINS);
+	status = create_builtin(BUILTIN_RID_ADMINISTRATORS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_administrators: Failed to create Administrators\n"));
 		return status;

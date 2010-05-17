@@ -25,35 +25,6 @@
 
 #define SMB_RPC_INTERFACE_VERSION 1
 
-
-/********************************************************************** 
- * well-known RIDs - Relative IDs
- **********************************************************************/
-
-/* RIDs - well-known aliases ... */
-#define BUILTIN_ALIAS_RID_ADMINS        (0x00000220L)
-#define BUILTIN_ALIAS_RID_USERS         (0x00000221L)
-#define BUILTIN_ALIAS_RID_GUESTS        (0x00000222L)
-#define BUILTIN_ALIAS_RID_POWER_USERS   (0x00000223L)
-
-#define BUILTIN_ALIAS_RID_ACCOUNT_OPS   (0x00000224L)
-#define BUILTIN_ALIAS_RID_SYSTEM_OPS    (0x00000225L)
-#define BUILTIN_ALIAS_RID_PRINT_OPS     (0x00000226L)
-#define BUILTIN_ALIAS_RID_BACKUP_OPS    (0x00000227L)
-
-#define BUILTIN_ALIAS_RID_REPLICATOR    (0x00000228L)
-#define BUILTIN_ALIAS_RID_RAS_SERVERS   (0x00000229L)
-#define BUILTIN_ALIAS_RID_PRE_2K_ACCESS (0x0000022aL)
-#define BUILTIN_ALIAS_RID_REMOTE_DESKTOP_USERS   (0x0000022bL)
-#define BUILTIN_ALIAS_RID_NETWORK_CONF_OPERATORS (0x0000022cL)
-#define BUILTIN_ALIAS_RID_INCOMING_FOREST_TRUST  (0x0000022dL)
-#define BUILTIN_ALIAS_RID_PERFMON_USERS	(0x0000022eL)
-#define BUILTIN_ALIAS_RID_PERFLOG_USERS	(0x0000022fL)
-#define BUILTIN_ALIAS_RID_AUTH_ACCESS	(0x00000230L)
-#define BUILTIN_ALIAS_RID_TS_LICENSE_SERVERS	(0x00000231L)
-
-
-
 /********************************************************************** 
  * RPC policy handle used pretty much everywhere
  **********************************************************************/

@@ -293,6 +293,25 @@ interface security
 	const int DOMAIN_RID_READONLY_DCS            = 521;
 	const int DOMAIN_RID_RAS_SERVERS             = 553;
 
+	/* well-known builtin RIDs */
+	const int BUILTIN_RID_ADMINISTRATORS		= 544;
+	const int BUILTIN_RID_USERS			= 545;
+	const int BUILTIN_RID_GUESTS			= 546;
+	const int BUILTIN_RID_POWER_USERS		= 547;
+	const int BUILTIN_RID_ACCOUNT_OPERATORS		= 548;
+	const int BUILTIN_RID_SERVER_OPERATORS		= 549;
+	const int BUILTIN_RID_PRINT_OPERATORS		= 550;
+	const int BUILTIN_RID_BACKUP_OPERATORS		= 551;
+	const int BUILTIN_RID_REPLICATOR		= 552;
+	const int BUILTIN_RID_RAS_SERVERS		= 553;
+	const int BUILTIN_RID_PRE_2K_ACCESS		= 554;
+	const int BUILTIN_RID_REMOTE_DESKTOP_USERS	= 555;
+	const int BUILTIN_RID_NETWORK_CONF_OPERATORS	= 556;
+	const int BUILTIN_RID_INCOMING_FOREST_TRUST	= 557;
+	const int BUILTIN_RID_PERFMON_USERS		= 558;
+	const int BUILTIN_RID_PERFLOG_USERS		= 559;
+	const int BUILTIN_RID_AUTH_ACCESS		= 560;
+	const int BUILTIN_RID_TS_LICENSE_SERVERS	= 561;
 
 	/*
 	  privilege IDs. Please keep the IDs below 64. If we get more
