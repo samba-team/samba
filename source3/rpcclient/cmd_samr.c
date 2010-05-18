@@ -26,6 +26,7 @@
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "rpc_client/cli_samr.h"
 
 extern DOM_SID domain_sid;
 

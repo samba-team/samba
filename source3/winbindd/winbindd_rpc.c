@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 
 #undef DBGC_CLASS
