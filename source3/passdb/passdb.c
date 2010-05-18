@@ -2397,26 +2397,3 @@ bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
 		"password for domain %s\n", domain));
 	return False;
 }
-
-struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
-						struct samu *pw)
-{
-	struct samr_LogonHours hours;
-	const int units_per_week = 168;
-
-	ZERO_STRUCT(hours);
-	hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
-	if (!hours.bits) {
-		return hours;
-	}
-
-	hours.units_per_week = units_per_week;
-	memset(hours.bits, 0xFF, units_per_week);
-
-	if (pdb_get_hours(pw)) {
-		memcpy(hours.bits, pdb_get_hours(pw),
-		       MIN(pdb_get_hours_len(pw), units_per_week));
-	}
-
-	return hours;
-}
