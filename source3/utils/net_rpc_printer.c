@@ -153,7 +153,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint16_t fnum_src = 0;
 	uint16_t fnum_dst = 0;
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 	uint16_t attr;
 	time_t f_atime, f_ctime, f_mtime;
 

@@ -3184,7 +3184,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 	union spoolss_PrinterInfo info1, info2;
 	WERROR werror;
 	TALLOC_CTX *mem_ctx = talloc_init("compare_printer_secdesc");
-	SEC_DESC *sd1, *sd2;
+	struct security_descriptor *sd1, *sd2;
 	bool result = true;
 
 

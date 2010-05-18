@@ -71,12 +71,7 @@
 #define SEC_DESC_REVISION 0x1
 #endif
 
-#ifndef _SEC_DESC
-/* SEC_DESC */
-typedef struct security_descriptor SEC_DESC;
 #define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
-#define _SEC_DESC
-#endif
 
 /* A type to describe the mapping of generic access rights to object
    specific access rights. */

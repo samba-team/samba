@@ -56,7 +56,7 @@ static void verbose_output(const char *format, ...)
 /********************************************************************
 ********************************************************************/
 
-static bool swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
+static bool swap_sid_in_acl( struct security_descriptor *sd, DOM_SID *s1, DOM_SID *s2 )
 {
 	struct security_acl *theacl;
 	int i;
@@ -117,7 +117,7 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
                                 const char *parentpath  )
 {
 	REGF_NK_REC *key, *subkey;
-	SEC_DESC *new_sd;
+	struct security_descriptor *new_sd;
 	struct regval_ctr *values;
 	struct regsubkey_ctr *subkeys;
 	int i;

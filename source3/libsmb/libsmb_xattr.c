@@ -415,7 +415,7 @@ add_ace(struct security_acl **the_acl,
 
 
 /* parse a ascii version of a security descriptor */
-static SEC_DESC *
+static struct security_descriptor *
 sec_desc_parse(TALLOC_CTX *ctx,
                struct cli_state *ipc_cli,
                struct policy_handle *pol,
@@ -424,7 +424,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 {
 	const char *p = str;
 	char *tok;
-	SEC_DESC *ret = NULL;
+	struct security_descriptor *ret = NULL;
 	size_t sd_size;
 	DOM_SID *group_sid=NULL;
         DOM_SID *owner_sid=NULL;
@@ -726,7 +726,7 @@ cacl_get(SMBCCTX *context,
         bool numeric = True;
         bool determine_size = (bufsize == 0);
 	uint16_t fnum;
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 	fstring sidstr;
         fstring name_sandbox;
         char *name;
@@ -1501,7 +1501,7 @@ cacl_set(SMBCCTX *context,
 {
 	uint16_t fnum = (uint16_t)-1;
         int err = 0;
-	SEC_DESC *sd = NULL, *old;
+	struct security_descriptor *sd = NULL, *old;
         struct security_acl *dacl = NULL;
 	DOM_SID *owner_sid = NULL;
 	DOM_SID *group_sid = NULL;

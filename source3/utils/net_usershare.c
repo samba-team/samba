@@ -330,7 +330,7 @@ static int info_fn(struct file_list *fl, void *priv)
 	struct net_context *c = pi->c;
 	int fd = -1;
 	int numlines = 0;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	char *basepath;
 	char *sharepath = NULL;
 	char *comment = NULL;

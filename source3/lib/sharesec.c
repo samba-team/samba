@@ -225,12 +225,12 @@ bool share_info_db_init(void)
  def_access is a GENERIC_XXX access mode.
  ********************************************************************/
 
-SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
+struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
 {
 	uint32_t sa;
 	struct security_ace ace;
 	struct security_acl *psa = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint32 spec_access = def_access;
 
 	se_map_generic(&spec_access, &file_generic_mapping);
@@ -256,11 +256,11 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
  Pull a security descriptor from the share tdb.
  ********************************************************************/
 
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
+struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 			      size_t *psize)
 {
 	char *key;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	TDB_DATA data;
 	char *c_servicename = canonicalize_servicename(talloc_tos(), servicename);
 	NTSTATUS status;
@@ -316,7 +316,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
  Store a security descriptor in the share db.
  ********************************************************************/
 
-bool set_share_security(const char *share_name, SEC_DESC *psd)
+bool set_share_security(const char *share_name, struct security_descriptor *psd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *key;
@@ -410,7 +410,7 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 {
 	uint32 granted;
 	NTSTATUS status;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 
 	psd = get_share_security(talloc_tos(), sharename, &sd_size);
@@ -430,14 +430,14 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
  Parse the contents of an acl string from a usershare file.
 ***************************************************************************/
 
-bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
+bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_descriptor **ppsd)
 {
 	size_t s_size = 0;
 	const char *pacl = acl_str;
 	int num_aces = 0;
 	struct security_ace *ace_list = NULL;
 	struct security_acl *psa = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size = 0;
 	int i;
 
@@ -445,7 +445,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 
 	/* If the acl string is blank return "Everyone:R" */
 	if (!*acl_str) {
-		SEC_DESC *default_psd = get_share_security_default(ctx, &s_size, GENERIC_READ_ACCESS);
+		struct security_descriptor *default_psd = get_share_security_default(ctx, &s_size, GENERIC_READ_ACCESS);
 		if (!default_psd) {
 			return False;
 		}

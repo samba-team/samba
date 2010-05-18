@@ -8568,7 +8568,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			char **pp_sharepath,
 			char **pp_comment,
 			char **pp_cp_servicename,
-			SEC_DESC **ppsd,
+			struct security_descriptor **ppsd,
 			bool *pallow_guest)
 {
 	const char **prefixallowlist = lp_usershare_prefix_allow_list();
@@ -8773,7 +8773,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	int fd = -1;
 	int iService = -1;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	bool guest_ok = False;
 	char *canon_name = NULL;
 	bool added_service = false;

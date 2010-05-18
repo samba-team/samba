@@ -290,7 +290,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uint32 security_info,
-	SEC_DESC **ppdesc, SMB4ACL_T *theacl)
+	struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
 {
 	int	good_aces = 0;
 	DOM_SID sid_owner, sid_group;
@@ -338,7 +338,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 			       uint32 security_info,
-			       SEC_DESC **ppdesc, SMB4ACL_T *theacl)
+			       struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
 
@@ -354,7 +354,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			      const char *name,
 			      uint32 security_info,
-			      SEC_DESC **ppdesc, SMB4ACL_T *theacl)
+			      struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
 
@@ -719,7 +719,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
-	const SEC_DESC *psd,
+	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
 {
 	smbacl4_vfs_params params;

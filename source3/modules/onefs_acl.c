@@ -604,7 +604,7 @@ static bool add_sfs_aces(files_struct *fsp, struct ifs_security_descriptor *sd)
  */
 NTSTATUS
 onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-		  uint32 security_info, SEC_DESC **ppdesc)
+		  uint32 security_info, struct security_descriptor **ppdesc)
 {
 	int error;
 	uint32_t sd_size = 0;
@@ -613,7 +613,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	DOM_SID owner_sid, group_sid;
 	DOM_SID *ownerp, *groupp;
 	struct security_acl *dacl, *sacl;
-	SEC_DESC *pdesc;
+	struct security_descriptor *pdesc;
 	bool alloced = false;
 	bool new_aces_alloced = false;
 	bool fopened = false;
@@ -790,7 +790,7 @@ out:
  */
 NTSTATUS
 onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
-		 uint32 security_info, SEC_DESC **ppdesc)
+		 uint32 security_info, struct security_descriptor **ppdesc)
 {
 	files_struct finfo;
 	struct fd_handle fh;
@@ -817,13 +817,14 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
 
 /**
  * Isilon-specific function for setting up an ifs_security_descriptor, given a
- * samba SEC_DESC.
+ * samba struct security_descriptor
  *
  * @param[out] sd ifs_security_descriptor to fill in
  *
  * @return NTSTATUS_OK if successful
  */
-NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, const SEC_DESC *psd,
+NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
+			      const struct security_descriptor *psd,
 			      struct ifs_security_descriptor *sd, int snum,
 			      uint32_t *security_info_effective)
 {
@@ -909,7 +910,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, const SEC_DESC *psd,
  */
 NTSTATUS
 onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-		  uint32_t sec_info_sent, const SEC_DESC *psd)
+		  uint32_t sec_info_sent, const struct security_descriptor *psd)
 {
 	struct ifs_security_descriptor sd = {};
 	int fd = -1;

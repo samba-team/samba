@@ -321,7 +321,7 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
  Map any generic bits to file specific bits.
 ********************************************************************/
 
-static void map_generic_share_sd_bits(SEC_DESC *psd)
+static void map_generic_share_sd_bits(struct security_descriptor *psd)
 {
 	int i;
 	struct security_acl *ps_dacl = NULL;
@@ -373,7 +373,7 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 {
 	const char *net_name = lp_servicename(snum);
 	char *path = NULL;
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -471,7 +471,7 @@ static void init_srv_share_info_1007(pipes_struct *p, struct srvsvc_NetShareInfo
 
 static void init_srv_share_info_1501(pipes_struct *p, struct sec_desc_buf *r, int snum)
 {
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 	size_t sd_size;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
@@ -1515,7 +1515,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	int snum;
 	int ret;
 	char *path = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op = False;
 	int max_connections = 0;
@@ -1711,7 +1711,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 
 	/* Replace SD if changed. */
 	if (psd) {
-		SEC_DESC *old_sd;
+		struct security_descriptor *old_sd;
 		size_t sd_size;
 
 		old_sd = get_share_security(p->mem_ctx, lp_servicename(snum), &sd_size);
@@ -1745,7 +1745,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 	int snum;
 	int ret;
 	char *path;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 	int max_connections = 0;
@@ -2074,7 +2074,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 				  struct srvsvc_NetGetFileSecurity *r)
 {
 	struct smb_filename *smb_fname = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	fstring servicename;
 	SMB_STRUCT_STAT st;

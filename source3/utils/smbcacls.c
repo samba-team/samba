@@ -552,11 +552,11 @@ static bool add_ace(struct security_acl **the_acl, struct security_ace *ace)
 }
 
 /* parse a ascii version of a security descriptor */
-static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx, struct cli_state *cli, char *str)
+static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_state *cli, char *str)
 {
 	const char *p = str;
 	char *tok;
-	SEC_DESC *ret = NULL;
+	struct security_descriptor *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	struct security_acl *dacl=NULL;
@@ -624,7 +624,7 @@ static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx, struct cli_state *cli, char *st
 
 
 /* print a ascii version of a security descriptor on a FILE handle */
-static void sec_desc_print(struct cli_state *cli, FILE *f, SEC_DESC *sd)
+static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descriptor *sd)
 {
 	fstring sidstr;
 	uint32 i;
@@ -691,10 +691,10 @@ static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
 /*****************************************************
 get sec desc for filename
 *******************************************************/
-static SEC_DESC *get_secdesc(struct cli_state *cli, const char *filename)
+static struct security_descriptor *get_secdesc(struct cli_state *cli, const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
@@ -721,7 +721,7 @@ static SEC_DESC *get_secdesc(struct cli_state *cli, const char *filename)
 set sec desc for filename
 *******************************************************/
 static bool set_secdesc(struct cli_state *cli, const char *filename,
-                        SEC_DESC *sd)
+                        struct security_descriptor *sd)
 {
 	uint16_t fnum = (uint16_t)-1;
         bool result=true;
@@ -753,7 +753,7 @@ dump the acls for a file
 static int cacl_dump(struct cli_state *cli, const char *filename)
 {
 	int result = EXIT_FAILED;
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 
 	if (test_args)
 		return EXIT_OK;
@@ -782,7 +782,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 			const char *filename, const char *new_username)
 {
 	DOM_SID sid;
-	SEC_DESC *sd, *old;
+	struct security_descriptor *sd, *old;
 	size_t sd_size;
 
 	if (!StringToSid(cli, &sid, new_username))
@@ -875,7 +875,7 @@ set the ACLs on a file given an ascii description
 static int cacl_set(struct cli_state *cli, const char *filename,
 		    char *the_acl, enum acl_mode mode)
 {
-	SEC_DESC *sd, *old;
+	struct security_descriptor *sd, *old;
 	uint32 i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
@@ -993,7 +993,7 @@ set the inherit on a file
 static int inherit(struct cli_state *cli, const char *filename,
                    const char *type)
 {
-	SEC_DESC *old,*sd;
+	struct security_descriptor *old,*sd;
 	uint32 oldattr;
 	size_t sd_size;
 	int result = EXIT_OK;
@@ -1011,7 +1011,7 @@ static int inherit(struct cli_state *cli, const char *filename,
                     SEC_DESC_DACL_PROTECTED) {
 			int i;
 			char *parentname,*temp;
-			SEC_DESC *parent;
+			struct security_descriptor *parent;
 			temp = talloc_strdup(talloc_tos(), filename);
 
 			old->type=old->type & (~SEC_DESC_DACL_PROTECTED);

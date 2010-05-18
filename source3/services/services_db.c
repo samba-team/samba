@@ -88,11 +88,11 @@ struct service_display_info common_unix_svcs[] = {
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
+static struct security_descriptor* construct_service_sd( TALLOC_CTX *ctx )
 {
 	struct security_ace ace[4];
 	size_t i = 0;
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 	struct security_acl *theacl = NULL;
 	size_t sd_size;
 
@@ -335,7 +335,7 @@ static void add_new_svc_name(struct registry_key_handle *key_parent,
 	char *path = NULL;
 	struct regval_ctr *values = NULL;
 	struct regsubkey_ctr *svc_subkeys = NULL;
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 	DATA_BLOB sd_blob;
 	NTSTATUS status;
 
@@ -497,12 +497,12 @@ void svcctl_init_keys( void )
  in case of any failure.
 ********************************************************************/
 
-SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
-	SEC_DESC *ret_sd = NULL;
+	struct security_descriptor *ret_sd = NULL;
 	char *path= NULL;
 	WERROR wresult;
 	NTSTATUS status;
@@ -558,7 +558,7 @@ done:
  Wrapper to make storing a Service sd easier
 ********************************************************************/
 
-bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
+bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, NT_USER_TOKEN *token )
 {
 	struct registry_key_handle *key = NULL;
 	WERROR wresult;

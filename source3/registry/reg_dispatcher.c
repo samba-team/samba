@@ -35,11 +35,11 @@ static const struct generic_mapping reg_generic_map =
 /********************************************************************
 ********************************************************************/
 
-static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
+static WERROR construct_registry_sd(TALLOC_CTX *ctx, struct security_descriptor **psd)
 {
 	struct security_ace ace[3];
 	size_t i = 0;
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 	struct security_acl *theacl;
 	size_t sd_size;
 
@@ -162,7 +162,7 @@ bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
 			 uint32 *granted,
 			 const struct nt_user_token *token )
 {
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 	NTSTATUS status;
 	WERROR err;
 

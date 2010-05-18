@@ -335,7 +335,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	NTSTATUS status;
 	struct sec_desc_buf *sd_orig = NULL;
 	struct sec_desc_buf *sd_new, *sd_store;
-	SEC_DESC *sec, *new_sec;
+	struct security_descriptor *sec, *new_sec;
 	TALLOC_CTX *ctx = state;
 	int result, i;
 	uint32 sd_size;
@@ -391,7 +391,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 		}
 	}
 
-	/* create a new SEC_DESC with the appropriate owner and group SIDs */
+	/* create a new struct security_descriptor with the appropriate owner and group SIDs */
 
 	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 				 &global_sid_Builtin_Administrators,
@@ -2638,7 +2638,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 	int i = 0;
 	uint32_t sa;
 	struct security_acl *psa = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	DOM_SID adm_sid;
 	size_t sd_size;
 
@@ -5503,7 +5503,7 @@ WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ct
 	if (!secdesc_ctr->sd->owner_sid || !secdesc_ctr->sd->group_sid) {
 		DOM_SID *owner_sid, *group_sid;
 		struct security_acl *dacl, *sacl;
-		SEC_DESC *psd = NULL;
+		struct security_descriptor *psd = NULL;
 		size_t size;
 
 		if (!nt_printing_getsec(mem_ctx, sharename, &old_secdesc_ctr)) {
@@ -5591,7 +5591,7 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	uint32_t sa;
 	struct security_acl *psa = NULL;
 	struct sec_desc_buf *sdb = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	DOM_SID adm_sid;
 	size_t sd_size;
 
@@ -5721,7 +5721,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_
 
 		if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
 			struct sec_desc_buf *new_secdesc_ctr = NULL;
-			SEC_DESC *psd = NULL;
+			struct security_descriptor *psd = NULL;
 			size_t size;
 
 			/* Create new sd */
@@ -5812,7 +5812,7 @@ jfm: I should use this comment for the text file to explain
    It turns out that NT4 security descriptors use generic access rights and
    NT5 the object specific ones. */
 
-void map_printer_permissions(SEC_DESC *sd)
+void map_printer_permissions(struct security_descriptor *sd)
 {
 	int i;
 
@@ -5822,7 +5822,7 @@ void map_printer_permissions(SEC_DESC *sd)
 	}
 }
 
-void map_job_permissions(SEC_DESC *sd)
+void map_job_permissions(struct security_descriptor *sd)
 {
 	int i;
 

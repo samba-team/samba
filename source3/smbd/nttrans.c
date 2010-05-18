@@ -831,7 +831,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 		       uint32_t security_info_sent)
 {
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	NTSTATUS status;
 
 	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
@@ -1755,7 +1755,7 @@ static void call_nt_transact_rename(connection_struct *conn,
  Fake up a completely empty SD.
 *******************************************************************************/
 
-static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
+static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, struct security_descriptor **ppsd)
 {
 	size_t sd_size;
 
@@ -1784,7 +1784,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					size_t *psd_size)
 {
 	NTSTATUS status;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 
 	/*
 	 * Get the permissions to return.

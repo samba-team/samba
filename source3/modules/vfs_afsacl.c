@@ -1056,7 +1056,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32 security_info_sent,
-			 const SEC_DESC *psd)
+			 const struct security_descriptor *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }

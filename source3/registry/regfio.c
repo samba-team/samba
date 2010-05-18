@@ -954,7 +954,7 @@ static REGF_SK_REC* find_sk_record_by_offset( REGF_FILE *file, uint32 offset )
 /*******************************************************************
 *******************************************************************/
 
-static REGF_SK_REC* find_sk_record_by_sec_desc( REGF_FILE *file, SEC_DESC *sd )
+static REGF_SK_REC* find_sk_record_by_sec_desc( REGF_FILE *file, struct security_descriptor *sd )
 {
 	REGF_SK_REC *p;
 
@@ -1568,7 +1568,7 @@ done:
 /*******************************************************************
 *******************************************************************/
 
-static uint32 sk_record_data_size( SEC_DESC * sd )
+static uint32 sk_record_data_size( struct security_descriptor * sd )
 {
 	uint32 size, size_mod8;
 
@@ -1718,7 +1718,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
  REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
                                struct regval_ctr *values, struct regsubkey_ctr *subkeys,
-                               SEC_DESC *sec_desc, REGF_NK_REC *parent )
+                               struct security_descriptor *sec_desc, REGF_NK_REC *parent )
 {
 	REGF_NK_REC *nk;
 	REGF_HBIN *vlist_hbin = NULL;

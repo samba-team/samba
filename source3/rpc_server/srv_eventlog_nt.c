@@ -72,7 +72,7 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
 static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 {
 	char *tdbname = elog_tdbname(talloc_tos(), info->logname );
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 	NTSTATUS status;
 
 	if ( !tdbname )

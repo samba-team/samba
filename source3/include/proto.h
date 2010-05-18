@@ -526,7 +526,7 @@ void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(struct security_ace *ace);
 void display_sec_acl(struct security_acl *sec_acl);
 void display_acl_type(uint16 type);
-void display_sec_desc(SEC_DESC *sec);
+void display_sec_desc(struct security_descriptor *sec);
 
 /* The following definitions come from lib/dmallocmsg.c  */
 
@@ -692,15 +692,15 @@ ssize_t drain_socket(int sockfd, size_t count);
 
 /* The following definitions come from lib/secdesc.c  */
 
-uint32_t get_sec_info(const SEC_DESC *sd);
-SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb);
+uint32_t get_sec_info(const struct security_descriptor *sd);
+struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_descriptor *new_sdb, struct security_descriptor *old_sdb);
 struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *new_sdb, struct sec_desc_buf *old_sdb);
-SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
+struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
 			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size);
-SEC_DESC *dup_sec_desc(TALLOC_CTX *ctx, const SEC_DESC *src);
+struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src);
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 			   struct security_descriptor *secdesc,
 			   uint8 **data, size_t *len);
@@ -711,24 +711,24 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 			     struct security_descriptor **psecdesc);
 NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 				 struct sec_desc_buf **psecdesc_buf);
-SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 				 struct security_acl *dacl, size_t *sd_size);
-struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
+struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct security_descriptor *sec_desc);
 struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size);
-NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
-bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container);
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, uint32 mask, size_t *sd_size);
+NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, DOM_SID *sid, uint32 mask);
+NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, size_t *sd_size);
+bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);
 NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
-                                        SEC_DESC **ppsd,
+                                        struct security_descriptor **ppsd,
 					size_t *psize,
-                                        const SEC_DESC *parent_ctr,
+                                        const struct security_descriptor *parent_ctr,
                                         const DOM_SID *owner_sid,
                                         const DOM_SID *group_sid,
                                         bool container);
 NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
 					struct sec_desc_buf **ppsdb,
-					const SEC_DESC *parent_ctr,
+					const struct security_descriptor *parent_ctr,
 					bool container);
 
 /* The following definitions come from lib/select.c  */
@@ -749,14 +749,14 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 /* The following definitions come from lib/sharesec.c  */
 
 bool share_info_db_init(void);
-SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access);
-SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
+struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access);
+struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 			      size_t *psize);
-bool set_share_security(const char *share_name, SEC_DESC *psd);
+bool set_share_security(const char *share_name, struct security_descriptor *psd);
 bool delete_share_security(const char *servicename);
 bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 			uint32 desired_access);
-bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd);
+bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_descriptor **ppsd);
 
 /* The following definitions come from lib/smbldap.c  */
 
@@ -1304,7 +1304,7 @@ bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
 void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
-NTSTATUS se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
+NTSTATUS se_access_check(const struct security_descriptor *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted);
 
 /* The following definitions come from lib/util_sec.c  */
@@ -1744,7 +1744,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libads/disp_sec.c  */
 
-void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_DESC *sd);
+void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descriptor *sd);
 
 /* The following definitions come from libads/dns.c  */
 
@@ -2844,9 +2844,9 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 
 /* The following definitions come from libsmb/clisecdesc.c  */
 
-SEC_DESC *cli_query_secdesc(struct cli_state *cli, uint16_t fnum, 
+struct security_descriptor *cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
 			    TALLOC_CTX *mem_ctx);
-bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, SEC_DESC *sd);
+bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descriptor *sd);
 
 /* The following definitions come from libsmb/clispnego.c  */
 
@@ -4235,7 +4235,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			char **pp_sharepath,
 			char **pp_comment,
 			char **pp_cp_share_name,
-			SEC_DESC **ppsd,
+			struct security_descriptor **ppsd,
 			bool *pallow_guest);
 int load_usershare_service(const char *servicename);
 int load_usershare_shares(void);
@@ -4795,8 +4795,8 @@ WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
 			     uint32 version, bool delete_files );
 WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr);
-void map_printer_permissions(SEC_DESC *sd);
-void map_job_permissions(SEC_DESC *sd);
+void map_printer_permissions(struct security_descriptor *sd);
+void map_job_permissions(struct security_descriptor *sd);
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type);
 bool print_time_access_check(const char *servicename);
@@ -5564,8 +5564,8 @@ bool init_service_op_table( void );
 /* The following definitions come from services/services_db.c  */
 
 void svcctl_init_keys( void );
-SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
-bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token );
+struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
+bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, NT_USER_TOKEN *token );
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
@@ -6300,18 +6300,18 @@ uint32_t map_canon_ace_perms(int snum,
                                 enum security_ace_type *pacl_type,
                                 mode_t perms,
                                 bool directory_ace);
-NTSTATUS unpack_nt_owners(connection_struct *conn, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
+NTSTATUS unpack_nt_owners(connection_struct *conn, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const struct security_descriptor *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
-			   SEC_DESC **ppdesc);
+			   struct security_descriptor **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
-			  uint32_t security_info, SEC_DESC **ppdesc);
+			  uint32_t security_info, struct security_descriptor **ppdesc);
 int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	      uid_t uid, gid_t gid);
 NTSTATUS append_parent_acl(files_struct *fsp,
-				const SEC_DESC *pcsd,
-				SEC_DESC **pp_new_sd);
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd);
+				const struct security_descriptor *pcsd,
+				struct security_descriptor **pp_new_sd);
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
@@ -6321,7 +6321,7 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname,
 				const SMB_STRUCT_STAT *psbuf,
 				uint16 num_def_acls, const char *pdata);
 bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16 num_acls, const char *pdata);
-SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
+struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 /* The following definitions come from smbd/process.c  */
 
@@ -6818,7 +6818,7 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int fncall_recv(struct tevent_req *req, int *perr);
 
 /* The following definitions come from rpc_server/srv_samr_nt.c */
-NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
+NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
 				SE_PRIV *rights, uint32 rights_mask,
 				uint32 des_access, uint32 *acc_granted,
 				const char *debug);

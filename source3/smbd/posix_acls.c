@@ -1164,12 +1164,13 @@ static mode_t map_nt_perms( uint32 *mask, int type)
 }
 
 /****************************************************************************
- Unpack a SEC_DESC into a UNIX owner and group.
+ Unpack a struct security_descriptor into a UNIX owner and group.
 ****************************************************************************/
 
 NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			uid_t *puser, gid_t *pgrp,
-			uint32 security_info_sent, const SEC_DESC *psd)
+			uint32 security_info_sent, const struct
+			security_descriptor *psd)
 {
 	DOM_SID owner_sid;
 	DOM_SID grp_sid;
@@ -1573,7 +1574,7 @@ static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
 }
 
 /****************************************************************************
- Unpack a SEC_DESC into two canonical ace lists.
+ Unpack a struct security_descriptor into two canonical ace lists.
 ****************************************************************************/
 
 static bool create_canon_ace_lists(files_struct *fsp,
@@ -2307,7 +2308,7 @@ static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
 }
 
 /****************************************************************************
- Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
+ Unpack a struct security_descriptor into two canonical ace lists. We don't depend on this
  succeeding.
 ****************************************************************************/
 
@@ -2318,7 +2319,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 				canon_ace **ppfile_ace,
 				canon_ace **ppdir_ace,
 				uint32 security_info_sent,
-				const SEC_DESC *psd)
+				const struct security_descriptor *psd)
 {
 	SMB_STRUCT_STAT st;
 	canon_ace *file_ace = NULL;
@@ -3174,7 +3175,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				      SMB_ACL_T posix_acl,
 				      SMB_ACL_T def_acl,
 				      uint32_t security_info,
-				      SEC_DESC **ppdesc)
+				      struct security_descriptor **ppdesc)
 {
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
@@ -3188,7 +3189,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	struct security_ace *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
 	DOM_SID orig_owner_sid;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	int i;
 
 	/*
@@ -3437,7 +3438,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 }
 
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
-			   SEC_DESC **ppdesc)
+			   struct security_descriptor **ppdesc)
 {
 	SMB_STRUCT_STAT sbuf;
 	SMB_ACL_T posix_acl = NULL;
@@ -3470,7 +3471,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 }
 
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
-			  uint32_t security_info, SEC_DESC **ppdesc)
+			  uint32_t security_info, struct security_descriptor **ppdesc)
 {
 	SMB_ACL_T posix_acl = NULL;
 	SMB_ACL_T def_acl = NULL;
@@ -3627,11 +3628,11 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 ****************************************************************************/
 
 NTSTATUS append_parent_acl(files_struct *fsp,
-				const SEC_DESC *pcsd,
-				SEC_DESC **pp_new_sd)
+				const struct security_descriptor *pcsd,
+				struct security_descriptor **pp_new_sd)
 {
 	struct smb_filename *smb_dname = NULL;
-	SEC_DESC *parent_sd = NULL;
+	struct security_descriptor *parent_sd = NULL;
 	files_struct *parent_fsp = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *parent_name = NULL;
@@ -3640,7 +3641,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 	NTSTATUS status;
 	int info;
 	unsigned int i, j;
-	SEC_DESC *psd = dup_sec_desc(talloc_tos(), pcsd);
+	struct security_descriptor *psd = dup_sec_desc(talloc_tos(), pcsd);
 	bool is_dacl_protected = (pcsd->type & SEC_DESC_DACL_PROTECTED);
 
 	if (psd == NULL) {
@@ -3826,7 +3827,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
  This should be the only external function needed for the UNIX style set ACL.
 ****************************************************************************/
 
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
@@ -4701,9 +4702,9 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
  Assume we are dealing with files (for now)
 ********************************************************************/
 
-SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
+struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 {
-	SEC_DESC *psd, *ret_sd;
+	struct security_descriptor *psd, *ret_sd;
 	connection_struct *conn;
 	files_struct finfo;
 	struct fd_handle fh;

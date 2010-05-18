@@ -124,7 +124,7 @@ static void print_ace(FILE *f, struct security_ace *ace)
  print an ascii version of a security descriptor on a FILE handle
 ********************************************************************/
 
-static void sec_desc_print(FILE *f, SEC_DESC *sd)
+static void sec_desc_print(FILE *f, struct security_descriptor *sd)
 {
 	uint32 i;
 
@@ -294,9 +294,9 @@ static bool parse_ace(struct security_ace *ace, const char *orig_str)
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t *sd_size )
+static struct security_descriptor* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t *sd_size )
 {
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 	struct security_ace *ace;
 	struct security_acl *theacl;
 	int num_ace;
@@ -407,8 +407,8 @@ static void sort_acl(struct security_acl *the_acl)
 
 static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *the_acl, enum acl_mode mode)
 {
-	SEC_DESC *sd = NULL;
-	SEC_DESC *old = NULL;
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *old = NULL;
 	size_t sd_size = 0;
 	uint32 i, j;
 

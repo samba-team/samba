@@ -2684,16 +2684,17 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 }
 
 /**
- * pull a SEC_DESC from a ADS result
+ * pull a struct security_descriptor from a ADS result
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param msg Results of search
  * @param field Attribute to retrieve
- * @param sd Pointer to *SEC_DESC to store result (talloc()ed)
+ * @param sd Pointer to *struct security_descriptor to store result (talloc()ed)
  * @return boolean inidicating success
 */
  bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
+		  LDAPMessage *msg, const char *field,
+		  struct security_descriptor **sd)
 {
 	struct berval **values;
 	bool ret = true;

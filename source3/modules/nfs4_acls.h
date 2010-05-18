@@ -131,12 +131,12 @@ uint32 smb_get_naces(SMB4ACL_T *theacl);
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info,
-	SEC_DESC **ppdesc, SMB4ACL_T *theacl);
+	struct security_descriptor **ppdesc, SMB4ACL_T *theacl);
 
 NTSTATUS smb_get_nt_acl_nfs4(connection_struct *conn,
 	const char *name,
 	uint32 security_info,
-	SEC_DESC **ppdesc, SMB4ACL_T *theacl);
+	struct security_descriptor **ppdesc, SMB4ACL_T *theacl);
 
 /* Callback function needed to set the native acl
  * when applicable */
@@ -144,7 +144,7 @@ typedef bool (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
 
 NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
-	const SEC_DESC *psd,
+	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native);
 
 #endif /* __NFS4_ACLS_H__ */

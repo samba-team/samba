@@ -26,7 +26,7 @@ bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		  LDAPMessage *msg, const char *field, DOM_SID **sids);
 bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		 LDAPMessage *msg, const char *field, SEC_DESC **sd);
+		 LDAPMessage *msg, const char *field, struct security_descriptor **sd);
 char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 			LDAPMessage *msg);
 int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads, 

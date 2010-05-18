@@ -562,7 +562,7 @@ static void display_finfo(file_info *finfo, const char *dir)
 				afname,
 				cli_errstr( finfo->cli)));
 		} else {
-			SEC_DESC *sd = NULL;
+			struct security_descriptor *sd = NULL;
 			sd = cli_query_secdesc(finfo->cli, fnum, ctx);
 			if (!sd) {
 				DEBUG( 0, ("display_finfo() failed to "

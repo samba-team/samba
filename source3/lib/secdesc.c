@@ -35,7 +35,7 @@ const struct generic_mapping file_generic_mapping = {
  Given a security_descriptor return the sec_info.
 ********************************************************************/
 
-uint32_t get_sec_info(const SEC_DESC *sd)
+uint32_t get_sec_info(const struct security_descriptor *sd)
 {
 	uint32_t sec_info = ALL_SECURITY_INFORMATION;
 
@@ -68,7 +68,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 	DOM_SID *owner_sid, *group_sid;
 	struct sec_desc_buf *return_sdb;
 	struct security_acl *dacl, *sacl;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint16 secdesc_type;
 	size_t secdesc_size;
 
@@ -108,11 +108,11 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 	return(return_sdb);
 }
 
-SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb)
+struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_descriptor *new_sdb, struct security_descriptor *old_sdb)
 {
 	DOM_SID *owner_sid, *group_sid;
 	struct security_acl *dacl, *sacl;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint16 secdesc_type;
 	size_t secdesc_size;
 
@@ -150,21 +150,21 @@ SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb)
 }
 
 /*******************************************************************
- Creates a SEC_DESC structure
+ Creates a struct security_descriptor structure
 ********************************************************************/
 
-SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
+struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
 			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size)
 {
-	SEC_DESC *dst;
+	struct security_descriptor *dst;
 	uint32 offset     = 0;
 
 	*sd_size = 0;
 
-	if(( dst = TALLOC_ZERO_P(ctx, SEC_DESC)) == NULL)
+	if(( dst = TALLOC_ZERO_P(ctx, struct security_descriptor)) == NULL)
 		return NULL;
 
 	dst->revision = revision;
@@ -223,10 +223,10 @@ error_exit:
 }
 
 /*******************************************************************
- Duplicate a SEC_DESC structure.  
+ Duplicate a struct security_descriptor structure.
 ********************************************************************/
 
-SEC_DESC *dup_sec_desc(TALLOC_CTX *ctx, const SEC_DESC *src)
+struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src)
 {
 	size_t dummy;
 
@@ -361,10 +361,10 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 }
 
 /*******************************************************************
- Creates a SEC_DESC structure with typical defaults.
+ Creates a struct security_descriptor structure with typical defaults.
 ********************************************************************/
 
-SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 				 struct security_acl *dacl, size_t *sd_size)
 {
 	return make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
@@ -376,7 +376,7 @@ SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, cons
  Creates a struct sec_desc_buf structure.
 ********************************************************************/
 
-struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
+struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct security_descriptor *sec_desc)
 {
 	struct sec_desc_buf *dst;
 
@@ -406,12 +406,12 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
 }
 
 /*******************************************************************
- Add a new SID with its permissions to SEC_DESC.
+ Add a new SID with its permissions to struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size)
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, uint32 mask, size_t *sd_size)
 {
-	SEC_DESC *sd   = 0;
+	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
 	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
@@ -439,10 +439,10 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 
 }
 
 /*******************************************************************
- Modify a SID's permissions in a SEC_DESC.
+ Modify a SID's permissions in a struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, DOM_SID *sid, uint32 mask)
 {
 	NTSTATUS status;
 
@@ -458,12 +458,12 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask)
 }
 
 /*******************************************************************
- Delete a SID from a SEC_DESC.
+ Delete a SID from a struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size)
+NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, size_t *sd_size)
 {
-	SEC_DESC *sd   = 0;
+	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
 	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
@@ -518,7 +518,7 @@ static bool is_inheritable_ace(const struct security_ace *ace,
  * the newly created type ?
  */
 
-bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container)
+bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container)
 {
 	unsigned int i;
 	const struct security_acl *the_acl = parent_ctr->dacl;
@@ -538,9 +538,9 @@ bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container)
    non-container object. */
 
 NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
-					SEC_DESC **ppsd,
+					struct security_descriptor **ppsd,
 					size_t *psize,
-					const SEC_DESC *parent_ctr,
+					const struct security_descriptor *parent_ctr,
 					const DOM_SID *owner_sid,
 					const DOM_SID *group_sid,
 					bool container)
@@ -674,12 +674,12 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
 					struct sec_desc_buf **ppsdb,
-					const SEC_DESC *parent_ctr,
+					const struct security_descriptor *parent_ctr,
 					bool container)
 {
 	NTSTATUS status;
 	size_t size = 0;
-	SEC_DESC *sd = NULL;
+	struct security_descriptor *sd = NULL;
 
 	*ppsdb = NULL;
 	status = se_create_child_secdesc(ctx,

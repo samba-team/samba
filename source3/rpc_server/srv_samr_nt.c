@@ -122,7 +122,7 @@ static const struct generic_mapping ali_generic_mapping = {
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size,
+static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor **psd, size_t *sd_size,
                                      const struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
@@ -177,7 +177,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
  level of access for further checks.
 ********************************************************************/
 
-NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
+NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
                                           SE_PRIV *rights, uint32 rights_mask,
                                           uint32 des_access, uint32 *acc_granted,
 					  const char *debug )
@@ -537,7 +537,7 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 {
 	struct samr_connect_info *cinfo;
 	struct samr_domain_info *dinfo;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = r->in.access_mask;
 	NTSTATUS  status;
@@ -775,7 +775,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	struct samr_group_info *ginfo;
 	struct samr_alias_info *ainfo;
 	NTSTATUS status;
-	SEC_DESC * psd = NULL;
+	struct security_descriptor * psd = NULL;
 	size_t sd_size = 0;
 
 	cinfo = policy_handle_find(p, r->in.handle,
@@ -2240,7 +2240,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	DOM_SID sid;
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = r->in.access_mask;
 	uint32_t extra_access = 0;
@@ -3754,7 +3754,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	struct samr_user_info *uinfo;
 	NTSTATUS nt_status;
 	uint32 acc_granted;
-	SEC_DESC *psd;
+	struct security_descriptor *psd;
 	size_t    sd_size;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
@@ -3955,7 +3955,7 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 {
 	struct samr_connect_info *info = NULL;
 	struct policy_handle hnd;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = r->in.access_mask;
 	NTSTATUS  nt_status;
@@ -4180,7 +4180,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 	uint32 alias_rid = r->in.rid;
 	struct samr_alias_info *ainfo;
 	struct samr_domain_info *dinfo;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = r->in.access_mask;
 	size_t    sd_size;
@@ -6247,7 +6247,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 	GROUP_MAP map;
 	struct samr_domain_info *dinfo;
 	struct samr_group_info *ginfo;
-	SEC_DESC         *psd = NULL;
+	struct security_descriptor         *psd = NULL;
 	uint32            acc_granted;
 	uint32            des_access = r->in.access_mask;
 	size_t            sd_size;

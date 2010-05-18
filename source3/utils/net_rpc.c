@@ -4420,8 +4420,8 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 			struct user_token *tokens)
 {
 	uint16_t fnum;
-	SEC_DESC *share_sd = NULL;
-	SEC_DESC *root_sd = NULL;
+	struct security_descriptor *share_sd = NULL;
+	struct security_descriptor *root_sd = NULL;
 	struct cli_state *cli = rpc_pipe_np_smb_conn(pipe_hnd);
 	int i;
 	union srvsvc_NetShareInfo info;

@@ -121,7 +121,7 @@ static struct service_control_op* find_service_by_name( const char *name )
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
+static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, NT_USER_TOKEN *token,
                                      uint32 access_desired, uint32 *access_granted )
 {
 	if ( geteuid() == sec_initial_uid() ) {
@@ -135,11 +135,11 @@ static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
+static struct security_descriptor* construct_scm_sd( TALLOC_CTX *ctx )
 {
 	struct security_ace ace[2];
 	size_t i = 0;
-	SEC_DESC *sd;
+	struct security_descriptor *sd;
 	struct security_acl *theacl;
 	size_t sd_size;
 
@@ -255,7 +255,7 @@ done:
 WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
 			      struct svcctl_OpenSCManagerW *r)
 {
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 	uint32 access_granted = 0;
 	NTSTATUS status;
 
@@ -280,7 +280,7 @@ WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
 WERROR _svcctl_OpenServiceW(pipes_struct *p,
 			    struct svcctl_OpenServiceW *r)
 {
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 	uint32 access_granted = 0;
 	NTSTATUS status;
 	const char *service = NULL;
@@ -854,7 +854,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 					  struct svcctl_QueryServiceObjectSecurity *r)
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	SEC_DESC *sec_desc;
+	struct security_descriptor *sec_desc;
 	NTSTATUS status;
 	uint8_t *buffer = NULL;
 	size_t len = 0;
@@ -905,7 +905,7 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 					struct svcctl_SetServiceObjectSecurity *r)
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	SEC_DESC *sec_desc = NULL;
+	struct security_descriptor *sec_desc = NULL;
 	uint32 required_access;
 	NTSTATUS status;
 

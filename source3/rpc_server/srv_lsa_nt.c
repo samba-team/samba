@@ -312,7 +312,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size,
+static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, struct security_descriptor **sd, size_t *sd_size,
 					const struct generic_mapping *map,
 					DOM_SID *sid, uint32_t sid_access)
 {
@@ -366,7 +366,7 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 			  struct lsa_OpenPolicy2 *r)
 {
 	struct lsa_info *info;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32 des_access = r->in.access_mask;
 	uint32 acc_granted;
@@ -1759,7 +1759,7 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
 	uint32_t acc_granted;
@@ -2115,7 +2115,7 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 			    struct lsa_QuerySecurity *r)
 {
 	struct lsa_info *handle=NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	NTSTATUS status;
 
@@ -2160,7 +2160,7 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 	struct lsa_info *info = NULL;
 	int i = 0;
 	uint32_t acc_granted = 0;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	DOM_SID sid;
 	NTSTATUS status;
@@ -2229,7 +2229,7 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 {
 	struct lsa_info *info = NULL;
 	int i = 0;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	DOM_SID sid;
 	const char *privname = NULL;

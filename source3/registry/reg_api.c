@@ -855,7 +855,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	char *subkeyname;
 	struct registry_key_handle registry_key;
 	WERROR result = WERR_OK;
-	SEC_DESC *sec_desc = NULL;
+	struct security_descriptor *sec_desc = NULL;
 
 	if (!regfile) {
 		return WERR_GENERAL_FAILURE;
