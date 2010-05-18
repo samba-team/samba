@@ -153,6 +153,8 @@ struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_desc
  Creates a struct security_descriptor structure
 ********************************************************************/
 
+#define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
+
 struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,

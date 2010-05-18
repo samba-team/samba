@@ -71,8 +71,6 @@
 #define SEC_DESC_REVISION 0x1
 #endif
 
-#define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
-
 /* A type to describe the mapping of generic access rights to object
    specific access rights. */
 
