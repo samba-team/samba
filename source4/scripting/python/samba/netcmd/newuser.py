@@ -20,8 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import samba.getopt as options
-from samba.netcmd import Command, Option
-import sys, ldb
+from samba.netcmd import Command, CommandError, Option
+import ldb
 
 from getpass import getpass
 from samba.auth import system_session
@@ -61,6 +61,6 @@ class cmd_newuser(Command):
             samdb.newuser(username, password,
                           force_password_change_at_next_login_req=must_change_at_next_login)
         except ldb.LdbError, (num, msg):
-            print('Failed to create user "%s" : %s' % (username, msg))
-            sys.exit(1)
+            raise CommandError('Failed to create user "%s" : %s' % (
+                username, msg))
 
