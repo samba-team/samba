@@ -29,6 +29,7 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "rpc_client/cli_spoolss.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
