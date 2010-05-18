@@ -1,0 +1,48 @@
+/* The following definitions come from rpc_client/cli_netlogon.c  */
+
+NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
+				     const char *server_name,
+				     const char *domain,
+				     const char *clnt_name,
+				     const char *machine_account,
+				     const unsigned char machine_pwd[16],
+				     enum netr_SchannelType sec_chan_type,
+				     uint32_t *neg_flags_inout);
+NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 logon_parameters,
+				   const char *domain,
+				   const char *username,
+				   const char *password,
+				   const char *workstation,
+				   int logon_type);
+NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   uint32 logon_parameters,
+					   const char *server,
+					   const char *username,
+					   const char *domain,
+					   const char *workstation,
+					   const uint8 chal[8],
+					   DATA_BLOB lm_response,
+					   DATA_BLOB nt_response,
+					   struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      uint32 logon_parameters,
+					      const char *server,
+					      const char *username,
+					      const char *domain,
+					      const char *workstation,
+					      const uint8 chal[8],
+					      DATA_BLOB lm_response,
+					      DATA_BLOB nt_response,
+					      struct netr_SamInfo3 **info3);
+NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const char *account_name,
+					    const unsigned char orig_trust_passwd_hash[16],
+					    const char *new_trust_pwd_cleartext,
+					    const unsigned char new_trust_passwd_hash[16],
+					    enum netr_SchannelType sec_channel_type);
+

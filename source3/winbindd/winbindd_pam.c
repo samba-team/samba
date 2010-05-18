@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "rpc_client/cli_netlogon.h"
 #include "smb_krb5.h"
 #include "../lib/crypto/arcfour.h"
 
