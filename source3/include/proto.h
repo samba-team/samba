@@ -1759,17 +1759,6 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     const char *impersonate_princ_s,
 			     struct PAC_LOGON_INFO **logon_info);
 
-/* The following definitions come from libads/cldap.c  */
-bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
-			const char *server,
-			const char *realm,
-			uint32_t nt_version,
-			struct netlogon_samlogon_response **reply);
-bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
-			  const char *server,
-			  const char *realm,
-			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5);
-
 /* The following definitions come from libads/disp_sec.c  */
 
 void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descriptor *sd);
@@ -2176,20 +2165,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 			const char *username,
 			const char *password,
 			const char *domain);
-/* The following definitions come from libsmb/clidgram.c  */
-
-bool send_getdc_request(TALLOC_CTX *mem_ctx,
-			struct messaging_context *msg_ctx,
-			struct sockaddr_storage *dc_ss,
-			const char *domain_name,
-			const struct dom_sid *sid,
-			uint32_t nt_version);
-bool receive_getdc_response(TALLOC_CTX *mem_ctx,
-			    struct sockaddr_storage *dc_ss,
-			    const char *domain_name,
-			    uint32_t *nt_version,
-			    const char **dc_name,
-			    struct netlogon_samlogon_response **reply);
 
 /* The following definitions come from libsmb/clientgen.c  */
 

@@ -656,7 +656,6 @@ struct ntlmssp_state;
 
 #include "auth.h"
 #include "ntdomain.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/rpc/dcerpc.h"
 #include "nt_printing.h"
 #include "idmap.h"

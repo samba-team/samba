@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "libads/cldap.h"
 
 #ifdef HAVE_ADS
 

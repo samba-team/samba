@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "libads/sitename_cache.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "libads/cldap.h"
+#include "libsmb/clidgram.h"
 
 #define DSGETDCNAME_FMT	"DSGETDCNAME/DOMAIN/%s"
 /* 15 minutes */

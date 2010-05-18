@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libads/sitename_cache.h"
+#include "libads/cldap.h"
 
 #ifdef HAVE_LDAP
 

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "../libcli/cldap/cldap.h"
 #include "../lib/tsocket/tsocket.h"
+#include "libads/cldap.h"
 
 /*******************************************************************
   do a cldap netlogon query.  Always 389/udp
