@@ -26,6 +26,7 @@
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
 #define PRINTERS_PREFIX "PRINTERS/"
+#define SECDESC_PREFIX "SECDESC/"
 
 static void dump_form(TALLOC_CTX *mem_ctx,
 		      const char *key_name,
@@ -117,6 +118,37 @@ static void dump_printer(TALLOC_CTX *mem_ctx,
 	}
 }
 
+static void dump_sd(TALLOC_CTX *mem_ctx,
+		    const char *key_name,
+		    unsigned char *data,
+		    size_t length)
+{
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	char *s;
+	struct sec_desc_buf r;
+
+	printf("found security descriptor: %s\n", key_name);
+
+	blob = data_blob_const(data, length);
+
+	ZERO_STRUCT(r);
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+		   (ndr_pull_flags_fn_t)ndr_pull_sec_desc_buf);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		d_fprintf(stderr, _("security descriptor pull failed: %s\n"),
+			  ndr_errstr(ndr_err));
+		return;
+	}
+
+	s = NDR_PRINT_STRUCT_STRING(mem_ctx, sec_desc_buf, &r);
+	if (s) {
+		printf("%s\n", s);
+	}
+}
+
+
 static int net_printing_dump(struct net_context *c, int argc,
 			     const char **argv)
 {
@@ -163,6 +195,13 @@ static int net_printing_dump(struct net_context *c, int argc,
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
+
+		if (strncmp((const char *)kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
+			dump_sd(ctx, (const char *)kbuf.dptr+strlen(SECDESC_PREFIX), dbuf.dptr, dbuf.dsize);
+			SAFE_FREE(dbuf.dptr);
+			continue;
+		}
+
 	}
 
 	ret = 0;
