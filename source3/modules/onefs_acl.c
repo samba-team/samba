@@ -167,7 +167,7 @@ sid_in_ignore_list(DOM_SID * sid, int snum)
  * Convert a trustee to a struct identity
  */
 static bool
-onefs_samba_ace_to_ace(SEC_ACE * samba_ace, struct ifs_ace * ace,
+onefs_samba_ace_to_ace(struct security_ace * samba_ace, struct ifs_ace * ace,
     bool *mapped, int snum)
 {
 	struct ifs_identity ident = {.type=IFS_ID_TYPE_LAST, .id.uid=0};
@@ -240,7 +240,7 @@ onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl,
 {
 	int num_aces = 0;
 	struct ifs_ace *aces = NULL;
-	SEC_ACE *samba_aces;
+	struct security_ace *samba_aces;
 	bool mapped;
 	int i, j;
 
@@ -292,7 +292,7 @@ err_free:
 static bool
 onefs_acl_to_samba_acl(struct ifs_security_acl *acl, SEC_ACL **samba_acl)
 {
-	SEC_ACE *samba_aces = NULL;
+	struct security_ace *samba_aces = NULL;
 	SEC_ACL *tmp_samba_acl = NULL;
 	int i, num_aces = 0;
 
@@ -313,13 +313,13 @@ onefs_acl_to_samba_acl(struct ifs_security_acl *acl, SEC_ACL **samba_acl)
 
 	/* Allocate the ace list. */
 	if (num_aces > 0) {
-		if ((samba_aces = SMB_MALLOC_ARRAY(SEC_ACE, num_aces)) == NULL)
+		if ((samba_aces = SMB_MALLOC_ARRAY(struct security_ace, num_aces)) == NULL)
 		{
 			DEBUG(0, ("Unable to malloc space for %d aces.\n",
 			    num_aces));
 			return false;
 		}
-		memset(samba_aces, '\0', (num_aces) * sizeof(SEC_ACE));
+		memset(samba_aces, '\0', (num_aces) * sizeof(struct security_ace));
 	}
 
 	for (i = 0; i < num_aces; i++) {

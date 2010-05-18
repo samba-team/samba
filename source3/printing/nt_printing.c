@@ -2634,7 +2634,7 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc)
 {
-	SEC_ACE ace[5];	/* max number of ace entries */
+	struct security_ace ace[5];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	SEC_ACL *psa = NULL;
@@ -5586,7 +5586,7 @@ WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ct
 
 static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
-	SEC_ACE ace[5];	/* max number of ace entries */
+	struct security_ace ace[5];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	SEC_ACL *psa = NULL;

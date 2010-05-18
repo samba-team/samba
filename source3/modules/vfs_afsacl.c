@@ -528,7 +528,7 @@ static struct static_dir_ace_mapping {
 	{ 0, 0, 0, 9999 }
 };
 
-static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
+static uint32 nt_to_afs_dir_rights(const char *filename, const struct security_ace *ace)
 {
 	uint32 result = 0;
 	uint32 rights = ace->access_mask;
@@ -569,7 +569,7 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 	return result;
 }
 
-static uint32 nt_to_afs_file_rights(const char *filename, const SEC_ACE *ace)
+static uint32 nt_to_afs_file_rights(const char *filename, const struct security_ace *ace)
 {
 	uint32 result = 0;
 	uint32 rights = ace->access_mask;
@@ -590,7 +590,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 				   uint32 security_info,
 				   struct security_descriptor **ppdesc)
 {
-	SEC_ACE *nt_ace_list;
+	struct security_ace *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
 	SEC_ACL *psa = NULL;
 	int good_aces;
@@ -603,7 +603,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	if (afs_acl->num_aces) {
-		nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
+		nt_ace_list = TALLOC_ARRAY(mem_ctx, struct security_ace, afs_acl->num_aces);
 
 		if (nt_ace_list == NULL)
 			return 0;
@@ -723,7 +723,7 @@ static bool nt_to_afs_acl(const char *filename,
 			  uint32 security_info_sent,
 			  const struct security_descriptor *psd,
 			  uint32 (*nt_to_afs_rights)(const char *filename,
-						     const SEC_ACE *ace),
+						     const struct security_ace *ace),
 			  struct afs_acl *afs_acl)
 {
 	const SEC_ACL *dacl;
@@ -741,7 +741,7 @@ static bool nt_to_afs_acl(const char *filename,
 	dacl = psd->dacl;
 
 	for (i = 0; i < dacl->num_aces; i++) {
-		const SEC_ACE *ace = &(dacl->aces[i]);
+		const struct security_ace *ace = &(dacl->aces[i]);
 		const char *dom_name, *name;
 		enum lsa_SidType name_type;
 		char *p;

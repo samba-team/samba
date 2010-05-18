@@ -54,8 +54,8 @@ find_lsa_pipe_hnd(struct cli_state *ipc_cli)
  */
 
 static int
-ace_compare(SEC_ACE *ace1,
-            SEC_ACE *ace2)
+ace_compare(struct security_ace *ace1,
+            struct security_ace *ace2)
 {
         bool b1;
         bool b2;
@@ -136,7 +136,7 @@ ace_compare(SEC_ACE *ace1,
 		return ace1->size - ace2->size;
         }
 
-	return memcmp(ace1, ace2, sizeof(SEC_ACE));
+	return memcmp(ace1, ace2, sizeof(struct security_ace));
 }
 
 
@@ -249,11 +249,11 @@ done:
 }
 
 
-/* parse an ACE in the same format as print_ace() */
+/* parse an struct security_ace in the same format as print_ace() */
 static bool
 parse_ace(struct cli_state *ipc_cli,
           struct policy_handle *pol,
-          SEC_ACE *ace,
+          struct security_ace *ace,
           bool numeric,
           char *str)
 {
@@ -386,26 +386,26 @@ done:
 	return true;
 }
 
-/* add an ACE to a list of ACEs in a SEC_ACL */
+/* add an struct security_ace to a list of struct security_aces in a SEC_ACL */
 static bool
 add_ace(SEC_ACL **the_acl,
-        SEC_ACE *ace,
+        struct security_ace *ace,
         TALLOC_CTX *ctx)
 {
 	SEC_ACL *newacl;
-	SEC_ACE *aces;
+	struct security_ace *aces;
 
 	if (! *the_acl) {
 		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
 		return True;
 	}
 
-	if ((aces = SMB_CALLOC_ARRAY(SEC_ACE,
+	if ((aces = SMB_CALLOC_ARRAY(struct security_ace,
                                      1+(*the_acl)->num_aces)) == NULL) {
 		return False;
 	}
-	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(SEC_ACE));
-	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(struct security_ace));
+	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(struct security_ace));
 	newacl = make_sec_acl(ctx, (*the_acl)->revision,
                               1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
@@ -503,7 +503,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"ACL:", 4) == 0) {
-			SEC_ACE ace;
+			struct security_ace ace;
 			if (!parse_ace(ipc_cli, pol, &ace, numeric, tok+4)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
 				goto done;
@@ -516,7 +516,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 		}
 
 		if (StrnCaseCmp(tok,"ACL+:", 5) == 0) {
-			SEC_ACE ace;
+			struct security_ace ace;
 			if (!parse_ace(ipc_cli, pol, &ace, False, tok+5)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
 				goto done;
@@ -1053,7 +1053,7 @@ cacl_get(SMBCCTX *context,
                         /* Add aces to value buffer  */
                         for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 
-                                SEC_ACE *ace = &sd->dacl->aces[i];
+                                struct security_ace *ace = &sd->dacl->aces[i];
                                 convert_sid_to_string(ipc_cli, pol,
                                                       sidstr, numeric,
                                                       &ace->trustee);

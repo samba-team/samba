@@ -64,7 +64,7 @@ static const struct perm_value standard_values[] = {
  print an ACE on a FILE
 ********************************************************************/
 
-static void print_ace(FILE *f, SEC_ACE *ace)
+static void print_ace(FILE *f, struct security_ace *ace)
 {
 	const struct perm_value *v;
 	int do_print = 0;
@@ -138,7 +138,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 	/* Print aces */
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		SEC_ACE *ace = &sd->dacl->aces[i];
+		struct security_ace *ace = &sd->dacl->aces[i];
 		fprintf(f, "ACL:");
 		print_ace(f, ace);
 		fprintf(f, "\n");
@@ -149,7 +149,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
  parse an ACE in the same format as print_ace()
 ********************************************************************/
 
-static bool parse_ace(SEC_ACE *ace, const char *orig_str)
+static bool parse_ace(struct security_ace *ace, const char *orig_str)
 {
 	char *p;
 	const char *cp;
@@ -297,7 +297,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t *sd_size )
 {
 	SEC_DESC *sd = NULL;
-	SEC_ACE *ace;
+	struct security_ace *ace;
 	SEC_ACL *theacl;
 	int num_ace;
 	const char *pacl;
@@ -309,7 +309,7 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 	pacl = szACL;
 	num_ace = count_chars( pacl, ',' ) + 1;
 
-	if ( !(ace = TALLOC_ZERO_ARRAY( mem_ctx, SEC_ACE, num_ace )) )
+	if ( !(ace = TALLOC_ZERO_ARRAY( mem_ctx, struct security_ace, num_ace )) )
 		return NULL;
 
 	for ( i=0; i<num_ace; i++ ) {
@@ -336,19 +336,20 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, SEC_ACE *ace)
+static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, struct security_ace *ace)
 {
 	SEC_ACL *new_ace;
-	SEC_ACE *aces;
+	struct security_ace *aces;
 	if (! *the_acl) {
 		return (((*the_acl) = make_sec_acl(mem_ctx, 3, 1, ace)) != NULL);
 	}
 
-	if (!(aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces))) {
+	if (!(aces = SMB_CALLOC_ARRAY(struct security_ace, 1+(*the_acl)->num_aces))) {
 		return False;
 	}
-	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(SEC_ACE));
-	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->aces, (*the_acl)->num_aces * sizeof(struct
+	security_ace));
+	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(struct security_ace));
 	new_ace = make_sec_acl(mem_ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
 	(*the_acl) = new_ace;
@@ -360,7 +361,7 @@ static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, SEC_ACE *ace)
    computer running Windows NT 5.0" if denied ACEs do not appear before
    allowed ACEs. */
 
-static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
+static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 {
 	if (sec_ace_equal(ace1, ace2))
 		return 0;
@@ -380,7 +381,7 @@ static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 	if (ace1->size != ace2->size)
 		return ace1->size - ace2->size;
 
-	return memcmp(ace1, ace2, sizeof(SEC_ACE));
+	return memcmp(ace1, ace2, sizeof(struct security_ace));
 }
 
 static void sort_acl(SEC_ACL *the_acl)

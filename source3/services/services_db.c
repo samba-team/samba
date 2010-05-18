@@ -90,7 +90,7 @@ struct service_display_info common_unix_svcs[] = {
 
 static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 {
-	SEC_ACE ace[4];
+	struct security_ace ace[4];
 	size_t i = 0;
 	SEC_DESC *sd = NULL;
 	SEC_ACL *theacl = NULL;

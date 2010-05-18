@@ -1600,7 +1600,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 	 */
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa = &dacl->aces[i];
+		struct security_ace *psa = &dacl->aces[i];
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
 			DEBUG(3,("create_canon_ace_lists: unable to set anything but an ALLOW or DENY ACE.\n"));
@@ -1637,10 +1637,10 @@ static bool create_canon_ace_lists(files_struct *fsp,
 	 */
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa1 = &dacl->aces[i];
+		struct security_ace *psa1 = &dacl->aces[i];
 
 		for (j = i + 1; j < dacl->num_aces; j++) {
-			SEC_ACE *psa2 = &dacl->aces[j];
+			struct security_ace *psa2 = &dacl->aces[j];
 
 			if (psa1->access_mask != psa2->access_mask)
 				continue;
@@ -1668,7 +1668,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 	}
 
 	for(i = 0; i < dacl->num_aces; i++) {
-		SEC_ACE *psa = &dacl->aces[i];
+		struct security_ace *psa = &dacl->aces[i];
 
 		/*
 		 * Create a cannon_ace entry representing this NT DACL ACE.
@@ -3064,7 +3064,7 @@ static bool convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
   Based on code from "Jim McDonough" <jmcd@us.ibm.com>.
 ****************************************************************************/
 
-static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
+static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_aces)
 {
 	size_t i, j;
 
@@ -3096,7 +3096,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 								(i_inh ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 					if (num_aces - i - 1 > 0)
 						memmove(&nt_ace_list[i], &nt_ace_list[i+1], (num_aces-i-1) *
-								sizeof(SEC_ACE));
+								sizeof(struct security_ace));
 
 					DEBUG(10,("merge_default_aces: Merging zero access ACE %u onto ACE %u.\n",
 						(unsigned int)i, (unsigned int)j ));
@@ -3110,7 +3110,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 								(i_inh ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 					if (num_aces - j - 1 > 0)
 						memmove(&nt_ace_list[j], &nt_ace_list[j+1], (num_aces-j-1) *
-								sizeof(SEC_ACE));
+								sizeof(struct security_ace));
 
 					DEBUG(10,("merge_default_aces: Merging ACE %u onto ACE %u.\n",
 						(unsigned int)j, (unsigned int)i ));
@@ -3135,7 +3135,7 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
  * any reallocation of memory.
  */
 
-static void add_or_replace_ace(SEC_ACE *nt_ace_list, size_t *num_aces,
+static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_aces,
 				const DOM_SID *sid, enum security_ace_type type,
 				uint32_t mask, uint8_t flags)
 {
@@ -3185,7 +3185,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	size_t num_aces = 0;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
-	SEC_ACE *nt_ace_list = NULL;
+	struct security_ace *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
 	DOM_SID orig_owner_sid;
 	SEC_DESC *psd = NULL;
@@ -3297,12 +3297,12 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			num_def_acls = count_canon_ace_list(dir_ace);
 
 			/* Allocate the ace list. */
-			if ((nt_ace_list = SMB_MALLOC_ARRAY(SEC_ACE,num_acls + num_profile_acls + num_def_acls)) == NULL) {
+			if ((nt_ace_list = SMB_MALLOC_ARRAY(struct security_ace,num_acls + num_profile_acls + num_def_acls)) == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 				goto done;
 			}
 
-			memset(nt_ace_list, '\0', (num_acls + num_def_acls) * sizeof(SEC_ACE) );
+			memset(nt_ace_list, '\0', (num_acls + num_def_acls) * sizeof(struct security_ace) );
 
 			/*
 			 * Create the NT ACE list from the canonical ace lists.
@@ -3635,7 +3635,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 	files_struct *parent_fsp = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *parent_name = NULL;
-	SEC_ACE *new_ace = NULL;
+	struct security_ace *new_ace = NULL;
 	unsigned int num_aces = pcsd->dacl->num_aces;
 	NTSTATUS status;
 	int info;
@@ -3704,7 +3704,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 
 	num_aces += parent_sd->dacl->num_aces;
 
-	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, SEC_ACE,
+	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, struct security_ace,
 					num_aces)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3721,7 +3721,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 
 	/* Finally append any inherited ACEs. */
 	for (j = 0; j < parent_sd->dacl->num_aces; j++) {
-		SEC_ACE *se = &parent_sd->dacl->aces[j];
+		struct security_ace *se = &parent_sd->dacl->aces[j];
 
 		if (fsp->is_directory) {
 			if (!(se->flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {

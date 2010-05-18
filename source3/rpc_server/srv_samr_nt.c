@@ -127,7 +127,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 				     DOM_SID *sid, uint32 sid_access )
 {
 	DOM_SID domadmin_sid;
-	SEC_ACE ace[5];		/* at most 5 entries */
+	struct security_ace ace[5];		/* at most 5 entries */
 	size_t i = 0;
 
 	SEC_ACL *psa = NULL;

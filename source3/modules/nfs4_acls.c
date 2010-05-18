@@ -200,13 +200,13 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 	DOM_SID *psid_owner, /* in */
 	DOM_SID *psid_group, /* in */
 	bool is_directory, /* in */
-	SEC_ACE **ppnt_ace_list, /* out */
+	struct security_ace **ppnt_ace_list, /* out */
 	int *pgood_aces /* out */
 )
 {
 	SMB_ACL4_INT_T *aclint = (SMB_ACL4_INT_T *)theacl;
 	SMB_ACE4_INT_T *aceint;
-	SEC_ACE *nt_ace_list = NULL;
+	struct security_ace *nt_ace_list = NULL;
 	int good_aces = 0;
 
 	DEBUG(10, ("smbacl_nfs42win entered\n"));
@@ -214,7 +214,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 	aclint = get_validated_aclint(theacl);
 	/* We do not check for naces being 0 or theacl being NULL here because it is done upstream */
 	/* in smb_get_nt_acl_nfs4(). */
-	nt_ace_list = (SEC_ACE *)TALLOC_ZERO_SIZE(mem_ctx, aclint->naces * sizeof(SEC_ACE));
+	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(mem_ctx, aclint->naces * sizeof(struct security_ace));
 	if (nt_ace_list==NULL)
 	{
 		DEBUG(10, ("talloc error"));
@@ -295,7 +295,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	int	good_aces = 0;
 	DOM_SID sid_owner, sid_group;
 	size_t sd_size = 0;
-	SEC_ACE *nt_ace_list = NULL;
+	struct security_ace *nt_ace_list = NULL;
 	SEC_ACL *psa = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 
@@ -543,7 +543,7 @@ static bool smbacl4_fill_ace4(
 	smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
-	const SEC_ACE *ace_nt, /* input */
+	const struct security_ace *ace_nt, /* input */
 	SMB_ACE4PROP_T *ace_v4 /* output */
 )
 {

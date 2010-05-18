@@ -523,7 +523,7 @@ bool dbghdr(int level, const char *location, const char *func);
 char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
 void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
-void display_sec_ace(SEC_ACE *ace);
+void display_sec_ace(struct security_ace *ace);
 void display_sec_acl(SEC_ACL *sec_acl);
 void display_acl_type(uint16 type);
 void display_sec_desc(SEC_DESC *sec);
@@ -1282,7 +1282,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 			const struct nt_user_token *token_1,
 			const struct nt_user_token *token_2,
 			struct nt_user_token **token_out);
-bool token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace);
+bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace);
 
 /* The following definitions come from lib/util_pw.c  */
 

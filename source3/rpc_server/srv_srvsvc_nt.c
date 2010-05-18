@@ -334,7 +334,7 @@ static void map_generic_share_sd_bits(SEC_DESC *psd)
 		return;
 
 	for (i = 0; i < ps_dacl->num_aces; i++) {
-		SEC_ACE *psa = &ps_dacl->aces[i];
+		struct security_ace *psa = &ps_dacl->aces[i];
 		uint32 orig_mask = psa->access_mask;
 
 		se_map_generic(&psa->access_mask, &file_generic_mapping);

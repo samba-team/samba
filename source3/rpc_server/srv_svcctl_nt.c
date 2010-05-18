@@ -137,7 +137,7 @@ static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 
 static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 {
-	SEC_ACE ace[2];
+	struct security_ace ace[2];
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *theacl;

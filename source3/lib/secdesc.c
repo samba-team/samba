@@ -413,7 +413,7 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 
 {
 	SEC_DESC *sd   = 0;
 	SEC_ACL  *dacl = 0;
-	SEC_ACE  *ace  = 0;
+	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
 
 	if (!ctx || !psd || !sid || !sd_size)
@@ -465,7 +465,7 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 {
 	SEC_DESC *sd   = 0;
 	SEC_ACL  *dacl = 0;
-	SEC_ACE  *ace  = 0;
+	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
 
 	if (!ctx || !psd[0] || !sid || !sd_size)
@@ -491,10 +491,10 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t 
 }
 
 /*
- * Determine if an ACE is inheritable
+ * Determine if an struct security_ace is inheritable
  */
 
-static bool is_inheritable_ace(const SEC_ACE *ace,
+static bool is_inheritable_ace(const struct security_ace *ace,
 				bool container)
 {
 	if (!container) {
@@ -524,7 +524,7 @@ bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container)
 	const SEC_ACL *the_acl = parent_ctr->dacl;
 
 	for (i = 0; i < the_acl->num_aces; i++) {
-		const SEC_ACE *ace = &the_acl->aces[i];
+		const struct security_ace *ace = &the_acl->aces[i];
 
 		if (is_inheritable_ace(ace, container)) {
 			return true;
@@ -546,7 +546,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					bool container)
 {
 	SEC_ACL *new_dacl = NULL, *the_acl = NULL;
-	SEC_ACE *new_ace_list = NULL;
+	struct security_ace *new_ace_list = NULL;
 	unsigned int new_ace_list_ndx = 0, i;
 
 	*ppsd = NULL;
@@ -563,7 +563,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!(new_ace_list = TALLOC_ARRAY(ctx, SEC_ACE,
+		if (!(new_ace_list = TALLOC_ARRAY(ctx, struct security_ace,
 						2*the_acl->num_aces))) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -572,8 +572,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	}
 
 	for (i = 0; i < the_acl->num_aces; i++) {
-		const SEC_ACE *ace = &the_acl->aces[i];
-		SEC_ACE *new_ace = &new_ace_list[new_ace_list_ndx];
+		const struct security_ace *ace = &the_acl->aces[i];
+		struct security_ace *new_ace = &new_ace_list[new_ace_list_ndx];
 		const DOM_SID *ptrustee = &ace->trustee;
 		const DOM_SID *creator = NULL;
 		uint8 new_flags = ace->flags;

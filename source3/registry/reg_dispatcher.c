@@ -37,7 +37,7 @@ static const struct generic_mapping reg_generic_map =
 
 static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 {
-	SEC_ACE ace[3];
+	struct security_ace ace[3];
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *theacl;

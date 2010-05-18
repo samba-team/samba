@@ -129,7 +129,7 @@ static void ads_disp_sec_ace_object(ADS_STRUCT *ads,
 }
 
 /* display ACE */
-static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, SEC_ACE *sec_ace)
+static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_ace *sec_ace)
 {
 	const char *access_type = "UNKNOWN";
 

@@ -117,7 +117,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Check if this ACE has a SID in common with the token.
+ Check if this struct security_ace has a SID in common with the token.
 ********************************************************************/
 
 bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace)

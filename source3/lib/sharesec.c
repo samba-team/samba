@@ -228,7 +228,7 @@ bool share_info_db_init(void)
 SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
 {
 	uint32_t sa;
-	SEC_ACE ace;
+	struct security_ace ace;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
 	uint32 spec_access = def_access;
@@ -435,7 +435,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 	size_t s_size = 0;
 	const char *pacl = acl_str;
 	int num_aces = 0;
-	SEC_ACE *ace_list = NULL;
+	struct security_ace *ace_list = NULL;
 	SEC_ACL *psa = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size = 0;
@@ -458,7 +458,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 	/* Add the number of ',' characters to get the number of aces. */
 	num_aces += count_chars(pacl,',');
 
-	ace_list = TALLOC_ARRAY(ctx, SEC_ACE, num_aces);
+	ace_list = TALLOC_ARRAY(ctx, struct security_ace, num_aces);
 	if (!ace_list) {
 		return False;
 	}
