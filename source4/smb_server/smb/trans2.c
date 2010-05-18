@@ -35,7 +35,6 @@
 #include "lib/tsocket/tsocket.h"
 
 #define MAX_DFS_RESPONSE 56*1024 /* 56 Kb */
-#define DEFAULT_SITE_NAME "Default-First-Site-Name"
 
 #define TRANS2_CHECK_ASYNC_STATUS_SIMPLE do { \
 	if (!NT_STATUS_IS_OK(req->ntvfs->async_states->status)) { \
