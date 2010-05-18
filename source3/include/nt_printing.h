@@ -100,7 +100,7 @@ typedef struct nt_printer_info_level_2
 	fstring datatype;
 	fstring parameters;
 	NT_PRINTER_DATA *data;
-	SEC_DESC_BUF *secdesc_buf;
+	struct sec_desc_buf *secdesc_buf;
 	uint32 changeid;
 	uint32 c_setprinter;
 	uint32 setuptime;	

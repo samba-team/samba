@@ -2161,7 +2161,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 	uint32 sec_info = DACL_SECURITY_INFORMATION;
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
-	SEC_DESC_BUF *sec_desc_buf=NULL;
+	struct sec_desc_buf *sec_desc_buf=NULL;
 	bool domain = False;
 
 	ctx=talloc_init("cmd_samr_query_sec_obj");

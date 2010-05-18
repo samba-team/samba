@@ -91,12 +91,6 @@ typedef struct security_descriptor SEC_DESC;
 #define _SEC_DESC
 #endif
 
-#ifndef _SEC_DESC_BUF
-/* SEC_DESC_BUF */
-typedef struct sec_desc_buf SEC_DESC_BUF;
-#define _SEC_DESC_BUF
-#endif
-
 /* A type to describe the mapping of generic access rights to object
    specific access rights. */
 

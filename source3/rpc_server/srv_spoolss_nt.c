@@ -5400,9 +5400,9 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
  ********************************************************************/
 
 static WERROR update_printer_sec(struct policy_handle *handle,
-				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
+				 pipes_struct *p, struct sec_desc_buf *secdesc_ctr)
 {
-	SEC_DESC_BUF *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
+	struct sec_desc_buf *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
 	WERROR result;
 	int snum;
 

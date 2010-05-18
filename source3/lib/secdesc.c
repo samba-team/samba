@@ -63,10 +63,10 @@ uint32_t get_sec_info(const SEC_DESC *sd)
  security descriptor new_sec.
 ********************************************************************/
 
-SEC_DESC_BUF *sec_desc_merge_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb)
+struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *new_sdb, struct sec_desc_buf *old_sdb)
 {
 	DOM_SID *owner_sid, *group_sid;
-	SEC_DESC_BUF *return_sdb;
+	struct sec_desc_buf *return_sdb;
 	SEC_ACL *dacl, *sacl;
 	SEC_DESC *psd = NULL;
 	uint16 secdesc_type;
@@ -373,14 +373,14 @@ SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, cons
 }
 
 /*******************************************************************
- Creates a SEC_DESC_BUF structure.
+ Creates a struct sec_desc_buf structure.
 ********************************************************************/
 
-SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
+struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 {
-	SEC_DESC_BUF *dst;
+	struct sec_desc_buf *dst;
 
-	if((dst = TALLOC_ZERO_P(ctx, SEC_DESC_BUF)) == NULL)
+	if((dst = TALLOC_ZERO_P(ctx, struct sec_desc_buf)) == NULL)
 		return NULL;
 
 	/* max buffer size (allocated size) */
@@ -394,10 +394,10 @@ SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 }
 
 /*******************************************************************
- Duplicates a SEC_DESC_BUF structure.
+ Duplicates a struct sec_desc_buf structure.
 ********************************************************************/
 
-SEC_DESC_BUF *dup_sec_desc_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *src)
+struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
 {
 	if(src == NULL)
 		return NULL;
@@ -673,7 +673,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 }
 
 NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
-					SEC_DESC_BUF **ppsdb,
+					struct sec_desc_buf **ppsdb,
 					const SEC_DESC *parent_ctr,
 					bool container)
 {

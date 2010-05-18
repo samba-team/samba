@@ -1038,7 +1038,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	SEC_DESC_BUF *sdb;
+	struct sec_desc_buf *sdb;
 	uint32 sec_info = DACL_SECURITY_INFORMATION;
 
 	if (argc < 1 || argc > 2) {

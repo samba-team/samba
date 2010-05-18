@@ -694,7 +694,7 @@ ssize_t drain_socket(int sockfd, size_t count);
 
 uint32_t get_sec_info(const SEC_DESC *sd);
 SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb);
-SEC_DESC_BUF *sec_desc_merge_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
+struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *new_sdb, struct sec_desc_buf *old_sdb);
 SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
@@ -713,8 +713,8 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 				 struct sec_desc_buf **psecdesc_buf);
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size);
-SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
-SEC_DESC_BUF *dup_sec_desc_buf(TALLOC_CTX *ctx, SEC_DESC_BUF *src);
+struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
+struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
 NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size);
 NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size);
@@ -727,7 +727,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
                                         const DOM_SID *group_sid,
                                         bool container);
 NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
-					SEC_DESC_BUF **ppsdb,
+					struct sec_desc_buf **ppsdb,
 					const SEC_DESC *parent_ctr,
 					bool container);
 
@@ -4793,8 +4793,8 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
 			     const struct spoolss_DriverInfo8 *r,
 			     uint32 version, bool delete_files );
-WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr);
-bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr);
+WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr);
+bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr);
 void map_printer_permissions(SEC_DESC *sd);
 void map_job_permissions(SEC_DESC *sd);
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,

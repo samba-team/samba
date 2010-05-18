@@ -333,8 +333,8 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
                             TDB_DATA data, void *state )
 {
 	NTSTATUS status;
-	SEC_DESC_BUF *sd_orig = NULL;
-	SEC_DESC_BUF *sd_new, *sd_store;
+	struct sec_desc_buf *sd_orig = NULL;
+	struct sec_desc_buf *sd_new, *sd_store;
 	SEC_DESC *sec, *new_sec;
 	TALLOC_CTX *ctx = state;
 	int result, i;
@@ -413,7 +413,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	/* store it back */
 
 	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
-		+ sizeof(SEC_DESC_BUF);
+		+ sizeof(struct sec_desc_buf);
 
 	status = marshall_sec_desc_buf(ctx, sd_store, &data.dptr, &data.dsize);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5480,10 +5480,10 @@ WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ctr)
 {
-	SEC_DESC_BUF *new_secdesc_ctr = NULL;
-	SEC_DESC_BUF *old_secdesc_ctr = NULL;
+	struct sec_desc_buf *new_secdesc_ctr = NULL;
+	struct sec_desc_buf *old_secdesc_ctr = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -5584,13 +5584,13 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
  Construct a default security descriptor buffer for a printer.
 ****************************************************************************/
 
-static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
+static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
 	SEC_ACE ace[5];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	SEC_ACL *psa = NULL;
-	SEC_DESC_BUF *sdb = NULL;
+	struct sec_desc_buf *sdb = NULL;
 	SEC_DESC *psd = NULL;
 	DOM_SID adm_sid;
 	size_t sd_size;
@@ -5668,7 +5668,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
+bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_buf **secdesc_ctr)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -5720,7 +5720,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		/* Change sd owner to workgroup administrator */
 
 		if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
-			SEC_DESC_BUF *new_secdesc_ctr = NULL;
+			struct sec_desc_buf *new_secdesc_ctr = NULL;
 			SEC_DESC *psd = NULL;
 			size_t size;
 
@@ -5859,7 +5859,7 @@ void map_job_permissions(SEC_DESC *sd)
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type)
 {
-	SEC_DESC_BUF *secdesc = NULL;
+	struct sec_desc_buf *secdesc = NULL;
 	uint32 access_granted;
 	NTSTATUS status;
 	const char *pname;
@@ -5898,7 +5898,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 	}
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {
-		SEC_DESC_BUF *parent_secdesc = secdesc;
+		struct sec_desc_buf *parent_secdesc = secdesc;
 
 		/* Create a child security descriptor to check permissions
 		   against.  This is because print jobs are child objects
