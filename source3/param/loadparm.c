@@ -675,7 +675,6 @@ static int *invalid_services = NULL;
 static int num_invalid_services = 0;
 static bool bInGlobalSection = True;
 static bool bGlobalOnly = False;
-static int server_role;
 static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
@@ -694,7 +693,6 @@ static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
 static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **ptr);
 
-static void set_server_role(void);
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
 
@@ -8413,79 +8411,6 @@ static void lp_save_defaults(void)
 	defaults_saved = True;
 }
 
-/*******************************************************************
- Set the server type we will announce as via nmbd.
-********************************************************************/
-
-static const struct srv_role_tab {
-	uint32 role;
-	const char *role_str;
-} srv_role_tab [] = {
-	{ ROLE_STANDALONE, "ROLE_STANDALONE" },
-	{ ROLE_DOMAIN_MEMBER, "ROLE_DOMAIN_MEMBER" },
-	{ ROLE_DOMAIN_BDC, "ROLE_DOMAIN_BDC" },
-	{ ROLE_DOMAIN_PDC, "ROLE_DOMAIN_PDC" },
-	{ 0, NULL }
-};
-
-const char* server_role_str(uint32 role)
-{
-	int i = 0;
-	for (i=0; srv_role_tab[i].role_str; i++) {
-		if (role == srv_role_tab[i].role) {
-			return srv_role_tab[i].role_str;
-		}
-	}
-	return NULL;
-}
-
-static void set_server_role(void)
-{
-	server_role = ROLE_STANDALONE;
-
-	switch (lp_security()) {
-		case SEC_SHARE:
-			if (lp_domain_logons())
-				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
-			break;
-		case SEC_SERVER:
-			if (lp_domain_logons())
-				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
-			/* this used to be considered ROLE_DOMAIN_MEMBER but that's just wrong */
-			server_role = ROLE_STANDALONE;
-			break;
-		case SEC_DOMAIN:
-			if (lp_domain_logons()) {
-				DEBUG(1, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
-				server_role = ROLE_DOMAIN_BDC;
-				break;
-			}
-			server_role = ROLE_DOMAIN_MEMBER;
-			break;
-		case SEC_ADS:
-			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_PDC;
-				break;
-			}
-			server_role = ROLE_DOMAIN_MEMBER;
-			break;
-		case SEC_USER:
-			if (lp_domain_logons()) {
-
-				if (Globals.iDomainMaster) /* auto or yes */ 
-					server_role = ROLE_DOMAIN_PDC;
-				else
-					server_role = ROLE_DOMAIN_BDC;
-			}
-			break;
-		default:
-			DEBUG(0, ("Server's Role undefined due to unknown security mode\n"));
-			break;
-	}
-
-	DEBUG(10, ("set_server_role: role = %s\n", server_role_str(server_role)));
-}
-
 /***********************************************************
  If we should send plaintext/LANMAN passwords in the clinet
 ************************************************************/
@@ -9667,15 +9592,6 @@ static void set_default_server_announce_type(void)
 
 	if (lp_host_msdfs())
 		default_server_announce |= SV_TYPE_DFS_SERVER;
-}
-
-/***********************************************************
- returns role of Samba server
-************************************************************/
-
-int lp_server_role(void)
-{
-	return server_role;
 }
 
 /***********************************************************

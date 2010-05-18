@@ -4281,7 +4281,6 @@ struct share_params *next_share(struct share_iterator *list);
 struct share_params *next_printer(struct share_iterator *list);
 struct share_params *snum2params_static(int snum);
 const char *volume_label(int snum);
-int lp_server_role(void);
 bool lp_domain_master(void);
 bool lp_domain_master_true_or_auto(void);
 bool lp_preferred_master(void);
@@ -4310,6 +4309,11 @@ int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
 void lp_set_passdb_backend(const char *backend);
 void widelinks_warning(int snum);
+
+/* The following definitions come from param/loadparm_server_role.c  */
+
+int lp_server_role(void);
+void set_server_role(void);
 
 /* The following definitions come from param/util.c  */
 
