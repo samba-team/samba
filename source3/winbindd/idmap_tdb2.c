@@ -906,7 +906,8 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 		goto done;
 	}
 
-	if (!(ksidstr = sid_string_talloc(ctx, map->sid))) {
+	ksidstr = sid_string_talloc(ctx, map->sid);
+	if (ksidstr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
