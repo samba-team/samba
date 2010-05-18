@@ -24,6 +24,7 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "rpc_client/init_samr.h"
 
 /****************************************************************
 ****************************************************************/
