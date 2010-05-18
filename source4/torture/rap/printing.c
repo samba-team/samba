@@ -31,6 +31,14 @@
 #include "torture/rap/proto.h"
 #include "param/param.h"
 
+/* TODO:
+
+ printing half the file,
+ finding job
+ delete job
+ try writing 2nd half
+
+*/
 
 #define TORTURE_PRINT_FILE "torture_print_file"
 
