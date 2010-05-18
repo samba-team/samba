@@ -197,7 +197,7 @@ int register_initial_vuid(struct smbd_server_connection *sconn)
 	return vuser->vuid;
 }
 
-static int register_homes_share(const char *username)
+int register_homes_share(const char *username)
 {
 	int result;
 	struct passwd *pwd;

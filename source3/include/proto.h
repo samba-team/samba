@@ -6268,6 +6268,7 @@ user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
 void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid);
 void invalidate_all_vuids(struct smbd_server_connection *sconn);
 int register_initial_vuid(struct smbd_server_connection *sconn);
+int register_homes_share(const char *username);
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
 			struct auth_serversupplied_info *server_info,
