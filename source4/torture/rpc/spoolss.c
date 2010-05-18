@@ -53,6 +53,11 @@
 #define TOP_LEVEL_CONTROL_ENVIRONMENTS_KEY TOP_LEVEL_CONTROL_KEY "\\Environments"
 
 struct test_spoolss_context {
+	struct dcerpc_pipe *spoolss_pipe;
+
+	/* server environment */
+	const char *environment;
+
 	/* print server handle */
 	struct policy_handle server_handle;
 
@@ -278,9 +283,12 @@ static bool test_OpenPrinter_server(struct torture_context *tctx,
 }
 
 static bool test_EnumPorts(struct torture_context *tctx,
-			   struct dcerpc_binding_handle *b,
-			   struct test_spoolss_context *ctx)
+			   void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
 	uint16_t levels[] = { 1, 2 };
@@ -357,10 +365,13 @@ static bool test_EnumPorts(struct torture_context *tctx,
 }
 
 static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
-					    struct dcerpc_pipe *p,
-					    const char *environment)
+					    void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	NTSTATUS status;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct spoolss_GetPrintProcessorDirectory r;
 	struct {
@@ -391,7 +402,7 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 		DATA_BLOB blob;
 
 		r.in.server		= levels[i].server;
-		r.in.environment	= environment;
+		r.in.environment	= ctx->environment;
 		r.in.level		= level;
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
@@ -422,10 +433,13 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 
 
 static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
-					   struct dcerpc_pipe *p,
-					   const char *environment)
+					   void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	NTSTATUS status;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct spoolss_GetPrinterDriverDirectory r;
 	struct {
@@ -456,7 +470,7 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		DATA_BLOB blob;
 
 		r.in.server		= levels[i].server;
-		r.in.environment	= environment;
+		r.in.environment	= ctx->environment;
 		r.in.level		= level;
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
@@ -593,18 +607,25 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinterDrivers(struct torture_context *tctx,
-				    struct dcerpc_pipe *p,
-				    struct test_spoolss_context *ctx,
-				    const char *architecture)
+				    void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint16_t levels[] = { 1, 2, 3, 4, 5, 6, 8 };
-	int i, j;
+	int i, j, a;
 
 	/* FIXME: gd, come back and fix "" as server, and handle
 	 * priority of returned error codes in torture test and samba 3
 	 * server */
 	const char *server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	const char *environments[2];
+
+	environments[0] = SPOOLSS_ARCHITECTURE_ALL;
+	environments[1] = ctx->environment;
+
+	for (a=0;a<ARRAY_SIZE(environments);a++) {
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -612,7 +633,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		union spoolss_DriverInfo *info;
 
 		torture_assert(tctx,
-			test_EnumPrinterDrivers_args(tctx, b, server_name, architecture, level, &count, &info),
+			test_EnumPrinterDrivers_args(tctx, b, server_name, environments[a], level, &count, &info),
 			"failed to enumerate drivers");
 
 		ctx->driver_count[level]	= count;
@@ -707,14 +728,18 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 			}
 		}
 	}
+	}
 
 	return true;
 }
 
 static bool test_EnumMonitors(struct torture_context *tctx,
-			      struct dcerpc_binding_handle *b,
-			      struct test_spoolss_context *ctx)
+			      void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
 	struct spoolss_EnumMonitors r;
 	uint16_t levels[] = { 1, 2 };
@@ -838,12 +863,15 @@ static bool test_EnumPrintProcessors_level(struct torture_context *tctx,
 }
 
 static bool test_EnumPrintProcessors(struct torture_context *tctx,
-				     struct dcerpc_binding_handle *b,
-				     struct test_spoolss_context *ctx,
-				     const char *environment)
+				     void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	uint16_t levels[] = { 1 };
 	int i, j;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -851,7 +879,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 		uint32_t count;
 
 		torture_assert(tctx,
-			test_EnumPrintProcessors_level(tctx, b, environment, level, &count, &info),
+			test_EnumPrintProcessors_level(tctx, b, ctx->environment, level, &count, &info),
 			"test_EnumPrintProcessors_level failed");
 
 		ctx->print_processor_count[level]	= count;
@@ -884,12 +912,17 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 }
 
 static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
-					struct dcerpc_binding_handle *b)
+					void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	NTSTATUS status;
 	struct spoolss_EnumPrintProcDataTypes r;
 	uint16_t levels[] = { 1 };
 	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -936,9 +969,12 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 
 
 static bool test_EnumPrinters(struct torture_context *tctx,
-			      struct dcerpc_binding_handle *b,
-			      struct test_spoolss_context *ctx)
+			      void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	uint16_t levels[] = { 0, 1, 2, 4, 5 };
@@ -2838,13 +2874,17 @@ static bool test_Forms(struct torture_context *tctx,
 }
 
 static bool test_EnumPorts_old(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
 	uint32_t needed;
 	uint32_t count;
 	union spoolss_PortInfo *info;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.servername = talloc_asprintf(tctx, "\\\\%s",
@@ -2882,10 +2922,14 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 }
 
 static bool test_AddPort(struct torture_context *tctx,
-			 struct dcerpc_pipe *p)
+			 void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	NTSTATUS status;
 	struct spoolss_AddPort r;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s",
@@ -3529,10 +3573,11 @@ static bool test_get_environment(struct torture_context *tctx,
 }
 
 static bool test_GetPrinterData_list(struct torture_context *tctx,
-				     struct dcerpc_pipe *p,
-				     struct policy_handle *handle,
-				     const char **architecture)
+				     void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	const char *list[] = {
 		"W3SvcInstalled",
@@ -3556,20 +3601,13 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 		uint8_t *data, *data_ex;
 		uint32_t needed, needed_ex;
 
-		torture_assert(tctx, test_GetPrinterData(tctx, b, handle, list[i], &type, &data, &needed),
+		torture_assert(tctx, test_GetPrinterData(tctx, b, &ctx->server_handle, list[i], &type, &data, &needed),
 			talloc_asprintf(tctx, "GetPrinterData failed on %s\n", list[i]));
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, handle, "random_string", list[i], &type_ex, &data_ex, &needed_ex),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, &ctx->server_handle, "random_string", list[i], &type_ex, &data_ex, &needed_ex),
 			talloc_asprintf(tctx, "GetPrinterDataEx failed on %s\n", list[i]));
 		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
 		torture_assert_int_equal(tctx, needed, needed_ex, "needed mismatch");
 		torture_assert_mem_equal(tctx, data, data_ex, needed, "data mismatch");
-
-		if (strequal(list[i], "Architecture")) {
-			if (architecture) {
-				DATA_BLOB blob = data_blob_const(data, needed);
-				*architecture = reg_val_data_string(tctx, REG_SZ, blob);
-			}
-		}
 	}
 
 	return true;
@@ -5199,6 +5237,17 @@ do {\
 	return true;
 }
 
+static bool test_print_processors_winreg(struct torture_context *tctx,
+					 void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	return test_PrintProcessors_winreg(tctx, b, ctx->environment);
+}
+
 static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -5449,9 +5498,11 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 }
 
 static bool test_OpenPrinter_badname_list(struct torture_context *tctx,
-					  struct dcerpc_binding_handle *b,
-					  const char *server_name)
+					  void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	const char *badnames[] = {
 		"__INVALID_PRINTER__",
 		"\\\\__INVALID_HOST__",
@@ -5460,6 +5511,9 @@ static bool test_OpenPrinter_badname_list(struct torture_context *tctx,
 		"\\\\\\__INVALID_PRINTER__"
 	};
 	const char *badname;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	const char *server_name = dcerpc_server_name(p);
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	int i;
 
 	for (i=0; i < ARRAY_SIZE(badnames); i++) {
@@ -5749,14 +5803,16 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinters_old(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  const char *environment)
+				  void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	uint16_t levels[] = {1, 2, 4, 5};
 	int i;
 	bool ret = true;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -5810,10 +5866,10 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 					slash++;
 					name = slash;
 				}
-				if (!test_OpenPrinter(tctx, p, name, environment)) {
+				if (!test_OpenPrinter(tctx, p, name, ctx->environment)) {
 					ret = false;
 				}
-				if (!test_OpenPrinterEx(tctx, p, name, environment)) {
+				if (!test_OpenPrinterEx(tctx, p, name, ctx->environment)) {
 					ret = false;
 				}
 			}
@@ -5951,11 +6007,13 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
-					struct dcerpc_pipe *p,
-					const char *environment)
+					void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6};
 	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	const char *server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -5965,7 +6023,7 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 		union spoolss_DriverInfo *info;
 
 		torture_assert(tctx,
-			test_EnumPrinterDrivers_args(tctx, b, server_name, environment, levels[i], &count, &info),
+			test_EnumPrinterDrivers_args(tctx, b, server_name, ctx->environment, levels[i], &count, &info),
 			"failed to enumerate drivers");
 
 		if (!info) {
@@ -6839,8 +6897,11 @@ static bool test_add_printer_with_devmode(struct torture_context *tctx,
 }
 
 static bool test_architecture_buffer(struct torture_context *tctx,
-				     struct dcerpc_pipe *p)
+				     void *private_data)
 {
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
 	struct spoolss_OpenPrinterEx r;
 	struct spoolss_UserLevel1 u1;
 	struct policy_handle handle;
@@ -6851,6 +6912,7 @@ static bool test_architecture_buffer(struct torture_context *tctx,
 	};
 	uint32_t needed[3];
 	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	for (i=0; i < ARRAY_SIZE(architectures); i++) {
@@ -6910,47 +6972,114 @@ static bool test_architecture_buffer(struct torture_context *tctx,
 	return true;
 }
 
-bool torture_rpc_spoolss(struct torture_context *torture)
+static bool test_PrintServer_Forms_Winreg(struct torture_context *tctx,
+					  void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	return test_Forms_winreg(tctx, b, &ctx->server_handle, true, NULL);
+}
+
+static bool test_PrintServer_Forms(struct torture_context *tctx,
+				   void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	return test_Forms(tctx, b, &ctx->server_handle, true, NULL, NULL, NULL);
+}
+
+static bool test_PrintServer_EnumForms(struct torture_context *tctx,
+				       void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	return test_EnumForms_all(tctx, b, &ctx->server_handle, true);
+}
+
+static bool torture_rpc_spoolss_setup_common(struct torture_context *tctx, struct test_spoolss_context *t)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p;
-	struct dcerpc_binding_handle *b;
-	bool ret = true;
-	struct test_spoolss_context *ctx;
-	const char *environment = SPOOLSS_ARCHITECTURE_NT_X86;
 
-	status = torture_rpc_connection(torture, &p, &ndr_table_spoolss);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-	b = p->binding_handle;
+	status = torture_rpc_connection(tctx, &t->spoolss_pipe, &ndr_table_spoolss);
 
-	ctx = talloc_zero(torture, struct test_spoolss_context);
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
-	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
-	ret &= test_GetPrinterData_list(torture, p, &ctx->server_handle, &environment);
-	ret &= test_EnumForms_all(torture, b, &ctx->server_handle, true);
-	ret &= test_Forms(torture, b, &ctx->server_handle, true, NULL, NULL, NULL);
-	ret &= test_Forms_winreg(torture, b, &ctx->server_handle, true, NULL);
-	ret &= test_EnumPorts(torture, b, ctx);
-	ret &= test_GetPrinterDriverDirectory(torture, p, environment);
-	ret &= test_GetPrintProcessorDirectory(torture, p, environment);
-	ret &= test_EnumPrinterDrivers(torture, p, ctx, environment);
-	ret &= test_EnumPrinterDrivers(torture, p, ctx, SPOOLSS_ARCHITECTURE_ALL);
-	ret &= test_EnumMonitors(torture, b, ctx);
-	ret &= test_EnumPrintProcessors(torture, b, ctx, environment);
-	ret &= test_EnumPrintProcDataTypes(torture, b);
-	ret &= test_EnumPrinters(torture, b, ctx);
-	ret &= test_OpenPrinter_badname_list(torture, b, dcerpc_server_name(p));
+	torture_assert(tctx,
+		test_OpenPrinter_server(tctx, t->spoolss_pipe, &t->server_handle),
+		"failed to open printserver");
+	torture_assert(tctx,
+		test_get_environment(tctx, t->spoolss_pipe->binding_handle, &t->server_handle, &t->environment),
+		"failed to get environment");
 
-	ret &= test_AddPort(torture, p);
-	ret &= test_EnumPorts_old(torture, p);
-	ret &= test_EnumPrinters_old(torture, p, environment);
-	ret &= test_EnumPrinterDrivers_old(torture, p, environment);
-	ret &= test_architecture_buffer(torture, p);
-	ret &= test_PrintProcessors_winreg(torture, b, environment);
+	return true;
+}
+
+static bool torture_rpc_spoolss_setup(struct torture_context *tctx, void **data)
+{
+	struct test_spoolss_context *t;
+
+	*data = t = talloc_zero(tctx, struct test_spoolss_context);
+
+	return torture_rpc_spoolss_setup_common(tctx, t);
+}
+
+static bool torture_rpc_spoolss_teardown_common(struct torture_context *tctx, struct test_spoolss_context *t)
+{
+	test_ClosePrinter(tctx, t->spoolss_pipe->binding_handle, &t->server_handle);
+
+	return true;
+}
+
+static bool torture_rpc_spoolss_teardown(struct torture_context *tctx, void *data)
+{
+	struct test_spoolss_context *t = talloc_get_type(data, struct test_spoolss_context);
+	bool ret;
+
+	ret = torture_rpc_spoolss_teardown_common(tctx, t);
+	talloc_free(t);
 
 	return ret;
+}
+
+struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "PRINTSERVER");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_spoolss_setup,
+				  torture_rpc_spoolss_teardown);
+
+	torture_tcase_add_simple_test(tcase, "printer_data_list", test_GetPrinterData_list);
+	torture_tcase_add_simple_test(tcase, "enum_forms", test_PrintServer_EnumForms);
+	torture_tcase_add_simple_test(tcase, "forms", test_PrintServer_Forms);
+	torture_tcase_add_simple_test(tcase, "forms_winreg", test_PrintServer_Forms_Winreg);
+	torture_tcase_add_simple_test(tcase, "enum_ports", test_EnumPorts);
+	torture_tcase_add_simple_test(tcase, "get_printer_driver_directory", test_GetPrinterDriverDirectory);
+	torture_tcase_add_simple_test(tcase, "get_print_processor_directory", test_GetPrintProcessorDirectory);
+	torture_tcase_add_simple_test(tcase, "enum_printer_drivers", test_EnumPrinterDrivers);
+	torture_tcase_add_simple_test(tcase, "enum_monitors", test_EnumMonitors);
+	torture_tcase_add_simple_test(tcase, "enum_print_processors", test_EnumPrintProcessors);
+	torture_tcase_add_simple_test(tcase, "enum_printprocdata", test_EnumPrintProcDataTypes);
+	torture_tcase_add_simple_test(tcase, "enum_printers", test_EnumPrinters);
+	torture_tcase_add_simple_test(tcase, "openprinter_badnamelist", test_OpenPrinter_badname_list);
+	torture_tcase_add_simple_test(tcase, "add_port", test_AddPort);
+	torture_tcase_add_simple_test(tcase, "enum_ports_old", test_EnumPorts_old);
+	torture_tcase_add_simple_test(tcase, "enum_printers_old", test_EnumPrinters_old);
+	torture_tcase_add_simple_test(tcase, "enum_printer_drivers_old", test_EnumPrinterDrivers_old);
+	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
+	torture_tcase_add_simple_test(tcase, "printprocessors_winreg", test_print_processors_winreg);
+
+	return suite;
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
