@@ -384,6 +384,7 @@ interface drsuapi
 	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
 		DRSUAPI_ATTRIBUTE_objectClass			= 0x00000000,
 		DRSUAPI_ATTRIBUTE_cn				= 0x00000003,
+		DRSUAPI_ATTRIBUTE_ou				= 0x0000000b,
 		DRSUAPI_ATTRIBUTE_description			= 0x0000000d,
 		DRSUAPI_ATTRIBUTE_member			= 0x0000001f,
 		DRSUAPI_ATTRIBUTE_instanceType			= 0x00020001,
@@ -401,6 +402,7 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_rangeLower			= 0x00020022,
 		DRSUAPI_ATTRIBUTE_rangeUpper			= 0x00020023,
 		DRSUAPI_ATTRIBUTE_dMDLocation			= 0x00020024,
+		DRSUAPI_ATTRIBUTE_isDeleted			= 0x00020030,
 		DRSUAPI_ATTRIBUTE_objectVersion			= 0x0002004c,
 		DRSUAPI_ATTRIBUTE_invocationId			= 0x00020073,
 		DRSUAPI_ATTRIBUTE_showInAdvancedViewOnly	= 0x000200a9,
@@ -449,13 +451,15 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_userPrincipalName		= 0x00090290,
 		DRSUAPI_ATTRIBUTE_groupType			= 0x000902ee,
 		DRSUAPI_ATTRIBUTE_servicePrincipalName		= 0x00090303,
+		DRSUAPI_ATTRIBUTE_lastKnownParent		= 0x0009030d,
 		DRSUAPI_ATTRIBUTE_objectCategory		= 0x0009030e,
 		DRSUAPI_ATTRIBUTE_gPLink			= 0x0009037b,
 		DRSUAPI_ATTRIBUTE_transportAddressAttribute	= 0x0009037f,
 		DRSUAPI_ATTRIBUTE_msDS_Behavior_Version		= 0x000905b3,
 		DRSUAPI_ATTRIBUTE_msDS_KeyVersionNumber		= 0x000906f6,
 		DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs		= 0x0009071c,
-		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c,		
+		DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs		= 0x0009072c,
+		DRSUAPI_ATTRIBUTE_isRecycled			= 0x0009080a,
 		DRSUAPI_ATTRIBUTE_NONE				= 0xFFFFFFFF
 	} drsuapi_DsAttributeId;
 
