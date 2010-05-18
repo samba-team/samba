@@ -694,7 +694,7 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 	struct security_ace ace[6];
 	uint32_t mask;
 
-	SEC_ACL *theacl = NULL;
+	struct security_acl *theacl = NULL;
 
 	uint8_t inherit_flags;
 

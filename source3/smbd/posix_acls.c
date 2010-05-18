@@ -1582,7 +1582,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 					DOM_SID *pfile_grp_sid,
 					canon_ace **ppfile_ace,
 					canon_ace **ppdir_ace,
-					const SEC_ACL *dacl)
+					const struct security_acl *dacl)
 {
 	bool all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
@@ -3179,7 +3179,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
 	size_t sd_size = 0;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	size_t num_acls = 0;
 	size_t num_def_acls = 0;
 	size_t num_aces = 0;

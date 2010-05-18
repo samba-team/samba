@@ -141,7 +141,7 @@ ace_compare(struct security_ace *ace1,
 
 
 static void
-sort_acl(SEC_ACL *the_acl)
+sort_acl(struct security_acl *the_acl)
 {
 	uint32 i;
 	if (!the_acl) return;
@@ -386,13 +386,13 @@ done:
 	return true;
 }
 
-/* add an struct security_ace to a list of struct security_aces in a SEC_ACL */
+/* add an struct security_ace to a list of struct security_aces in a struct security_acl */
 static bool
-add_ace(SEC_ACL **the_acl,
+add_ace(struct security_acl **the_acl,
         struct security_ace *ace,
         TALLOC_CTX *ctx)
 {
-	SEC_ACL *newacl;
+	struct security_acl *newacl;
 	struct security_ace *aces;
 
 	if (! *the_acl) {
@@ -428,7 +428,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	size_t sd_size;
 	DOM_SID *group_sid=NULL;
         DOM_SID *owner_sid=NULL;
-	SEC_ACL *dacl=NULL;
+	struct security_acl *dacl=NULL;
 	int revision=1;
 
 	while (next_token_talloc(ctx, &p, &tok, "\t,\r\n")) {
@@ -1502,7 +1502,7 @@ cacl_set(SMBCCTX *context,
 	uint16_t fnum = (uint16_t)-1;
         int err = 0;
 	SEC_DESC *sd = NULL, *old;
-        SEC_ACL *dacl = NULL;
+        struct security_acl *dacl = NULL;
 	DOM_SID *owner_sid = NULL;
 	DOM_SID *group_sid = NULL;
 	uint32 i, j;

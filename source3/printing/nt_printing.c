@@ -2637,7 +2637,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 	struct security_ace ace[5];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	SEC_DESC *psd = NULL;
 	DOM_SID adm_sid;
 	size_t sd_size;
@@ -5502,7 +5502,7 @@ WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ct
 
 	if (!secdesc_ctr->sd->owner_sid || !secdesc_ctr->sd->group_sid) {
 		DOM_SID *owner_sid, *group_sid;
-		SEC_ACL *dacl, *sacl;
+		struct security_acl *dacl, *sacl;
 		SEC_DESC *psd = NULL;
 		size_t size;
 
@@ -5589,7 +5589,7 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	struct security_ace ace[5];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	struct sec_desc_buf *sdb = NULL;
 	SEC_DESC *psd = NULL;
 	DOM_SID adm_sid;
@@ -5755,7 +5755,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *the_acl = (*secdesc_ctr)->sd->dacl;
+		struct security_acl *the_acl = (*secdesc_ctr)->sd->dacl;
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n",

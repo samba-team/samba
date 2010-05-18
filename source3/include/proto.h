@@ -524,7 +524,7 @@ char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
 void display_sec_access(uint32_t *info);
 void display_sec_ace_flags(uint8_t flags);
 void display_sec_ace(struct security_ace *ace);
-void display_sec_acl(SEC_ACL *sec_acl);
+void display_sec_acl(struct security_acl *sec_acl);
 void display_acl_type(uint16 type);
 void display_sec_desc(SEC_DESC *sec);
 
@@ -699,7 +699,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
 			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
-			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
+			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size);
 SEC_DESC *dup_sec_desc(TALLOC_CTX *ctx, const SEC_DESC *src);
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 			   struct security_descriptor *secdesc,
@@ -712,7 +712,7 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 				 struct sec_desc_buf **psecdesc_buf);
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
-				 SEC_ACL *dacl, size_t *sd_size);
+				 struct security_acl *dacl, size_t *sd_size);
 struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
 struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
 NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size);

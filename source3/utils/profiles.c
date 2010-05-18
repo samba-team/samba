@@ -58,7 +58,7 @@ static void verbose_output(const char *format, ...)
 
 static bool swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 {
-	SEC_ACL *theacl;
+	struct security_acl *theacl;
 	int i;
 	bool update = False;
 

@@ -232,10 +232,10 @@ onefs_samba_ace_to_ace(struct security_ace * samba_ace, struct ifs_ace * ace,
 }
 
 /**
- * Convert a SEC_ACL to a struct ifs_security_acl
+ * Convert a struct security_acl to a struct ifs_security_acl
  */
 static bool
-onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl,
+onefs_samba_acl_to_acl(struct security_acl *samba_acl, struct ifs_security_acl **acl,
     bool * ignore_aces, int snum)
 {
 	int num_aces = 0;
@@ -287,13 +287,13 @@ err_free:
 }
 
 /**
- * Convert a struct ifs_security_acl to a SEC_ACL
+ * Convert a struct ifs_security_acl to a struct security_acl
  */
 static bool
-onefs_acl_to_samba_acl(struct ifs_security_acl *acl, SEC_ACL **samba_acl)
+onefs_acl_to_samba_acl(struct ifs_security_acl *acl, struct security_acl **samba_acl)
 {
 	struct security_ace *samba_aces = NULL;
-	SEC_ACL *tmp_samba_acl = NULL;
+	struct security_acl *tmp_samba_acl = NULL;
 	int i, num_aces = 0;
 
 	if (!samba_acl)
@@ -612,7 +612,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	struct ifs_security_descriptor *sd = NULL;
 	DOM_SID owner_sid, group_sid;
 	DOM_SID *ownerp, *groupp;
-	SEC_ACL *dacl, *sacl;
+	struct security_acl *dacl, *sacl;
 	SEC_DESC *pdesc;
 	bool alloced = false;
 	bool new_aces_alloced = false;

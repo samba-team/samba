@@ -130,7 +130,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	struct security_ace ace[5];		/* at most 5 entries */
 	size_t i = 0;
 
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 
 	/* basic access for Everyone */
 
@@ -674,7 +674,7 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 {
 	struct samr_user_info *uinfo;
 	uint32 i;
-	SEC_ACL *dacl;
+	struct security_acl *dacl;
 	bool ret;
 	struct samu *sampass=NULL;
 	NTSTATUS status;

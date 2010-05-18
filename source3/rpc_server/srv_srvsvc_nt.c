@@ -324,7 +324,7 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 static void map_generic_share_sd_bits(SEC_DESC *psd)
 {
 	int i;
-	SEC_ACL *ps_dacl = NULL;
+	struct security_acl *ps_dacl = NULL;
 
 	if (!psd)
 		return;

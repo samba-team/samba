@@ -592,7 +592,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 {
 	struct security_ace *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	int good_aces;
 	size_t sd_size;
 	TALLOC_CTX *mem_ctx = talloc_tos();
@@ -726,7 +726,7 @@ static bool nt_to_afs_acl(const char *filename,
 						     const struct security_ace *ace),
 			  struct afs_acl *afs_acl)
 {
-	const SEC_ACL *dacl;
+	const struct security_acl *dacl;
 	int i;
 
 	/* Currently we *only* look at the dacl */

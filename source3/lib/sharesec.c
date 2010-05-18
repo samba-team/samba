@@ -229,7 +229,7 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 {
 	uint32_t sa;
 	struct security_ace ace;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	SEC_DESC *psd = NULL;
 	uint32 spec_access = def_access;
 
@@ -436,7 +436,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 	const char *pacl = acl_str;
 	int num_aces = 0;
 	struct security_ace *ace_list = NULL;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size = 0;
 	int i;

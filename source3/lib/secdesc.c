@@ -67,7 +67,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 {
 	DOM_SID *owner_sid, *group_sid;
 	struct sec_desc_buf *return_sdb;
-	SEC_ACL *dacl, *sacl;
+	struct security_acl *dacl, *sacl;
 	SEC_DESC *psd = NULL;
 	uint16 secdesc_type;
 	size_t secdesc_size;
@@ -111,7 +111,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 SEC_DESC *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC *new_sdb, SEC_DESC *old_sdb)
 {
 	DOM_SID *owner_sid, *group_sid;
-	SEC_ACL *dacl, *sacl;
+	struct security_acl *dacl, *sacl;
 	SEC_DESC *psd = NULL;
 	uint16 secdesc_type;
 	size_t secdesc_size;
@@ -157,7 +157,7 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
 			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
-			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
+			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size)
 {
 	SEC_DESC *dst;
 	uint32 offset     = 0;
@@ -365,7 +365,7 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 ********************************************************************/
 
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
-				 SEC_ACL *dacl, size_t *sd_size)
+				 struct security_acl *dacl, size_t *sd_size)
 {
 	return make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
 			     SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, NULL,
@@ -412,7 +412,7 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
 NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, uint32 mask, size_t *sd_size)
 {
 	SEC_DESC *sd   = 0;
-	SEC_ACL  *dacl = 0;
+	struct security_acl  *dacl = 0;
 	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
 
@@ -464,7 +464,7 @@ NTSTATUS sec_desc_mod_sid(SEC_DESC *sd, DOM_SID *sid, uint32 mask)
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, SEC_DESC **psd, DOM_SID *sid, size_t *sd_size)
 {
 	SEC_DESC *sd   = 0;
-	SEC_ACL  *dacl = 0;
+	struct security_acl  *dacl = 0;
 	struct security_ace  *ace  = 0;
 	NTSTATUS  status;
 
@@ -521,7 +521,7 @@ static bool is_inheritable_ace(const struct security_ace *ace,
 bool sd_has_inheritable_components(const SEC_DESC *parent_ctr, bool container)
 {
 	unsigned int i;
-	const SEC_ACL *the_acl = parent_ctr->dacl;
+	const struct security_acl *the_acl = parent_ctr->dacl;
 
 	for (i = 0; i < the_acl->num_aces; i++) {
 		const struct security_ace *ace = &the_acl->aces[i];
@@ -545,7 +545,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					const DOM_SID *group_sid,
 					bool container)
 {
-	SEC_ACL *new_dacl = NULL, *the_acl = NULL;
+	struct security_acl *new_dacl = NULL, *the_acl = NULL;
 	struct security_ace *new_ace_list = NULL;
 	unsigned int new_ace_list_ndx = 0, i;
 

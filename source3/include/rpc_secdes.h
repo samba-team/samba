@@ -67,12 +67,6 @@
 					PROTECTED_SACL_SECURITY_INFORMATION|\
 					PROTECTED_DACL_SECURITY_INFORMATION)
 
-#ifndef _SEC_ACL
-/* SEC_ACL */
-typedef struct security_acl SEC_ACL;
-#define _SEC_ACL
-#endif
-
 #ifndef SEC_DESC_REVISION
 #define SEC_DESC_REVISION 0x1
 #endif

@@ -2387,7 +2387,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	 */
 	if (!secdesc->owner_sid || !secdesc->group_sid) {
 		DOM_SID *owner_sid, *group_sid;
-		SEC_ACL *dacl, *sacl;
+		struct security_acl *dacl, *sacl;
 		size_t size;
 
 		result = winreg_get_printer_secdesc(tmp_ctx,

@@ -93,7 +93,7 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	struct security_ace ace[4];
 	size_t i = 0;
 	SEC_DESC *sd = NULL;
-	SEC_ACL *theacl = NULL;
+	struct security_acl *theacl = NULL;
 	size_t sd_size;
 
 	/* basic access for Everyone */

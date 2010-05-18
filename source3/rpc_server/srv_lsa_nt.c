@@ -320,7 +320,7 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	struct security_ace ace[5];
 	size_t i = 0;
 
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 
 	/* READ|EXECUTE access for Everyone */
 

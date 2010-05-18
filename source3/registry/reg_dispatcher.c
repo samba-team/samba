@@ -40,7 +40,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 	struct security_ace ace[3];
 	size_t i = 0;
 	SEC_DESC *sd;
-	SEC_ACL *theacl;
+	struct security_acl *theacl;
 	size_t sd_size;
 
 	/* basic access for Everyone */

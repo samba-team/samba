@@ -529,10 +529,10 @@ static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	return True;
 }
 
-/* add an ACE to a list of ACEs in a SEC_ACL */
-static bool add_ace(SEC_ACL **the_acl, struct security_ace *ace)
+/* add an ACE to a list of ACEs in a struct security_acl */
+static bool add_ace(struct security_acl **the_acl, struct security_ace *ace)
 {
-	SEC_ACL *new_ace;
+	struct security_acl *new_ace;
 	struct security_ace *aces;
 	if (! *the_acl) {
 		return (((*the_acl) = make_sec_acl(talloc_tos(), 3, 1, ace))
@@ -559,7 +559,7 @@ static SEC_DESC *sec_desc_parse(TALLOC_CTX *ctx, struct cli_state *cli, char *st
 	SEC_DESC *ret = NULL;
 	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
-	SEC_ACL *dacl=NULL;
+	struct security_acl *dacl=NULL;
 	int revision=1;
 
 	while (next_token_talloc(ctx, &p, &tok, "\t,\r\n")) {
@@ -848,7 +848,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 	return memcmp(ace1, ace2, sizeof(struct security_ace));
 }
 
-static void sort_acl(SEC_ACL *the_acl)
+static void sort_acl(struct security_acl *the_acl)
 {
 	uint32 i;
 	if (!the_acl) return;
@@ -1049,7 +1049,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 			/* remove all inherited ACL's. */
 			if (old->dacl) {
 				int i;
-				SEC_ACL *temp=old->dacl;
+				struct security_acl *temp=old->dacl;
 				old->dacl=make_sec_acl(talloc_tos(), 3, 0, NULL);
 				for (i=temp->num_aces-1;i>=0;i--) {
 					struct security_ace *ace=&temp->aces[i];

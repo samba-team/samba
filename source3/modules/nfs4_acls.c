@@ -296,7 +296,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	DOM_SID sid_owner, sid_group;
 	size_t sd_size = 0;
 	struct security_ace *nt_ace_list = NULL;
-	SEC_ACL *psa = NULL;
+	struct security_acl *psa = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	if (theacl==NULL || smb_get_naces(theacl)==0)
@@ -675,7 +675,7 @@ static int smbacl4_MergeIgnoreReject(
 
 static SMB4ACL_T *smbacl4_win2nfs4(
 	const char *filename,
-	const SEC_ACL *dacl,
+	const struct security_acl *dacl,
 	smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
 	gid_t ownerGID

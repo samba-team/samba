@@ -298,7 +298,7 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 {
 	SEC_DESC *sd = NULL;
 	struct security_ace *ace;
-	SEC_ACL *theacl;
+	struct security_acl *theacl;
 	int num_ace;
 	const char *pacl;
 	int i;
@@ -335,10 +335,10 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 	return sd;
 }
 
-/* add an ACE to a list of ACEs in a SEC_ACL */
-static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, struct security_ace *ace)
+/* add an ACE to a list of ACEs in a struct security_acl */
+static bool add_ace(TALLOC_CTX *mem_ctx, struct security_acl **the_acl, struct security_ace *ace)
 {
-	SEC_ACL *new_ace;
+	struct security_acl *new_ace;
 	struct security_ace *aces;
 	if (! *the_acl) {
 		return (((*the_acl) = make_sec_acl(mem_ctx, 3, 1, ace)) != NULL);
@@ -384,7 +384,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 	return memcmp(ace1, ace2, sizeof(struct security_ace));
 }
 
-static void sort_acl(SEC_ACL *the_acl)
+static void sort_acl(struct security_acl *the_acl)
 {
 	uint32 i;
 	if (!the_acl) return;

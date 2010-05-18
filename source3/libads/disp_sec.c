@@ -173,7 +173,7 @@ static void ads_disp_ace(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_a
 }
 
 /* display ACL */
-static void ads_disp_acl(SEC_ACL *sec_acl, const char *type)
+static void ads_disp_acl(struct security_acl *sec_acl, const char *type)
 {
         if (!sec_acl)
 		printf("------- (%s) ACL not present\n", type);

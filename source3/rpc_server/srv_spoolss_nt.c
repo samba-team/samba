@@ -5443,7 +5443,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *the_acl;
+		struct security_acl *the_acl;
 		int i;
 
 		the_acl = old_secdesc_ctr->sd->dacl;

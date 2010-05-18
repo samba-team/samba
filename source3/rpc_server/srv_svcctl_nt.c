@@ -140,7 +140,7 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 	struct security_ace ace[2];
 	size_t i = 0;
 	SEC_DESC *sd;
-	SEC_ACL *theacl;
+	struct security_acl *theacl;
 	size_t sd_size;
 
 	/* basic access for Everyone */
