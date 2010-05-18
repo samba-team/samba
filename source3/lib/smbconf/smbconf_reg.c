@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "lib/smbconf/smbconf_private.h"
 #include "registry.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
 
 #define INCLUDES_VALNAME "includes"
 

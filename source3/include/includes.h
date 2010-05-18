@@ -679,11 +679,6 @@ struct ntlmssp_state;
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 
-#include "lib/smbconf/smbconf.h"
-#include "lib/smbconf/smbconf_init.h"
-#include "lib/smbconf/smbconf_reg.h"
-#include "lib/smbconf/smbconf_txt.h"
-
 #include "nsswitch/winbind_nss.h"
 
 /* forward declaration from printing.h to get around 

@@ -18,6 +18,10 @@
  */
 
 #include "includes.h"
+#include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
+#include "lib/smbconf/smbconf_txt.h"
 
 static void print_strings(const char *prefix,
 			  uint32_t num_strings, const char **strings)

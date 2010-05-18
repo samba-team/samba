@@ -53,6 +53,9 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>

@@ -24,6 +24,8 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
+#include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_reg.h"
 
 /****************************************************************
 ****************************************************************/

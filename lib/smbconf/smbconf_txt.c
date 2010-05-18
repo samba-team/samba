@@ -27,6 +27,7 @@
 
 #include "includes.h"
 #include "smbconf_private.h"
+#include "lib/smbconf/smbconf_txt.h"
 
 struct txt_cache {
 	uint32_t current_share;
