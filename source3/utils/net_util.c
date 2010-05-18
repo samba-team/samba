@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/cli_dssetup.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,

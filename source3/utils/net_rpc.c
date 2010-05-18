@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"

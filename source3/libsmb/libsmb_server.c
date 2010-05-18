@@ -27,6 +27,7 @@
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 
 /* 
  * Check a server for being alive and well.

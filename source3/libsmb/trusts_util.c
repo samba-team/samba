@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/cli_netlogon.h"
 
 /*********************************************************

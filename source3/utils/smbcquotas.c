@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 
 static char *server;
 
