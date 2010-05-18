@@ -329,7 +329,7 @@ static struct security_descriptor* parse_acl_string(TALLOC_CTX *mem_ctx, const c
 	if ( !(theacl = make_sec_acl( mem_ctx, NT4_ACL_REVISION, num_ace, ace )) )
 		return NULL;
 
-	sd = make_sec_desc( mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	sd = make_sec_desc( mem_ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
 		NULL, NULL, NULL, theacl, sd_size);
 
 	return sd;

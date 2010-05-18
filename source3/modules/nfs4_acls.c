@@ -321,7 +321,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	}
 
 	DEBUG(10,("after make sec_acl\n"));
-	*ppdesc = make_sec_desc(mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	*ppdesc = make_sec_desc(mem_ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
 	                        (security_info & OWNER_SECURITY_INFORMATION) ? &sid_owner : NULL,
 	                        (security_info & GROUP_SECURITY_INFORMATION) ? &sid_group : NULL,
 	                        NULL, psa, &sd_size);

@@ -741,7 +741,7 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 	theacl = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 6, ace);
 	W_ERROR_HAVE_NO_MEMORY(theacl);
 
-	*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION,
+	*sd = make_sec_desc(mem_ctx, SD_REVISION,
 			    SEC_DESC_SELF_RELATIVE |
 			    SEC_DESC_DACL_AUTO_INHERITED | /* really ? */
 			    SEC_DESC_DACL_AUTO_INHERIT_REQ, /* really ? */

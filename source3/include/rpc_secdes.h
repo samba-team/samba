@@ -67,10 +67,6 @@
 					PROTECTED_SACL_SECURITY_INFORMATION|\
 					PROTECTED_DACL_SECURITY_INFORMATION)
 
-#ifndef SEC_DESC_REVISION
-#define SEC_DESC_REVISION 0x1
-#endif
-
 /* A type to describe the mapping of generic access rights to object
    specific access rights. */
 

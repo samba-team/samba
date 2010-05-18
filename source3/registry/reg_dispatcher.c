@@ -65,7 +65,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, struct security_descriptor 
 		return WERR_NOMEM;
 	}
 
-	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	sd = make_sec_desc(ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
 			   &global_sid_Builtin_Administrators,
 			   &global_sid_System, NULL, theacl,
 			   &sd_size);

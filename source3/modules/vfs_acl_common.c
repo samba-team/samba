@@ -88,7 +88,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 
 	switch (xacl.version) {
 		case 2:
-			*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION,
+			*ppdesc = make_sec_desc(ctx, SD_REVISION,
 					xacl.info.sd_hs2->sd->type | SEC_DESC_SELF_RELATIVE,
 					xacl.info.sd_hs2->sd->owner_sid,
 					xacl.info.sd_hs2->sd->group_sid,
@@ -100,7 +100,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 			memset(hash, '\0', XATTR_SD_HASH_SIZE);
 			break;
 		case 3:
-			*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION,
+			*ppdesc = make_sec_desc(ctx, SD_REVISION,
 					xacl.info.sd_hs3->sd->type | SEC_DESC_SELF_RELATIVE,
 					xacl.info.sd_hs3->sd->owner_sid,
 					xacl.info.sd_hs3->sd->group_sid,

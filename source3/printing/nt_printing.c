@@ -393,7 +393,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* create a new struct security_descriptor with the appropriate owner and group SIDs */
 
-	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	new_sec = make_sec_desc( ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
 				 &global_sid_Builtin_Administrators,
 				 &global_sid_Builtin_Administrators,
 				 NULL, NULL, &size_new_sec );
@@ -2693,7 +2693,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 
 	if ((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
 		psd = make_sec_desc(mem_ctx,
-				    SEC_DESC_REVISION,
+				    SD_REVISION,
 				    SEC_DESC_SELF_RELATIVE,
 				    &global_sid_Builtin_Administrators,
 				    &global_sid_Builtin_Administrators,
@@ -5645,7 +5645,7 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	   NT5 machine. */
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
-		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+		psd = make_sec_desc(ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
 			&global_sid_Builtin_Administrators,
 			&global_sid_Builtin_Administrators,
 			NULL, psa, &sd_size);
