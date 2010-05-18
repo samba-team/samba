@@ -520,22 +520,46 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	{
-		/* Marshel the packet in the right format, be it unicode or ASCII */
+		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
-		if (ntlmssp_state->unicode) {
-			gen_string = "CdUdbddB";
-		} else {
-			gen_string = "CdAdbddB";
-		}
+		/* "What Windows returns" as a version number. */
+		const char vers[] = { 0x6, 0x1, 0xb0, 0x1d, 0, 0, 0, 0xf};
 
-		msrpc_gen(ntlmssp_state, reply, gen_string,
-			  "NTLMSSP",
-			  NTLMSSP_CHALLENGE,
-			  target_name,
-			  chal_flags,
-			  cryptkey, 8,
-			  0, 0,
-			  struct_blob.data, struct_blob.length);
+		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
+			DATA_BLOB version_blob = data_blob_talloc(ntlmssp_state, vers, 8);
+
+			if (ntlmssp_state->unicode) {
+				gen_string = "CdUdbddBb";
+			} else {
+				gen_string = "CdAdbddBb";
+			}
+
+			msrpc_gen(ntlmssp_state, reply, gen_string,
+				"NTLMSSP",
+				NTLMSSP_CHALLENGE,
+				target_name,
+				chal_flags,
+				cryptkey, 8,
+				0, 0,
+				struct_blob.data, struct_blob.length,
+				version_blob.data, version_blob.length);
+			data_blob_free(&version_blob);
+		} else {
+			if (ntlmssp_state->unicode) {
+				gen_string = "CdUdbddB";
+			} else {
+				gen_string = "CdAdbddB";
+			}
+
+			msrpc_gen(ntlmssp_state, reply, gen_string,
+				"NTLMSSP",
+				NTLMSSP_CHALLENGE,
+				target_name,
+				chal_flags,
+				cryptkey, 8,
+				0, 0,
+				struct_blob.data, struct_blob.length);
+		}
 
 		if (DEBUGLEVEL >= 10) {
 			if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(reply,
