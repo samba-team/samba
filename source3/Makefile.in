@@ -618,6 +618,7 @@ RPC_NETLOG_OBJ = rpc_server/srv_netlog_nt.o \
 
 RPC_SAMR_OBJ = rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o \
+               rpc_server/srv_samr_chgpasswd.o \
 	       librpc/gen_ndr/srv_samr.o
 
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
@@ -777,7 +778,7 @@ SMBD_OBJ_MAIN = smbd/server.o
 
 BUILDOPT_OBJ = smbd/build_options.o
 
-SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
+SMBD_OBJ_SRV = smbd/files.o smbd/connection.o \
 	       smbd/utmp.o smbd/session.o smbd/map_username.o \
                smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
 	       smbd/share_access.o smbd/fileio.o \
@@ -1254,7 +1255,7 @@ WINBINDD_OBJ1 = \
 		auth/server_info_sam.o \
 		auth/user_info.o \
 		auth/pampass.o \
-		smbd/chgpasswd.o \
+		rpc_server/srv_samr_chgpasswd.o \
 		../nsswitch/libwbclient/wb_reqtrans.o
 
 WINBINDD_OBJ = \

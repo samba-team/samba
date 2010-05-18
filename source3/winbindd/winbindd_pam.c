@@ -31,6 +31,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "smb_krb5.h"
 #include "../lib/crypto/arcfour.h"
+#include "rpc_server/srv_samr_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

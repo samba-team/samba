@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -48,6 +48,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
+#include "rpc_server/srv_samr_util.h"
 
 #if ALLOW_CHANGE_PASSWORD
 
@@ -206,7 +207,7 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 	stermios.c_lflag |= ICANON;
 #ifdef ONLCR
- 	stermios.c_oflag &= ~(ONLCR);
+	stermios.c_oflag &= ~(ONLCR);
 #endif
 	if (tcsetattr(0, TCSANOW, &stermios) < 0)
 	{
@@ -618,7 +619,7 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 
 #else /* ALLOW_CHANGE_PASSWORD */
 
-bool chgpasswd(const char *name, const struct passwd *pass, 
+bool chgpasswd(const char *name, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root)
 {
 	DEBUG(0, ("chgpasswd: Unix Password changing not compiled in (user=%s)\n", name));
@@ -700,20 +701,20 @@ static NTSTATUS check_oem_password(const char *user,
 		password_encrypted = password_encrypted_with_lm_hash;
 		encryption_key = lanman_pw;
 	} else if (nt_pass_set) {
-		DEBUG(1, ("NT password change supplied for user %s, but we have no NT password to check it with\n", 
+		DEBUG(1, ("NT password change supplied for user %s, but we have no NT password to check it with\n",
 			  user));
 		return NT_STATUS_WRONG_PASSWORD;
 	} else if (lm_pass_set) {
 		if (lp_lanman_auth()) {
-			DEBUG(1, ("LM password change supplied for user %s, but we have no LanMan password to check it with\n", 
+			DEBUG(1, ("LM password change supplied for user %s, but we have no LanMan password to check it with\n",
 				  user));
 		} else {
-			DEBUG(1, ("LM password change supplied for user %s, but we have disabled LanMan authentication\n", 
+			DEBUG(1, ("LM password change supplied for user %s, but we have disabled LanMan authentication\n",
 				  user));
 		}
 		return NT_STATUS_WRONG_PASSWORD;
 	} else {
-		DEBUG(1, ("password change requested for user %s, but no password supplied!\n", 
+		DEBUG(1, ("password change requested for user %s, but no password supplied!\n",
 			  user));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -1009,7 +1010,7 @@ static NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *ne
 	}
 
 	if (pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
-		DEBUG(1, ("user %s cannot change password - password too short\n", 
+		DEBUG(1, ("user %s cannot change password - password too short\n",
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));
 		if (samr_reject_reason) {

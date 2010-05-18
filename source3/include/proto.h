@@ -5365,20 +5365,6 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine);
 
-/* The following definitions come from smbd/chgpasswd.c  */
-
-bool chgpasswd(const char *name, const struct passwd *pass,
-	       const char *oldpass, const char *newpass, bool as_root);
-NTSTATUS pass_oem_change(char *user,
-			 uchar password_encrypted_with_lm_hash[516],
-			 const uchar old_lm_hash_encrypted[16],
-			 uchar password_encrypted_with_nt_hash[516],
-			 const uchar old_nt_hash_encrypted[16],
-			 enum samPwdChangeReason *reject_reason);
-NTSTATUS check_password_complexity(const char *username,
-				   const char *password,
-				   enum samPwdChangeReason *samr_reject_reason);
-
 /* The following definitions come from smbd/close.c  */
 
 void set_close_write_time(struct files_struct *fsp, struct timespec ts);
