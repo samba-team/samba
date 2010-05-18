@@ -22,6 +22,8 @@
 #include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/proto.h"
 #include "libcli/security/dom_sid.h"
+#include "tldap.h"
+#include "tldap_util.h"
 
 extern char *optarg;
 extern int optind;
