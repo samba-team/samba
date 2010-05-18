@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "librpc/gen_ndr/notify.h"
+#include "librpc/gen_ndr/s4_notify.h"
 #include "param/share.h"
 
 struct sys_notify_context;

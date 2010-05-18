@@ -288,7 +288,7 @@ bld.SAMBA_SUBSYSTEM('NDR_OPENDB',
 
 
 bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
-	source='gen_ndr/ndr_notify.c',
+	source='gen_ndr/ndr_s4_notify.c',
 	public_deps='LIBNDR'
 	)
 
