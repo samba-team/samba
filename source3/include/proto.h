@@ -4283,6 +4283,7 @@ struct share_params *snum2params_static(int snum);
 const char *volume_label(int snum);
 int lp_server_role(void);
 bool lp_domain_master(void);
+bool lp_domain_master_true_or_auto(void);
 bool lp_preferred_master(void);
 void lp_remove_service(int snum);
 void lp_copy_service(int snum, const char *new_name);

@@ -9691,6 +9691,18 @@ bool lp_domain_master(void)
 }
 
 /***********************************************************
+ If we are PDC then prefer us as DMB
+************************************************************/
+
+bool lp_domain_master_true_or_auto(void)
+{
+	if (Globals.iDomainMaster) /* auto or yes */
+		return true;
+
+	return false;
+}
+
+/***********************************************************
  If we are DMB then prefer us as LMB
 ************************************************************/
 
