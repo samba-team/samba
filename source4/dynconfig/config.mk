@@ -22,4 +22,9 @@ $(dynconfigsrcdir)/dynconfig.o: CFLAGS+=-DCONFIGFILE=\"$(CONFIG4FILE)\" -DBINDIR
 	 -DWINBINDD_PRIVILEGED_SOCKET_DIR=\"$(winbindd_privileged_socket_dir)\" \
 	 -DWINBINDD_SOCKET_DIR=\"$(winbindd_socket_dir)\" \
 	 -DNTP_SIGND_SOCKET_DIR=\"$(ntp_signd_socket_dir)\" \
-	 -DPYTHONDIR=\"$(pythondir)\"
+	 -DPYTHONDIR=\"$(pythondir)\" \
+	 -DCODEPAGEDIR=\"$(codepagedir)\" \
+	 -DLIBDIR=\"$(libdir)\" \
+	 -DSTATEDIR=\"$(localstatedir)\" \
+	 -DCACHEDIR=\"$(cachedir)\" \
+	 -DSMB_PASSWD_FILE=\"$(privatedir)/smbpasswd\"
