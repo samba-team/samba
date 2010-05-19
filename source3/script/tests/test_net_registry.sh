@@ -237,7 +237,7 @@ test_deletekey_with_subkey()
 test_setvalue()
 {
 	KEY="$1"
-	VALNAME="$2"
+	VALNAME="${2#_}"
 	VALTYPE="$3"
 	VALVALUE="$4"
 
@@ -248,7 +248,7 @@ test_setvalue()
 		return
 	fi
 
-	OUTPUT=`${NETREG} setvalue ${KEY} ${VALNAME} ${VALTYPE} ${VALVALUE}`
+	OUTPUT=`${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE} ${VALVALUE}`
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failed to set value testval in key ${KEY}"
 		printf "%s\n" "${OUTPUT}"
@@ -256,7 +256,7 @@ test_setvalue()
 		return
 	fi
 
-	OUTPUT=`${NETREG} getvalueraw ${KEY} ${VALNAME}`
+	OUTPUT=`${NETREG} getvalueraw ${KEY} "${VALNAME}"`
 	if test "x$?" != "x0" ; then
 		echo "ERROR: failure calling getvalueraw for key ${KEY}"
 		echo output:
@@ -277,17 +277,17 @@ test_setvalue()
 test_deletevalue()
 {
 	KEY="$1"
-	VALNAME="$2"
+	VALNAME="${2#_}"
 
-	${NETREG} deletevalue ${KEY} ${VALNAME}
+	${NETREG} deletevalue ${KEY} "${VALNAME}"
 }
 
 test_deletevalue_nonexisting()
 {
 	KEY="$1"
-	VALNAME="$2"
+	VALNAME="${2#_}"
 
-	${NETREG} deletevalue ${KEY} ${VALNAME}
+	${NETREG} deletevalue ${KEY} "${VALNAME}"
 	if test "x$?" = "x0" ; then
 		echo "ERROR: succeeded deleting value ${VALNAME}"
 		false
@@ -299,13 +299,13 @@ test_deletevalue_nonexisting()
 test_setvalue_twice()
 {
 	KEY="$1"
-	VALNAME="$2"
+	VALNAME="${2#_}"
 	VALTYPE1="$3"
 	VALVALUE1="$4"
 	VALTYPE2="$5"
 	VALVALUE2="$6"
 
-	OUTPUT=`test_setvalue ${KEY} ${VALNAME} ${VALTYPE1} ${VALVALUE1}`
+	OUTPUT=`test_setvalue ${KEY} _"${VALNAME}" ${VALTYPE1} ${VALVALUE1}`
 	if test "x$?" != "x0" ; then
 		echo "ERROR: first setvalue call failed"
 		printf "%s\n" "$OUTPUT"
@@ -313,7 +313,7 @@ test_setvalue_twice()
 		return
 	fi
 
-	${NETREG} setvalue ${KEY} ${VALNAME} ${VALTYPE2} ${VALVALUE2}
+	${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE2} ${VALVALUE2}
 }
 
 give_administrative_rights()
@@ -402,19 +402,31 @@ testit "delete key with subkey" \
 	failed=`expr $failed + 1`
 
 testit "set value" \
-	test_setvalue HKLM/testkey testval sz moin || \
+	test_setvalue HKLM/testkey _testval sz moin || \
 	failed=`expr $failed + 1`
 
 testit "delete value" \
-	test_deletevalue HKLM/testkey testval || \
+	test_deletevalue HKLM/testkey _testval || \
 	failed=`expr $failed + 1`
 
 testit "delete nonexisting value" \
-	test_deletevalue_nonexisting HKLM/testkey testval || \
+	test_deletevalue_nonexisting HKLM/testkey _testval || \
 	failed=`expr $failed + 1`
 
 testit "set value to different type" \
 	test_setvalue_twice HKLM/testkey testval sz moin dword 42 || \
+	failed=`expr $failed + 1`
+
+testit "set default value" \
+	test_setvalue HKLM/testkey _"" sz 42 || \
+	failed=`expr $failed + 1`
+
+testit "delete default value" \
+	test_deletevalue HKLM/testkey _"" || \
+	failed=`expr $failed + 1`
+
+testit "delete nonexisting default value" \
+	test_deletevalue_nonexisting HKLM/testkey _"" || \
 	failed=`expr $failed + 1`
 
 testit "delete key with value" \
