@@ -256,38 +256,22 @@ test_setvalue()
 		return
 	fi
 
-	OUTPUT=`${NETREG} enumerate ${KEY}`
+	OUTPUT=`${NETREG} getvalueraw ${KEY} ${VALNAME}`
 	if test "x$?" != "x0" ; then
-		echo "ERROR: failure calling enumerate for key ${KEY}"
+		echo "ERROR: failure calling getvalueraw for key ${KEY}"
 		echo output:
 		printf "%s\n" "${OUTPUT}"
 		false
 		return
 	fi
 
-	printf "%s\n" "$OUTPUT" | {
-	FOUND=0
-	while read LINE ; do
-		SEARCH1=`echo $LINE | grep '^Valuename' | grep ${VALNAME}`
-		if test "x$?" = "x0" ; then
-			read LINE
-			read LINE
-			SEARCH2=`echo $LINE | grep '^Value ' | grep ${VALVALUE}`
-			if test "x$?" = "x0" ; then
-				FOUND=1
-				break
-			fi
-		fi
-	done
-
-	if test "x$FOUND" != "x1" ; then
-		echo "ERROR: did not find value '${VALNAME}' with enumerate"
-		echo "enumerate output:"
-		printf "%s\n" "$OUTPUT"
+	if test "x${OUTPUT}" != "x${VALVALUE}" ; then
+		echo "ERROR: failure retrieving value ${VALNAME} for key ${KEY}"
+		printf "expected: %s\ngot: %s\n" "${VALVALUE}" "${OUTPUT}"
 		false
 		return
 	fi
-	}
+
 }
 
 test_deletevalue()
