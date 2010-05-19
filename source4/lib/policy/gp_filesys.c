@@ -22,6 +22,7 @@
 #include "libcli/libcli.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/raw/libcliraw.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -186,12 +187,29 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 	return NT_STATUS_OK;
 }
 
+static char * gp_get_share_path(TALLOC_CTX *mem_ctx, const char *file_sys_path)
+{
+	unsigned int i, bkslash_cnt;
+
+	/* Get the path from the share down (\\..\..\(this\stuff) */
+	for (i = 0, bkslash_cnt = 0; file_sys_path[i] != '\0'; i++) {
+		if (file_sys_path[i] == '\\')
+			bkslash_cnt++;
+
+		if (bkslash_cnt == 4) {
+			return talloc_strdup(mem_ctx, &file_sys_path[i]);
+		}
+	}
+
+	return NULL;
+}
+
+
 NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **ret_local_path)
 {
 	TALLOC_CTX *mem_ctx;
 	struct gp_list_state *state;
 	NTSTATUS status;
-	unsigned int i, bkslash_cnt;
 	struct stat st;
 	int rv;
 
@@ -211,18 +229,9 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 	/* Prepare the state structure */
 	state = talloc_zero(mem_ctx, struct gp_list_state);
 	state->gp_ctx = gp_ctx;
-	state->local_path = talloc_asprintf(gp_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
+	state->local_path = talloc_asprintf(mem_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
+	state->share_path = gp_get_share_path(mem_ctx, gpo->file_sys_path);
 
-	/* Get the path from the share down (\\..\..\(this\stuff) */
-	for (i = 0, bkslash_cnt = 0; gpo->file_sys_path[i] != '\0'; i++) {
-		if (gpo->file_sys_path[i] == '\\')
-			bkslash_cnt++;
-
-		if (bkslash_cnt == 4) {
-			state->share_path = talloc_strdup(mem_ctx, &gpo->file_sys_path[i]);
-			break;
-		}
-	}
 
 	/* Create the GPO dir if it does not exist */
 	if (stat(state->local_path, &st) != 0) {
@@ -310,7 +319,6 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path, const char *file_sys_path)
 {
 	NTSTATUS status;
-	unsigned int i, bkslash_cnt;
 	char *share_path;
 
 	if (gp_ctx->cli == NULL) {
@@ -320,17 +328,7 @@ NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path, const ch
 			return status;
 		}
 	}
-
-	/* Get the path from the share down (\\..\..\(this\stuff) */
-	for (i = 0, bkslash_cnt = 0; file_sys_path[i] != '\0'; i++) {
-		if (file_sys_path[i] == '\\')
-			bkslash_cnt++;
-
-		if (bkslash_cnt == 4) {
-			share_path = talloc_strdup(gp_ctx, &file_sys_path[i]);
-			break;
-		}
-	}
+	share_path = gp_get_share_path(gp_ctx, file_sys_path);
 
 	DEBUG(5, ("Copying %s to %s on sysvol\n", local_path, share_path));
 
@@ -355,6 +353,9 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 
 	tmp_dir = gp_tmpdir(mem_ctx);
 	policy_dir = talloc_asprintf(mem_ctx, "%s/%s", tmp_dir, name);
+
+	/* Create the directories */
+
 	rv = mkdir(policy_dir, 0755);
 	if (rv < 0) {
 		DEBUG(0, ("Could not create the policy dir: %s\n", policy_dir));
@@ -378,6 +379,8 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	/* Create a GPT.INI with version 0 */
+
 	tmp_str = talloc_asprintf(mem_ctx, "%s/GPT.INI", policy_dir);
 	fd = open(tmp_str, O_CREAT | O_WRONLY, 0644);
 	if (fd < 0) {
@@ -395,9 +398,76 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 
 	close(fd);
 
-
+	/* Upload the GPT to the sysvol share on a DC */
 	status = gp_push_gpt(gp_ctx, policy_dir, file_sys_path);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_object *gpo, struct security_descriptor *sd)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	union smb_setfileinfo fileinfo;
+	union smb_open io;
+	union smb_close io_close;
+
+	/* Create a connection to sysvol if it is not already there */
+	if (gp_ctx->cli == NULL) {
+		status = gp_cli_connect(gp_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to create cli connection to DC\n"));
+			return status;
+		}
+	}
+
+	/* Create a forked memory context which can be freed easily */
+	mem_ctx = talloc_new(gp_ctx);
+
+	/* Open the directory with NTCreate AndX call */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = gp_get_share_path(mem_ctx, gpo->file_sys_path);
+	status = smb_raw_open(gp_ctx->cli->tree, mem_ctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Can't open GPT directory\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Set the security descriptor on the directory */
+	fileinfo.generic.level = RAW_FILEINFO_SEC_DESC;
+	fileinfo.set_secdesc.in.file.fnum = io.ntcreatex.out.file.fnum;
+	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_SACL | SECINFO_DACL;
+	fileinfo.set_secdesc.in.sd = sd;
+	status = smb_raw_setfileinfo(gp_ctx->cli->tree, &fileinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set security descriptor on the GPT\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Close the directory */
+	io_close.close.level = RAW_CLOSE_CLOSE;
+	io_close.close.in.file.fnum = io.ntcreatex.out.file.fnum;
+	io_close.close.in.write_time = 0;
+	status = smb_raw_close(gp_ctx->cli->tree, &io_close);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to close directory\n"));
 		talloc_free(mem_ctx);
 		return status;
 	}

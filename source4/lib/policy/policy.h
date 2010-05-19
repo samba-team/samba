@@ -92,6 +92,7 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo);
 /* File system functions */
 NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
 NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *file_sys_path);
+NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_object *gpo, struct security_descriptor *sd);
 
 /* Managing functions */
 NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, struct gp_object **ret);

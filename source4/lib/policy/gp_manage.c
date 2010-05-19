@@ -63,8 +63,8 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 	fs_sd = talloc(mem_ctx, struct security_descriptor);
 
 	/* Copy the basic information from the directory server security descriptor */
-	fs_sd->owner_sid = talloc_memdup(fs_sd, fs_sd->owner_sid, sizeof(struct dom_sid));
-	fs_sd->group_sid = talloc_memdup(fs_sd, fs_sd->group_sid, sizeof(struct dom_sid));
+	fs_sd->owner_sid = talloc_memdup(fs_sd, ds_sd->owner_sid, sizeof(struct dom_sid));
+	fs_sd->group_sid = talloc_memdup(fs_sd, ds_sd->group_sid, sizeof(struct dom_sid));
 	fs_sd->type = ds_sd->type;
 	fs_sd->revision = ds_sd->revision;
 
@@ -114,7 +114,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	struct GUID guid_struct;
 	char *guid_str;
 	char *name;
-	//struct security_descriptor *sd;
+	struct security_descriptor *sd;
 	TALLOC_CTX *mem_ctx;
 	struct gp_object *gpo;
 	unsigned int i;
@@ -126,7 +126,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	/* Create the gpo struct to return later */
 	gpo = talloc(gp_ctx, struct gp_object);
 
-	/* Generate GUID */
+	/* Generate a GUID */
 	guid_struct = GUID_random();
 	guid_str = GUID_string(mem_ctx, &guid_struct);
 	name = talloc_asprintf(gpo, "{%s}", guid_str);
@@ -140,8 +140,6 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	gpo->display_name = talloc_strdup(gpo, display_name);
 	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lp_realm(gp_ctx->lp_ctx), lp_realm(gp_ctx->lp_ctx), name);
 
-	/* FIXME: Add gpo->security_descriptor */
-
 	/* Create the GPT */
 	status = gp_create_gpt(gp_ctx, name, gpo->file_sys_path);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -149,13 +147,6 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 		return status;
 	}
 
-	/* Create matching file and DS security descriptors */
-/*	status = gp_create_gpt_security_descriptor (mem_ctx, gpo->security_descriptor, &sd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to convert ADS security descriptor to filesystem security descriptor\n"));
-		return status;
-	}
-*/
 
 	/* Create the LDAP GPO, including CN=User and CN=Machine */
 	status = gp_create_ldap_gpo(gp_ctx, gpo);
@@ -164,6 +155,26 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 		return status;
 	}
 
+	/* Get the new security descriptor */
+	status = gp_get_gpo_info(gp_ctx, gpo->dn, &gpo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to fetch LDAP group policy object\n"));
+		return status;
+	}
+
+	/* Create matching file and DS security descriptors */
+	status = gp_create_gpt_security_descriptor(mem_ctx, gpo->security_descriptor, &sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to convert ADS security descriptor to filesystem security descriptor\n"));
+		return status;
+	}
+
+	/* Set the security descriptor on the filesystem for this GPO */
+	status = gp_set_gpt_security_descriptor(gp_ctx, gpo, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set security descriptor (ACL) on the file system\n"));
+		return status;
+	}
 
 	talloc_free(mem_ctx);
 
