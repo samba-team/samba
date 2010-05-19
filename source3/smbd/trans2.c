@@ -5348,8 +5348,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,
+		struct smb_request *req,
+		bool overwrite_if_exists,
 		const struct smb_filename *smb_fname_old,
-		const struct smb_filename *smb_fname_new)
+		struct smb_filename *smb_fname_new)
 {
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -5358,9 +5360,23 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	/* Disallow if newname already exists. */
 	if (VALID_STAT(smb_fname_new->st)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+		if (overwrite_if_exists) {
+			if (S_ISDIR(smb_fname_new->st.st_ex_mode)) {
+				return NT_STATUS_FILE_IS_A_DIRECTORY;
+			}
+			status = unlink_internals(conn,
+						req,
+						FILE_ATTRIBUTE_NORMAL,
+						smb_fname_new,
+						false);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		} else {
+			/* Disallow if newname already exists. */
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
 	}
 
 	/* No links from a directory. */
@@ -5870,7 +5886,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 					struct smb_request *req,
 					const char *pdata, int total_data,
-					const struct smb_filename *smb_fname_new)
+					struct smb_filename *smb_fname_new)
 {
 	char *oldname = NULL;
 	struct smb_filename *smb_fname_old = NULL;
@@ -5902,7 +5918,8 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	return hardlink_internals(ctx, conn, smb_fname_old, smb_fname_new);
+	return hardlink_internals(ctx, conn, req, false,
+			smb_fname_old, smb_fname_new);
 }
 
 /****************************************************************************
@@ -6006,6 +6023,75 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	return status;
 }
 
+static NTSTATUS smb_file_link_information(connection_struct *conn,
+					    struct smb_request *req,
+					    const char *pdata,
+					    int total_data,
+					    files_struct *fsp,
+					    struct smb_filename *smb_fname_src)
+{
+	bool overwrite;
+	uint32_t len;
+	char *newname = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	if (!fsp) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (total_data < 20) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	overwrite = (CVAL(pdata,0) ? true : false);
+	len = IVAL(pdata,16);
+
+	if (len > (total_data - 20) || (len == 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	srvstr_get_path(ctx, pdata, req->flags2, &newname,
+				&pdata[20], len, STR_TERMINATE,
+				&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(10,("smb_file_link_information: got name |%s|\n",
+				newname));
+
+	status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				newname,
+				0,
+				NULL,
+				&smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (fsp->base_fsp) {
+		/* No stream names. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	DEBUG(10,("smb_file_link_information: "
+		  "SMB_FILE_LINK_INFORMATION (fnum %d) %s -> %s\n",
+		  fsp->fnum, fsp_str_dbg(fsp),
+		  smb_fname_str_dbg(smb_fname_dst)));
+	status = hardlink_internals(ctx,
+				conn,
+				req,
+				overwrite,
+				fsp->fsp_name,
+				smb_fname_dst);
+
+	TALLOC_FREE(smb_fname_dst);
+	return status;
+}
 
 /****************************************************************************
  Deal with SMB_FILE_RENAME_INFORMATION.
@@ -7606,6 +7692,14 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 			status = smb2_file_rename_information(conn, req,
 							     pdata, total_data,
 							     fsp, smb_fname);
+			break;
+		}
+
+		case SMB_FILE_LINK_INFORMATION:
+		{
+			status = smb_file_link_information(conn, req,
+							pdata, total_data,
+							fsp, smb_fname);
 			break;
 		}
 

@@ -6368,8 +6368,10 @@ void send_trans2_replies(connection_struct *conn,
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16]);
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,
+		struct smb_request *req,
+		bool overwrite_if_exists,
 		const struct smb_filename *smb_fname_old,
-		const struct smb_filename *smb_fname_new);
+		struct smb_filename *smb_fname_new);
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   const struct smb_filename *smb_fname,

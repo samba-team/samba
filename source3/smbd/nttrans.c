@@ -1550,6 +1550,8 @@ void reply_ntrename(struct smb_request *req)
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
 				status = hardlink_internals(ctx, conn,
+							    req,
+							    false,
 							    smb_fname_old,
 							    smb_fname_new);
 			}
