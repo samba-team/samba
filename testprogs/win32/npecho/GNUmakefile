@@ -19,5 +19,5 @@ CC = i586-mingw32msvc-gcc
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 clean:
-	del *~ *.obj *.exe
+	rm -f *~ *.obj *.exe
 
