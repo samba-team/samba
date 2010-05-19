@@ -1560,7 +1560,7 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen
 
 		/* add the new value. Paranoid protective code -- make sure data_p is valid */
 
-		if (*valuename && size && data_p) {
+		if (size && data_p) {
 			regval_ctr_addvalue(values, valuename, type,
 					(const char *)data_p, size);
 		}
