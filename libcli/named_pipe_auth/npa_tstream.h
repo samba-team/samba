@@ -56,4 +56,70 @@ int _tstream_npa_existing_socket(TALLOC_CTX *mem_ctx,
 	_tstream_npa_existing_socket(mem_ctx, fd, ft, stream, \
 				     __location__)
 
+
+/**
+ * @brief Accepts a connection for authenticated named pipes
+ *
+ * @param[in]  mem_ctx          The memory context for the operation
+ * @param[in]  ev               The tevent_context for the operation
+ * @param[in]  plain            The plain tstream_context of the bsd unix
+ *                              domain socket.
+ *                              This must be valid for the whole life of the
+ *                              resulting npa tstream_context!
+ * @param[in]  file_type        The file_type, message mode or byte mode
+ * @param[in]  device_state     The reported device state
+ * @param[in]  allocation_size  The reported allocation size
+ *
+ * @return the tevent_req handle
+ */
+struct tevent_req *tstream_npa_accept_existing_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *plain,
+					uint16_t file_type,
+					uint16_t device_state,
+					uint64_t allocation_size);
+
+/**
+ * @brief The receive end of the previous async function
+ *
+ * @param[in]  req		The tevent_req handle
+ * @param[out] perrno		Pointer to store the errno in case of error
+ * @param[in]  mem_ctx		The memory context for the results
+ * @param[out] stream		The resulting stream
+ * @param[out] client		The resulting client address
+ * @param[out] client_name	The resulting client name
+ * @param[out] server		The resulting server address
+ * @param[out] server_name	The resulting server name
+ * @param[out] info3		The info3 auth for the connecting user.
+ * @param[out] session_key	The resulting session key
+ * @param[out] delegated_creds	Delegated credentials
+ *
+ * @return  0 if successful, -1 on failure with *perror filled.
+ */
+int _tstream_npa_accept_existing_recv(struct tevent_req *req,
+				      int *perrno,
+				      TALLOC_CTX *mem_ctx,
+				      struct tstream_context **stream,
+				      struct tsocket_address **client,
+				      char **client_name,
+				      struct tsocket_address **server,
+				      char **server_name,
+				      struct netr_SamInfo3 **info3,
+				      DATA_BLOB *session_key,
+				      DATA_BLOB *delegated_creds,
+				      const char *location);
+#define tstream_npa_accept_existing_recv(req, perrno, \
+					 mem_ctx, stream, \
+					 client, client_name, \
+					 server, server_name, \
+					 info3, session_key, \
+					 delegated_creds) \
+	_tstream_npa_accept_existing_recv(req, perrno, \
+					  mem_ctx, stream, \
+					  client, client_name, \
+					  server, server_name, \
+					  info3, session_key, \
+					  delegated_creds, \
+					  __location__)
+
 #endif /* NPA_TSTREAM_H */
