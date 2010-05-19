@@ -620,6 +620,103 @@ def INSTALL_DIRS(bld, destdir, dirs):
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 
+re_header = re.compile('#include[ \t]*"([^"]+)"', re.I | re.M)
+class header_task(Task.Task):
+    name = 'header'
+    color = 'PINK'
+    vars = ['INCLUDEDIR', 'HEADER_DEPS']
+    def run(self):
+        txt = self.inputs[0].read(self.env)
+
+        txt = txt.replace('#if _SAMBA_BUILD_ == 4', '#if 1\n')
+
+        themap = self.generator.bld.subst_table
+        def repl(m):
+            if m.group(1):
+                s = m.group(1)
+                return "#include <%s>" % themap.get(s, s)
+            return ''
+
+        txt = re_header.sub(repl, txt)
+
+        f = None
+        try:
+            f = open(self.outputs[0].abspath(self.env), 'w')
+            f.write(txt)
+        finally:
+            if f:
+                f.close()
+
+def init_subst(bld):
+    """
+    initialize the header substitution table
+    for now use the file headermap.txt but in the future we will compute the paths properly
+    """
+
+    if getattr(bld, 'subst_table', None):
+        return bld.subst_table_h
+
+    node = bld.srcnode.find_resource("source4/headermap.txt")
+    if not node:
+        return {}
+    lines = node.read(None)
+    bld.subst_table_h = hash(lines)
+    lines = [x.strip().split(': ') for x in lines.split('\n') if x.rfind(': ') > -1]
+    bld.subst_table = dict(lines)
+    return bld.subst_table_h
+
+@TaskGen.feature('pubh')
+def make_public_headers(self):
+    if not self.bld.is_install:
+        # install time only (lazy)
+        return
+
+    self.env['HEADER_DEPS'] = init_subst(self.bld)
+    # adds a dependency and trigger a rebuild if the dict changes
+
+    header_path = getattr(self, 'header_path', None) or ''
+
+    for x in self.to_list(self.headers):
+
+        # too complicated, but what was the original idea?
+        if isinstance(header_path, list):
+            add_dir = ''
+            for (p1, dir) in header_path:
+                lst = self.to_list(p1)
+                for p2 in lst:
+                    if fnmatch.fnmatch(x, p2):
+                        add_dir = dir
+                        break
+                else:
+                    continue
+                break
+            inst_path = add_dir
+        else:
+            inst_path = header_path
+
+        dest = ''
+        name = x
+        if x.find(':') != -1:
+            s = x.split(':')
+            name = s[0]
+            dest = s[1]
+
+        inn = self.path.find_resource(name)
+        if not inn:
+            raise ValueError("could not find the public header %r in %r" % (name, self.path))
+        out = inn.change_ext('.inst.h')
+        self.create_task('header', inn, out)
+
+        if not dest:
+            dest = inn.name
+
+        if inst_path:
+            inst_path = inst_path + '/'
+        inst_path = inst_path + dest
+
+        #print("going to install the headers", inst_path, out)
+        self.bld.install_as('${INCLUDEDIR}/%s' % inst_path, out, self.env)
+
 def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     '''install some headers
 
@@ -627,27 +724,9 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     or it can be a dictionary of wildcard patterns which map to destination
     directories relative to INCLUDEDIR
     '''
-    dest = '${INCLUDEDIR}'
-    if isinstance(header_path, str):
-        dest += '/' + header_path
-    for h in TO_LIST(public_headers):
-        hdest = dest
-        if isinstance(header_path, list):
-            for (p1, dir) in header_path:
-                found_match=False
-                lst = TO_LIST(p1)
-                for p2 in lst:
-                    if fnmatch.fnmatch(h, p2):
-                        if dir:
-                            hdest = os.path.join(hdest, dir)
-                        found_match=True
-                        break
-                if found_match: break
-        if h.find(':') != -1:
-            hs=h.split(':')
-            INSTALL_FILES(bld, hdest, hs[0], flat=True, destname=hs[1])
-        else:
-            INSTALL_FILES(bld, hdest, h, flat=True)
+    bld.SET_BUILD_GROUP('final')
+    ret = bld(features=['pubh'], headers=public_headers, header_path=header_path)
+    return ret
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 
 
