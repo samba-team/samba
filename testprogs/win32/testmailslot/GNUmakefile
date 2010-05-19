@@ -1,6 +1,7 @@
 INCLUDES=-I.
 CFLAGS=$(INCLUDES) 
-CC=i586-mingw32msvc-gcc
+MINGW_CC = i586-mingw32msvc-cc
+CC = $(MINGW_CC)
 
 all: testmailslot.exe
 

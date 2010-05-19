@@ -8,7 +8,8 @@ NPECHO2 = npecho_client2.exe npecho_server2.exe
 
 all: $(NPECHO) $(NPECHO2)
 
-CC = i586-mingw32msvc-gcc
+MINGW_CC = i586-mingw32msvc-cc
+CC = $(MINGW_CC)
 
 .SUFFIXES: .c .obj .exe
 

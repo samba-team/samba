@@ -1,5 +1,7 @@
 CFLAGS=-I../../../
-CC=i686-pc-mingw32-gcc
+MINGW_CC = i586-mingw32msvc-cc
+CC = $(MINGW_CC)
+
 LIBS=-lwinspool
 
 all: testspoolss.exe
