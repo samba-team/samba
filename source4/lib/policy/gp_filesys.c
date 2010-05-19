@@ -452,7 +452,7 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_obj
 	/* Set the security descriptor on the directory */
 	fileinfo.generic.level = RAW_FILEINFO_SEC_DESC;
 	fileinfo.set_secdesc.in.file.fnum = io.ntcreatex.out.file.fnum;
-	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_SACL | SECINFO_DACL;
+	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_PROTECTED_DACL | SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 	fileinfo.set_secdesc.in.sd = sd;
 	status = smb_raw_setfileinfo(gp_ctx->cli->tree, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
