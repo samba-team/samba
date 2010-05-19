@@ -879,7 +879,6 @@ static struct idmap_methods db_methods = {
 	.init            = idmap_tdb2_db_init,
 	.unixids_to_sids = idmap_tdb2_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb2_sids_to_unixids,
-	.set_mapping     = idmap_tdb2_set_mapping,
 	.close_fn        = idmap_tdb2_close
 };
 
