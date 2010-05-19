@@ -830,9 +830,9 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 
 	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
 					    QueueName,
-					    NULL,
+					    "RAW",
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1072,9 +1072,9 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 
 		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
 						    printername,
-						    NULL,
+						    "RAW",
 						    devmode_ctr,
-						    SEC_FLAG_MAXIMUM_ALLOWED,
+						    PRINTER_ACCESS_USE,
 						    &handle,
 						    &werr);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3113,9 +3113,9 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 
 	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
 					    sharename,
-					    NULL,
+					    "RAW",
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    JOB_ACCESS_ADMINISTER,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3411,9 +3411,9 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 
 	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
 					    sharename,
-					    NULL,
+					    "RAW",
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4399,9 +4399,9 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 
 	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
 					    sharename,
-					    NULL,
+					    "RAW",
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
