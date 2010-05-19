@@ -86,7 +86,7 @@ interface ntlmssp
 
 	/* [MS-NLMP] 2.2.2.10 VERSION */
 
-	typedef struct {
+	typedef [public] struct {
 		ntlmssp_WindowsMajorVersion ProductMajorVersion;
 		ntlmssp_WindowsMinorVersion ProductMinorVersion;
 		uint16 ProductBuild;

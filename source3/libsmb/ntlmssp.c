@@ -522,44 +522,46 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	{
 		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
-		/* "What Windows returns" as a version number. */
-		const char vers[] = { 0x6, 0x1, 0xb0, 0x1d, 0, 0, 0, 0xf};
+		DATA_BLOB version_blob = data_blob_null;
 
 		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
-			DATA_BLOB version_blob = data_blob_talloc(ntlmssp_state, vers, 8);
+			enum ndr_err_code err;
+			struct VERSION vers;
 
-			if (ntlmssp_state->unicode) {
-				gen_string = "CdUdbddBb";
-			} else {
-				gen_string = "CdAdbddBb";
+			/* "What Windows returns" as a version number. */
+			ZERO_STRUCT(vers);
+			vers.ProductMajorVersion = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
+			vers.ProductMinorVersion = NTLMSSP_WINDOWS_MINOR_VERSION_1;
+			vers.ProductBuild = 0;
+			vers.NTLMRevisionCurrent = NTLMSSP_REVISION_W2K3;
+
+			err = ndr_push_struct_blob(&version_blob,
+						ntlmssp_state,
+						&vers,
+						(ndr_push_flags_fn_t)ndr_push_VERSION);
+
+			if (err) {
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			msrpc_gen(ntlmssp_state, reply, gen_string,
-				"NTLMSSP",
-				NTLMSSP_CHALLENGE,
-				target_name,
-				chal_flags,
-				cryptkey, 8,
-				0, 0,
-				struct_blob.data, struct_blob.length,
-				version_blob.data, version_blob.length);
-			data_blob_free(&version_blob);
-		} else {
-			if (ntlmssp_state->unicode) {
-				gen_string = "CdUdbddB";
-			} else {
-				gen_string = "CdAdbddB";
-			}
-
-			msrpc_gen(ntlmssp_state, reply, gen_string,
-				"NTLMSSP",
-				NTLMSSP_CHALLENGE,
-				target_name,
-				chal_flags,
-				cryptkey, 8,
-				0, 0,
-				struct_blob.data, struct_blob.length);
 		}
+
+		if (ntlmssp_state->unicode) {
+			gen_string = "CdUdbddBb";
+		} else {
+			gen_string = "CdAdbddBb";
+		}
+
+		msrpc_gen(ntlmssp_state, reply, gen_string,
+			"NTLMSSP",
+			NTLMSSP_CHALLENGE,
+			target_name,
+			chal_flags,
+			cryptkey, 8,
+			0, 0,
+			struct_blob.data, struct_blob.length,
+			version_blob.data, version_blob.length);
+
+		data_blob_free(&version_blob);
 
 		if (DEBUGLEVEL >= 10) {
 			if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(reply,

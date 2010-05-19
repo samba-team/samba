@@ -174,7 +174,10 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			break;
 		case 'b':
 			n = pointers[i].length;
-			memcpy(blob->data + head_ofs, pointers[i].data, n);
+			if (pointers[i].data && n) {
+				/* don't follow null pointers... */
+				memcpy(blob->data + head_ofs, pointers[i].data, n);
+			}
 			head_ofs += n;
 			break;
 		case 'C':
