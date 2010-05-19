@@ -1,7 +1,5 @@
-MAKE=mingw32-make
-CFLAGS=-I../../../ -I/usr/i686-pc-mingw32/sys-root/mingw/include
-LDFLAGS=-L/usr/i686-pc-mingw32/sys-root/mingw/lib
-CC=/usr/bin/i686-pc-mingw32-gcc
+CFLAGS=-I../../../
+CC=i686-pc-mingw32-gcc
 LIBS=-lwinspool
 
 all: testspoolss.exe
