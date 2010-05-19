@@ -1,3 +1,6 @@
+#
+# use nmake /f NMakefile [<target>]
+#
 CFLAGS = /nologo /Zi /MT /Gm- /W4 /FR /D_CRT_SECURE_NO_WARNINGS
 LIBS = kernel32.lib gdi32.lib user32.lib shell32.lib \
 	advapi32.lib ole32.lib ws2_32.lib rpcrt4.lib

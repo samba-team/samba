@@ -1,3 +1,6 @@
+#
+# use nmake /f NMakefile [<target>]
+#
 INCLUDES=-I 
 CFLAGS=$(INCLUDES) -Zi -nologo
 
