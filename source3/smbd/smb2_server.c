@@ -437,6 +437,10 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint1
 		SSVAL(outhdr, SMB2_HDR_OPCODE,
 		      SVAL(inhdr, SMB2_HDR_OPCODE));
 		SSVAL(outhdr, SMB2_HDR_CREDIT,		creds);
+
+		/* Remember what we gave out. */
+		req->sconn->smb2.credits_granted += creds;
+
 		SIVAL(outhdr, SMB2_HDR_FLAGS,
 		      IVAL(inhdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
@@ -755,6 +759,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SIVAL(hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
 	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(reqhdr, SMB2_HDR_OPCODE));
 	SSVAL(hdr, SMB2_HDR_CREDIT, 5);
+
+	req->sconn->smb2.credits_granted += 5;
+
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND, 0);
 	SBVAL(hdr, SMB2_HDR_MESSAGE_ID, message_id);
@@ -1909,7 +1916,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, (uint16_t)lp_maxmux());
+	status = smbd_smb2_request_setup_out(req, 1);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
