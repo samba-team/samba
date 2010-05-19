@@ -134,6 +134,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 		name[i] = toupper(name[i]);
 	}
 
+	gpo->dn = NULL;
 	gpo->name = name;
 	gpo->flags = 0;
 	gpo->version = 0;

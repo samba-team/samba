@@ -62,11 +62,18 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 
 	DEBUG(9, ("Parsing GPO LDAP data for %s\n", gpo->dn));
 
-	gpo->display_name = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", ""));
-	gpo->name = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "name", ""));
+	gpo->display_name = ldb_msg_find_attr_as_string(msg, "displayName", "");
+	gpo->name = ldb_msg_find_attr_as_string(msg, "name", "");
 	gpo->flags = ldb_msg_find_attr_as_uint(msg, "name", 0);
 	gpo->version = ldb_msg_find_attr_as_uint(msg, "version", 0);
-	gpo->file_sys_path = talloc_steal(mem_ctx, ldb_msg_find_attr_as_string(msg, "gPCFileSysPath", ""));
+	gpo->file_sys_path = ldb_msg_find_attr_as_string(msg, "gPCFileSysPath", "");
+
+	if (gpo->display_name[0] != '\0')
+		gpo->display_name = talloc_steal(mem_ctx, gpo->display_name);
+	if (gpo->name[0] != '\0')
+		gpo->name = talloc_steal(mem_ctx, gpo->name);
+	if (gpo->file_sys_path[0] != '\0')
+		gpo->file_sys_path = talloc_steal(mem_ctx, gpo->file_sys_path);
 
 	/* Pull the security descriptor through the NDR library */
 	data = ldb_msg_find_ldb_val(msg, "nTSecurityDescriptor");
@@ -792,8 +799,6 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 	rv = ldb_msg_add_string(msg, "gpCFunctionalityVersion", "2");
 	if (rv != LDB_SUCCESS) goto ldb_msg_add_error;
 
-	/* FIXME Add security descriptor as well */
-
 	rv = ldb_add(gp_ctx->ldb_ctx, msg);
 	if (rv != LDB_SUCCESS) {
 		DEBUG(0, ("LDB add error: %s\n", ldb_errstring(gp_ctx->ldb_ctx)));
@@ -853,6 +858,7 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	gpo->dn = talloc_steal(gpo, ldb_dn_get_linearized(gpo_dn));
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
