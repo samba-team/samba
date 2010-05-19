@@ -50,8 +50,6 @@ struct idmap_methods {
 	   and type and gets back a uid or gid. */
 	NTSTATUS (*sids_to_unixids)(struct idmap_domain *dom, struct id_map **ids);
 
-	NTSTATUS (*set_mapping)(struct idmap_domain *dom, const struct id_map *map);
-
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(struct idmap_domain *dom);
 };
