@@ -2103,6 +2103,54 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenHive(struct torture_context *tctx,
+			  struct dcerpc_binding_handle *b,
+			  struct policy_handle *handle,
+			  int hkey)
+{
+	struct winreg_OpenHKLM r;
+
+	r.in.system_name = 0;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	switch (hkey) {
+	case HKEY_LOCAL_MACHINE:
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_OpenHKLM_r(b, tctx, &r),
+			"failed to open HKLM");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to open HKLM");
+		break;
+	case HKEY_CURRENT_USER:
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_OpenHKCU_r(b, tctx, (struct winreg_OpenHKCU *)&r),
+			"failed to open HKCU");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to open HKCU");
+		break;
+	case HKEY_USERS:
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_OpenHKU_r(b, tctx, (struct winreg_OpenHKU *)&r),
+			"failed to open HKU");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to open HKU");
+		break;
+	case HKEY_CLASSES_ROOT:
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_OpenHKCR_r(b, tctx, (struct winreg_OpenHKCR *)&r),
+			"failed to open HKCR");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"failed to open HKCR");
+		break;
+	default:
+		torture_warning(tctx, "unsupported hkey: 0x%08x\n", hkey);
+		return false;
+	}
+
+	return true;
+}
+
 static bool test_volatile_keys(struct torture_context *tctx,
 			       struct dcerpc_binding_handle *b,
 			       struct policy_handle *handle,
@@ -2111,7 +2159,9 @@ static bool test_volatile_keys(struct torture_context *tctx,
 	struct policy_handle new_handle;
 	enum winreg_CreateAction action_taken;
 
-	torture_comment(tctx, "Testing REG_OPTION_VOLATILE key\n");
+	torture_comment(tctx, "Testing VOLATILE key\n");
+
+	test_DeleteKey(b, tctx, handle, TEST_KEY_VOLATILE);
 
 	torture_assert(tctx,
 		test_CreateKey_opts(tctx, b, handle, TEST_KEY_VOLATILE, NULL,
@@ -2176,12 +2226,34 @@ static bool test_volatile_keys(struct torture_context *tctx,
 		"failed to open volatile key");
 
 	torture_assert(tctx,
-		test_DeleteKey(b, tctx, handle, TEST_KEY_VOLATILE),
-		"failed to delete key");
-
-	torture_assert(tctx,
 		test_CloseKey(b, tctx, &new_handle),
 		"failed to close");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_OpenHive(tctx, b, handle, hkey),
+		"failed top open hive");
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+				  REG_OPTION_VOLATILE,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_BADFILE),
+		"failed to open volatile key");
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+				  REG_OPTION_NON_VOLATILE,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_BADFILE),
+		"failed to open volatile key");
+
+	torture_comment(tctx, "Testing VOLATILE key succeeded\n");
 
 	return true;
 }
@@ -2302,12 +2374,14 @@ static bool test_key_base(struct torture_context *tctx,
 				     "CreateKey failed (OpenKey after Create didn't work)\n");
 		}
 
-		torture_assert(tctx, test_SetValue_simple(b, tctx, &newhandle),
-			"simple SetValue test failed");
-		torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
-			"extended SetValue test failed");
-		torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, hkey),
-			"keytype test failed");
+		if (hkey == HKEY_CURRENT_USER) {
+			torture_assert(tctx, test_SetValue_simple(b, tctx, &newhandle),
+				"simple SetValue test failed");
+			torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
+				"extended SetValue test failed");
+			torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, hkey),
+				"keytype test failed");
+		}
 
 		if (!test_CloseKey(b, tctx, &newhandle)) {
 			torture_fail(tctx,
