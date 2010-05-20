@@ -651,13 +651,18 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (qfid) {
 			uint8_t p[32];
+			uint64_t file_index = get_FileIndex(result->conn,
+							&result->fsp_name->st);
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 			ZERO_STRUCT(p);
 
-			/* TODO: maybe use result->file_id */
-			SIVAL(p, 0, result->fsp_name->st.st_ex_ino);/* FileIndexLow */
-			SIVAL(p, 4, result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
+			/* From conversations with Microsoft engineers at
+			   the MS plugfest. The first 8 bytes are the "volume index"
+			   == inode, the second 8 bytes are the "volume id",
+			   == dev. This will be updated in the SMB2 doc. */
+			SBVAL(p, 0, file_index);
+			SIVAL(p, 8, result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
 
 			status = smb2_create_blob_add(state, &out_context_blobs,
 						      SMB2_CREATE_TAG_QFID,

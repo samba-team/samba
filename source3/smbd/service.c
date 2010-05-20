@@ -1033,6 +1033,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 		goto err_root_exit;
 	}
+	conn->base_share_dev = smb_fname_cpath->st.st_ex_dev;
 
 	string_set(&conn->origpath,conn->connectpath);
 

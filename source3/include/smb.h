@@ -607,6 +607,9 @@ typedef struct connection_struct {
 
 	/* Semantics provided by the underlying filesystem. */
 	int fs_capabilities;
+	/* Device number of the directory of the share mount.
+	   Used to ensure unique FileIndex returns. */
+	SMB_DEV_T base_share_dev;
 
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
