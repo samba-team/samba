@@ -1560,7 +1560,7 @@ static void print_queue_update_with_lock( struct tevent_context *ev,
 /****************************************************************************
 this is the receive function of the background lpq updater
 ****************************************************************************/
-static void print_queue_receive(struct messaging_context *msg,
+void print_queue_receive(struct messaging_context *msg,
 				void *private_data,
 				uint32_t msg_type,
 				struct server_id server_id,
