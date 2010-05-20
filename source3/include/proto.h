@@ -1294,6 +1294,7 @@ struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 /* The following definitions come from ..libcli/registry/util_reg.c  */
 
 const char *str_regtype(int type);
+int regtype_by_string(const char *str);
 bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s);
 bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
 bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
