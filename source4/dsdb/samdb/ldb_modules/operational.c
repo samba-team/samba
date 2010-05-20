@@ -378,7 +378,8 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 /*
   construct msDS-isRODC attr
 */
-static int construct_msds_isrodc(struct ldb_module *module, struct ldb_message *msg)
+static int construct_msds_isrodc(struct ldb_module *module,
+				 struct ldb_message *msg, enum ldb_scope scope)
 {
 	struct ldb_message_element * object_class;
 	struct ldb_message_element * object_category;
@@ -429,13 +430,14 @@ static int construct_msds_isrodc(struct ldb_module *module, struct ldb_message *
   TODO:  Make this based on the 'win2k' DS huristics bit...
 
 */
-static int construct_msds_keyversionnumber(struct ldb_module *module, struct ldb_message *msg)
+static int construct_msds_keyversionnumber(struct ldb_module *module,
+					   struct ldb_message *msg,
+					   enum ldb_scope scope)
 {
 	uint32_t i;
 	enum ndr_err_code ndr_err;
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob *omd;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	omd_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
 	if (!omd_value) {
