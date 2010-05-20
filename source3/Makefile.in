@@ -886,7 +886,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
                smbd/posix_acls.o lib/sysacls.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       rpc_server/epmd.o \
-	       printing/printspoolss.o \
+	       printing/printspoolss.o printing/spoolssd.o \
 	       lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       lib/sysquotas_nfs.o \
