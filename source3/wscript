@@ -317,6 +317,7 @@ updwtmp updwtmpx utimensat vsyslog _write __write __xstat
                 conf.env[shared_env].append('%s' % entry.upper())
 
     if Options.options.with_winbind:
+        conf.env.build_winbind = True
         conf.DEFINE('WITH_WINBIND', '1')
 
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled

@@ -923,7 +923,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl DYNCONFIG ZLIB NSS_WRAPPER
                  LIBWBCLIENT PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
-                 enabled=Options.options.with_winbind,
+                 enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
 
