@@ -3625,8 +3625,9 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	uint32_t generation;
 	struct tm *tm;
 	char tbuf[100];
+	char *dbname;
 
-	if (argc != 1) {
+	if (argc < 1 || argc > 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
 	}
@@ -3645,6 +3646,11 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
+	dbname = dbhdr.name;
+	if (argc == 2) {
+		dbname = argv[1];
+	}
+
 	outdata.dsize = dbhdr.size;
 	outdata.dptr = talloc_size(tmp_ctx, outdata.dsize);
 	if (outdata.dptr == NULL) {
@@ -3659,12 +3665,12 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	tm = localtime(&dbhdr.timestamp);
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 	printf("Restoring database '%s' from backup @ %s\n",
-		dbhdr.name, tbuf);
+		dbname, tbuf);
 
 
-	ctdb_db = ctdb_attach(ctdb, dbhdr.name, dbhdr.persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, dbname, dbhdr.persistent, 0);
 	if (ctdb_db == NULL) {
-		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", dbhdr.name));
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", dbname));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -4402,7 +4408,7 @@ static const struct {
 	{ "delip",           control_delip,		false,	false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
-	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file>"},
+	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file> [dbname]"},
 	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
