@@ -62,6 +62,9 @@ def configure(conf):
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
 
+    if Options.options.with_swat:
+        conf.env['build_swat'] = True
+
     # set a limit on recursing in the waf preprocessor
     conf.env.preprocessor_recursion_limit = 10
 
