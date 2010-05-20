@@ -2145,68 +2145,58 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_QueryGroupMember *r)
 {
+	NTSTATUS status;
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
-	struct ldb_message **res;
-	struct ldb_message_element *el;
 	struct samr_RidTypeArray *array;
-	const char * const attrs[2] = { "member", NULL };
-	int ret;
+	size_t i;
+	struct dom_sid *members_as_sids;
+	size_t num_members;
+	struct dom_sid *dom_sid;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
 	a_state = h->data;
 
-	/* pull the member attribute */
-	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-			      a_state->account_dn, &res, attrs);
+	dom_sid = a_state->domain_state->domain_sid;
+	status = dsdb_enum_group_mem(a_state->sam_ctx, mem_ctx, a_state->account_dn, &members_as_sids, &num_members);
 
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	array = talloc(mem_ctx, struct samr_RidTypeArray);
+	array = talloc_zero(mem_ctx, struct samr_RidTypeArray);
 
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(array);
+	if (num_members == 0) {
+		*r->out.rids = array;
 
-	el = ldb_msg_find_element(res[0], "member");
+		return NT_STATUS_OK;
+	}
 
-	if (el != NULL) {
-		unsigned int i;
+	array->count = 0;
+	array->rids = talloc_array(array, uint32_t,
+				   num_members);
+	if (array->rids == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-		array->count = el->num_values;
+	array->types = talloc_array(array, uint32_t,
+				    num_members);
+	if (array->types == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-		array->rids = talloc_array(mem_ctx, uint32_t,
-					     el->num_values);
-		if (array->rids == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		array->types = talloc_array(mem_ctx, uint32_t,
-					    el->num_values);
-		if (array->types == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		for (i=0; i<el->num_values; i++) {
-			struct ldb_message **res2;
-			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-					   ldb_dn_from_ldb_val(mem_ctx, a_state->sam_ctx, &el->values[i]),
-					   &res2, attrs2);
-			if (ret != 1)
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-
-			array->rids[i] =
-				samdb_result_rid_from_sid(mem_ctx, res2[0],
-							  "objectSid", 0);
-
-			if (array->rids[i] == 0)
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-
-			array->types[i] = 7; /* RID type of some kind, not sure what the value means. */
+	for (i=0; i<num_members; i++) {
+		if (!dom_sid_in_domain(dom_sid, &members_as_sids[i])) {
+			continue;
 		}
+		status = dom_sid_split_rid(NULL, &members_as_sids[i], NULL, &array->rids[array->count]);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		array->types[array->count] = 7; /* RID type of some kind, not sure what the value means. */
+		array->count++;
 	}
 
 	*r->out.rids = array;
@@ -2561,60 +2551,43 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	struct ldb_message **msgs;
 	struct lsa_SidPtr *sids;
-	struct ldb_message_element *el;
-	const char * const attrs[2] = { "member", NULL};
-	int ret;
-
+	size_t i;
+	struct dom_sid *members;
+	size_t num_members;
+	NTSTATUS status;
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	ret = gendb_search_dn(d_state->sam_ctx, mem_ctx,
-			      a_state->account_dn, &msgs, attrs);
-
-	if (ret == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (ret == 0) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	} else if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = dsdb_enum_group_mem(d_state->sam_ctx, mem_ctx,
+				     a_state->account_dn, &members, &num_members);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	r->out.sids->num_sids = 0;
 	r->out.sids->sids = NULL;
 
-	el = ldb_msg_find_element(msgs[0], "member");
-
-	if (el != NULL) {
-		unsigned int i;
-
-		sids = talloc_array(mem_ctx, struct lsa_SidPtr,
-				      el->num_values);
-
-		if (sids == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		for (i=0; i<el->num_values; i++) {
-			struct ldb_message **msgs2;
-			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-					      ldb_dn_from_ldb_val(mem_ctx, a_state->sam_ctx, &el->values[i]),
-					      &msgs2, attrs2);
-			if (ret != 1)
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-
-			sids[i].sid = samdb_result_dom_sid(mem_ctx, msgs2[0],
-							   "objectSid");
-
-			if (sids[i].sid == NULL)
-				return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		r->out.sids->num_sids = el->num_values;
-		r->out.sids->sids = sids;
+	if (num_members == 0) {
+		return NT_STATUS_OK;
 	}
+
+	sids = talloc_array(mem_ctx, struct lsa_SidPtr,
+			    num_members);
+
+	if (sids == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_members; i++) {
+
+		sids[i].sid = dom_sid_dup(sids, &members[i]);
+		if (sids[i].sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	r->out.sids->num_sids = num_members;
+	r->out.sids->sids = sids;
 
 	return NT_STATUS_OK;
 }

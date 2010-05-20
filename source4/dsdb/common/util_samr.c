@@ -399,3 +399,70 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 	return NT_STATUS_OK;
 }
 
+/* Return the members of this group (which may be a domain group or an alias) */
+NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
+			     TALLOC_CTX *mem_ctx,
+			     struct ldb_dn *dn,
+			     struct dom_sid **members_out,
+			     size_t *pnum_members)
+{
+	struct ldb_message *msg;
+	int i, ret;
+	struct dom_sid *members;
+	struct ldb_message_element *member_el;
+	const char *attrs[] = { "member", NULL };
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	ret = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE, attrs,
+			      DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("dsdb_enum_group_mem: dsdb_search for %s failed: %s\n",
+			  ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	member_el = ldb_msg_find_element(msg, "member");
+	if (!member_el) {
+		*members_out = NULL;
+		*pnum_members = 0;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	members = talloc_array(mem_ctx, struct dom_sid, member_el->num_values);
+	if (members == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i <member_el->num_values; i++) {
+		struct ldb_dn *member_dn = ldb_dn_from_ldb_val(tmp_ctx, ldb,
+							       &member_el->values[i]);
+		if (!member_dn || !ldb_dn_validate(member_dn)) {
+			DEBUG(1, ("Could not parse %*.*s as a DN\n",
+				  (int)member_el->values[i].length,
+				  (int)member_el->values[i].length,
+				  (const char *)member_el->values[i].data));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = dsdb_get_extended_dn_sid(member_dn, &members[i], "SID");
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Could find SID attribute on extended DN %s\n",
+				  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1)));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	*members_out = talloc_steal(mem_ctx, members);
+	*pnum_members = member_el->num_values;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
