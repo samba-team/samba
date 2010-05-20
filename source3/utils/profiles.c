@@ -1,24 +1,24 @@
-/* 
-   Samba Unix/Linux SMB client utility profiles.c 
-   
-   Copyright (C) Richard Sharpe, <rsharpe@richardsharpe.com>   2002 
-   Copyright (C) Jelmer Vernooij (conversion to popt)          2003 
-   Copyright (C) Gerald (Jerry) Carter                         2005 
+/*
+   Samba Unix/Linux SMB client utility profiles.c
+
+   Copyright (C) Richard Sharpe, <rsharpe@richardsharpe.com>   2002
+   Copyright (C) Jelmer Vernooij (conversion to popt)          2003
+   Copyright (C) Gerald (Jerry) Carter                         2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-                                  
+
 #include "includes.h"
 #include "reg_objects.h"
 #include "regfio.h"
@@ -66,7 +66,7 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, DOM_SID *s1, DOM_SI
 	if ( sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
 		update = True;
-		verbose_output("  New Owner SID: %s\n", 
+		verbose_output("  New Owner SID: %s\n",
 			sid_string_tos(sd->owner_sid));
 
 	}
@@ -75,19 +75,19 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, DOM_SID *s1, DOM_SI
 	if ( sid_equal( sd->group_sid, s1 ) ) {
 		sid_copy( sd->group_sid, s2 );
 		update = True;
-		verbose_output("  New Group SID: %s\n", 
+		verbose_output("  New Group SID: %s\n",
 			sid_string_tos(sd->group_sid));
 	}
 
 	theacl = sd->dacl;
 	verbose_output("  DACL: %d entries:\n", theacl->num_aces);
 	for ( i=0; i<theacl->num_aces; i++ ) {
-		verbose_output("    Trustee SID: %s\n", 
+		verbose_output("    Trustee SID: %s\n",
 			sid_string_tos(&theacl->aces[i].trustee));
 		if ( sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
-			verbose_output("    New Trustee SID: %s\n", 
+			verbose_output("    New Trustee SID: %s\n",
 				sid_string_tos(&theacl->aces[i].trustee));
 		}
 	}
@@ -96,12 +96,12 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, DOM_SID *s1, DOM_SI
 	theacl = sd->sacl;
 	verbose_output("  SACL: %d entries: \n", theacl->num_aces);
 	for ( i=0; i<theacl->num_aces; i++ ) {
-		verbose_output("    Trustee SID: %s\n", 
+		verbose_output("    Trustee SID: %s\n",
 			sid_string_tos(&theacl->aces[i].trustee));
 		if ( sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
-			verbose_output("    New Trustee SID: %s\n", 
+			verbose_output("    New Trustee SID: %s\n",
 				sid_string_tos(&theacl->aces[i].trustee));
 		}
 	}
