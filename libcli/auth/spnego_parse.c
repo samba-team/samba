@@ -88,11 +88,11 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 				/* RFC 2478 says we have an Octet String here,
 				   but W2k sends something different... */
 				char *mechListMIC;
-				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
-				asn1_push_tag(asn1, ASN1_CONTEXT(0));
+				asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+				asn1_start_tag(asn1, ASN1_CONTEXT(0));
 				asn1_read_GeneralString(asn1, mem_ctx, &mechListMIC);
-				asn1_pop_tag(asn1);
-				asn1_pop_tag(asn1);
+				asn1_end_tag(asn1);
+				asn1_end_tag(asn1);
 
 				token->targetPrincipal = mechListMIC;
 			}
