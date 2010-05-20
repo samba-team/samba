@@ -89,7 +89,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len2 + c_len_term)*byte_mul));
@@ -127,7 +127,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
@@ -166,7 +166,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
@@ -201,7 +201,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len3 + c_len_term)*byte_mul));
@@ -233,7 +233,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len3));
@@ -252,7 +252,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 					   &converted_size, false))
 		{
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+					      "Bad character conversion with flags 0x%x", flags);
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len1));
 		*s = as;
@@ -277,7 +277,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 						   &converted_size, false))
 			{
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion");
+						      "Bad character conversion with flags 0x%x", flags);
 			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len1));
@@ -337,7 +337,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 				   (void **)(void *)&dest, &d_len, false))
 	{
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
-				      "Bad character conversion");
+				      "Bad character push conversion with flags 0x%x", flags);
 	}
 
 	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
