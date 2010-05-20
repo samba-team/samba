@@ -421,8 +421,16 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	int info;
 	struct timespec write_time_ts;
 	struct smb2_create_blobs out_context_blobs;
+	int requested_oplock_level;
 
 	ZERO_STRUCT(out_context_blobs);
+
+	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat_conn))) {
+		requested_oplock_level = NO_OPLOCK;
+	} else {
+		requested_oplock_level = in_oplock_level;
+	}
+
 
 	if (!smb2req->async) {
 		/* New create call. */
@@ -695,7 +703,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     in_create_disposition,
 					     in_create_options,
 					     in_file_attributes,
-					     map_smb2_oplock_levels_to_samba(in_oplock_level),
+					     map_smb2_oplock_levels_to_samba(requested_oplock_level),
 					     allocation_size,
 					     0, /* private_flags */
 					     sec_desc,
@@ -766,7 +774,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
-	state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
+	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat_conn))) {
+		state->out_oplock_level	= in_oplock_level;
+	} else {
+		state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
+	}
 
 	if ((in_create_disposition == FILE_SUPERSEDE)
 	    && (info == FILE_WAS_OVERWRITTEN)) {
