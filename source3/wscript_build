@@ -49,7 +49,7 @@ LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              ../librpc/gen_ndr/ndr_misc.c
              ../librpc/gen_ndr/ndr_security.c
              ../librpc/ndr/ndr_sec_helper.c
-             librpc/ndr/ndr_string.c
+             ../librpc/ndr/ndr_string.c
              ../librpc/ndr/uuid.c
              librpc/ndr/util.c
              ../librpc/gen_ndr/ndr_dcerpc.c'''
