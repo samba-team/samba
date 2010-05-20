@@ -152,6 +152,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	int snum = -1;
 	struct smbd_smb2_tcon *tcon;
 	connection_struct *compat_conn = NULL;
+	user_struct *compat_vuser = req->session->compat_vuser;
 	int id;
 	NTSTATUS status;
 
@@ -169,14 +170,30 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	strlower_m(service);
 
-	snum = find_service(service);
+	/* TODO: do more things... */
+	if (strequal(service,HOMES_NAME)) {
+		if (compat_vuser->homes_snum == -1) {
+			DEBUG(2, ("[homes] share not available for "
+				"user %s because it was not found "
+				"or created at session setup "
+				"time\n",
+				compat_vuser->server_info->unix_name));
+			return NT_STATUS_BAD_NETWORK_NAME;
+		}
+		snum = compat_vuser->homes_snum;
+	} else if ((compat_vuser->homes_snum != -1)
+                   && strequal(service,
+			lp_servicename(compat_vuser->homes_snum))) {
+		snum = compat_vuser->homes_snum;
+	} else {
+		snum = find_service(service);
+	}
+
 	if (snum < 0) {
 		DEBUG(3,("smbd_smb2_tree_connect: couldn't find service %s\n",
 			 service));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
-
-	/* TODO: do more things... */
 
 	/* create a new tcon as child of the session */
 	tcon = talloc_zero(req->session, struct smbd_smb2_tcon);
