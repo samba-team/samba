@@ -39,6 +39,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 
 	switch (type) {
 	case REG_DWORD:
+	case REG_DWORD_BIG_ENDIAN:
 		if ((size != 4) || (length != 4)) {
 			err = WERR_INVALID_PARAM;
 			goto error;
@@ -151,7 +152,8 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *presult)
 {
 	switch (value->type) {
-	case REG_DWORD: {
+	case REG_DWORD:
+	case REG_DWORD_BIG_ENDIAN: {
 		char buf[4];
 		SIVAL(buf, 0, value->v.dword);
 		*presult = data_blob_talloc(mem_ctx, (void *)buf, 4);
