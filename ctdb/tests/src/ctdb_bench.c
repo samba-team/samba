@@ -22,7 +22,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
-#include "ctdb.h"
+#include "ctdb_client.h"
 #include "ctdb_private.h"
 
 #include <sys/time.h>

@@ -26,7 +26,7 @@
 #include "system/locale.h"
 #include "popt.h"
 #include "cmdline.h"
-#include "../include/ctdb.h"
+#include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 #include "db_wrap.h"

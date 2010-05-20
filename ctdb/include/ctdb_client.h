@@ -1,5 +1,5 @@
-/* 
-   ctdb database library
+/*
+   ctdb database library: old client interface
 
    Copyright (C) Andrew Tridgell  2006
 
@@ -7,134 +7,19 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _CTDB_H
-#define _CTDB_H
-
-#define CTDB_IMMEDIATE_MIGRATION	0x00000001
-struct ctdb_call {
-	int call_id;
-	TDB_DATA key;
-	TDB_DATA call_data;
-	TDB_DATA reply_data;
-	uint32_t status;
-	uint32_t flags;
-};
-
-/*
-  structure passed to a ctdb call backend function
-*/
-struct ctdb_call_info {
-	TDB_DATA key;          /* record key */
-	TDB_DATA record_data;  /* current data in the record */
-	TDB_DATA *new_data;    /* optionally updated record data */
-	TDB_DATA *call_data;   /* optionally passed from caller */
-	TDB_DATA *reply_data;  /* optionally returned by function */
-	uint32_t status;       /* optional reply status - defaults to zero */
-};
-
-#define CTDB_ERR_INVALID 1
-#define CTDB_ERR_NOMEM 2
-
-/*
-  ctdb flags
-*/
-#define CTDB_FLAG_TORTURE      (1<<1)
-
-/* 
-   a message handler ID meaning "give me all messages"
- */
-#define CTDB_SRVID_ALL (~(uint64_t)0)
-
-/*
-  srvid type : RECOVERY
-*/
-#define CTDB_SRVID_RECOVERY	0xF100000000000000LL
-
-/* 
-   a message handler ID meaning that the cluster has been reconfigured
- */
-#define CTDB_SRVID_RECONFIGURE 0xF200000000000000LL
-
-/* 
-   a message handler ID meaning that an IP address has been released
- */
-#define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
-
-/* 
-   a message ID to set the node flags in the recovery daemon
- */
-#define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
-
-/* 
-   a message ID to ask the recovery daemon to update the expected node
-   assignment for a public ip
- */
-#define CTDB_SRVID_RECD_UPDATE_IP 0xF500000000000000LL
-
-/*
-  a message to tell the recovery daemon to fetch a set of records
- */
-#define CTDB_SRVID_VACUUM_FETCH 0xF700000000000000LL
-
-/*
-  a message to tell the recovery daemon to write a talloc memdump
-  to the log
- */
-#define CTDB_SRVID_MEM_DUMP 0xF800000000000000LL
-
-/* 
-   a message ID to get the recovery daemon to push the node flags out
- */
-#define CTDB_SRVID_PUSH_NODE_FLAGS 0xF900000000000000LL
-
-/* 
-   a message ID to get the recovery daemon to reload the nodes file
- */
-#define CTDB_SRVID_RELOAD_NODES 0xFA00000000000000LL
-
-/* 
-   a message ID to get the recovery daemon to perform a takeover run
- */
-#define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
-
-/* A message id to ask the recovery daemon to temporarily disable the
-   public ip checks
-*/
-#define CTDB_SRVID_DISABLE_IP_CHECK  0xFC00000000000000LL
-
-/* A dummy port used for sending back ipreallocate resposnes to the main
-   daemon
-*/
-#define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
-
-/* A port reserved for samba (top 32 bits)
- */
-#define CTDB_SRVID_SAMBA_NOTIFY  0xFE00000000000000LL
-
-/* used on the domain socket, send a pdu to the local daemon */
-#define CTDB_CURRENT_NODE     0xF0000001
-/* send a broadcast to all nodes in the cluster, active or not */
-#define CTDB_BROADCAST_ALL    0xF0000002
-/* send a broadcast to all nodes in the current vnn map */
-#define CTDB_BROADCAST_VNNMAP 0xF0000003
-/* send a broadcast to all connected nodes */
-#define CTDB_BROADCAST_CONNECTED 0xF0000004
-
-/* the key used for transaction locking on persistent databases */
-#define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
-
-/* the key used to store persistent db sequence number */
-#define CTDB_DB_SEQNUM_KEY "__db_sequence_number__"
+#ifndef _CTDB_CLIENT_H
+#define _CTDB_CLIENT_H
+#include <ctdb_protocol.h>
 
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
@@ -154,7 +39,7 @@ struct ctdb_client_control_state {
 	struct {
 		void (*fn)(struct ctdb_client_control_state *);
 		void *private_data;
-	} async;	
+	} async;
 };
 
 struct ctdb_client_notify_register {
@@ -267,9 +152,9 @@ uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
 uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 
 /* setup a handler for ctdb messages */
-typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid, 
+typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid,
 				  TDB_DATA data, void *);
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     ctdb_message_fn_t handler,
 			     void *private_data);
 
@@ -283,20 +168,20 @@ int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data);
 
 
-/* 
+/*
    Fetch a ctdb record from a remote node
  . Underneath this will force the
-   dmaster for the record to be moved to the local node. 
+   dmaster for the record to be moved to the local node.
 */
-struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 					   TDB_DATA key, TDB_DATA *data);
 
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
-int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, 
+int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 	       TDB_DATA key, TDB_DATA *data);
 
-int ctdb_register_message_handler(struct ctdb_context *ctdb, 
+int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  TALLOC_CTX *mem_ctx,
 				  uint64_t srvid,
 				  ctdb_message_fn_t handler,
@@ -313,11 +198,11 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
 int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
 struct ctdb_vnn_map;
-int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, 
-		struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb,
+		struct timeval timeout, uint32_t destnode,
 		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
 int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb,
-		struct timeval timeout, uint32_t destnode, 
+		struct timeval timeout, uint32_t destnode,
 		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
 
 /* table that contains a list of all dbids on a node
@@ -329,22 +214,22 @@ struct ctdb_dbid_map {
 		bool persistent;
 	} dbs[1];
 };
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, 
-	struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb,
+	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
 
 
 struct ctdb_node_map;
 
-int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, 
-		    struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
+		    struct timeval timeout, uint32_t destnode,
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
-int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb, 
-		    struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb,
+		    struct timeval timeout, uint32_t destnode,
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
-int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb, 
+int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode);
 
 struct ctdb_key_list {
@@ -384,9 +269,9 @@ int ctdb_ctrl_pushdb_recv(
        struct ctdb_client_control_state *state);
 
 
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb, 
-	struct timeval timeout, uint32_t sourcenode, 
-	uint32_t destnode, uint32_t dbid, uint32_t lmaster, 
+int ctdb_ctrl_copydb(struct ctdb_context *ctdb,
+	struct timeval timeout, uint32_t sourcenode,
+	uint32_t destnode, uint32_t dbid, uint32_t lmaster,
 	TALLOC_CTX *mem_ctx);
 
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
@@ -410,8 +295,8 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32
 /*
   change dmaster for all keys in the database to the new value
  */
-int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, 
-	struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
+	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
 
 /*
@@ -468,8 +353,8 @@ int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
  */
 int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmaster);
 
-uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb, 
-				   struct timeval timeout, 
+uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
+				   struct timeval timeout,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_nodes);
 
@@ -488,17 +373,17 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f);
  */
 int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *pid);
 
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, 
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
 			uint32_t destnode);
-int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout, 
+int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout,
 			      uint32_t destnode, uint32_t priority);
 
 struct ctdb_client_control_state *
-ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 		      struct timeval timeout, uint32_t destnode,
 		      uint32_t priority);
 
-int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
+int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 			struct ctdb_client_control_state *state);
 
 int ctdb_ctrl_thaw_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t priority);
@@ -506,25 +391,25 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
-int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb, 
-			  struct timeval timeout, 
+int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb,
+			  struct timeval timeout,
 			  uint32_t destnode,
 			  const char *name, uint32_t *value);
 
-int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb, 
-			  struct timeval timeout, 
+int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb,
+			  struct timeval timeout,
 			  uint32_t destnode,
 			  const char *name, uint32_t value);
 
-int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb, 
-			    struct timeval timeout, 
+int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
+			    struct timeval timeout,
 			    uint32_t destnode,
 			    TALLOC_CTX *mem_ctx,
 			    const char ***list, uint32_t *count);
 
-int ctdb_ctrl_modflags(struct ctdb_context *ctdb, 
-		       struct timeval timeout, 
-		       uint32_t destnode, 
+int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
+		       struct timeval timeout,
+		       uint32_t destnode,
 		       uint32_t set, uint32_t clear);
 
 enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
@@ -544,15 +429,15 @@ struct ctdb_server_id_list {
 int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
 		struct timeval timeout,
 		struct ctdb_server_id *id);
-int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
-		struct timeval timeout, 
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
+		struct timeval timeout,
 		struct ctdb_server_id *id);
 int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
-		struct timeval timeout, uint32_t destnode, 
+		struct timeval timeout, uint32_t destnode,
 		struct ctdb_server_id *id, uint32_t *status);
 int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 		TALLOC_CTX *mem_ctx,
-		struct timeval timeout, uint32_t destnode, 
+		struct timeval timeout, uint32_t destnode,
 		struct ctdb_server_id_list **svid_list);
 
 struct ctdb_uptime {
@@ -576,7 +461,7 @@ typedef union {
 /*
   struct for tcp_client control
   this is an ipv4 only version of this structure used by samba
-  samba will later be migrated over to use the 
+  samba will later be migrated over to use the
   ctdb_control_tcp_addr structure instead
  */
 struct ctdb_control_tcp {
@@ -602,11 +487,11 @@ int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 
 int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
-int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, 
-	struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getreclock(struct ctdb_context *ctdb,
+	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, const char **reclock);
-int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, 
-	struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_setreclock(struct ctdb_context *ctdb,
+	struct timeval timeout, uint32_t destnode,
 	const char *reclock);
 
 
@@ -643,7 +528,7 @@ int32_t ctdb_ctrl_transaction_active(struct ctdb_context *ctdb,
 				     uint32_t destnode,
 				     uint32_t db_id);
 
-struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
 					       uint64_t db_id,
 					       uint32_t reqid,
@@ -654,10 +539,10 @@ TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m);
 
 struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *ctdb_db,
 						       TALLOC_CTX *mem_ctx);
-int ctdb_transaction_fetch(struct ctdb_transaction_handle *h, 
-			   TALLOC_CTX *mem_ctx, 
+int ctdb_transaction_fetch(struct ctdb_transaction_handle *h,
+			   TALLOC_CTX *mem_ctx,
 			   TDB_DATA key, TDB_DATA *data);
-int ctdb_transaction_store(struct ctdb_transaction_handle *h, 
+int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 			   TDB_DATA key, TDB_DATA data);
 int ctdb_transaction_commit(struct ctdb_transaction_handle *h);
 
@@ -665,47 +550,8 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb);
 
 int switch_from_server_to_client(struct ctdb_context *ctdb);
 
-#define MONITOR_SCRIPT_OK      0
-#define MONITOR_SCRIPT_TIMEOUT 1
-
-#define MAX_SCRIPT_NAME 31
-#define MAX_SCRIPT_OUTPUT 511
-struct ctdb_script_wire {
-	char name[MAX_SCRIPT_NAME+1];
-	struct timeval start;
-	struct timeval finished;
-	int32_t status;
-	char output[MAX_SCRIPT_OUTPUT+1];
-};
-
-struct ctdb_scripts_wire {
-	uint32_t num_scripts;
-	struct ctdb_script_wire scripts[1];
-};
-
-/* different calls to event scripts. */
-enum ctdb_eventscript_call {
-	CTDB_EVENT_INIT,		/* CTDB starting up: no args */
-	CTDB_EVENT_SETUP,		/* CTDB starting up after transport is readdy: no args. */
-	CTDB_EVENT_STARTUP,		/* CTDB starting up after initial recovery: no args. */
-	CTDB_EVENT_START_RECOVERY,	/* CTDB recovery starting: no args. */
-	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
-	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */
-	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
-	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
-	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
-	CTDB_EVENT_STATUS,		/* Report service status: no args. */
-	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */
-	CTDB_EVENT_RELOAD,		/* magic */
-	CTDB_EVENT_UPDATE_IP,		/* IP updating: old interface, new interface, IP address, netmask bits. */
-	CTDB_EVENT_MAX
-};
-
-/* Mapping from enum to names. */
-extern const char *ctdb_eventscript_call_names[];
-
-int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
-		    struct timeval timeout, uint32_t destnode, 
+int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
+		    struct timeval timeout, uint32_t destnode,
 		    TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
 		    struct ctdb_scripts_wire **script_status);
 
@@ -745,4 +591,4 @@ struct ctdb_db_priority {
 int ctdb_ctrl_set_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_db_priority *db_prio);
 int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t db_id, uint32_t *priority);
 
-#endif
+#endif /* _CTDB_CLIENT_H */

@@ -27,7 +27,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
-#include "../include/ctdb.h"
+#include "../include/ctdb_client.h"
 
 /* structures for packet queueing - see common/ctdb_io.c */
 struct ctdb_partial {

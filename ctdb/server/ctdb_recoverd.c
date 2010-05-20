@@ -25,7 +25,7 @@
 #include "system/wait.h"
 #include "popt.h"
 #include "cmdline.h"
-#include "../include/ctdb.h"
+#include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "dlinklist.h"
