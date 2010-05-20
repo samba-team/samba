@@ -8,7 +8,7 @@ dcerpcsrcdir = $(librpcsrcdir)/rpc
 PUBLIC_DEPENDENCIES = LIBSAMBA-ERRORS LIBTALLOC LIBSAMBA-UTIL CHARSET \
 					  LIBSAMBA-HOSTCONFIG
 
-LIBNDR_OBJ_FILES = $(addprefix $(ndrsrcdir)/, ndr_string.o) ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o ../librpc/ndr/ndr.o ../librpc/gen_ndr/ndr_misc.o ../librpc/ndr/ndr_misc.o
+LIBNDR_OBJ_FILES = ../librpc/ndr/ndr_string.o ../librpc/ndr/ndr_basic.o ../librpc/ndr/uuid.o ../librpc/ndr/ndr.o ../librpc/gen_ndr/ndr_misc.o ../librpc/ndr/ndr_misc.o
 
 PC_FILES += ../librpc/ndr.pc
 LIBNDR_VERSION = 0.0.1
