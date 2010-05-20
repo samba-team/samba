@@ -40,6 +40,8 @@
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
 
+extern void start_spoolssd(void);
+
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -1240,6 +1242,19 @@ extern void build_options(bool screen);
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
 		start_background_queue(smbd_event_context(),
 				       smbd_messaging_context());
+	}
+
+	if (is_daemon && !_lp_disable_spoolss()) {
+		const char *rpcsrv_type;
+
+		/* start spoolss daemon */
+		/* start as a separate daemon only if enabled */
+		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+						   "rpc_server", "spoolss",
+						   "embedded");
+		if (StrCaseCmp(rpcsrv_type, "embedded") != 0) {
+			start_spoolssd();
+		}
 	}
 
 	if (!is_daemon) {
