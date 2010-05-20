@@ -57,6 +57,23 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 	return val;
 }
 
+/********************************************************************
+ Create a 64 bit FileIndex. If the file is on the same device as
+ the root of the share, just return the 64-bit inode. If it isn't,
+ mangle as we used to do.
+********************************************************************/
+
+uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
+{
+	uint64_t file_index;
+	if (conn->base_share_dev == psbuf->st_ex_dev) {
+		return (uint64_t)psbuf->st_ex_ino;
+	}
+	file_index = ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIndexLow */
+	file_index |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
+	return file_index;
+}
+
 /****************************************************************************
  Utility functions for dealing with extended attributes.
 ****************************************************************************/
@@ -1474,6 +1491,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint32_t reskey=0;
 	uint64_t file_size = 0;
 	uint64_t allocation_size = 0;
+	uint64_t file_index = 0;
 	uint32_t len;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
@@ -1495,6 +1513,8 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		file_size = get_file_size_stat(&smb_fname->st);
 	}
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+
+	file_index = get_FileIndex(conn, &smb_fname->st);
 
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
@@ -1864,8 +1884,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			p +=4;
 		}
 		SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
-		SIVAL(p,0,smb_fname->st.st_ex_ino); p += 4; /* FileIndexLow */
-		SIVAL(p,0,smb_fname->st.st_ex_dev); p += 4; /* FileIndexHigh */
+		SBVAL(p,0,file_index); p += 8;
 		len = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII);
@@ -1935,8 +1954,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 		p += 26;
 		SSVAL(p,0,0); p += 2; /* Reserved ? */
-		SIVAL(p,0,smb_fname->st.st_ex_ino); p += 4; /* FileIndexLow */
-		SIVAL(p,0,smb_fname->st.st_ex_dev); p += 4; /* FileIndexHigh */
+		SBVAL(p,0,file_index); p += 8;
 		len = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII);
@@ -3850,6 +3868,8 @@ static char *store_file_unix_basic(connection_struct *conn,
 				files_struct *fsp,
 				const SMB_STRUCT_STAT *psbuf)
 {
+	uint64_t file_index = get_FileIndex(conn, psbuf);
+
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
 	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_ex_mode));
 
@@ -3883,7 +3903,7 @@ static char *store_file_unix_basic(connection_struct *conn,
 	SIVAL(pdata,4,0);
 	pdata += 8;
 
-	SINO_T_VAL(pdata,0,(SMB_INO_T)psbuf->st_ex_ino);   /* inode number */
+	SINO_T_VAL(pdata,0,(SMB_INO_T)file_index);   /* inode number */
 	pdata += 8;
 
 	SIVAL(pdata,0, unix_perms_to_wire(psbuf->st_ex_mode));     /* Standard UNIX file permissions */
@@ -4285,8 +4305,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
-	file_index =  ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIndexLow */
-	file_index |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
+	file_index = get_FileIndex(conn, psbuf);
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
