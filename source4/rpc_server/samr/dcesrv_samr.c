@@ -32,6 +32,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
 #include "rpc_server/samr/proto.h"
@@ -1213,28 +1214,14 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_CreateUser2 *r)
 {
+	NTSTATUS status;
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *name;
-	struct ldb_message *msg;
+	struct ldb_dn *dn;
 	struct dom_sid *sid;
-	const char *account_name;
 	struct dcesrv_handle *u_handle;
-	int ret;
-	const char *container, *obj_class=NULL;
-	char *cn_name;
-	int cn_name_len;
-
-	const char *attrs[] = {
-		"objectSid", 
-		"userAccountControl",
-		NULL
-	};
-
-	uint32_t user_account_control;
-
-	struct ldb_message **msgs;
+	const char *account_name;
 
 	ZERO_STRUCTP(r->out.user_handle);
 	*r->out.access_granted = 0;
@@ -1257,111 +1244,10 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/*
-	 * Start a transaction, so we can query and do a subsequent atomic
-	 * modify
-	 */
-
-	ret = ldb_transaction_start(d_state->sam_ctx);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = dsdb_add_user(d_state->sam_ctx, mem_ctx, account_name, r->in.acct_flags, &sid, &dn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	/* check if the user already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
-				   "sAMAccountName", 
-				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   ldb_binary_encode_string(mem_ctx, account_name));
-	if (name != NULL) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_USER_EXISTS;
-	}
-
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	cn_name   = talloc_strdup(mem_ctx, account_name);
-	if (!cn_name) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	cn_name_len = strlen(cn_name);
-
-	/* This must be one of these values *only* */
-	if (r->in.acct_flags == ACB_NORMAL) {
-		container = "CN=Users";
-		obj_class = "user";
-
-	} else if (r->in.acct_flags == ACB_WSTRUST) {
-		if (cn_name[cn_name_len - 1] != '$') {
-			ldb_transaction_cancel(d_state->sam_ctx);
-			return NT_STATUS_FOOBAR;
-		}
-		cn_name[cn_name_len - 1] = '\0';
-		container = "CN=Computers";
-		obj_class = "computer";
-		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg,
-			"primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
-
-	} else if (r->in.acct_flags == ACB_SVRTRUST) {
-		if (cn_name[cn_name_len - 1] != '$') {
-			ldb_transaction_cancel(d_state->sam_ctx);
-			return NT_STATUS_FOOBAR;		
-		}
-		cn_name[cn_name_len - 1] = '\0';
-		container = "OU=Domain Controllers";
-		obj_class = "computer";
-		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg,
-			"primaryGroupID", DOMAIN_RID_DCS);
-	} else {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* add core elements to the ldb_message for the user */
-	msg->dn = ldb_dn_copy(msg, d_state->domain_dn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,%s", cn_name, container)) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_FOOBAR;
-	}
-
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName",
-		account_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass",
-		obj_class);
-
-	/* create the user */
-	ret = ldb_add(d_state->sam_ctx, msg);
-	switch (ret) {
-	case LDB_SUCCESS:
-		break;
-	case LDB_ERR_ENTRY_ALREADY_EXISTS:
-		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Failed to create user record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_USER_EXISTS;
-	case LDB_ERR_UNWILLING_TO_PERFORM:
-	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
-		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Failed to create user record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_ACCESS_DENIED;
-	default:
-		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Failed to create user record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
 		ldb_transaction_cancel(d_state->sam_ctx);
@@ -1370,71 +1256,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
-	a_state->account_dn = talloc_steal(a_state, msg->dn);
-
-	/* retrieve the sid and account control bits for the user just created */
-	ret = gendb_search_dn(d_state->sam_ctx, mem_ctx,
-			      msg->dn, &msgs, attrs);
-
-	if (ret != 1) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Apparently we failed to create an account record, as %s now doesn't exist\n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
-	if (sid == NULL) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		DEBUG(0,("Apparently we failed to get the objectSid of the just created account record %s\n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* Change the account control to be the correct account type.
-	 * The default is for a workstation account */
-	user_account_control = samdb_result_uint(msgs[0], "userAccountControl", 0);
-	user_account_control = (user_account_control & 
-				~(UF_NORMAL_ACCOUNT |
-				  UF_INTERDOMAIN_TRUST_ACCOUNT | 
-				  UF_WORKSTATION_TRUST_ACCOUNT | 
-				  UF_SERVER_TRUST_ACCOUNT));
-	user_account_control |= ds_acb2uf(r->in.acct_flags);
-
-	talloc_free(msg);
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	msg->dn = ldb_dn_copy(msg, a_state->account_dn);
-
-	if (samdb_msg_add_uint(a_state->sam_ctx, mem_ctx, msg, 
-			       "userAccountControl", 
-			       user_account_control) != 0) { 
-		ldb_transaction_cancel(d_state->sam_ctx);
-		return NT_STATUS_NO_MEMORY; 
-	}
-
-	/* modify the samdb record */
-	ret = dsdb_replace(a_state->sam_ctx, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		ldb_transaction_cancel(d_state->sam_ctx);
-
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	ret = ldb_transaction_commit(d_state->sam_ctx);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to commit transaction to add and modify account record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+	a_state->account_dn = talloc_steal(a_state, dn);
 
 	a_state->account_name = talloc_steal(a_state, account_name);
 	if (!a_state->account_name) {

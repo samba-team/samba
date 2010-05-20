@@ -1,0 +1,249 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Helpers to add users and groups to the DB
+
+   Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2010
+   Copyright (C) Matthias Dieter Wallnöfer 2009
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
+#include "../libds/common/flags.h"
+
+/* Add a user, SAMR style, including the correct transaction
+ * semantics.  Used by the SAMR server and by pdb_samba4 */
+NTSTATUS dsdb_add_user(struct ldb_context *ldb,
+		       TALLOC_CTX *mem_ctx,
+		       const char *account_name,
+		       uint32_t acct_flags,
+		       struct dom_sid **sid,
+		       struct ldb_dn **dn)
+{
+	const char *name;
+	struct ldb_message *msg;
+	int ret;
+	const char *container, *obj_class=NULL;
+	char *cn_name;
+	int cn_name_len;
+
+	const char *attrs[] = {
+		"objectSid",
+		"userAccountControl",
+		NULL
+	};
+
+	uint32_t user_account_control;
+	struct ldb_dn *account_dn;
+	struct dom_sid *account_sid;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	/*
+	 * Start a transaction, so we can query and do a subsequent atomic
+	 * modify
+	 */
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* check if the user already exists */
+	name = samdb_search_string(ldb, tmp_ctx, NULL,
+				   "sAMAccountName",
+				   "(&(sAMAccountName=%s)(objectclass=user))",
+				   ldb_binary_encode_string(tmp_ctx, account_name));
+	if (name != NULL) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_USER_EXISTS;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cn_name   = talloc_strdup(tmp_ctx, account_name);
+	if (!cn_name) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cn_name_len = strlen(cn_name);
+
+	/* This must be one of these values *only* */
+	if (acct_flags == ACB_NORMAL) {
+		container = "CN=Users";
+		obj_class = "user";
+
+	} else if (acct_flags == ACB_WSTRUST) {
+		if (cn_name[cn_name_len - 1] != '$') {
+			ldb_transaction_cancel(ldb);
+			return NT_STATUS_FOOBAR;
+		}
+		cn_name[cn_name_len - 1] = '\0';
+		container = "CN=Computers";
+		obj_class = "computer";
+		samdb_msg_add_int(ldb, tmp_ctx, msg,
+			"primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
+
+	} else if (acct_flags == ACB_SVRTRUST) {
+		if (cn_name[cn_name_len - 1] != '$') {
+			ldb_transaction_cancel(ldb);
+			return NT_STATUS_FOOBAR;
+		}
+		cn_name[cn_name_len - 1] = '\0';
+		container = "OU=Domain Controllers";
+		obj_class = "computer";
+		samdb_msg_add_int(ldb, tmp_ctx, msg,
+			"primaryGroupID", DOMAIN_RID_DCS);
+	} else {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* add core elements to the ldb_message for the user */
+	msg->dn = ldb_dn_copy(msg, ldb_get_default_basedn(ldb));
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s,%s", cn_name, container)) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_FOOBAR;
+	}
+
+	samdb_msg_add_string(ldb, tmp_ctx, msg, "sAMAccountName",
+		account_name);
+	samdb_msg_add_string(ldb, tmp_ctx, msg, "objectClass",
+		obj_class);
+
+	/* create the user */
+	ret = ldb_add(ldb, msg);
+	switch (ret) {
+	case LDB_SUCCESS:
+		break;
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
+		ldb_transaction_cancel(ldb);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_USER_EXISTS;
+	case LDB_ERR_UNWILLING_TO_PERFORM:
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		ldb_transaction_cancel(ldb);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		ldb_transaction_cancel(ldb);
+		DEBUG(0,("Failed to create user record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	account_dn = msg->dn;
+
+	/* retrieve the sid and account control bits for the user just created */
+	ret = dsdb_search_one(ldb, tmp_ctx, &msg,
+			      account_dn, LDB_SCOPE_BASE, attrs, 0, NULL);
+
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(ldb);
+		DEBUG(0,("Can't locate the account we just created %s: %s\n",
+			 ldb_dn_get_linearized(account_dn), ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	account_sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
+	if (account_sid == NULL) {
+		ldb_transaction_cancel(ldb);
+		DEBUG(0,("Apparently we failed to get the objectSid of the just created account record %s\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* Change the account control to be the correct account type.
+	 * The default is for a workstation account */
+	user_account_control = samdb_result_uint(msg, "userAccountControl", 0);
+	user_account_control = (user_account_control &
+				~(UF_NORMAL_ACCOUNT |
+				  UF_INTERDOMAIN_TRUST_ACCOUNT |
+				  UF_WORKSTATION_TRUST_ACCOUNT |
+				  UF_SERVER_TRUST_ACCOUNT));
+	user_account_control |= ds_acb2uf(acct_flags);
+
+	talloc_free(msg);
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg->dn = account_dn;
+
+	if (samdb_msg_add_uint(ldb, tmp_ctx, msg,
+			       "userAccountControl",
+			       user_account_control) != 0) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* modify the samdb record */
+	ret = dsdb_replace(ldb, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to modify account record %s to set userAccountControl: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to commit transaction to add and modify account record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	*dn = talloc_steal(mem_ctx, account_dn);
+	*sid = talloc_steal(mem_ctx, account_sid);
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+

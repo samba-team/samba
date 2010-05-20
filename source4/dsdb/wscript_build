@@ -11,7 +11,7 @@ bld.SAMBA_SUBSYSTEM('SAMDB',
 
 
 bld.SAMBA_SUBSYSTEM('SAMDB_COMMON',
-	source='common/util.c common/dsdb_dn.c common/dsdb_access.c ../../libds/common/flag_mapping.c',
+	source='common/util.c common/util_samr.c common/dsdb_dn.c common/dsdb_access.c ../../libds/common/flag_mapping.c',
 	autoproto='common/proto.h',
 	deps='ldb NDR_DRSBLOBS LIBCLI_LDAP_NDR UTIL_LDB LIBCLI_AUTH DSDB_MODULE_HELPERS'
 	)
