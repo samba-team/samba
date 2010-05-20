@@ -2258,6 +2258,28 @@ static bool test_volatile_keys(struct torture_context *tctx,
 	return true;
 }
 
+static const char *kernel_mode_registry_path(struct torture_context *tctx,
+					     int hkey,
+					     const char *sid_string,
+					     const char *path)
+{
+	switch (hkey) {
+	case HKEY_LOCAL_MACHINE:
+		return talloc_asprintf(tctx, "\\Registry\\MACHINE\\%s", path);
+	case HKEY_CURRENT_USER:
+		return talloc_asprintf(tctx, "\\Registry\\USER\\%s\\%s", sid_string, path);
+	case HKEY_USERS:
+		return talloc_asprintf(tctx, "\\Registry\\USER\\%s", path);
+	case HKEY_CLASSES_ROOT:
+		return talloc_asprintf(tctx, "\\Registry\\MACHINE\\Software\\Classes\\%s", path);
+	default:
+		torture_warning(tctx, "unsupported hkey: 0x%08x\n", hkey);
+		return NULL;
+	}
+
+	return NULL;
+}
+
 static bool test_symlink_keys(struct torture_context *tctx,
 			      struct dcerpc_binding_handle *b,
 			      struct policy_handle *handle,
