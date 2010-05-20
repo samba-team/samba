@@ -420,7 +420,8 @@ PDB_ADS_SRC =       'passdb/pdb_ads.c'
 PDB_SMBPASSWD_SRC = 'passdb/pdb_smbpasswd.c'
 PDB_WBC_SAM_SRC =   'passdb/pdb_wbc_sam.c'
 
-SECRETS_SRC = 'passdb/secrets.c passdb/machine_sid.c librpc/gen_ndr/ndr_secrets.c'
+SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
+                 passdb/machine_sid.c librpc/gen_ndr/ndr_secrets.c'''
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
                 passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
@@ -632,6 +633,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_chauthtok.c
                    winbindd/winbindd_pam_auth_crap.c
                    winbindd/winbindd_pam_chng_pswd_auth_crap.c
+                   winbindd/winbindd_event.c
                    auth/token_util.c
                    auth/check_samsec.c
                    auth/server_info.c
@@ -725,7 +727,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
-               printing/lpq_parse.c printing/load.c
+               printing/lpq_parse.c printing/load.c printing/print_standard.c
                printing/print_iprint.c'''
 
 PRINTBASE_SRC = '''printing/notify.c printing/printing_db.c'''
