@@ -3641,10 +3641,13 @@ int dsdb_search_one(struct ldb_context *ldb,
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		ret = dsdb_search(ldb, tmp_ctx, &res, basedn, scope, attrs,
+				  dsdb_flags, "%s", expression);
+	} else {
+		ret = dsdb_search(ldb, tmp_ctx, &res, basedn, scope, attrs,
+				  dsdb_flags, NULL);
 	}
 
-	ret = dsdb_search(ldb, tmp_ctx, &res, basedn, scope, attrs,
-			  dsdb_flags, "%s", expression);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
