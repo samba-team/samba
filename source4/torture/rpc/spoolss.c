@@ -3697,9 +3697,8 @@ static bool test_EnumPrinterData_consistency(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing EnumPrinterData vs EnumPrinterDataEx consistency\n");
 
-	torture_assert(tctx,
-		reg_string_to_val(tctx, 
-				  "REG_SZ", "torture_data1", &type, &blob), "");
+	torture_assert(tctx, push_reg_sz(tctx, &blob, "torture_data1"), "");
+	type = REG_SZ;
 
 	torture_assert(tctx,
 		test_SetPrinterData(tctx, b, handle, "torture_value1", type, blob.data, blob.length),
@@ -4590,9 +4589,8 @@ static bool test_SetPrinterData_matrix(struct torture_context *tctx,
 		uint8_t *data;
 		uint32_t needed;
 
-		torture_assert(tctx,
-			reg_string_to_val(tctx, 
-					  "REG_SZ", "dog", &type, &blob), "");
+		torture_assert(tctx, push_reg_sz(tctx, &blob, "dog"), "");
+		type = REG_SZ;
 
 		torture_assert(tctx,
 			test_SetPrinterData(tctx, b, handle, values[i], REG_SZ, blob.data, blob.length),
@@ -4717,6 +4715,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		const char *key;
 		enum winreg_Type type;
 		const char *string = talloc_strndup(tctx, str, s);
+		const char *array[2];
 		DATA_BLOB blob = data_blob_string_const(string);
 		const char **subkeys;
 		DATA_BLOB data;
@@ -4724,6 +4723,9 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		uint32_t needed, offered = 0;
 		uint32_t ecount;
 		struct spoolss_PrinterEnumValues *einfo;
+
+		array[0] = talloc_strdup(tctx, string);
+		array[1] = NULL;
 
 		if (types[t] == REG_DWORD) {
 			s = 0xffff;
@@ -4747,18 +4749,14 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 			offered = 4;
 			break;
 		case REG_SZ:
-			torture_assert(tctx,
-				reg_string_to_val(tctx, 
-						  "REG_SZ", string, &type, &data), "");
+			torture_assert(tctx, push_reg_sz(tctx, &data, string), "");
+			type = REG_SZ;
 			offered = data.length;
 			/*strlen_m_term(data.string)*2;*/
 			break;
 		case REG_MULTI_SZ:
-			torture_assert(tctx,
-				reg_string_to_val(tctx, 
-						  "REG_SZ", string, &type, &data), "");
-			torture_assert(tctx, data_blob_realloc(tctx, &data, data.length + 2), "");
-			memset(&data.data[data.length - 2], '\0', 2);
+			torture_assert(tctx, push_reg_multi_sz(tctx, &data, array), "");
+			type = REG_MULTI_SZ;
 			offered = data.length;
 			break;
 		default:
