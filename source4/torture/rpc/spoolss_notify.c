@@ -330,11 +330,12 @@ static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tc
 						      struct spoolss_NotifyOption *option)
 {
 	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx r;
+	const char *local_machine = talloc_asprintf(tctx, "\\\\%s", address);
 
-	torture_comment(tctx, "Testing RemoteFindFirstPrinterChangeNotifyEx\n");
+	torture_comment(tctx, "Testing RemoteFindFirstPrinterChangeNotifyEx(%s)\n", local_machine);
 
 	r.in.flags = 0;
-	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
+	r.in.local_machine = local_machine;
 	r.in.options = 0;
 	r.in.printer_local = 0;
 	r.in.notify_options = option;
