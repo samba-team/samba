@@ -247,3 +247,82 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	return NT_STATUS_OK;
 }
 
+/*
+  called by samr_CreateDomainGroup and pdb_samba4
+*/
+NTSTATUS dsdb_add_domain_group(struct ldb_context *ldb,
+			       TALLOC_CTX *mem_ctx,
+			       const char *groupname,
+			       struct dom_sid **sid,
+			       struct ldb_dn **dn)
+{
+	const char *name;
+	struct ldb_message *msg;
+	struct dom_sid *group_sid;
+	int ret;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	/* check if the group already exists */
+	name = samdb_search_string(ldb, tmp_ctx, NULL,
+				   "sAMAccountName",
+				   "(&(sAMAccountName=%s)(objectclass=group))",
+				   ldb_binary_encode_string(tmp_ctx, groupname));
+	if (name != NULL) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* add core elements to the ldb_message for the user */
+	msg->dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(ldb));
+	ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Users", groupname);
+	if (!msg->dn) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	samdb_msg_add_string(ldb, tmp_ctx, msg, "sAMAccountName", groupname);
+	samdb_msg_add_string(ldb, tmp_ctx, msg, "objectClass", "group");
+
+	/* create the group */
+	ret = ldb_add(ldb, msg);
+	switch (ret) {
+	case  LDB_SUCCESS:
+		break;
+	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_GROUP_EXISTS;
+	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		DEBUG(0,("Failed to create group record %s: %s\n",
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* retrieve the sid for the group just created */
+	group_sid = samdb_search_dom_sid(ldb, tmp_ctx,
+					 msg->dn, "objectSid", NULL);
+	if (group_sid == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*dn = talloc_steal(mem_ctx, msg->dn);
+	*sid = talloc_steal(mem_ctx, group_sid);
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+

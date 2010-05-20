@@ -996,15 +996,14 @@ static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TA
 static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct samr_CreateDomainGroup *r)
 {
+	NTSTATUS status;
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *name;
-	struct ldb_message *msg;
-	struct dom_sid *sid;
 	const char *groupname;
+	struct dom_sid *group_sid;
+	struct ldb_dn *group_dn;
 	struct dcesrv_handle *g_handle;
-	int ret;
 
 	ZERO_STRUCTP(r->out.group_handle);
 	*r->out.rid = 0;
@@ -1024,49 +1023,9 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* check if the group already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL, 
-				   "sAMAccountName",
-				   "(&(sAMAccountName=%s)(objectclass=group))",
-				   ldb_binary_encode_string(mem_ctx, groupname));
-	if (name != NULL) {
-		return NT_STATUS_GROUP_EXISTS;
-	}
-
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* add core elements to the ldb_message for the user */
-	msg->dn = ldb_dn_copy(mem_ctx, d_state->domain_dn);
-	ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Users", groupname);
-	if (!msg->dn) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", groupname);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
-			     
-	/* create the group */
-	ret = ldb_add(d_state->sam_ctx, msg);
-	switch (ret) {
-	case  LDB_SUCCESS:
-		break;
-	case  LDB_ERR_ENTRY_ALREADY_EXISTS:
-		DEBUG(0,("Failed to create group record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_GROUP_EXISTS;
-	case  LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
-		DEBUG(0,("Failed to create group record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_ACCESS_DENIED;
-	default:
-		DEBUG(0,("Failed to create group record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = dsdb_add_domain_group(d_state->sam_ctx, mem_ctx, groupname, &group_sid, &group_dn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	a_state = talloc(mem_ctx, struct samr_account_state);
@@ -1076,19 +1035,9 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
-	a_state->account_dn = talloc_steal(a_state, msg->dn);
+	a_state->account_dn = talloc_steal(a_state, group_dn);
 
-	/* retrieve the sid for the group just created */
-	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", NULL);
-	if (sid == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	a_state->account_name = talloc_strdup(a_state, groupname);
-	if (!a_state->account_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	a_state->account_name = talloc_steal(a_state, groupname);
 
 	/* create the policy handle */
 	g_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_GROUP);
@@ -1099,7 +1048,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.group_handle = g_handle->wire_handle;
-	*r->out.rid = sid->sub_auths[sid->num_auths-1];
+	*r->out.rid = group_sid->sub_auths[group_sid->num_auths-1];
 
 	return NT_STATUS_OK;
 }
