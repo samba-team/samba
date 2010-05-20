@@ -143,6 +143,7 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 	return 0;
 }
 
+#ifdef HAVE_KRB5
 static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
@@ -511,6 +512,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	data_blob_free(&secblob_out);
 	return status;
 }
+#endif
 
 static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 					struct smbd_smb2_request *smb2req,
