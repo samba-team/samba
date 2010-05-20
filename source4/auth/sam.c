@@ -332,23 +332,23 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 	v = ldb_dn_get_extended_component(dn, "SID");
 
-	ndr_err = ndr_pull_struct_blob(v, sid, NULL, sid,
+	ndr_err = ndr_pull_struct_blob(v, sid, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	/* This is an O(n^2) linear search */
-	already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
-					  *num_res_sids, sid);
-	if (already_there) {
-		return NT_STATUS_OK;
-	}
-
 	if (only_childs) {
 		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
 	} else {
+		/* This is an O(n^2) linear search */
+		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
+						  *num_res_sids, sid);
+		if (already_there) {
+			return NT_STATUS_OK;
+		}
+
 		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "%s", filter);
 	}
 
