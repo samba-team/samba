@@ -2,15 +2,73 @@
 #include <stdint.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <string.h>
 #include <stdlib.h>
 #include <err.h>
 #include <stdbool.h>
 #include "lib/tdb/include/tdb.h"
 #include "include/ctdb.h"
 
+TDB_DATA key;
+
 void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	printf("Message received on port %d : %s\n", (int)srvid, data.dptr);
+}
+
+void pnn_cb(int32_t status, uint32_t pnn, void *private_data)
+{
+	if (status != 0) {
+		printf("Error reading PNN\n");
+		return;
+	}
+	printf("status:%d pnn:%d\n", status, pnn);
+}
+
+void rm_cb(int status, uint32_t rm, void *private_data)
+{
+	if (status != 0) {
+		printf("Error reading RECMASTER\n");
+		return;
+	}
+
+	printf("GETRECMASTER ASYNC: status:%d recmaster:%d\n", status, rm);
+}
+
+
+/*
+ * example on how to first read(non-existing recortds are implicitely created
+ * on demand) a record and change it in the callback.
+ * This forms the atom for the read-modify-write cycle.
+ *
+ * Pure read, or pure write are just special cases of this cycle.
+ */
+void rrl_cb(int32_t status, struct ctdb_lock *lock, TDB_DATA outdata, void *private_data)
+{
+	TDB_DATA data;
+	char tmp[256];
+
+	if (status != 0) {
+		printf("rrl_cb returned error: status %d\n", status);
+		return;
+	}
+
+	printf("rrl size:%d data:%.*s\n", outdata.dsize,
+	       outdata.dsize, outdata.dptr);
+	if (outdata.dsize == 0) {
+		tmp[0] = 0;
+	} else {
+		strcpy(tmp, outdata.dptr);
+	}
+	strcat(tmp, "*");
+
+	data.dptr  = tmp;
+	data.dsize = strlen(tmp) + 1;
+	ctdb_writerecord(lock, data);
+
+	printf("Wrote new record : %s\n", tmp);
+
+	ctdb_release_lock(lock);
 }
 
 static bool registered = false;
@@ -20,16 +78,13 @@ void message_handler_cb(int status, void *private_data)
 	registered = true;
 }
 
-void rm_cb(int status, uint32_t recmaster, void *private_data)
-{
-	printf("recmaster:%d\n", recmaster);
-}
-
 int main(int argc, char *argv[])
 {
 	struct ctdb_connection *ctdb_connection;
 	struct ctdb_request *handle;
+	struct ctdb_db *ctdb_db_context;
 	struct pollfd pfd;
+	uint32_t recmaster;
 	int ret;
 	TDB_DATA msg;
 
@@ -65,6 +120,38 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
+	ctdb_db_context = ctdb_attachdb(ctdb_connection, "test_test.tdb", 0, 0);
+	if (!ctdb_db_context) {
+		printf("Failed to attach to database\n");
+		exit(10);
+	}
+
+	/*
+	 * SYNC call with callback to read the recmaster
+	 * calls the blocking sync function.
+	 * Avoid this mode for performance critical tasks
+	 */
+	ret = ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster);
+	if (ret != 0) {
+		printf("Failed to receive response to getrecmaster\n");
+		exit(10);
+	}
+	printf("GETRECMASTER SYNC: status:%d recmaster:%d\n", ret, recmaster);
+
+
+	handle = ctdb_getpnn_send(ctdb_connection, CTDB_CURRENT_NODE,
+				  pnn_cb, NULL);
+	if (handle == NULL) {
+		printf("Failed to send get_pnn control\n");
+		exit(10);
+	}
+
+	handle = ctdb_readrecordlock_send(ctdb_db_context, key, rrl_cb,
+					  ctdb_db_context);
+	if (handle == NULL) {
+		printf("Failed to send READRECORDLOCK\n");
+		exit(10);
+	}
 
 	for (;;) {
 
