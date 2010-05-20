@@ -88,6 +88,7 @@ NTSTATUS gp_get_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum 
 NTSTATUS gp_set_inheritance(struct gp_context *gp_ctx, const char *dn_str, enum gpo_inheritance inheritance);
 
 NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo);
+NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const struct security_descriptor *sd);
 
 /* File system functions */
 NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
@@ -96,5 +97,7 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_obj
 
 /* Managing functions */
 NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, struct gp_object **ret);
+NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security_descriptor *ds_sd, struct security_descriptor **ret);
+NTSTATUS gp_set_acl (struct gp_context *gp_ctx, const char *dn_str, const struct security_descriptor *sd);
 
 #endif

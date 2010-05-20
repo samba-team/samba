@@ -134,6 +134,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 		name[i] = toupper(name[i]);
 	}
 
+	/* Prepare the GPO struct */
 	gpo->dn = NULL;
 	gpo->name = name;
 	gpo->flags = 0;
@@ -145,6 +146,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	status = gp_create_gpt(gp_ctx, name, gpo->file_sys_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to create GPT\n"));
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -153,6 +155,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	status = gp_create_ldap_gpo(gp_ctx, gpo);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to create LDAP group policy object\n"));
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -160,6 +163,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	status = gp_get_gpo_info(gp_ctx, gpo->dn, &gpo);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to fetch LDAP group policy object\n"));
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -167,6 +171,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	status = gp_create_gpt_security_descriptor(mem_ctx, gpo->security_descriptor, &sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to convert ADS security descriptor to filesystem security descriptor\n"));
+		talloc_free(mem_ctx);
 		return status;
 	}
 
@@ -174,11 +179,58 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	status = gp_set_gpt_security_descriptor(gp_ctx, gpo, sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to set security descriptor (ACL) on the file system\n"));
+		talloc_free(mem_ctx);
 		return status;
 	}
 
 	talloc_free(mem_ctx);
 
 	*ret = gpo;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_set_acl (struct gp_context *gp_ctx, const char *dn_str, const struct security_descriptor *sd)
+{
+	TALLOC_CTX *mem_ctx;
+	struct security_descriptor *fs_sd;
+	struct gp_object *gpo;
+	NTSTATUS status;
+
+	/* Create a forked memory context, as a base for everything here */
+	mem_ctx = talloc_new(gp_ctx);
+
+	/* Set the ACL on LDAP database */
+	status = gp_set_ads_acl(gp_ctx, dn_str, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set ACL on ADS\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Get the group policy object information, for filesystem location and merged sd */
+	status = gp_get_gpo_info(gp_ctx, dn_str, &gpo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set ACL on ADS\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Create matching file and DS security descriptors */
+	status = gp_create_gpt_security_descriptor(mem_ctx, gpo->security_descriptor, &fs_sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to convert ADS security descriptor to filesystem security descriptor\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Set the security descriptor on the filesystem for this GPO */
+	status = gp_set_gpt_security_descriptor(gp_ctx, gpo, fs_sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set security descriptor (ACL) on the file system\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }

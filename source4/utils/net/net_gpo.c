@@ -26,6 +26,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "libcli/security/sddl.h"
+#include "dsdb/samdb/samdb.h"
 #include "lib/policy/policy.h"
 
 static int net_gpo_list_all_usage(struct net_context *ctx, int argc, const char **argv)
@@ -91,6 +93,7 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 	struct gp_context *gp_ctx;
 	struct gp_object *gpo;
 	const char **gpo_flags;
+	char *sddl;
 	int i;
 	NTSTATUS rv;
 
@@ -126,6 +129,11 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 			d_printf("               %s\n", gpo_flags[i]);
 		}
 	}
+	sddl = sddl_encode(gp_ctx, gpo->security_descriptor, samdb_domain_sid(gp_ctx->ldb_ctx));
+	if (sddl != NULL) {
+		d_printf("ACL          : %s\n", sddl);
+	}
+
 	d_printf("\n");
 
 	talloc_free(gp_ctx);
@@ -511,6 +519,49 @@ static int net_gpo_create(struct net_context *ctx, int argc, const char **argv)
 
 	return 0;
 }
+
+static int net_gpo_set_acl_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syntax: net gpo setacl <dn> <sddl> [options]\n");
+	d_printf("For a list of available options, please type net gpo setacl --help\n");
+	return 0;
+}
+
+static int net_gpo_set_acl(struct net_context *ctx, int argc, const char **argv)
+{
+	struct gp_context *gp_ctx;
+	struct security_descriptor *sd;
+	NTSTATUS rv;
+
+	if (argc != 2) {
+		return net_gpo_set_acl_usage(ctx, argc, argv);
+	}
+
+	rv = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+	/* Convert sddl to security descriptor */
+	sd = sddl_decode(gp_ctx, argv[1], samdb_domain_sid(gp_ctx->ldb_ctx));
+	if (sd == NULL) {
+		DEBUG(0, ("Invalid SDDL\n"));
+		return 1;
+	}
+
+	rv = gp_set_acl(gp_ctx, argv[0], sd);
+	if (!NT_STATUS_IS_OK(rv)) {
+		DEBUG(0, ("Failed to set ACL on GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		return 1;
+	}
+
+	talloc_free(gp_ctx);
+	return 0;
+}
+
+
+
 static const struct net_functable net_gpo_functable[] = {
 	{ "listall", "List all GPO's on a DC\n", net_gpo_list_all, net_gpo_list_all_usage },
 	{ "list", "List all active GPO's for a machine/user\n", net_gpo_list, net_gpo_list_usage },
@@ -522,10 +573,9 @@ static const struct net_functable net_gpo_functable[] = {
 	{ "setinheritance", "Set inheritance flag on a container\n", net_gpo_inheritance_set, net_gpo_inheritance_set_usage },
 	{ "fetch", "Download a GPO\n", net_gpo_fetch, net_gpo_fetch_usage },
 	{ "create", "Create a GPO\n", net_gpo_create, net_gpo_create_usage },
+	{ "setacl", "Set ACL on a GPO\n", net_gpo_set_acl, net_gpo_set_acl_usage },
 	{ NULL, NULL }
 };
-
-
 
 int net_gpo_usage(struct net_context *ctx, int argc, const char **argv)
 {

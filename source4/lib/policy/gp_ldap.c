@@ -29,7 +29,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "libcli/security/security.h"
 #include "../lib/talloc/talloc.h"
-#include "policy.h"
+#include "lib/policy/policy.h"
 
 struct gpo_stringmap {
 	const char *str;
@@ -867,4 +867,49 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 	DEBUG(0, ("LDB Error adding element to ldb message\n"));
 	talloc_free(mem_ctx);
 	return NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const struct security_descriptor *sd)
+{
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB data;
+	enum ndr_err_code ndr_err;
+	struct ldb_message *msg;
+	int rv;
+
+	/* Create a forked memory context to clean up easily */
+	mem_ctx = talloc_new(gp_ctx);
+
+	/* Push the security descriptor through the NDR library */
+	ndr_err = ndr_push_struct_blob(&data,
+			mem_ctx,
+			lp_iconv_convenience(gp_ctx->lp_ctx),
+			sd,
+			(ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+
+	/* Create a LDB message */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, dn_str);
+
+	rv = ldb_msg_add_value(msg, "nTSecurityDescriptor", &data, NULL);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add element failed for adding nTSecurityDescriptor: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
+	if (rv != 0) {
+		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
 }
