@@ -2,6 +2,7 @@
    ctdb database library
 
    Copyright (C) Ronnie sahlberg 2010
+   Copyright (C) Rusty Russell 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,42 +20,26 @@
 
 #ifndef _CTDB_H
 #define _CTDB_H
+#include <sys/types.h>
+#include <stdint.h>
+#include <tdb.h>
 
-/* Functions are not thread safe so all function calls must be wrapped
- * inside a pthread_mutex for threaded applications.
- *
- * All *_send() functions are guaranteed to be non-blocking and fully
- * asynchronous.
- *
- * The return data from a _send() call can be accessed through two different
- * mechanisms.
- *
- * 1, by calling *_recv() directly on the handle.
- *    This function will block until the response is received so it
- *    should be avoided.
- *    The exception is when called from in the registered callback,
- *    in this case the fucntion is guaranteed not to block.
- *
- * 2, providing an async callback to be invoked when the call completes.
- *    From inside the callback you use the *_recv() function to extract the
- *    response data.
- *
- * After the *_recv() function returns, the handle will have been destroyed.
- */
+/* All *_send() functions are guaranteed to be non-blocking and fully
+ * asynchronous.  The non-_send variants are synchronous. */
 
 /*
  * Connect to ctdb using the specified domain socket.
  * Returns a ctdb context if successful or NULL.
  *
- * Use ctdb_free() to release the returned ctdb_context when finished.
+ * Use ctdb_free() to release the returned ctdb_connection when finished.
  */
-struct ctdb_context *ctdb_connect(const char *addr);
+struct ctdb_connection *ctdb_connect(const char *addr);
 
-int ctdb_get_fd(struct ctdb_context *ctdb);
+int ctdb_get_fd(struct ctdb_connection *ctdb);
 
-int ctdb_which_events(struct ctdb_context *ctdb);
+int ctdb_which_events(struct ctdb_connection *ctdb);
 
-int ctdb_service(struct ctdb_context *ctdb);
+int ctdb_service(struct ctdb_connection *ctdb, int revents);
 
 
 /*
@@ -70,61 +55,50 @@ int ctdb_service(struct ctdb_context *ctdb);
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 
 
-
-
-
-
-typedef void ctdb_handle;
-
-
-typedef void (*ctdb_generic_callback)(int32_t status, struct ctdb_context *ctdb, ctdb_handle *, void *private_data);
-
+struct ctdb_request;
 
 /*
  * functions to attach to a database
  * if the database does not exist it will be created.
  *
- * You have to free the handle with ctdb_free() when finished with it.
+ * You have to free the handle with ctdb_detach_db() when finished with it.
  */
-struct ctdb_db_context;
+struct ctdb_db;
 
-typedef void (*ctdb_attachdb_cb)(int32_t status, ctdb_handle *, struct ctdb_db_context *ctdb_db, void *private_data);
+typedef void (*ctdb_attachdb_cb)(int status, struct ctdb_db *ctdb_db, void *private_data);
 
-ctdb_handle *
-ctdb_attachdb_send(struct ctdb_context *ctdb,
+struct ctdb_request *
+ctdb_attachdb_send(struct ctdb_connection *ctdb,
 		   const char *name, int persistent, uint32_t tdb_flags,
 		   ctdb_attachdb_cb callback,
 		   void *private_data);
-int ctdb_attachdb_recv(struct ctdb_context *ctdb,
-		       ctdb_handle *handle, struct ctdb_db_context **);
-int ctdb_attachdb(struct ctdb_context *ctdb,
-		  const char *name, int persistent, uint32_t tdb_flags,
-		  struct ctdb_db_context **);
+struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
+			      const char *name, int persistent,
+			      uint32_t tdb_flags);
 
+struct ctdb_lock;
 
 /*
  * functions to read a record from the database
  * when the callback is invoked, the client will hold an exclusive lock
- * on the record, until the handle is ctdb_free()d.
- * the client MUST NOT block during holding this lock and MUST
- * release it quickly by performing ctdb_free(handle).
+ * on the record, the client MUST NOT block during holding this lock and MUST
+ * release it quickly by performing ctdb_release_lock(lock).
  *
- * When the handle is freed, data is freed too, so make sure to copy the data
- * before freeing the handle.
+ * When the lock is released, data is freed too, so make sure to copy the data
+ * before that.
  */
-typedef void (*ctdb_readrecordlock_cb)(int32_t status, ctdb_handle *handle, TDB_DATA data, void *private_data);
+typedef void (*ctdb_readrecordlock_cb)(int status, struct ctdb_lock *lock, TDB_DATA data, void *private_data);
 
-ctdb_handle *
-ctdb_readrecordlock_send(struct ctdb_context *ctdb,
-		struct ctdb_db_context *ctdb_db_context,
+struct ctdb_request *
+ctdb_readrecordlock_send(struct ctdb_db *ctdb_db,
 		TDB_DATA key,
 		ctdb_readrecordlock_cb callback,
 		void *private_data);
-int ctdb_readrecordlock_recv(struct ctdb_context *ctdb,
-		ctdb_handle *handle,
+int ctdb_readrecordlock_recv(struct ctdb_connection *ctdb,
+		struct ctdb_request *handle,
 		TDB_DATA **data);
-int ctdb_readrecordlock(struct ctdb_context *ctdb,
-		struct ctdb_db_context *ctdb_db_context,
+int ctdb_readrecordlock(struct ctdb_connection *ctdb,
+		struct ctdb_db *ctdb_db,
 		TDB_DATA key,
 		TDB_DATA **data);
 
@@ -136,35 +110,34 @@ int ctdb_readrecordlock(struct ctdb_context *ctdb,
  * created by ctdb_readrecordlock*
  * Either from the callback provided to ctdb_readrecordlock_send()
  * or after calling ctdb_readrecordlock_recv() but before calling
- * ctdb_free() to release the handle.
+ * ctdb_release_lock() to release the lock.
  */
-int ctdb_writerecord(ctdb_handle *handle,
-		TDB_DATA key,
-		TDB_DATA data);
+int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data);
 
 
+void ctdb_release_lock(struct ctdb_lock *lock);
 
 /*
  * messaging functions
  * these functions provide a messaging layer for applications to communicate
  * with eachother across
  */
-typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid, TDB_DATA data, void *);
+typedef void (*ctdb_message_fn_t)(struct ctdb_connection *, uint64_t srvid, TDB_DATA data, void *);
 
 /*
  * register a message handler and start listening on a service port
  */
-typedef void (*ctdb_set_message_handler_cb)(int32_t status, void *private_data);
+typedef void (*ctdb_set_message_handler_cb)(int status, void *private_data);
 
-ctdb_handle *
-ctdb_set_message_handler_send(struct ctdb_context *ctdb, uint64_t srvid,
+struct ctdb_request *
+ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 			      ctdb_set_message_handler_cb callback,
 			      ctdb_message_fn_t handler, void *private_data);
 
-int ctdb_set_message_handler_recv(struct ctdb_context *ctdb,
-				  ctdb_handle *handle);
+int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
+				  struct ctdb_request *handle);
 
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
+int ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
 			     ctdb_message_fn_t handler, void *private_data);
 
 
@@ -172,17 +145,17 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
  * unregister a message handler and stop listening on teh specified port
  */
-typedef void (*ctdb_remove_message_handler_cb)(int32_t status, void *private_data);
+typedef void (*ctdb_remove_message_handler_cb)(int status, void *private_data);
 
-ctdb_handle *
-ctdb_remove_message_handler_send(struct ctdb_context *ctdb, uint64_t srvid,
+struct ctdb_request *
+ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 				 ctdb_remove_message_handler_cb callback,
 				 void *private_data);
 
-int ctdb_remove_message_handler_recv(struct ctdb_context *ctdb,
-				  ctdb_handle *handle);
+int ctdb_remove_message_handler_recv(struct ctdb_connection *ctdb,
+				  struct ctdb_request *handle);
 
-int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid);
+int ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
 
 
 
@@ -190,23 +163,21 @@ int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid);
  * send a message to a specific node/port
  * this function is non-blocking
  */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn, uint64_t srvid, TDB_DATA data);
-
+int ctdb_send_message(struct ctdb_connection *ctdb, uint32_t pnn, uint64_t srvid, TDB_DATA data);
 
 
 
 /*
  * functions to read the pnn number of the local node
  */
-ctdb_handle *
-ctdb_getpnn_send(struct ctdb_context *ctdb,
+typedef void (*ctdb_getpnn_cb)(int status, uint32_t pnn, void *private_data);
+
+struct ctdb_request *
+ctdb_getpnn_send(struct ctdb_connection *ctdb,
 		 uint32_t destnode,
-		 ctdb_generic_callback callback,
+		 ctdb_getpnn_cb callback,
 		 void *private_data);
-int ctdb_getpnn_recv(struct ctdb_context *ctdb,
-		     ctdb_handle *handle,
-		     uint32_t *pnn);
-int ctdb_getpnn(struct ctdb_context *ctdb,
+int ctdb_getpnn(struct ctdb_connection *ctdb,
 		uint32_t destnode,
 		uint32_t *pnn);
 
@@ -216,15 +187,18 @@ int ctdb_getpnn(struct ctdb_context *ctdb,
 /*
  * functions to read the recovery master of a node
  */
-ctdb_handle *
-ctdb_getrecmaster_send(struct ctdb_context *ctdb,
+typedef void (*ctdb_getrecmaster_cb)(int status,
+				     uint32_t recmaster, void *private_data);
+
+struct ctdb_request *
+ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 			uint32_t destnode,
-			ctdb_generic_callback callback,
+			ctdb_getrecmaster_cb callback,
 			void *private_data);
-int ctdb_getrecmaster_recv(struct ctdb_context *ctdb,
-			ctdb_handle *handle,
+int ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
+			struct ctdb_request *handle,
 			uint32_t *recmaster);
-int ctdb_getrecmaster(struct ctdb_context *ctdb,
+int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 			uint32_t destnode,
 			uint32_t *recmaster);
 
@@ -232,10 +206,8 @@ int ctdb_getrecmaster(struct ctdb_context *ctdb,
 
 
 /*
- * cancel a request/call or release a resource
+ * cancel a request
  */
-int ctdb_free(ctdb_handle *);
-
-
+int ctdb_cancel(struct ctdb_request *);
 
 #endif
