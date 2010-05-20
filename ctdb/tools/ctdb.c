@@ -2007,15 +2007,10 @@ static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char 
 	data.dsize = sizeof(rd);
 
 again:
-	if (retries>5) {
-		DEBUG(DEBUG_ERR,("Failed waiting for cluster convergense\n"));
-		exit(10);
-	}
-
 	/* check that there are valid nodes available */
 	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap) != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
+		return -1;
 	}
 	for (i=0; i<nodemap->num;i++) {
 		if ((nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) == 0) {
@@ -2037,7 +2032,7 @@ again:
 	/* verify the node exists */
 	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), recmaster, ctdb, &nodemap) != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
+		return -1;
 	}
 
 
@@ -2079,14 +2074,14 @@ again:
 
 	tv = timeval_current();
 	/* this loop will terminate when we have received the reply */
-	while (timeval_elapsed(&tv) < 3.0) {	
+	while (timeval_elapsed(&tv) < 3.0) {
 		event_loop_once(ctdb->ev);
 	}
 	if (ipreallocate_finished == 1) {
 		return 0;
 	}
 
-	DEBUG(DEBUG_INFO,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
+	DEBUG(DEBUG_ERR,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
 	retries++;
 	sleep(1);
 	goto again;
