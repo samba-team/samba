@@ -21,7 +21,7 @@
  */
 
 #include "includes.h"
-#include "services.h"
+#include "services/services.h"
 #include "registry.h"
 
 struct rcinit_file_information {

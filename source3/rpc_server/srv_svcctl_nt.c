@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
-#include "services.h"
+#include "services/services.h"
 #include "registry.h"
 
 #undef DBGC_CLASS
