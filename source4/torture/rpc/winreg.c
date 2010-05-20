@@ -2105,7 +2105,8 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 
 static bool test_volatile_keys(struct torture_context *tctx,
 			       struct dcerpc_binding_handle *b,
-			       struct policy_handle *handle)
+			       struct policy_handle *handle,
+			       int hkey)
 {
 	struct policy_handle new_handle;
 	enum winreg_CreateAction action_taken;
@@ -2187,7 +2188,8 @@ static bool test_volatile_keys(struct torture_context *tctx,
 
 static bool test_symlink_keys(struct torture_context *tctx,
 			      struct dcerpc_binding_handle *b,
-			      struct policy_handle *handle)
+			      struct policy_handle *handle,
+			      int hkey)
 {
 	struct policy_handle new_handle;
 	enum winreg_CreateAction action_taken;
@@ -2246,7 +2248,8 @@ static bool test_symlink_keys(struct torture_context *tctx,
 
 static bool test_CreateKey_keytypes(struct torture_context *tctx,
 				    struct dcerpc_binding_handle *b,
-				    struct policy_handle *handle)
+				    struct policy_handle *handle,
+				    int hkey)
 {
 
 	if (torture_setting_bool(tctx, "samba3", false) ||
@@ -2255,11 +2258,11 @@ static bool test_CreateKey_keytypes(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_volatile_keys(tctx, b, handle),
+		test_volatile_keys(tctx, b, handle, hkey),
 		"failed to test volatile keys");
 
 	torture_assert(tctx,
-		test_symlink_keys(tctx, b, handle),
+		test_symlink_keys(tctx, b, handle, hkey),
 		"failed to test symlink keys");
 
 	return true;
@@ -2267,7 +2270,8 @@ static bool test_CreateKey_keytypes(struct torture_context *tctx,
 
 static bool test_key_base(struct torture_context *tctx,
 			  struct dcerpc_binding_handle *b,
-			  struct policy_handle *handle)
+			  struct policy_handle *handle,
+			  int hkey)
 {
 	struct policy_handle newhandle;
 	bool ret = true, created = false, deleted = false;
@@ -2302,7 +2306,7 @@ static bool test_key_base(struct torture_context *tctx,
 			"simple SetValue test failed");
 		torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 			"extended SetValue test failed");
-		torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle),
+		torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, hkey),
 			"keytype test failed");
 
 		if (!test_CloseKey(b, tctx, &newhandle)) {
@@ -2424,6 +2428,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	bool ret = true;
 	struct winreg_OpenHKLM r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	int hkey = 0;
 
 	winreg_open_fn open_fn = (winreg_open_fn)userdata;
 
@@ -2440,12 +2445,24 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKLM_r) {
+		hkey = HKEY_LOCAL_MACHINE;
+	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKU_r) {
+		hkey = HKEY_USERS;
+	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCR_r) {
+		hkey = HKEY_CLASSES_ROOT;
+	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCU_r) {
+		hkey = HKEY_CURRENT_USER;
+	} else {
+		torture_fail(tctx, "unsupported hkey");
+	}
+
+	if (hkey == HKEY_LOCAL_MACHINE) {
 		torture_assert(tctx,
 			test_HKLM_wellknown(tctx, b, &handle),
 			"failed to test HKLM wellknown keys");
 	}
 
-	if (!test_key_base(tctx, b, &handle)) {
+	if (!test_key_base(tctx, b, &handle, hkey)) {
 		torture_warning(tctx, "failed to test TEST_KEY_BASE");
 		ret = false;
 	}
@@ -2456,7 +2473,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	/* The HKCR hive has a very large fanout */
-	if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCR_r) {
+	if (hkey == HKEY_CLASSES_ROOT) {
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, false)) {
 			ret = false;
 		}
