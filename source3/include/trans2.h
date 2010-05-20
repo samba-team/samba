@@ -334,6 +334,20 @@ Byte offset   Type     name                description
 #define SMB_FS_FULL_SIZE_INFORMATION			1007
 #define SMB_FS_OBJECTID_INFORMATION			1008
 
+/* SMB_FS_DEVICE_INFORMATION device types. */
+#define FILE_DEVICE_CD_ROM		0x2
+#define FILE_DEVICE_DISK		0x7
+
+/* SMB_FS_DEVICE_INFORMATION characteristics. */
+#define FILE_REMOVABLE_MEDIA		0x001
+#define FILE_READ_ONLY_DEVICE		0x002
+#define FILE_FLOPPY_DISKETTE		0x004
+#define FILE_WRITE_ONCE_MEDIA		0x008
+#define FILE_REMOTE_DEVICE		0x010
+#define FILE_DEVICE_IS_MOUNTED		0x020
+#define FILE_VIRTUAL_VOLUME		0x040
+#define FILE_DEVICE_SECURE_OPEN		0x100
+
 /* flags on trans2 findfirst/findnext that control search */
 #define FLAG_TRANS2_FIND_CLOSE          0x1
 #define FLAG_TRANS2_FIND_CLOSE_IF_END   0x2

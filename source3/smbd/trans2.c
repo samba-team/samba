@@ -3123,10 +3123,17 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 		case SMB_QUERY_FS_DEVICE_INFO:
 		case SMB_FS_DEVICE_INFORMATION:
+		{
+			uint32_t characteristics = FILE_DEVICE_IS_MOUNTED;
+
+			if (!CAN_WRITE(conn)) {
+				characteristics |= FILE_READ_ONLY_DEVICE;
+			}
 			data_len = 8;
-			SIVAL(pdata,0,0); /* dev type */
-			SIVAL(pdata,4,0); /* characteristics */
+			SIVAL(pdata,0,FILE_DEVICE_DISK); /* dev type */
+			SIVAL(pdata,4,characteristics);
 			break;
+		}
 
 #ifdef HAVE_SYS_QUOTAS
 		case SMB_FS_QUOTA_INFORMATION:
