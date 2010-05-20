@@ -6351,6 +6351,7 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 /* The following definitions come from smbd/trans2.c  */
 
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
+uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
