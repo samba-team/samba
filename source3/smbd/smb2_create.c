@@ -1159,7 +1159,8 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 	if (!state->private_data.data) {
 		return false;
 	}
-#if 0
+
+#if 1
 	/* Boo - turns out this isn't what W2K8R2
 	   does. It actually sends the STATUS_PENDING
 	   message followed by the STATUS_SHARING_VIOLATION
@@ -1167,6 +1168,10 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 	   calls (even on directories) will potentially
 	   fail in a chain.... ? And I've seen directory
 	   opens as the start of a chain. JRA.
+
+	   Update: 19th May 2010. Talking with Microsoft
+	   engineers at the plugfest this is a bug in
+	   Windows. Re-enable this code.
 	*/
 	/*
 	 * More subtlety. To match W2K8R2 don't
