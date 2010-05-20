@@ -22,15 +22,13 @@
 
 struct named_pipe_listen_state {
 	int fd;
+	char *name;
 };
 
 static void named_pipe_listener(struct tevent_context *ev,
 				struct tevent_fd *fde,
 				uint16_t flags,
-				void *private_data)
-{
-	return;
-}
+				void *private_data);
 
 bool setup_named_pipe_socket(const char *pipe_name,
 			     struct tevent_context *ev_ctx)
@@ -43,6 +41,11 @@ bool setup_named_pipe_socket(const char *pipe_name,
 	if (!state) {
 		DEBUG(0, ("Out of memory\n"));
 		return false;
+	}
+	state->name = talloc_strdup(state, pipe_name);
+	if (!state->name) {
+		DEBUG(0, ("Out of memory\n"));
+		goto out;
 	}
 	state->fd = -1;
 
@@ -85,4 +88,44 @@ out:
 	}
 	TALLOC_FREE(state);
 	return false;
+}
+
+static void named_pipe_accept_function(const char *pipe_name, int fd);
+
+static void named_pipe_listener(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags,
+				void *private_data)
+{
+	struct named_pipe_listen_state *state =
+			talloc_get_type_abort(private_data,
+					      struct named_pipe_listen_state);
+	struct sockaddr_un sunaddr;
+	socklen_t len;
+	int sd = -1;
+
+	/* TODO: should we have a limit to the number of clients ? */
+
+	len = sizeof(sunaddr);
+
+	while (sd == -1) {
+		sd = accept(state->fd,
+			    (struct sockaddr *)(void *)&sunaddr, &len);
+		if (errno != EINTR) break;
+	}
+
+	if (sd == -1) {
+		DEBUG(6, ("Failed to get a valid socket [%s]\n",
+			  strerror(errno)));
+		return;
+	}
+
+	DEBUG(6, ("Accepted socket %d\n", sd));
+
+	named_pipe_accept_function(state->name, sd);
+}
+
+static void named_pipe_accept_function(const char *pipe_name, int fd)
+{
+	return;
 }
