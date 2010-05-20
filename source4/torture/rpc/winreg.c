@@ -40,6 +40,7 @@
 #define TEST_KEY_VOLATILE "torture_volatile_key"
 #define TEST_SUBKEY_VOLATILE "torture_volatile_subkey"
 #define TEST_KEY_SYMLINK "torture_symlink_key"
+#define TEST_KEY_SYMLINK_DEST "torture_symlink_dest"
 
 #define TEST_SID "S-1-5-21-1234567890-1234567890-1234567890-500"
 
@@ -2296,23 +2297,55 @@ static const char *kernel_mode_registry_path(struct torture_context *tctx,
 static bool test_symlink_keys(struct torture_context *tctx,
 			      struct dcerpc_binding_handle *b,
 			      struct policy_handle *handle,
+			      const char *key,
 			      int hkey)
 {
 	struct policy_handle new_handle;
 	enum winreg_CreateAction action_taken;
 	DATA_BLOB blob;
-	/* symlink destination needs to be a kernel mode registry path */
-	const char *dest = "\\Registry\\MACHINE\\SOFTWARE\\foo";
+	uint32_t value = 42;
+	const char *test_key_symlink_dest;
+	const char *test_key_symlink;
+	const char *kernel_mode_path;
 
-	/* disable until we know how to *not* screw up a windows registry */
+	/* disable until we know how to delete a symbolic link */
 	torture_skip(tctx, "symlink test disabled");
 
 	torture_comment(tctx, "Testing REG_OPTION_CREATE_LINK key\n");
 
-	test_DeleteKey(b, tctx, handle, TEST_KEY_SYMLINK);
+	/* create destination key with testvalue */
+	test_key_symlink = talloc_asprintf(tctx, "%s\\%s",
+			key, TEST_KEY_SYMLINK);
+	test_key_symlink_dest = talloc_asprintf(tctx, "%s\\%s",
+			key, TEST_KEY_SYMLINK_DEST);
+
+	test_DeleteKey(b, tctx, handle, test_key_symlink);
 
 	torture_assert(tctx,
-		test_CreateKey_opts(tctx, b, handle, TEST_KEY_SYMLINK, NULL,
+		test_CreateKey_opts(tctx, b, handle, test_key_symlink_dest, NULL,
+				    0,
+				    SEC_FLAG_MAXIMUM_ALLOWED,
+				    NULL,
+				    WERR_OK,
+				    &action_taken,
+				    &new_handle),
+		"failed to create symlink destination");
+
+	blob = data_blob_talloc_zero(tctx, 4);
+	SIVAL(blob.data, 0, value);
+
+	torture_assert(tctx,
+		test_SetValue(b, tctx, &new_handle, "TestValue", REG_DWORD, blob.data, blob.length),
+		"failed to create TestValue");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	/* create symlink */
+
+	torture_assert(tctx,
+		test_CreateKey_opts(tctx, b, handle, test_key_symlink, NULL,
 				    REG_OPTION_CREATE_LINK | REG_OPTION_VOLATILE,
 				    SEC_FLAG_MAXIMUM_ALLOWED,
 				    NULL,
@@ -2323,9 +2356,12 @@ static bool test_symlink_keys(struct torture_context *tctx,
 
 	torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
 
+	kernel_mode_path = kernel_mode_registry_path(tctx, hkey, NULL, test_key_symlink_dest);
+
 	torture_assert(tctx,
 		convert_string_talloc(tctx, CH_UNIX, CH_UTF16,
-				      dest, strlen(dest), /* not NULL terminated */
+				      kernel_mode_path,
+				      strlen(kernel_mode_path), /* not NULL terminated */
 				      &blob.data, &blob.length,
 				      false),
 		"failed to convert");
@@ -2338,8 +2374,28 @@ static bool test_symlink_keys(struct torture_context *tctx,
 		test_CloseKey(b, tctx, &new_handle),
 		"failed to close");
 
+	/* test follow symlink */
+
 	torture_assert(tctx,
-		test_OpenKey_opts(tctx, b, handle, TEST_KEY_SYMLINK,
+		test_OpenKey_opts(tctx, b, handle, test_key_symlink,
+				  0,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  &new_handle,
+				  WERR_OK),
+		"failed to follow symlink key");
+
+	torture_assert(tctx,
+		test_QueryValue(b, tctx, &new_handle, "TestValue"),
+		"failed to query value");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	/* delete link */
+
+	torture_assert(tctx,
+		test_OpenKey_opts(tctx, b, handle, test_key_symlink,
 				  REG_OPTION_OPEN_LINK | REG_OPTION_VOLATILE,
 				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &new_handle,
@@ -2347,7 +2403,21 @@ static bool test_symlink_keys(struct torture_context *tctx,
 		"failed to open symlink key");
 
 	torture_assert(tctx,
-		test_DeleteKey(b, tctx, handle, TEST_KEY_SYMLINK),
+		test_DeleteValue(b, tctx, &new_handle, "SymbolicLinkValue"),
+		"failed to delete value SymbolicLinkValue");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &new_handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, handle, test_key_symlink),
+		"failed to delete key");
+
+	/* delete destination */
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, handle, test_key_symlink_dest),
 		"failed to delete key");
 
 	return true;
@@ -2356,6 +2426,7 @@ static bool test_symlink_keys(struct torture_context *tctx,
 static bool test_CreateKey_keytypes(struct torture_context *tctx,
 				    struct dcerpc_binding_handle *b,
 				    struct policy_handle *handle,
+				    const char *key,
 				    int hkey)
 {
 
@@ -2369,7 +2440,7 @@ static bool test_CreateKey_keytypes(struct torture_context *tctx,
 		"failed to test volatile keys");
 
 	torture_assert(tctx,
-		test_symlink_keys(tctx, b, handle, hkey),
+		test_symlink_keys(tctx, b, handle, key, hkey),
 		"failed to test symlink keys");
 
 	return true;
@@ -2420,7 +2491,8 @@ static bool test_key_base(struct torture_context *tctx,
 				"simple SetValue test failed");
 			torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 				"extended SetValue test failed");
-			torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, hkey),
+		} else {
+			torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, test_key1, hkey),
 				"keytype test failed");
 		}
 
