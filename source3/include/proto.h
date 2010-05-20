@@ -3667,6 +3667,7 @@ int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
 void lp_set_passdb_backend(const char *backend);
 void widelinks_warning(int snum);
+char *lp_ncalrpc_dir(void);
 
 /* The following definitions come from param/loadparm_server_role.c  */
 

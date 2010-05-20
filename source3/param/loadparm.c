@@ -376,6 +376,7 @@ struct global {
 	int ismb2_max_read;
 	int ismb2_max_write;
 	int ismb2_max_trans;
+	char *ncalrpc_dir;
 };
 
 static struct global Globals;
@@ -4722,6 +4723,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "ncalrpc dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ncalrpc_dir,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -5365,6 +5375,8 @@ static void init_globals(bool reinit_globals)
 	Globals.ismb2_max_write = 1024*1024;
 	Globals.ismb2_max_trans = 1024*1024;
 
+	string_set(&Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
@@ -5894,6 +5906,8 @@ FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
 FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrapping)
+
+FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 
 /* local prototypes */
 
