@@ -58,7 +58,7 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 
 	if (req->compat_chain_fsp) {
 		/* skip check */
-	} else if (in_file_id_persistent != 0) {
+	} else if (in_file_id_persistent != in_file_id_volatile) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 

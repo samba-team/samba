@@ -87,6 +87,7 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			uint64_t *out_allocation_size,
 			uint64_t *out_end_of_file,
 			uint32_t *out_file_attributes,
+			uint64_t *out_file_id_persistent,
 			uint64_t *out_file_id_volatile,
 			struct smb2_create_blobs *out_context_blobs);
 
@@ -264,6 +265,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	uint64_t out_allocation_size = 0;
 	uint64_t out_end_of_file = 0;
 	uint32_t out_file_attributes = 0;
+	uint64_t out_file_id_persistent = 0;
 	uint64_t out_file_id_volatile = 0;
 	struct smb2_create_blobs out_context_blobs;
 	DATA_BLOB out_context_buffer;
@@ -295,6 +297,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 				       &out_allocation_size,
 				       &out_end_of_file,
 				       &out_file_attributes,
+				       &out_file_id_persistent,
 				       &out_file_id_volatile,
 				       &out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -356,7 +359,8 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	SIVAL(outbody.data, 0x38,
 	      out_file_attributes);		/* file attributes */
 	SIVAL(outbody.data, 0x3C, 0);		/* reserved */
-	SBVAL(outbody.data, 0x40, 0);		/* file id (persistent) */
+	SBVAL(outbody.data, 0x40,
+	      out_file_id_persistent);		/* file id (persistent) */
 	SBVAL(outbody.data, 0x48,
 	      out_file_id_volatile);		/* file id (volatile) */
 	SIVAL(outbody.data, 0x50,
@@ -391,6 +395,7 @@ struct smbd_smb2_create_state {
 	uint64_t out_allocation_size;
 	uint64_t out_end_of_file;
 	uint32_t out_file_attributes;
+	uint64_t out_file_id_persistent;
 	uint64_t out_file_id_volatile;
 	struct smb2_create_blobs out_context_blobs;
 };
@@ -791,6 +796,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
+	state->out_file_id_persistent = result->fnum;
 	state->out_file_id_volatile = result->fnum;
 	state->out_context_blobs = out_context_blobs;
 
@@ -809,6 +815,7 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			uint64_t *out_allocation_size,
 			uint64_t *out_end_of_file,
 			uint32_t *out_file_attributes,
+			uint64_t *out_file_id_persistent,
 			uint64_t *out_file_id_volatile,
 			struct smb2_create_blobs *out_context_blobs)
 {
@@ -830,6 +837,7 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 	*out_allocation_size	= state->out_allocation_size;
 	*out_end_of_file	= state->out_end_of_file;
 	*out_file_attributes	= state->out_file_attributes;
+	*out_file_id_persistent	= state->out_file_id_persistent;
 	*out_file_id_volatile	= state->out_file_id_volatile;
 	*out_context_blobs	= state->out_context_blobs;
 

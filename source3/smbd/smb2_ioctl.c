@@ -88,7 +88,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	} else if (in_file_id_persistent == UINT64_MAX &&
 		   in_file_id_volatile == UINT64_MAX) {
 		/* without a handle */
-	} else if (in_file_id_persistent != 0) {
+	} else if (in_file_id_persistent != in_file_id_volatile) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 

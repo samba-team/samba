@@ -269,6 +269,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn, __location__)
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
+				     uint64_t file_id_persistent,
 				     uint64_t file_id_volatile,
 				     uint8_t oplock_level);
 
