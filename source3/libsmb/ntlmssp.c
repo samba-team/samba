@@ -540,7 +540,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 						&vers,
 						(ndr_push_flags_fn_t)ndr_push_VERSION);
 
-			if (err) {
+			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
