@@ -1349,11 +1349,11 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *alias_name, *name;
-	struct ldb_message *msg;
+	const char *alias_name;
 	struct dom_sid *sid;
 	struct dcesrv_handle *a_handle;
-	int ret;
+	struct ldb_dn *dn;
+	NTSTATUS status;
 
 	ZERO_STRUCTP(r->out.alias_handle);
 	*r->out.rid = 0;
@@ -1373,46 +1373,9 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* Check if alias already exists */
-	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-				   "sAMAccountName",
-				   "(sAMAccountName=%s)(objectclass=group))",
-				   ldb_binary_encode_string(mem_ctx, alias_name));
-
-	if (name != NULL) {
-		return NT_STATUS_ALIAS_EXISTS;
-	}
-
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_copy(mem_ctx, d_state->domain_dn);
-	ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Users", alias_name);
-	if (!msg->dn) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", alias_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
-	samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "groupType", GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
-
-	/* create the alias */
-	ret = ldb_add(d_state->sam_ctx, msg);
-	switch (ret) {
-	case LDB_SUCCESS:
-		break;
-	case LDB_ERR_ENTRY_ALREADY_EXISTS:
-		return NT_STATUS_ALIAS_EXISTS;
-	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
-		return NT_STATUS_ACCESS_DENIED;
-	default:
-		DEBUG(0,("Failed to create alias record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(d_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = dsdb_add_domain_alias(d_state->sam_ctx, mem_ctx, alias_name, &sid, &dn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	a_state = talloc(mem_ctx, struct samr_account_state);
@@ -1423,16 +1386,9 @@ static NTSTATUS dcesrv_samr_CreateDomAlias(struct dcesrv_call_state *dce_call, T
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
-	a_state->account_dn = talloc_steal(a_state, msg->dn);
+	a_state->account_dn = talloc_steal(a_state, dn);
 
-	/* retrieve the sid for the alias just created */
-	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", NULL);
-
-	a_state->account_name = talloc_strdup(a_state, alias_name);
-	if (!a_state->account_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	a_state->account_name = talloc_steal(a_state, alias_name);
 
 	/* create the policy handle */
 	a_handle = dcesrv_handle_new(dce_call->context, SAMR_HANDLE_ALIAS);
