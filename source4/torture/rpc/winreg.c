@@ -4,7 +4,7 @@
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Jelmer Vernooij 2004-2007
-   Copyright (C) Günther Deschner 2007
+   Copyright (C) Günther Deschner 2007,2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1919,6 +1919,7 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 	uint32_t value = 0x12345678;
 	uint64_t value2 = 0x12345678;
 	const char *string = "torture";
+	const char *array[2];
 	DATA_BLOB blob;
 	enum winreg_Type types[] = {
 		REG_DWORD,
@@ -1929,6 +1930,9 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 		REG_MULTI_SZ
 	};
 	int t;
+
+	array[0] = "array0";
+	array[1] = NULL;
 
 	torture_comment(tctx, "Testing SetValue (standard formats)\n");
 
@@ -1952,26 +1956,10 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 			blob = data_blob_string_const("binary_blob");
 			break;
 		case REG_SZ:
-			torture_assert(tctx,
-				convert_string_talloc_convenience(tctx, lp_iconv_convenience(tctx->lp_ctx),
-								  CH_UNIX, CH_UTF16,
-								  string,
-								  strlen(string)+1,
-								  (void **)&blob.data,
-								  &blob.length,
-								  false), "");
+			torture_assert(tctx, push_reg_sz(tctx, &blob, string), "failed to push REG_SZ");
 			break;
 		case REG_MULTI_SZ:
-			torture_assert(tctx,
-				convert_string_talloc_convenience(tctx, lp_iconv_convenience(tctx->lp_ctx),
-								  CH_UNIX, CH_UTF16,
-								  string,
-								  strlen(string)+1,
-								  (void **)&blob.data,
-								  &blob.length,
-								  false), "");
-			torture_assert(tctx, data_blob_realloc(tctx, &blob, blob.length + 2), "");
-			memset(&blob.data[blob.length - 2], '\0', 2);
+			torture_assert(tctx, push_reg_multi_sz(tctx, &blob, array), "failed to push REG_MULTI_SZ");
 			break;
 		default:
 			break;
