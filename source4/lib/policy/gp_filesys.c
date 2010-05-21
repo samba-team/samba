@@ -181,7 +181,6 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 			gp_ctx->ev_ctx,
 			&options,
 			&session_options,
-			lp_iconv_convenience(gp_ctx->lp_ctx),
 			lp_gensec_settings(gp_ctx, gp_ctx->lp_ctx));
 
 	return NT_STATUS_OK;

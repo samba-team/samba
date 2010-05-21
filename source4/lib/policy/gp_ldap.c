@@ -80,7 +80,6 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 	gpo->security_descriptor = talloc(mem_ctx, struct security_descriptor);
 	ndr_err = ndr_pull_struct_blob(data,
 			mem_ctx,
-			NULL,
 			gpo->security_descriptor,
 			(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -883,7 +882,6 @@ NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const st
 	/* Push the security descriptor through the NDR library */
 	ndr_err = ndr_push_struct_blob(&data,
 			mem_ctx,
-			lp_iconv_convenience(gp_ctx->lp_ctx),
 			sd,
 			(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
