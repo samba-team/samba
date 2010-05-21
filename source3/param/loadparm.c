@@ -827,12 +827,6 @@ static const struct enum_list enum_bool_auto[] = {
 	{-1, NULL}
 };
 
-/* Client-side offline caching policy types */
-#define CSC_POLICY_MANUAL 0
-#define CSC_POLICY_DOCUMENTS 1
-#define CSC_POLICY_PROGRAMS 2
-#define CSC_POLICY_DISABLE 3
-
 static const struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
 	{CSC_POLICY_DOCUMENTS, "documents"},

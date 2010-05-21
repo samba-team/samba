@@ -673,11 +673,18 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
-		/* convert '\\' into '/' */
-		status = check_path_syntax(fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
+                /*
+		 * For a DFS path the function parse_dfs_path()
+		 * will do the path processing.
+		 */
+
+		if (!smb1req->flags2 & FLAGS2_DFS_PATHNAMES) {
+			/* convert '\\' into '/' */
+			status = check_path_syntax(fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		status = filename_convert(req,

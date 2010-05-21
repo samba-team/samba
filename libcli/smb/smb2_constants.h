@@ -81,12 +81,18 @@
 /* SMB2 capabilities - only 1 so far. I'm sure more will be added */
 #define SMB2_CAP_DFS                     0x00000001
 #define SMB2_CAP_LEASING                 0x00000002 /* only in dialect 0x210 */
+#define SMB2_CAP_LARGE_MTU		 0x00000004 /* only in dialect 0x210 */
 /* so we can spot new caps as added */
 #define SMB2_CAP_ALL                     SMB2_CAP_DFS
 
 /* SMB2 session flags */
 #define SMB2_SESSION_FLAG_IS_GUEST       0x0001
 #define SMB2_SESSION_FLAG_IS_NULL        0x0002
+
+/* SMB2 sharetype flags */
+#define SMB2_SHARE_TYPE_DISK		0x1
+#define SMB2_SHARE_TYPE_PIPE		0x2
+#define SMB2_SHARE_TYPE_PRINT		0x3
 
 /* SMB2 share flags */
 #define SMB2_SHAREFLAG_MANUAL_CACHING                    0x0000
@@ -100,6 +106,9 @@
 #define SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING           0x0400
 #define SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM       0x0800
 #define SMB2_SHAREFLAG_ALL                               0x0F33
+
+/* SMB2 share capafilities */
+#define SMB2_SHARE_CAP_DFS		0x8
 
 /* SMB2 create security flags */
 #define SMB2_SECURITY_DYNAMIC_TRACKING                   0x01

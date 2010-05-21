@@ -50,6 +50,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 				struct dfs_path *pdp, /* MUST BE TALLOCED */
 				bool *ppath_contains_wcard)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *pathname_local;
 	char *p,*temp;
 	char *servicename;
@@ -77,7 +78,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 
 	sepchar = pdp->posix_path ? '/' : '\\';
 
-	if (*pathname != sepchar) {
+	if (!sconn->allow_smb2 && (*pathname != sepchar)) {
 		DEBUG(10,("parse_dfs_path: path %s doesn't start with %c\n",
 			pathname, sepchar ));
 		/*

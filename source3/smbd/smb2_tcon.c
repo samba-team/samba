@@ -227,14 +227,38 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	tcon->compat_conn->cnum = tcon->tid;
 
 	if (IS_PRINT(tcon->compat_conn)) {
-		*out_share_type = 0x03;
+		*out_share_type = SMB2_SHARE_TYPE_PRINT;
 	} else if (IS_IPC(tcon->compat_conn)) {
-		*out_share_type = 0x02;
+		*out_share_type = SMB2_SHARE_TYPE_PIPE;
 	} else {
-		*out_share_type = 0x01;
+		*out_share_type = SMB2_SHARE_TYPE_DISK;
 	}
-	*out_share_flags = SMB2_SHAREFLAG_ALL;
-	*out_capabilities = 0;
+
+	*out_share_flags = SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING;
+
+	if (lp_msdfs_root(SNUM(tcon->compat_conn)) && lp_host_msdfs()) {
+		*out_share_flags |= (SMB2_SHAREFLAG_DFS|SMB2_SHAREFLAG_DFS_ROOT);
+		*out_capabilities = SMB2_SHARE_CAP_DFS;
+	} else {
+		*out_capabilities = 0;
+	}
+
+	switch(lp_csc_policy(SNUM(tcon->compat_conn))) {
+	case CSC_POLICY_MANUAL:
+		break;
+	case CSC_POLICY_DOCUMENTS:
+		*out_share_flags |= SMB2_SHAREFLAG_AUTO_CACHING;
+		break;
+	case CSC_POLICY_PROGRAMS:
+		*out_share_flags |= SMB2_SHAREFLAG_VDO_CACHING;
+		break;
+	case CSC_POLICY_DISABLE:
+		*out_share_flags |= SMB2_SHAREFLAG_NO_CACHING;
+		break;
+	default:
+		break;
+	}
+
 	*out_maximal_access = FILE_GENERIC_ALL;
 
 	*out_tree_id = tcon->tid;
