@@ -307,8 +307,10 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 {
 	krb5_error_code ret = 0;
 	bool auth_ok = False;
+	bool cont = true;
 	char *password_s = NULL;
-	krb5_data password;
+	/* Let's make some room for 2 password (old and new)*/
+	krb5_data passwords[2];
 	krb5_enctype enctypes[] = { 
 #if defined(ENCTYPE_ARCFOUR_HMAC)
 		ENCTYPE_ARCFOUR_HMAC,
@@ -318,12 +320,13 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 		ENCTYPE_NULL
 	};
 	krb5_data packet;
-	int i;
+	int i, j;
 
 	*pp_tkt = NULL;
 	*keyblock = NULL;
 	*perr = 0;
 
+	ZERO_STRUCT(passwords);
 
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
@@ -338,8 +341,15 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 		return False;
 	}
 
-	password.data = password_s;
-	password.length = strlen(password_s);
+	passwords[0].data = password_s;
+	passwords[0].length = strlen(password_s);
+
+	password_s = secrets_fetch_prev_machine_password(lp_workgroup());
+	if (password_s) {
+		DEBUG(10,("ads_secrets_verify_ticket: found previous password\n"));
+		passwords[1].data = password_s;
+		passwords[1].length = strlen(password_s);
+	}
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
@@ -347,50 +357,61 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 	packet.data = (char *)ticket->data;
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
-	for (i=0;enctypes[i];i++) {
-		krb5_keyblock *key = NULL;
+	for (j=0; j<2 && passwords[j].length; j++) {
 
-		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
-			ret = ENOMEM;
-			goto out;
-		}
-	
-		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i], false)) {
-			SAFE_FREE(key);
-			continue;
-		}
+		for (i=0;enctypes[i];i++) {
+			krb5_keyblock *key = NULL;
 
-		krb5_auth_con_setuseruserkey(context, auth_context, key);
+			if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
+				ret = ENOMEM;
+				goto out;
+			}
 
-		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
-					NULL,
-					NULL, NULL, pp_tkt))) {
-			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
-				(unsigned int)enctypes[i] ));
-			auth_ok = True;
-			krb5_copy_keyblock(context, key, keyblock);
+			if (create_kerberos_key_from_string(context, host_princ, &passwords[j], key, enctypes[i], false)) {
+				SAFE_FREE(key);
+				continue;
+			}
+
+			krb5_auth_con_setuseruserkey(context, auth_context, key);
+
+			if (!(ret = krb5_rd_req(context, &auth_context, &packet,
+						NULL,
+						NULL, NULL, pp_tkt))) {
+				DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
+					(unsigned int)enctypes[i] ));
+				auth_ok = True;
+				cont = false;
+				krb5_copy_keyblock(context, key, keyblock);
+				krb5_free_keyblock(context, key);
+				break;
+			}
+
+			DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
+					("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
+					(unsigned int)enctypes[i], error_message(ret)));
+
+			/* successfully decrypted but ticket is just not valid at the moment */
+			if (ret == KRB5KRB_AP_ERR_TKT_NYV ||
+			    ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
+			    ret == KRB5KRB_AP_ERR_SKEW) {
+				krb5_free_keyblock(context, key);
+				cont = false;
+				break;
+			}
+
 			krb5_free_keyblock(context, key);
+		}
+		if (!cont) {
+			/* If we found a valid pass then no need to try
+			 * the next one or we have invalid ticket so no need
+			 * to try next password*/
 			break;
 		}
-
-		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
-				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
-				(unsigned int)enctypes[i], error_message(ret)));
-
-		/* successfully decrypted but ticket is just not valid at the moment */
-		if (ret == KRB5KRB_AP_ERR_TKT_NYV || 
-		    ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
-		    ret == KRB5KRB_AP_ERR_SKEW) {
-			krb5_free_keyblock(context, key);
-			break;
-		}
-
-		krb5_free_keyblock(context, key);
-
 	}
 
  out:
-	SAFE_FREE(password_s);
+	SAFE_FREE(passwords[0].data);
+	SAFE_FREE(passwords[1].data);
 	*perr = ret;
 	return auth_ok;
 }
