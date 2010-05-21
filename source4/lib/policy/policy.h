@@ -61,6 +61,21 @@ struct gp_link {
 	const char *dn;
 };
 
+struct gp_ini_param {
+	char *name;
+	char *value;
+};
+
+struct gp_ini_section {
+	char *name;
+	uint16_t num_params;
+	struct gp_ini_param *params;
+};
+
+struct gp_ini_context {
+	uint16_t num_sections;
+	struct gp_ini_section *sections;
+};
 
 NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
