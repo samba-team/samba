@@ -191,6 +191,10 @@ def configure(conf):
     conf.env.ABI_CHECK = Options.options.ABI_CHECK or Options.options.developer
     if Options.options.ABI_CHECK_DISABLE:
         conf.env.ABI_CHECK = False
+    try:
+        conf.find_program('gdb', mandatory=True)
+    except:
+        conf.env.ABI_CHECK = False
 
     conf.CHECK_COMMAND(['uname', '-a'],
                        msg='Checking build system',
