@@ -49,11 +49,45 @@ static bool test_userpasswordset2_args(struct torture_context *tctx,
 	struct rap_NetUserPasswordSet2 r;
 	char *newpass = samr_rand_pass(tctx, 8);
 
+	ZERO_STRUCT(r);
+
 	r.in.UserName = username;
-	r.in.OldPassword = *password;
-	r.in.NewPassword = newpass;
+
+	memcpy(r.in.OldPassword, *password, MIN(strlen(*password), 16));
+	memcpy(r.in.NewPassword, newpass, MIN(strlen(newpass), 16));
 	r.in.EncryptedPassword = 0;
-	r.in.RealPasswordLength = strlen(r.in.NewPassword);
+	r.in.RealPasswordLength = strlen(newpass);
+
+	torture_comment(tctx, "Testing rap_NetUserPasswordSet2(%s)\n", r.in.UserName);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netuserpasswordset2(cli->tree, lp_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		"smbcli_rap_netuserpasswordset2 failed");
+	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
+		torture_warning(tctx, "RAP NetUserPasswordSet2 gave: %s\n",
+			win_errstr(W_ERROR(r.out.status)));
+	} else {
+		*password = newpass;
+	}
+
+	return true;
+}
+
+static bool test_userpasswordset2_crypt_args(struct torture_context *tctx,
+					     struct smbcli_state *cli,
+					     const char *username,
+					     const char **password)
+{
+	struct rap_NetUserPasswordSet2 r;
+	char *newpass = samr_rand_pass(tctx, 8);
+
+	r.in.UserName = username;
+
+	E_deshash(*password, r.in.OldPassword);
+	E_deshash(newpass, r.in.NewPassword);
+
+	r.in.RealPasswordLength = strlen(newpass);
+	r.in.EncryptedPassword = 1;
 
 	torture_comment(tctx, "Testing rap_NetUserPasswordSet2(%s)\n", r.in.UserName);
 
@@ -75,7 +109,7 @@ static bool test_userpasswordset2(struct torture_context *tctx,
 {
 	struct test_join *join_ctx;
 	const char *password;
-	bool ret;
+	bool ret = true;
 
 	join_ctx = torture_create_testuser_max_pwlen(tctx, TEST_RAP_USER,
 						     torture_setting_string(tctx, "workgroup", NULL),
@@ -85,7 +119,8 @@ static bool test_userpasswordset2(struct torture_context *tctx,
 		torture_fail(tctx, "failed to create user\n");
 	}
 
-	ret = test_userpasswordset2_args(tctx, cli, TEST_RAP_USER, &password);
+	ret &= test_userpasswordset2_args(tctx, cli, TEST_RAP_USER, &password);
+	ret &= test_userpasswordset2_crypt_args(tctx, cli, TEST_RAP_USER, &password);
 
 	torture_leave_domain(tctx, join_ctx);
 
