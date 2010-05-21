@@ -324,6 +324,23 @@ static const char *machine_last_change_time_keystr(const char *domain)
 
 
 /**
+ * Form a key for fetching the machine previous trust account password
+ *
+ * @param domain domain name
+ *
+ * @return keystring
+ **/
+static const char *machine_prev_password_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_MACHINE_PASSWORD_PREV, domain);
+	SMB_ASSERT(keystr != NULL);
+	return keystr;
+}
+
+/**
  * Form a key for fetching the machine trust account password
  *
  * @param domain domain name
@@ -571,21 +588,42 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 }
 
 /************************************************************************
- Routine to delete the plaintext machine account password
+ Routine to delete the old plaintext machine account password if any
+************************************************************************/
+
+static bool secrets_delete_prev_machine_password(const char *domain)
+{
+	char *oldpass = (char *)secrets_fetch(machine_prev_password_keystr(domain), NULL);
+	if (oldpass == NULL) {
+		return true;
+	}
+	SAFE_FREE(oldpass);
+	return secrets_delete(machine_prev_password_keystr(domain));
+}
+
+/************************************************************************
+ Routine to delete the plaintext machine account password and old
+ password if any
 ************************************************************************/
 
 bool secrets_delete_machine_password(const char *domain)
 {
+	if (!secrets_delete_prev_machine_password(domain)) {
+		return false;
+	}
 	return secrets_delete(machine_password_keystr(domain));
 }
 
 /************************************************************************
- Routine to delete the plaintext machine account password, sec channel type and
- last change time from secrets database
+ Routine to delete the plaintext machine account password, old password,
+ sec channel type and last change time from secrets database
 ************************************************************************/
 
 bool secrets_delete_machine_password_ex(const char *domain)
 {
+	if (!secrets_delete_prev_machine_password(domain)) {
+		return false;
+	}
 	if (!secrets_delete(machine_password_keystr(domain))) {
 		return false;
 	}
@@ -605,8 +643,28 @@ bool secrets_delete_domain_sid(const char *domain)
 }
 
 /************************************************************************
+ Routine to store the previous machine password (by storing the current password
+ as the old)
+************************************************************************/
+
+static bool secrets_store_prev_machine_password(const char *domain)
+{
+	char *oldpass;
+	bool ret;
+
+	oldpass = (char *)secrets_fetch(machine_password_keystr(domain), NULL);
+	if (oldpass == NULL) {
+		return true;
+	}
+	ret = secrets_store(machine_prev_password_keystr(domain), oldpass, strlen(oldpass)+1);
+	SAFE_FREE(oldpass);
+	return ret;
+}
+
+/************************************************************************
  Routine to set the plaintext machine account password for a realm
-the password is assumed to be a null terminated ascii string
+ the password is assumed to be a null terminated ascii string.
+ Before storing
 ************************************************************************/
 
 bool secrets_store_machine_password(const char *pass, const char *domain,
@@ -615,6 +673,10 @@ bool secrets_store_machine_password(const char *pass, const char *domain,
 	bool ret;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
+
+	if (!secrets_store_prev_machine_password(domain)) {
+		return false;
+	}
 
 	ret = secrets_store(machine_password_keystr(domain), pass, strlen(pass)+1);
 	if (!ret)
@@ -627,6 +689,17 @@ bool secrets_store_machine_password(const char *pass, const char *domain,
 	ret = secrets_store(machine_sec_channel_type_keystr(domain), &sec_channel_type, sizeof(sec_channel_type));
 
 	return ret;
+}
+
+
+/************************************************************************
+ Routine to fetch the previous plaintext machine account password for a realm
+ the password is assumed to be a null terminated ascii string.
+************************************************************************/
+
+char *secrets_fetch_prev_machine_password(const char *domain)
+{
+	return (char *)secrets_fetch(machine_prev_password_keystr(domain), NULL);
 }
 
 /************************************************************************
