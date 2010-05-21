@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "../lib/util/asn1.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "libcli/ldap/ldap_proto.h"
 #include "dsdb/samdb/samdb.h"

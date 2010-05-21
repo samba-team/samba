@@ -30,7 +30,6 @@
  */
 
 #include "includes.h"
-#include "libcli/ldap/ldap.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"

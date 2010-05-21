@@ -20,7 +20,7 @@
 */
 
 
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 
 enum ldap_request_state { LDAP_REQUEST_SEND=1, LDAP_REQUEST_PENDING=2, LDAP_REQUEST_DONE=3, LDAP_REQUEST_ERROR=4 };
 

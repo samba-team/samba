@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include <talloc.h>
-#include "libcli/ldap/ldap.h"
 #include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"
 #include "smbd/service.h"

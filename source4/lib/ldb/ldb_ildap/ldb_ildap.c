@@ -44,7 +44,7 @@
 #include "ldb_module.h"
 #include "dlinklist.h"
 
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"

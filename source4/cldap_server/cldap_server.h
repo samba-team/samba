@@ -20,6 +20,7 @@
 */
 
 #include "libcli/cldap/cldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 
 /*
   top level context structure for the cldap server

@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "../lib/util/dlinklist.h"
-#include "libcli/ldap/ldap.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"

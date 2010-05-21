@@ -27,7 +27,7 @@
 #include "lib/socket/socket.h"
 #include "../lib/util/asn1.h"
 #include "../lib/util/dlinklist.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 #include "libcli/ldap/ldap_proto.h"
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/composite/composite.h"

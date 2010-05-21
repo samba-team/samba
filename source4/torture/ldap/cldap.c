@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
-#include "libcli/ldap/ldap.h"
+#include "libcli/ldap/libcli_ldap.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "torture/torture.h"
 #include "param/param.h"
