@@ -28,14 +28,14 @@
 #include "param/param.h"
 #include "lib/registry/registry.h"
 
-#define TEST_KEY_BASE "smbtorture test"
-#define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"
-#define TEST_KEY2 TEST_KEY_BASE "\\with a SD (#1)"
-#define TEST_KEY3 TEST_KEY_BASE "\\with a subkey"
-#define TEST_KEY4 TEST_KEY_BASE "\\sd_tests"
-#define TEST_SUBKEY TEST_KEY3 "\\subkey"
-#define TEST_SUBKEY_SD  TEST_KEY4 "\\subkey_sd"
-#define TEST_SUBSUBKEY_SD TEST_KEY4 "\\subkey_sd\\subsubkey_sd"
+#define TEST_KEY_BASE "winreg_torture_test"
+#define TEST_KEY1 "spottyfoot"
+#define TEST_KEY2 "with a SD (#1)"
+#define TEST_KEY3 "with a subkey"
+#define TEST_KEY4 "sd_tests"
+#define TEST_SUBKEY "subkey"
+#define TEST_SUBKEY_SD  "subkey_sd"
+#define TEST_SUBSUBKEY_SD "subkey_sd\\subsubkey_sd"
 #define TEST_VALUE "torture_value_name"
 #define TEST_KEY_VOLATILE "torture_volatile_key"
 #define TEST_SUBKEY_VOLATILE "torture_volatile_subkey"
@@ -832,6 +832,8 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 	struct policy_handle new_handle;
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *test_subkey_sd;
+	const char *test_subsubkey_sd;
 
 	torture_comment(tctx, "SecurityDescriptor inheritance\n");
 
@@ -874,12 +876,14 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (!test_CreateKey(b, tctx, handle, TEST_SUBKEY_SD, NULL)) {
+	test_subkey_sd = talloc_asprintf(tctx, "%s\\%s", key, TEST_SUBKEY_SD);
+
+	if (!test_CreateKey(b, tctx, handle, test_subkey_sd, NULL)) {
 		ret = false;
 		goto out;
 	}
 
-	if (!test_OpenKey(b, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, test_subkey_sd, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -890,13 +894,15 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 		goto out;
 	}
 
+	test_subsubkey_sd = talloc_asprintf(tctx, "%s\\%s", key, TEST_SUBSUBKEY_SD);
+
 	test_CloseKey(b, tctx, &new_handle);
-	if (!test_CreateKey(b, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+	if (!test_CreateKey(b, tctx, handle, test_subsubkey_sd, NULL)) {
 		ret = false;
 		goto out;
 	}
 
-	if (!test_OpenKey(b, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, test_subsubkey_sd, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -909,10 +915,10 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(b, tctx, &new_handle);
-	test_Cleanup(b, tctx, handle, TEST_SUBKEY_SD);
+	test_Cleanup(b, tctx, handle, test_subkey_sd);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
-	return true;
+	return ret;
 }
 
 static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
@@ -941,6 +947,8 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 	bool ret = true;
 	uint8_t ace_flags = 0x0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *test_subkey_sd;
+	const char *test_subsubkey_sd;
 
 	torture_comment(tctx, "SecurityDescriptor inheritance block\n");
 
@@ -980,11 +988,14 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (!test_CreateKey(b, tctx, handle, TEST_SUBSUBKEY_SD, NULL)) {
+	test_subkey_sd = talloc_asprintf(tctx, "%s\\%s", key, TEST_SUBKEY_SD);
+	test_subsubkey_sd = talloc_asprintf(tctx, "%s\\%s", key, TEST_SUBSUBKEY_SD);
+
+	if (!test_CreateKey(b, tctx, handle, test_subsubkey_sd, NULL)) {
 		return false;
 	}
 
-	if (!test_OpenKey(b, tctx, handle, TEST_SUBSUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, test_subsubkey_sd, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -1008,7 +1019,7 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 
 	test_CloseKey(b, tctx, &new_handle);
 
-	if (!test_OpenKey(b, tctx, handle, TEST_SUBKEY_SD, &new_handle)) {
+	if (!test_OpenKey(b, tctx, handle, test_subkey_sd, &new_handle)) {
 		ret = false;
 		goto out;
 	}
@@ -1028,7 +1039,7 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(b, tctx, &new_handle);
-	test_Cleanup(b, tctx, handle, TEST_SUBKEY_SD);
+	test_Cleanup(b, tctx, handle, test_subkey_sd);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
 	return ret;
@@ -2367,20 +2378,25 @@ static bool test_CreateKey_keytypes(struct torture_context *tctx,
 static bool test_key_base(struct torture_context *tctx,
 			  struct dcerpc_binding_handle *b,
 			  struct policy_handle *handle,
+			  const char *base_key,
 			  int hkey)
 {
 	struct policy_handle newhandle;
 	bool ret = true, created = false, deleted = false;
 	bool created3 = false;
+	const char *test_key1;
+	const char *test_key3;
 
-	test_Cleanup(b, tctx, handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, handle, base_key);
 
-	if (!test_CreateKey(b, tctx, handle, TEST_KEY_BASE, NULL)) {
+	if (!test_CreateKey(b, tctx, handle, base_key, NULL)) {
 		torture_comment(tctx,
-				"CreateKey (TEST_KEY_BASE) failed\n");
+				"CreateKey(%s) failed\n", base_key);
 	}
 
-	if (!test_CreateKey(b, tctx, handle, TEST_KEY1, NULL)) {
+	test_key1 = talloc_asprintf(tctx, "%s\\%s", base_key, TEST_KEY1);
+
+	if (!test_CreateKey(b, tctx, handle, test_key1, NULL)) {
 		torture_comment(tctx,
 				"CreateKey failed - not considering a failure\n");
 	} else {
@@ -2393,7 +2409,7 @@ static bool test_key_base(struct torture_context *tctx,
 			ret = false;
 		}
 
-		if (!test_OpenKey(b, tctx, handle, TEST_KEY1, &newhandle)) {
+		if (!test_OpenKey(b, tctx, handle, test_key1, &newhandle)) {
 			torture_fail(tctx,
 				     "CreateKey failed (OpenKey after Create didn't work)\n");
 		}
@@ -2412,7 +2428,7 @@ static bool test_key_base(struct torture_context *tctx,
 				     "CreateKey failed (CloseKey after Open didn't work)\n");
 		}
 
-		if (!test_DeleteKey(b, tctx, handle, TEST_KEY1)) {
+		if (!test_DeleteKey(b, tctx, handle, test_key1)) {
 			torture_comment(tctx, "DeleteKey failed\n");
 			ret = false;
 		} else {
@@ -2425,7 +2441,7 @@ static bool test_key_base(struct torture_context *tctx,
 		}
 
 		if (deleted) {
-			if (!test_OpenKey_opts(tctx, b, handle, TEST_KEY1,
+			if (!test_OpenKey_opts(tctx, b, handle, test_key1,
 					       REG_OPTION_NON_VOLATILE,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &newhandle,
@@ -2437,7 +2453,9 @@ static bool test_key_base(struct torture_context *tctx,
 			}
 		}
 
-		if (test_CreateKey(b, tctx, handle, TEST_KEY3, NULL)) {
+		test_key3 = talloc_asprintf(tctx, "%s\\%s", base_key, TEST_KEY3);
+
+		if (test_CreateKey(b, tctx, handle, test_key3, NULL)) {
 			created3 = true;
 		}
 
@@ -2449,39 +2467,44 @@ static bool test_key_base(struct torture_context *tctx,
 				}
 			}
 
-			if (!test_DeleteKey(b, tctx, handle, TEST_KEY3)) {
+			if (!test_DeleteKey(b, tctx, handle, test_key3)) {
 				torture_comment(tctx, "DeleteKey failed\n");
 				ret = false;
 			}
 		}
 	}
 
-	test_Cleanup(b, tctx, handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, handle, base_key);
 
 	return ret;
 }
 
 static bool test_key_base_sd(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
-			     struct policy_handle *handle)
+			     struct policy_handle *handle,
+			     const char *base_key)
 {
 	struct policy_handle newhandle;
 	bool ret = true, created2 = false, created4 = false;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *test_key2;
+	const char *test_key4;
 
 	if (torture_setting_bool(tctx, "samba3", false) ||
 	    torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skipping security descriptor tests against Samba");
 	}
 
-	test_Cleanup(b, tctx, handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, handle, base_key);
 
-	if (!test_CreateKey(b, tctx, handle, TEST_KEY_BASE, NULL)) {
+	if (!test_CreateKey(b, tctx, handle, base_key, NULL)) {
 		torture_comment(tctx,
-				"CreateKey (TEST_KEY_BASE) failed\n");
+				"CreateKey(%s) failed\n", base_key);
 	}
 
-	if (test_CreateKey_sd(b, tctx, handle, TEST_KEY2,
+	test_key2 = talloc_asprintf(tctx, "%s\\%s", base_key, TEST_KEY2);
+
+	if (test_CreateKey_sd(b, tctx, handle, test_key2,
 			      NULL, &newhandle)) {
 		created2 = true;
 	}
@@ -2491,7 +2514,9 @@ static bool test_key_base_sd(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (test_CreateKey_sd(b, tctx, handle, TEST_KEY4, NULL, &newhandle)) {
+	test_key4 = talloc_asprintf(tctx, "%s\\%s", base_key, TEST_KEY4);
+
+	if (test_CreateKey_sd(b, tctx, handle, test_key4, NULL, &newhandle)) {
 		created4 = true;
 	}
 
@@ -2500,21 +2525,21 @@ static bool test_key_base_sd(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (created4 && !test_SecurityDescriptors(p, tctx, handle, TEST_KEY4)) {
+	if (created4 && !test_SecurityDescriptors(p, tctx, handle, test_key4)) {
 		ret = false;
 	}
 
-	if (created4 && !test_DeleteKey(b, tctx, handle, TEST_KEY4)) {
+	if (created4 && !test_DeleteKey(b, tctx, handle, test_key4)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
-	if (created2 && !test_DeleteKey(b, tctx, handle, TEST_KEY2)) {
+	if (created2 && !test_DeleteKey(b, tctx, handle, test_key4)) {
 		torture_comment(tctx, "DeleteKey failed\n");
 		ret = false;
 	}
 
-	test_Cleanup(b, tctx, handle, TEST_KEY_BASE);
+	test_Cleanup(b, tctx, handle, base_key);
 
 	return ret;
 }
@@ -2526,6 +2551,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	bool ret = true;
 	struct winreg_OpenHKLM r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *torture_base_key;
 	int hkey = 0;
 
 	winreg_open_fn open_fn = (winreg_open_fn)userdata;
@@ -2544,12 +2570,16 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKLM_r) {
 		hkey = HKEY_LOCAL_MACHINE;
+		torture_base_key = "SOFTWARE\\Samba\\" TEST_KEY_BASE;
 	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKU_r) {
 		hkey = HKEY_USERS;
+		torture_base_key = TEST_KEY_BASE;
 	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCR_r) {
 		hkey = HKEY_CLASSES_ROOT;
+		torture_base_key = TEST_KEY_BASE;
 	} else if (open_fn == (winreg_open_fn)dcerpc_winreg_OpenHKCU_r) {
 		hkey = HKEY_CURRENT_USER;
+		torture_base_key = TEST_KEY_BASE;
 	} else {
 		torture_fail(tctx, "unsupported hkey");
 	}
@@ -2560,13 +2590,15 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 			"failed to test HKLM wellknown keys");
 	}
 
-	if (!test_key_base(tctx, b, &handle, hkey)) {
-		torture_warning(tctx, "failed to test TEST_KEY_BASE");
+	if (!test_key_base(tctx, b, &handle, torture_base_key, hkey)) {
+		torture_warning(tctx, "failed to test TEST_KEY_BASE(%s)",
+				torture_base_key);
 		ret = false;
 	}
 
-	if (!test_key_base_sd(tctx, p, &handle)) {
-		torture_warning(tctx, "failed to test TEST_KEY_BASE sd");
+	if (!test_key_base_sd(tctx, p, &handle, torture_base_key)) {
+		torture_warning(tctx, "failed to test TEST_KEY_BASE(%s) sd",
+				torture_base_key);
 		ret = false;
 	}
 
@@ -2575,6 +2607,8 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1, false)) {
 			ret = false;
 		}
+	} else if (hkey == HKEY_LOCAL_MACHINE) {
+		/* FIXME we are not allowed to enum values in the HKLM root */
 	} else {
 		if (!test_key(p, tctx, &handle, 0, false)) {
 			ret = false;
