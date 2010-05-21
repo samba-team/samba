@@ -1677,9 +1677,11 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 	uint32_t data_length = 0;
 	uint8_t *data = NULL;
 	WERROR expected_error = WERR_BADFILE;
+	const char *errmsg_nonexisting = "expected WERR_BADFILE for nonexisting value";
 
 	if (valuename == NULL) {
 		expected_error = WERR_INVALID_PARAM;
+		errmsg_nonexisting = "expected WERR_INVALID_PARAM for NULL valuename";
 	}
 
 	ZERO_STRUCT(r);
@@ -1701,21 +1703,21 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"QueryValue failed");
+		"expected WERR_INVALID_PARAM for missing type length and size");
 
 	r.in.type = &type;
 	r.out.type = &type;
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"QueryValue failed");
+		"expected WERR_INVALID_PARAM for missing length and size");
 
 	r.in.data_length = &data_length;
 	r.out.data_length = &data_length;
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"QueryValue failed");
+		"expected WERR_INVALID_PARAM for missing size");
 
 	r.in.data_size = &data_size;
 	r.out.data_size = &data_size;
@@ -1726,7 +1728,7 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 			"QueryValue failed");
 	} else {
 		torture_assert_werr_equal(tctx, r.out.result, expected_error,
-			"QueryValue failed");
+			errmsg_nonexisting);
 	}
 
 	real_data_size = *r.out.data_size;
@@ -1740,10 +1742,10 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 		"QueryValue failed");
 	if (existing_value) {
 		torture_assert_werr_equal(tctx, r.out.result, WERR_MORE_DATA,
-			"QueryValue failed");
+			"expected WERR_MORE_DATA for query with too small buffer");
 	} else {
 		torture_assert_werr_equal(tctx, r.out.result, expected_error,
-			"QueryValue failed");
+			errmsg_nonexisting);
 	}
 
 	data = talloc_zero_array(tctx, uint8_t, real_data_size);
@@ -1758,7 +1760,7 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 			"QueryValue failed");
 	} else {
 		torture_assert_werr_equal(tctx, r.out.result, expected_error,
-			"QueryValue failed");
+			errmsg_nonexisting);
 	}
 
 	return true;
