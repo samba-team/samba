@@ -33,6 +33,7 @@
 #include "ldb_includes.h"
 #include "ldb.h"
 #include "tools/cmdline.h"
+#include "tools/ldbutil.h"
 
 static struct ldb_cmdline *options;
 
@@ -56,7 +57,8 @@ static void ldif_write_msg(struct ldb_context *ldb,
 */
 static int modify_record(struct ldb_context *ldb, 
 			 struct ldb_message *msg1,
-			 struct ldb_message *msg2)
+			 struct ldb_message *msg2,
+			 struct ldb_control **req_ctrls)
 {
 	struct ldb_message *mod;
 
@@ -74,7 +76,7 @@ static int modify_record(struct ldb_context *ldb,
 		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
 	}
 
-	if (ldb_modify(ldb, mod) != 0) {
+	if (ldb_modify_ctrl(ldb, mod, req_ctrls) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
 			ldb_dn_get_linearized(msg1->dn), ldb_errstring(ldb));
 		return -1;
@@ -111,6 +113,11 @@ static int merge_edits(struct ldb_context *ldb,
 	struct ldb_message *msg;
 	int ret = 0;
 	int adds=0, modifies=0, deletes=0;
+	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	if (options->controls != NULL && req_ctrls == NULL) {
+		fprintf(stderr, "parsing controls failed: %s\n", ldb_errstring(ldb));
+		return -1;
+	}
 
 	if (ldb_transaction_start(ldb) != 0) {
 		fprintf(stderr, "Failed to start transaction: %s\n", ldb_errstring(ldb));
@@ -124,7 +131,7 @@ static int merge_edits(struct ldb_context *ldb,
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
 			}
-			if (ldb_add(ldb, msgs2[i]) != 0) {
+			if (ldb_add_ctrl(ldb, msgs2[i], req_ctrls) != 0) {
 				fprintf(stderr, "failed to add %s - %s\n",
 					ldb_dn_get_linearized(msgs2[i]->dn),
 					ldb_errstring(ldb));
@@ -133,7 +140,7 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			adds++;
 		} else {
-			if (modify_record(ldb, msg, msgs2[i]) > 0) {
+			if (modify_record(ldb, msg, msgs2[i], req_ctrls) > 0) {
 				modifies++;
 			}
 		}
@@ -146,7 +153,7 @@ static int merge_edits(struct ldb_context *ldb,
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
 			}
-			if (ldb_delete(ldb, msgs1[i]->dn) != 0) {
+			if (ldb_delete_ctrl(ldb, msgs1[i]->dn, req_ctrls) != 0) {
 				fprintf(stderr, "failed to delete %s - %s\n",
 					ldb_dn_get_linearized(msgs1[i]->dn),
 					ldb_errstring(ldb));
