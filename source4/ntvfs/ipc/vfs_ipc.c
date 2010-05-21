@@ -249,8 +249,8 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	struct tevent_req *subreq;
 	const char *fname;
 	const char *directory;
-	struct tsocket_address *client_addr;
-	struct tsocket_address *server_addr;
+	const struct tsocket_address *client_addr;
+	const struct tsocket_address *server_addr;
 	int ret;
 	DATA_BLOB delegated_creds = data_blob_null;
 
