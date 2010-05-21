@@ -802,6 +802,40 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "local_oid:", 10) == 0) {
+			const char *p;
+			int crit = 0, ret = 0;
+			char oid[256];
+
+			oid[0] = '\0';
+			p = &(control_strings[i][10]);
+			ret = sscanf(p, "%64[^:]:%d", oid, &crit);
+
+			if ((ret != 2) || strlen(oid) == 0 || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid local_oid control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: oid(s):crit(b)\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!ctrl[i]) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->oid = talloc_strdup(ctrl[i], oid);
+			if (!ctrl[i]->oid) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
 		/* no controls matched, throw an error */
 		ldb_asprintf_errstring(ldb, "Invalid control name: '%s'", control_strings[i]);
 		return NULL;
