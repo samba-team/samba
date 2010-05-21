@@ -78,6 +78,9 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	if (client_lm_hash || client_nt_hash) {
+		if (!nt_pw) {
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 		*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (!user_sess_key->data) {
 			return NT_STATUS_NO_MEMORY;
