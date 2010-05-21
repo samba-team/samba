@@ -212,7 +212,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 		return NT_STATUS_INVALID_PARAMETER;
 
 	*dest = talloc_zero_array(mem_ctx, char, len+1);
-	pull_string((char *)*dest, p, len+1, len, STR_ASCII);
+	pull_string(discard_const_p(char, *dest), p, len+1, len, STR_ASCII);
 
 	return NT_STATUS_OK;
 }
