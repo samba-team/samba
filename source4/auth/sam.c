@@ -27,8 +27,6 @@
 #include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
-#include "libcli/ldap/ldap.h"
-#include "../libcli/ldap/ldap_ndr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
@@ -367,8 +365,9 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	if (!only_childs) {
 		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
 			struct dom_sid *, *num_res_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(*res_sids);
-		(*res_sids)[*num_res_sids] = talloc_steal(*res_sids, &sid);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(*res_sids, tmp_ctx);
+		(*res_sids)[*num_res_sids] = dom_sid_dup(*res_sids, &sid);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE((*res_sids)[*num_res_sids], tmp_ctx);
 		++(*num_res_sids);
 	}
 
@@ -384,7 +383,6 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		}
 	}
 
-	talloc_free(res);
 	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
