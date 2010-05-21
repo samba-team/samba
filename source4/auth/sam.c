@@ -24,12 +24,8 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include <ldb.h>
-#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
-#include "librpc/gen_ndr/ndr_security.h"
-#include "param/param.h"
 #include "auth/auth_sam.h"
 #include "dsdb/common/util.h"
 

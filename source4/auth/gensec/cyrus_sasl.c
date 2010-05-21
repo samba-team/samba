@@ -24,7 +24,6 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
-#include "lib/socket/socket.h"
 #include <sasl/sasl.h>
 
 struct gensec_sasl_state {

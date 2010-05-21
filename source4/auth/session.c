@@ -26,8 +26,6 @@
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
-#include "auth/credentials/credentials.h"
-#include "param/param.h"
 #include "auth/session_proto.h"
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 

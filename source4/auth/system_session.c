@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "libcli/security/security.h"
-#include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "auth/auth.h" /* for auth_serversupplied_info */
