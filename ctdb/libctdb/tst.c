@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <err.h>
+#include <stdbool.h>
 #include "lib/tdb/include/tdb.h"
 #include "include/ctdb.h"
 
@@ -12,9 +13,11 @@ void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *pr
 	printf("Message received on port %d : %s\n", (int)srvid, data.dptr);
 }
 
+static bool registered = false;
 void message_handler_cb(int status, void *private_data)
 {
 	printf("Message handler registered: %i\n", status);
+	registered = true;
 }
 
 void rm_cb(int status, uint32_t recmaster, void *private_data)
@@ -40,6 +43,11 @@ int main(int argc, char *argv[])
 	if (handle == NULL) {
 		printf("Failed to register message port\n");
 		exit(10);
+	}
+
+	/* Hack for testing: this makes sure registration goes out. */
+	while (!registered) {
+		ctdb_service(ctdb_connection, POLLIN|POLLOUT);
 	}
 
 	msg.dptr="HelloWorld";
