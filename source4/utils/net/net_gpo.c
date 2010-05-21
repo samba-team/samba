@@ -28,6 +28,7 @@
 #include "param/param.h"
 #include "libcli/security/sddl.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "lib/policy/policy.h"
 
 static int net_gpo_list_all_usage(struct net_context *ctx, int argc, const char **argv)
@@ -211,22 +212,27 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 	NTSTATUS status;
 	int rv;
 	unsigned int i;
+	struct auth_context *auth_context;
 
 	if (argc != 1) {
 		return net_gpo_list_usage(ctx, argc, argv);
 	}
+
 	status = gp_init(ctx, ctx->lp_ctx, ctx->credentials, ctx->event_ctx, &gp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to connect to DC's LDAP: %s\n", get_friendly_nt_error_msg(status)));
 		return 1;
 	}
 
-	rv = ldb_search(gp_ctx->ldb_ctx,
+	/* Find the user in the directory. We need extended DN's for group expansion
+	 * in authsam_make_server_info */
+	rv = dsdb_search(gp_ctx->ldb_ctx,
 			gp_ctx,
 			&result,
 			ldb_get_default_basedn(gp_ctx->ldb_ctx),
 			LDB_SCOPE_SUBTREE,
 			NULL,
+			DSDB_SEARCH_SHOW_EXTENDED_DN,
 			"(&(objectClass=user)(sAMAccountName=%s))", argv[0]);
 	if (rv != LDB_SUCCESS) {
 		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
@@ -241,6 +247,8 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 		return 1;
 	}
 
+	/* We need the server info, as this will contain the groups of this
+	 * user, needed for a token */
 	status = authsam_make_server_info(gp_ctx,
 			gp_ctx->ldb_ctx,
 			lp_netbios_name(gp_ctx->lp_ctx),
@@ -256,7 +264,16 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 		return 1;
 	}
 
-	status = auth_generate_session_info(gp_ctx, gp_ctx->ev_ctx, gp_ctx->lp_ctx, server_info, &session_info);
+	/* We do now need an auth context to create a session */
+	status = auth_context_create_from_ldb(gp_ctx, gp_ctx->ldb_ctx, &auth_context);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to get an auth context: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
+		return 1;
+	}
+
+	/* The session info will contain the security token for this user */
+	status = auth_generate_session_info(gp_ctx, auth_context, server_info, 0, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to generate session information: %s\n", get_friendly_nt_error_msg(status)));
 		talloc_free(gp_ctx);
