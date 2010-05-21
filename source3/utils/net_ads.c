@@ -2708,7 +2708,7 @@ int net_ads_group(struct net_context *c, int argc, const char **argv)
 	return net_ads_noads();
 }
 
-int net_ads_gpo(int argc, const char **argv)
+int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 {
 	return net_ads_noads();
 }
