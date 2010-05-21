@@ -50,7 +50,7 @@ NTTIME nttime_from_string(const char *s)
  preserve the "special" values.
 **************************************************************/
 
-uint32_t convert_time_t_to_uint32(time_t t)
+uint32_t convert_time_t_to_uint32_t(time_t t)
 {
 #if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
 	/* time_t is 64-bit. */
@@ -63,7 +63,7 @@ uint32_t convert_time_t_to_uint32(time_t t)
 	return (uint32_t)t;
 }
 
-time_t convert_uint32_to_time_t(uint32_t u)
+time_t convert_uint32_t_to_time_t(uint32_t u)
 {
 #if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
 	/* time_t is 64-bit. */

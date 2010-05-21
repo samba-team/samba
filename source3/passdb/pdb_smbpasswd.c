@@ -39,7 +39,7 @@ struct smb_passwd
         const unsigned char *smb_passwd;    /* Null if no password */
         const unsigned char *smb_nt_passwd; /* Null if no password */
 
-        uint16 acct_ctrl;             /* account info (ACB_xxxx bit-mask) */
+        uint16_t acct_ctrl;             /* account info (ACB_xxxx bit-mask) */
         time_t pass_last_set_time;    /* password last set time */
 };
 
@@ -614,7 +614,7 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
 	/* Add the account encoding and the last change time. */
 	slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
 		pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN),
-		(uint32)newpwd->pass_last_set_time);
+		(uint32_t)newpwd->pass_last_set_time);
 
 	return new_entry;
 }
@@ -1003,7 +1003,7 @@ This is no longer supported.!\n", pwd->smb_name));
 		slprintf(&ascii_p16[strlen(ascii_p16)], 
 			sizeof(ascii_p16)-(strlen(ascii_p16)+1),
 			"%s:LCT-%08X:", 
-			encode_bits, (uint32)pwd->pass_last_set_time );
+			encode_bits, (uint32_t)pwd->pass_last_set_time );
 		wr_len = strlen(ascii_p16);
 	}
 
@@ -1185,7 +1185,7 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
 
 static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampass)
 {
-	uint32 rid;
+	uint32_t rid;
 
 	if (sampass == NULL) 
 		return False;
@@ -1323,7 +1323,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	FILE *fp = NULL;
-	uint32 rid;
+	uint32_t rid;
 
 	DEBUG(10, ("smbpasswd_getsampwrid: search by sid: %s\n",
 		   sid_string_dbg(sid)));

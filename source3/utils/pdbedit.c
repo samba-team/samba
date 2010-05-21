@@ -201,7 +201,7 @@ static int reinit_account_policies (void)
 	int i;
 
 	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-		uint32 policy_value;
+		uint32_t policy_value;
 		if (!account_policy_get_default(i, &policy_value)) {
 			fprintf(stderr, "Can't get default account policy\n");
 			return -1;
@@ -225,7 +225,7 @@ static int export_account_policies (struct pdb_methods *in, struct pdb_methods *
 	int i;
 
 	for ( i=1; decode_account_policy_name(i) != NULL; i++ ) {
-		uint32 policy_value;
+		uint32_t policy_value;
 		NTSTATUS status;
 
 		status = in->get_account_policy(in, i, &policy_value);
@@ -261,7 +261,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 
 	if (verbosity) {
 		char temp[44];
-		const uint8 *hours;
+		const uint8_t *hours;
 
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
 		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
@@ -328,7 +328,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		       lm_passwd,
 		       nt_passwd,
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-		       (uint32)convert_time_t_to_uint32(pdb_get_pass_last_set_time(sam_pwent)));
+		       (uint32)convert_time_t_to_uint32_t(pdb_get_pass_last_set_time(sam_pwent)));
 	} else {
 		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,
@@ -592,7 +592,7 @@ static int set_user_info(const char *username, const char *fullname,
 				return -1;
 			}
 
-			value = convert_uint32_to_time_t(num);
+			value = convert_uint32_t_to_time_t(num);
 		}
 
 		pdb_set_kickoff_time(sam_pwent, value, PDB_CHANGED);
@@ -1132,7 +1132,7 @@ int main (int argc, char **argv)
 
 	/* account policy operations */
 	if ((checkparms & BIT_ACCPOLICY) && !(checkparms & ~(BIT_ACCPOLICY + BIT_ACCPOLVAL))) {
-		uint32 value;
+		uint32_t value;
 		enum pdb_policy_type field = account_policy_name_to_typenum(account_policy);
 		if (field == 0) {
 			const char **names;

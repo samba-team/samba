@@ -376,7 +376,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 ******************************************************************/
 
 static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state,
-					 uint32 rid, LDAPMessage ** result,
+					 uint32_t rid, LDAPMessage ** result,
 					 const char **attr)
 {
 	char *filter = NULL;
@@ -529,19 +529,19 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			*acct_desc = NULL,
 			*workstations = NULL,
 			*munged_dial = NULL;
-	uint32 		user_rid;
+	uint32_t 		user_rid;
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
 	bool 		use_samba_attrs = True;
-	uint32 		acct_ctrl = 0;
-	uint16		logon_divs;
-	uint16 		bad_password_count = 0,
+	uint32_t 		acct_ctrl = 0;
+	uint16_t		logon_divs;
+	uint16_t 		bad_password_count = 0,
 			logon_count = 0;
-	uint32 hours_len;
+	uint32_t hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	char *temp = NULL;
 	struct login_cache cache_entry;
-	uint32 		pwHistLen;
+	uint32_t 		pwHistLen;
 	bool expand_explicit = lp_passdb_expand_explicit();
 	bool ret = false;
 	TALLOC_CTX *ctx = talloc_init("init_sam_from_ldap");
@@ -604,7 +604,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				get_userattr_key2string(ldap_state->schema_ver,
 					LDAP_ATTR_USER_RID),
 				ctx))!=NULL) {
-			user_rid = (uint32)atol(temp);
+			user_rid = (uint32_t)atol(temp);
 			pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
 		}
 	}
@@ -985,7 +985,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				LDAP_ATTR_BAD_PASSWORD_COUNT),
 			ctx);
 	if (temp) {
-		bad_password_count = (uint32) atol(temp);
+		bad_password_count = (uint32_t) atol(temp);
 		pdb_set_bad_password_count(sampass,
 				bad_password_count, PDB_SET);
 	}
@@ -1009,7 +1009,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				LDAP_ATTR_LOGON_COUNT),
 			ctx);
 	if (temp) {
-		logon_count = (uint32) atol(temp);
+		logon_count = (uint32_t) atol(temp);
 		pdb_set_logon_count(sampass, logon_count, PDB_SET);
 	}
 
@@ -1172,7 +1172,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 						    enum pdb_elements))
 {
 	char *temp = NULL;
-	uint32 rid;
+	uint32_t rid;
 
 	if (mods == NULL || sampass == NULL) {
 		DEBUG(0, ("init_ldap_from_sam: NULL parameters found!\n"));
@@ -1396,7 +1396,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 		if (need_update(sampass, PDB_PWHISTORY)) {
 			char *pwstr = NULL;
-			uint32 pwHistLen = 0;
+			uint32_t pwHistLen = 0;
 			pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 
 			pwstr = SMB_MALLOC_ARRAY(char, 1024);
@@ -1409,7 +1409,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 				pwstr[64] = '\0';
 			} else {
 				int i;
-				uint32 currHistLen = 0;
+				uint32_t currHistLen = 0;
 				const uint8 *pwhist = pdb_get_pw_history(sampass, &currHistLen);
 				if (pwhist != NULL) {
 					/* We can only store (1024-1/64 password history entries. */
@@ -1471,9 +1471,9 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	if (need_update(sampass, PDB_BAD_PASSWORD_COUNT))  /* &&
 	    need_update(sampass, PDB_BAD_PASSWORD_TIME)) */ {
-		uint16 badcount = pdb_get_bad_password_count(sampass);
+		uint16_t badcount = pdb_get_bad_password_count(sampass);
 		time_t badtime = pdb_get_bad_password_time(sampass);
-		uint32 pol;
+		uint32_t pol;
 		pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &pol);
 
 		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
@@ -1628,7 +1628,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 {
 	int rc = -1;
 	const char ** attr_list;
-	uint32 rid;
+	uint32_t rid;
 
 	switch ( ldap_state->schema_ver ) {
 		case SCHEMAVER_SAMBASAMACCOUNT: {
@@ -2068,8 +2068,8 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 
 static NTSTATUS ldapsam_del_groupmem(struct pdb_methods *my_methods,
 				     TALLOC_CTX *tmp_ctx,
-				     uint32 group_rid,
-				     uint32 member_rid);
+				     uint32_t group_rid,
+				     uint32_t member_rid);
 
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
@@ -2175,7 +2175,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	LDAPMessage 	*entry  = NULL;
 	LDAPMod 	**mods = NULL;
 	int		ldap_op = LDAP_MOD_REPLACE;
-	uint32		num_result;
+	uint32_t		num_result;
 	const char	**attr_list;
 	char *escape_user = NULL;
 	const char 	*username = pdb_get_username(newpwd);
@@ -2663,7 +2663,7 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 					   LDAPMessage *entry,
 					   const DOM_SID *domain_sid,
-					   uint32 *rid)
+					   uint32_t *rid)
 {
 	fstring str;
 	DOM_SID sid;
@@ -2696,7 +2696,7 @@ static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
-					   uint32 **pp_member_rids,
+					   uint32_t **pp_member_rids,
 					   size_t *p_num_members)
 {
 	struct ldapsam_privates *ldap_state =
@@ -2814,7 +2814,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		{
 			char *sidstr;
 			DOM_SID sid;
-			uint32 rid;
+			uint32_t rid;
 
 			sidstr = smbldap_talloc_single_attribute(conn->ldap_struct,
 								 entry, "sambaSID",
@@ -2865,7 +2865,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	     entry != NULL;
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
-		uint32 rid;
+		uint32_t rid;
 
 		if (!ldapsam_extract_rid_from_entry(conn->ldap_struct,
 						    entry,
@@ -3791,7 +3791,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 					  const DOM_SID *domain_sid,
 					  const DOM_SID *members,
 					  size_t num_members,
-					  uint32 **pp_alias_rids,
+					  uint32_t **pp_alias_rids,
 					  size_t *p_num_alias_rids)
 {
 	struct ldapsam_privates *ldap_state =
@@ -3870,7 +3870,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	{
 		fstring sid_str;
 		DOM_SID sid;
-		uint32 rid;
+		uint32_t rid;
 
 		if (!smbldap_get_single_attribute(ldap_struct, entry,
 						  LDAP_ATTRIBUTE_SID,
@@ -3907,7 +3907,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 						   enum pdb_policy_type type,
-						   uint32 value)
+						   uint32_t value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	int rc;
@@ -3963,7 +3963,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods,
 						     enum pdb_policy_type type,
-						     uint32 *value)
+						     uint32_t *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *result = NULL;
@@ -4022,7 +4022,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 		goto out;
 	}
 
-	*value = (uint32)atol(vals[0]);
+	*value = (uint32_t)atol(vals[0]);
 
 	ntstatus = NT_STATUS_OK;
 
@@ -4100,7 +4100,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 				    const DOM_SID *domain_sid,
 				    int num_rids,
-				    uint32 *rids,
+				    uint32_t *rids,
 				    const char **names,
 				    enum lsa_SidType *attrs)
 {
@@ -4181,7 +4181,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (entry = ldap_first_entry(ld, msg);
 	     entry != NULL;
 	     entry = ldap_next_entry(ld, entry)) {
-		uint32 rid;
+		uint32_t rid;
 		int rid_index;
 		const char *name;
 
@@ -4255,7 +4255,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	     entry != NULL;
 	     entry = ldap_next_entry(ld, entry))
 	{
-		uint32 rid;
+		uint32_t rid;
 		int rid_index;
 		const char *attr;
 		enum lsa_SidType type;
@@ -4379,8 +4379,8 @@ const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 struct ldap_search_state {
 	struct smbldap_state *connection;
 
-	uint32 acct_flags;
-	uint16 group_type;
+	uint32_t acct_flags;
+	uint16_t group_type;
 
 	const char *base;
 	int scope;
@@ -4558,7 +4558,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 	char **vals;
 	size_t converted_size;
 	DOM_SID sid;
-	uint32 acct_flags;
+	uint32_t acct_flags;
 
 	vals = ldap_get_values(ld, entry, "sambaAcctFlags");
 	if ((vals == NULL) || (vals[0] == NULL)) {
@@ -4650,7 +4650,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 
 static bool ldapsam_search_users(struct pdb_methods *methods,
 				 struct pdb_search *search,
-				 uint32 acct_flags)
+				 uint32_t acct_flags)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -4704,7 +4704,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 	char **vals;
 	size_t converted_size;
 	DOM_SID sid;
-	uint16 group_type;
+	uint16_t group_type;
 
 	result->account_name = "";
 	result->fullname = "";
@@ -4885,7 +4885,7 @@ static uint32_t ldapsam_capabilities(struct pdb_methods *methods)
 }
 
 static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
-				    uint32 *rid)
+				    uint32_t *rid)
 {
 	struct smbldap_state *smbldap_state = priv->smbldap_state;
 
@@ -4895,7 +4895,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	NTSTATUS status;
 	char *value;
 	int rc;
-	uint32 nextRid = 0;
+	uint32_t nextRid = 0;
 	const char *dn;
 
 	TALLOC_CTX *mem_ctx;
@@ -4932,21 +4932,21 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextRid",	mem_ctx);
 	if (value != NULL) {
-		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
 		nextRid = MAX(nextRid, tmp);
 	}
 
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextUserRid", mem_ctx);
 	if (value != NULL) {
-		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
 		nextRid = MAX(nextRid, tmp);
 	}
 
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextGroupRid", mem_ctx);
 	if (value != NULL) {
-		uint32 tmp = (uint32)strtoul(value, NULL, 10);
+		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
 		nextRid = MAX(nextRid, tmp);
 	}
 
@@ -4981,7 +4981,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	return status;
 }
 
-static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32 *rid)
+static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32_t *rid)
 {
 	int i;
 
@@ -5003,7 +5003,7 @@ static NTSTATUS ldapsam_new_rid_internal(struct pdb_methods *methods, uint32 *ri
 	return NT_STATUS_ACCESS_DENIED;
 }
 
-static bool ldapsam_new_rid(struct pdb_methods *methods, uint32 *rid)
+static bool ldapsam_new_rid(struct pdb_methods *methods, uint32_t *rid)
 {
 	NTSTATUS result = ldapsam_new_rid_internal(methods, rid);
 	return NT_STATUS_IS_OK(result) ? True : False;
@@ -5261,12 +5261,12 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 				    TALLOC_CTX *tmp_ctx, const char *name,
-				    uint32 acb_info, uint32 *rid)
+				    uint32_t acb_info, uint32_t *rid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
-	uint32 num_result;
+	uint32_t num_result;
 	bool is_machine = False;
 	bool add_posix = False;
 	LDAPMod **mods = NULL;
@@ -5583,13 +5583,13 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 					 TALLOC_CTX *tmp_ctx,
 					 const char *name,
-					 uint32 *rid)
+					 uint32_t *rid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	NTSTATUS ret;
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
-	uint32 num_result;
+	uint32_t num_result;
 	bool is_new_entry = False;
 	LDAPMod **mods = NULL;
 	char *filter;
@@ -5735,7 +5735,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, uint32 rid)
+static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_CTX *tmp_ctx, uint32_t rid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result = NULL;
@@ -5831,14 +5831,14 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 
 static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 					TALLOC_CTX *tmp_ctx,
-					uint32 group_rid,
-					uint32 member_rid,
+					uint32_t group_rid,
+					uint32_t member_rid,
 					int modop)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
-	uint32 num_result;
+	uint32_t num_result;
 	LDAPMod **mods = NULL;
 	char *filter;
 	char *uidstr;
@@ -5993,15 +5993,15 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_add_groupmem(struct pdb_methods *my_methods,
 				     TALLOC_CTX *tmp_ctx,
-				     uint32 group_rid,
-				     uint32 member_rid)
+				     uint32_t group_rid,
+				     uint32_t member_rid)
 {
 	return ldapsam_change_groupmem(my_methods, tmp_ctx, group_rid, member_rid, LDAP_MOD_ADD);
 }
 static NTSTATUS ldapsam_del_groupmem(struct pdb_methods *my_methods,
 				     TALLOC_CTX *tmp_ctx,
-				     uint32 group_rid,
-				     uint32 member_rid)
+				     uint32_t group_rid,
+				     uint32_t member_rid)
 {
 	return ldapsam_change_groupmem(my_methods, tmp_ctx, group_rid, member_rid, LDAP_MOD_DELETE);
 }
@@ -6013,7 +6013,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *entry = NULL;
 	LDAPMessage *result = NULL;
-	uint32 num_result;
+	uint32_t num_result;
 	LDAPMod **mods = NULL;
 	char *filter;
 	char *escape_username;
@@ -6128,7 +6128,7 @@ static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 	int attrsonly = 0; /* 0: return values too */
 	LDAPMessage *result = NULL;
 	char *trusted_dn;
-	uint32 num_result;
+	uint32_t num_result;
 
 	filter = talloc_asprintf(talloc_tos(),
 				 "(&(objectClass=%s)(sambaDomainName=%s))",
@@ -6339,7 +6339,7 @@ static bool ldapsam_del_trusteddom_pw(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
 					 TALLOC_CTX *mem_ctx,
-					 uint32 *num_domains,
+					 uint32_t *num_domains,
 					 struct trustdom_info ***domains)
 {
 	int rc;
@@ -6556,7 +6556,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state = NULL;
-	uint32 alg_rid_base;
+	uint32_t alg_rid_base;
 	char *alg_rid_base_string = NULL;
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
@@ -6688,7 +6688,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 					 LDAP_ATTR_ALGORITHMIC_RID_BASE ),
 		    talloc_tos());
 	if (alg_rid_base_string) {
-		alg_rid_base = (uint32)atol(alg_rid_base_string);
+		alg_rid_base = (uint32_t)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {
 			DEBUG(0, ("The value of 'algorithmic RID base' has "
 				  "changed since the LDAP\n"

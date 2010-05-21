@@ -40,7 +40,7 @@
  Collection of get...() functions for struct samu.
  ********************************************************************/
 
-uint32 pdb_get_acct_ctrl(const struct samu *sampass)
+uint32_t pdb_get_acct_ctrl(const struct samu *sampass)
 {
 	return sampass->acct_ctrl;
 }
@@ -72,7 +72,7 @@ time_t pdb_get_pass_last_set_time(const struct samu *sampass)
 
 time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 {
-	uint32 allow;
+	uint32_t allow;
 
 	/* if the last set time is zero, it means the user cannot 
 	   change their password, and this time must be zero.   jmcd 
@@ -104,7 +104,7 @@ time_t pdb_get_pass_can_change_time_noncalc(const struct samu *sampass)
 
 time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 {
-	uint32 expire;
+	uint32_t expire;
 
 	if (sampass->pass_last_set_time == 0)
 		return (time_t) 0;
@@ -113,7 +113,7 @@ time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 		return get_time_t_max();
 
 	if (!pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &expire)
-	    || expire == (uint32)-1 || expire == 0) 
+	    || expire == (uint32_t)-1 || expire == 0)
 		return get_time_t_max();
 
 	return sampass->pass_last_set_time + expire;
@@ -127,12 +127,12 @@ bool pdb_get_pass_can_change(const struct samu *sampass)
 	return True;
 }
 
-uint16 pdb_get_logon_divs(const struct samu *sampass)
+uint16_t pdb_get_logon_divs(const struct samu *sampass)
 {
 	return sampass->logon_divs;
 }
 
-uint32 pdb_get_hours_len(const struct samu *sampass)
+uint32_t pdb_get_hours_len(const struct samu *sampass)
 {
 	return sampass->hours_len;
 }
@@ -156,7 +156,7 @@ const uint8 *pdb_get_lanman_passwd(const struct samu *sampass)
 	return (uint8 *)sampass->lm_pw.data;
 }
 
-const uint8 *pdb_get_pw_history(const struct samu *sampass, uint32 *current_hist_len)
+const uint8 *pdb_get_pw_history(const struct samu *sampass, uint32_t *current_hist_len)
 {
 	SMB_ASSERT((!sampass->nt_pw_his.data) 
 	   || ((sampass->nt_pw_his.length % PW_HISTORY_ENTRY_LEN) == 0));
@@ -371,17 +371,17 @@ const char *pdb_get_munged_dial(const struct samu *sampass)
 	return sampass->munged_dial;
 }
 
-uint16 pdb_get_bad_password_count(const struct samu *sampass)
+uint16_t pdb_get_bad_password_count(const struct samu *sampass)
 {
 	return sampass->bad_password_count;
 }
 
-uint16 pdb_get_logon_count(const struct samu *sampass)
+uint16_t pdb_get_logon_count(const struct samu *sampass)
 {
 	return sampass->logon_count;
 }
 
-uint32 pdb_get_unknown_6(const struct samu *sampass)
+uint32_t pdb_get_unknown_6(const struct samu *sampass)
 {
 	return sampass->unknown_6;
 }
@@ -399,7 +399,7 @@ void *pdb_get_backend_private_data(const struct samu *sampass, const struct pdb_
  Collection of set...() functions for struct samu.
  ********************************************************************/
 
-bool pdb_set_acct_ctrl(struct samu *sampass, uint32 acct_ctrl, enum pdb_value_state flag)
+bool pdb_set_acct_ctrl(struct samu *sampass, uint32_t acct_ctrl, enum pdb_value_state flag)
 {
 	sampass->acct_ctrl = acct_ctrl;
 	return pdb_set_init_flags(sampass, PDB_ACCTCTRL, flag);
@@ -447,13 +447,13 @@ bool pdb_set_pass_last_set_time(struct samu *sampass, time_t mytime, enum pdb_va
 	return pdb_set_init_flags(sampass, PDB_PASSLASTSET, flag);
 }
 
-bool pdb_set_hours_len(struct samu *sampass, uint32 len, enum pdb_value_state flag)
+bool pdb_set_hours_len(struct samu *sampass, uint32_t len, enum pdb_value_state flag)
 {
 	sampass->hours_len = len;
 	return pdb_set_init_flags(sampass, PDB_HOURSLEN, flag);
 }
 
-bool pdb_set_logon_divs(struct samu *sampass, uint16 hours, enum pdb_value_state flag)
+bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_state flag)
 {
 	sampass->logon_divs = hours;
 	return pdb_set_init_flags(sampass, PDB_LOGONDIVS, flag);
@@ -911,7 +911,7 @@ bool pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], e
  in pwd.
 ********************************************************************/
 
-bool pdb_set_pw_history(struct samu *sampass, const uint8 *pwd, uint32 historyLen, enum pdb_value_state flag)
+bool pdb_set_pw_history(struct samu *sampass, const uint8 *pwd, uint32_t historyLen, enum pdb_value_state flag)
 {
 	if (historyLen && pwd){
 		data_blob_free(&(sampass->nt_pw_his));
@@ -952,19 +952,19 @@ bool pdb_set_plaintext_pw_only(struct samu *sampass, const char *password, enum 
 	return pdb_set_init_flags(sampass, PDB_PLAINTEXT_PW, flag);
 }
 
-bool pdb_set_bad_password_count(struct samu *sampass, uint16 bad_password_count, enum pdb_value_state flag)
+bool pdb_set_bad_password_count(struct samu *sampass, uint16_t bad_password_count, enum pdb_value_state flag)
 {
 	sampass->bad_password_count = bad_password_count;
 	return pdb_set_init_flags(sampass, PDB_BAD_PASSWORD_COUNT, flag);
 }
 
-bool pdb_set_logon_count(struct samu *sampass, uint16 logon_count, enum pdb_value_state flag)
+bool pdb_set_logon_count(struct samu *sampass, uint16_t logon_count, enum pdb_value_state flag)
 {
 	sampass->logon_count = logon_count;
 	return pdb_set_init_flags(sampass, PDB_LOGON_COUNT, flag);
 }
 
-bool pdb_set_unknown_6(struct samu *sampass, uint32 unkn, enum pdb_value_state flag)
+bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag)
 {
 	sampass->unknown_6 = unkn;
 	return pdb_set_init_flags(sampass, PDB_UNKNOWN6, flag);
@@ -1020,8 +1020,8 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
 	uchar *pwhistory;
-	uint32 pwHistLen;
-	uint32 current_history_len;
+	uint32_t pwHistLen;
+	uint32_t current_history_len;
 
 	if (!plaintext)
 		return False;
@@ -1129,7 +1129,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 }
 
 /* check for any PDB_SET/CHANGED field and fill the appropriate mask bit */
-uint32 pdb_build_fields_present(struct samu *sampass)
+uint32_t pdb_build_fields_present(struct samu *sampass)
 {
 	/* value set to all for testing */
 	return 0x00ffffff;

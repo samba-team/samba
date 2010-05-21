@@ -1049,8 +1049,8 @@ void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
-uint32 convert_time_t_to_uint32(time_t t);
-time_t convert_uint32_to_time_t(uint32 u);
+uint32_t convert_time_t_to_uint32_t(time_t t);
+time_t convert_uint32_t_to_time_t(uint32_t u);
 bool nt_time_is_zero(const NTTIME *nt);
 time_t generalized_to_unix_time(const char *str);
 int get_server_zone_offset(void);
@@ -4354,20 +4354,20 @@ const char *my_sam_name(void);
 struct samu *samu_new( TALLOC_CTX *ctx );
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd);
 NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd);
-char *pdb_encode_acct_ctrl(uint32 acct_ctrl, size_t length);
-uint32 pdb_decode_acct_ctrl(const char *p);
-void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32 acct_ctrl);
+char *pdb_encode_acct_ctrl(uint32_t acct_ctrl, size_t length);
+uint32_t pdb_decode_acct_ctrl(const char *p);
+void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl);
 bool pdb_gethexpwd(const char *p, unsigned char *pwd);
 void pdb_sethexhours(char *p, const unsigned char *hours);
 bool pdb_gethexhours(const char *p, unsigned char *hours);
 int algorithmic_rid_base(void);
-uid_t algorithmic_pdb_user_rid_to_uid(uint32 user_rid);
+uid_t algorithmic_pdb_user_rid_to_uid(uint32_t user_rid);
 uid_t max_algorithmic_uid(void);
-uint32 algorithmic_pdb_uid_to_user_rid(uid_t uid);
-gid_t pdb_group_rid_to_gid(uint32 group_rid);
+uint32_t algorithmic_pdb_uid_to_user_rid(uid_t uid);
+gid_t pdb_group_rid_to_gid(uint32_t group_rid);
 gid_t max_algorithmic_gid(void);
-uint32 algorithmic_pdb_gid_to_group_rid(gid_t gid);
-bool algorithmic_pdb_rid_is_user(uint32 rid);
+uint32_t algorithmic_pdb_gid_to_group_rid(gid_t gid);
+bool algorithmic_pdb_rid_is_user(uint32_t rid);
 bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 			    enum lsa_SidType *type);
 NTSTATUS local_password_change(const char *user_name,
@@ -4376,8 +4376,8 @@ NTSTATUS local_password_change(const char *user_name,
 				char **pp_err_str,
 				char **pp_msg_str);
 bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
-			   uint8 *buf, uint32 buflen);
-uint32 init_buffer_from_samu (uint8 **buf, struct samu *sampass, bool size_only);
+			   uint8_t *buf, uint32_t buflen);
+uint32_t init_buffer_from_samu (uint8_t **buf, struct samu *sampass, bool size_only);
 bool pdb_copy_sam_account(struct samu *dst, struct samu *src );
 bool pdb_update_bad_password_count(struct samu *sampass, bool *updated);
 bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);
@@ -4386,20 +4386,20 @@ bool is_dc_trusted_domain_situation(const char *domain_name);
 bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 			const char **account_name,
 			enum netr_SchannelType *channel);
-bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
+bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 		       const char **account_name,
 		       enum netr_SchannelType *channel);
 
 /* The following definitions come from passdb/pdb_compat.c  */
 
-uint32 pdb_get_user_rid (const struct samu *sampass);
-uint32 pdb_get_group_rid (struct samu *sampass);
-bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value_state flag);
-bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_value_state flag);
+uint32_t pdb_get_user_rid (const struct samu *sampass);
+uint32_t pdb_get_group_rid (struct samu *sampass);
+bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32_t rid, enum pdb_value_state flag);
+bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32_t grid, enum pdb_value_state flag);
 
 /* The following definitions come from passdb/pdb_get_set.c  */
 
-uint32 pdb_get_acct_ctrl(const struct samu *sampass);
+uint32_t pdb_get_acct_ctrl(const struct samu *sampass);
 time_t pdb_get_logon_time(const struct samu *sampass);
 time_t pdb_get_logoff_time(const struct samu *sampass);
 time_t pdb_get_kickoff_time(const struct samu *sampass);
@@ -4409,12 +4409,12 @@ time_t pdb_get_pass_can_change_time(const struct samu *sampass);
 time_t pdb_get_pass_can_change_time_noncalc(const struct samu *sampass);
 time_t pdb_get_pass_must_change_time(const struct samu *sampass);
 bool pdb_get_pass_can_change(const struct samu *sampass);
-uint16 pdb_get_logon_divs(const struct samu *sampass);
-uint32 pdb_get_hours_len(const struct samu *sampass);
-const uint8 *pdb_get_hours(const struct samu *sampass);
-const uint8 *pdb_get_nt_passwd(const struct samu *sampass);
-const uint8 *pdb_get_lanman_passwd(const struct samu *sampass);
-const uint8 *pdb_get_pw_history(const struct samu *sampass, uint32 *current_hist_len);
+uint16_t pdb_get_logon_divs(const struct samu *sampass);
+uint32_t pdb_get_hours_len(const struct samu *sampass);
+const uint8_t *pdb_get_hours(const struct samu *sampass);
+const uint8_t *pdb_get_nt_passwd(const struct samu *sampass);
+const uint8_t *pdb_get_lanman_passwd(const struct samu *sampass);
+const uint8_t *pdb_get_pw_history(const struct samu *sampass, uint32_t *current_hist_len);
 const char *pdb_get_plaintext_passwd(const struct samu *sampass);
 const DOM_SID *pdb_get_user_sid(const struct samu *sampass);
 const DOM_SID *pdb_get_group_sid(struct samu *sampass);
@@ -4431,11 +4431,11 @@ const char *pdb_get_acct_desc(const struct samu *sampass);
 const char *pdb_get_workstations(const struct samu *sampass);
 const char *pdb_get_comment(const struct samu *sampass);
 const char *pdb_get_munged_dial(const struct samu *sampass);
-uint16 pdb_get_bad_password_count(const struct samu *sampass);
-uint16 pdb_get_logon_count(const struct samu *sampass);
-uint32 pdb_get_unknown_6(const struct samu *sampass);
+uint16_t pdb_get_bad_password_count(const struct samu *sampass);
+uint16_t pdb_get_logon_count(const struct samu *sampass);
+uint32_t pdb_get_unknown_6(const struct samu *sampass);
 void *pdb_get_backend_private_data(const struct samu *sampass, const struct pdb_methods *my_methods);
-bool pdb_set_acct_ctrl(struct samu *sampass, uint32 acct_ctrl, enum pdb_value_state flag);
+bool pdb_set_acct_ctrl(struct samu *sampass, uint32_t acct_ctrl, enum pdb_value_state flag);
 bool pdb_set_logon_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_logoff_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_kickoff_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
@@ -4443,8 +4443,8 @@ bool pdb_set_bad_password_time(struct samu *sampass, time_t mytime, enum pdb_val
 bool pdb_set_pass_can_change_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_pass_must_change_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_pass_last_set_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
-bool pdb_set_hours_len(struct samu *sampass, uint32 len, enum pdb_value_state flag);
-bool pdb_set_logon_divs(struct samu *sampass, uint16 hours, enum pdb_value_state flag);
+bool pdb_set_hours_len(struct samu *sampass, uint32_t len, enum pdb_value_state flag);
+bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_state flag);
 bool pdb_set_init_flags(struct samu *sampass, enum pdb_elements element, enum pdb_value_state value_flag);
 bool pdb_set_user_sid(struct samu *sampass, const DOM_SID *u_sid, enum pdb_value_state flag);
 bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_value_state flag);
@@ -4461,21 +4461,21 @@ bool pdb_set_acct_desc(struct samu *sampass, const char *acct_desc, enum pdb_val
 bool pdb_set_workstations(struct samu *sampass, const char *workstations, enum pdb_value_state flag);
 bool pdb_set_comment(struct samu *sampass, const char *comment, enum pdb_value_state flag);
 bool pdb_set_munged_dial(struct samu *sampass, const char *munged_dial, enum pdb_value_state flag);
-bool pdb_set_nt_passwd(struct samu *sampass, const uint8 pwd[NT_HASH_LEN], enum pdb_value_state flag);
-bool pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], enum pdb_value_state flag);
-bool pdb_set_pw_history(struct samu *sampass, const uint8 *pwd, uint32 historyLen, enum pdb_value_state flag);
+bool pdb_set_nt_passwd(struct samu *sampass, const uint8_t pwd[NT_HASH_LEN], enum pdb_value_state flag);
+bool pdb_set_lanman_passwd(struct samu *sampass, const uint8_t pwd[LM_HASH_LEN], enum pdb_value_state flag);
+bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t historyLen, enum pdb_value_state flag);
 bool pdb_set_plaintext_pw_only(struct samu *sampass, const char *password, enum pdb_value_state flag);
-bool pdb_set_bad_password_count(struct samu *sampass, uint16 bad_password_count, enum pdb_value_state flag);
-bool pdb_set_logon_count(struct samu *sampass, uint16 logon_count, enum pdb_value_state flag);
-bool pdb_set_unknown_6(struct samu *sampass, uint32 unkn, enum pdb_value_state flag);
-bool pdb_set_hours(struct samu *sampass, const uint8 *hours, enum pdb_value_state flag);
+bool pdb_set_bad_password_count(struct samu *sampass, uint16_t bad_password_count, enum pdb_value_state flag);
+bool pdb_set_logon_count(struct samu *sampass, uint16_t logon_count, enum pdb_value_state flag);
+bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag);
+bool pdb_set_hours(struct samu *sampass, const uint8_t *hours, enum pdb_value_state flag);
 bool pdb_set_backend_private_data(struct samu *sampass, void *private_data, 
 				   void (*free_fn)(void **), 
 				   const struct pdb_methods *my_methods, 
 				   enum pdb_value_state flag);
 bool pdb_set_pass_can_change(struct samu *sampass, bool canchange);
 bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext);
-uint32 pdb_build_fields_present(struct samu *sampass);
+uint32_t pdb_build_fields_present(struct samu *sampass);
 
 /* The following definitions come from passdb/pdb_interface.c  */
 
@@ -4486,8 +4486,8 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx);
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) ;
 bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid) ;
-NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32 flags,
-			 uint32 *rid);
+NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32_t flags,
+			 uint32_t *rid);
 NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct);
 NTSTATUS pdb_add_sam_account(struct samu *sam_acct) ;
 NTSTATUS pdb_update_sam_account(struct samu *sam_acct) ;
@@ -4498,8 +4498,8 @@ bool pdb_getgrsid(GROUP_MAP *map, DOM_SID sid);
 bool pdb_getgrgid(GROUP_MAP *map, gid_t gid);
 bool pdb_getgrnam(GROUP_MAP *map, const char *name);
 NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
-			      uint32 *rid);
-NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32 rid);
+			      uint32_t *rid);
+NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32_t rid);
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map);
 NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map);
 NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid);
@@ -4507,17 +4507,17 @@ bool pdb_enum_group_mapping(const DOM_SID *sid, enum lsa_SidType sid_name_use, G
 			    size_t *p_num_entries, bool unix_only);
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				const DOM_SID *sid,
-				uint32 **pp_member_rids,
+				uint32_t **pp_member_rids,
 				size_t *p_num_members);
 NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
 				    DOM_SID **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups);
 NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, struct samu *user);
-NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
-			  uint32 member_rid);
-NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32 group_rid,
-			  uint32 member_rid);
-NTSTATUS pdb_create_alias(const char *name, uint32 *rid);
+NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
+			  uint32_t member_rid);
+NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
+			  uint32_t member_rid);
+NTSTATUS pdb_create_alias(const char *name, uint32_t *rid);
 NTSTATUS pdb_delete_alias(const DOM_SID *sid);
 NTSTATUS pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info);
 NTSTATUS pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info);
@@ -4528,17 +4528,17 @@ NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
 NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,
 				    const DOM_SID *members, size_t num_members,
-				    uint32 **pp_alias_rids,
+				    uint32_t **pp_alias_rids,
 				    size_t *p_num_alias_rids);
 NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
 			 int num_rids,
-			 uint32 *rids,
+			 uint32_t *rids,
 			 const char **names,
 			 enum lsa_SidType *attrs);
 NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  int num_names,
 			  const char **names,
-			  uint32 *rids,
+			  uint32_t *rids,
 			  enum lsa_SidType *attrs);
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
@@ -4548,22 +4548,22 @@ bool pdb_gid_to_sid(gid_t gid, DOM_SID *sid);
 bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 		   enum lsa_SidType *type);
 uint32_t pdb_capabilities(void);
-bool pdb_new_rid(uint32 *rid);
+bool pdb_new_rid(uint32_t *rid);
 bool initialize_password_db(bool reload, struct event_context *event_ctx);
 struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
 				   enum pdb_search_type type);
-struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32 acct_flags);
+struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32_t acct_flags);
 struct pdb_search *pdb_search_groups(TALLOC_CTX *mem_ctx);
 struct pdb_search *pdb_search_aliases(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
-uint32 pdb_search_entries(struct pdb_search *search,
-			  uint32 start_idx, uint32 max_entries,
+uint32_t pdb_search_entries(struct pdb_search *search,
+			  uint32_t start_idx, uint32_t max_entries,
 			  struct samr_displayentry **result);
 bool pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
 			   time_t *pass_last_set_time);
 bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
 			   const DOM_SID *sid);
 bool pdb_del_trusteddom_pw(const char *domain);
-NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32 *num_domains,
+NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 			      struct trustdom_info ***domains);
 NTSTATUS make_pdb_method( struct pdb_methods **methods ) ;
 
@@ -4602,7 +4602,7 @@ NTSTATUS pdb_wbc_sam_init(void);
 
 /* The following definitions come from passdb/pdb_tdb.c  */
 
-bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen);
+bool init_sam_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_t buflen);
 NTSTATUS pdb_tdbsam_init(void);
 
 /* The following definitions come from passdb/secrets.c  */
