@@ -107,7 +107,7 @@ static void popt_common_credentials_callback(poptContext con,
 		if (arg) {
 			if (!set_boolean(arg, &use_kerberos)) {
 				fprintf(stderr, "Error parsing -k %s. Should be "
-					"-k = [yes|no]\n", arg);
+					"-k [yes|no]\n", arg);
 				exit(1);
 				break;
 			}
@@ -160,7 +160,7 @@ struct poptOption popt_common_credentials[] = {
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
-	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos, -k = [yes|no]" },
+	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos, -k [yes|no]" },
 	{ "sign", 'S', POPT_ARG_NONE, NULL, OPT_SIGN, "Sign connection to prevent modification in transit" },
 	{ "encrypt", 'e', POPT_ARG_NONE, NULL, OPT_ENCRYPT, "Encrypt connection for privacy" },
 	{ NULL }
