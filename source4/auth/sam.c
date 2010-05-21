@@ -308,13 +308,11 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	int ret;
 	bool already_there;
 	struct ldb_dn *dn;
-	struct dom_sid *sid;
+	struct dom_sid sid;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
 	NTSTATUS status;
-	const struct ldb_val *v;
 	const struct ldb_message_element *el;
-	enum ndr_err_code ndr_err;
 
 	if (*res_sids == NULL) {
 		*num_res_sids = 0;
@@ -322,19 +320,16 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 
 	tmp_ctx = talloc_new(res_sids_ctx);
 
-	sid = talloc(tmp_ctx, struct dom_sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid, tmp_ctx);
-
 	dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, dn_val);
 	if (dn == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	v = ldb_dn_get_extended_component(dn, "SID");
-
-	ndr_err = ndr_pull_struct_blob(v, sid, sid,
-				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ "when parsing DN %s we failed to find or parse SID component, so we cannot calculate the group token: %s",
+			  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1), 
+			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -344,7 +339,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	} else {
 		/* This is an O(n^2) linear search */
 		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
-						  *num_res_sids, sid);
+						  *num_res_sids, &sid);
 		if (already_there) {
 			return NT_STATUS_OK;
 		}
@@ -373,7 +368,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
 			struct dom_sid *, *num_res_sids + 1);
 		NT_STATUS_HAVE_NO_MEMORY(*res_sids);
-		(*res_sids)[*num_res_sids] = talloc_steal(*res_sids, sid);
+		(*res_sids)[*num_res_sids] = talloc_steal(*res_sids, &sid);
 		++(*num_res_sids);
 	}
 
