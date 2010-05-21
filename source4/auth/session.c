@@ -46,19 +46,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 					     uint32_t session_info_flags,
 					     struct auth_session_info **_session_info)
 {
-	return auth_generate_session_info2(mem_ctx,
-			auth_context->event_ctx,
-			auth_context->lp_ctx,
-			server_info,
-			_session_info);
-}
-
-_PUBLIC_ NTSTATUS auth_generate_session_info2(TALLOC_CTX *mem_ctx,
-					     struct tevent_context *event_ctx,
-					     struct loadparm_context *lp_ctx,
-					     struct auth_serversupplied_info *server_info,
-					     struct auth_session_info **_session_info)
-{
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
 	unsigned int i, num_groupSIDs = 0;
@@ -206,8 +193,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info2(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = security_token_create(session_info,
-					  event_ctx,
-					  lp_ctx,
+					  auth_context->event_ctx,
+					  auth_context->lp_ctx,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  num_groupSIDs,

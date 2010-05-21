@@ -256,7 +256,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 		return 1;
 	}
 
-	status = auth_generate_session_info2(gp_ctx, gp_ctx->ev_ctx, gp_ctx->lp_ctx, server_info, &session_info);
+	status = auth_generate_session_info(gp_ctx, gp_ctx->ev_ctx, gp_ctx->lp_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to generate session information: %s\n", get_friendly_nt_error_msg(status)));
 		talloc_free(gp_ctx);

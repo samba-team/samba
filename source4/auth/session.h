@@ -53,12 +53,6 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				    uint32_t session_info_flags,
 				    struct auth_session_info **_session_info);
 
-NTSTATUS auth_generate_session_info2(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *event_ctx,
-				    struct loadparm_context *lp_ctx,
-				    struct auth_serversupplied_info *server_info,
-				    struct auth_session_info **_session_info);
-
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info);
