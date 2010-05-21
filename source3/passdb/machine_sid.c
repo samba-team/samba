@@ -25,7 +25,7 @@
 /* NOTE! the global_sam_sid is the SID of our local SAM. This is only
    equal to the domain SID when we are a DC, otherwise its our
    workstation SID */
-static DOM_SID *global_sam_sid=NULL;
+static struct dom_sid *global_sam_sid=NULL;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -35,7 +35,7 @@ static DOM_SID *global_sam_sid=NULL;
  style of SID storage
 ****************************************************************************/
 
-static bool read_sid_from_file(const char *fname, DOM_SID *sid)
+static bool read_sid_from_file(const char *fname, struct dom_sid *sid)
 {
 	char **lines;
 	int numlines;
@@ -56,7 +56,7 @@ static bool read_sid_from_file(const char *fname, DOM_SID *sid)
 /*
   generate a random sid - used to build our own sid if we don't have one
 */
-static void generate_random_sid(DOM_SID *sid)
+static void generate_random_sid(struct dom_sid *sid)
 {
 	int i;
 	uchar raw_sid_data[12];
@@ -77,13 +77,13 @@ static void generate_random_sid(DOM_SID *sid)
  Generate the global machine sid.
 ****************************************************************************/
 
-static DOM_SID *pdb_generate_sam_sid(void)
+static struct dom_sid *pdb_generate_sam_sid(void)
 {
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	char *fname = NULL;
-	DOM_SID *sam_sid;
+	struct dom_sid *sam_sid;
 
-	if(!(sam_sid=SMB_MALLOC_P(DOM_SID)))
+	if(!(sam_sid=SMB_MALLOC_P(struct dom_sid)))
 		return NULL;
 
 	if ( IS_DC ) {
@@ -179,7 +179,7 @@ static DOM_SID *pdb_generate_sam_sid(void)
 }   
 
 /* return our global_sam_sid */
-DOM_SID *get_global_sam_sid(void)
+struct dom_sid *get_global_sam_sid(void)
 {
 	struct db_context *db;
 
@@ -228,7 +228,7 @@ void reset_global_sam_sid(void)
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
 
-bool sid_check_is_domain(const DOM_SID *sid)
+bool sid_check_is_domain(const struct dom_sid *sid)
 {
 	return sid_equal(sid, get_global_sam_sid());
 }
@@ -237,9 +237,9 @@ bool sid_check_is_domain(const DOM_SID *sid)
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
 
-bool sid_check_is_in_our_domain(const DOM_SID *sid)
+bool sid_check_is_in_our_domain(const struct dom_sid *sid)
 {
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 	uint32 rid;
 
 	sid_copy(&dom_sid, sid);

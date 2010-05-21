@@ -196,7 +196,7 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 				    "%U", name_user);
 
 	{
-		DOM_SID user_sid;
+		struct dom_sid user_sid;
 		fstring sidstr;
 
 		sid_compose(&user_sid, info3->base.domain_sid,
@@ -252,11 +252,11 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
  *    or other NT_STATUS_IS_ERR(status) for other kinds of failure.
  */
 {
-	DOM_SID *require_membership_of_sid;
+	struct dom_sid *require_membership_of_sid;
 	size_t num_require_membership_of_sid;
 	char *req_sid;
 	const char *p;
-	DOM_SID sid;
+	struct dom_sid sid;
 	size_t i;
 	struct nt_user_token *token;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -812,7 +812,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
 	uint16 max_allowed_bad_attempts;
 	fstring name_domain, name_user;
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType type;
 	uchar new_nt_pass[NT_HASH_LEN];
 	const uint8 *cached_nt_pass;
@@ -1590,7 +1590,7 @@ process_result:
 
 	if (NT_STATUS_IS_OK(result)) {
 
-		DOM_SID user_sid;
+		struct dom_sid user_sid;
 
 		/* In all codepaths where result == NT_STATUS_OK info3 must have
 		   been initialized. */

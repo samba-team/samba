@@ -60,7 +60,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	struct winbindd_domain *domain;
 	char *p;
 	NTSTATUS status;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32 rid;
 	fstring keystr;
 	fstring dom_name;
@@ -1146,7 +1146,7 @@ static int idmap_tdb_dump_one_entry(struct db_record *rec, void *pdata)
 			return -1;
 		}
        		*data->maps = maps;
-		maps[num_maps].sid = talloc(maps, DOM_SID);
+		maps[num_maps].sid = talloc(maps, struct dom_sid);
 		if ( ! maps[num_maps].sid) {
 			DEBUG(0, ("Out of memory!\n"));
 			data->ret = NT_STATUS_NO_MEMORY;

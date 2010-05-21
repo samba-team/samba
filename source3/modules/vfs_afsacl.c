@@ -30,11 +30,11 @@
 
 #define MAXSIZE 2048
 
-extern const DOM_SID global_sid_World;
-extern const DOM_SID global_sid_Builtin_Administrators;
-extern const DOM_SID global_sid_Builtin_Backup_Operators;
-extern const DOM_SID global_sid_Authenticated_Users;
-extern const DOM_SID global_sid_NULL;
+extern const struct dom_sid global_sid_World;
+extern const struct dom_sid global_sid_Builtin_Administrators;
+extern const struct dom_sid global_sid_Builtin_Backup_Operators;
+extern const struct dom_sid global_sid_Authenticated_Users;
+extern const struct dom_sid global_sid_NULL;
 
 static char space_replacement = '%';
 
@@ -46,7 +46,7 @@ extern int afs_syscall(int, char *, int, char *, int);
 struct afs_ace {
 	bool positive;
 	char *name;
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType type;
 	uint32 rights;
 	struct afs_ace *next;
@@ -108,7 +108,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 				   bool positive,
 				   const char *name, uint32 rights)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType type;
 	struct afs_ace *result;
 
@@ -591,7 +591,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 				   struct security_descriptor **ppdesc)
 {
 	struct security_ace *nt_ace_list;
-	DOM_SID owner_sid, group_sid;
+	struct dom_sid owner_sid, group_sid;
 	struct security_acl *psa = NULL;
 	int good_aces;
 	size_t sd_size;
@@ -695,9 +695,9 @@ static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
 	return afs_to_nt_acl_common(afs_acl, &sbuf, security_info, ppdesc);
 }
 
-static bool mappable_sid(const DOM_SID *sid)
+static bool mappable_sid(const struct dom_sid *sid)
 {
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	
 	if (sid_compare(sid, &global_sid_Builtin_Administrators) == 0)
 		return True;

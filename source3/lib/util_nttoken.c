@@ -45,8 +45,8 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 	}
 
 	if (ptoken->user_sids && ptoken->num_sids) {
-		token->user_sids = (DOM_SID *)talloc_memdup(
-			token, ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids );
+		token->user_sids = (struct dom_sid *)talloc_memdup(
+			token, ptoken->user_sids, sizeof(struct dom_sid) * ptoken->num_sids );
 
 		if (token->user_sids == NULL) {
 			DEBUG(0, ("talloc_memdup failed\n"));

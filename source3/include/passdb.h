@@ -145,8 +145,8 @@ struct samu {
 	const char *comment;
 	const char *munged_dial;  /* munged path name and dial-back tel number */
 
-	DOM_SID user_sid;  
-	DOM_SID *group_sid;
+	struct dom_sid user_sid;
+	struct dom_sid *group_sid;
 
 	DATA_BLOB lm_pw; /* .data is Null if no password */
 	DATA_BLOB nt_pw; /* .data is Null if no password */
@@ -267,7 +267,7 @@ struct pdb_methods
 
 	NTSTATUS (*getsampwnam)(struct pdb_methods *, struct samu *sam_acct, const char *username);
 
-	NTSTATUS (*getsampwsid)(struct pdb_methods *, struct samu *sam_acct, const DOM_SID *sid);
+	NTSTATUS (*getsampwsid)(struct pdb_methods *, struct samu *sam_acct, const struct dom_sid *sid);
 
 	NTSTATUS (*create_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
 				const char *name, uint32_t acct_flags,
@@ -286,7 +286,7 @@ struct pdb_methods
 
 	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, struct samu *sam_acct, bool success);
 
-	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
+	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, struct dom_sid sid);
 
 	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map, gid_t gid);
 
@@ -306,23 +306,23 @@ struct pdb_methods
 					       GROUP_MAP *map);
 
 	NTSTATUS (*delete_group_mapping_entry)(struct pdb_methods *methods,
-					       DOM_SID sid);
+					       struct dom_sid sid);
 
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
-				       const DOM_SID *sid, enum lsa_SidType sid_name_use,
+				       const struct dom_sid *sid, enum lsa_SidType sid_name_use,
 				       GROUP_MAP **pp_rmap, size_t *p_num_entries,
 				       bool unix_only);
 
 	NTSTATUS (*enum_group_members)(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
-				       const DOM_SID *group,
+				       const struct dom_sid *group,
 				       uint32_t **pp_member_rids,
 				       size_t *p_num_members);
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   struct samu *user,
-					   DOM_SID **pp_sids, gid_t **pp_gids,
+					   struct dom_sid **pp_sids, gid_t **pp_gids,
 					   size_t *p_num_groups);
 
 	NTSTATUS (*set_unix_primary_group)(struct pdb_methods *methods,
@@ -341,40 +341,40 @@ struct pdb_methods
 				 const char *name, uint32_t *rid);
 
 	NTSTATUS (*delete_alias)(struct pdb_methods *methods,
-				 const DOM_SID *sid);
+				 const struct dom_sid *sid);
 
 	NTSTATUS (*get_aliasinfo)(struct pdb_methods *methods,
-				  const DOM_SID *sid,
+				  const struct dom_sid *sid,
 				  struct acct_info *info);
 
 	NTSTATUS (*set_aliasinfo)(struct pdb_methods *methods,
-				  const DOM_SID *sid,
+				  const struct dom_sid *sid,
 				  struct acct_info *info);
 
 	NTSTATUS (*add_aliasmem)(struct pdb_methods *methods,
-				 const DOM_SID *alias, const DOM_SID *member);
+				 const struct dom_sid *alias, const struct dom_sid *member);
 	NTSTATUS (*del_aliasmem)(struct pdb_methods *methods,
-				 const DOM_SID *alias, const DOM_SID *member);
+				 const struct dom_sid *alias, const struct dom_sid *member);
 	NTSTATUS (*enum_aliasmem)(struct pdb_methods *methods,
-				  const DOM_SID *alias, TALLOC_CTX *mem_ctx,
-				  DOM_SID **members, size_t *p_num_members);
+				  const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
+				  struct dom_sid **members, size_t *p_num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
-					   const DOM_SID *domain_sid,
-					   const DOM_SID *members,
+					   const struct dom_sid *domain_sid,
+					   const struct dom_sid *members,
 					   size_t num_members,
 					   uint32_t **pp_alias_rids,
 					   size_t *p_num_alias_rids);
 
 	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				int num_rids,
 				uint32_t *rids,
 				const char **pp_names,
 				enum lsa_SidType *attrs);
 
 	NTSTATUS (*lookup_names)(struct pdb_methods *methods,
-				 const DOM_SID *domain_sid,
+				 const struct dom_sid *domain_sid,
 				 int num_names,
 				 const char **pp_names,
 				 uint32_t *rids,
@@ -397,13 +397,13 @@ struct pdb_methods
 			      struct pdb_search *search);
 	bool (*search_aliases)(struct pdb_methods *methods,
 			       struct pdb_search *search,
-			       const DOM_SID *sid);
+			       const struct dom_sid *sid);
 
 	bool (*uid_to_sid)(struct pdb_methods *methods, uid_t uid,
-			   DOM_SID *sid);
+			   struct dom_sid *sid);
 	bool (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
-			   DOM_SID *sid);
-	bool (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,
+			   struct dom_sid *sid);
+	bool (*sid_to_id)(struct pdb_methods *methods, const struct dom_sid *sid,
 			  union unid_t *id, enum lsa_SidType *type);
 
 	uint32_t (*capabilities)(struct pdb_methods *methods);
@@ -412,10 +412,10 @@ struct pdb_methods
 
 	bool (*get_trusteddom_pw)(struct pdb_methods *methods,
 				  const char *domain, char** pwd, 
-				  DOM_SID *sid, time_t *pass_last_set_time);
+				  struct dom_sid *sid, time_t *pass_last_set_time);
 	bool (*set_trusteddom_pw)(struct pdb_methods *methods, 
 				  const char* domain, const char* pwd,
-	        	  	  const DOM_SID *sid);
+				  const struct dom_sid *sid);
 	bool (*del_trusteddom_pw)(struct pdb_methods *methods, 
 				  const char *domain);
 	NTSTATUS (*enum_trusteddoms)(struct pdb_methods *methods,

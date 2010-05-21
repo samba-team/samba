@@ -242,7 +242,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 
 	if ( create && (pdb_capabilities() & PDB_CAP_STORE_RIDS)) {
 		uint32_t user_rid;
-		DOM_SID user_sid;
+		struct dom_sid user_sid;
 
 		if ( !pdb_new_rid( &user_rid ) ) {
 			DEBUG(3, ("Could not allocate a new RID\n"));
@@ -604,7 +604,7 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 
 	if ((flags & LOOKUP_NAME_GROUP) == 0) {
 		struct samu *sam_account = NULL;
-		DOM_SID user_sid;
+		struct dom_sid user_sid;
 
 		if ( !(sam_account = samu_new( NULL )) ) {
 			return False;

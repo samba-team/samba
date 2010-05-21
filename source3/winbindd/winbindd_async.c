@@ -26,7 +26,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+bool print_sidlist(TALLOC_CTX *mem_ctx, const struct dom_sid *sids,
 		   size_t num_sids, char **result, ssize_t *len)
 {
 	size_t i;
@@ -48,7 +48,7 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 }
 
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
-		   DOM_SID **sids, size_t *num_sids)
+		   struct dom_sid **sids, size_t *num_sids)
 {
 	const char *p, *q;
 
@@ -59,7 +59,7 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 	while (p[0] != '\0') {
 		fstring tmp;
 		size_t sidlen;
-		DOM_SID sid;
+		struct dom_sid sid;
 		q = strchr(p, '\n');
 		if (q == NULL) {
 			DEBUG(0, ("Got invalid sidstr: %s\n", p));

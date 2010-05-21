@@ -297,7 +297,7 @@ static WERROR gp_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static const char *gp_reg_groupmembership_path(TALLOC_CTX *mem_ctx,
-					       const DOM_SID *sid,
+					       const struct dom_sid *sid,
 					       uint32_t flags)
 {
 	if (flags & GPO_LIST_FLAG_MACHINE) {
@@ -375,7 +375,7 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 /* not used yet */
 static WERROR gp_reg_read_groupmembership(TALLOC_CTX *mem_ctx,
 					  struct gp_registry_context *reg_ctx,
-					  const DOM_SID *object_sid,
+					  const struct dom_sid *object_sid,
 					  struct nt_user_token **token,
 					  uint32_t flags)
 {
@@ -426,7 +426,7 @@ static WERROR gp_reg_read_groupmembership(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static const char *gp_req_state_path(TALLOC_CTX *mem_ctx,
-				     const DOM_SID *sid,
+				     const struct dom_sid *sid,
 				     uint32_t flags)
 {
 	if (flags & GPO_LIST_FLAG_MACHINE) {
@@ -612,7 +612,7 @@ static WERROR gp_read_reg_gpo(TALLOC_CTX *mem_ctx,
 
 WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 			 uint32_t flags,
-			 const DOM_SID *sid,
+			 const struct dom_sid *sid,
 			 struct GROUP_POLICY_OBJECT **gpo_list)
 {
 	struct gp_registry_context *reg_ctx = NULL;
@@ -687,7 +687,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
-				 const DOM_SID *sid,
+				 const struct dom_sid *sid,
 				 struct security_descriptor **sd,
 				 size_t *sd_size)
 {
@@ -758,11 +758,11 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 WERROR gp_secure_key(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct registry_key *key,
-		     const DOM_SID *sid)
+		     const struct dom_sid *sid)
 {
 	struct security_descriptor *sd = NULL;
 	size_t sd_size = 0;
-	const DOM_SID *sd_sid = NULL;
+	const struct dom_sid *sd_sid = NULL;
 	WERROR werr;
 
 	if (!(flags & GPO_LIST_FLAG_MACHINE)) {

@@ -197,13 +197,6 @@ typedef union unid_t {
 					|LOOKUP_NAME_WKN\
 					|LOOKUP_NAME_DOMAIN)
 
-/**
- * @brief Security Identifier
- *
- * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
- **/
-typedef struct dom_sid DOM_SID;
-
 enum id_mapping {
 	ID_UNKNOWN = 0,
 	ID_MAPPED,
@@ -223,7 +216,7 @@ struct unixid {
 };
 
 struct id_map {
-	DOM_SID *sid;
+	struct dom_sid *sid;
 	struct unixid xid;
 	enum id_mapping status;
 };
@@ -234,7 +227,7 @@ struct id_map {
 
 struct lsa_dom_info {
 	bool valid;
-	DOM_SID sid;
+	struct dom_sid sid;
 	const char *name;
 	int num_idxs;
 	int *idxs;
@@ -248,30 +241,30 @@ struct lsa_name_info {
 };
 
 /* Some well-known SIDs */
-extern const DOM_SID global_sid_World_Domain;
-extern const DOM_SID global_sid_World;
-extern const DOM_SID global_sid_Creator_Owner_Domain;
-extern const DOM_SID global_sid_NT_Authority;
-extern const DOM_SID global_sid_System;
-extern const DOM_SID global_sid_NULL;
-extern const DOM_SID global_sid_Authenticated_Users;
-extern const DOM_SID global_sid_Network;
-extern const DOM_SID global_sid_Creator_Owner;
-extern const DOM_SID global_sid_Creator_Group;
-extern const DOM_SID global_sid_Anonymous;
-extern const DOM_SID global_sid_Builtin;
-extern const DOM_SID global_sid_Builtin_Administrators;
-extern const DOM_SID global_sid_Builtin_Users;
-extern const DOM_SID global_sid_Builtin_Guests;
-extern const DOM_SID global_sid_Builtin_Power_Users;
-extern const DOM_SID global_sid_Builtin_Account_Operators;
-extern const DOM_SID global_sid_Builtin_Server_Operators;
-extern const DOM_SID global_sid_Builtin_Print_Operators;
-extern const DOM_SID global_sid_Builtin_Backup_Operators;
-extern const DOM_SID global_sid_Builtin_Replicator;
-extern const DOM_SID global_sid_Builtin_PreWin2kAccess;
-extern const DOM_SID global_sid_Unix_Users;
-extern const DOM_SID global_sid_Unix_Groups;
+extern const struct dom_sid global_sid_World_Domain;
+extern const struct dom_sid global_sid_World;
+extern const struct dom_sid global_sid_Creator_Owner_Domain;
+extern const struct dom_sid global_sid_NT_Authority;
+extern const struct dom_sid global_sid_System;
+extern const struct dom_sid global_sid_NULL;
+extern const struct dom_sid global_sid_Authenticated_Users;
+extern const struct dom_sid global_sid_Network;
+extern const struct dom_sid global_sid_Creator_Owner;
+extern const struct dom_sid global_sid_Creator_Group;
+extern const struct dom_sid global_sid_Anonymous;
+extern const struct dom_sid global_sid_Builtin;
+extern const struct dom_sid global_sid_Builtin_Administrators;
+extern const struct dom_sid global_sid_Builtin_Users;
+extern const struct dom_sid global_sid_Builtin_Guests;
+extern const struct dom_sid global_sid_Builtin_Power_Users;
+extern const struct dom_sid global_sid_Builtin_Account_Operators;
+extern const struct dom_sid global_sid_Builtin_Server_Operators;
+extern const struct dom_sid global_sid_Builtin_Print_Operators;
+extern const struct dom_sid global_sid_Builtin_Backup_Operators;
+extern const struct dom_sid global_sid_Builtin_Replicator;
+extern const struct dom_sid global_sid_Builtin_PreWin2kAccess;
+extern const struct dom_sid global_sid_Unix_Users;
+extern const struct dom_sid global_sid_Unix_Groups;
 
 /*
  * The complete list of SIDS belonging to this user.
@@ -288,7 +281,7 @@ extern const DOM_SID global_sid_Unix_Groups;
 
 typedef struct nt_user_token {
 	size_t num_sids;
-	DOM_SID *user_sids;
+	struct dom_sid *user_sids;
 	SE_PRIV privileges;
 } NT_USER_TOKEN;
 

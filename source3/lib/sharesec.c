@@ -467,7 +467,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_d
 		uint32_t sa;
 		uint32 g_access;
 		uint32 s_access;
-		DOM_SID sid;
+		struct dom_sid sid;
 		char *sidstr;
 		enum security_ace_type type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 

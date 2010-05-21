@@ -60,9 +60,9 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
  ********************************************************************/
 
 static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
-				       const DOM_SID *domain_sid,
+				       const struct dom_sid *domain_sid,
 				       size_t num_sids,
-				       const DOM_SID *sids,
+				       const struct dom_sid *sids,
 				       int *numgroups,
 				       struct samr_RidWithAttribute **pgids)
 {
@@ -99,9 +99,9 @@ static NTSTATUS serverinfo_to_SamInfo_base(TALLOC_CTX *mem_ctx,
 {
 	struct samu *sampw;
 	struct samr_RidWithAttribute *gids = NULL;
-	const DOM_SID *user_sid = NULL;
-	const DOM_SID *group_sid = NULL;
-	DOM_SID domain_sid;
+	const struct dom_sid *user_sid = NULL;
+	const struct dom_sid *group_sid = NULL;
+	struct dom_sid domain_sid;
 	uint32 user_rid, group_rid;
 	NTSTATUS status;
 

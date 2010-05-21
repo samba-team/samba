@@ -25,7 +25,7 @@
 
 /* GLOBAL VARIABLES */
 
-DOM_SID old_sid, new_sid;
+struct dom_sid old_sid, new_sid;
 int change = 0, new_val = 0;
 int opt_verbose = False;
 
@@ -56,7 +56,7 @@ static void verbose_output(const char *format, ...)
 /********************************************************************
 ********************************************************************/
 
-static bool swap_sid_in_acl( struct security_descriptor *sd, DOM_SID *s1, DOM_SID *s2 )
+static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1, struct dom_sid *s2 )
 {
 	struct security_acl *theacl;
 	int i;

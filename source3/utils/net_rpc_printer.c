@@ -1126,7 +1126,7 @@ out:
  **/
 
 NTSTATUS rpc_printer_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1178,7 +1178,7 @@ NTSTATUS rpc_printer_list_internals(struct net_context *c,
  **/
 
 NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1336,7 +1336,7 @@ done:
 }
 
 NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1348,7 +1348,7 @@ NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
 }
 
 NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1360,7 +1360,7 @@ NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
 }
 
 NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1389,7 +1389,7 @@ NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
  **/
 
 NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1481,7 +1481,7 @@ done:
  **/
 
 NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1629,7 +1629,7 @@ done:
  **/
 
 NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -1792,7 +1792,7 @@ done:
  **/
 
 NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -2003,7 +2003,7 @@ done:
  **/
 
 NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -2160,7 +2160,7 @@ done:
  **/
 
 NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,

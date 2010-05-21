@@ -157,7 +157,7 @@ static bool parse_ace(struct security_ace *ace, const char *orig_str)
 	unsigned int atype = 0;
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
@@ -599,7 +599,7 @@ int main(int argc, const char *argv[])
 	/* check for initializing secrets.tdb first */
 
 	if ( initialize_sid ) {
-		DOM_SID *sid = get_global_sam_sid();
+		struct dom_sid *sid = get_global_sam_sid();
 
 		if ( !sid ) {
 			fprintf( stderr, "Failed to retrieve Machine SID!\n");

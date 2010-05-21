@@ -65,7 +65,7 @@ uint32_t get_sec_info(const struct security_descriptor *sd)
 
 struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *new_sdb, struct sec_desc_buf *old_sdb)
 {
-	DOM_SID *owner_sid, *group_sid;
+	struct dom_sid *owner_sid, *group_sid;
 	struct sec_desc_buf *return_sdb;
 	struct security_acl *dacl, *sacl;
 	struct security_descriptor *psd = NULL;
@@ -110,7 +110,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 
 struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_descriptor *new_sdb, struct security_descriptor *old_sdb)
 {
-	DOM_SID *owner_sid, *group_sid;
+	struct dom_sid *owner_sid, *group_sid;
 	struct security_acl *dacl, *sacl;
 	struct security_descriptor *psd = NULL;
 	uint16 secdesc_type;
@@ -158,7 +158,7 @@ struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_desc
 struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
-			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+			const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size)
 {
 	struct security_descriptor *dst;
@@ -366,7 +366,7 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
  Creates a struct security_descriptor structure with typical defaults.
 ********************************************************************/
 
-struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
 				 struct security_acl *dacl, size_t *sd_size)
 {
 	return make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
@@ -411,7 +411,7 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
  Add a new SID with its permissions to struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, uint32 mask, size_t *sd_size)
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, uint32 mask, size_t *sd_size)
 {
 	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
@@ -444,7 +444,7 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM
  Modify a SID's permissions in a struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32 mask)
 {
 	NTSTATUS status;
 
@@ -463,7 +463,7 @@ NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, DOM_SID *sid, uint32 m
  Delete a SID from a struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, size_t *sd_size)
+NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size)
 {
 	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
@@ -543,8 +543,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					struct security_descriptor **ppsd,
 					size_t *psize,
 					const struct security_descriptor *parent_ctr,
-					const DOM_SID *owner_sid,
-					const DOM_SID *group_sid,
+					const struct dom_sid *owner_sid,
+					const struct dom_sid *group_sid,
 					bool container)
 {
 	struct security_acl *new_dacl = NULL, *the_acl = NULL;
@@ -576,8 +576,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	for (i = 0; i < the_acl->num_aces; i++) {
 		const struct security_ace *ace = &the_acl->aces[i];
 		struct security_ace *new_ace = &new_ace_list[new_ace_list_ndx];
-		const DOM_SID *ptrustee = &ace->trustee;
-		const DOM_SID *creator = NULL;
+		const struct dom_sid *ptrustee = &ace->trustee;
+		const struct dom_sid *creator = NULL;
 		uint8 new_flags = ace->flags;
 
 		if (!is_inheritable_ace(ace, container)) {

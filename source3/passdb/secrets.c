@@ -214,7 +214,7 @@ static char *trustdom_keystr(const char *domain)
 ************************************************************************/
 
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
-                                           DOM_SID *sid, time_t *pass_last_set_time)
+                                           struct dom_sid *sid, time_t *pass_last_set_time)
 {
 	struct TRUSTED_DOM_PASS pass;
 	enum ndr_err_code ndr_err;
@@ -266,7 +266,7 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
  **/
 
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
-                                           const DOM_SID *sid)
+                                           const struct dom_sid *sid)
 {
 	bool ret;
 

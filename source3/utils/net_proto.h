@@ -26,16 +26,16 @@
 
 /* The following definitions come from auth/token_util.c  */
 
-bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token );
+bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token );
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
-NTSTATUS add_aliases(const DOM_SID *domain_sid,
+NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct nt_user_token *token);
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
-					    const DOM_SID *user_sid,
+					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const DOM_SID *groupsids);
+					    const struct dom_sid *groupsids);
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
@@ -154,7 +154,7 @@ int net_registry(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_rpc.c  */
 
 NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				   DOM_SID **domain_sid,
+				   struct dom_sid **domain_sid,
 				   const char **domain_name);
 int run_rpc_command(struct net_context *c,
 			struct cli_state *cli_arg,
@@ -166,7 +166,7 @@ int run_rpc_command(struct net_context *c,
 int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv);
 int net_rpc_join(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_info_internals(struct net_context *c,
-			const DOM_SID *domain_sid,
+			const struct dom_sid *domain_sid,
 			const char *domain_name,
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -193,7 +193,7 @@ struct rpc_sh_cmd *net_rpc_share_cmds(struct net_context *c, TALLOC_CTX *mem_ctx
 				      struct rpc_sh_ctx *ctx);
 int net_rpc_file(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
-				     const DOM_SID *domain_sid,
+				     const struct dom_sid *domain_sid,
 				     const char *domain_name,
 				     struct cli_state *cli,
 				     struct rpc_pipe_client *pipe_hnd,
@@ -201,7 +201,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 				     int argc,
 				     const char **argv);
 NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    const char *domain_name,
 				    struct cli_state *cli,
 				    struct rpc_pipe_client *pipe_hnd,
@@ -242,7 +242,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 		       bool copy_acls, bool copy_attrs,
 		       bool copy_timestamps, bool is_file);
 NTSTATUS rpc_printer_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -250,7 +250,7 @@ NTSTATUS rpc_printer_list_internals(struct net_context *c,
 					int argc,
 					const char **argv);
 NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -258,7 +258,7 @@ NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -266,7 +266,7 @@ NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -274,7 +274,7 @@ NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -282,7 +282,7 @@ NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -290,7 +290,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -298,7 +298,7 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -306,7 +306,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -314,7 +314,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -322,7 +322,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 						int argc,
 						const char **argv);
 NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -343,7 +343,7 @@ struct rpc_sh_cmd *net_rpc_rights_cmds(struct net_context *c, TALLOC_CTX *mem_ct
 /* The following definitions come from utils/net_rpc_samsync.c  */
 
 NTSTATUS rpc_samdump_internals(struct net_context *c,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -352,7 +352,7 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 				const char **argv);
 int rpc_vampire_usage(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_vampire_internals(struct net_context *c,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -362,7 +362,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv);
 int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    const char *domain_name,
 				    struct cli_state *cli,
 				    struct rpc_pipe_client *pipe_hnd,
@@ -370,7 +370,7 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 				    int argc,
 				    const char **argv);
 NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
-				      const DOM_SID *domain_sid,
+				      const struct dom_sid *domain_sid,
 				      const char *domain_name,
 				      struct cli_state *cli,
 				      struct rpc_pipe_client *pipe_hnd,
@@ -440,7 +440,7 @@ int net_serverid(struct net_context *c, int argc, const char **argv);
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     const char *name, const char **ret_domain,
-			     const char **ret_name, DOM_SID *ret_sid,
+			     const char **ret_name, struct dom_sid *ret_sid,
 			     enum lsa_SidType *ret_type);
 NTSTATUS connect_to_service(struct net_context *c,
 					struct cli_state **cli_ctx,
@@ -494,11 +494,11 @@ NTSTATUS net_scan_dc(struct net_context *c,
 
 NTSTATUS net_lookup_name_from_sid(struct net_context *c,
 				TALLOC_CTX *ctx,
-				DOM_SID *psid,
+				struct dom_sid *psid,
 				const char **ppdomain,
 				const char **ppname);
 NTSTATUS net_lookup_sid_from_name(struct net_context *c, TALLOC_CTX *ctx,
-				  const char *full_name, DOM_SID *pret_sid);
+				  const char *full_name, struct dom_sid *pret_sid);
 
 /* The following definitions come from utils/passwd_util.c  */
 

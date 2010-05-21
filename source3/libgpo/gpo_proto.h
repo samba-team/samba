@@ -49,12 +49,12 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 			  struct GROUP_POLICY_OBJECT *gpo_list);
 WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 			 uint32_t flags,
-			 const DOM_SID *sid,
+			 const struct dom_sid *sid,
 			 struct GROUP_POLICY_OBJECT **gpo_list);
 WERROR gp_secure_key(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct registry_key *key,
-		     const DOM_SID *sid);
+		     const struct dom_sid *sid);
 void dump_reg_val(int lvl, const char *direction,
 		  const char *key, const char *subkey,
 		  struct registry_value *val);

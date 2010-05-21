@@ -665,7 +665,7 @@ enum smb_whoami_flags {
 	4 bytes -		pad / reserved (must be zero)
 
 	8 bytes unsigned[] -	list of GIDs (may be empty)
-	DOM_SID[] -		list of SIDs (may be empty)
+	struct dom_sid[] -		list of SIDs (may be empty)
 */
 
 /*

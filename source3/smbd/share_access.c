@@ -71,7 +71,7 @@ static bool token_contains_name(TALLOC_CTX *mem_ctx,
 				const char *name)
 {
 	const char *prefix;
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType type;
 	struct smbd_server_connection *sconn = smbd_server_conn;
 

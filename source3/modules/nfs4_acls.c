@@ -197,8 +197,8 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 }
 
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
-	DOM_SID *psid_owner, /* in */
-	DOM_SID *psid_group, /* in */
+	struct dom_sid *psid_owner, /* in */
+	struct dom_sid *psid_group, /* in */
 	bool is_directory, /* in */
 	struct security_ace **ppnt_ace_list, /* out */
 	int *pgood_aces /* out */
@@ -224,7 +224,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 
 	for (aceint=aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
 		uint32_t mask;
-		DOM_SID sid;
+		struct dom_sid sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 		uint32_t mapped_ace_flags;
 
@@ -293,7 +293,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
 {
 	int	good_aces = 0;
-	DOM_SID sid_owner, sid_group;
+	struct dom_sid sid_owner, sid_group;
 	size_t sd_size = 0;
 	struct security_ace *nt_ace_list = NULL;
 	struct security_acl *psa = NULL;
@@ -481,8 +481,8 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 	return NULL;
 }
 
-static bool nfs4_map_sid(smbacl4_vfs_params *params, const DOM_SID *src,
-			 DOM_SID *dst)
+static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
+			 struct dom_sid *dst)
 {
 	static struct db_context *mapping_db = NULL;
 	TDB_DATA data;
@@ -573,13 +573,13 @@ static bool smbacl4_fill_ace4(
 		enum lsa_SidType type;
 		uid_t uid;
 		gid_t gid;
-		DOM_SID sid;
+		struct dom_sid sid;
 		
 		sid_copy(&sid, &ace_nt->trustee);
 		
 		if (!lookup_sid(mem_ctx, &sid, &dom, &name, &type)) {
 			
-			DOM_SID mapped;
+			struct dom_sid mapped;
 			
 			if (!nfs4_map_sid(params, &sid, &mapped)) {
 				DEBUG(1, ("nfs4_acls.c: file [%s]: SID %s "

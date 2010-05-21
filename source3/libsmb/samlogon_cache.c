@@ -100,7 +100,7 @@ bool netsamlogon_cache_shutdown(void)
 
 void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3)
 {
-	DOM_SID	user_sid;
+	struct dom_sid	user_sid;
 	fstring keystr, tmp;
 
 	if (!info3) {
@@ -133,7 +133,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	TDB_DATA data;
 	fstring keystr, tmp;
 	bool result = false;
-	DOM_SID	user_sid;
+	struct dom_sid	user_sid;
 	time_t t = time(NULL);
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB blob;
@@ -203,7 +203,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
  free the user_info struct (malloc()'d memory)
 ***********************************************************************/
 
-struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
+struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct dom_sid *user_sid)
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	TDB_DATA data;
@@ -276,7 +276,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *
 #endif
 }
 
-bool netsamlogon_cache_have(const DOM_SID *user_sid)
+bool netsamlogon_cache_have(const struct dom_sid *user_sid)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("netsamlogon_cache_have");
 	struct netr_SamInfo3 *info3 = NULL;

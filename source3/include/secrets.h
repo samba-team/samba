@@ -66,7 +66,7 @@ struct machine_acct_pass {
  */
 struct trustdom_info {
 	char *name;
-	DOM_SID sid;
+	struct dom_sid sid;
 };
 
 /*

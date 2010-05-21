@@ -72,7 +72,7 @@ typedef struct _SMB_NTQUOTA_STRUCT {
 	uint64_t softlim;
 	uint64_t hardlim;
 	uint32 qflags;
-	DOM_SID sid;
+	struct dom_sid sid;
 } SMB_NTQUOTA_STRUCT;
 
 typedef struct _SMB_NTQUOTA_LIST {

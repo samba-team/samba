@@ -24,7 +24,7 @@
 typedef struct _GROUP_MAP {
 	struct pdb_methods *methods;
 	gid_t gid;
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType sid_name_use;
 	fstring nt_name;
 	fstring comment;

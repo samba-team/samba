@@ -531,7 +531,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
+					CONST_DISCARD(struct dom_sid *, &global_sid_Builtin),
 					&builtin_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);

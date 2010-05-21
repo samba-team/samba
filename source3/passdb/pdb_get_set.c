@@ -175,14 +175,14 @@ const char *pdb_get_plaintext_passwd(const struct samu *sampass)
 	return sampass->plaintext_pw;
 }
 
-const DOM_SID *pdb_get_user_sid(const struct samu *sampass)
+const struct dom_sid *pdb_get_user_sid(const struct samu *sampass)
 {
 	return &sampass->user_sid;
 }
 
-const DOM_SID *pdb_get_group_sid(struct samu *sampass)
+const struct dom_sid *pdb_get_group_sid(struct samu *sampass)
 {
-	DOM_SID *gsid;
+	struct dom_sid *gsid;
 	struct passwd *pwd;
 	bool need_lookup_sid = false;
 
@@ -193,7 +193,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 
 	/* generate the group SID from the user's primary Unix group */
 
-	if ( !(gsid  = TALLOC_ZERO_P( sampass, DOM_SID )) ) {
+	if ( !(gsid  = TALLOC_ZERO_P( sampass, struct dom_sid )) ) {
 		return NULL;
 	}
 
@@ -215,7 +215,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 
 	gid_to_sid(gsid, pwd->pw_gid);
 	if (!is_null_sid(gsid)) {
-		DOM_SID dgsid;
+		struct dom_sid dgsid;
 		uint32_t rid;
 
 		sid_copy(&dgsid, gsid);
@@ -246,7 +246,7 @@ const DOM_SID *pdb_get_group_sid(struct samu *sampass)
 		enum lsa_SidType type = SID_NAME_UNKNOWN;
 		TALLOC_CTX *mem_ctx;
 		bool lookup_ret;
-		const DOM_SID *usid = pdb_get_user_sid(sampass);
+		const struct dom_sid *usid = pdb_get_user_sid(sampass);
 
 		mem_ctx = talloc_init("pdb_get_group_sid");
 		if (!mem_ctx) {
@@ -525,7 +525,7 @@ bool pdb_set_init_flags(struct samu *sampass, enum pdb_elements element, enum pd
         return True;
 }
 
-bool pdb_set_user_sid(struct samu *sampass, const DOM_SID *u_sid, enum pdb_value_state flag)
+bool pdb_set_user_sid(struct samu *sampass, const struct dom_sid *u_sid, enum pdb_value_state flag)
 {
 	if (!u_sid)
 		return False;
@@ -540,7 +540,7 @@ bool pdb_set_user_sid(struct samu *sampass, const DOM_SID *u_sid, enum pdb_value
 
 bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_value_state flag)
 {
-	DOM_SID new_sid;
+	struct dom_sid new_sid;
 
 	if (!u_sid)
 		return False;
@@ -569,15 +569,15 @@ bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_
  have to allow the explicitly setting of a group SID here.
 ********************************************************************/
 
-bool pdb_set_group_sid(struct samu *sampass, const DOM_SID *g_sid, enum pdb_value_state flag)
+bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum pdb_value_state flag)
 {
 	gid_t gid;
-	DOM_SID dug_sid;
+	struct dom_sid dug_sid;
 
 	if (!g_sid)
 		return False;
 
-	if ( !(sampass->group_sid = TALLOC_P( sampass, DOM_SID )) ) {
+	if ( !(sampass->group_sid = TALLOC_P( sampass, struct dom_sid )) ) {
 		return False;
 	}
 

@@ -38,9 +38,9 @@ struct pdb_ads_samu_private {
 
 static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
-				    const DOM_SID *sid);
+				    const struct dom_sid *sid);
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
-			       DOM_SID *sid);
+			       struct dom_sid *sid);
 static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
 			       struct dom_sid *psid);
 static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
@@ -428,7 +428,7 @@ static NTSTATUS pdb_ads_getsampwnam(struct pdb_methods *m,
 
 static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
-				    const DOM_SID *sid)
+				    const struct dom_sid *sid)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -688,7 +688,7 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 }
 
 static NTSTATUS pdb_ads_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
-				 DOM_SID sid)
+				 struct dom_sid sid)
 {
 	char *filter;
 	NTSTATUS status;
@@ -884,13 +884,13 @@ static NTSTATUS pdb_ads_update_group_mapping_entry(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_delete_group_mapping_entry(struct pdb_methods *m,
-						   DOM_SID sid)
+						   struct dom_sid sid)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS pdb_ads_enum_group_mapping(struct pdb_methods *m,
-					   const DOM_SID *sid,
+					   const struct dom_sid *sid,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap,
 					   size_t *p_num_entries,
@@ -901,7 +901,7 @@ static NTSTATUS pdb_ads_enum_group_mapping(struct pdb_methods *m,
 
 static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 					   TALLOC_CTX *mem_ctx,
-					   const DOM_SID *group,
+					   const struct dom_sid *group,
 					   uint32 **pmembers,
 					   size_t *pnum_members)
 {
@@ -963,7 +963,7 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
 					       struct samu *user,
-					       DOM_SID **pp_sids,
+					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
 					       size_t *p_num_groups)
 {
@@ -1184,7 +1184,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
-				     const DOM_SID *sid)
+				     const struct dom_sid *sid)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -1239,7 +1239,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
-				      const DOM_SID *sid,
+				      const struct dom_sid *sid,
 				      struct acct_info *info)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
@@ -1363,8 +1363,8 @@ static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
 }
 
 static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
-				     const DOM_SID *alias,
-				     const DOM_SID *member,
+				     const struct dom_sid *alias,
+				     const struct dom_sid *member,
 				     int mod_op)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
@@ -1422,15 +1422,15 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_add_aliasmem(struct pdb_methods *m,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
+				     const struct dom_sid *alias,
+				     const struct dom_sid *member)
 {
 	return pdb_ads_mod_aliasmem(m, alias, member, TLDAP_MOD_ADD);
 }
 
 static NTSTATUS pdb_ads_del_aliasmem(struct pdb_methods *m,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
+				     const struct dom_sid *alias,
+				     const struct dom_sid *member)
 {
 	return pdb_ads_mod_aliasmem(m, alias, member, TLDAP_MOD_DELETE);
 }
@@ -1467,9 +1467,9 @@ static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
 }
 
 static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
-				      const DOM_SID *alias,
+				      const struct dom_sid *alias,
 				      TALLOC_CTX *mem_ctx,
-				      DOM_SID **pmembers,
+				      struct dom_sid **pmembers,
 				      size_t *pnum_members)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
@@ -1527,8 +1527,8 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 
 static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
-					       const DOM_SID *domain_sid,
-					       const DOM_SID *members,
+					       const struct dom_sid *domain_sid,
+					       const struct dom_sid *members,
 					       size_t num_members,
 					       uint32_t **palias_rids,
 					       size_t *pnum_alias_rids)
@@ -1622,7 +1622,7 @@ done:
 }
 
 static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    int num_rids,
 				    uint32 *rids,
 				    const char **names,
@@ -1698,7 +1698,7 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_lookup_names(struct pdb_methods *m,
-				     const DOM_SID *domain_sid,
+				     const struct dom_sid *domain_sid,
 				     int num_names,
 				     const char **pp_names,
 				     uint32 *rids,
@@ -1895,7 +1895,7 @@ static bool pdb_ads_search_groups(struct pdb_methods *m,
 
 static bool pdb_ads_search_aliases(struct pdb_methods *m,
 				   struct pdb_search *search,
-				   const DOM_SID *sid)
+				   const struct dom_sid *sid)
 {
 	struct pdb_ads_search_state *sstate;
 	char *filter;
@@ -1920,7 +1920,7 @@ static bool pdb_ads_search_aliases(struct pdb_methods *m,
 }
 
 static bool pdb_ads_uid_to_sid(struct pdb_methods *m, uid_t uid,
-			       DOM_SID *sid)
+			       struct dom_sid *sid)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -1929,7 +1929,7 @@ static bool pdb_ads_uid_to_sid(struct pdb_methods *m, uid_t uid,
 }
 
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
-			       DOM_SID *sid)
+			       struct dom_sid *sid)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -1937,7 +1937,7 @@ static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 	return true;
 }
 
-static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
+static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 			      union unid_t *id, enum lsa_SidType *type)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
@@ -1996,7 +1996,7 @@ static bool pdb_ads_new_rid(struct pdb_methods *m, uint32 *rid)
 
 static bool pdb_ads_get_trusteddom_pw(struct pdb_methods *m,
 				      const char *domain, char** pwd,
-				      DOM_SID *sid,
+				      struct dom_sid *sid,
 				      time_t *pass_last_set_time)
 {
 	return false;
@@ -2004,7 +2004,7 @@ static bool pdb_ads_get_trusteddom_pw(struct pdb_methods *m,
 
 static bool pdb_ads_set_trusteddom_pw(struct pdb_methods *m,
 				      const char* domain, const char* pwd,
-				      const DOM_SID *sid)
+				      const struct dom_sid *sid)
 {
 	return false;
 }

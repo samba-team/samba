@@ -617,7 +617,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods,
 }
 
 static NTSTATUS tdbsam_getsampwsid(struct pdb_methods *my_methods,
-				   struct samu * user, const DOM_SID *sid)
+				   struct samu * user, const struct dom_sid *sid)
 {
 	uint32 rid;
 

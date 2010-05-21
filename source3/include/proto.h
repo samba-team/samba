@@ -121,7 +121,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
 				    struct nt_user_token **token);
-bool user_in_group_sid(const char *username, const DOM_SID *group_sid);
+bool user_in_group_sid(const char *username, const struct dom_sid *group_sid);
 bool user_in_group(const char *username, const char *groupname);
 NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
                              char *unix_username,
@@ -201,18 +201,18 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 
 /* The following definitions come from auth/token_util.c  */
 
-bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token );
+bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token );
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
-NTSTATUS add_aliases(const DOM_SID *domain_sid,
+NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct nt_user_token *token);
-NTSTATUS create_builtin_users(const DOM_SID *sid);
-NTSTATUS create_builtin_administrators(const DOM_SID *sid);
+NTSTATUS create_builtin_users(const struct dom_sid *sid);
+NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
-					    const DOM_SID *user_sid,
+					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const DOM_SID *groupsids);
+					    const struct dom_sid *groupsids);
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
@@ -220,14 +220,14 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 /* The following definitions come from groupdb/mapping.c  */
 
 NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name_use, const char *nt_name, const char *comment);
-bool get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map);
+bool get_domain_group_from_sid(struct dom_sid sid, GROUP_MAP *map);
 int smb_create_group(const char *unix_group, gid_t *new_gid);
 int smb_delete_group(const char *unix_group);
 int smb_set_primary_group(const char *unix_group, const char* unix_user);
 int smb_add_user_group(const char *unix_group, const char *unix_user);
 int smb_delete_user_group(const char *unix_group, const char *unix_user);
 NTSTATUS pdb_default_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid);
+				 struct dom_sid sid);
 NTSTATUS pdb_default_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 				 gid_t gid);
 NTSTATUS pdb_default_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
@@ -237,38 +237,38 @@ NTSTATUS pdb_default_add_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
 						   GROUP_MAP *map);
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid);
+						   struct dom_sid sid);
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
-					   const DOM_SID *sid, enum lsa_SidType sid_name_use,
+					   const struct dom_sid *sid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   bool unix_only);
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid);
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
-				  const DOM_SID *sid);
+				  const struct dom_sid *sid);
 NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
-				   const DOM_SID *sid,
+				   const struct dom_sid *sid,
 				   struct acct_info *info);
 NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
-				   const DOM_SID *sid,
+				   const struct dom_sid *sid,
 				   struct acct_info *info);
 NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
-				  const DOM_SID *alias, const DOM_SID *member);
+				  const struct dom_sid *alias, const struct dom_sid *member);
 NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
-				  const DOM_SID *alias, const DOM_SID *member);
+				  const struct dom_sid *alias, const struct dom_sid *member);
 NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
-				   const DOM_SID *alias, TALLOC_CTX *mem_ctx,
-				   DOM_SID **pp_members,
+				   const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
+				   struct dom_sid **pp_members,
 				   size_t *p_num_members);
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
-				       const DOM_SID *domain_sid,
-				       const DOM_SID *members,
+				       const struct dom_sid *domain_sid,
+				       const struct dom_sid *members,
 				       size_t num_members,
 				       uint32 **pp_alias_rids,
 				       size_t *p_num_alias_rids);
 NTSTATUS pdb_nop_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid);
+				 struct dom_sid sid);
 NTSTATUS pdb_nop_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 				 gid_t gid);
 NTSTATUS pdb_nop_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
@@ -278,13 +278,13 @@ NTSTATUS pdb_nop_add_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_nop_update_group_mapping_entry(struct pdb_methods *methods,
 						   GROUP_MAP *map);
 NTSTATUS pdb_nop_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid);
+						   struct dom_sid sid);
 NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
 					   bool unix_only);
-bool pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info);
-bool pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info);
+bool pdb_get_dom_grp_info(const struct dom_sid *sid, struct acct_info *info);
+bool pdb_set_dom_grp_info(const struct dom_sid *sid, const struct acct_info *info);
 NTSTATUS pdb_create_builtin_alias(uint32 rid);
 
 /* The following definitions come from groupdb/mapping_ldb.c  */
@@ -631,23 +631,23 @@ void popt_common_set_auth_info(struct user_auth_info *auth_info);
 
 /* The following definitions come from lib/privileges.c  */
 
-bool get_privileges_for_sids(SE_PRIV *privileges, DOM_SID *slist, int scount);
-NTSTATUS privilege_enumerate_accounts(DOM_SID **sids, int *num_sids);
+bool get_privileges_for_sids(SE_PRIV *privileges, struct dom_sid *slist, int scount);
+NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids);
 NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
-			     DOM_SID **sids, int *num_sids);
-bool grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask);
-bool grant_privilege_by_name(DOM_SID *sid, const char *name);
-bool revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask);
-bool revoke_all_privileges( DOM_SID *sid );
-bool revoke_privilege_by_name(DOM_SID *sid, const char *name);
-NTSTATUS privilege_create_account(const DOM_SID *sid );
+			     struct dom_sid **sids, int *num_sids);
+bool grant_privilege(const struct dom_sid *sid, const SE_PRIV *priv_mask);
+bool grant_privilege_by_name(struct dom_sid *sid, const char *name);
+bool revoke_privilege(const struct dom_sid *sid, const SE_PRIV *priv_mask);
+bool revoke_all_privileges( struct dom_sid *sid );
+bool revoke_privilege_by_name(struct dom_sid *sid, const char *name);
+NTSTATUS privilege_create_account(const struct dom_sid *sid );
 NTSTATUS privilege_delete_account(const struct dom_sid *sid);
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set);
 NTSTATUS privilege_set_init_by_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set);
 void privilege_set_free(PRIVILEGE_SET *priv_set);
 NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_la, int count);
-bool is_privileged_sid( const DOM_SID *sid );
-bool grant_all_privileges( const DOM_SID *sid );
+bool is_privileged_sid( const struct dom_sid *sid );
+bool grant_all_privileges( const struct dom_sid *sid );
 
 /* The following definitions come from lib/privileges_basic.c  */
 
@@ -698,7 +698,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
 			uint16 type,
-			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+			const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size);
 struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src);
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
@@ -711,20 +711,20 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 			     struct security_descriptor **psecdesc);
 NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 				 struct sec_desc_buf **psecdesc_buf);
-struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
+struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
 				 struct security_acl *dacl, size_t *sd_size);
 struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct security_descriptor *sec_desc);
 struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, uint32 mask, size_t *sd_size);
-NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, DOM_SID *sid, uint32 mask);
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, DOM_SID *sid, size_t *sd_size);
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, uint32 mask, size_t *sd_size);
+NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32 mask);
+NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size);
 bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);
 NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
                                         struct security_descriptor **ppsd,
 					size_t *psize,
                                         const struct security_descriptor *parent_ctr,
-                                        const DOM_SID *owner_sid,
-                                        const DOM_SID *group_sid,
+                                        const struct dom_sid *owner_sid,
+                                        const struct dom_sid *group_sid,
                                         bool container);
 NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
 					struct sec_desc_buf **ppsdb,
@@ -1332,38 +1332,38 @@ bool is_setuid_root(void) ;
 const char *sid_type_lookup(uint32 sid_type) ;
 NT_USER_TOKEN *get_system_token(void) ;
 const char *get_global_sam_name(void) ;
-char *sid_to_fstring(fstring sidstr_out, const DOM_SID *sid);
-char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
-char *sid_string_dbg(const DOM_SID *sid);
-char *sid_string_tos(const DOM_SID *sid);
-bool string_to_sid(DOM_SID *sidout, const char *sidstr);
-bool sid_append_rid(DOM_SID *sid, uint32 rid);
-bool sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid);
-bool sid_split_rid(DOM_SID *sid, uint32 *rid);
-bool sid_peek_rid(const DOM_SID *sid, uint32 *rid);
-bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid);
-void sid_copy(DOM_SID *dst, const DOM_SID *src);
-bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid);
-bool sid_parse(const char *inbuf, size_t len, DOM_SID *sid);
-int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
-int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2);
-bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
-bool non_mappable_sid(DOM_SID *sid);
-char *sid_binstring(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
-char *sid_binstring_hex(const DOM_SID *sid);
-DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src);
-NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			  DOM_SID **sids, size_t *num);
-NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-				 DOM_SID **sids, size_t *num_sids);
-void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num);
+char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid);
+char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
+char *sid_string_dbg(const struct dom_sid *sid);
+char *sid_string_tos(const struct dom_sid *sid);
+bool string_to_sid(struct dom_sid *sidout, const char *sidstr);
+bool sid_append_rid(struct dom_sid *sid, uint32 rid);
+bool sid_compose(struct dom_sid *dst, const struct dom_sid *domain_sid, uint32 rid);
+bool sid_split_rid(struct dom_sid *sid, uint32 *rid);
+bool sid_peek_rid(const struct dom_sid *sid, uint32 *rid);
+bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32 *rid);
+void sid_copy(struct dom_sid *dst, const struct dom_sid *src);
+bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid);
+bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid);
+int sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2);
+int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2);
+bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
+bool non_mappable_sid(struct dom_sid *sid);
+char *sid_binstring(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
+char *sid_binstring_hex(const struct dom_sid *sid);
+struct dom_sid *sid_dup_talloc(TALLOC_CTX *ctx, const struct dom_sid *src);
+NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+			  struct dom_sid **sids, size_t *num);
+NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+				 struct dom_sid **sids, size_t *num_sids);
+void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t *num);
 bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num);
-bool is_null_sid(const DOM_SID *sid);
-bool is_sid_in_token(const NT_USER_TOKEN *token, const DOM_SID *sid);
+bool is_null_sid(const struct dom_sid *sid);
+bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid);
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
-			      DOM_SID **user_sids,
+			      struct dom_sid **user_sids,
 			      size_t *num_user_sids,
 			      bool include_user_group_rid,
 			      bool skip_ressource_groups);
@@ -1652,21 +1652,21 @@ const char *samba_version_string(void);
 
 /* The following definitions come from lib/winbind_util.c  */
 
-bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
+bool winbind_lookup_name(const char *dom_name, const char *name, struct dom_sid *sid,
                          enum lsa_SidType *name_type);
-bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
+bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			const char **domain, const char **name,
                         enum lsa_SidType *name_type);
 bool winbind_ping(void);
-bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid);
-bool winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
-bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid);
-bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
+bool winbind_sid_to_uid(uid_t *puid, const struct dom_sid *sid);
+bool winbind_uid_to_sid(struct dom_sid *sid, uid_t uid);
+bool winbind_sid_to_gid(gid_t *pgid, const struct dom_sid *sid);
+bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid);
 struct passwd * winbind_getpwnam(const char * sname);
-struct passwd * winbind_getpwsid(const DOM_SID *sid);
+struct passwd * winbind_getpwsid(const struct dom_sid *sid);
 wbcErr wb_is_trusted_domain(const char *domain);
 bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
-			 const DOM_SID *domain_sid,
+			 const struct dom_sid *domain_sid,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types);
@@ -1677,8 +1677,8 @@ bool winbind_get_groups(TALLOC_CTX *mem_ctx,
 			uint32_t *num_groups,
 			gid_t ** _groups);
 bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
-			     const DOM_SID *dom_sid,
-		             const DOM_SID *members,
+			     const struct dom_sid *dom_sid,
+		             const struct dom_sid *members,
 			     size_t num_members,
 			     uint32_t **pp_alias_rids,
 			     size_t *p_num_alias_rids);
@@ -1884,7 +1884,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res);
 ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn);
 ADS_STATUS ads_current_time(ADS_STRUCT *ads);
 ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val);
-ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid);
+ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, struct dom_sid *sid);
 ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_name);
 ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site_dn);
 ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffixes, size_t *num_suffixes);
@@ -1895,7 +1895,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 					const char *extended_dn,
 					enum ads_extended_dn_flags flags,
-					DOM_SID *sid);
+					struct dom_sid *sid);
 char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
@@ -2157,7 +2157,7 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
 			struct sockaddr_storage *dc_ss,
 			const char *domain_name,
-			const DOM_SID *sid,
+			const struct dom_sid *sid,
 			uint32_t nt_version);
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    struct sockaddr_storage *dc_ss,
@@ -2675,8 +2675,8 @@ bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST **pqt_list);
 bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt);
 bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt);
-void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric));
-void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, DOM_SID *sid, bool _numeric));
+void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, struct dom_sid *sid, bool _numeric));
+void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose, bool _numeric, void (*_sidtostring)(fstring str, struct dom_sid *sid, bool _numeric));
 
 /* The following definitions come from libsmb/clirap.c  */
 
@@ -3167,8 +3167,8 @@ bool netsamlogon_cache_init(void);
 bool netsamlogon_cache_shutdown(void);
 void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3);
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3);
-struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid);
-bool netsamlogon_cache_have(const DOM_SID *user_sid);
+struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct dom_sid *user_sid);
+bool netsamlogon_cache_have(const struct dom_sid *user_sid);
 
 /* The following definitions come from libsmb/smb_seal.c  */
 
@@ -3230,9 +3230,9 @@ WERROR map_werror_from_unix(int error);
 
 bool trustdom_cache_enable(void);
 bool trustdom_cache_shutdown(void);
-bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
+bool trustdom_cache_store(char* name, char* alt_name, const struct dom_sid *sid,
                           time_t timeout);
-bool trustdom_cache_fetch(const char* name, DOM_SID* sid);
+bool trustdom_cache_fetch(const char* name, struct dom_sid* sid);
 uint32 trustdom_cache_fetch_timestamp( void );
 bool trustdom_cache_store_timestamp( uint32 t, time_t timeout );
 void trustdom_cache_flush(void);
@@ -3250,7 +3250,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 					   const char *domain) ;
 bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
                                      char ***domain_names, uint32 *num_domains,
-				     DOM_SID **sids );
+				     struct dom_sid **sids );
 
 /* The following definitions come from libsmb/unexpected.c  */
 
@@ -4322,24 +4322,24 @@ bool login_cache_delentry(const struct samu *sampass);
 bool lookup_name(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
-		 DOM_SID *ret_sid, enum lsa_SidType *ret_type);
+		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type);
 bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
-		 DOM_SID *ret_sid, enum lsa_SidType *ret_type);
+		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type);
 NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
-		     const DOM_SID **sids, int level,
+		     const struct dom_sid **sids, int level,
 		     struct lsa_dom_info **ret_domains,
 		     struct lsa_name_info **ret_names);
-bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		const char **ret_domain, const char **ret_name,
 		enum lsa_SidType *ret_type);
-void store_uid_sid_cache(const DOM_SID *psid, uid_t uid);
-void store_gid_sid_cache(const DOM_SID *psid, gid_t gid);
-void uid_to_sid(DOM_SID *psid, uid_t uid);
-void gid_to_sid(DOM_SID *psid, gid_t gid);
-bool sid_to_uid(const DOM_SID *psid, uid_t *puid);
-bool sid_to_gid(const DOM_SID *psid, gid_t *pgid);
+void store_uid_sid_cache(const struct dom_sid *psid, uid_t uid);
+void store_gid_sid_cache(const struct dom_sid *psid, gid_t gid);
+void uid_to_sid(struct dom_sid *psid, uid_t uid);
+void gid_to_sid(struct dom_sid *psid, gid_t gid);
+bool sid_to_uid(const struct dom_sid *psid, uid_t *puid);
+bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid);
 
 /* The following definitions come from passdb/machine_sid.c  */
 
@@ -4416,8 +4416,8 @@ const uint8_t *pdb_get_nt_passwd(const struct samu *sampass);
 const uint8_t *pdb_get_lanman_passwd(const struct samu *sampass);
 const uint8_t *pdb_get_pw_history(const struct samu *sampass, uint32_t *current_hist_len);
 const char *pdb_get_plaintext_passwd(const struct samu *sampass);
-const DOM_SID *pdb_get_user_sid(const struct samu *sampass);
-const DOM_SID *pdb_get_group_sid(struct samu *sampass);
+const struct dom_sid *pdb_get_user_sid(const struct samu *sampass);
+const struct dom_sid *pdb_get_group_sid(struct samu *sampass);
 enum pdb_value_state pdb_get_init_flags(const struct samu *sampass, enum pdb_elements element);
 const char *pdb_get_username(const struct samu *sampass);
 const char *pdb_get_domain(const struct samu *sampass);
@@ -4446,9 +4446,9 @@ bool pdb_set_pass_last_set_time(struct samu *sampass, time_t mytime, enum pdb_va
 bool pdb_set_hours_len(struct samu *sampass, uint32_t len, enum pdb_value_state flag);
 bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_state flag);
 bool pdb_set_init_flags(struct samu *sampass, enum pdb_elements element, enum pdb_value_state value_flag);
-bool pdb_set_user_sid(struct samu *sampass, const DOM_SID *u_sid, enum pdb_value_state flag);
+bool pdb_set_user_sid(struct samu *sampass, const struct dom_sid *u_sid, enum pdb_value_state flag);
 bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_value_state flag);
-bool pdb_set_group_sid(struct samu *sampass, const DOM_SID *g_sid, enum pdb_value_state flag);
+bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum pdb_value_state flag);
 bool pdb_set_username(struct samu *sampass, const char *username, enum pdb_value_state flag);
 bool pdb_set_domain(struct samu *sampass, const char *domain, enum pdb_value_state flag);
 bool pdb_set_nt_username(struct samu *sampass, const char *nt_username, enum pdb_value_state flag);
@@ -4485,7 +4485,7 @@ struct event_context *pdb_get_event_context(void);
 NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected);
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx);
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) ;
-bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid) ;
+bool pdb_getsampwsid(struct samu *sam_acct, const struct dom_sid *sid) ;
 NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32_t flags,
 			 uint32_t *rid);
 NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct);
@@ -4494,7 +4494,7 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct) ;
 NTSTATUS pdb_delete_sam_account(struct samu *sam_acct) ;
 NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname);
 NTSTATUS pdb_update_login_attempts(struct samu *sam_acct, bool success);
-bool pdb_getgrsid(GROUP_MAP *map, DOM_SID sid);
+bool pdb_getgrsid(GROUP_MAP *map, struct dom_sid sid);
 bool pdb_getgrgid(GROUP_MAP *map, gid_t gid);
 bool pdb_getgrnam(GROUP_MAP *map, const char *name);
 NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
@@ -4502,15 +4502,15 @@ NTSTATUS pdb_create_dom_group(TALLOC_CTX *mem_ctx, const char *name,
 NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32_t rid);
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map);
 NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map);
-NTSTATUS pdb_delete_group_mapping_entry(DOM_SID sid);
-bool pdb_enum_group_mapping(const DOM_SID *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
+NTSTATUS pdb_delete_group_mapping_entry(struct dom_sid sid);
+bool pdb_enum_group_mapping(const struct dom_sid *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
 			    size_t *p_num_entries, bool unix_only);
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
-				const DOM_SID *sid,
+				const struct dom_sid *sid,
 				uint32_t **pp_member_rids,
 				size_t *p_num_members);
 NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
-				    DOM_SID **pp_sids, gid_t **pp_gids,
+				    struct dom_sid **pp_sids, gid_t **pp_gids,
 				    size_t *p_num_groups);
 NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, struct samu *user);
 NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
@@ -4518,24 +4518,24 @@ NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
 NTSTATUS pdb_del_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
 			  uint32_t member_rid);
 NTSTATUS pdb_create_alias(const char *name, uint32_t *rid);
-NTSTATUS pdb_delete_alias(const DOM_SID *sid);
-NTSTATUS pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info);
-NTSTATUS pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info);
-NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member);
-NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member);
-NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
-			   DOM_SID **pp_members, size_t *p_num_members);
+NTSTATUS pdb_delete_alias(const struct dom_sid *sid);
+NTSTATUS pdb_get_aliasinfo(const struct dom_sid *sid, struct acct_info *info);
+NTSTATUS pdb_set_aliasinfo(const struct dom_sid *sid, struct acct_info *info);
+NTSTATUS pdb_add_aliasmem(const struct dom_sid *alias, const struct dom_sid *member);
+NTSTATUS pdb_del_aliasmem(const struct dom_sid *alias, const struct dom_sid *member);
+NTSTATUS pdb_enum_aliasmem(const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
+			   struct dom_sid **pp_members, size_t *p_num_members);
 NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
-				    const DOM_SID *domain_sid,
-				    const DOM_SID *members, size_t num_members,
+				    const struct dom_sid *domain_sid,
+				    const struct dom_sid *members, size_t num_members,
 				    uint32_t **pp_alias_rids,
 				    size_t *p_num_alias_rids);
-NTSTATUS pdb_lookup_rids(const DOM_SID *domain_sid,
+NTSTATUS pdb_lookup_rids(const struct dom_sid *domain_sid,
 			 int num_rids,
 			 uint32_t *rids,
 			 const char **names,
 			 enum lsa_SidType *attrs);
-NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
+NTSTATUS pdb_lookup_names(const struct dom_sid *domain_sid,
 			  int num_names,
 			  const char **names,
 			  uint32_t *rids,
@@ -4543,9 +4543,9 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
-bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid);
-bool pdb_gid_to_sid(gid_t gid, DOM_SID *sid);
-bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
+bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid);
+bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid);
+bool pdb_sid_to_id(const struct dom_sid *sid, union unid_t *id,
 		   enum lsa_SidType *type);
 uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32_t *rid);
@@ -4554,14 +4554,14 @@ struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
 				   enum pdb_search_type type);
 struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32_t acct_flags);
 struct pdb_search *pdb_search_groups(TALLOC_CTX *mem_ctx);
-struct pdb_search *pdb_search_aliases(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
+struct pdb_search *pdb_search_aliases(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 uint32_t pdb_search_entries(struct pdb_search *search,
 			  uint32_t start_idx, uint32_t max_entries,
 			  struct samr_displayentry **result);
-bool pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
+bool pdb_get_trusteddom_pw(const char *domain, char** pwd, struct dom_sid *sid,
 			   time_t *pass_last_set_time);
 bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
-			   const DOM_SID *sid);
+			   const struct dom_sid *sid);
 bool pdb_del_trusteddom_pw(const char *domain);
 NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 			      struct trustdom_info ***domains);
@@ -4656,30 +4656,30 @@ bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name);
 bool lookup_builtin_name(const char *name, uint32 *rid);
 const char *builtin_domain_name(void);
-bool sid_check_is_builtin(const DOM_SID *sid);
-bool sid_check_is_in_builtin(const DOM_SID *sid);
+bool sid_check_is_builtin(const struct dom_sid *sid);
+bool sid_check_is_in_builtin(const struct dom_sid *sid);
 
 /* The following definitions come from passdb/util_unixsids.c  */
 
-bool sid_check_is_unix_users(const DOM_SID *sid);
-bool sid_check_is_in_unix_users(const DOM_SID *sid);
-bool uid_to_unix_users_sid(uid_t uid, DOM_SID *sid);
-bool gid_to_unix_groups_sid(gid_t gid, DOM_SID *sid);
+bool sid_check_is_unix_users(const struct dom_sid *sid);
+bool sid_check_is_in_unix_users(const struct dom_sid *sid);
+bool uid_to_unix_users_sid(uid_t uid, struct dom_sid *sid);
+bool gid_to_unix_groups_sid(gid_t gid, struct dom_sid *sid);
 const char *unix_users_domain_name(void);
-bool lookup_unix_user_name(const char *name, DOM_SID *sid);
-bool sid_check_is_unix_groups(const DOM_SID *sid);
-bool sid_check_is_in_unix_groups(const DOM_SID *sid);
+bool lookup_unix_user_name(const char *name, struct dom_sid *sid);
+bool sid_check_is_unix_groups(const struct dom_sid *sid);
+bool sid_check_is_in_unix_groups(const struct dom_sid *sid);
 const char *unix_groups_domain_name(void);
-bool lookup_unix_group_name(const char *name, DOM_SID *sid);
+bool lookup_unix_group_name(const char *name, struct dom_sid *sid);
 
 /* The following definitions come from passdb/util_wellknown.c  */
 
-bool sid_check_is_wellknown_domain(const DOM_SID *sid, const char **name);
-bool sid_check_is_in_wellknown_domain(const DOM_SID *sid);
-bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool sid_check_is_wellknown_domain(const struct dom_sid *sid, const char **name);
+bool sid_check_is_in_wellknown_domain(const struct dom_sid *sid);
+bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			  const char **domain, const char **name);
 bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
-			   DOM_SID *sid, const char **domain);
+			   struct dom_sid *sid, const char **domain);
 
 /* The following definitions come from printing/load.c  */
 
@@ -5836,8 +5836,8 @@ void notify_trigger(struct notify_context *notify,
 
 /* The following definitions come from smbd/ntquotas.c  */
 
-int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid, SMB_NTQUOTA_STRUCT *qt);
-int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid, SMB_NTQUOTA_STRUCT *qt);
+int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
+int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
 int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list);
 void *init_quota_handle(TALLOC_CTX *mem_ctx);
 
@@ -6020,7 +6020,7 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
-void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid);
+void create_file_sids(const SMB_STRUCT_STAT *psbuf, struct dom_sid *powner_sid, struct dom_sid *pgroup_sid);
 bool nt4_compatible_acls(void);
 uint32_t map_canon_ace_perms(int snum,
                                 enum security_ace_type *pacl_type,
@@ -6514,10 +6514,10 @@ NTSTATUS idmap_tdb_init(void);
 
 /* The following definitions come from winbindd/idmap_util.c  */
 
-NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid);
-NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid);
-NTSTATUS idmap_sid_to_uid(const char *dom_name, DOM_SID *sid, uid_t *uid);
-NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
+NTSTATUS idmap_uid_to_sid(const char *domname, struct dom_sid *sid, uid_t uid);
+NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid);
+NTSTATUS idmap_sid_to_uid(const char *dom_name, struct dom_sid *sid, uid_t *uid);
+NTSTATUS idmap_sid_to_gid(const char *domname, struct dom_sid *sid, gid_t *gid);
 
 /* The following definitions come from winbindd/nss_info.c  */
 

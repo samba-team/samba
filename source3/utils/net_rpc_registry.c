@@ -411,7 +411,7 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
-					       const DOM_SID *domain_sid,
+					       const struct dom_sid *domain_sid,
 					       const char *domain_name,
 					       struct cli_state *cli,
 					       struct rpc_pipe_client *pipe_hnd,
@@ -483,7 +483,7 @@ static int rpc_registry_setvalue(struct net_context *c, int argc,
 }
 
 static NTSTATUS rpc_registry_deletevalue_internal(struct net_context *c,
-						  const DOM_SID *domain_sid,
+						  const struct dom_sid *domain_sid,
 						  const char *domain_name,
 						  struct cli_state *cli,
 						  struct rpc_pipe_client *pipe_hnd,
@@ -537,7 +537,7 @@ static int rpc_registry_deletevalue(struct net_context *c, int argc,
 }
 
 static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
-					       const DOM_SID *domain_sid,
+					       const struct dom_sid *domain_sid,
 					       const char *domain_name,
 					       struct cli_state *cli,
 					       struct rpc_pipe_client *pipe_hnd,
@@ -625,7 +625,7 @@ done:
 }
 
 static NTSTATUS rpc_registry_getvalue_full(struct net_context *c,
-					   const DOM_SID *domain_sid,
+					   const struct dom_sid *domain_sid,
 					   const char *domain_name,
 					   struct cli_state *cli,
 					   struct rpc_pipe_client *pipe_hnd,
@@ -653,7 +653,7 @@ static int rpc_registry_getvalue(struct net_context *c, int argc,
 }
 
 static NTSTATUS rpc_registry_getvalue_raw(struct net_context *c,
-					  const DOM_SID *domain_sid,
+					  const struct dom_sid *domain_sid,
 					  const char *domain_name,
 					  struct cli_state *cli,
 					  struct rpc_pipe_client *pipe_hnd,
@@ -681,7 +681,7 @@ static int rpc_registry_getvalueraw(struct net_context *c, int argc,
 }
 
 static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -755,7 +755,7 @@ static int rpc_registry_createkey(struct net_context *c, int argc,
 }
 
 static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -809,7 +809,7 @@ static int rpc_registry_deletekey(struct net_context *c, int argc, const char **
 ********************************************************************/
 
 static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -887,7 +887,7 @@ static int rpc_registry_enumerate(struct net_context *c, int argc,
 ********************************************************************/
 
 static NTSTATUS rpc_registry_save_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1189,7 +1189,7 @@ out:
 ********************************************************************/
 
 static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
-					    const DOM_SID *domain_sid,
+					    const struct dom_sid *domain_sid,
 					    const char *domain_name,
 					    struct cli_state *cli,
 					    struct rpc_pipe_client *pipe_hnd,

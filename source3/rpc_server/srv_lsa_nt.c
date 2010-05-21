@@ -41,7 +41,7 @@ extern PRIVS privs[];
 enum lsa_handle_type { LSA_HANDLE_POLICY_TYPE = 1, LSA_HANDLE_ACCOUNT_TYPE };
 
 struct lsa_info {
-	DOM_SID sid;
+	struct dom_sid sid;
 	const char *name;
 	uint32 access;
 	enum lsa_handle_type type;
@@ -83,7 +83,7 @@ const struct generic_mapping lsa_trusted_domain_mapping = {
 static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 				    struct lsa_RefDomainList *ref,
 				    const char *dom_name,
-				    DOM_SID *dom_sid)
+				    struct dom_sid *dom_sid)
 {
 	int num = 0;
 
@@ -129,7 +129,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 
 static void init_dom_query_3(struct lsa_DomainInfo *r,
 			     const char *name,
-			     DOM_SID *sid)
+			     struct dom_sid *sid)
 {
 	init_lsa_StringLarge(&r->name, name);
 	r->sid = sid;
@@ -141,7 +141,7 @@ static void init_dom_query_3(struct lsa_DomainInfo *r,
 
 static void init_dom_query_5(struct lsa_DomainInfo *r,
 			     const char *name,
-			     DOM_SID *sid)
+			     struct dom_sid *sid)
 {
 	init_lsa_StringLarge(&r->name, name);
 	r->sid = sid;
@@ -167,7 +167,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 	*pmapped_count = 0;
 
 	for (i = 0; i < num_entries; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		uint32 rid;
 		int dom_idx;
 		const char *full_name;
@@ -251,7 +251,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 	*pmapped_count = 0;
 
 	for (i = 0; i < num_entries; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		uint32 rid;
 		int dom_idx;
 		const char *full_name;
@@ -295,7 +295,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 		dom_idx = -1;
 
 		if (type != SID_NAME_UNKNOWN) {
-			DOM_SID domain_sid;
+			struct dom_sid domain_sid;
 			sid_copy(&domain_sid, &sid);
 			sid_split_rid(&domain_sid, &rid);
 			dom_idx = init_lsa_ref_domain_list(mem_ctx, ref, domain, &domain_sid);
@@ -314,9 +314,9 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, struct security_descriptor **sd, size_t *sd_size,
 					const struct generic_mapping *map,
-					DOM_SID *sid, uint32_t sid_access)
+					struct dom_sid *sid, uint32_t sid_access)
 {
-	DOM_SID adm_sid;
+	struct dom_sid adm_sid;
 	struct security_ace ace[5];
 	size_t i = 0;
 
@@ -517,9 +517,9 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_info *handle;
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	const char *name;
-	DOM_SID *sid = NULL;
+	struct dom_sid *sid = NULL;
 	union lsa_PolicyInformation *info = NULL;
 	uint32_t acc_required = 0;
 
@@ -786,7 +786,7 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 {
 	NTSTATUS status;
 	int i;
-	const DOM_SID **sids = NULL;
+	const struct dom_sid **sids = NULL;
 	struct lsa_RefDomainList *ref = NULL;
 	uint32 mapped_count = 0;
 	struct lsa_dom_info *dom_infos = NULL;
@@ -801,7 +801,7 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
-	sids = TALLOC_ARRAY(p->mem_ctx, const DOM_SID *, num_sids);
+	sids = TALLOC_ARRAY(p->mem_ctx, const struct dom_sid *, num_sids);
 	ref = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
 
 	if (sids == NULL || ref == NULL) {
@@ -1565,7 +1565,7 @@ NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
 			   struct lsa_EnumAccounts *r)
 {
 	struct lsa_info *handle;
-	DOM_SID *sid_list;
+	struct dom_sid *sid_list;
 	int i, j, num_entries;
 	NTSTATUS status;
 	struct lsa_SidPtr *sids = NULL;
@@ -2162,7 +2162,7 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 	uint32_t acc_granted = 0;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
-	DOM_SID sid;
+	struct dom_sid sid;
 	NTSTATUS status;
 
 	/* find the connection policy handle. */
@@ -2231,7 +2231,7 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 	int i = 0;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
-	DOM_SID sid;
+	struct dom_sid sid;
 	const char *privname = NULL;
 	uint32_t acc_granted = 0;
 	NTSTATUS status;
@@ -2345,7 +2345,7 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 {
 	NTSTATUS status;
 	struct lsa_info *info = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	PRIVILEGE_SET privileges;
 	SE_PRIV mask;
 

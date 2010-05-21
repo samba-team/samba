@@ -333,7 +333,7 @@ static int net_idmap_aclmapset(struct net_context *c, int argc, const char **arg
 {
 	TALLOC_CTX *mem_ctx;
 	int result = -1;
-	DOM_SID src_sid, dst_sid;
+	struct dom_sid src_sid, dst_sid;
 	char *src, *dst;
 	struct db_context *db;
 	struct db_record *rec;

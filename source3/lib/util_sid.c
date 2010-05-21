@@ -30,61 +30,61 @@
  */
 
 
-const DOM_SID global_sid_World_Domain =               /* Everyone domain */
+const struct dom_sid global_sid_World_Domain =               /* Everyone domain */
 { 1, 0, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_World =                      /* Everyone */
+const struct dom_sid global_sid_World =                      /* Everyone */
 { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Creator_Owner_Domain =       /* Creator Owner domain */
+const struct dom_sid global_sid_Creator_Owner_Domain =       /* Creator Owner domain */
 { 1, 0, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_NT_Authority =    		/* NT Authority */
+const struct dom_sid global_sid_NT_Authority =    		/* NT Authority */
 { 1, 0, {0,0,0,0,0,5}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_System =			/* System */
+const struct dom_sid global_sid_System =			/* System */
 { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_NULL =            		/* NULL sid */
+const struct dom_sid global_sid_NULL =            		/* NULL sid */
 { 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Authenticated_Users =	/* All authenticated rids */
+const struct dom_sid global_sid_Authenticated_Users =	/* All authenticated rids */
 { 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #if 0
 /* for documentation */
-const DOM_SID global_sid_Restriced =			/* Restriced Code */
+const struct dom_sid global_sid_Restriced =			/* Restriced Code */
 { 1, 1, {0,0,0,0,0,5}, {12,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #endif
-const DOM_SID global_sid_Network =			/* Network rids */
+const struct dom_sid global_sid_Network =			/* Network rids */
 { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
-const DOM_SID global_sid_Creator_Owner =		/* Creator Owner */
+const struct dom_sid global_sid_Creator_Owner =		/* Creator Owner */
 { 1, 1, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Creator_Group =		/* Creator Group */
+const struct dom_sid global_sid_Creator_Group =		/* Creator Group */
 { 1, 1, {0,0,0,0,0,3}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Anonymous =			/* Anonymous login */
+const struct dom_sid global_sid_Anonymous =			/* Anonymous login */
 { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
-const DOM_SID global_sid_Builtin = 			/* Local well-known domain */
+const struct dom_sid global_sid_Builtin = 			/* Local well-known domain */
 { 1, 1, {0,0,0,0,0,5}, {32,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Administrators =	/* Builtin administrators */
+const struct dom_sid global_sid_Builtin_Administrators =	/* Builtin administrators */
 { 1, 2, {0,0,0,0,0,5}, {32,544,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Users =		/* Builtin users */
+const struct dom_sid global_sid_Builtin_Users =		/* Builtin users */
 { 1, 2, {0,0,0,0,0,5}, {32,545,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Guests =		/* Builtin guest users */
+const struct dom_sid global_sid_Builtin_Guests =		/* Builtin guest users */
 { 1, 2, {0,0,0,0,0,5}, {32,546,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Power_Users =	/* Builtin power users */
+const struct dom_sid global_sid_Builtin_Power_Users =	/* Builtin power users */
 { 1, 2, {0,0,0,0,0,5}, {32,547,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Account_Operators =	/* Builtin account operators */
+const struct dom_sid global_sid_Builtin_Account_Operators =	/* Builtin account operators */
 { 1, 2, {0,0,0,0,0,5}, {32,548,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Server_Operators =	/* Builtin server operators */
+const struct dom_sid global_sid_Builtin_Server_Operators =	/* Builtin server operators */
 { 1, 2, {0,0,0,0,0,5}, {32,549,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Print_Operators =	/* Builtin print operators */
+const struct dom_sid global_sid_Builtin_Print_Operators =	/* Builtin print operators */
 { 1, 2, {0,0,0,0,0,5}, {32,550,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Backup_Operators =	/* Builtin backup operators */
+const struct dom_sid global_sid_Builtin_Backup_Operators =	/* Builtin backup operators */
 { 1, 2, {0,0,0,0,0,5}, {32,551,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_Replicator =		/* Builtin replicator */
+const struct dom_sid global_sid_Builtin_Replicator =		/* Builtin replicator */
 { 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Builtin_PreWin2kAccess =	/* Builtin pre win2k access */
+const struct dom_sid global_sid_Builtin_PreWin2kAccess =	/* Builtin pre win2k access */
 { 1, 2, {0,0,0,0,0,5}, {32,554,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
-const DOM_SID global_sid_Unix_Users =			/* Unmapped Unix users */
+const struct dom_sid global_sid_Unix_Users =			/* Unmapped Unix users */
 { 1, 1, {0,0,0,0,0,22}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-const DOM_SID global_sid_Unix_Groups =			/* Unmapped Unix groups */
+const struct dom_sid global_sid_Unix_Groups =			/* Unmapped Unix groups */
 { 1, 1, {0,0,0,0,0,22}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 /* Unused, left here for documentary purposes */
@@ -100,13 +100,13 @@ const DOM_SID global_sid_Unix_Groups =			/* Unmapped Unix groups */
  * An NT compatible anonymous token.
  */
 
-static DOM_SID anon_sid_array[3] =
+static struct dom_sid anon_sid_array[3] =
 { { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
   { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
   { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
 NT_USER_TOKEN anonymous_token = { 3, anon_sid_array, SE_NONE };
 
-static DOM_SID system_sid_array[1] =
+static struct dom_sid system_sid_array[1] =
 { { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
 NT_USER_TOKEN system_token = { 1, system_sid_array, SE_ALL_PRIVS };
 
@@ -172,7 +172,7 @@ const char *get_global_sam_name(void)
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_fstring(fstring sidstr_out, const DOM_SID *sid)
+char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 {
 	char *str = sid_string_talloc(talloc_tos(), sid);
 	fstrcpy(sidstr_out, str);
@@ -188,7 +188,7 @@ char *sid_to_fstring(fstring sidstr_out, const DOM_SID *sid)
  be turned around if necessary
 *****************************************************************/
 
-char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
+char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	char *result = dom_sid_string(mem_ctx, sid);
 	SMB_ASSERT(result != NULL);
@@ -199,7 +199,7 @@ char *sid_string_talloc(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
  Useful function for debug lines.
 *****************************************************************/
 
-char *sid_string_dbg(const DOM_SID *sid)
+char *sid_string_dbg(const struct dom_sid *sid)
 {
 	return sid_string_talloc(talloc_tos(), sid);
 }
@@ -208,7 +208,7 @@ char *sid_string_dbg(const DOM_SID *sid)
  Use with care!
 *****************************************************************/
 
-char *sid_string_tos(const DOM_SID *sid)
+char *sid_string_tos(const struct dom_sid *sid)
 {
 	return sid_string_talloc(talloc_tos(), sid);
 }
@@ -217,7 +217,7 @@ char *sid_string_tos(const DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
 
-bool string_to_sid(DOM_SID *sidout, const char *sidstr)
+bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 {
 	const char *p;
 	char *q;
@@ -302,7 +302,7 @@ format_error:
  Add a rid to the end of a sid
 *****************************************************************/  
 
-bool sid_append_rid(DOM_SID *sid, uint32 rid)
+bool sid_append_rid(struct dom_sid *sid, uint32 rid)
 {
 	if (sid->num_auths < MAXSUBAUTHS) {
 		sid->sub_auths[sid->num_auths++] = rid;
@@ -311,7 +311,7 @@ bool sid_append_rid(DOM_SID *sid, uint32 rid)
 	return False;
 }
 
-bool sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
+bool sid_compose(struct dom_sid *dst, const struct dom_sid *domain_sid, uint32 rid)
 {
 	sid_copy(dst, domain_sid);
 	return sid_append_rid(dst, rid);
@@ -321,7 +321,7 @@ bool sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
  Removes the last rid from the end of a sid
 *****************************************************************/  
 
-bool sid_split_rid(DOM_SID *sid, uint32 *rid)
+bool sid_split_rid(struct dom_sid *sid, uint32 *rid)
 {
 	if (sid->num_auths > 0) {
 		sid->num_auths--;
@@ -335,7 +335,7 @@ bool sid_split_rid(DOM_SID *sid, uint32 *rid)
  Return the last rid from the end of a sid
 *****************************************************************/  
 
-bool sid_peek_rid(const DOM_SID *sid, uint32 *rid)
+bool sid_peek_rid(const struct dom_sid *sid, uint32 *rid)
 {
 	if (!sid || !rid)
 		return False;		
@@ -352,7 +352,7 @@ bool sid_peek_rid(const DOM_SID *sid, uint32 *rid)
  and check the sid against the exp_dom_sid  
 *****************************************************************/  
 
-bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid)
+bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32 *rid)
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
@@ -373,7 +373,7 @@ bool sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
  Copies a sid
 *****************************************************************/  
 
-void sid_copy(DOM_SID *dst, const DOM_SID *src)
+void sid_copy(struct dom_sid *dst, const struct dom_sid *src)
 {
 	int i;
 
@@ -392,7 +392,7 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
  Write a sid out into on-the-wire format.
 *****************************************************************/  
 
-bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
+bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid)
 {
 	size_t i;
 
@@ -409,10 +409,10 @@ bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 }
 
 /*****************************************************************
- Parse a on-the-wire SID to a DOM_SID.
+ Parse a on-the-wire SID to a struct dom_sid.
 *****************************************************************/  
 
-bool sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
+bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid)
 {
 	int i;
 	if (len < 8)
@@ -434,7 +434,7 @@ bool sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
  Compare the auth portion of two sids.
 *****************************************************************/  
 
-static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
+static int sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int i;
 
@@ -459,7 +459,7 @@ static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
  Compare two sids.
 *****************************************************************/  
 
-int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int i;
 
@@ -486,7 +486,7 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
  this just compares the leading sub-auths
 *****************************************************************/  
 
-int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int n, i;
 
@@ -503,7 +503,7 @@ int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
  Compare two sids.
 *****************************************************************/  
 
-bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;
 }
@@ -512,9 +512,9 @@ bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
  Returns true if SID is internal (and non-mappable).
 *****************************************************************/
 
-bool non_mappable_sid(DOM_SID *sid)
+bool non_mappable_sid(struct dom_sid *sid)
 {
-	DOM_SID dom;
+	struct dom_sid dom;
 	uint32 rid;
 
 	sid_copy(&dom, sid);
@@ -530,11 +530,11 @@ bool non_mappable_sid(DOM_SID *sid)
 }
 
 /*****************************************************************
- Return the binary string representation of a DOM_SID.
+ Return the binary string representation of a struct dom_sid.
  Caller must free.
 *****************************************************************/
 
-char *sid_binstring(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
+char *sid_binstring(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	uint8_t *buf;
 	char *s;
@@ -550,11 +550,11 @@ char *sid_binstring(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 }
 
 /*****************************************************************
- Return the binary string representation of a DOM_SID.
+ Return the binary string representation of a struct dom_sid.
  Caller must free.
 *****************************************************************/
 
-char *sid_binstring_hex(const DOM_SID *sid)
+char *sid_binstring_hex(const struct dom_sid *sid)
 {
 	char *buf, *s;
 	int len = ndr_size_dom_sid(sid, 0);
@@ -590,10 +590,10 @@ struct dom_sid *sid_dup_talloc(TALLOC_CTX *ctx, const struct dom_sid *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			  DOM_SID **sids, size_t *num)
+NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+			  struct dom_sid **sids, size_t *num)
 {
-	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
+	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, struct dom_sid,
 					     (*num)+1);
 	if (*sids == NULL) {
 		*num = 0;
@@ -611,8 +611,8 @@ NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Add SID to an array SIDs ensuring that it is not already there
 ********************************************************************/
 
-NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-				 DOM_SID **sids, size_t *num_sids)
+NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+				 struct dom_sid **sids, size_t *num_sids)
 {
 	size_t i;
 
@@ -628,9 +628,9 @@ NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Remove SID from an array
 ********************************************************************/
 
-void del_sid_from_array(const DOM_SID *sid, DOM_SID **sids, size_t *num)
+void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t *num)
 {
-	DOM_SID *sid_list = *sids;
+	struct dom_sid *sid_list = *sids;
 	size_t i;
 
 	for ( i=0; i<*num; i++ ) {
@@ -675,13 +675,13 @@ bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-bool is_null_sid(const DOM_SID *sid)
+bool is_null_sid(const struct dom_sid *sid)
 {
-	static const DOM_SID null_sid = {0};
+	static const struct dom_sid null_sid = {0};
 	return sid_equal(sid, &null_sid);
 }
 
-bool is_sid_in_token(const NT_USER_TOKEN *token, const DOM_SID *sid)
+bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid)
 {
         int i;
 
@@ -694,14 +694,14 @@ bool is_sid_in_token(const NT_USER_TOKEN *token, const DOM_SID *sid)
 
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
-			      DOM_SID **user_sids,
+			      struct dom_sid **user_sids,
 			      size_t *num_user_sids,
 			      bool include_user_group_rid,
 			      bool skip_ressource_groups)
 {
 	NTSTATUS status;
-	DOM_SID sid;
-	DOM_SID *sid_array = NULL;
+	struct dom_sid sid;
+	struct dom_sid *sid_array = NULL;
 	size_t num_sids = 0;
 	int i;
 

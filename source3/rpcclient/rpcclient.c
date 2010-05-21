@@ -27,7 +27,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
 
-DOM_SID domain_sid;
+struct dom_sid domain_sid;
 
 static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
 static enum dcerpc_AuthLevel pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;

@@ -28,14 +28,14 @@
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     const char *name, const char **ret_domain,
-			     const char **ret_name, DOM_SID *ret_sid,
+			     const char **ret_name, struct dom_sid *ret_sid,
 			     enum lsa_SidType *ret_type)
 {
 	struct rpc_pipe_client *lsa_pipe = NULL;
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	const char **dom_names;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	enum lsa_SidType *types;
 
 	ZERO_STRUCT(pol);

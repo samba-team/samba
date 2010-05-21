@@ -62,7 +62,7 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
  **/
 
 NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				   DOM_SID **domain_sid,
+				   struct dom_sid **domain_sid,
 				   const char **domain_name)
 {
 	struct rpc_pipe_client *lsa_pipe = NULL;
@@ -131,7 +131,7 @@ int run_rpc_command(struct net_context *c,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
-	DOM_SID *domain_sid;
+	struct dom_sid *domain_sid;
 	const char *domain_name;
 	int ret = -1;
 
@@ -244,7 +244,7 @@ fail:
  **/
 
 static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -312,7 +312,7 @@ int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -491,7 +491,7 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
  **/
 
 NTSTATUS rpc_info_internals(struct net_context *c,
-			const DOM_SID *domain_sid,
+			const struct dom_sid *domain_sid,
 			const char *domain_name,
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -588,7 +588,7 @@ int net_rpc_info(struct net_context *c, int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_getsid_internals(struct net_context *c,
-			const DOM_SID *domain_sid,
+			const struct dom_sid *domain_sid,
 			const char *domain_name,
 			struct cli_state *cli,
 			struct rpc_pipe_client *pipe_hnd,
@@ -1106,7 +1106,7 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32 rid;
 	enum lsa_SidType type;
 
@@ -1495,7 +1495,7 @@ static int rpc_group_usage(struct net_context *c, int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_group_delete_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1781,10 +1781,10 @@ static int rpc_group_add(struct net_context *c, int argc, const char **argv)
 static NTSTATUS get_sid_from_name(struct cli_state *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *name,
-				DOM_SID *sid,
+				struct dom_sid *sid,
 				enum lsa_SidType *type)
 {
-	DOM_SID *sids = NULL;
+	struct dom_sid *sids = NULL;
 	enum lsa_SidType *types = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle lsa_pol;
@@ -1822,7 +1822,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 
 		/* Try as S-1-5-whatever */
 
-		DOM_SID tmp_sid;
+		struct dom_sid tmp_sid;
 
 		if (string_to_sid(&tmp_sid, name)) {
 			sid_copy(sid, &tmp_sid);
@@ -1836,7 +1836,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 
 static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid,
+				const struct dom_sid *group_sid,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
@@ -1847,7 +1847,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	sid_copy(&sid, group_sid);
 
@@ -1911,7 +1911,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *alias_sid,
+				const struct dom_sid *alias_sid,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
@@ -1919,10 +1919,10 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 alias_rid;
 	struct policy_handle alias_pol;
 
-	DOM_SID member_sid;
+	struct dom_sid member_sid;
 	enum lsa_SidType member_type;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	sid_copy(&sid, alias_sid);
 
@@ -1982,7 +1982,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 }
 
 static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -1990,7 +1990,7 @@ static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	enum lsa_SidType group_type;
 
 	if (argc != 2 || c->display_usage) {
@@ -2048,7 +2048,7 @@ static int rpc_group_addmem(struct net_context *c, int argc, const char **argv)
 static NTSTATUS rpc_del_groupmem(struct net_context *c,
 				struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *group_sid,
+				const struct dom_sid *group_sid,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
@@ -2059,7 +2059,7 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	sid_copy(&sid, group_sid);
 
@@ -2117,7 +2117,7 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 
 static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *alias_sid,
+				const struct dom_sid *alias_sid,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
@@ -2125,10 +2125,10 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 alias_rid;
 	struct policy_handle alias_pol;
 
-	DOM_SID member_sid;
+	struct dom_sid member_sid;
 	enum lsa_SidType member_type;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	sid_copy(&sid, alias_sid);
 
@@ -2185,7 +2185,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 }
 
 static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2193,7 +2193,7 @@ static NTSTATUS rpc_group_delmem_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	enum lsa_SidType group_type;
 
 	if (argc != 2 || c->display_usage) {
@@ -2265,7 +2265,7 @@ static int rpc_group_delmem(struct net_context *c, int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_group_list_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2500,7 +2500,7 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 					struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					const char *domain_name,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					struct policy_handle *domain_pol,
 					uint32 rid)
 {
@@ -2583,7 +2583,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle alias_pol, lsa_pol;
 	uint32 num_members;
-	DOM_SID *alias_sids;
+	struct dom_sid *alias_sids;
 	char **domains;
 	char **names;
 	enum lsa_SidType *types;
@@ -2632,7 +2632,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return result;
 	}
 
-	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
+	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_members);
 	if (!alias_sids) {
 		d_fprintf(stderr, _("Out of memory\n"));
 		TALLOC_FREE(lsa_pipe);
@@ -2675,7 +2675,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 }
 
 static NTSTATUS rpc_group_members_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -2722,7 +2722,7 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 
 		/* Ok, did not find it in the global sam, try with builtin */
 
-		DOM_SID sid_Builtin;
+		struct dom_sid sid_Builtin;
 
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
@@ -3224,7 +3224,7 @@ static bool check_share_sanity(struct net_context *c, struct cli_state *cli,
  **/
 
 static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3529,7 +3529,7 @@ bool copy_top_level_perms(struct net_context *c,
  **/
 
 static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3687,7 +3687,7 @@ static int rpc_share_migrate_files(struct net_context *c, int argc, const char *
  **/
 
 static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -3897,9 +3897,9 @@ static int rpc_share_migrate(struct net_context *c, int argc, const char **argv)
 }
 
 struct full_alias {
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32 num_members;
-	DOM_SID *members;
+	struct dom_sid *members;
 };
 
 static int num_server_aliases;
@@ -3925,7 +3925,7 @@ static void push_alias(TALLOC_CTX *mem_ctx, struct full_alias *alias)
 static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *connect_pol,
-					const DOM_SID *domain_sid)
+					const struct dom_sid *domain_sid)
 {
 	uint32 start_idx, max_entries, num_entries, i;
 	struct samr_SamArray *groups = NULL;
@@ -3982,7 +3982,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			alias.members = NULL;
 
 			if (alias.num_members > 0) {
-				alias.members = SMB_MALLOC_ARRAY(DOM_SID, alias.num_members);
+				alias.members = SMB_MALLOC_ARRAY(struct dom_sid, alias.num_members);
 
 				for (j = 0; j < alias.num_members; j++)
 					sid_copy(&alias.members[j],
@@ -4009,7 +4009,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
  */
 
 static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -4075,7 +4075,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
  */
 
 static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -4108,11 +4108,11 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 	return result;
 }
 
-static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
+static void init_user_token(NT_USER_TOKEN *token, struct dom_sid *user_sid)
 {
 	token->num_sids = 4;
 
-	if (!(token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4))) {
+	if (!(token->user_sids = SMB_MALLOC_ARRAY(struct dom_sid, 4))) {
 		d_fprintf(stderr, "malloc %s\n",_("failed"));
 		token->num_sids = 0;
 		return;
@@ -4129,12 +4129,12 @@ static void free_user_token(NT_USER_TOKEN *token)
 	SAFE_FREE(token->user_sids);
 }
 
-static void add_sid_to_token(NT_USER_TOKEN *token, DOM_SID *sid)
+static void add_sid_to_token(NT_USER_TOKEN *token, struct dom_sid *sid)
 {
 	if (is_sid_in_token(token, sid))
 		return;
 
-	token->user_sids = SMB_REALLOC_ARRAY(token->user_sids, DOM_SID, token->num_sids+1);
+	token->user_sids = SMB_REALLOC_ARRAY(token->user_sids, struct dom_sid, token->num_sids+1);
 	if (!token->user_sids) {
 		return;
 	}
@@ -4160,7 +4160,7 @@ static void dump_user_token(struct user_token *token)
 	}
 }
 
-static bool is_alias_member(DOM_SID *sid, struct full_alias *alias)
+static bool is_alias_member(struct dom_sid *sid, struct full_alias *alias)
 {
 	int i;
 
@@ -4172,7 +4172,7 @@ static bool is_alias_member(DOM_SID *sid, struct full_alias *alias)
 	return false;
 }
 
-static void collect_sid_memberships(NT_USER_TOKEN *token, DOM_SID sid)
+static void collect_sid_memberships(NT_USER_TOKEN *token, struct dom_sid sid)
 {
 	int i;
 
@@ -4206,7 +4206,7 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 	fstring full_name;
 	struct wbcDomainSid wsid;
 	char *sid_str = NULL;
-	DOM_SID user_sid;
+	struct dom_sid user_sid;
 	uint32_t num_groups;
 	gid_t *groups = NULL;
 	uint32_t i;
@@ -4256,7 +4256,7 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 
 	for (i = 0; i < num_groups; i++) {
 		gid_t gid = groups[i];
-		DOM_SID sid;
+		struct dom_sid sid;
 
 		wbc_status = wbcGidToSid(gid, &wsid);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -4375,7 +4375,7 @@ static bool get_user_tokens_from_file(FILE *f,
 		if (line[0] == ' ') {
 			/* We have a SID */
 
-			DOM_SID sid;
+			struct dom_sid sid;
 			if(!string_to_sid(&sid, &line[1])) {
 				DEBUG(1,("get_user_tokens_from_file: Could "
 					"not convert sid %s \n",&line[1]));
@@ -4539,7 +4539,7 @@ static void collect_share(const char *name, uint32 m,
  **/
 
 static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -5054,7 +5054,7 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_shutdown_abort_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5093,7 +5093,7 @@ static NTSTATUS rpc_shutdown_abort_internals(struct net_context *c,
  **/
 
 static NTSTATUS rpc_reg_shutdown_abort_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -5169,7 +5169,7 @@ static int rpc_shutdown_abort(struct net_context *c, int argc,
  **/
 
 NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
-				     const DOM_SID *domain_sid,
+				     const struct dom_sid *domain_sid,
 				     const char *domain_name,
 				     struct cli_state *cli,
 				     struct rpc_pipe_client *pipe_hnd,
@@ -5223,7 +5223,7 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
  **/
 
 NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    const char *domain_name,
 				    struct cli_state *cli,
 				    struct rpc_pipe_client *pipe_hnd,
@@ -5320,7 +5320,7 @@ static int rpc_shutdown(struct net_context *c, int argc, const char **argv)
  */
 
 static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -5481,7 +5481,7 @@ static int rpc_trustdom_add(struct net_context *c, int argc, const char **argv)
  */
 
 static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5492,7 +5492,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	DOM_SID trust_acct_sid;
+	struct dom_sid trust_acct_sid;
 	struct samr_Ids user_rids, name_types;
 	struct lsa_String lsa_acct_name;
 
@@ -5687,7 +5687,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct policy_handle connect_hnd;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
-	DOM_SID *domain_sid;
+	struct dom_sid *domain_sid;
 
 	char* domain_name;
 	char* acct_name;
@@ -5890,7 +5890,7 @@ done:
 }
 
 static NTSTATUS rpc_query_domain_sid(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -5906,7 +5906,7 @@ static NTSTATUS rpc_query_domain_sid(struct net_context *c,
 	return NT_STATUS_OK;
 }
 
-static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
+static void print_trusted_domain(struct dom_sid *dom_sid, const char *trusted_dom_name)
 {
 	fstring ascii_sid;
 
@@ -5919,7 +5919,7 @@ static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
 static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *pol,
-				      DOM_SID dom_sid,
+				      struct dom_sid dom_sid,
 				      const char *trusted_dom_name)
 {
 	NTSTATUS nt_status;
@@ -5985,7 +5985,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
-	DOM_SID *queried_dom_sid;
+	struct dom_sid *queried_dom_sid;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -6138,7 +6138,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
-	DOM_SID *queried_dom_sid;
+	struct dom_sid *queried_dom_sid;
 	int ascii_dom_name_len;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;

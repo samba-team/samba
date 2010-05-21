@@ -168,7 +168,7 @@ convert_sid_to_string(struct cli_state *ipc_cli,
                       struct policy_handle *pol,
                       fstring str,
                       bool numeric,
-                      DOM_SID *sid)
+                      struct dom_sid *sid)
 {
 	char **domains = NULL;
 	char **names = NULL;
@@ -212,11 +212,11 @@ static bool
 convert_string_to_sid(struct cli_state *ipc_cli,
                       struct policy_handle *pol,
                       bool numeric,
-                      DOM_SID *sid,
+                      struct dom_sid *sid,
                       const char *str)
 {
 	enum lsa_SidType *types = NULL;
-	DOM_SID *sids = NULL;
+	struct dom_sid *sids = NULL;
 	bool result = True;
 	TALLOC_CTX *ctx = NULL;
 	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
@@ -264,7 +264,7 @@ parse_ace(struct cli_state *ipc_cli,
 	unsigned int atype;
         unsigned int aflags;
         unsigned int amask;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32_t mask;
 	const struct perm_value *v;
         struct perm_value {
@@ -427,8 +427,8 @@ sec_desc_parse(TALLOC_CTX *ctx,
 	char *tok;
 	struct security_descriptor *ret = NULL;
 	size_t sd_size;
-	DOM_SID *group_sid=NULL;
-        DOM_SID *owner_sid=NULL;
+	struct dom_sid *group_sid=NULL;
+        struct dom_sid *owner_sid=NULL;
 	struct security_acl *dacl=NULL;
 	int revision=1;
 
@@ -444,7 +444,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
@@ -460,7 +460,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!owner_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
@@ -476,7 +476,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
 			}
-			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			group_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    numeric,
@@ -492,7 +492,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
 			}
-			group_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			group_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!group_sid ||
 			    !convert_string_to_sid(ipc_cli, pol,
                                                    False,
@@ -1504,8 +1504,8 @@ cacl_set(SMBCCTX *context,
         int err = 0;
 	struct security_descriptor *sd = NULL, *old;
         struct security_acl *dacl = NULL;
-	DOM_SID *owner_sid = NULL;
-	DOM_SID *group_sid = NULL;
+	struct dom_sid *owner_sid = NULL;
+	struct dom_sid *group_sid = NULL;
 	uint32 i, j;
 	size_t sd_size;
 	int ret = 0;

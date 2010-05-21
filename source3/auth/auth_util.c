@@ -35,7 +35,7 @@
 ****************************************************************************/
 
 static void sort_sid_array_for_smbd(struct auth_serversupplied_info *result,
-				const DOM_SID *pgroup_sid)
+				const struct dom_sid *pgroup_sid)
 {
 	unsigned int i;
 
@@ -504,7 +504,7 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 
 	for (i=1; i<server_info->ptok->num_sids; i++) {
 		gid_t gid;
-		DOM_SID *sid = &server_info->ptok->user_sids[i];
+		struct dom_sid *sid = &server_info->ptok->user_sids[i];
 
 		if (!sid_to_gid(sid, &gid)) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
@@ -573,7 +573,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	gid_t *gids;
 	char *qualified_name = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-	DOM_SID u_sid;
+	struct dom_sid u_sid;
 	enum lsa_SidType type;
 	struct auth_serversupplied_info *result;
 
@@ -689,7 +689,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 {
 	NTSTATUS status;
 	struct samu *sampass = NULL;
-	DOM_SID guest_sid;
+	struct dom_sid guest_sid;
 	bool ret;
 	static const char zeros[16] = {0, };
 	fstring tmp;
@@ -1052,8 +1052,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	const char *nt_domain;
 	const char *nt_username;
 	struct samu *sam_account = NULL;
-	DOM_SID user_sid;
-	DOM_SID group_sid;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
 	bool username_was_mapped;
 
 	uid_t uid = (uid_t)-1;
@@ -1301,8 +1301,8 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	const char *nt_domain;
 	const char *nt_username;
 	struct samu *sam_account = NULL;
-	DOM_SID user_sid;
-	DOM_SID group_sid;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
 	bool username_was_mapped;
 	uint32_t i;
 
@@ -1489,7 +1489,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	/* Create a 'combined' list of all SIDs we might want in the SD */
 
 	result->num_sids = info->num_sids - 2;
-	result->sids = talloc_array(result, DOM_SID, result->num_sids);
+	result->sids = talloc_array(result, struct dom_sid, result->num_sids);
 	if (result->sids == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
@@ -1537,7 +1537,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 bool is_trusted_domain(const char* dom_name)
 {
-	DOM_SID trustdom_sid;
+	struct dom_sid trustdom_sid;
 	bool ret;
 
 	/* no trusted domains for a standalone server */

@@ -29,7 +29,7 @@
  If mapping is not possible returns an error.
 *****************************************************************/  
 
-NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid)
+NTSTATUS idmap_uid_to_sid(const char *domname, struct dom_sid *sid, uid_t uid)
 {
 	NTSTATUS ret;
 	struct id_map map;
@@ -88,7 +88,7 @@ backend:
  If mapping is not possible returns an error.
 *****************************************************************/  
 
-NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
+NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid)
 {
 	NTSTATUS ret;
 	struct id_map map;
@@ -147,7 +147,7 @@ backend:
  If mapping is not possible or SID maps to a GID returns an error.
 *****************************************************************/  
 
-NTSTATUS idmap_sid_to_uid(const char *dom_name, DOM_SID *sid, uid_t *uid)
+NTSTATUS idmap_sid_to_uid(const char *dom_name, struct dom_sid *sid, uid_t *uid)
 {
 	NTSTATUS ret;
 	struct id_map map;
@@ -229,7 +229,7 @@ done:
  If mapping is not possible or SID maps to a UID returns an error.
 *****************************************************************/  
 
-NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid)
+NTSTATUS idmap_sid_to_gid(const char *domname, struct dom_sid *sid, gid_t *gid)
 {
 	NTSTATUS ret;
 	struct id_map map;

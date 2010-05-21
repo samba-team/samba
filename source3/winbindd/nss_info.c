@@ -303,7 +303,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 /********************************************************************
  *******************************************************************/
 
-NTSTATUS nss_get_info( const char *domain, const DOM_SID *user_sid,
+NTSTATUS nss_get_info( const char *domain, const struct dom_sid *user_sid,
 		       TALLOC_CTX *ctx,
 		       ADS_STRUCT *ads, LDAPMessage *msg,
 		       const char **homedir, const char **shell,

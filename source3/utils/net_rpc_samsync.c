@@ -105,7 +105,7 @@ static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
 
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_samdump_internals(struct net_context *c,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -174,7 +174,7 @@ int rpc_vampire_usage(struct net_context *c, int argc, const char **argv)
 
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_vampire_internals(struct net_context *c,
-				const DOM_SID *domain_sid,
+				const struct dom_sid *domain_sid,
 				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
@@ -267,7 +267,7 @@ int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 }
 
 NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    const char *domain_name,
 				    struct cli_state *cli,
 				    struct rpc_pipe_client *pipe_hnd,
@@ -352,7 +352,7 @@ int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv)
 
 
 NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
-				      const DOM_SID *domain_sid,
+				      const struct dom_sid *domain_sid,
 				      const char *domain_name,
 				      struct cli_state *cli,
 				      struct rpc_pipe_client *pipe_hnd,
@@ -412,7 +412,7 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 }
 
 static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,

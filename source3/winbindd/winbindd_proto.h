@@ -26,16 +26,16 @@
 
 /* The following definitions come from auth/token_util.c  */
 
-bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token );
+bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token );
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
-NTSTATUS add_aliases(const DOM_SID *domain_sid,
+NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct nt_user_token *token);
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
-					    const DOM_SID *user_sid,
+					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const DOM_SID *groupsids);
+					    const struct dom_sid *groupsids);
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
@@ -76,24 +76,24 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from winbindd/winbindd_async.c  */
 
-bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+bool print_sidlist(TALLOC_CTX *mem_ctx, const struct dom_sid *sids,
 		   size_t num_sids, char **result, ssize_t *len);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
-		   DOM_SID **sids, size_t *num_sids);
+		   struct dom_sid **sids, size_t *num_sids);
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
 void winbindd_check_cache_size(time_t t);
 struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status);
-NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const DOM_SID *sid);
+NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid);
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
 			  TALLOC_CTX *mem_ctx, 
-			  const DOM_SID *sid,
+			  const struct dom_sid *sid,
 			  const uint8 **cached_nt_pass,
 			  const uint8 **cached_salt);
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   const DOM_SID *sid, 
+			   const struct dom_sid *sid,
 			   const uint8 nt_pass[NT_HASH_LEN]);
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
 				struct netr_SamInfo3 *info3);
@@ -114,17 +114,17 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 				uint32_t *num_names,
 				struct dom_sid **sid_mem, char ***names,
 				uint32_t **name_types);
-bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type);
 bool lookup_cached_name(TALLOC_CTX *mem_ctx,
 			const char *domain_name,
 			const char *name,
-			DOM_SID *sid,
+			struct dom_sid *sid,
 			enum lsa_SidType *type);
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
-		    enum lsa_SidType type, const DOM_SID *sid);
+		    enum lsa_SidType type, const struct dom_sid *sid);
 NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
@@ -136,7 +136,7 @@ NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 			   struct wbint_userinfo *info);
 NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 num_sids, const struct dom_sid *sids,
 				   uint32 *pnum_aliases, uint32 **paliases);
 NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
@@ -146,7 +146,7 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
-NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const DOM_SID *sid) ;
+NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const struct dom_sid *sid) ;
 bool set_global_winbindd_state_offline(void);
 void set_global_winbindd_state_online(void);
 bool get_global_winbindd_state_offline(void);
@@ -158,7 +158,7 @@ bool wcache_tdc_add_domain( struct winbindd_domain *domain );
 struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const char *name );
 void wcache_tdc_clear( void );
 NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
-			      const DOM_SID *user_sid,
+			      const struct dom_sid *user_sid,
 			      TALLOC_CTX *ctx,
 			      ADS_STRUCT *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
@@ -230,7 +230,7 @@ NTSTATUS winbindd_replace_memory_creds(const char *username,
 
 NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
+			    const struct dom_sid *sid,
 			    struct netr_SamInfo3 **info3,
 			    const uint8 *cached_nt_pass[NT_HASH_LEN],
 			    const uint8 *cred_salt[NT_HASH_LEN]);
@@ -239,7 +239,7 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 			      const char *user, 
 			      const char *pass, 
 			      struct netr_SamInfo3 *info3,
-			      const DOM_SID *user_sid);
+			      const struct dom_sid *user_sid);
 NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 				        TALLOC_CTX *mem_ctx,
 				        const char *user,
@@ -247,7 +247,7 @@ NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 				        struct netr_SamInfo3 *info3);
 NTSTATUS winbindd_update_creds_by_sid(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      const DOM_SID *sid,
+				      const struct dom_sid *sid,
 				      const char *pass);
 NTSTATUS winbindd_update_creds_by_name(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
@@ -397,15 +397,15 @@ void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state);
 bool init_domain_list(void);
-void check_domain_trusted( const char *name, const DOM_SID *user_sid );
+void check_domain_trusted( const char *name, const struct dom_sid *user_sid );
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name);
 struct winbindd_domain *find_domain_from_name(const char *domain_name);
-struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid);
-struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid);
+struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid);
+struct winbindd_domain *find_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_our_domain(void);
 struct winbindd_domain *find_root_domain(void);
 struct winbindd_domain *find_builtin_domain(void);
-struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid);
+struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
 bool parse_domain_user(const char *domuser, fstring domain, fstring user);
 bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
@@ -428,8 +428,8 @@ void winbindd_kill_all_clients(void);
 int winbindd_num_clients(void);
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *user_sid,
-				  uint32 *p_num_groups, DOM_SID **user_sids);
+				  const struct dom_sid *user_sid,
+				  uint32 *p_num_groups, struct dom_sid **user_sids);
 
 NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
 			     struct winbindd_domain *domain,

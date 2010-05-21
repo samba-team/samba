@@ -194,7 +194,7 @@ done:
 ********************************************************************/
 
 static NTSTATUS rpc_service_list_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -307,7 +307,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_service_status_internal(struct net_context *c,
-						const DOM_SID *domain_sid,
+						const struct dom_sid *domain_sid,
 						const char *domain_name,
 						struct cli_state *cli,
 						struct rpc_pipe_client *pipe_hnd,
@@ -442,7 +442,7 @@ done:
 ********************************************************************/
 
 static NTSTATUS rpc_service_stop_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -488,7 +488,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_service_pause_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -534,7 +534,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_service_resume_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -580,7 +580,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_service_start_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,
@@ -661,7 +661,7 @@ done:
 ********************************************************************/
 
 static NTSTATUS rpc_service_delete_internal(struct net_context *c,
-					    const DOM_SID *domain_sid,
+					    const struct dom_sid *domain_sid,
 					    const char *domain_name,
 					    struct cli_state *cli,
 					    struct rpc_pipe_client *pipe_hnd,
@@ -736,7 +736,7 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_service_create_internal(struct net_context *c,
-					    const DOM_SID *domain_sid,
+					    const struct dom_sid *domain_sid,
 					    const char *domain_name,
 					    struct cli_state *cli,
 					    struct rpc_pipe_client *pipe_hnd,

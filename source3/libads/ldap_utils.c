@@ -199,7 +199,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 }
 
  ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
-				 const DOM_SID *sid,
+				 const struct dom_sid *sid,
 				 const char **attrs)
 {
 	char *dn, *sid_string;

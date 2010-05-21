@@ -2293,7 +2293,7 @@ create_default:
 	   this security descriptor has been created when winbindd was
 	   down.  Take ownership of security descriptor. */
 	if (sid_equal(secdesc->owner_sid, &global_sid_World)) {
-		DOM_SID owner_sid;
+		struct dom_sid owner_sid;
 
 		/* Change sd owner to workgroup administrator */
 
@@ -2393,7 +2393,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	 * descriptor then copy them over from the old one.
 	 */
 	if (!secdesc->owner_sid || !secdesc->group_sid) {
-		DOM_SID *owner_sid, *group_sid;
+		struct dom_sid *owner_sid, *group_sid;
 		struct security_acl *dacl, *sacl;
 		size_t size;
 

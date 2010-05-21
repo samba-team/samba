@@ -474,12 +474,12 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 static NTSTATUS find_forced_group(bool force_user,
 				  int snum, const char *username,
-				  DOM_SID *pgroup_sid,
+				  struct dom_sid *pgroup_sid,
 				  gid_t *pgid)
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
 	TALLOC_CTX *frame = talloc_stackframe();
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	enum lsa_SidType type;
 	char *groupname;
 	bool user_must_be_member = False;

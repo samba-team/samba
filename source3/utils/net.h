@@ -109,7 +109,7 @@ struct functable {
 };
 
 typedef NTSTATUS (*rpc_command_fn)(struct net_context *c,
-				const DOM_SID *,
+				const struct dom_sid *,
 				const char *,
 				struct cli_state *cli,
 				struct rpc_pipe_client *,
@@ -129,7 +129,7 @@ typedef struct copy_clistate {
 struct rpc_sh_ctx {
 	struct cli_state *cli;
 
-	DOM_SID *domain_sid;
+	struct dom_sid *domain_sid;
 	const char *domain_name;
 
 	const char *whoami;

@@ -11,7 +11,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *pol,
 				int num_sids,
-				const DOM_SID *sids,
+				const struct dom_sid *sids,
 				char ***pdomains,
 				char ***pnames,
 				enum lsa_SidType **ptypes);
@@ -19,7 +19,7 @@ NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *pol,
 				 int num_sids,
-				 const DOM_SID *sids,
+				 const struct dom_sid *sids,
 				 char ***pdomains,
 				 char ***pnames,
 				 enum lsa_SidType **ptypes);
@@ -29,7 +29,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 const char **names,
 				 const char ***dom_names,
 				 int level,
-				 DOM_SID **sids,
+				 struct dom_sid **sids,
 				 enum lsa_SidType **types);
 NTSTATUS rpccli_lsa_lookup_names4(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
@@ -37,8 +37,8 @@ NTSTATUS rpccli_lsa_lookup_names4(struct rpc_pipe_client *cli,
 				  const char **names,
 				  const char ***dom_names,
 				  int level,
-				  DOM_SID **sids,
+				  struct dom_sid **sids,
 				  enum lsa_SidType **types);
 
-bool fetch_domain_sid( char *domain, char *remote_machine, DOM_SID *psid);
+bool fetch_domain_sid( char *domain, char *remote_machine, struct dom_sid *psid);
 

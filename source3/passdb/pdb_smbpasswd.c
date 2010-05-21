@@ -1317,7 +1317,7 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct samu *sam_acct, const DOM_SID *sid)
+static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct samu *sam_acct, const struct dom_sid *sid)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;

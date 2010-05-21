@@ -71,7 +71,7 @@ static uint64_t limit_blk2inodes(uint64_t in)
 	return ret;	
 }
 
-int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid, SMB_NTQUOTA_STRUCT *qt)
+int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt)
 {
 	int ret;
 	SMB_DISK_QUOTA D;
@@ -109,7 +109,7 @@ int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 	return 0;
 }
 
-int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid, SMB_NTQUOTA_STRUCT *qt)
+int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt)
 {
 	int ret;
 	SMB_DISK_QUOTA D;
@@ -175,7 +175,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 	while ((usr = sys_getpwent()) != NULL) {
 		SMB_NTQUOTA_STRUCT tmp_qt;
 		SMB_NTQUOTA_LIST *tmp_list_ent;
-		DOM_SID	sid;
+		struct dom_sid	sid;
 
 		ZERO_STRUCT(tmp_qt);
 

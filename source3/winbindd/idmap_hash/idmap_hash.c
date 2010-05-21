@@ -26,7 +26,7 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 struct sid_hash_table {
-	DOM_SID *sid;
+	struct dom_sid *sid;
 };
 
 struct sid_hash_table *hashed_domains = NULL;
@@ -35,7 +35,7 @@ struct sid_hash_table *hashed_domains = NULL;
  Hash a domain SID (S-1-5-12-aaa-bbb-ccc) to a 12bit number
  ********************************************************************/
 
-static uint32_t hash_domain_sid(const DOM_SID *sid)
+static uint32_t hash_domain_sid(const struct dom_sid *sid)
 {
 	uint32_t hash;
 
@@ -143,7 +143,7 @@ static NTSTATUS be_init(struct idmap_domain *dom,
 			 sid_string_dbg(&dom_list[i].sid),
 			 hash));
 
-		hashed_domains[hash].sid = talloc(hashed_domains, DOM_SID);
+		hashed_domains[hash].sid = talloc(hashed_domains, struct dom_sid);
 		sid_copy(hashed_domains[hash].sid, &dom_list[i].sid);
 	}
 
@@ -224,7 +224,7 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 	}
 
 	for (i=0; ids[i]; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		uint32_t rid;
 		uint32_t h_domain, h_rid;
 
@@ -271,7 +271,7 @@ static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
  *********************************************************************/
 
 static NTSTATUS nss_hash_get_info(struct nss_domain_entry *e,
-				    const DOM_SID *sid,
+				    const struct dom_sid *sid,
 				    TALLOC_CTX *ctx,
 				    ADS_STRUCT *ads,
 				    LDAPMessage *msg,

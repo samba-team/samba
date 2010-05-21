@@ -64,26 +64,26 @@ static NTSTATUS pdb_wbc_sam_getsampwnam(struct pdb_methods *methods, struct samu
 	return _pdb_wbc_sam_getsampw(methods, user, winbind_getpwnam(sname));
 }
 
-static NTSTATUS pdb_wbc_sam_getsampwsid(struct pdb_methods *methods, struct samu *user, const DOM_SID *sid)
+static NTSTATUS pdb_wbc_sam_getsampwsid(struct pdb_methods *methods, struct samu *user, const struct dom_sid *sid)
 {
 	return _pdb_wbc_sam_getsampw(methods, user, winbind_getpwsid(sid));
 }
 
 static bool pdb_wbc_sam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
-				   DOM_SID *sid)
+				   struct dom_sid *sid)
 {
 	return winbind_uid_to_sid(sid, uid);
 }
 
 static bool pdb_wbc_sam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
-				   DOM_SID *sid)
+				   struct dom_sid *sid)
 {
 	return winbind_gid_to_sid(sid, gid);
 }
 
 static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
-					       const DOM_SID *group,
+					       const struct dom_sid *group,
 					       uint32 **pp_member_rids,
 					       size_t *p_num_members)
 {
@@ -93,7 +93,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
 static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 						   TALLOC_CTX *mem_ctx,
 						   struct samu *user,
-						   DOM_SID **pp_sids,
+						   struct dom_sid **pp_sids,
 						   gid_t **pp_gids,
 						   size_t *p_num_groups)
 {
@@ -110,7 +110,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*pp_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *p_num_groups);
+	*pp_sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, *p_num_groups);
 
 	if (*pp_sids == NULL) {
 		TALLOC_FREE(*pp_gids);
@@ -125,7 +125,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 }
 
 static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					int num_rids,
 					uint32 *rids,
 					const char **names,
@@ -185,7 +185,7 @@ static bool pdb_wbc_sam_search_groups(struct pdb_methods *methods,
 
 static bool pdb_wbc_sam_search_aliases(struct pdb_methods *methods,
 				       struct pdb_search *search,
-				       const DOM_SID *sid)
+				       const struct dom_sid *sid)
 {
 
 	return false;
@@ -194,7 +194,7 @@ static bool pdb_wbc_sam_search_aliases(struct pdb_methods *methods,
 static bool pdb_wbc_sam_get_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain,
 					  char **pwd,
-					  DOM_SID *sid,
+					  struct dom_sid *sid,
 					  time_t *pass_last_set_time)
 {
 	return false;
@@ -204,7 +204,7 @@ static bool pdb_wbc_sam_get_trusteddom_pw(struct pdb_methods *methods,
 static bool pdb_wbc_sam_set_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain,
 					  const char *pwd,
-					  const DOM_SID *sid)
+					  const struct dom_sid *sid)
 {
 	return false;
 }
@@ -223,7 +223,7 @@ static NTSTATUS pdb_wbc_sam_enum_trusteddoms(struct pdb_methods *methods,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static bool _make_group_map(struct pdb_methods *methods, const char *domain, const char *name, enum lsa_SidType name_type, gid_t gid, DOM_SID *sid, GROUP_MAP *map)
+static bool _make_group_map(struct pdb_methods *methods, const char *domain, const char *name, enum lsa_SidType name_type, gid_t gid, struct dom_sid *sid, GROUP_MAP *map)
 {
 	snprintf(map->nt_name, sizeof(map->nt_name), "%s%c%s",
 	        domain, *lp_winbind_separator(), name);
@@ -234,7 +234,7 @@ static bool _make_group_map(struct pdb_methods *methods, const char *domain, con
 }
 
 static NTSTATUS pdb_wbc_sam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid)
+				 struct dom_sid sid)
 {
 	NTSTATUS result = NT_STATUS_OK;
 	char *name = NULL;
@@ -278,7 +278,7 @@ static NTSTATUS pdb_wbc_sam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map
 	NTSTATUS result = NT_STATUS_OK;
 	char *name = NULL;
 	char *domain = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	enum lsa_SidType name_type;
 
 	if (!winbind_gid_to_sid(&sid, gid)) {
@@ -317,7 +317,7 @@ static NTSTATUS pdb_wbc_sam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map
 {
 	NTSTATUS result = NT_STATUS_OK;
 	const char *domain = "";
-	DOM_SID sid;
+	struct dom_sid sid;
 	gid_t gid;
 	enum lsa_SidType name_type;
 
@@ -350,7 +350,7 @@ done:
 }
 
 static NTSTATUS pdb_wbc_sam_enum_group_mapping(struct pdb_methods *methods,
-					   const DOM_SID *sid, enum lsa_SidType sid_name_use,
+					   const struct dom_sid *sid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   bool unix_only)
 {
@@ -358,16 +358,16 @@ static NTSTATUS pdb_wbc_sam_enum_group_mapping(struct pdb_methods *methods,
 }
 
 static NTSTATUS pdb_wbc_sam_get_aliasinfo(struct pdb_methods *methods,
-				   const DOM_SID *sid,
+				   const struct dom_sid *sid,
 				   struct acct_info *info)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS pdb_wbc_sam_enum_aliasmem(struct pdb_methods *methods,
-					  const DOM_SID *alias,
+					  const struct dom_sid *alias,
 					  TALLOC_CTX *mem_ctx,
-					  DOM_SID **pp_members,
+					  struct dom_sid **pp_members,
 					  size_t *p_num_members)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -375,8 +375,8 @@ static NTSTATUS pdb_wbc_sam_enum_aliasmem(struct pdb_methods *methods,
 
 static NTSTATUS pdb_wbc_sam_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
-				       const DOM_SID *domain_sid,
-				       const DOM_SID *members,
+				       const struct dom_sid *domain_sid,
+				       const struct dom_sid *members,
 				       size_t num_members,
 				       uint32 **pp_alias_rids,
 				       size_t *p_num_alias_rids)

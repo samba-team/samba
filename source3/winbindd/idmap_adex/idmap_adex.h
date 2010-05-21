@@ -91,11 +91,11 @@
  */
 
 struct cell_provider_api {
-	NTSTATUS(*get_sid_from_id) (DOM_SID * sid,
+	NTSTATUS(*get_sid_from_id) (struct dom_sid * sid,
 				    uint32_t id, enum id_type type);
 	NTSTATUS(*get_id_from_sid) (uint32_t * id,
-				    enum id_type * type, const DOM_SID * sid);
-	NTSTATUS(*get_nss_info) (const DOM_SID * sid,
+				    enum id_type * type, const struct dom_sid * sid);
+	NTSTATUS(*get_nss_info) (const struct dom_sid * sid,
 				 TALLOC_CTX * ctx,
 				 const char **homedir,
 				 const char **shell,
@@ -122,7 +122,7 @@ struct likewise_cell {
 	struct likewise_cell *prev, *next;
 	ADS_STRUCT *conn;
 	struct likewise_cell *gc_search_cell;
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	char *dns_domain;
 	char *forest_name;
 	char *dn;
@@ -179,7 +179,7 @@ void cell_set_connection(struct likewise_cell *c,
 void cell_set_dn(struct likewise_cell *c,
 		   const char *dn);
 void cell_set_domain_sid(struct likewise_cell *c,
-			   DOM_SID *sid);
+			   struct dom_sid *sid);
 void cell_set_flags(struct likewise_cell *c, uint32_t flags);
 void cell_clear_flags(struct likewise_cell *c, uint32_t flags);
 
@@ -224,10 +224,10 @@ NTSTATUS gc_search_all_forests_unique(const char *filter,
 
 NTSTATUS gc_name_to_sid(const char *domain,
 			const char *name,
-			DOM_SID *sid,
+			struct dom_sid *sid,
 			enum lsa_SidType *sid_type);
 
-NTSTATUS gc_sid_to_name(const DOM_SID *sid,
+NTSTATUS gc_sid_to_name(const struct dom_sid *sid,
 			char **name,
 			enum lsa_SidType *sid_type);
 
@@ -252,7 +252,7 @@ NTSTATUS domain_init_list(void);
 NTSTATUS dc_search_domains(struct likewise_cell **cell,
 			   LDAPMessage **msg,
 			   const char *dn,
-			   const DOM_SID *user_sid);
+			   const struct dom_sid *user_sid);
 
 
 #endif	/* _IDMAP_ADEX_H */

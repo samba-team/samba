@@ -30,7 +30,7 @@
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/
 
-bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
+bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token )
 {
 	int i;
 
@@ -47,7 +47,7 @@ bool nt_token_check_sid ( const DOM_SID *sid, const NT_USER_TOKEN *token )
 
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 {
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 
 	/* if we are a domain member, the get the domain SID, else for
 	   a DC or standalone server, use our own SID */
@@ -78,7 +78,7 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 NT_USER_TOKEN *get_root_nt_token( void )
 {
 	struct nt_user_token *token, *for_cache;
-	DOM_SID u_sid, g_sid;
+	struct dom_sid u_sid, g_sid;
 	struct passwd *pw;
 	void *cache_data;
 
@@ -124,7 +124,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
  * Add alias SIDs from memberships within the partially created token SID list
  */
 
-NTSTATUS add_aliases(const DOM_SID *domain_sid,
+NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct nt_user_token *token)
 {
 	uint32 *aliases;
@@ -151,7 +151,7 @@ NTSTATUS add_aliases(const DOM_SID *domain_sid,
 	}
 
 	for (i=0; i<num_aliases; i++) {
-		DOM_SID alias_sid;
+		struct dom_sid alias_sid;
 		sid_compose(&alias_sid, domain_sid, aliases[i]);
 		status = add_sid_to_array_unique(token, &alias_sid,
 						 &token->user_sids,
@@ -171,9 +171,9 @@ done:
 *******************************************************************/
 
 static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
-					   const DOM_SID *dom_sid)
+					   const struct dom_sid *dom_sid)
 {
-	DOM_SID domadm;
+	struct dom_sid domadm;
 	NTSTATUS status;
 
 	/* nothing to do if we aren't in a domain */
@@ -215,7 +215,7 @@ static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
 static NTSTATUS create_builtin(uint32 rid)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	DOM_SID sid;
+	struct dom_sid sid;
 	gid_t gid;
 
 	if (!sid_compose(&sid, &global_sid_Builtin, rid)) {
@@ -238,8 +238,8 @@ static NTSTATUS create_builtin(uint32 rid)
  * @param[in] dom_sid		sid to add as a member of builtin_sid.
  * @return Normal NTSTATUS return
  */
-static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
-				   const DOM_SID *dom_sid)
+static NTSTATUS add_sid_to_builtin(const struct dom_sid *builtin_sid,
+				   const struct dom_sid *dom_sid)
 {
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -267,10 +267,10 @@ static NTSTATUS add_sid_to_builtin(const DOM_SID *builtin_sid,
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
+NTSTATUS create_builtin_users(const struct dom_sid *dom_sid)
 {
 	NTSTATUS status;
-	DOM_SID dom_users;
+	struct dom_sid dom_users;
 
 	status = create_builtin(BUILTIN_RID_USERS);
 	if ( !NT_STATUS_IS_OK(status) ) {
@@ -292,10 +292,10 @@ NTSTATUS create_builtin_users(const DOM_SID *dom_sid)
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
+NTSTATUS create_builtin_administrators(const struct dom_sid *dom_sid)
 {
 	NTSTATUS status;
-	DOM_SID dom_admins, root_sid;
+	struct dom_sid dom_admins, root_sid;
 	fstring root_name;
 	enum lsa_SidType type;
 	TALLOC_CTX *ctx;
@@ -341,16 +341,16 @@ NTSTATUS create_builtin_administrators(const DOM_SID *dom_sid)
 *******************************************************************/
 
 struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
-					    const DOM_SID *user_sid,
+					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const DOM_SID *groupsids)
+					    const struct dom_sid *groupsids)
 {
 	struct nt_user_token *result = NULL;
 	int i;
 	NTSTATUS status;
 	gid_t gid;
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
@@ -585,11 +585,11 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	DOM_SID user_sid;
+	struct dom_sid user_sid;
 	enum lsa_SidType type;
 	gid_t *gids;
-	DOM_SID *group_sids;
-	DOM_SID unix_group_sid;
+	struct dom_sid *group_sids;
+	struct dom_sid unix_group_sid;
 	size_t num_group_sids;
 	size_t num_gids;
 	size_t i;
@@ -715,7 +715,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		if (num_group_sids) {
-			group_sids = TALLOC_ARRAY(tmp_ctx, DOM_SID, num_group_sids);
+			group_sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_group_sids);
 			if (group_sids == NULL) {
 				DEBUG(1, ("TALLOC_ARRAY failed\n"));
 				result = NT_STATUS_NO_MEMORY;
@@ -756,7 +756,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		num_group_sids = 1;
-		group_sids = TALLOC_ARRAY(tmp_ctx, DOM_SID, num_group_sids);
+		group_sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_group_sids);
 		if (group_sids == NULL) {
 			DEBUG(1, ("TALLOC_ARRAY failed\n"));
 			result = NT_STATUS_NO_MEMORY;
@@ -829,7 +829,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
  member of a particular group.
 ***************************************************************************/
 
-bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
+bool user_in_group_sid(const char *username, const struct dom_sid *group_sid)
 {
 	NTSTATUS status;
 	uid_t uid;
@@ -858,7 +858,7 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 bool user_in_group(const char *username, const char *groupname)
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	bool ret;
 
 	ret = lookup_name(mem_ctx, groupname, LOOKUP_NAME_ALL,

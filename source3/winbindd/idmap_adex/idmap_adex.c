@@ -44,7 +44,7 @@ static NTSTATUS _idmap_adex_init(struct idmap_domain *dom,
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	static NTSTATUS init_status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	fstring dcname;
 	struct sockaddr_storage ip;
 	struct likewise_cell *lwcell;
@@ -314,7 +314,7 @@ static NTSTATUS _nss_adex_init(struct nss_domain_entry
 
 static NTSTATUS _nss_adex_get_info(struct
 				      nss_domain_entry *e,
-				      const DOM_SID * sid,
+				      const struct dom_sid * sid,
 				      TALLOC_CTX * ctx,
 				      ADS_STRUCT * ads,
 				      LDAPMessage * msg,

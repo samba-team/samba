@@ -30,12 +30,12 @@
  * looking it up automatically */
 static NTSTATUS name_to_sid(struct rpc_pipe_client *cli, 
 			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid, const char *name)
+			    struct dom_sid *sid, const char *name)
 {
 	struct policy_handle pol;
 	enum lsa_SidType *sid_types;
 	NTSTATUS result;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 
 	/* maybe its a raw SID */
 	if (strncmp(name, "S-", 2) == 0 &&
@@ -212,7 +212,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	enum lsa_SidType *types;
 	int i;
 
@@ -260,7 +260,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	enum lsa_SidType *types;
 	int i, level;
 
@@ -361,7 +361,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	char **domains;
 	char **names;
 	enum lsa_SidType *types;
@@ -381,7 +381,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 	/* Convert arguments to sids */
 
-	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, argc - 1);
+	sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, argc - 1);
 
 	if (!sids) {
 		printf("could not allocate memory for %d sids\n", argc - 1);
@@ -732,7 +732,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	if (argc != 2 ) {
 		printf("Usage: %s SID\n", argv[0]);
@@ -778,7 +778,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	struct policy_handle user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
-	DOM_SID sid;
+	struct dom_sid sid;
 	struct lsa_PrivilegeSet *privs = NULL;
 	int i;
 
@@ -839,7 +839,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 {
 	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	struct lsa_RightSet rights;
 
 	int i;
@@ -890,7 +890,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
-	DOM_SID sid;
+	struct dom_sid sid;
 	int i;
 
 	if (argc < 3 ) {
@@ -943,7 +943,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
-	DOM_SID sid;
+	struct dom_sid sid;
 	int i;
 
 	if (argc < 3 ) {
@@ -1120,7 +1120,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
@@ -1219,7 +1219,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	uint8_t nt_hash[16];
 
@@ -1320,7 +1320,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	int i;
 
 	ZERO_STRUCT(privs);
@@ -1404,7 +1404,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	int i;
 
 	ZERO_STRUCT(privs);

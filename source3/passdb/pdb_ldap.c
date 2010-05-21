@@ -399,7 +399,7 @@ static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state,
 ******************************************************************/
 
 static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
-				 const DOM_SID *sid, LDAPMessage ** result,
+				 const struct dom_sid *sid, LDAPMessage ** result,
 				 const char **attr)
 {
 	char *filter = NULL;
@@ -1032,8 +1032,8 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		struct passwd unix_pw;
 		bool have_uid = false;
 		bool have_gid = false;
-		DOM_SID mapped_gsid;
-		const DOM_SID *primary_gsid;
+		struct dom_sid mapped_gsid;
+		const struct dom_sid *primary_gsid;
 
 		ZERO_STRUCT(unix_pw);
 
@@ -1201,7 +1201,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	/* only update the RID if we actually need to */
 	if (need_update(sampass, PDB_USERSID)) {
 		fstring sid_string;
-		const DOM_SID *user_sid = pdb_get_user_sid(sampass);
+		const struct dom_sid *user_sid = pdb_get_user_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
 			case SCHEMAVER_SAMBAACCOUNT:
@@ -1238,7 +1238,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 	if (need_update(sampass, PDB_GROUPSID)) {
 		fstring sid_string;
-		const DOM_SID *group_sid = pdb_get_group_sid(sampass);
+		const struct dom_sid *group_sid = pdb_get_group_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
 			case SCHEMAVER_SAMBAACCOUNT:
@@ -1624,7 +1624,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 }
 
 static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state, 
-				   const DOM_SID *sid, LDAPMessage **result) 
+				   const struct dom_sid *sid, LDAPMessage **result)
 {
 	int rc = -1;
 	const char ** attr_list;
@@ -1674,7 +1674,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
  Get struct samu entry from LDAP by SID.
 *********************************************************************/
 
-static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu * user, const DOM_SID *sid)
+static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu * user, const struct dom_sid *sid)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	LDAPMessage *result = NULL;
@@ -2074,7 +2074,7 @@ static NTSTATUS ldapsam_del_groupmem(struct pdb_methods *my_methods,
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       struct samu *user,
-					       DOM_SID **pp_sids,
+					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
 					       size_t *p_num_groups);
 
@@ -2179,7 +2179,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	const char	**attr_list;
 	char *escape_user = NULL;
 	const char 	*username = pdb_get_username(newpwd);
-	const DOM_SID 	*sid = pdb_get_user_sid(newpwd);
+	const struct dom_sid 	*sid = pdb_get_user_sid(newpwd);
 	char *filter = NULL;
 	char *dn = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -2592,7 +2592,7 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid)
+				 struct dom_sid sid)
 {
 	char *filter = NULL;
 	NTSTATUS status;
@@ -2662,11 +2662,11 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 
 static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 					   LDAPMessage *entry,
-					   const DOM_SID *domain_sid,
+					   const struct dom_sid *domain_sid,
 					   uint32_t *rid)
 {
 	fstring str;
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	if (!smbldap_get_single_attribute(ldap_struct, entry, "sambaSID",
 					  str, sizeof(str)-1)) {
@@ -2695,7 +2695,7 @@ static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 
 static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
-					   const DOM_SID *group,
+					   const struct dom_sid *group,
 					   uint32_t **pp_member_rids,
 					   size_t *p_num_members)
 {
@@ -2813,7 +2813,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		     entry = ldap_next_entry(conn->ldap_struct, entry))
 		{
 			char *sidstr;
-			DOM_SID sid;
+			struct dom_sid sid;
 			uint32_t rid;
 
 			sidstr = smbldap_talloc_single_attribute(conn->ldap_struct,
@@ -2896,7 +2896,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       struct samu *user,
-					       DOM_SID **pp_sids,
+					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
 					       size_t *p_num_groups)
 {
@@ -3013,7 +3013,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	     entry = ldap_next_entry(conn->ldap_struct, entry))
 	{
 		fstring str;
-		DOM_SID sid;
+		struct dom_sid sid;
 		gid_t gid;
 		char *end;
 
@@ -3138,7 +3138,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	int rc;
 
@@ -3343,7 +3343,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid)
+						   struct dom_sid sid)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3506,7 +3506,7 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
  *********************************************************************/
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
-					   const DOM_SID *domsid, enum lsa_SidType sid_name_use,
+					   const struct dom_sid *domsid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap,
 					   size_t *p_num_entries,
 					   bool unix_only)
@@ -3556,8 +3556,8 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
-					const DOM_SID *alias,
-					const DOM_SID *member,
+					const struct dom_sid *alias,
+					const struct dom_sid *member,
 					int modop)
 {
 	struct ldapsam_privates *ldap_state =
@@ -3661,24 +3661,24 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_add_aliasmem(struct pdb_methods *methods,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
+				     const struct dom_sid *alias,
+				     const struct dom_sid *member)
 {
 	return ldapsam_modify_aliasmem(methods, alias, member, LDAP_MOD_ADD);
 }
 
 static NTSTATUS ldapsam_del_aliasmem(struct pdb_methods *methods,
-				     const DOM_SID *alias,
-				     const DOM_SID *member)
+				     const struct dom_sid *alias,
+				     const struct dom_sid *member)
 {
 	return ldapsam_modify_aliasmem(methods, alias, member,
 				       LDAP_MOD_DELETE);
 }
 
 static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
-				      const DOM_SID *alias,
+				      const struct dom_sid *alias,
 				      TALLOC_CTX *mem_ctx,
-				      DOM_SID **pp_members,
+				      struct dom_sid **pp_members,
 				      size_t *p_num_members)
 {
 	struct ldapsam_privates *ldap_state =
@@ -3764,7 +3764,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	count = ldap_count_values(values);
 
 	for (i=0; i<count; i++) {
-		DOM_SID member;
+		struct dom_sid member;
 		NTSTATUS status;
 
 		if (!string_to_sid(&member, values[i]))
@@ -3788,8 +3788,8 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 					  TALLOC_CTX *mem_ctx,
-					  const DOM_SID *domain_sid,
-					  const DOM_SID *members,
+					  const struct dom_sid *domain_sid,
+					  const struct dom_sid *members,
 					  size_t num_members,
 					  uint32_t **pp_alias_rids,
 					  size_t *p_num_alias_rids)
@@ -3869,7 +3869,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	     entry = ldap_next_entry(ldap_struct, entry))
 	{
 		fstring sid_str;
-		DOM_SID sid;
+		struct dom_sid sid;
 		uint32_t rid;
 
 		if (!smbldap_get_single_attribute(ldap_struct, entry,
@@ -4098,7 +4098,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
-				    const DOM_SID *domain_sid,
+				    const struct dom_sid *domain_sid,
 				    int num_rids,
 				    uint32_t *rids,
 				    const char **names,
@@ -4141,7 +4141,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	}
 
 	for (i=0; i<num_rids; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		sid_compose(&sid, domain_sid, rids[i]);
 		allsids = talloc_asprintf_append_buffer(
 			allsids, "(sambaSid=%s)",
@@ -4557,7 +4557,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 {
 	char **vals;
 	size_t converted_size;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32_t acct_flags;
 
 	vals = ldap_get_values(ld, entry, "sambaAcctFlags");
@@ -4703,7 +4703,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 {
 	char **vals;
 	size_t converted_size;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint16_t group_type;
 
 	result->account_name = "";
@@ -4822,7 +4822,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 
 static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 				     struct pdb_search *search,
-                                     const DOM_SID *sid,
+                                     const struct dom_sid *sid,
 				     enum lsa_SidType type)
 {
 	struct ldapsam_privates *ldap_state =
@@ -4874,7 +4874,7 @@ static bool ldapsam_search_groups(struct pdb_methods *methods,
 
 static bool ldapsam_search_aliases(struct pdb_methods *methods,
 				   struct pdb_search *search,
-				   const DOM_SID *sid)
+				   const struct dom_sid *sid)
 {
 	return ldapsam_search_grouptype(methods, search, sid, SID_NAME_ALIAS);
 }
@@ -5010,7 +5010,7 @@ static bool ldapsam_new_rid(struct pdb_methods *methods, uint32_t *rid)
 }
 
 static bool ldapsam_sid_to_id(struct pdb_methods *methods,
-			      const DOM_SID *sid,
+			      const struct dom_sid *sid,
 			      union unid_t *id, enum lsa_SidType *type)
 {
 	struct ldapsam_privates *priv =
@@ -5107,7 +5107,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
  * This is shortcut is only used if ldapsam:trusted is set to true.
  */
 static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
-			       DOM_SID *sid)
+			       struct dom_sid *sid)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -5179,7 +5179,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
  * This is shortcut is only used if ldapsam:trusted is set to true.
  */
 static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
-			       DOM_SID *sid)
+			       struct dom_sid *sid)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -5189,7 +5189,7 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	LDAPMessage *entry = NULL;
 	bool ret = false;
 	char *group_sid_string;
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
@@ -5278,8 +5278,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	char *uidstr;
 	char *shell;
 	const char *dn = NULL;
-	DOM_SID group_sid;
-	DOM_SID user_sid;
+	struct dom_sid group_sid;
+	struct dom_sid user_sid;
 	gid_t gid = -1;
 	uid_t uid = -1;
 	NTSTATUS ret;
@@ -5598,7 +5598,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	char *grouptype;
 	char *gidstr;
 	const char *dn = NULL;
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	gid_t gid = -1;
 	int rc;
 
@@ -5744,7 +5744,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 	const char *dn;
 	char *gidstr;
 	char *filter;
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	int rc;
 
 	/* get the group sid */
@@ -5843,8 +5843,8 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	char *filter;
 	char *uidstr;
 	const char *dn = NULL;
-	DOM_SID group_sid;
-	DOM_SID member_sid;
+	struct dom_sid group_sid;
+	struct dom_sid member_sid;
 	int rc;
 
 	switch (modop) {
@@ -6178,7 +6178,7 @@ static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 static bool ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
 				      const char *domain,
 				      char** pwd,
-				      DOM_SID *sid,
+				      struct dom_sid *sid,
 	        	 	      time_t *pass_last_set_time)
 {
 	struct ldapsam_privates *ldap_state =
@@ -6241,7 +6241,7 @@ static bool ldapsam_get_trusteddom_pw(struct pdb_methods *methods,
 static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 				      const char* domain,
 				      const char* pwd,
-	        	  	      const DOM_SID *sid)
+				      const struct dom_sid *sid)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -6560,8 +6560,8 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 	char *alg_rid_base_string = NULL;
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
-	DOM_SID ldap_domain_sid;
-	DOM_SID secrets_domain_sid;
+	struct dom_sid ldap_domain_sid;
+	struct dom_sid secrets_domain_sid;
 	char *domain_sid_string = NULL;
 	char *dn = NULL;
 	char *uri = talloc_strdup( NULL, location );

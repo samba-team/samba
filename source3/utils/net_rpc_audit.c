@@ -56,7 +56,7 @@ static void print_auditing_category(const char *policy, const char *value)
 ********************************************************************/
 
 static NTSTATUS rpc_audit_get_internal(struct net_context *c,
-				       const DOM_SID *domain_sid,
+				       const struct dom_sid *domain_sid,
 				       const char *domain_name,
 				       struct cli_state *cli,
 				       struct rpc_pipe_client *pipe_hnd,
@@ -124,7 +124,7 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_audit_set_internal(struct net_context *c,
-				       const DOM_SID *domain_sid,
+				       const struct dom_sid *domain_sid,
 				       const char *domain_name,
 				       struct cli_state *cli,
 				       struct rpc_pipe_client *pipe_hnd,
@@ -265,7 +265,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 ********************************************************************/
 
 static NTSTATUS rpc_audit_disable_internal(struct net_context *c,
-					   const DOM_SID *domain_sid,
+					   const struct dom_sid *domain_sid,
 					   const char *domain_name,
 					   struct cli_state *cli,
 					   struct rpc_pipe_client *pipe_hnd,
@@ -281,7 +281,7 @@ static NTSTATUS rpc_audit_disable_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_audit_enable_internal(struct net_context *c,
-					  const DOM_SID *domain_sid,
+					  const struct dom_sid *domain_sid,
 					  const char *domain_name,
 					  struct cli_state *cli,
 					  struct rpc_pipe_client *pipe_hnd,
@@ -297,7 +297,7 @@ static NTSTATUS rpc_audit_enable_internal(struct net_context *c,
 ********************************************************************/
 
 static NTSTATUS rpc_audit_list_internal(struct net_context *c,
-					const DOM_SID *domain_sid,
+					const struct dom_sid *domain_sid,
 					const char *domain_name,
 					struct cli_state *cli,
 					struct rpc_pipe_client *pipe_hnd,

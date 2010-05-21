@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "se_access_check_utils.h"
 
-void char_to_sid(DOM_SID *sid, char *sid_str)
+void char_to_sid(struct dom_sid *sid, char *sid_str)
 {
 	/* If it looks like a SID, call string_to_sid() else look it up
 	   using wbinfo. */
@@ -65,7 +65,7 @@ SEC_ACL *build_acl(struct ace_entry *ace_list)
 
 	while(ace_list->sid) {
 		SEC_ACCESS sa;
-		DOM_SID sid;
+		struct dom_sid sid;
 
 		/* Create memory for new ACE */
 
@@ -99,7 +99,7 @@ SEC_ACL *build_acl(struct ace_entry *ace_list)
 SEC_DESC *build_sec_desc(struct ace_entry *dacl, struct ace_entry *sacl, 
 			 char *owner_sid, char *group_sid)
 {
-	DOM_SID the_owner_sid, the_group_sid;
+	struct dom_sid the_owner_sid, the_group_sid;
 	SEC_ACL *the_dacl, *the_sacl;
 	SEC_DESC *result;
 	size_t size;

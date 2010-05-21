@@ -299,8 +299,8 @@ static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 	struct samu *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
-	DOM_SID user_sid;
-	DOM_SID group_sid;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
 	struct passwd *passwd = NULL;
 	fstring sid_string;
 
@@ -385,7 +385,7 @@ static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
 	fstring name;
 	fstring comment;
 	struct group *grp = NULL;
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	fstring sid_string;
 	GROUP_MAP map;
 	bool insert = true;
@@ -449,7 +449,7 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 	int i;
 	char **nt_members = NULL;
 	char **unix_members;
-	DOM_SID group_sid;
+	struct dom_sid group_sid;
 	GROUP_MAP map;
 	struct group *grp;
 
@@ -482,7 +482,7 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < r->num_rids; i++) {
 		struct samu *member = NULL;
-		DOM_SID member_sid;
+		struct dom_sid member_sid;
 
 		if ( !(member = samu_new(mem_ctx)) ) {
 			return NT_STATUS_NO_MEMORY;
@@ -569,12 +569,12 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 				 uint32_t rid,
 				 struct netr_DELTA_ALIAS *r,
-				 const DOM_SID *dom_sid)
+				 const struct dom_sid *dom_sid)
 {
 	fstring name;
 	fstring comment;
 	struct group *grp = NULL;
-	DOM_SID alias_sid;
+	struct dom_sid alias_sid;
 	fstring sid_string;
 	GROUP_MAP map;
 	bool insert = true;
@@ -630,7 +630,7 @@ static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 static NTSTATUS fetch_alias_mem(TALLOC_CTX *mem_ctx,
 				uint32_t rid,
 				struct netr_DELTA_ALIAS_MEMBER *r,
-				const DOM_SID *dom_sid)
+				const struct dom_sid *dom_sid)
 {
 	return NT_STATUS_OK;
 }

@@ -55,7 +55,7 @@
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x60405FE0
 
-static int get_sid_from_cli_string(DOM_SID *sid, const char *str_sid)
+static int get_sid_from_cli_string(struct dom_sid *sid, const char *str_sid)
 {
 	uint32_t rid;
 
@@ -103,7 +103,7 @@ static int export_database (struct pdb_methods *in,
 	while (u_search->next_entry(u_search, &userentry)) {
 		struct samu *user;
 		struct samu *account;
-		DOM_SID user_sid;
+		struct dom_sid user_sid;
 
 		DEBUG(4, ("Processing account %s\n", userentry.account_name));
 
@@ -376,7 +376,7 @@ static int print_users_list(bool verbosity, bool smbpwdstyle)
 	struct samr_displayentry userentry;
 	struct samu *sam_pwent;
 	TALLOC_CTX *tosctx;
-	DOM_SID user_sid;
+	struct dom_sid user_sid;
 	bool bret;
 	int ret;
 
@@ -434,7 +434,7 @@ static int fix_users_list(void)
 	struct samr_displayentry userentry;
 	struct samu *sam_pwent;
 	TALLOC_CTX *tosctx;
-	DOM_SID user_sid;
+	struct dom_sid user_sid;
 	NTSTATUS status;
 	bool bret;
 	int ret;
@@ -504,7 +504,7 @@ static int set_user_info(const char *username, const char *fullname,
 	uint32_t acb_flags;
 	uint32_t not_settable;
 	uint32_t new_flags;
-	DOM_SID u_sid;
+	struct dom_sid u_sid;
 	bool ret;
 
 	sam_pwent = samu_new(NULL);
@@ -618,7 +618,7 @@ static int set_machine_info(const char *machinename,
 	uint32_t acb_flags;
 	uint32_t not_settable;
 	uint32_t new_flags;
-	DOM_SID m_sid;
+	struct dom_sid m_sid;
 	char *name;
 	int len;
 	bool ret;
@@ -709,7 +709,7 @@ static int new_user(const char *username, const char *fullname,
 	struct samu *sam_pwent = NULL;
 	TALLOC_CTX *tosctx;
 	NTSTATUS status;
-	DOM_SID u_sid;
+	struct dom_sid u_sid;
 	int flags;
 	int ret;
 
@@ -806,7 +806,7 @@ static int new_machine(const char *machinename, char *machine_sid)
 	struct samu *sam_pwent = NULL;
 	TALLOC_CTX *tosctx;
 	NTSTATUS status;
-	DOM_SID m_sid;
+	struct dom_sid m_sid;
 	char *compatpwd;
 	char *name;
 	int flags;

@@ -150,7 +150,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	/* rpc variables */
 
 	struct policy_handle lsa_pol, sam_pol, domain_pol, user_pol;
-	DOM_SID *domain_sid;
+	struct dom_sid *domain_sid;
 	uint32 user_rid;
 
 	/* Password stuff */

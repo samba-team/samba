@@ -176,7 +176,7 @@ static struct likewise_cell *_lw_cell_list = NULL;
 /**********************************************************************
  *********************************************************************/
 
- void cell_set_domain_sid(struct likewise_cell *c, DOM_SID *sid)
+ void cell_set_domain_sid(struct likewise_cell *c, struct dom_sid *sid)
 {
 	sid_copy(&c->domain_sid, sid);
 }

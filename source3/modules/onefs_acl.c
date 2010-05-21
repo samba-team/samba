@@ -38,7 +38,7 @@ const struct enum_list enum_onefs_acl_wire_format[] = {
  * Turn SID into UID/GID and setup a struct ifs_identity
  */
 static bool
-onefs_sid_to_identity(const DOM_SID *sid, struct ifs_identity *id,
+onefs_sid_to_identity(const struct dom_sid *sid, struct ifs_identity *id,
     bool is_group)
 {
 	enum ifs_identity_type type = IFS_ID_TYPE_LAST+1;
@@ -80,7 +80,7 @@ onefs_sid_to_identity(const DOM_SID *sid, struct ifs_identity *id,
  * Turn struct ifs_identity into SID
  */
 static bool
-onefs_identity_to_sid(struct ifs_identity *id, DOM_SID *sid)
+onefs_identity_to_sid(struct ifs_identity *id, struct dom_sid *sid)
 {
 	if (!id || !sid)
 		return false;
@@ -116,10 +116,10 @@ onefs_identity_to_sid(struct ifs_identity *id, DOM_SID *sid)
 }
 
 static bool
-onefs_og_to_identity(DOM_SID *sid, struct ifs_identity * ident,
+onefs_og_to_identity(struct dom_sid *sid, struct ifs_identity * ident,
     bool is_group, int snum)
 {
-	const DOM_SID *b_admin_sid = &global_sid_Builtin_Administrators;
+	const struct dom_sid *b_admin_sid = &global_sid_Builtin_Administrators;
 
 	if (!onefs_sid_to_identity(sid, ident, is_group)) {
 		if (!lp_parm_bool(snum, PARM_ONEFS_TYPE,
@@ -140,10 +140,10 @@ onefs_og_to_identity(DOM_SID *sid, struct ifs_identity * ident,
 }
 
 static bool
-sid_in_ignore_list(DOM_SID * sid, int snum)
+sid_in_ignore_list(struct dom_sid * sid, int snum)
 {
 	const char ** sid_list = NULL;
-	DOM_SID match;
+	struct dom_sid match;
 
 	sid_list = lp_parm_string_list(snum, PARM_ONEFS_TYPE,
 	    PARM_UNMAPPABLE_SIDS_IGNORE_LIST,
@@ -323,7 +323,7 @@ onefs_acl_to_samba_acl(struct ifs_security_acl *acl, struct security_acl **samba
 	}
 
 	for (i = 0; i < num_aces; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 
 		if (!onefs_identity_to_sid(&acl->aces[i].trustee, &sid))
 			goto err_free;
@@ -610,8 +610,8 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32_t sd_size = 0;
 	size_t size = 0;
 	struct ifs_security_descriptor *sd = NULL;
-	DOM_SID owner_sid, group_sid;
-	DOM_SID *ownerp, *groupp;
+	struct dom_sid owner_sid, group_sid;
+	struct dom_sid *ownerp, *groupp;
 	struct security_acl *dacl, *sacl;
 	struct security_descriptor *pdesc;
 	bool alloced = false;

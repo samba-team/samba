@@ -184,7 +184,7 @@ struct ldapsam_privates {
 	int index;
 
 	const char *domain_name;
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 
 	/* configuration items */
 	int schema_ver;

@@ -137,7 +137,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 
 bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
                                      char ***domain_names, uint32 *num_domains,
-				     DOM_SID **sids )
+				     struct dom_sid **sids )
 {
 	struct policy_handle 	pol;
 	NTSTATUS 	result = NT_STATUS_UNSUCCESSFUL;
@@ -202,7 +202,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 		goto done;
 	}
 
-	*sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, *num_domains);
+	*sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, *num_domains);
 	if (!*sids) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;

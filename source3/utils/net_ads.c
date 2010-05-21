@@ -539,7 +539,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	char **grouplist;
 	char *primary_group;
 	char *escaped_user;
-	DOM_SID primary_group_sid;
+	struct dom_sid primary_group_sid;
 	uint32_t group_rid;
 	enum SID_NAME_USE type;
 
@@ -2181,7 +2181,7 @@ static int net_ads_sid(struct net_context *c, int argc, const char **argv)
 	const char *sid_string;
 	const char **attrs;
 	LDAPMessage *res = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	if (argc < 1 || c->display_usage) {
 		return net_ads_sid_usage(c, argc, argv);

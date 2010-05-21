@@ -67,7 +67,7 @@ static NTSTATUS testsam_getsampwnam (struct pdb_methods *methods, struct samu *u
  Search by sid
  **************************************************************************/
 
-static NTSTATUS testsam_getsampwsid (struct pdb_methods *methods, struct samu *user, const DOM_SID *sid)
+static NTSTATUS testsam_getsampwsid (struct pdb_methods *methods, struct samu *user, const struct dom_sid *sid)
 {
 	DEBUG(10, ("testsam_getsampwsid called\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;

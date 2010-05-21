@@ -219,7 +219,7 @@ bool afs_login(connection_struct *conn)
 	char *cell = NULL;
 	bool result;
 	char *ticket_str = NULL;
-	const DOM_SID *user_sid;
+	const struct dom_sid *user_sid;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	struct ClearToken ct;

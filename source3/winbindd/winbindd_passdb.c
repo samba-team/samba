@@ -91,7 +91,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    uint32_t flags,
-			    DOM_SID *sid,
+			    struct dom_sid *sid,
 			    enum lsa_SidType *type)
 {
 	const char *fullname;
@@ -127,7 +127,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
+			    const struct dom_sid *sid,
 			    char **domain_name,
 			    char **name,
 			    enum lsa_SidType *type)
@@ -162,7 +162,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      TALLOC_CTX *mem_ctx,
-			      const DOM_SID *sid,
+			      const struct dom_sid *sid,
 			      uint32 *rids,
 			      size_t num_rids,
 			      char **domain_name,
@@ -205,7 +205,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	have_mapped = have_unmapped = false;
 
 	for (i=0; i<num_rids; i++) {
-		DOM_SID lsid;
+		struct dom_sid lsid;
 		const char *dom = NULL, *nam = NULL;
 		enum lsa_SidType type = SID_NAME_UNKNOWN;
 
@@ -243,11 +243,11 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *user_sid,
-				  uint32 *num_groups, DOM_SID **user_gids)
+				  const struct dom_sid *user_sid,
+				  uint32 *num_groups, struct dom_sid **user_gids)
 {
 	NTSTATUS result;
-	DOM_SID *groups = NULL;
+	struct dom_sid *groups = NULL;
 	gid_t *gids = NULL;
 	size_t ngroups = 0;
 	struct samu *user;
@@ -273,7 +273,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 num_sids, const struct dom_sid *sids,
 				   uint32 *p_num_aliases, uint32 **rids)
 {
 	NTSTATUS result;
@@ -390,7 +390,7 @@ static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 /* Lookup user information from a rid or username. */
 static NTSTATUS builtin_query_user(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				const DOM_SID *user_sid,
+				const struct dom_sid *user_sid,
 				struct wbint_userinfo *user_info)
 {
 	return NT_STATUS_NO_SUCH_USER;
@@ -477,7 +477,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 /* Lookup user information from a rid or username. */
 static NTSTATUS sam_query_user(struct winbindd_domain *domain,
                            TALLOC_CTX *mem_ctx,
-                           const DOM_SID *user_sid,
+                           const struct dom_sid *user_sid,
                            struct wbint_userinfo *user_info)
 {
 	struct samu *sampass = NULL;
@@ -531,15 +531,15 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 /* Lookup group membership given a rid.   */
 static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    const DOM_SID *group_sid,
+				    const struct dom_sid *group_sid,
 				    enum lsa_SidType type,
 				    uint32 *num_names,
-				    DOM_SID **sid_mem, char ***names,
+				    struct dom_sid **sid_mem, char ***names,
 				    uint32 **name_types)
 {
 	size_t i, num_members, num_mapped;
 	NTSTATUS result;
-	const DOM_SID **sids;
+	const struct dom_sid **sids;
 	struct lsa_dom_info *lsa_domains;
 	struct lsa_name_info *lsa_names;
 	TALLOC_CTX *tmp_ctx;
@@ -594,7 +594,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 
 	*names = TALLOC_ARRAY(mem_ctx, char *, num_members);
 	*name_types = TALLOC_ARRAY(mem_ctx, uint32, num_members);
-	sids = TALLOC_ARRAY(tmp_ctx, const DOM_SID *, num_members);
+	sids = TALLOC_ARRAY(tmp_ctx, const struct dom_sid *, num_members);
 
 	if (((*names) == NULL) || ((*name_types) == NULL) || (sids == NULL)) {
 		TALLOC_FREE(tmp_ctx);

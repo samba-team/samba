@@ -596,7 +596,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS printing_migrate_internal(struct net_context *c,
-					  const DOM_SID *domain_sid,
+					  const struct dom_sid *domain_sid,
 					  const char *domain_name,
 					  struct cli_state *cli,
 					  struct rpc_pipe_client *pipe_hnd,

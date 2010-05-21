@@ -102,7 +102,7 @@ const char *builtin_domain_name(void)
  Check if the SID is the builtin SID (S-1-5-32).
 *****************************************************************/  
 
-bool sid_check_is_builtin(const DOM_SID *sid)
+bool sid_check_is_builtin(const struct dom_sid *sid)
 {
 	return sid_equal(sid, &global_sid_Builtin);
 }
@@ -111,9 +111,9 @@ bool sid_check_is_builtin(const DOM_SID *sid)
  Check if the SID is one of the builtin SIDs (S-1-5-32-a).
 *****************************************************************/  
 
-bool sid_check_is_in_builtin(const DOM_SID *sid)
+bool sid_check_is_in_builtin(const struct dom_sid *sid)
 {
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 	uint32 rid;
 
 	sid_copy(&dom_sid, sid);

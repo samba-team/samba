@@ -68,7 +68,7 @@ static const struct perm_value standard_values[] = {
 /* Open cli connection and policy handle */
 
 static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
-				   const DOM_SID *sid,
+				   const struct dom_sid *sid,
 				   TALLOC_CTX *mem_ctx,
 				   enum lsa_SidType *type,
 				   char **domain, char **name)
@@ -121,14 +121,14 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 				    const char *name,
 				    enum lsa_SidType *type,
-				    DOM_SID *sid)
+				    struct dom_sid *sid)
 {
 	uint16 orig_cnum = cli->cnum;
 	struct rpc_pipe_client *p;
 	struct policy_handle handle;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	enum lsa_SidType *types;
 
 	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
@@ -167,7 +167,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 }
 
 /* convert a SID to a string, either numeric or username/group */
-static void SidToString(struct cli_state *cli, fstring str, const DOM_SID *sid)
+static void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid)
 {
 	char *domain = NULL;
 	char *name = NULL;
@@ -196,7 +196,7 @@ static void SidToString(struct cli_state *cli, fstring str, const DOM_SID *sid)
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static bool StringToSid(struct cli_state *cli, DOM_SID *sid, const char *str)
+static bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str)
 {
 	enum lsa_SidType type;
 
@@ -373,7 +373,7 @@ static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	unsigned int atype = 0;
 	unsigned int aflags = 0;
 	unsigned int amask = 0;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32_t mask;
 	const struct perm_value *v;
 	char *str = SMB_STRDUP(orig_str);
@@ -559,7 +559,7 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 	char *tok;
 	struct security_descriptor *ret = NULL;
 	size_t sd_size;
-	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
+	struct dom_sid *grp_sid=NULL, *owner_sid=NULL;
 	struct security_acl *dacl=NULL;
 	int revision=1;
 
@@ -574,7 +574,7 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 				printf("Only specify owner once\n");
 				goto done;
 			}
-			owner_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			owner_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!owner_sid ||
 			    !StringToSid(cli, owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
@@ -588,7 +588,7 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 				printf("Only specify group once\n");
 				goto done;
 			}
-			grp_sid = SMB_CALLOC_ARRAY(DOM_SID, 1);
+			grp_sid = SMB_CALLOC_ARRAY(struct dom_sid, 1);
 			if (!grp_sid ||
 			    !StringToSid(cli, grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
@@ -782,7 +782,7 @@ because the NT docs say this can't be done :-). JRA.
 static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
 			const char *filename, const char *new_username)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	struct security_descriptor *sd, *old;
 	size_t sd_size;
 

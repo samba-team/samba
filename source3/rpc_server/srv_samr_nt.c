@@ -75,7 +75,7 @@ struct samr_alias_info {
 };
 
 typedef struct disp_info {
-	DOM_SID sid; /* identify which domain this is. */
+	struct dom_sid sid; /* identify which domain this is. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
@@ -124,9 +124,9 @@ static const struct generic_mapping ali_generic_mapping = {
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor **psd, size_t *sd_size,
                                      const struct generic_mapping *map,
-				     DOM_SID *sid, uint32 sid_access )
+				     struct dom_sid *sid, uint32 sid_access )
 {
-	DOM_SID domadmin_sid;
+	struct dom_sid domadmin_sid;
 	struct security_ace ace[5];		/* at most 5 entries */
 	size_t i = 0;
 
@@ -267,7 +267,7 @@ void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
 
 	/* Full access for DOMAIN\Domain Admins. */
 	if ( IS_DC ) {
-		DOM_SID domadmin_sid;
+		struct dom_sid domadmin_sid;
 		sid_compose(&domadmin_sid, get_global_sam_sid(),
 			    DOMAIN_RID_ADMINS);
 		if (is_sid_in_token(nt_token, &domadmin_sid)) {
@@ -731,7 +731,7 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 /*******************************************************************
   build correct perms based on policies and password times for _samr_query_sec_obj
 *******************************************************************/
-static bool check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
+static bool check_change_pw_access(TALLOC_CTX *mem_ctx, struct dom_sid *user_sid)
 {
 	struct samu *sampass=NULL;
 	bool ret;
@@ -2237,7 +2237,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 			struct samr_OpenUser *r)
 {
 	struct samu *sampass=NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
 	struct security_descriptor *psd = NULL;
@@ -2432,9 +2432,9 @@ static struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_1(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo1 *r,
 				struct samu *pw,
-				DOM_SID *domain_sid)
+				struct dom_sid *domain_sid)
 {
-	const DOM_SID *sid_group;
+	const struct dom_sid *sid_group;
 	uint32_t primary_gid;
 
 	become_root();
@@ -2481,9 +2481,9 @@ static NTSTATUS get_user_info_2(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_3(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo3 *r,
 				struct samu *pw,
-				DOM_SID *domain_sid)
+				struct dom_sid *domain_sid)
 {
-	const DOM_SID *sid_user, *sid_group;
+	const struct dom_sid *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
 
 	sid_user = pdb_get_user_sid(pw);
@@ -2552,9 +2552,9 @@ static NTSTATUS get_user_info_4(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo5 *r,
 				struct samu *pw,
-				DOM_SID *domain_sid)
+				struct dom_sid *domain_sid)
 {
-	const DOM_SID *sid_user, *sid_group;
+	const struct dom_sid *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
 
 	sid_user = pdb_get_user_sid(pw);
@@ -2760,7 +2760,7 @@ static NTSTATUS get_user_info_17(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_18(pipes_struct *p,
 				 TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo18 *r,
-				 DOM_SID *user_sid)
+				 struct dom_sid *user_sid)
 {
 	struct samu *smbpass=NULL;
 	bool ret;
@@ -2854,11 +2854,11 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo21 *r,
 				 struct samu *pw,
-				 DOM_SID *domain_sid,
+				 struct dom_sid *domain_sid,
 				 uint32_t acc_granted)
 {
 	NTSTATUS status;
-	const DOM_SID *sid_user, *sid_group;
+	const struct dom_sid *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
 	NTTIME force_password_change;
 	time_t must_change_time;
@@ -2971,7 +2971,7 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	NTSTATUS status;
 	union samr_UserInfo *user_info = NULL;
 	struct samr_user_info *uinfo;
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	uint32 rid;
 	bool ret = false;
 	struct samu *pwd = NULL;
@@ -3188,7 +3188,7 @@ NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
 {
 	struct samr_user_info *uinfo;
 	struct samu *sam_pass=NULL;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	struct samr_RidWithAttribute dom_gid;
 	struct samr_RidWithAttribute *gids = NULL;
 	uint32 primary_group_rid;
@@ -3774,7 +3774,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 			   struct samr_CreateUser2 *r)
 {
 	const char *account = NULL;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32_t acb_info = r->in.acct_flags;
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
@@ -4109,7 +4109,7 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 	NTSTATUS status;
 	struct samr_connect_info *info;
 	const char *domain_name;
-	DOM_SID *sid = NULL;
+	struct dom_sid *sid = NULL;
 
 	/* win9x user manager likes to use SAMR_ACCESS_ENUM_DOMAINS here.
 	   Reverted that change so we will work with RAS servers again */
@@ -4202,7 +4202,7 @@ NTSTATUS _samr_EnumDomains(pipes_struct *p,
 NTSTATUS _samr_OpenAlias(pipes_struct *p,
 			 struct samr_OpenAlias *r)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32 alias_rid = r->in.rid;
 	struct samr_alias_info *ainfo;
 	struct samr_domain_info *dinfo;
@@ -5345,7 +5345,7 @@ NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
 
 	NTSTATUS status;
 
-	DOM_SID *members;
+	struct dom_sid *members;
 
 	DEBUG(5,("_samr_GetAliasMembership: %d\n", __LINE__));
 
@@ -5362,7 +5362,7 @@ NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	if (r->in.sids->num_sids) {
-		members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, r->in.sids->num_sids);
+		members = TALLOC_ARRAY(p->mem_ctx, struct dom_sid, r->in.sids->num_sids);
 
 		if (members == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -5412,7 +5412,7 @@ NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 	size_t i;
 	size_t num_sids = 0;
 	struct lsa_SidPtr *sids = NULL;
-	DOM_SID *pdb_sids = NULL;
+	struct dom_sid *pdb_sids = NULL;
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
 				   SAMR_ALIAS_ACCESS_GET_MEMBERS, NULL,
@@ -5913,7 +5913,7 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 			      struct samr_CreateDomAlias *r)
 {
-	DOM_SID info_sid;
+	struct dom_sid info_sid;
 	const char *name = NULL;
 	struct samr_domain_info *dinfo;
 	struct samr_alias_info *ainfo;
@@ -6269,7 +6269,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 			 struct samr_OpenGroup *r)
 
 {
-	DOM_SID info_sid;
+	struct dom_sid info_sid;
 	GROUP_MAP map;
 	struct samr_domain_info *dinfo;
 	struct samr_group_info *ginfo;

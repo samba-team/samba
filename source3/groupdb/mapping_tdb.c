@@ -25,12 +25,12 @@
 
 static struct db_context *db; /* used for driver files */
 
-static bool enum_group_mapping(const DOM_SID *domsid,
+static bool enum_group_mapping(const struct dom_sid *domsid,
 			       enum lsa_SidType sid_name_use,
 			       GROUP_MAP **pp_rmap,
 			       size_t *p_num_entries,
 			       bool unix_only);
-static bool group_map_remove(const DOM_SID *sid);
+static bool group_map_remove(const struct dom_sid *sid);
 
 static bool mapping_switch(const char *ldb_path);
 
@@ -109,7 +109,7 @@ static bool init_group_mapping(void)
 	return true;
 }
 
-static char *group_mapping_key(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
+static char *group_mapping_key(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	char *sidstr, *result;
 
@@ -162,7 +162,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
+static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 {
 	TDB_DATA dbuf;
 	char *key;
@@ -286,7 +286,7 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
  Remove a group mapping entry.
 ****************************************************************************/
 
-static bool group_map_remove(const DOM_SID *sid)
+static bool group_map_remove(const struct dom_sid *sid)
 {
 	char *key;
 	NTSTATUS status;
@@ -307,7 +307,7 @@ static bool group_map_remove(const DOM_SID *sid)
 ****************************************************************************/
 
 struct enum_map_state {
-	const DOM_SID *domsid;
+	const struct dom_sid *domsid;
 	enum lsa_SidType sid_name_use;
 	bool unix_only;
 
@@ -358,7 +358,7 @@ static int collect_map(struct db_record *rec, void *private_data)
 	return 0;
 }
 
-static bool enum_group_mapping(const DOM_SID *domsid,
+static bool enum_group_mapping(const struct dom_sid *domsid,
 			       enum lsa_SidType sid_name_use,
 			       GROUP_MAP **pp_rmap,
 			       size_t *p_num_entries, bool unix_only)
@@ -384,8 +384,8 @@ static bool enum_group_mapping(const DOM_SID *domsid,
 /* This operation happens on session setup, so it should better be fast. We
  * store a list of aliases a SID is member of hanging off MEMBEROF/SID. */
 
-static NTSTATUS one_alias_membership(const DOM_SID *member,
-			       DOM_SID **sids, size_t *num)
+static NTSTATUS one_alias_membership(const struct dom_sid *member,
+			       struct dom_sid **sids, size_t *num)
 {
 	fstring tmp;
 	fstring key;
@@ -407,7 +407,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	p = (const char *)dbuf.dptr;
 
 	while (next_token_talloc(frame, &p, &string_sid, " ")) {
-		DOM_SID alias;
+		struct dom_sid alias;
 
 		if (!string_to_sid(&alias, string_sid))
 			continue;
@@ -423,8 +423,8 @@ done:
 	return status;
 }
 
-static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
-				  DOM_SID **sids, size_t *num)
+static NTSTATUS alias_memberships(const struct dom_sid *members, size_t num_members,
+				  struct dom_sid **sids, size_t *num)
 {
 	size_t i;
 
@@ -439,9 +439,9 @@ static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
 	return NT_STATUS_OK;
 }
 
-static bool is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static bool is_aliasmem(const struct dom_sid *alias, const struct dom_sid *member)
 {
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	size_t i, num;
 
 	/* This feels the wrong way round, but the on-disk data structure
@@ -460,7 +460,7 @@ static bool is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 }
 
 
-static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *member)
 {
 	GROUP_MAP map;
 	char *key;
@@ -543,8 +543,8 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 struct aliasmem_state {
 	TALLOC_CTX *mem_ctx;
-	const DOM_SID *alias;
-	DOM_SID **sids;
+	const struct dom_sid *alias;
+	struct dom_sid **sids;
 	size_t *num;
 };
 
@@ -564,7 +564,7 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 	frame = talloc_stackframe();
 
 	while (next_token_talloc(frame, &p, &alias_string, " ")) {
-		DOM_SID alias, member;
+		struct dom_sid alias, member;
 		const char *member_string;
 
 		if (!string_to_sid(&alias, alias_string))
@@ -601,8 +601,8 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 	return 0;
 }
 
-static NTSTATUS enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
-			      DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
+			      struct dom_sid **sids, size_t *num)
 {
 	GROUP_MAP map;
 	struct aliasmem_state state;
@@ -626,10 +626,10 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *member)
 {
 	NTSTATUS status;
-	DOM_SID *sids;
+	struct dom_sid *sids;
 	size_t i, num;
 	bool found = False;
 	char *member_string;
@@ -760,7 +760,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 	char *val;
 	char *q;
 	uint32_t num_mem = 0;
-	DOM_SID *members = NULL;
+	struct dom_sid *members = NULL;
 
 	p = (uint8_t *)data.dptr;
 	if (data.dsize < 8) {
@@ -839,7 +839,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		num_vals = pull_uint32(p, 0);
 		if (StrCaseCmp(name, "member") == 0) {
 			num_mem = num_vals;
-			members = talloc_array(tmp_ctx, DOM_SID, num_mem);
+			members = talloc_array(tmp_ctx, struct dom_sid, num_mem);
 			if (members == NULL) {
 				errno = ENOMEM;
 				goto failed;

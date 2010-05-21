@@ -43,7 +43,7 @@ typedef struct canon_ace {
 	struct canon_ace *next, *prev;
 	SMB_ACL_TAG_T type;
 	mode_t perms; /* Only use S_I(R|W|X)USR mode bits here. */
-	DOM_SID trustee;
+	struct dom_sid trustee;
 	enum ace_owner owner_type;
 	enum ace_attribute attr;
 	posix_id unix_ug;
@@ -905,7 +905,7 @@ static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_AC
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
 
-void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid)
+void create_file_sids(const SMB_STRUCT_STAT *psbuf, struct dom_sid *powner_sid, struct dom_sid *pgroup_sid)
 {
 	uid_to_sid( powner_sid, psbuf->st_ex_uid );
 	gid_to_sid( pgroup_sid, psbuf->st_ex_gid );
@@ -1172,8 +1172,8 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 			uint32 security_info_sent, const struct
 			security_descriptor *psd)
 {
-	DOM_SID owner_sid;
-	DOM_SID grp_sid;
+	struct dom_sid owner_sid;
+	struct dom_sid grp_sid;
 
 	*puser = (uid_t)-1;
 	*pgrp = (gid_t)-1;
@@ -1348,8 +1348,8 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace,
 				     const struct share_params *params,
 				     const bool is_directory,
-							const DOM_SID *pfile_owner_sid,
-							const DOM_SID *pfile_grp_sid,
+							const struct dom_sid *pfile_owner_sid,
+							const struct dom_sid *pfile_grp_sid,
 							const SMB_STRUCT_STAT *pst,
 							bool setting_acl)
 {
@@ -1490,7 +1490,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
  file owner or the owning group, and map these to SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ.
 ****************************************************************************/
 
-static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID *pfile_grp_sid)
+static void check_owning_objs(canon_ace *ace, struct dom_sid *pfile_owner_sid, struct dom_sid *pfile_grp_sid)
 {
 	bool got_user_obj, got_group_obj;
 	canon_ace *current_ace;
@@ -1579,8 +1579,8 @@ static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
 
 static bool create_canon_ace_lists(files_struct *fsp,
 					const SMB_STRUCT_STAT *pst,
-					DOM_SID *pfile_owner_sid,
-					DOM_SID *pfile_grp_sid,
+					struct dom_sid *pfile_owner_sid,
+					struct dom_sid *pfile_grp_sid,
 					canon_ace **ppfile_ace,
 					canon_ace **ppdir_ace,
 					const struct security_acl *dacl)
@@ -2314,8 +2314,8 @@ static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
 
 static bool unpack_canon_ace(files_struct *fsp,
 				const SMB_STRUCT_STAT *pst,
-				DOM_SID *pfile_owner_sid,
-				DOM_SID *pfile_grp_sid,
+				struct dom_sid *pfile_owner_sid,
+				struct dom_sid *pfile_grp_sid,
 				canon_ace **ppfile_ace,
 				canon_ace **ppdir_ace,
 				uint32 security_info_sent,
@@ -2493,7 +2493,7 @@ static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
 static canon_ace *canonicalise_acl(struct connection_struct *conn,
 				   const char *fname, SMB_ACL_T posix_acl,
 				   const SMB_STRUCT_STAT *psbuf,
-				   const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
+				   const struct dom_sid *powner, const struct dom_sid *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
 	canon_ace *l_head = NULL;
@@ -2506,7 +2506,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	while ( posix_acl && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1)) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
-		DOM_SID sid;
+		struct dom_sid sid;
 		posix_id unix_ug;
 		enum ace_owner owner_type;
 
@@ -3137,7 +3137,7 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
  */
 
 static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_aces,
-				const DOM_SID *sid, enum security_ace_type type,
+				const struct dom_sid *sid, enum security_ace_type type,
 				uint32_t mask, uint8_t flags)
 {
 	int i;
@@ -3177,8 +3177,8 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				      uint32_t security_info,
 				      struct security_descriptor **ppdesc)
 {
-	DOM_SID owner_sid;
-	DOM_SID group_sid;
+	struct dom_sid owner_sid;
+	struct dom_sid group_sid;
 	size_t sd_size = 0;
 	struct security_acl *psa = NULL;
 	size_t num_acls = 0;
@@ -3188,7 +3188,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	canon_ace *dir_ace = NULL;
 	struct security_ace *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
-	DOM_SID orig_owner_sid;
+	struct dom_sid orig_owner_sid;
 	struct security_descriptor *psd = NULL;
 	int i;
 
@@ -3832,8 +3832,8 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
 	gid_t grp = (gid_t)-1;
-	DOM_SID file_owner_sid;
-	DOM_SID file_grp_sid;
+	struct dom_sid file_owner_sid;
+	struct dom_sid file_grp_sid;
 	canon_ace *file_ace_list = NULL;
 	canon_ace *dir_ace_list = NULL;
 	bool acl_perms = False;

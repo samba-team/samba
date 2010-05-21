@@ -1145,7 +1145,7 @@ done:
 
 /* this function searches up to IDMAP_LDAP_MAX_IDS entries
  * in maps for a match */
-static struct id_map *find_map_by_sid(struct id_map **maps, DOM_SID *sid)
+static struct id_map *find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
 {
 	int i;
 
@@ -1262,7 +1262,7 @@ again:
 		char *tmp = NULL;
 		enum id_type type;
 		struct id_map *map;
-		DOM_SID sid;
+		struct dom_sid sid;
 		uint32_t id;
 
 		if (i == 0) { /* first entry */

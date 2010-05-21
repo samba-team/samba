@@ -2632,7 +2632,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 	uint32_t sa;
 	struct security_acl *psa = NULL;
 	struct security_descriptor *psd = NULL;
-	DOM_SID adm_sid;
+	struct dom_sid adm_sid;
 	size_t sd_size;
 
 	/* Create an ACE where Everyone is allowed to print */
@@ -2644,7 +2644,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 	/* Add the domain admins group if we are a DC */
 
 	if ( IS_DC ) {
-		DOM_SID domadmins_sid;
+		struct dom_sid domadmins_sid;
 
 		sid_compose(&domadmins_sid, get_global_sam_sid(),
 			    DOMAIN_RID_ADMINS);
@@ -5226,7 +5226,7 @@ WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ct
 	   descriptor then copy them over from the old one. */
 
 	if (!secdesc_ctr->sd->owner_sid || !secdesc_ctr->sd->group_sid) {
-		DOM_SID *owner_sid, *group_sid;
+		struct dom_sid *owner_sid, *group_sid;
 		struct security_acl *dacl, *sacl;
 		struct security_descriptor *psd = NULL;
 		size_t size;
@@ -5317,7 +5317,7 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	struct security_acl *psa = NULL;
 	struct sec_desc_buf *sdb = NULL;
 	struct security_descriptor *psd = NULL;
-	DOM_SID adm_sid;
+	struct dom_sid adm_sid;
 	size_t sd_size;
 
 	/* Create an ACE where Everyone is allowed to print */
@@ -5329,7 +5329,7 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Add the domain admins group if we are a DC */
 
 	if ( IS_DC ) {
-		DOM_SID domadmins_sid;
+		struct dom_sid domadmins_sid;
 
 		sid_compose(&domadmins_sid, get_global_sam_sid(),
 			    DOMAIN_RID_ADMINS);
@@ -5440,7 +5440,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, struct sec_desc_
 	   down.  Take ownership of security descriptor. */
 
 	if (sid_equal((*secdesc_ctr)->sd->owner_sid, &global_sid_World)) {
-		DOM_SID owner_sid;
+		struct dom_sid owner_sid;
 
 		/* Change sd owner to workgroup administrator */
 

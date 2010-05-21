@@ -146,7 +146,7 @@ char *ace_to_str(SEC_ACE *ace)
 void str_to_ace(SEC_ACE *ace, char *ace_str)
 {
 	SEC_ACCESS sa;
-	DOM_SID sid;
+	struct dom_sid sid;
 	uint32 mask;
 	uint8 type, flags;
 
@@ -256,7 +256,7 @@ int psec_getsec(char *printer)
 
 int psec_setsec(char *printer)
 {
-	DOM_SID user_sid, group_sid;
+	struct dom_sid user_sid, group_sid;
 	SEC_ACE *ace_list = NULL;
 	SEC_ACL *dacl = NULL;
 	SEC_DESC *sd;
@@ -304,7 +304,7 @@ int psec_setsec(char *printer)
 		int ace_type, ace_flags;
 		uint32 ace_mask;
 		fstring sidstr;
-		DOM_SID sid;
+		struct dom_sid sid;
 		SEC_ACCESS sa;
 
 		if (sscanf(line, "%d %d 0x%x %s", &ace_type, &ace_flags, 

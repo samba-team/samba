@@ -231,7 +231,7 @@ static int net_getauthuser(struct net_context *c, int argc, const char **argv)
  */
 static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 {
-        DOM_SID sid;
+        struct dom_sid sid;
 	const char *name;
 	fstring sid_str;
 
@@ -271,7 +271,7 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 
 static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	if ( (argc != 1)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
@@ -292,7 +292,7 @@ static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 
 static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 
 	if ( (argc != 1)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
@@ -313,7 +313,7 @@ static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 
 static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID domain_sid;
+	struct dom_sid domain_sid;
 	fstring sid_str;
 
 	if (argc > 0) {

@@ -29,7 +29,7 @@
 
 NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
+			    const struct dom_sid *sid,
 			    struct netr_SamInfo3 **info3,
 			    const uint8 *cached_nt_pass[NT_HASH_LEN],
 			    const uint8 *cred_salt[NT_HASH_LEN])
@@ -58,11 +58,11 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 			      const char *user, 
 			      const char *pass, 
 			      struct netr_SamInfo3 *info3,
-			      const DOM_SID *user_sid)
+			      const struct dom_sid *user_sid)
 {
 	NTSTATUS status;
 	uchar nt_pass[NT_HASH_LEN];
-	DOM_SID cred_sid;
+	struct dom_sid cred_sid;
 
 	if (info3 != NULL) {
 
@@ -144,7 +144,7 @@ NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 
 NTSTATUS winbindd_update_creds_by_sid(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      const DOM_SID *sid,
+				      const struct dom_sid *sid,
 				      const char *pass)
 {
 	return winbindd_store_creds(domain, mem_ctx, NULL, pass, NULL, sid);

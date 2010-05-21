@@ -22,9 +22,9 @@ bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		     uint32 *v);
 bool ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid);
 bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
-		  DOM_SID *sid);
+		  struct dom_sid *sid);
 int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		  LDAPMessage *msg, const char *field, DOM_SID **sids);
+		  LDAPMessage *msg, const char *field, struct dom_sid **sids);
 bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		 LDAPMessage *msg, const char *field, struct security_descriptor **sd);
 char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
@@ -34,7 +34,7 @@ int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads,
 				  LDAPMessage *msg, 
 				  const char *field,
 				  enum ads_extended_dn_flags flags,
-				  DOM_SID **sids);
+				  struct dom_sid **sids);
 
 ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, LDAPMessage **res,
 				 const char *machine);
@@ -83,7 +83,7 @@ ADS_STATUS ads_search_retry_extended_dn_ranged(ADS_STRUCT *ads, TALLOC_CTX *mem_
 						char ***strings,
 						size_t *num_strings);
 ADS_STATUS ads_search_retry_sid(ADS_STRUCT *ads, LDAPMessage **res, 
-				const DOM_SID *sid,
+				const struct dom_sid *sid,
 				const char **attrs);
 
 
@@ -113,9 +113,9 @@ ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
 			      TALLOC_CTX *mem_ctx,
 			      const char *dn,
-			      DOM_SID *user_sid,
-			      DOM_SID *primary_group_sid,
-			      DOM_SID **sids,
+			      struct dom_sid *user_sid,
+			      struct dom_sid *primary_group_sid,
+			      struct dom_sid **sids,
 			      size_t *num_sids);
 ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,

@@ -28,7 +28,7 @@
  Figure out if the input was an NT group or a SID string.
  Return the SID.
 **********************************************************/
-static bool get_sid_from_input(DOM_SID *sid, char *input)
+static bool get_sid_from_input(struct dom_sid *sid, char *input)
 {
 	GROUP_MAP map;
 
@@ -123,7 +123,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 
 	/* list a single group is given a name */
 	if ( ntgroup[0] || sid_string[0] ) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		GROUP_MAP map;
 
 		if ( sid_string[0] )
@@ -165,7 +165,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 
 static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	fstring ntgroup = "";
 	fstring unixgrp = "";
 	fstring string_sid = "";
@@ -335,7 +335,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 
 static int net_groupmap_modify(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	GROUP_MAP map;
 	fstring ntcomment = "";
 	fstring type = "";
@@ -483,7 +483,7 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 
 static int net_groupmap_delete(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	fstring ntgroup = "";
 	fstring sid_string = "";
 	int i;
@@ -580,7 +580,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 	have_map = pdb_getgrnam(&map, ntgroup);
 
 	if (!have_map) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		have_map = ( (strncmp(ntgroup, "S-", 2) == 0) &&
 			     string_to_sid(&sid, ntgroup) &&
 			     pdb_getgrsid(&map, sid) );
@@ -705,7 +705,7 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 
 static int net_groupmap_addmem(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID alias, member;
+	struct dom_sid alias, member;
 
 	if ( (argc != 2) ||
 	     c->display_usage ||
@@ -728,7 +728,7 @@ static int net_groupmap_addmem(struct net_context *c, int argc, const char **arg
 
 static int net_groupmap_delmem(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID alias, member;
+	struct dom_sid alias, member;
 
 	if ( (argc != 2) ||
 	     c->display_usage ||
@@ -751,8 +751,8 @@ static int net_groupmap_delmem(struct net_context *c, int argc, const char **arg
 
 static int net_groupmap_listmem(struct net_context *c, int argc, const char **argv)
 {
-	DOM_SID alias;
-	DOM_SID *members;
+	struct dom_sid alias;
+	struct dom_sid *members;
 	size_t i, num;
 
 	if ( (argc != 1) ||
@@ -784,8 +784,8 @@ static int net_groupmap_listmem(struct net_context *c, int argc, const char **ar
 }
 
 static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
-				    const DOM_SID *domain_sid,
-				    const DOM_SID *member)
+				    const struct dom_sid *domain_sid,
+				    const struct dom_sid *member)
 {
 	uint32 *alias_rids;
 	size_t i, num_alias_rids;
@@ -802,7 +802,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_alias_rids; i++) {
-		DOM_SID alias;
+		struct dom_sid alias;
 		sid_compose(&alias, domain_sid, alias_rids[i]);
 		printf("%s\n", sid_string_tos(&alias));
 	}
@@ -813,7 +813,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 static int net_groupmap_memberships(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
-	DOM_SID *domain_sid, member;
+	struct dom_sid *domain_sid, member;
 
 	if ( (argc != 1) ||
 	     c->display_usage ||

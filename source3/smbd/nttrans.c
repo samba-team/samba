@@ -2224,7 +2224,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 *
 		 * but I have to check that --metze
 		 */
-		DOM_SID sid;
+		struct dom_sid sid;
 		uid_t uid;
 		size_t sid_len = MIN(data_count-4,SID_MAX_SIZE);
 
@@ -2364,7 +2364,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	files_struct *fsp = NULL;
 	uint16 level = 0;
 	size_t sid_len;
-	DOM_SID sid;
+	struct dom_sid sid;
 	bool start_enum = True;
 	SMB_NTQUOTA_STRUCT qt;
 	SMB_NTQUOTA_LIST *tmp_list;
@@ -2634,7 +2634,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	int data_len=0,param_len=0;
 	SMB_NTQUOTA_STRUCT qt;
 	size_t sid_len;
-	DOM_SID sid;
+	struct dom_sid sid;
 	files_struct *fsp = NULL;
 
 	ZERO_STRUCT(qt);

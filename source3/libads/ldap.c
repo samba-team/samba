@@ -2139,7 +2139,7 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i;
 	for (i=0; values[i]; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		fstring tmp;
 		sid_parse(values[i]->bv_val, values[i]->bv_len, &sid);
 		printf("%s: %s\n", field, sid_to_fstring(tmp, &sid));
@@ -2622,7 +2622,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 
 /**
- * pull a single DOM_SID from a ADS result
+ * pull a single struct dom_sid from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
  * @param field Attribute to retrieve
@@ -2630,13 +2630,13 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @return boolean inidicating success
 */
  bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
-		   DOM_SID *sid)
+		   struct dom_sid *sid)
 {
 	return smbldap_pull_sid(ads->ldap.ld, msg, field, sid);
 }
 
 /**
- * pull an array of DOM_SIDs from a ADS result
+ * pull an array of struct dom_sids from a ADS result
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param msg Results of search
@@ -2645,7 +2645,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @return the count of SIDs pulled
  **/
  int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-		   LDAPMessage *msg, const char *field, DOM_SID **sids)
+		   LDAPMessage *msg, const char *field, struct dom_sid **sids)
 {
 	struct berval **values;
 	bool ret;
@@ -2660,7 +2660,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		/* nop */ ;
 
 	if (i) {
-		(*sids) = TALLOC_ARRAY(mem_ctx, DOM_SID, i);
+		(*sids) = TALLOC_ARRAY(mem_ctx, struct dom_sid, i);
 		if (!(*sids)) {
 			ldap_value_free_len(values);
 			return 0;
@@ -2926,7 +2926,7 @@ done:
  * @param sid Pointer to domain sid
  * @return status of search
  **/
-ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
+ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, struct dom_sid *sid)
 {
 	const char *attrs[] = {"objectSid", NULL};
 	LDAPMessage *res;
@@ -3165,11 +3165,11 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 
 /**
- * pull a DOM_SID from an extended dn string
+ * pull a struct dom_sid from an extended dn string
  * @param mem_ctx TALLOC_CTX
  * @param extended_dn string
  * @param flags string type of extended_dn
- * @param sid pointer to a DOM_SID
+ * @param sid pointer to a struct dom_sid
  * @return NT_STATUS_OK on success,
  *	   NT_INVALID_PARAMETER on error,
  *	   NT_STATUS_NOT_FOUND if no SID present
@@ -3177,7 +3177,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 					const char *extended_dn,
 					enum ads_extended_dn_flags flags,
-					DOM_SID *sid)
+					struct dom_sid *sid)
 {
 	char *p, *q, *dn;
 
@@ -3252,7 +3252,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * pull an array of DOM_SIDs from a ADS result
+ * pull an array of struct dom_sids from a ADS result
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param msg Results of search
@@ -3266,7 +3266,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 				   LDAPMessage *msg,
 				   const char *field,
 				   enum ads_extended_dn_flags flags,
-				   DOM_SID **sids)
+				   struct dom_sid **sids)
 {
 	int i;
 	ADS_STATUS rc;
@@ -3278,7 +3278,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	(*sids) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, dn_count + 1);
+	(*sids) = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, dn_count + 1);
 	if (!(*sids)) {
 		TALLOC_FREE(dn_strings);
 		return 0;
@@ -3583,8 +3583,8 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param dn of LDAP object
- * @param user_sid pointer to DOM_SID (objectSid)
- * @param primary_group_sid pointer to DOM_SID (self composed)
+ * @param user_sid pointer to struct dom_sid (objectSid)
+ * @param primary_group_sid pointer to struct dom_sid (self composed)
  * @param sids pointer to sid array to allocate
  * @param num_sids counter of SIDs pulled
  * @return status of token query
@@ -3592,18 +3592,18 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
 			      TALLOC_CTX *mem_ctx,
 			      const char *dn,
-			      DOM_SID *user_sid,
-			      DOM_SID *primary_group_sid,
-			      DOM_SID **sids,
+			      struct dom_sid *user_sid,
+			      struct dom_sid *primary_group_sid,
+			      struct dom_sid **sids,
 			      size_t *num_sids)
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
 	int count = 0;
 	size_t tmp_num_sids;
-	DOM_SID *tmp_sids;
-	DOM_SID tmp_user_sid;
-	DOM_SID tmp_primary_group_sid;
+	struct dom_sid *tmp_sids;
+	struct dom_sid tmp_user_sid;
+	struct dom_sid tmp_primary_group_sid;
 	uint32 pgid;
 	const char *attrs[] = {
 		"objectSid",
@@ -3637,7 +3637,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		/* hack to compose the primary group sid without knowing the
 		 * domsid */
 
-		DOM_SID domsid;
+		struct dom_sid domsid;
 		uint32 dummy_rid;
 
 		sid_copy(&domsid, &tmp_user_sid);

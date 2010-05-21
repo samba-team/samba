@@ -71,7 +71,7 @@ static void free_domain_list(void)
 	}
 }
 
-static bool is_internal_domain(const DOM_SID *sid)
+static bool is_internal_domain(const struct dom_sid *sid)
 {
 	if (sid == NULL)
 		return False;
@@ -79,7 +79,7 @@ static bool is_internal_domain(const DOM_SID *sid)
 	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
-static bool is_in_internal_domain(const DOM_SID *sid)
+static bool is_in_internal_domain(const struct dom_sid *sid)
 {
 	if (sid == NULL)
 		return False;
@@ -91,7 +91,7 @@ static bool is_in_internal_domain(const DOM_SID *sid)
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
 						  struct winbindd_methods *methods,
-						  const DOM_SID *sid)
+						  const struct dom_sid *sid)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
@@ -289,7 +289,7 @@ static void trustdom_list_done(struct tevent_req *req)
 
 	while ((p != NULL) && (*p != '\0')) {
 		char *q, *sidstr, *alt_name;
-		DOM_SID sid;
+		struct dom_sid sid;
 		struct winbindd_domain *domain;
 		char *alternate_name = NULL;
 
@@ -618,7 +618,7 @@ bool init_domain_list(void)
 	/* Add ourselves as the first entry. */
 
 	if ( role == ROLE_DOMAIN_MEMBER ) {
-		DOM_SID our_sid;
+		struct dom_sid our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
 			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
@@ -644,10 +644,10 @@ bool init_domain_list(void)
 	return True;
 }
 
-void check_domain_trusted( const char *name, const DOM_SID *user_sid )
+void check_domain_trusted( const char *name, const struct dom_sid *user_sid )
 {
 	struct winbindd_domain *domain;
-	DOM_SID dom_sid;
+	struct dom_sid dom_sid;
 	uint32 rid;
 
 	/* Check if we even care */
@@ -735,7 +735,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
+struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid)
 {
 	struct winbindd_domain *domain;
 
@@ -753,7 +753,7 @@ struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
+struct winbindd_domain *find_domain_from_sid(const struct dom_sid *sid)
 {
 	struct winbindd_domain *domain;
 
@@ -808,7 +808,7 @@ struct winbindd_domain *find_builtin_domain(void)
 
 /* Find the appropriate domain to lookup a name or SID */
 
-struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
+struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 {
 	/* SIDs in the S-1-22-{1,2} domain should be handled by our passdb */
 
@@ -1127,8 +1127,8 @@ int winbindd_num_clients(void)
 
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const DOM_SID *user_sid,
-				  uint32 *p_num_groups, DOM_SID **user_sids)
+				  const struct dom_sid *user_sid,
+				  uint32 *p_num_groups, struct dom_sid **user_sids)
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;

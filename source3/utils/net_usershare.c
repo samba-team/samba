@@ -806,7 +806,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	num_aces += count_chars(pacl,',');
 
 	for (i = 0; i < num_aces; i++) {
-		DOM_SID sid;
+		struct dom_sid sid;
 		const char *pcolon = strchr_m(pacl, ':');
 		const char *name;
 

@@ -313,7 +313,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 
 static char *longvar_domainsid( void )
 {
-	DOM_SID sid;
+	struct dom_sid sid;
 	fstring tmp;
 	char *sid_string;
 
