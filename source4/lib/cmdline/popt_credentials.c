@@ -103,6 +103,15 @@ static void popt_common_credentials_callback(poptContext con,
 	case OPT_KERBEROS:
 	{
 		bool use_kerberos = true;
+		/* Force us to only use kerberos */
+		if (arg) {
+			if (!set_boolean(arg, &use_kerberos)) {
+				fprintf(stderr, "Error parsing -k %s\n", arg);
+				exit(1);
+				break;
+			}
+		}
+		
 		cli_credentials_set_kerberos_state(cmdline_credentials, 
 						   use_kerberos 
 						   ? CRED_MUST_USE_KERBEROS
