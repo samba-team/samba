@@ -772,7 +772,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	set_secrets->key_version_number = join->out.kvno;
 	set_secrets->domain_sid = join->out.domain_sid;
 	
-	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
+	status = provision_store_self_join(ctx, s->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, error_string);
 		talloc_free(s);
