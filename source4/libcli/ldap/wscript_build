@@ -4,7 +4,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP',
 	source='ldap_client.c ldap_bind.c ldap_ildap.c ldap_controls.c',
 	autoproto='ldap_proto.h',
 	public_deps='LIBSAMBA-ERRORS tevent LIBPACKET',
-	public_headers='ldap.h:ldap-util.h',
+	public_headers='libcli_ldap.h:ldap-util.h',
 	deps='LIBCLI_COMPOSITE samba_socket NDR_SAMR LIBTLS LIBCLI_LDAP_NDR LIBNDR LP_RESOLVE gensec LIBCLI_LDAP_MESSAGE'
 	)
 
