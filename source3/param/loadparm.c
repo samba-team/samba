@@ -5294,9 +5294,9 @@ static void init_globals(bool first_time_only)
 
 	Globals.bMapUntrustedToDomain = false;
 
-	Globals.ismb2_max_read = 64*1024;
-	Globals.ismb2_max_write = 64*1024;
-	Globals.ismb2_max_trans = 64*1024;
+	Globals.ismb2_max_read = 1024*1024;
+	Globals.ismb2_max_write = 1024*1024;
+	Globals.ismb2_max_trans = 1024*1024;
 }
 
 /*******************************************************************
