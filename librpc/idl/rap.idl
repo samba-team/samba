@@ -756,8 +756,8 @@ interface rap
 
 	[public] void rap_NetUserPasswordSet2(
 		[in] astring UserName,
-		[in] [charset(DOS)] uint8 OldPassword[16],
-		[in] [charset(DOS)] uint8 NewPassword[16],
+		[in] uint8 OldPassword[16],
+		[in] uint8 NewPassword[16],
 		[in] uint16 EncryptedPassword,
 		[in] uint16 RealPasswordLength,
 		[out] rap_status status,
