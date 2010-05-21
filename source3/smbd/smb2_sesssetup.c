@@ -516,7 +516,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 
 static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 					struct smbd_smb2_request *smb2req,
-					uint8_t in_security_flags,
+					uint8_t in_security_mode,
 					DATA_BLOB in_security_buffer,
 					uint16_t *out_session_flags,
 					DATA_BLOB *out_security_buffer,
@@ -542,7 +542,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 				USE_KERBEROS_KEYTAB) ) {
 		status = smbd_smb2_session_setup_krb5(session,
 				smb2req,
-				in_security_flags,
+				in_security_mode,
 				&secblob_in,
 				kerb_mech,
 				out_session_flags,
@@ -704,6 +704,54 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	if (!spnego_parse_auth(in_security_buffer, &auth)) {
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (auth.data[0] == ASN1_APPLICATION(0)) {
+		/* Might be a second negTokenTarg packet */
+		DATA_BLOB secblob_in = data_blob_null;
+		char *kerb_mech = NULL;
+
+		status = parse_spnego_mechanisms(in_security_buffer,
+				&secblob_in, &kerb_mech);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(session);
+			return status;
+		}
+
+#ifdef HAVE_KRB5
+		if (kerb_mech && ((lp_security()==SEC_ADS) ||
+					USE_KERBEROS_KEYTAB) ) {
+			status = smbd_smb2_session_setup_krb5(session,
+					smb2req,
+					in_security_mode,
+					&secblob_in,
+					kerb_mech,
+					out_session_flags,
+					out_security_buffer,
+					out_session_id);
+
+			data_blob_free(&secblob_in);
+			SAFE_FREE(kerb_mech);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(session);
+			}
+			return status;
+		}
+#endif
+
+		/* Can't blunder into NTLMSSP auth if we have
+		 * a krb5 ticket. */
+
+		if (kerb_mech) {
+			DEBUG(3,("smb2: network "
+				"misconfiguration, client sent us a "
+				"krb5 ticket and kerberos security "
+				"not enabled\n"));
+			TALLOC_FREE(session);
+			data_blob_free(&secblob_in);
+			SAFE_FREE(kerb_mech);
+			return NT_STATUS_LOGON_FAILURE;
+		}
 	}
 
 	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
