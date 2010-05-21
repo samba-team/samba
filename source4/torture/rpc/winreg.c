@@ -2386,6 +2386,7 @@ static bool test_key_base(struct torture_context *tctx,
 	bool created3 = false;
 	const char *test_key1;
 	const char *test_key3;
+	const char *test_subkey;
 
 	test_Cleanup(b, tctx, handle, base_key);
 
@@ -2459,9 +2460,11 @@ static bool test_key_base(struct torture_context *tctx,
 			created3 = true;
 		}
 
+		test_subkey = talloc_asprintf(tctx, "%s\\%s", test_key3, TEST_SUBKEY);
+
 		if (created3) {
-			if (test_CreateKey(b, tctx, handle, TEST_SUBKEY, NULL)) {
-				if (!test_DeleteKey(b, tctx, handle, TEST_SUBKEY)) {
+			if (test_CreateKey(b, tctx, handle, test_subkey, NULL)) {
+				if (!test_DeleteKey(b, tctx, handle, test_subkey)) {
 					torture_comment(tctx, "DeleteKey failed\n");
 					ret = false;
 				}
@@ -2489,6 +2492,8 @@ static bool test_key_base_sd(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	const char *test_key2;
 	const char *test_key4;
+
+	torture_skip(tctx, "security descriptor test disabled\n");
 
 	if (torture_setting_bool(tctx, "samba3", false) ||
 	    torture_setting_bool(tctx, "samba4", false)) {
