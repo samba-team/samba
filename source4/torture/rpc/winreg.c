@@ -2093,11 +2093,11 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, VALUE_CURRENT_VERSION, true),
 		"failed to query current version");
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "IDoNotExist", false),
-		"failed to query current version");
+		"succeeded to query nonexistent value");
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, NULL, false),
-		"test_QueryValue_full for NULL value failed");
+		"succeeded to query value with NULL name");
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
-		"test_QueryValue_full for \"\" value failed");
+		"succeeded to query nonexistent default value (\"\")");
 
 	torture_assert(tctx, test_CloseKey(b, tctx, &newhandle),
 		"failed to close current version key");
