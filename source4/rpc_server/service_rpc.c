@@ -361,21 +361,20 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	if (dcesrv_sock->endpoint->ep_description->transport == NCACN_NP) {
 		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
-		ret = tstream_npa_existing_socket(dcesrv_conn,
-						  socket_get_fd(srv_conn->socket),
-						  FILE_TYPE_MESSAGE_MODE_PIPE,
-						  &dcesrv_conn->stream);
+		dcesrv_conn->stream = talloc_move(dcesrv_conn,
+						  &srv_conn->tstream);
 	} else {
 		ret = tstream_bsd_existing_socket(dcesrv_conn,
 						  socket_get_fd(srv_conn->socket),
 						  &dcesrv_conn->stream);
-	}
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(0,("dcesrv_sock_accept: failed to setup tstream: %s\n",
-			nt_errstr(status)));
-		stream_terminate_connection(srv_conn, nt_errstr(status));
-		return;
+		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
+			DEBUG(0, ("dcesrv_sock_accept: "
+				  "failed to setup tstream: %s\n",
+				  nt_errstr(status)));
+			stream_terminate_connection(srv_conn, nt_errstr(status));
+			return;
+		}
 	}
 
 	dcesrv_conn->local_address = srv_conn->local_address;
@@ -545,9 +544,10 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
-	status = stream_setup_named_pipe(event_ctx, lp_ctx,
-					 model_ops, &dcesrv_stream_ops,
-					 e->ep_description->endpoint, dcesrv_sock);
+	status = tstream_setup_named_pipe(event_ctx, lp_ctx,
+					  model_ops, &dcesrv_stream_ops,
+					  e->ep_description->endpoint,
+					  dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("stream_setup_named_pipe(pipe=%s) failed - %s\n",
 			 e->ep_description->endpoint, nt_errstr(status)));
