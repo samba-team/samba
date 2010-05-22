@@ -530,7 +530,6 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 			sizeof(finfo->short_name));
 	}
 	return true;
-	return(DIR_STRUCT_SIZE);
 }
 
 /****************************************************************************
