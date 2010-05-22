@@ -124,11 +124,13 @@ m4_include(../lib/util/time.m4)
 
 m4_include(m4/swat.m4)
 
+DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
+
 # Probe the gcc version for extra CFLAGS. We always stash these in
 # DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
 # Makefile edit, avoiding the need to re-run configure.
 if test x"$ac_cv_prog_gcc" = x"yes" ; then
-    	DEVELOPER_CFLAGS="-g -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+	DEVELOPER_CFLAGS="${DEVELOPER_CFLAGS} -g -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
