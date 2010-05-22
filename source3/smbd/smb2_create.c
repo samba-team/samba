@@ -678,7 +678,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 * will do the path processing.
 		 */
 
-		if (!smb1req->flags2 & FLAGS2_DFS_PATHNAMES) {
+		if (!(smb1req->flags2 & FLAGS2_DFS_PATHNAMES)) {
 			/* convert '\\' into '/' */
 			status = check_path_syntax(fname);
 			if (!NT_STATUS_IS_OK(status)) {
