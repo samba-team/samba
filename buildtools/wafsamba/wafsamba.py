@@ -660,9 +660,17 @@ def init_subst(bld):
     if not node:
         return {}
     lines = node.read(None)
-    bld.subst_table_h = hash(lines)
+
     lines = [x.strip().split(': ') for x in lines.split('\n') if x.rfind(': ') > -1]
     bld.subst_table = dict(lines)
+
+    # pidl file replacement (all of this is temporary, one step at a time)
+    keyz = list(bld.subst_table.keys())
+    for k in keyz:
+        bld.subst_table['bin/default/' + k] = bld.subst_table[k]
+
+    tp = tuple(bld.subst_table.keys())
+    bld.subst_table_h = hash(tp)
     return bld.subst_table_h
 
 @TaskGen.feature('pubh')
