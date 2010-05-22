@@ -26,8 +26,11 @@
 	}
 
 
-#define FIELDS_NUM 11
-enum test_fields { none = 0, account_name, full_name, description, home_directory, home_drive,
+#define USER_FIELD_FIRST	account_name
+#define USER_FIELD_LAST 	acct_flags
+
+enum test_fields { none = 0,
+		   account_name, full_name, description, home_directory, home_drive,
 		   comment, logon_script, profile_path, acct_expiry, acct_flags };
 
 

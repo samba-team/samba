@@ -356,10 +356,10 @@ static void set_test_changes(struct torture_context *tctx,
 
 	torture_comment(tctx, "Fields to change: [");
 
-	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
+	for (i = 0; i < num_changes && i <= USER_FIELD_LAST; i++) {
 		const char *fldname;
 
-		testfld = (req_change == none) ? (random() % FIELDS_NUM) : req_change;
+		testfld = (req_change == none) ? (random() % USER_FIELD_LAST) + 1 : req_change;
 
 		/* get one in case we hit time field this time */
 		gettimeofday(&now, NULL);
@@ -524,7 +524,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	torture_comment(torture, "Testing change of all fields - each single one in turn\n");
 
-	for (fld = 1; fld < FIELDS_NUM - 1; fld++) {
+	for (fld = USER_FIELD_FIRST; fld <= USER_FIELD_LAST; fld++) {
 		ZERO_STRUCT(req);
 		req.in.domain_name = lp_workgroup(torture->lp_ctx);
 		req.in.user_name = name;

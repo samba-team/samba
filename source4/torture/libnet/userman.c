@@ -110,10 +110,10 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "fields to change: [");
 
-	for (i = 0; i < num_changes && i < FIELDS_NUM - 1; i++) {
+	for (i = 0; i < num_changes && i <= USER_FIELD_LAST; i++) {
 		const char *fldname;
 
-		testfld = (random() % (FIELDS_NUM - 1)) + 1;
+		testfld = (random() % USER_FIELD_LAST) + 1;
 
 		gettimeofday(&now, NULL);
 
@@ -444,7 +444,7 @@ bool torture_usermod(struct torture_context *torture)
 		goto done;
 	}
 
-	for (i = 1; i < FIELDS_NUM; i++) {
+	for (i = USER_FIELD_FIRST; i <= USER_FIELD_LAST; i++) {
 		struct libnet_rpc_usermod m;
 
 		if (!test_usermod(torture, p, mem_ctx, &h, i, &m, &name)) {
