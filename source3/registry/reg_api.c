@@ -81,15 +81,17 @@
 
 static WERROR fill_value_cache(struct registry_key *key)
 {
+	WERROR werr;
+
 	if (key->values != NULL) {
 		if (!reg_values_need_update(key->key, key->values)) {
 			return WERR_OK;
 		}
 	}
 
-	if (!(key->values = TALLOC_ZERO_P(key, struct regval_ctr))) {
-		return WERR_NOMEM;
-	}
+	werr = regval_ctr_init(key, &(key->values));
+	W_ERROR_NOT_OK_RETURN(werr);
+
 	if (fetch_reg_values(key->key, key->values) == -1) {
 		TALLOC_FREE(key->values);
 		return WERR_BADFILE;
@@ -337,6 +339,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		     uint32 idx, char **pname, struct registry_value **pval)
 {
 	struct registry_value *val;
+	struct regval_blob *blob;
 	WERROR err;
 
 	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
@@ -347,22 +350,23 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		return err;
 	}
 
-	if (idx >= key->values->num_values) {
+	if (idx >= regval_ctr_numvals(key->values)) {
 		return WERR_NO_MORE_ITEMS;
 	}
 
+	blob = regval_ctr_specific_value(key->values, idx);
 	err = registry_pull_value(mem_ctx, &val,
-				  key->values->values[idx]->type,
-				  key->values->values[idx]->data_p,
-				  key->values->values[idx]->size,
-				  key->values->values[idx]->size);
+				  regval_type(blob),
+				  regval_data_p(blob),
+				  regval_size(blob),
+				  regval_size(blob));
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
 
 	if (pname
 	    && !(*pname = talloc_strdup(
-			 mem_ctx, key->values->values[idx]->valuename))) {
+			 mem_ctx, regval_name(blob)))) {
 		SAFE_FREE(val);
 		return WERR_NOMEM;
 	}
@@ -385,8 +389,10 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		return err;
 	}
 
-	for (i=0; i<key->values->num_values; i++) {
-		if (strequal(key->values->values[i]->valuename, name)) {
+	for (i=0; i < regval_ctr_numvals(key->values); i++) {
+		struct regval_blob *blob;
+		blob = regval_ctr_specific_value(key->values, i);
+		if (strequal(regval_name(blob), name)) {
 			return reg_enumvalue(mem_ctx, key, i, NULL, pval);
 		}
 	}
@@ -427,13 +433,14 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 
 	max_len = 0;
 	max_size = 0;
-	for (i=0; i<key->values->num_values; i++) {
-		max_len = MAX(max_len,
-			      strlen(key->values->values[i]->valuename));
-		max_size = MAX(max_size, key->values->values[i]->size);
+	for (i=0; i < regval_ctr_numvals(key->values); i++) {
+		struct regval_blob *blob;
+		blob = regval_ctr_specific_value(key->values, i);
+		max_len = MAX(max_len, strlen(regval_name(blob)));
+		max_size = MAX(max_size, regval_size(blob));
 	}
 
-	*num_values = key->values->num_values;
+	*num_values = regval_ctr_numvals(key->values);
 	*max_valnamelen = max_len;
 	*max_valbufsize = max_size;
 
@@ -647,15 +654,15 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 
 static WERROR reg_value_exists(struct registry_key *key, const char *name)
 {
-	int i;
+	struct regval_blob *blob;
 
-	for (i=0; i<key->values->num_values; i++) {
-		if (strequal(key->values->values[i]->valuename, name)) {
-			return WERR_OK;
-		}
+	blob = regval_ctr_getvalue(key->values, name);
+
+	if (blob == NULL) {
+		return WERR_BADFILE;
+	} else {
+		return WERR_OK;
 	}
-
-	return WERR_BADFILE;
 }
 
 WERROR reg_deletevalue(struct registry_key *key, const char *name)
@@ -743,10 +750,8 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	result = regsubkey_ctr_init(regfile->mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_RETURN(result);
 
-	values = TALLOC_ZERO_P(subkeys, struct regval_ctr);
-	if (values == NULL) {
-		return WERR_NOMEM;
-	}
+	result = regval_ctr_init(subkeys, &values);
+	W_ERROR_NOT_OK_RETURN(result);
 
 	/* copy values into the struct regval_ctr */
 
@@ -903,10 +908,8 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	result = regsubkey_ctr_init(regfile->mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_RETURN(result);
 
-	values = TALLOC_ZERO_P(subkeys, struct regval_ctr);
-	if (values == NULL) {
-		return WERR_NOMEM;
-	}
+	result = regval_ctr_init(subkeys, &values); 
+	W_ERROR_NOT_OK_RETURN(result);
 
 	fetch_reg_keys(&registry_key, subkeys);
 	fetch_reg_values(&registry_key, values);
@@ -999,8 +1002,10 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 		return err;
 	}
 
-	for (i=0; i<key->values->num_values; i++) {
-		regval_ctr_delvalue(key->values, key->values->values[i]->valuename);
+	for (i=0; i < regval_ctr_numvals(key->values); i++) {
+		struct regval_blob *blob;
+		blob = regval_ctr_specific_value(key->values, i);
+		regval_ctr_delvalue(key->values, regval_name(blob));
 	}
 
 	if (!store_reg_values(key->key, key->values)) {
