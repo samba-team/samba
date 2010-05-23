@@ -114,7 +114,7 @@ if test x"$libreplace_cv_HAVE_UNIXSOCKET" = x"yes"; then
 	AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
 fi
 
-dnl The following test is roughl taken from the cvs sources.
+dnl The following test is roughly taken from the cvs sources.
 dnl
 dnl If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
 dnl The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
