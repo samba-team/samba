@@ -90,7 +90,9 @@ bool eventlog_init_keys(void)
 		TALLOC_FREE( subkeys );
 
 		/* now add the values to the KEY_EVENTLOG/Application form key */
-		if (!(values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
+
+		werr = regval_ctr_init(ctx, &values);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -147,7 +149,9 @@ bool eventlog_init_keys(void)
 		if (!evtlogpath) {
 			return false;
 		}
-		if (!(values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
+
+		werr = regval_ctr_init(ctx, &values);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -228,7 +232,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	/* todo add to Sources */
 
-	if (!( values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
+	werr = regval_ctr_init(ctx, &values);
+	if(!W_ERROR_IS_OK(werr)) {
 		DEBUG( 0, ( "talloc() failure!\n" ));
 		return false;
 	}
@@ -249,7 +254,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	/* perhaps this adding a new string to a multi_sz should be a fn? */
 	/* check to see if it's there already */
 
-	if ( rval->type != REG_MULTI_SZ ) {
+	if ( regval_type(rval) != REG_MULTI_SZ ) {
 		DEBUG( 0,
 		       ( "Wrong type for Sources, should be REG_MULTI_SZ\n" ) );
 		return False;
@@ -258,9 +263,9 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	already_in = False;
 	wrklist = NULL;
-	dump_data( 1, rval->data_p, rval->size );
+	dump_data(1, regval_data_p(rval), regval_size(rval));
 
-	blob = data_blob_const(rval->data_p, rval->size);
+	blob = data_blob_const(regval_data_p(rval), regval_size(rval));
 	if (!pull_reg_multi_sz(talloc_tos(), &blob, &wrklist)) {
 		return false;
 	}
@@ -361,7 +366,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	regdb_fetch_keys( evtlogpath, subkeys );
 
 	/* now add the values to the KEY_EVENTLOG/Application form key */
-	if ( !( values = TALLOC_ZERO_P(ctx, struct regval_ctr ) ) ) {
+	werr = regval_ctr_init(ctx, &values);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}
