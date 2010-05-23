@@ -293,6 +293,23 @@ char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index 
  * Utility functions for struct regval_ctr
  */
 
+/**
+ * allocate a regval_ctr structure.
+ */
+WERROR regval_ctr_init(TALLOC_CTX *mem_ctx, struct regval_ctr **ctr)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*ctr = talloc_zero(mem_ctx, struct regval_ctr);
+	if (*ctr == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
 /***********************************************************************
  How many keys does the container hold ?
  **********************************************************************/
