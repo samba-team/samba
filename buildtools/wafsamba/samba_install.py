@@ -105,6 +105,10 @@ def install_library(self):
         install_link = None
         inst_name    = 'lib%s.so' % t.target
 
+    if t.env.SONAME_ST and install_link:
+        t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
+        t.env.SONAME_ST = ''
+
     # tell waf to install the library
     bld.install_as(os.path.join(install_path, install_name),
                    os.path.join(self.path.abspath(bld.env), inst_name))
