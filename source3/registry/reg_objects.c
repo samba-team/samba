@@ -603,6 +603,15 @@ struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
 	return NULL;
 }
 
+int regval_ctr_get_seqnum(struct regval_ctr *ctr)
+{
+	if (ctr == NULL) {
+		return -1;
+	}
+
+	return ctr->seqnum;
+}
+
 /***********************************************************************
  return the data_p as a uint32
  **********************************************************************/
