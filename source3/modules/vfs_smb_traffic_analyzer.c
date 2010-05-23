@@ -471,6 +471,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			tm->tm_min,
 			tm->tm_sec,
 			(int)seconds);
+		len = strlen(str);
 		if (write_data(rf_sock->sock, str, len) != len) {
                 	DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
 			"error sending V1 protocol data to socket!\n"));
