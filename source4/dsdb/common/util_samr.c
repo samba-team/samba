@@ -26,6 +26,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "../libds/common/flags.h"
+#include "libcli/security/dom_sid.h"
 
 /* Add a user, SAMR style, including the correct transaction
  * semantics.  Used by the SAMR server and by pdb_samba4 */
@@ -466,3 +467,68 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
+
+NTSTATUS dsdb_lookup_rids(struct ldb_context *ldb,
+			  TALLOC_CTX *mem_ctx,
+			  const struct dom_sid *domain_sid,
+			  int num_rids,
+			  uint32_t *rids,
+			  const char **names,
+			  enum lsa_SidType *lsa_attrs)
+{
+	const char *attrs[] = { "sAMAccountType", "sAMAccountName", NULL };
+	int i, num_mapped;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	num_mapped = 0;
+
+	for (i=0; i<num_rids; i++) {
+		struct ldb_message *msg;
+		struct ldb_dn *dn;
+		uint32_t attr;
+		int rc;
+
+		lsa_attrs[i] = SID_NAME_UNKNOWN;
+
+		dn = ldb_dn_new_fmt(tmp_ctx, ldb, "<SID=%s>",
+				    dom_sid_string(tmp_ctx,
+						   dom_sid_add_rid(tmp_ctx, domain_sid,
+								   rids[i])));
+		if (!dn || !ldb_dn_validate(dn)) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		rc = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE, attrs, 0, "samAccountName=*");
+		if (rc == LDB_ERR_NO_SUCH_OBJECT) {
+			continue;
+		} else if (rc != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		names[i] = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+		if (names[i] == NULL) {
+			DEBUG(10, ("no samAccountName\n"));
+			continue;
+		}
+		talloc_steal(names, names[i]);
+		attr = ldb_msg_find_attr_as_uint(msg, "samAccountType", 0);
+		lsa_attrs[i] = ds_atype_map(attr);
+		if (lsa_attrs[i] == SID_NAME_UNKNOWN) {
+			continue;
+		}
+		num_mapped += 1;
+	}
+	talloc_free(tmp_ctx);
+
+	if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (num_mapped < num_rids) {
+		return STATUS_SOME_UNMAPPED;
+	}
+	return NT_STATUS_OK;
+}
+

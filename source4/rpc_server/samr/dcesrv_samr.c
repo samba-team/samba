@@ -1669,11 +1669,11 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_LookupRids *r)
 {
+	NTSTATUS status;
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	uint32_t i;
-	NTSTATUS status = NT_STATUS_OK;
-	struct lsa_String *names;
+	const char **names;
+	struct lsa_String *lsa_names;
 	uint32_t *ids;
 
 	ZERO_STRUCTP(r->out.names);
@@ -1686,63 +1686,27 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 	if (r->in.num_rids == 0)
 		return NT_STATUS_OK;
 
-	names = talloc_array(mem_ctx, struct lsa_String, r->in.num_rids);
-	ids = talloc_array(mem_ctx, uint32_t, r->in.num_rids);
+	lsa_names = talloc_zero_array(mem_ctx, struct lsa_String, r->in.num_rids);
+	names = talloc_zero_array(mem_ctx, const char *, r->in.num_rids);
+	ids = talloc_zero_array(mem_ctx, uint32_t, r->in.num_rids);
 
-	if ((names == NULL) || (ids == NULL))
+	if ((lsa_names == NULL) || (names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
 
-	for (i=0; i<r->in.num_rids; i++) {
-		struct ldb_message **res;
-		int count;
-		const char * const attrs[] = { 	"sAMAccountType",
-						"sAMAccountName", NULL };
-		uint32_t atype;
-		struct dom_sid *sid;
-
-		ids[i] = SID_NAME_UNKNOWN;
-
-		sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid,
-			r->in.rids[i]);
-		if (sid == NULL) {
-			names[i].string = NULL;
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-		
-		count = gendb_search(d_state->sam_ctx, mem_ctx,
-				     d_state->domain_dn, &res, attrs,
-				     "(objectSid=%s)", 
-				     ldap_encode_ndr_dom_sid(mem_ctx, sid));
-		if (count != 1) {
-			names[i].string = NULL;
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		names[i].string = samdb_result_string(res[0], "sAMAccountName",
-						      NULL);
-
-		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-		if (atype == 0) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-
-		ids[i] = ds_atype_map(atype);
-		
-		if (ids[i] == SID_NAME_UNKNOWN) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-	}
-
-	r->out.names->names = names;
+	r->out.names->names = lsa_names;
 	r->out.names->count = r->in.num_rids;
 
 	r->out.types->ids = ids;
 	r->out.types->count = r->in.num_rids;
 
+	status = dsdb_lookup_rids(d_state->sam_ctx, mem_ctx, d_state->domain_sid,
+				  r->in.num_rids, r->in.rids, names, ids);
+	if (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED) || NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		uint32_t i;
+		for (i = 0; i < r->in.num_rids; i++) {
+			lsa_names[i].string = names[i];
+		}
+	}
 	return status;
 }
 
