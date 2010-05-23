@@ -658,6 +658,8 @@ def init_subst(bld):
 
     node = bld.srcnode.find_resource("source4/headermap.txt")
     if not node:
+        bld.subst_table = {}
+        bld.subst_table_h = 0
         return {}
     lines = node.read(None)
 
