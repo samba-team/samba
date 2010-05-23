@@ -127,14 +127,6 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf);
 uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf);
 WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids);
 
-/* The following definitions come from registry/reg_util.c  */
-
-bool reg_split_path(char *path, char **base, char **new_path);
-bool reg_split_key(char *path, char **base, char **key);
-char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname );
-void normalize_dbkey(char *key);
-char *reg_remaining_path(TALLOC_CTX *ctx, const char *key);
-
 /* The following definitions come from lib/util_reg_api.c  */
 
 WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
