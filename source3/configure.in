@@ -6759,6 +6759,13 @@ AC_SUBST(SMBD_LIBS)
 CFLAGS="${CFLAGS} \$(FLAGS)"
 CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
 
+# If we had to expand the includes, make tsure the output file is moved back
+AC_OUTPUT_COMMANDS([
+if test -f Makefile-noincludes -a ! -f Makefile -a ! -h Makefile ; then
+	ln -s Makefile-noincludes Makefile
+fi
+])
+
 AC_SUBST(MAKEFILE)
 if test x$samba_cv_gnu_make = xyes; then
 	MAKEFILE=Makefile
@@ -6779,12 +6786,6 @@ AC_OUTPUT($MAKEFILE
 	  pkgconfig/smbsharemodes.pc
 	  ../examples/libsmbclient/Makefile.internal
 	  )
-dnl If we had to expand the includes, make tsure the output file is moved back
-AC_OUTPUT_COMMANDS([
-if test x$MAKEFILE != Makefile; then
-	mv $MAKEFILE Makefile
-fi
-])
 
 #################################################
 # Print very concise instructions on building/use
