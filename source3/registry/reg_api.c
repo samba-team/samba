@@ -64,6 +64,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "reg_cachehook.h"
 #include "regfio.h"
 
 #undef DBGC_CLASS

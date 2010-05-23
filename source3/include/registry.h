@@ -100,14 +100,6 @@ bool regdb_values_need_update(struct regval_ctr *values);
 
 /* The following definitions come from registry/reg_backend_tcpip_params.c  */
 
-
-/* The following definitions come from registry/reg_cachehook.c  */
-
-WERROR reghook_cache_init(void);
-WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops);
-struct registry_ops *reghook_cache_find(const char *keyname);
-void reghook_dump_cache( int debuglevel );
-
 /* The following definitions come from registry/reg_dispatcher.c  */
 
 bool store_reg_keys(struct registry_key_handle *key,
