@@ -25,6 +25,24 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+/* low level structure to contain registry values */
+
+struct regval_blob {
+	fstring		valuename;
+	uint16		type;
+	/* this should be encapsulated in an RPC_DATA_BLOB */
+	uint32		size;	/* in bytes */
+	uint8           *data_p;
+};
+
+/* container for registry values */
+
+struct regval_ctr {
+	uint32          num_values;
+	struct regval_blob **values;
+	int seqnum;
+};
+
 struct regsubkey_ctr {
 	uint32_t        num_subkeys;
 	char            **subkeys;
