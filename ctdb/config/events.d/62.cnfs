@@ -7,8 +7,9 @@ loadconfig
 
 STATEDIR=$CTDB_BASE/state/gpfs
 
+
 # filesystems needed by nfs
-NFS_FSS=`cat /etc/exports | egrep -v "^#" | sed -e "s/[ \t]*[^ \t]*$//"`
+NFS_FSS=`cat /etc/exports | egrep -v "^#" | sed -e "s/[ \t]*[^ \t]*$//" -e "s/\"//g"`
 
 
 
