@@ -56,9 +56,6 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_delete_path(const struct nt_user_token *token,
 		       const char *orig_path);
 
-/* The following definitions come from registry/reg_backend_current_version.c  */
-
-
 /* The following definitions come from registry/reg_backend_db.c  */
 
 WERROR init_registry_key(const char *add_path);
@@ -76,29 +73,6 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values);
 bool regdb_store_values(const char *key, struct regval_ctr *values);
 bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys);
 bool regdb_values_need_update(struct regval_ctr *values);
-
-/* The following definitions come from registry/reg_backend_hkpt_params.c  */
-
-
-/* The following definitions come from registry/reg_backend_netlogon_params.c  */
-
-
-/* The following definitions come from registry/reg_backend_perflib.c  */
-
-
-/* The following definitions come from registry/reg_backend_printing.c  */
-
-
-/* The following definitions come from registry/reg_backend_prod_options.c  */
-
-
-/* The following definitions come from registry/reg_backend_shares.c  */
-
-
-/* The following definitions come from registry/reg_backend_smbconf.c  */
-
-
-/* The following definitions come from registry/reg_backend_tcpip_params.c  */
 
 /* The following definitions come from registry/reg_dispatcher.c  */
 
@@ -160,8 +134,6 @@ bool reg_split_key(char *path, char **base, char **key);
 char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname );
 void normalize_dbkey(char *key);
 char *reg_remaining_path(TALLOC_CTX *ctx, const char *key);
-
-/* The following definitions come from registry/regfio.c  */
 
 /* The following definitions come from lib/util_reg_api.c  */
 
