@@ -1,3 +1,6 @@
+#ifndef _REGISTRY_H
+#define _REGISTRY_H
+
 #include "reg_objects.h"
 
 /* The following definitions come from registry/reg_api.c  */
@@ -186,3 +189,4 @@ WERROR registry_push_value(TALLOC_CTX *mem_ctx,
 			   const struct registry_value *value,
 			   DATA_BLOB *presult);
 
+#endif /* _REGISTRY_H */
