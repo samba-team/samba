@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
+ *  Copyright (C) Michael Adam                      2009
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,35 +18,28 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Implementation of registry frontend view functions. */
+#ifndef _REG_UTIL_LEGACY_H
+#define _REG_UTIL_LEGACY_H
+
+/*
+ * This module contains legacy code code from the old regkey
+ * interface that is now mostly hidden behind the reg_api interface.
+ * This code should be removed once the last users of the old code
+ * have been converted.
+ */
 
 #include "includes.h"
 #include "registry.h"
-#include "reg_util_legacy.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_REGISTRY
 
 /**
  * legacy open key function that should be replaced by uses of
  * reg_open_path
  */
+
 WERROR regkey_open_internal(TALLOC_CTX *ctx,
 			    struct registry_key_handle **regkey,
 			    const char *path,
 			    const struct nt_user_token *token,
-			    uint32 access_desired )
-{
-	struct registry_key *key;
-	WERROR err;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+			    uint32 access_desired );
 
-	err = reg_open_path(tmp_ctx, path, access_desired, token, &key);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
-	}
-
-	*regkey = talloc_move(ctx, &key->key);
-	TALLOC_FREE(tmp_ctx);
-	return WERR_OK;
-}
+#endif /* _REG_UTIL_LEGACY_H */
