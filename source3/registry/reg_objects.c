@@ -612,6 +612,17 @@ int regval_ctr_get_seqnum(struct regval_ctr *ctr)
 	return ctr->seqnum;
 }
 
+WERROR regval_ctr_set_seqnum(struct regval_ctr *ctr, int seqnum)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ctr->seqnum = seqnum;
+
+	return WERR_OK;
+}
+
 /***********************************************************************
  return the data_p as a uint32
  **********************************************************************/
