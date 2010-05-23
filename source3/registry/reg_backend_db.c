@@ -296,10 +296,11 @@ static NTSTATUS init_registry_data_action(struct db_context *db,
 	/* loop over all of the predefined values and add each component */
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
+		WERROR werr;
 
-		values = TALLOC_ZERO_P(frame, struct regval_ctr);
-		if (values == NULL) {
-			status = NT_STATUS_NO_MEMORY;
+		werr = regval_ctr_init(frame, &values);
+		if (!W_ERROR_IS_OK(werr)) {
+			status = werror_to_ntstatus(werr);
 			goto done;
 		}
 
@@ -347,11 +348,8 @@ WERROR init_registry_data(void)
 	}
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
-		values = TALLOC_ZERO_P(frame, struct regval_ctr);
-		if (values == NULL) {
-			werr = WERR_NOMEM;
-			goto done;
-		}
+		werr = regval_ctr_init(frame, &values);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 		regdb_fetch_values_internal(regdb,
 					    builtin_registry_values[i].path,
@@ -1620,6 +1618,7 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = 0;
 	TDB_DATA value;
+	WERROR werr;
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 
@@ -1632,7 +1631,8 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 		goto done;
 	}
 
-	values->seqnum = db->get_seqnum(db);
+	werr = regval_ctr_set_seqnum(values, db->get_seqnum(db));
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	value = regdb_fetch_key_internal(db, ctx, keystr);
 
@@ -1807,7 +1807,7 @@ bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 
 bool regdb_values_need_update(struct regval_ctr *values)
 {
-	return (regdb_get_seqnum() != values->seqnum);
+	return (regdb_get_seqnum() != regval_ctr_get_seqnum(values));
 }
 
 /* 
