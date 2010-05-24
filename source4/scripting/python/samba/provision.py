@@ -743,6 +743,8 @@ def secretsdb_setup_dns(secretsdb, setup_path, private_dir,
 
 def setup_secretsdb(path, setup_path, session_info, backend_credentials, lp):
     """Setup the secrets database.
+       This function does not handle exceptions and transaction on purpose,
+       it's up to the caller to do this job.
 
     :param path: Path to the secrets database.
     :param setup_path: Get the path to a setup file.
