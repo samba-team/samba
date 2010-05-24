@@ -398,7 +398,7 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 	const char *sid;
 	struct ldb_dn *dn;
 	struct ldb_message_element *element;
-	int inherit;
+	bool inherit;
 	const char *attrs[] = { "objectClass", NULL };
 	int rv;
 	NTSTATUS status;
