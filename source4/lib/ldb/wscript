@@ -45,6 +45,10 @@ def configure(conf):
                                          onlyif='talloc tdb tevent',
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
+
+        if conf.env.standalone_ldb:
+            conf.find_program('xsltproc', var='XSLTPROC')
+
         # we need this for the ldap backend
         if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
             conf.env.ENABLE_LDAP_BACKEND = True
@@ -178,10 +182,25 @@ def build(bld):
     # ldbtest doesn't get installed
     bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='LIBLDB_CMDLINE', install=False)
 
-    if s4_build:
-        bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                         deps='ldb',
-                         realname='ldb.so')
+    bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                     deps='ldb',
+                     realname='ldb.so')
+
+    if bld.env.XSLTPROC:
+        manpages = 'man/ad2oLschema.1 man/ldb.3 man/ldbadd.1 man/ldbdel.1 ' \
+                   'man/ldbedit.1 man/ldbmodify.1 man/ldbrename.1 ' \
+                   'man/ldbsearch.1 man/oLschema2ldif.1'
+
+        bld.env.LDB_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+
+        for m in manpages.split():
+            source = m + '.xml'
+            bld.SAMBA_GENERATOR(m,
+                                source=source,
+                                target=m,
+                                rule='${XSLTPROC} -o ${TGT} ${LDB_MAN_XSL} ${SRC}'
+                                )
+            bld.INSTALL_FILES('${MANDIR}/man1 ${MANDIR}/man3', m, flat=True)
 
 
 def test(ctx):
