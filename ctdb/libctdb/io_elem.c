@@ -130,3 +130,8 @@ int write_io_elem(int fd, struct io_elem *io)
 	io->off += ret;
 	return ret;
 }
+
+void io_elem_reset(struct io_elem *io)
+{
+	io->off = 0;
+}

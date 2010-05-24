@@ -20,36 +20,47 @@
 #include <ctdb_protocol.h>
 #include "libctdb_private.h"
 
-struct ctdb_request *ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
-				    uint32_t destnode,
-				    ctdb_getrecmaster_cb callback,
-				    void *private_data)
-{
-	struct ctdb_request *req;
+/* Remove type-safety macros. */
+#undef ctdb_getrecmaster_send
+#undef ctdb_getpnn_send
 
-	req = new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_RECMASTER,
-				       destnode, NULL, 0);
-	if (!req)
-		return NULL;
-	req->callback.getrecmaster = callback;
-	req->priv_data = private_data;
-	return req;
+int ctdb_getrecmaster_recv(struct ctdb_request *req, uint32_t *recmaster)
+{
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_RECMASTER);
+	if (!reply || reply->status == -1)
+		return -1;
+	*recmaster = reply->status;
+	return 0;
 }
 
-struct ctdb_request *
-ctdb_getpnn_send(struct ctdb_connection *ctdb,
-		 uint32_t destnode,
-		 ctdb_getpnn_cb callback,
-		 void *private_data)
+struct ctdb_request *ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
+					    uint32_t destnode,
+					    ctdb_callback_t callback,
+					    void *private_data)
 {
-	struct ctdb_request *req;
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_RECMASTER,
+					destnode, NULL, 0,
+					callback, private_data);
+}
 
-	req = new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_PNN, destnode,
-				       NULL, 0);
-	if (!req) {
-		return NULL;
-	}
-	req->callback.getpnn = callback;
-	req->priv_data = private_data;
-	return req;
+int ctdb_getpnn_recv(struct ctdb_request *req, uint32_t *pnn)
+{
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_PNN);
+	if (!reply || reply->status == -1)
+		return -1;
+	*pnn = reply->status;
+	return 0;
+}
+
+struct ctdb_request *ctdb_getpnn_send(struct ctdb_connection *ctdb,
+				      uint32_t destnode,
+				      ctdb_callback_t callback,
+				      void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_PNN, destnode,
+					NULL, 0, callback, private_data);
 }

@@ -41,6 +41,19 @@ int ctdb_which_events(struct ctdb_connection *ctdb);
 
 int ctdb_service(struct ctdb_connection *ctdb, int revents);
 
+struct ctdb_request;
+
+void ctdb_request_free(struct ctdb_request *req);
+
+/*
+ * Callback for completed requests: it would normally unpack the request
+ * using ctdb_*_recv().  You must free the request using ctdb_request_free().
+ *
+ * Note that due to macro magic, your callback doesn't have to take void *,
+ * it can take a type which matches the actual private parameter.
+ */
+typedef void (*ctdb_callback_t)(struct ctdb_connection *ctdb,
+				struct ctdb_request *req, void *private);
 
 /*
  * Special node addresses :
@@ -55,8 +68,6 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents);
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 
 
-struct ctdb_request;
-
 /*
  * functions to attach to a database
  * if the database does not exist it will be created.
@@ -65,13 +76,13 @@ struct ctdb_request;
  */
 struct ctdb_db;
 
-typedef void (*ctdb_attachdb_cb)(int status, struct ctdb_db *ctdb_db, void *private_data);
-
 struct ctdb_request *
 ctdb_attachdb_send(struct ctdb_connection *ctdb,
 		   const char *name, int persistent, uint32_t tdb_flags,
-		   ctdb_attachdb_cb callback,
-		   void *private_data);
+		   ctdb_callback_t callback, void *private_data);
+
+struct ctdb_db *ctdb_attachdb_recv(struct ctdb_request *req);
+
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			      const char *name, int persistent,
 			      uint32_t tdb_flags);
@@ -87,22 +98,16 @@ struct ctdb_lock;
  * When the lock is released, data is freed too, so make sure to copy the data
  * before that.
  */
-typedef void (*ctdb_readrecordlock_cb)(int status, struct ctdb_lock *lock, TDB_DATA data, void *private_data);
-
 struct ctdb_request *
-ctdb_readrecordlock_send(struct ctdb_db *ctdb_db,
-		TDB_DATA key,
-		ctdb_readrecordlock_cb callback,
-		void *private_data);
-int ctdb_readrecordlock_recv(struct ctdb_connection *ctdb,
-		struct ctdb_request *handle,
-		TDB_DATA **data);
-int ctdb_readrecordlock(struct ctdb_connection *ctdb,
-		struct ctdb_db *ctdb_db,
-		TDB_DATA key,
-		TDB_DATA **data);
+ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
+			 ctdb_callback_t callback, void *private_data);
+struct ctdb_lock *ctdb_readrecordlock_recv(struct ctdb_db *ctdb_db,
+					   struct ctdb_request *handle,
+					   TDB_DATA *data);
 
-
+/* Returns null on failure. */
+struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
+				      TDB_DATA *data);
 
 /*
  * Function to write data to a record
@@ -124,15 +129,11 @@ void ctdb_release_lock(struct ctdb_lock *lock);
  */
 typedef void (*ctdb_message_fn_t)(struct ctdb_connection *, uint64_t srvid, TDB_DATA data, void *);
 
-/*
- * register a message handler and start listening on a service port
- */
-typedef void (*ctdb_set_message_handler_cb)(int status, void *private_data);
-
 struct ctdb_request *
 ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
-			      ctdb_set_message_handler_cb callback,
-			      ctdb_message_fn_t handler, void *private_data);
+			      ctdb_message_fn_t handler,
+			      ctdb_callback_t callback,
+			      void *private_data);
 
 int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 				  struct ctdb_request *handle);
@@ -145,15 +146,12 @@ int ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
 /*
  * unregister a message handler and stop listening on teh specified port
  */
-typedef void (*ctdb_remove_message_handler_cb)(int status, void *private_data);
-
 struct ctdb_request *
 ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
-				 ctdb_remove_message_handler_cb callback,
+				 ctdb_callback_t callback,
 				 void *private_data);
 
-int ctdb_remove_message_handler_recv(struct ctdb_connection *ctdb,
-				  struct ctdb_request *handle);
+int ctdb_remove_message_handler_recv(struct ctdb_request *handle);
 
 int ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
 
@@ -170,13 +168,13 @@ int ctdb_send_message(struct ctdb_connection *ctdb, uint32_t pnn, uint64_t srvid
 /*
  * functions to read the pnn number of the local node
  */
-typedef void (*ctdb_getpnn_cb)(int status, uint32_t pnn, void *private_data);
-
 struct ctdb_request *
 ctdb_getpnn_send(struct ctdb_connection *ctdb,
 		 uint32_t destnode,
-		 ctdb_getpnn_cb callback,
+		 ctdb_callback_t callback,
 		 void *private_data);
+int ctdb_getpnn_recv(struct ctdb_request *req, uint32_t *pnn);
+
 int ctdb_getpnn(struct ctdb_connection *ctdb,
 		uint32_t destnode,
 		uint32_t *pnn);
@@ -187,17 +185,13 @@ int ctdb_getpnn(struct ctdb_connection *ctdb,
 /*
  * functions to read the recovery master of a node
  */
-typedef void (*ctdb_getrecmaster_cb)(int status,
-				     uint32_t recmaster, void *private_data);
-
 struct ctdb_request *
 ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 			uint32_t destnode,
-			ctdb_getrecmaster_cb callback,
+			ctdb_callback_t callback,
 			void *private_data);
-int ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
-			struct ctdb_request *handle,
-			uint32_t *recmaster);
+int ctdb_getrecmaster_recv(struct ctdb_request *handle,
+			   uint32_t *recmaster);
 int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 			uint32_t destnode,
 			uint32_t *recmaster);
@@ -210,4 +204,34 @@ int ctdb_getrecmaster(struct ctdb_connection *ctdb,
  */
 int ctdb_cancel(struct ctdb_request *);
 
+
+/* These ugly macro wrappers make the callbacks typesafe. */
+#include <ccan/typesafe_cb.h>
+#define ctdb_sendcb(cb, cbdata)						\
+	 typesafe_cb_preargs(void, (cb), (cbdata),			\
+			     struct ctdb_connection *, struct ctdb_request *)
+
+#define ctdb_attachdb_send(ctdb, name, persistent, tdb_flags, cb, cbdata) \
+	ctdb_attachdb_send((ctdb), (name), (persistent), (tdb_flags),	\
+			   ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_readrecordlock_send(ctdb_db, key, cb, cbdata)		\
+	ctdb_readrecordlock_send((ctdb_db), (key),			\
+				 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_set_message_handler_send(ctdb, srvid, handler, cb, cbdata)	\
+	ctdb_set_message_handler_send((ctdb), (srvid), (handler),	\
+	      ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_remove_message_handler_send(ctdb, srvid, cb, cbdata)	\
+	ctdb_remove_message_handler_send((ctdb), (srvid),		\
+	      ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getpnn_send(ctdb, destnode, cb, cbdata)			\
+	ctdb_getpnn_send((ctdb), (destnode),				\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getrecmaster_send(ctdb, destnode, cb, cbdata)		\
+	ctdb_getrecmaster_send((ctdb), (destnode),			\
+			       ctdb_sendcb((cb), (cbdata)), (cbdata))
 #endif

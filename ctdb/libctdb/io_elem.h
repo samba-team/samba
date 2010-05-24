@@ -14,6 +14,9 @@ void free_io_elem(struct io_elem *io);
 /* If finished, this returns the request header, otherwise NULL. */
 bool io_elem_finished(const struct io_elem *io);
 
+/* Reset an io_elem to the start. */
+void io_elem_reset(struct io_elem *io);
+
 /* Access to raw data: if len is non-NULL it is filled in. */
 void *io_elem_data(const struct io_elem *io, size_t *len);
 

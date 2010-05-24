@@ -7,15 +7,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Remove type-safety macros. */
+#undef ctdb_set_message_handler_send
+#undef ctdb_set_message_handler_recv
+#undef ctdb_remove_message_handler_send
+
 struct message_handler_info {
 	struct message_handler_info *next, *prev;
-	/* Callback when we're first registered. */
-	ctdb_set_message_handler_cb callback;
 
 	uint64_t srvid;
 	ctdb_message_fn_t handler;
 	void *private_data;
-	struct ctdb_connection *ctdb;
 };
 
 void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
@@ -35,50 +37,57 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	/* FIXME: Report unknown messages */
 }
 
-static void set_message_handler(int status, struct message_handler_info *info)
+int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
+				  struct ctdb_request *req)
 {
-	/* If registration failed, tell callback and clean up */
-	if (status < 0) {
-		info->callback(status, info->private_data);
-		free(info);
-		return;
-	} else {
-		/* Put ourselves in list of handlers. */
-		DLIST_ADD_END(info->ctdb->message_handlers, info,
-			      struct message_handler_info);
-		/* Now call callback: it could remove us in theory. */
-		info->callback(status, info->private_data);
+	struct message_handler_info *info = req->extra;
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_REGISTER_SRVID);
+	if (!reply || reply->status != 0) {
+		return -1;
 	}
+
+	/* Put ourselves in list of handlers. */
+	DLIST_ADD_END(ctdb->message_handlers, info,
+		      struct message_handler_info);
+	/* Keep safe from destructor */
+	req->extra = NULL;
+	return 0;
+}
+
+static void free_info(struct ctdb_request *req)
+{
+	free(req->extra);
 }
 
 struct ctdb_request *
 ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
-			      ctdb_set_message_handler_cb callback,
-			      ctdb_message_fn_t handler, void *private_data)
+			      ctdb_message_fn_t handler,
+			      ctdb_callback_t callback, void *private_data)
 {
-	struct ctdb_request *req;
 	struct message_handler_info *info;
+	struct ctdb_request *req;
 
 	info = malloc(sizeof(*info));
 	if (!info) {
 		return NULL;
 	}
+
 	req = new_ctdb_control_request(ctdb, CTDB_CONTROL_REGISTER_SRVID,
-				       CTDB_CURRENT_NODE, NULL, 0);
+				       CTDB_CURRENT_NODE, NULL, 0,
+				       callback, private_data);
 	if (!req) {
 		free(info);
 		return NULL;
 	}
+	req->extra = info;
+	req->extra_destructor = free_info;
 	req->hdr.control->srvid = srvid;
 
 	info->srvid = srvid;
 	info->handler = handler;
-	info->callback = callback;
 	info->private_data = private_data;
-	info->ctdb = ctdb;
-
-	req->callback.register_srvid = set_message_handler;
-	req->priv_data = info;
 
 	return req;
 }
@@ -90,16 +99,15 @@ int ctdb_send_message(struct ctdb_connection *ctdb,
 	struct ctdb_request *req;
 	struct ctdb_req_message *pkt;
 
-	req = new_ctdb_request(sizeof(*pkt) + data.dsize);
+	/* We just discard it once it's finished: no reply. */
+	req = new_ctdb_request(sizeof(*pkt) + data.dsize,
+			       ctdb_cancel_callback, NULL);
 	if (!req) {
 		return -1;
 	}
 
 	io_elem_init_req_header(req->io,
 				CTDB_REQ_MESSAGE, pnn, new_reqid(ctdb));
-
-	/* There's no reply to this, so we mark it cancelled immediately. */
-	req->cancelled = true;
 
 	pkt = req->hdr.message;
 	pkt->srvid = srvid;

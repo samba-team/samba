@@ -16,8 +16,13 @@ void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *pr
 	printf("Message received on port %d : %s\n", (int)srvid, data.dptr);
 }
 
-void pnn_cb(int32_t status, uint32_t pnn, void *private_data)
+static void pnn_cb(struct ctdb_connection *ctdb,
+		   struct ctdb_request *req, void *private)
 {
+	int status;
+	uint32_t pnn;
+
+	status = ctdb_getpnn_recv(req, &pnn);
 	if (status != 0) {
 		printf("Error reading PNN\n");
 		return;
@@ -25,8 +30,13 @@ void pnn_cb(int32_t status, uint32_t pnn, void *private_data)
 	printf("status:%d pnn:%d\n", status, pnn);
 }
 
-void rm_cb(int status, uint32_t rm, void *private_data)
+static void rm_cb(struct ctdb_connection *ctdb,
+		  struct ctdb_request *req, void *private)
 {
+	int status;
+	uint32_t rm;
+
+	status = ctdb_getrecmaster_recv(req, &rm);
 	if (status != 0) {
 		printf("Error reading RECMASTER\n");
 		return;
@@ -35,7 +45,6 @@ void rm_cb(int status, uint32_t rm, void *private_data)
 	printf("GETRECMASTER ASYNC: status:%d recmaster:%d\n", status, rm);
 }
 
-
 /*
  * example on how to first read(non-existing recortds are implicitely created
  * on demand) a record and change it in the callback.
@@ -43,13 +52,17 @@ void rm_cb(int status, uint32_t rm, void *private_data)
  *
  * Pure read, or pure write are just special cases of this cycle.
  */
-void rrl_cb(int32_t status, struct ctdb_lock *lock, TDB_DATA outdata, void *private_data)
+static void rrl_cb(struct ctdb_connection *ctdb,
+		  struct ctdb_request *req, void *private)
 {
+	struct ctdb_lock *lock;
+	TDB_DATA outdata;
 	TDB_DATA data;
 	char tmp[256];
 
-	if (status != 0) {
-		printf("rrl_cb returned error: status %d\n", status);
+	lock = ctdb_readrecordlock_recv(private, req, &outdata);
+	if (!lock) {
+		printf("rrl_cb returned error\n");
 		return;
 	}
 
@@ -72,9 +85,13 @@ void rrl_cb(int32_t status, struct ctdb_lock *lock, TDB_DATA outdata, void *priv
 }
 
 static bool registered = false;
-void message_handler_cb(int status, void *private_data)
+void message_handler_cb(struct ctdb_connection *ctdb,
+			struct ctdb_request *req, void *private)
 {
-	printf("Message handler registered: %i\n", status);
+	if (ctdb_set_message_handler_recv(ctdb, req) != 0) {
+		err(1, "registering message");
+	}
+	printf("Message handler registered\n");
 	registered = true;
 }
 
@@ -94,7 +111,8 @@ int main(int argc, char *argv[])
 
 	pfd.fd = ctdb_get_fd(ctdb_connection);
 
-	handle = ctdb_set_message_handler_send(ctdb_connection, 55, message_handler_cb, msg_h, NULL);
+	handle = ctdb_set_message_handler_send(ctdb_connection, 55, msg_h,
+					       message_handler_cb, NULL);
 	if (handle == NULL) {
 		printf("Failed to register message port\n");
 		exit(10);

@@ -22,68 +22,56 @@
 #include <errno.h>
 #include <stdlib.h>
 
-/* FIXME: Find a way to share more code here. */
-struct ctdb_getrecmaster {
-	bool done;
-	int status;
-	uint32_t *recmaster;
-};
-
-static bool ctdb_service_flush(struct ctdb_connection *ctdb)
+/* On failure, frees req and returns NULL. */
+static struct ctdb_request *wait_for(struct ctdb_connection *ctdb,
+				     struct ctdb_request *req,
+				     bool *done)
 {
 	struct pollfd fds;
 
+	/* Pass through allocation failures. */
+	if (!req)
+		return NULL;
+
 	fds.fd = ctdb_get_fd(ctdb);
-	fds.events = ctdb_which_events(ctdb);
-	if (poll(&fds, 1, -1) < 0) {
-		/* Signalled is OK, other error is bad. */
-		return errno == EINTR;
+	while (!*done) {
+		fds.events = ctdb_which_events(ctdb);
+		if (poll(&fds, 1, -1) < 0) {
+			/* Signalled is OK, other error is bad. */
+			if (errno == EINTR)
+				continue;
+			ctdb_request_free(req);
+			return NULL;
+		}
+		if (ctdb_service(ctdb, fds.revents) < 0) {
+			ctdb_request_free(req);
+			return NULL;
+		}
 	}
-	return ctdb_service(ctdb, fds.revents) >= 0;
+	return req;
 }
 
-static void getrecmaster_done(int status, uint32_t recmaster, void *priv_data)
+static void set(struct ctdb_connection *ctdb,
+		struct ctdb_request *req, bool *done)
 {
-	struct ctdb_getrecmaster *grm = priv_data;
-	*grm->recmaster = recmaster;
-	grm->status = status;
-	grm->done = true;
+	*done = true;
 }
 
 int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 		      uint32_t destnode, uint32_t *recmaster)
 {
 	struct ctdb_request *req;
-	struct ctdb_getrecmaster grm;
+	bool done = false;
+	int ret = -1;
 
-	grm.done = false;
-	grm.recmaster = recmaster;
-	req = ctdb_getrecmaster_send(ctdb, destnode, getrecmaster_done, &grm);
-	if (!req)
-		return -1;
-
-	while (!grm.done) {
-		if (!ctdb_service_flush(ctdb)) {
-			ctdb_cancel(req);
-			return -1;
-		}
+	req = wait_for(ctdb,
+		       ctdb_getrecmaster_send(ctdb, destnode, set, &done),
+		       &done);
+	if (req != NULL) {
+		ret = ctdb_getrecmaster_recv(req, recmaster);
+		ctdb_request_free(req);
 	}
-	return grm.status;
-}
-
-struct ctdb_attachdb {
-	bool done;
-	int status;
-	struct ctdb_db *ctdb_db;
-};
-
-static void attachdb_sync_done(int status,
-			       struct ctdb_db *ctdb_db, void *private_data)
-{
-	struct ctdb_attachdb *atb = private_data;
-	atb->ctdb_db = ctdb_db;
-	atb->status = status;
-	atb->done = true;
+	return ret;
 }
 
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
@@ -91,21 +79,16 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			      uint32_t tdb_flags)
 {
 	struct ctdb_request *req;
-	struct ctdb_attachdb atb;
+	bool done = false;
+	struct ctdb_db *ret = NULL;
 
-	atb.done = false;
-	req = ctdb_attachdb_send(ctdb, name, persistent, tdb_flags,
-				 attachdb_sync_done, &atb);
-	if (!req)
-		return NULL;
-
-	while (!atb.done) {
-		if (!ctdb_service_flush(ctdb)) {
-			ctdb_cancel(req);
-			return NULL;
-		}
+	req = wait_for(ctdb,
+		       ctdb_attachdb_send(ctdb, name, persistent, tdb_flags,
+					  set, &done),
+		       &done);
+	if (req != NULL) {
+		ret = ctdb_attachdb_recv(req);
+		ctdb_request_free(req);
 	}
-	if (atb.status != 0)
-		return NULL;
-	return atb.ctdb_db;
+	return ret;
 }

@@ -5,12 +5,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctdb.h>
+#include <ctdb_protocol.h>
 
 struct message_handler_info;
 struct ctdb_reply_call;
 
 struct ctdb_request {
+	struct ctdb_connection *ctdb;
 	struct ctdb_request *next, *prev;
+	bool cancelled;
+
 	struct io_elem *io;
 	union {
 		struct ctdb_req_header *hdr;
@@ -18,17 +22,15 @@ struct ctdb_request {
 		struct ctdb_req_control *control;
 		struct ctdb_req_message *message;
 	} hdr;
-	bool cancelled;
-	union {
-		ctdb_getrecmaster_cb getrecmaster;
-		ctdb_getpnn_cb getpnn;
-		void (*register_srvid)(int, struct message_handler_info *);
-		void (*attachdb)(int, uint32_t id, struct ctdb_db *);
-		void (*getdbpath)(int, const char *, void *);
-		void (*nullfunc)(int, struct ctdb_reply_call *, void *);
-		void (*immediate)(struct ctdb_request *, void *);
-	} callback;
+
+	struct io_elem *reply;
+
+	ctdb_callback_t callback;
 	void *priv_data;
+
+	/* Extra per-request info. */
+	void (*extra_destructor)(struct ctdb_request *);
+	void *extra;
 };
 
 struct ctdb_connection {
@@ -53,11 +55,18 @@ struct ctdb_connection {
 };
 
 /* ctdb.c */
-struct ctdb_request *new_ctdb_request(size_t len);
+struct ctdb_request *new_ctdb_request(size_t len, ctdb_callback_t, void *);
 struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 					      uint32_t opcode,
 					      uint32_t destnode,
 					      const void *extra_data,
-					      size_t extra);
+					      size_t extra,
+					      ctdb_callback_t, void *);
 uint32_t new_reqid(struct ctdb_connection *ctdb);
+
+struct ctdb_reply_control *unpack_reply_control(struct ctdb_request *req,
+						enum ctdb_controls control);
+void ctdb_cancel_callback(struct ctdb_connection *ctdb,
+			  struct ctdb_request *req,
+			  void *unused);
 #endif /* _LIBCTDB_PRIVATE_H */
