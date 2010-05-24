@@ -2113,9 +2113,8 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_RidTypeArray *array;
-	size_t i;
+	unsigned int i, num_members;
 	struct dom_sid *members_as_sids;
-	size_t num_members;
 	struct dom_sid *dom_sid;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
@@ -2516,9 +2515,8 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
 	struct lsa_SidPtr *sids;
-	size_t i;
+	unsigned int i, num_members;
 	struct dom_sid *members;
-	size_t num_members;
 	NTSTATUS status;
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
@@ -2544,12 +2542,12 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_members; i++) {
-
 		sids[i].sid = dom_sid_dup(sids, &members[i]);
 		if (sids[i].sid == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
 	r->out.sids->num_sids = num_members;
 	r->out.sids->sids = sids;
 

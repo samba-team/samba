@@ -410,10 +410,11 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 			     TALLOC_CTX *mem_ctx,
 			     struct ldb_dn *dn,
 			     struct dom_sid **members_out,
-			     size_t *pnum_members)
+			     unsigned int *pnum_members)
 {
 	struct ldb_message *msg;
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct dom_sid *members;
 	struct ldb_message_element *member_el;
 	const char *attrs[] = { "member", NULL };
