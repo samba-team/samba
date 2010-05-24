@@ -23,6 +23,12 @@ check_if_healthy() {
                 exit 0
         }
 
+        [ -f "$STATEDIR/gpfsnoquorum" ] && {
+                logger No GPFS quorum. Node is UNHEALTHY
+                $CTDB_BASE/events.d/62.cnfs unhealthy "No GPFS quorum. Nodfe is UNHEALTHY."
+		exit 0
+	}
+
         logger All required GPFS resources are available. CNFS part is healthy.
         $CTDB_BASE/events.d/62.cnfs healthy
 }
@@ -82,8 +88,28 @@ case "$1" in
     # It checks that all required NFS filesystems are mounted 
     # and flags the node healthy if so.
     gpfsstartup)
+	# assume we always have quorum when starting
+	# we are only interested in the case when we explicitely
+	# lost quorum in an otherwise happy cluster
+        mkdir -p $STATEDIR
+        rm -f "$STATEDIR/gpfsnoquorum"
         logger "GPFS is is started."
         check_if_healthy
+        ;;
+
+
+    gpfsquorumreached)
+        mkdir -p $STATEDIR
+        rm -f "$STATEDIR/gpfsnoquorum"
+        logger "GPFS quorum has been reached."
+        check_if_healthy
+        ;;
+
+    gpfsquorumloss)
+        mkdir -p $STATEDIR
+        touch "$STATEDIR/gpfsnoquorum"
+        logger "GPFS quorum has been lost."
+        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS quorum was lost! Marking node as UNHEALTHY."
         ;;
 
 
