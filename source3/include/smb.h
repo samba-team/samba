@@ -197,30 +197,7 @@ typedef union unid_t {
 					|LOOKUP_NAME_WKN\
 					|LOOKUP_NAME_DOMAIN)
 
-enum id_mapping {
-	ID_UNKNOWN = 0,
-	ID_MAPPED,
-	ID_UNMAPPED,
-	ID_EXPIRED
-};
-
-enum id_type {
-	ID_TYPE_NOT_SPECIFIED = 0,
-	ID_TYPE_UID,
-	ID_TYPE_GID
-};
-
-struct unixid {
-	uint32_t id;
-	enum id_type type;
-};
-
-struct id_map {
-	struct dom_sid *sid;
-	struct unixid xid;
-	enum id_mapping status;
-};
-
+#include "librpc/gen_ndr/idmap.h"
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "librpc/gen_ndr/dcerpc.h"
