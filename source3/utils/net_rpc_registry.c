@@ -1038,7 +1038,8 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		return false;
 	}
 
-	if ( !(values = TALLOC_ZERO_P( subkeys, struct regval_ctr )) ) {
+	werr = regval_ctr_init(subkeys, &values);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
 		TALLOC_FREE(subkeys);
 		return false;
