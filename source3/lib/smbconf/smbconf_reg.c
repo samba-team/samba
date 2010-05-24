@@ -21,6 +21,7 @@
 #include "lib/smbconf/smbconf_private.h"
 #include "registry.h"
 #include "registry/reg_backend_db.h"
+#include "registry/reg_util_token.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
 

@@ -67,8 +67,6 @@ WERROR registry_init_full(void);
 
 /* The following definitions come from registry/reg_init_smbconf.c  */
 
-NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
-				     NT_USER_TOKEN **ptoken);
 WERROR registry_init_smbconf(const char *keyname);
 
 /* The following definitions come from lib/util_reg_api.c  */

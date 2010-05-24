@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "reg_util_token.h"
 
 /*
  * create a fake token just with enough rights to
