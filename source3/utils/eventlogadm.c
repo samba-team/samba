@@ -26,6 +26,7 @@
 #include "lib/eventlog/eventlog.h"
 #include "registry.h"
 #include "registry/reg_backend_db.h"
+#include "registry/reg_eventlog.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_UTIL_EVENTLOG

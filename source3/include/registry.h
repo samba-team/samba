@@ -56,12 +56,6 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_delete_path(const struct nt_user_token *token,
 		       const char *orig_path);
 
-/* The following definitions come from registry/reg_eventlog.c  */
-
-bool eventlog_init_keys(void);
-bool eventlog_add_source( const char *eventlog, const char *sourcename,
-			  const char *messagefile );
-
 /* The following definitions come from registry/reg_init_basic.c  */
 
 WERROR registry_init_common(void);

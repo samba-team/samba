@@ -25,6 +25,7 @@
 #include "reg_cachehook.h"
 #include "reg_backend_db.h"
 #include "reg_perfcount.h"
+#include "reg_eventlog.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
