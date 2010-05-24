@@ -635,23 +635,60 @@ Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 re_header = re.compile('#include[ \t]*"([^"]+)"', re.I | re.M)
 class header_task(Task.Task):
+    """
+    The public headers (the one installed on the system) have both
+    different paths and contents, so the rename is not enough.
+
+    Intermediate .inst.h files are created because path manipulation
+    may be slow. The substitution is thus performed only once.
+    """
+
     name = 'header'
     color = 'PINK'
     vars = ['INCLUDEDIR', 'HEADER_DEPS']
+
     def run(self):
         txt = self.inputs[0].read(self.env)
 
+        # hard-coded string, but only present in samba4 (I promise, you won't feel a thing)
         txt = txt.replace('#if _SAMBA_BUILD_ == 4', '#if 1\n')
 
-        themap = self.generator.bld.subst_table
+        # use a regexp to substitute the #include lines in the files
+        map = self.generator.bld.hnodemap
+        dirnodes = self.generator.bld.hnodedirs
         def repl(m):
             if m.group(1):
                 s = m.group(1)
-                return "#include <%s>" % themap.get(s, s)
+
+                # pokemon headers: gotta catch'em all!
+                fin = s
+                if s.startswith('bin/default'):
+                    node = self.generator.bld.srcnode.find_resource(s.replace('bin/default/', ''))
+                    if not node:
+                        Logs.warn('could not find the public header for %r' % s)
+                    elif node.id in map:
+                        fin = map[node.id]
+                    else:
+                        Logs.warn('could not find the public header replacement for build header %r' % s)
+                else:
+                    # this part is more difficult since the path may be relative to anything
+                    for dirnode in dirnodes:
+                        node = dirnode.find_resource(s)
+                        if node:
+                             if node.id in map:
+                                 fin = map[node.id]
+                                 break
+                             else:
+                                 Logs.warn('could not find the public header replacement for source header %r %r' % (s, node))
+                    else:
+                        Logs.warn('-> could not find the public header for %r' % s)
+
+                return "#include <%s>" % fin
             return ''
 
         txt = re_header.sub(repl, txt)
 
+        # and write the output file
         f = None
         try:
             f = open(self.outputs[0].abspath(self.env), 'w')
@@ -660,42 +697,30 @@ class header_task(Task.Task):
             if f:
                 f.close()
 
-def init_subst(bld):
-    """
-    initialize the header substitution table
-    for now use the file headermap.txt but in the future we will compute the paths properly
-    """
-
-    if getattr(bld, 'subst_table', None):
-        return bld.subst_table_h
-
-    node = bld.srcnode.find_resource("source4/headermap.txt")
-    if not node:
-        bld.subst_table = {}
-        bld.subst_table_h = 0
-        return {}
-    lines = node.read(None)
-
-    lines = [x.strip().split(': ') for x in lines.split('\n') if x.rfind(': ') > -1]
-    bld.subst_table = dict(lines)
-
-    # pidl file replacement (all of this is temporary, one step at a time)
-    keyz = list(bld.subst_table.keys())
-    for k in keyz:
-        bld.subst_table['bin/default/' + k] = bld.subst_table[k]
-
-    tp = tuple(bld.subst_table.keys())
-    bld.subst_table_h = hash(tp)
-    return bld.subst_table_h
-
 @TaskGen.feature('pubh')
 def make_public_headers(self):
+    """
+    collect the public headers to process and to install, then
+    create the substitutions (name and contents)
+    """
+
     if not self.bld.is_install:
         # install time only (lazy)
         return
 
-    self.env['HEADER_DEPS'] = init_subst(self.bld)
-    # adds a dependency and trigger a rebuild if the dict changes
+    # keep two variables
+    #    hnodedirs: list of folders for searching the headers
+    #    hnodemap: node ids and replacement string (node objects are unique)
+    try:
+        self.bld.hnodedirs.append(self.path)
+    except AttributeError:
+        self.bld.hnodemap = {}
+        self.bld.hnodedirs = [self.bld.srcnode, self.path]
+
+        for k in 'source4 source4/include lib/talloc lib/tevent/ source4/lib/ldb/include/'.split():
+            node = self.bld.srcnode.find_dir(k)
+            if node:
+                self.bld.hnodedirs.append(node)
 
     header_path = getattr(self, 'header_path', None) or ''
 
@@ -725,6 +750,7 @@ def make_public_headers(self):
             dest = s[1]
 
         inn = self.path.find_resource(name)
+
         if not inn:
             raise ValueError("could not find the public header %r in %r" % (name, self.path))
         out = inn.change_ext('.inst.h')
@@ -737,8 +763,17 @@ def make_public_headers(self):
             inst_path = inst_path + '/'
         inst_path = inst_path + dest
 
-        #print("going to install the headers", inst_path, out)
         self.bld.install_as('${INCLUDEDIR}/%s' % inst_path, out, self.env)
+
+        self.bld.hnodemap[inn.id] = inst_path
+
+    # create a hash (not md5) to make sure the headers are re-created if something changes
+    val = 0
+    lst = list(self.bld.hnodemap.keys())
+    lst.sort()
+    for k in lst:
+        val = hash((val, k, self.bld.hnodemap[k]))
+    self.bld.env.HEADER_DEPS = val
 
 def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     '''install some headers
