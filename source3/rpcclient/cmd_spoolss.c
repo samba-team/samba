@@ -729,25 +729,25 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-static void display_reg_value(struct regval_blob value)
+static void display_reg_value(struct regval_blob *value)
 {
 	const char *text = NULL;
 	DATA_BLOB blob;
 
-	switch(value.type) {
+	switch(regval_type(value)) {
 	case REG_DWORD:
-		printf("%s: REG_DWORD: 0x%08x\n", value.valuename,
-		       *((uint32_t *) value.data_p));
+		printf("%s: REG_DWORD: 0x%08x\n", regval_name(value),
+		       *((uint32_t *) regval_data_p(value)));
 		break;
 	case REG_SZ:
-		blob = data_blob_const(value.data_p, value.size);
+		blob = data_blob_const(regval_data_p(value), regval_size(value));
 		pull_reg_sz(talloc_tos(), &blob, &text);
-		printf("%s: REG_SZ: %s\n", value.valuename, text ? text : "");
+		printf("%s: REG_SZ: %s\n", regval_name(value), text ? text : "");
 		break;
 	case REG_BINARY: {
-		char *hex = hex_encode_talloc(NULL, value.data_p, value.size);
+		char *hex = hex_encode_talloc(NULL, regval_data_p(value), regval_size(value));
 		size_t i, len;
-		printf("%s: REG_BINARY:", value.valuename);
+		printf("%s: REG_BINARY:", regval_name(value));
 		len = strlen(hex);
 		for (i=0; i<len; i++) {
 			if (hex[i] == '\0') {
@@ -765,14 +765,14 @@ static void display_reg_value(struct regval_blob value)
 	case REG_MULTI_SZ: {
 		uint32_t i;
 		const char **values;
-		blob = data_blob_const(value.data_p, value.size);
+		blob = data_blob_const(regval_data_p(value), regval_size(value));
 
 		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
 
-		printf("%s: REG_MULTI_SZ: \n", value.valuename);
+		printf("%s: REG_MULTI_SZ: \n", regval_name(value));
 		for (i=0; values[i] != NULL; i++) {
 			d_printf("%s\n", values[i]);
 		}
@@ -780,7 +780,7 @@ static void display_reg_value(struct regval_blob value)
 		break;
 	}
 	default:
-		printf("%s: unknown type %d\n", value.valuename, value.type);
+		printf("%s: unknown type %d\n", regval_name(value), regval_type(value));
 	}
 
 }
@@ -2900,12 +2900,20 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 							&data_needed,
 							&result);
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
-			struct regval_blob v;
-			fstrcpy(v.valuename, value_name);
-			v.type = type;
-			v.size = data_offered;
-			v.data_p = data;
+			struct regval_blob *v;
+
+			v = regval_compose(talloc_tos(),
+					   value_name,
+					   type,
+					   data,
+					   data_offered);
+			if (v == NULL) {
+				result = WERR_NOMEM;
+				goto done;
+			}
+
 			display_reg_value(v);
+			talloc_free(v);
 		}
 	}
 
