@@ -453,7 +453,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
  **********************************************************************/
 
 int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
-                        const char *data_p, size_t size)
+                        const uint8 *data_p, size_t size)
 {
 	if ( !name )
 		return ctr->num_values;
@@ -503,7 +503,7 @@ int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char 
 	}
 
 	return regval_ctr_addvalue(ctr, name, REG_SZ,
-				   (const char *)blob.data,
+				   (const uint8 *)blob.data,
 				   blob.length);
 }
 
@@ -520,7 +520,7 @@ int regval_ctr_addvalue_multi_sz(struct regval_ctr *ctr, const char *name, const
 	}
 
 	return regval_ctr_addvalue(ctr, name, REG_MULTI_SZ,
-				   (const char *)blob.data,
+				   (const uint8 *)blob.data,
 				   blob.length);
 }
 
@@ -532,7 +532,7 @@ int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val)
 {
 	if ( val ) {
 		regval_ctr_addvalue(ctr, val->valuename, val->type,
-				    (char *)val->data_p, val->size);
+				    (uint8 *)val->data_p, val->size);
 	}
 
 	return ctr->num_values;
