@@ -56,28 +56,6 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_delete_path(const struct nt_user_token *token,
 		       const char *orig_path);
 
-/* The following definitions come from registry/reg_dispatcher.c  */
-
-bool store_reg_keys(struct registry_key_handle *key,
-		    struct regsubkey_ctr *subkeys);
-bool store_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
-WERROR create_reg_subkey(struct registry_key_handle *key, const char *subkey);
-WERROR delete_reg_subkey(struct registry_key_handle *key, const char *subkey);
-int fetch_reg_keys(struct registry_key_handle *key,
-		   struct regsubkey_ctr *subkey_ctr);
-int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
-bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
-			 uint32 *granted,
-			 const struct nt_user_token *token);
-WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, struct registry_key_handle *key,
-			  struct security_descriptor **psecdesc);
-WERROR regkey_set_secdesc(struct registry_key_handle *key,
-			  struct security_descriptor *psecdesc);
-bool reg_subkeys_need_update(struct registry_key_handle *key,
-			     struct regsubkey_ctr *subkeys);
-bool reg_values_need_update(struct registry_key_handle *key,
-			    struct regval_ctr *values);
-
 /* The following definitions come from registry/reg_eventlog.c  */
 
 bool eventlog_init_keys(void);
