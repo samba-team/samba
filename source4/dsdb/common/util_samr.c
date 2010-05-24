@@ -476,13 +476,13 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 NTSTATUS dsdb_lookup_rids(struct ldb_context *ldb,
 			  TALLOC_CTX *mem_ctx,
 			  const struct dom_sid *domain_sid,
-			  int num_rids,
+			  unsigned int num_rids,
 			  uint32_t *rids,
 			  const char **names,
 			  enum lsa_SidType *lsa_attrs)
 {
 	const char *attrs[] = { "sAMAccountType", "sAMAccountName", NULL };
-	int i, num_mapped;
+	unsigned int i, num_mapped;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
