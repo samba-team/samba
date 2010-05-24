@@ -55,6 +55,7 @@ static int net_gpo_list_all(struct net_context *ctx, int argc, const char **argv
 	rv = gp_list_all_gpos(gp_ctx, &gpo);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to list all GPO's: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -112,6 +113,7 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 	rv = gp_get_gpo_info(gp_ctx, argv[0], &gpo);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to get GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -169,6 +171,7 @@ static int net_gpo_link_get(struct net_context *ctx, int argc, const char **argv
 	rv = gp_get_gplinks(gp_ctx, argv[0], &links);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to get gplinks: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -372,6 +375,7 @@ static int net_gpo_link_del(struct net_context *ctx, int argc, const char **argv
 	status = gp_del_gplink(gp_ctx, argv[0], argv[1]);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to delete gplink: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 	d_printf("Deleted gplink.\nCurrent Group Policy links:\n\n");
@@ -409,6 +413,7 @@ static int net_gpo_inheritance_get(struct net_context *ctx, int argc, const char
 	status = gp_get_inheritance(gp_ctx, argv[0], &inheritance);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to set GPO link on container: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -456,6 +461,7 @@ static int net_gpo_inheritance_set(struct net_context *ctx, int argc, const char
 	status = gp_set_inheritance(gp_ctx, argv[0], inheritance);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to set GPO link on container: %s\n", get_friendly_nt_error_msg(status)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -492,12 +498,14 @@ static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 	rv = gp_get_gpo_info(gp_ctx, argv[0], &gpo);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to get GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
 	rv = gp_fetch_gpt(gp_ctx, gpo, &path);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to fetch GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 	d_printf("%s\n", path);
@@ -530,6 +538,7 @@ static int net_gpo_create(struct net_context *ctx, int argc, const char **argv)
 	rv = gp_create_gpo(gp_ctx, argv[0], &gpo);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to create GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
@@ -564,12 +573,14 @@ static int net_gpo_set_acl(struct net_context *ctx, int argc, const char **argv)
 	sd = sddl_decode(gp_ctx, argv[1], samdb_domain_sid(gp_ctx->ldb_ctx));
 	if (sd == NULL) {
 		DEBUG(0, ("Invalid SDDL\n"));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
 	rv = gp_set_acl(gp_ctx, argv[0], sd);
 	if (!NT_STATUS_IS_OK(rv)) {
 		DEBUG(0, ("Failed to set ACL on GPO: %s\n", get_friendly_nt_error_msg(rv)));
+		talloc_free(gp_ctx);
 		return 1;
 	}
 
