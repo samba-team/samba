@@ -424,7 +424,7 @@ bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value)
 
 struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint16 type,
-				   const char *data_p, size_t size)
+				   const uint8 *data_p, size_t size)
 {
 	struct regval_blob *regval = TALLOC_P(ctx, struct regval_blob);
 

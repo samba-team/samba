@@ -190,7 +190,7 @@ struct regval_blob* regval_ctr_specific_value(struct regval_ctr *ctr,
 bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value);
 struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint16 type,
-				   const char *data_p, size_t size);
+				   const uint8 *data_p, size_t size);
 int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
 			const char *data_p, size_t size);
 int regval_ctr_addvalue_sz(struct regval_ctr *ctr, const char *name, const char *data);
