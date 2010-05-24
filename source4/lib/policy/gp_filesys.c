@@ -27,15 +27,25 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 #define GP_MAX_DEPTH 25
 
+struct gp_file_entry {
+	bool is_directory;
+	const char *rel_path;
+};
+struct gp_file_list {
+	uint32_t num_files;
+	struct gp_file_entry *files;
+};
 struct gp_list_state {
-	struct gp_context *gp_ctx;
+	struct smbcli_tree *tree;
 	uint8_t depth;
 	const char *cur_rel_path;
 	const char *share_path;
-	const char *local_path;
+
+	struct gp_file_list list;
 };
 
 static NTSTATUS gp_do_list(const char *, struct gp_list_state *);
@@ -43,93 +53,69 @@ static NTSTATUS gp_do_list(const char *, struct gp_list_state *);
 /* Create a temporary policy directory */
 static const char *gp_tmpdir(TALLOC_CTX *mem_ctx)
 {
-	const char *gp_dir = talloc_asprintf(mem_ctx, "%s/policy", tmpdir());
+	char *gp_dir = talloc_asprintf(mem_ctx, "%s/policy", tmpdir());
 	struct stat st;
+	int rv;
 
 	if (gp_dir == NULL) return NULL;
 
 	if (stat(gp_dir, &st) != 0) {
-		mkdir(gp_dir, 0755);
+		rv = mkdir(gp_dir, 0755);
+		if (rv < 0) {
+			DEBUG(0, ("Failed to create directory %s: %s\n",
+					gp_dir, strerror(errno)));
+			talloc_free(gp_dir);
+			return NULL;
+		}
 	}
 
 	return gp_dir;
 }
 
 /* This function is called by the smbcli_list function */
-static void gp_list_helper (struct clilist_file_info *info, const char *mask, void *list_state_ptr)
+static void gp_list_helper (struct clilist_file_info *info, const char *mask,
+                            void *list_state_ptr)
 {
 	struct gp_list_state *state = list_state_ptr;
-	const char *rel_path, *full_remote_path;
-	char *local_rel_path, *full_local_path;
-	unsigned int i;
-	int fh_remote, fh_local;
-	uint8_t *buf;
-	size_t nread = 0;
-	size_t buf_size = 1024;
+	const char *rel_path;
 
-	/* Get local path by replacing backslashes with slashes */
-	local_rel_path = talloc_strdup(state, state->cur_rel_path);
-	if (local_rel_path == NULL) return;
-
-	for (i = 0; local_rel_path[i] != '\0'; i++) {
-		if (local_rel_path[i] == '\\') {
-			local_rel_path[i] = '/';
-		}
+	/* Ignore . and .. directory entries */
+	if (strcmp(info->name, ".") == 0 || strcmp(info->name, "..") == 0) {
+		return;
 	}
-	full_local_path = talloc_asprintf(state, "%s%s/%s", state->local_path, local_rel_path, info->name);
-	if (full_local_path == NULL) return;
+
+	/* Safety check against ../.. in filenames which may occur on non-POSIX
+	 * platforms */
+	if (strstr(info->name, "../")) {
+		return;
+	}
+
+	rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
+	if (rel_path == NULL) return;
+
+	/* Append entry to file list */
+	state->list.files = talloc_realloc(state, state->list.files,
+			struct gp_file_entry,
+			state->list.num_files + 1);
+	if (state->list.files == NULL) return;
+
+	state->list.files[state->list.num_files].rel_path = rel_path;
 
 	/* Directory */
 	if (info->attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		if (state->depth >= GP_MAX_DEPTH)
-			return;
-		if (strcmp(info->name, ".") == 0 || strcmp(info->name, "..") == 0)
-			return;
+		state->list.files[state->list.num_files].is_directory = true;
+		state->list.num_files++;
 
-		mkdir(full_local_path, 0755);
-
-		rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
-		if (rel_path == NULL) return;
-
-		/* Recurse into this directory */
-		gp_do_list(rel_path, state);
-		return;
-	}
-
-	full_remote_path = talloc_asprintf(state, "%s%s\\%s", state->share_path, state->cur_rel_path, info->name);
-	if (full_remote_path == NULL) return;
-
-	/* Open the remote file */
-	fh_remote = smbcli_open(state->gp_ctx->cli->tree, full_remote_path, O_RDONLY, DENY_NONE);
-	if (fh_remote == -1) {
-		DEBUG(0, ("Failed to open remote file: %s\n", full_remote_path));
-		return;
-	}
-
-	/* Open the local file */
-	fh_local = open(full_local_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fh_local == -1) {
-		DEBUG(0, ("Failed to open local file: %s\n", full_local_path));
-		return;
-	}
-
-	/* Copy the contents of the file */
-	buf = talloc_zero_array(state, uint8_t, buf_size);
-	if (buf == NULL) return;
-	while (1) {
-		int n = smbcli_read(state->gp_ctx->cli->tree, fh_remote, buf, nread, buf_size);
-		if (n <= 0) {
-			break;
+		/* Recurse into this directory if the depth is below the maximum */
+		if (state->depth < GP_MAX_DEPTH) {
+			gp_do_list(rel_path, state);
 		}
-		if (write(fh_local, buf, n) != n) {
-			DEBUG(0, ("Short write while copying file.\n"));
-			return;
-		}
-		nread += n;
+
+		return;
 	}
-	/* Close the files */
-	smbcli_close(state->gp_ctx->cli->tree, fh_remote);
-	close(fh_local);
+
+	state->list.files[state->list.num_files].is_directory = false;
+	state->list.num_files++;
 
 	return;
 }
@@ -137,11 +123,12 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 static NTSTATUS gp_do_list (const char *rel_path, struct gp_list_state *state)
 {
 	uint16_t attributes;
-	int success;
+	int rv;
 	char *mask;
 	const char *old_rel_path;
 
-	attributes = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
+	attributes = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN |
+	             FILE_ATTRIBUTE_DIRECTORY;
 
 	/* Update the relative paths, while buffering the parent */
 	old_rel_path = state->cur_rel_path;
@@ -151,14 +138,14 @@ static NTSTATUS gp_do_list (const char *rel_path, struct gp_list_state *state)
 	/* Get the current mask */
 	mask = talloc_asprintf(state, "%s%s\\*", state->share_path, rel_path);
 	NT_STATUS_HAVE_NO_MEMORY(mask);
-	success = smbcli_list(state->gp_ctx->cli->tree, mask, attributes, gp_list_helper, state);
+	rv = smbcli_list(state->tree, mask, attributes, gp_list_helper, state);
 	talloc_free(mask);
 
 	/* Go back to the state of the parent */
 	state->cur_rel_path = old_rel_path;
 	state->depth--;
 
-	if (!success)
+	if (rv == -1)
 		return NT_STATUS_UNSUCCESSFUL;
 
 	return NT_STATUS_OK;
@@ -212,18 +199,139 @@ static char * gp_get_share_path(TALLOC_CTX *mem_ctx, const char *file_sys_path)
 	return NULL;
 }
 
+static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
+                             const char *local_dst)
+{
+	int fh_remote, fh_local;
+	uint8_t *buf;
+	size_t nread = 0;
+	size_t buf_size = 1024;
+	size_t file_size;
+	uint16_t attr;
 
-NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **ret_local_path)
+	/* Open the remote file */
+	fh_remote = smbcli_open(tree, remote_src, O_RDONLY, DENY_NONE);
+	if (fh_remote == -1) {
+		DEBUG(0, ("Failed to open remote file: %s\n", remote_src));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Open the local file */
+	fh_local = open(local_dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fh_local == -1) {
+		DEBUG(0, ("Failed to open local file: %s\n", local_dst));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get the remote file size for error checking */
+	if (NT_STATUS_IS_ERR(smbcli_qfileinfo(tree, fh_remote,
+				&attr, &file_size, NULL, NULL, NULL, NULL, NULL)) &&
+			NT_STATUS_IS_ERR(smbcli_getattrE(tree, fh_remote,
+				&attr, &file_size, NULL, NULL, NULL))) {
+		DEBUG(0, ("Failed to get remote file size: %s\n", smbcli_errstr(tree)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	buf = talloc_zero_array(tree, uint8_t, buf_size);
+	NT_STATUS_HAVE_NO_MEMORY(buf);
+
+	/* Copy the contents of the file */
+	while (1) {
+		int n = smbcli_read(tree, fh_remote, buf, nread, buf_size);
+
+		if (n <= 0) {
+			break;
+		}
+
+		if (write(fh_local, buf, n) != n) {
+			DEBUG(0, ("Short write while copying file.\n"));
+			talloc_free(buf);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		nread += n;
+	}
+
+	/* Bytes read should match the file size, or the copy was incomplete */
+	if (nread != file_size) {
+		DEBUG(0, ("Remote/local file size mismatch after copying file: "
+		          "%s (remote %ld, local %ld).\n",
+		          remote_src, file_size, nread));
+		talloc_free(buf);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Close the files */
+	smbcli_close(tree, fh_remote);
+	close(fh_local);
+
+	talloc_free(buf);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gp_get_files(struct smbcli_tree *tree, const char *share_path,
+                             const char *local_path, struct gp_file_list *list)
+{
+	uint32_t i;
+	int rv;
+	char *local_rel_path, *full_local_path, *full_remote_path;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+
+	mem_ctx = talloc_new(tree);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	for (i = 0; i < list->num_files; i++) {
+
+		/* Get local path by replacing backslashes with slashes */
+		local_rel_path = talloc_strdup(mem_ctx, list->files[i].rel_path);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(local_rel_path, mem_ctx);
+		string_replace(local_rel_path, '\\', '/');
+
+		full_local_path = talloc_asprintf(mem_ctx, "%s%s", local_path,
+				local_rel_path);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(full_local_path, mem_ctx);
+
+		/* If the entry is a directory, create it. */
+		if (list->files[i].is_directory == true) {
+			rv = mkdir(full_local_path, 0755);
+			if (rv < 0) {
+				DEBUG(0, ("Failed to create directory %s: %s\n",
+						full_local_path, strerror(errno)));
+				talloc_free(mem_ctx);
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			continue;
+		}
+
+		full_remote_path = talloc_asprintf(mem_ctx, "%s%s", share_path,
+				list->files[i].rel_path);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(full_remote_path, mem_ctx);
+
+		/* Get the file */
+		status = gp_get_file(tree, full_remote_path, full_local_path);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Error getting file.\n"));
+			talloc_free(mem_ctx);
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo,
+                       const char **ret_local_path)
 {
 	TALLOC_CTX *mem_ctx;
 	struct gp_list_state *state;
 	NTSTATUS status;
 	struct stat st;
 	int rv;
+	const char *local_path, *share_path;
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
-
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	if (gp_ctx->cli == NULL) {
 		status = gp_cli_connect(gp_ctx);
@@ -234,19 +342,24 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 		}
 	}
 
+	/* Get the remote path to copy from */
+	share_path = gp_get_share_path(mem_ctx, gpo->file_sys_path);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(share_path, mem_ctx);
+
+	/* Get the local path to copy to */
+	local_path = talloc_asprintf(gp_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(local_path, mem_ctx);
+
 	/* Prepare the state structure */
 	state = talloc_zero(mem_ctx, struct gp_list_state);
-	NT_STATUS_HAVE_NO_MEMORY(state);
-	state->gp_ctx = gp_ctx;
-	state->local_path = talloc_asprintf(mem_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
-	NT_STATUS_HAVE_NO_MEMORY(state->local_path);
-	state->share_path = gp_get_share_path(mem_ctx, gpo->file_sys_path);
-	NT_STATUS_HAVE_NO_MEMORY(state->share_path);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(state, mem_ctx);
 
+	state->tree = gp_ctx->cli->tree;
+	state->share_path = share_path;
 
 	/* Create the GPO dir if it does not exist */
-	if (stat(state->local_path, &st) != 0) {
-		rv = mkdir(state->local_path, 0755);
+	if (stat(local_path, &st) != 0) {
+		rv = mkdir(local_path, 0755);
 		if (rv < 0) {
 			DEBUG(0, ("Could not create local path\n"));
 			talloc_free(mem_ctx);
@@ -254,7 +367,7 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 		}
 	}
 
-	/* Copy the files */
+	/* Get the file list */
 	status = gp_do_list("", state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not list GPO files on remote server\n"));
@@ -262,14 +375,25 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 		return status;
 	}
 
+	/* If the list has no entries there is a problem. */
+	if (state->list.num_files == 0) {
+		DEBUG(0, ("File list is has no entries. Is the GPT directory empty?\n"));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Fetch the files */
+	status = gp_get_files(gp_ctx->cli->tree, share_path, local_path, &state->list);
+
 	/* Return the local path to the gpo */
-	*ret_local_path = state->local_path;
+	*ret_local_path = local_path;
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_path, const char *remote_path, int depth)
+static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_path,
+                                const char *remote_path, int depth)
 {
 	DIR *dir;
 	struct dirent *dirent;
@@ -281,38 +405,53 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 
 	dir = opendir(local_path);
 	while ((dirent = readdir(dir)) != NULL) {
-		if (strcmp(dirent->d_name, ".") == 0 || strcmp(dirent->d_name, "..") == 0) {
+		if (strcmp(dirent->d_name, ".") == 0 ||
+				strcmp(dirent->d_name, "..") == 0) {
 			continue;
 		}
 
-		entry_local_path = talloc_asprintf(gp_ctx, "%s/%s", local_path, dirent->d_name);
+		entry_local_path = talloc_asprintf(gp_ctx, "%s/%s", local_path,
+		                                   dirent->d_name);
 		NT_STATUS_HAVE_NO_MEMORY(entry_local_path);
-		entry_remote_path = talloc_asprintf(gp_ctx, "%s\\%s", remote_path, dirent->d_name);
+
+		entry_remote_path = talloc_asprintf(gp_ctx, "%s\\%s",
+		                                    remote_path, dirent->d_name);
 		NT_STATUS_HAVE_NO_MEMORY(entry_remote_path);
+
 		if (dirent->d_type == DT_DIR) {
-			DEBUG(6, ("Pushing directory %s to %s on sysvol\n", entry_local_path, entry_remote_path));
+			DEBUG(6, ("Pushing directory %s to %s on sysvol\n",
+			          entry_local_path, entry_remote_path));
 			smbcli_mkdir(gp_ctx->cli->tree, entry_remote_path);
-			if (depth < GP_MAX_DEPTH)
-				push_recursive(gp_ctx, entry_local_path, entry_remote_path, depth+1);
+			if (depth < GP_MAX_DEPTH) {
+				push_recursive(gp_ctx, entry_local_path,
+				               entry_remote_path, depth+1);
+			}
 		} else {
-			DEBUG(6, ("Pushing file %s to %s on sysvol\n", entry_local_path, entry_remote_path));
-			remote_fd = smbcli_open(gp_ctx->cli->tree, entry_remote_path, O_WRONLY | O_CREAT, 0);
+			DEBUG(6, ("Pushing file %s to %s on sysvol\n",
+			          entry_local_path, entry_remote_path));
+			remote_fd = smbcli_open(gp_ctx->cli->tree,
+			                        entry_remote_path,
+			                        O_WRONLY | O_CREAT,
+			                        0);
 			if (remote_fd < 0) {
 				talloc_free(entry_local_path);
 				talloc_free(entry_remote_path);
-				DEBUG(0, ("Failed to create remote file: %s\n", entry_remote_path));
+				DEBUG(0, ("Failed to create remote file: %s\n",
+				          entry_remote_path));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			local_fd = open(entry_local_path, O_RDONLY);
 			if (local_fd < 0) {
 				talloc_free(entry_local_path);
 				talloc_free(entry_remote_path);
-				DEBUG(0, ("Failed to open local file: %s\n", entry_local_path));
+				DEBUG(0, ("Failed to open local file: %s\n",
+				          entry_local_path));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			total_read = 0;
 			while ((nread = read(local_fd, &buf, sizeof(buf)))) {
-				smbcli_write(gp_ctx->cli->tree, remote_fd, 0, &buf, total_read, nread);
+				smbcli_write(gp_ctx->cli->tree, remote_fd, 0,
+						&buf, total_read, nread);
 				total_read += nread;
 			}
 
@@ -329,7 +468,8 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 
 
 
-NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path, const char *file_sys_path)
+NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path,
+                     const char *file_sys_path)
 {
 	NTSTATUS status;
 	char *share_path;
@@ -353,7 +493,8 @@ NTSTATUS gp_push_gpt(struct gp_context *gp_ctx, const char *local_path, const ch
 	return status;
 }
 
-NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *file_sys_path)
+NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name,
+                       const char *file_sys_path)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *tmp_dir, *policy_dir, *tmp_str;
@@ -429,7 +570,9 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_object *gpo, struct security_descriptor *sd)
+NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx,
+                                        struct gp_object *gpo,
+                                        struct security_descriptor *sd)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -457,7 +600,8 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_obj
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	                               NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
@@ -473,7 +617,10 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_obj
 	/* Set the security descriptor on the directory */
 	fileinfo.generic.level = RAW_FILEINFO_SEC_DESC;
 	fileinfo.set_secdesc.in.file.fnum = io.ntcreatex.out.file.fnum;
-	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_PROTECTED_DACL | SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_PROTECTED_DACL |
+	                                        SECINFO_OWNER |
+	                                        SECINFO_GROUP |
+	                                        SECINFO_DACL;
 	fileinfo.set_secdesc.in.sd = sd;
 	status = smb_raw_setfileinfo(gp_ctx->cli->tree, &fileinfo);
 	if (!NT_STATUS_IS_OK(status)) {
