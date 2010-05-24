@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "registry.h"
 #include "registry/reg_perfcount.h"
+#include "registry/reg_util_marshalling.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

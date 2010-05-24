@@ -69,14 +69,4 @@ WERROR registry_init_full(void);
 
 WERROR registry_init_smbconf(const char *keyname);
 
-/* The following definitions come from lib/util_reg_api.c  */
-
-WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
-			   struct registry_value **pvalue,
-			   enum winreg_Type type, uint8 *data,
-			   uint32 size, uint32 length);
-WERROR registry_push_value(TALLOC_CTX *mem_ctx,
-			   const struct registry_value *value,
-			   DATA_BLOB *presult);
-
 #endif /* _REGISTRY_H */
