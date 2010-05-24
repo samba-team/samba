@@ -218,7 +218,8 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 			id_type = "ID_TYPE_GID";
 			break;
 		default:
-			DEBUG(1, ("unixid->type must be type gid or uid\n"));
+			DEBUG(1, ("unixid->type must be type gid or uid (got %u) for lookup with id %lu\n",
+				  (unsigned)unixid->type, (unsigned long)unixid->id));
 			status = NT_STATUS_NONE_MAPPED;
 			goto failed;
 	}
