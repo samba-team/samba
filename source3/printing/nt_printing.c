@@ -2897,6 +2897,7 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
+	WERROR werr;
 
 	if ( !name || !data )
 		return -1;
@@ -2916,8 +2917,10 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 
 	data->keys[key_index].name = talloc_strdup( data, name );
 
-	if ( !(data->keys[key_index].values = TALLOC_ZERO_P( data, struct regval_ctr )) )
+	werr = regval_ctr_init(data, &(data->keys[key_index].values));
+	if (!W_ERROR_IS_OK(werr)) {
 		return -1;
+	}
 
 	data->num_keys++;
 
