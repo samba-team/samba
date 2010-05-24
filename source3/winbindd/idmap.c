@@ -428,6 +428,10 @@ fail:
 
 static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 {
+	DEBUG(10, ("idmap_init_passdb_domain: calling static_init_idmap\n"));
+
+	static_init_idmap;
+
 	if (passdb_idmap_domain != NULL) {
 		return passdb_idmap_domain;
 	}
