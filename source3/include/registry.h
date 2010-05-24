@@ -1,8 +1,6 @@
 #ifndef _REGISTRY_H
 #define _REGISTRY_H
 
-#include "reg_objects.h"
-
 /*
  * A REG_SZ string is not necessarily NULL terminated. When retrieving it from
  * the net, we guarantee this however. A server might want to push it without

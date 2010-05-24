@@ -32,6 +32,7 @@
 #include "rpc_client/init_spoolss.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "registry.h"
+#include "registry/reg_objects.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

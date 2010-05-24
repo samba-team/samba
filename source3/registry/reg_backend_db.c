@@ -25,6 +25,7 @@
 #include "reg_db.h"
 #include "reg_util_internal.h"
 #include "reg_backend_db.h"
+#include "reg_objects.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

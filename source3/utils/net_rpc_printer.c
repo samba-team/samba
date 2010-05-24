@@ -21,6 +21,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
 #include "registry.h"
+#include "registry/reg_objects.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {

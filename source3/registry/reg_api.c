@@ -70,6 +70,7 @@
 #include "reg_backend_db.h"
 #include "reg_dispatcher.h"
 #include "reg_util_marshalling.h"
+#include "reg_objects.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

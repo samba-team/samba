@@ -25,6 +25,7 @@
 #include "registry.h"
 #include "registry/reg_util_legacy.h"
 #include "registry/reg_dispatcher.h"
+#include "registry/reg_objects.h"
 
 struct rcinit_file_information {
 	char *description;

@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "printing/pcap.h"
 #include "registry.h"
+#include "registry/reg_objects.h"
 
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
 static TDB_CONTEXT *tdb_drivers; /* used for driver files */

@@ -24,6 +24,7 @@
 #include "regfio.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
 #include "registry/reg_util_marshalling.h"
+#include "registry/reg_objects.h"
 
 /*******************************************************************
  connect to a registry hive root (open a registry policy)

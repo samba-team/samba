@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "reg_objects.h"
+#include "registry/reg_objects.h"
 #include "regfio.h"
 
 /* GLOBAL VARIABLES */
