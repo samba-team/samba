@@ -2370,7 +2370,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 					goto done;
 
 				DEBUGADD(1,("\tSetPrinterData of [%s] succeeded\n",
-					v.valuename));
+					    value_name));
 			}
 		}
 
