@@ -140,7 +140,8 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		return False;
 	}
 
-	if ( !(values = TALLOC_ZERO_P( subkeys, struct regval_ctr )) ) {
+	werr = regval_ctr_init(subkeys, &values);
+	if (!W_ERROR_IS_OK(werr)) {
 		TALLOC_FREE( subkeys );
 		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
 		return False;
