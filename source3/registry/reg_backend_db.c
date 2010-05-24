@@ -256,7 +256,7 @@ static void regdb_ctr_add_value(struct regval_ctr *ctr,
 	switch(value->type) {
 	case REG_DWORD:
 		regval_ctr_addvalue(ctr, value->valuename, REG_DWORD,
-				    (char*)&value->data.dw_value,
+				    (uint8_t *)&value->data.dw_value,
 				    sizeof(uint32));
 		break;
 
@@ -1563,7 +1563,7 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen
 
 		if (size && data_p) {
 			regval_ctr_addvalue(values, valuename, type,
-					(const char *)data_p, size);
+					(uint8_t *)data_p, size);
 		}
 		SAFE_FREE(data_p); /* 'B' option to tdb_unpack does a malloc() */
 

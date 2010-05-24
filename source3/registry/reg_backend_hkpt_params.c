@@ -43,7 +43,7 @@ static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 
 	base_index = reg_perfcount_get_base_index();
 	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, buffer,
+	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, (uint8 *)buffer,
 			    buffer_size);
 
 	if(buffer_size > 0) {
@@ -51,7 +51,7 @@ static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 	}
 
 	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
+	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, (uint8 *)buffer, buffer_size);
 	if(buffer_size > 0) {
 		SAFE_FREE(buffer);
 	}

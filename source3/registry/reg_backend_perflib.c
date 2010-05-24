@@ -44,12 +44,12 @@ static int perflib_params(struct regval_ctr *regvals)
 	int version = 0x00010001;
 	
 	base_index = reg_perfcount_get_base_index();
-	regval_ctr_addvalue(regvals, "Base Index", REG_DWORD, (char *)&base_index, sizeof(base_index));
+	regval_ctr_addvalue(regvals, "Base Index", REG_DWORD, (uint8_t *)&base_index, sizeof(base_index));
 	last_counter = reg_perfcount_get_last_counter(base_index);
-	regval_ctr_addvalue(regvals, "Last Counter", REG_DWORD, (char *)&last_counter, sizeof(last_counter));
+	regval_ctr_addvalue(regvals, "Last Counter", REG_DWORD, (uint8_t *)&last_counter, sizeof(last_counter));
 	last_help = reg_perfcount_get_last_help(last_counter);
-	regval_ctr_addvalue(regvals, "Last Help", REG_DWORD, (char *)&last_help, sizeof(last_help));
-	regval_ctr_addvalue(regvals, "Version", REG_DWORD, (char *)&version, sizeof(version));
+	regval_ctr_addvalue(regvals, "Last Help", REG_DWORD, (uint8_t *)&last_help, sizeof(last_help));
+	regval_ctr_addvalue(regvals, "Version", REG_DWORD, (uint8_t *)&version, sizeof(version));
 
 	return regval_ctr_numvals( regvals );
 }
@@ -62,11 +62,11 @@ static int perflib_009_params(struct regval_ctr *regvals)
 
 	base_index = reg_perfcount_get_base_index();
 	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counter", REG_MULTI_SZ, buffer, buffer_size);
+	regval_ctr_addvalue(regvals, "Counter", REG_MULTI_SZ, (uint8_t *)buffer, buffer_size);
 	if(buffer_size > 0)
 		SAFE_FREE(buffer);
 	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
+	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, (uint8_t *)buffer, buffer_size);
 	if(buffer_size > 0)
 		SAFE_FREE(buffer);
 	

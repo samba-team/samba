@@ -261,13 +261,13 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 	   I'm just storing them here for cosmetic purposes */
 
 	dword = SVCCTL_AUTO_START;
-	regval_ctr_addvalue( values, "Start", REG_DWORD, (char*)&dword, sizeof(uint32));
+	regval_ctr_addvalue( values, "Start", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
 
 	dword = SERVICE_TYPE_WIN32_OWN_PROCESS;
-	regval_ctr_addvalue( values, "Type", REG_DWORD, (char*)&dword, sizeof(uint32));
+	regval_ctr_addvalue( values, "Type", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
 
 	dword = SVCCTL_SVC_ERROR_NORMAL;
-	regval_ctr_addvalue( values, "ErrorControl", REG_DWORD, (char*)&dword, sizeof(uint32));
+	regval_ctr_addvalue( values, "ErrorControl", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
 
 	/* everything runs as LocalSystem */
 
@@ -426,7 +426,7 @@ static void add_new_svc_name(struct registry_key_handle *key_parent,
 	}
 
 	regval_ctr_addvalue(values, "Security", REG_BINARY,
-			    (const char *)sd_blob.data, sd_blob.length);
+			    sd_blob.data, sd_blob.length);
 	store_reg_values( key_secdesc, values );
 
 	TALLOC_FREE( key_secdesc );
@@ -599,7 +599,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 		return False;
 	}
 
-	regval_ctr_addvalue( values, "Security", REG_BINARY, (const char *)blob.data, blob.length);
+	regval_ctr_addvalue( values, "Security", REG_BINARY, blob.data, blob.length);
 	ret = store_reg_values( key, values );
 
 	/* cleanup */

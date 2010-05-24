@@ -3099,7 +3099,7 @@ static void map_dword_into_ctr(struct regval_ctr *ctr, const char *val_name,
 {
 	regval_ctr_delvalue(ctr, val_name);
 	regval_ctr_addvalue(ctr, val_name, REG_DWORD,
-			    (char *) &dword, sizeof(dword));
+			    (uint8 *) &dword, sizeof(dword));
 }
 
 static void map_bool_into_ctr(struct regval_ctr *ctr, const char *val_name,
@@ -3108,7 +3108,7 @@ static void map_bool_into_ctr(struct regval_ctr *ctr, const char *val_name,
 	uint8 bin_bool = (b ? 1 : 0);
 	regval_ctr_delvalue(ctr, val_name);
 	regval_ctr_addvalue(ctr, val_name, REG_BINARY,
-			    (char *) &bin_bool, sizeof(bin_bool));
+			    (uint8 *) &bin_bool, sizeof(bin_bool));
 }
 
 static void map_single_multi_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
@@ -3701,7 +3701,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 		return WERR_NOMEM;
 
 	regval_ctr_addvalue( p2->data->keys[key_index].values, value,
-		type, (const char *)data, real_len );
+		type, data, real_len );
 
 	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], type=> [%d], size => [%d]\n",
 		key, value, type, real_len  ));
@@ -3830,7 +3830,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 			/* add the value */
 
 			regval_ctr_addvalue( printer_data->keys[key_index].values,
-					     valuename, type, (const char *)data_p,
+					     valuename, type, data_p,
 					     size );
 		}
 

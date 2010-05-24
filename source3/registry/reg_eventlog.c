@@ -109,18 +109,18 @@ bool eventlog_init_keys(void)
 			uiRetention = 0x93A80;
 
 			regval_ctr_addvalue(values, "MaxSize", REG_DWORD,
-					     (char *)&uiMaxSize,
+					     (uint8 *)&uiMaxSize,
 					     sizeof(uint32));
 
 			regval_ctr_addvalue(values, "Retention", REG_DWORD,
-					     (char *)&uiRetention,
+					     (uint8 *)&uiRetention,
 					     sizeof(uint32));
 
 			regval_ctr_addvalue_sz(values, "PrimaryModule", *elogs);
 			push_reg_sz(talloc_tos(), &data, *elogs);
 
 			regval_ctr_addvalue(values, "Sources", REG_MULTI_SZ,
-					     (char *)data.data,
+					     data.data,
 					     data.length);
 
 			evtfilepath = talloc_asprintf(ctx,
@@ -130,7 +130,7 @@ bool eventlog_init_keys(void)
 				TALLOC_FREE(values);
 			}
 			push_reg_sz(talloc_tos(), &data, evtfilepath);
-			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, (char *)data.data,
+			regval_ctr_addvalue(values, "File", REG_EXPAND_SZ, data.data,
 					     data.length);
 			regdb_store_values(evtlogpath, values);
 
@@ -160,14 +160,14 @@ bool eventlog_init_keys(void)
 			uiCategoryCount = 0x00000007;
 			regval_ctr_addvalue( values, "CategoryCount",
 					     REG_DWORD,
-					     ( char * ) &uiCategoryCount,
+					     (uint8 *) &uiCategoryCount,
 					     sizeof( uint32 ) );
 			push_reg_sz(talloc_tos(), &data,
 				      "%SystemRoot%\\system32\\eventlog.dll");
 
 			regval_ctr_addvalue( values, "CategoryMessageFile",
 					     REG_EXPAND_SZ,
-					     ( char * ) data.data,
+					     data.data,
 					     data.length);
 			regdb_store_values( evtlogpath, values );
 		}
@@ -304,7 +304,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		}
 		dump_data( 1, blob.data, blob.length);
 		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
-				     ( char * ) blob.data, blob.length);
+				     blob.data, blob.length);
 		regdb_store_values( evtlogpath, values );
 		data_blob_free(&blob);
 	} else {

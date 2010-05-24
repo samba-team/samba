@@ -123,7 +123,7 @@ static int key_forms_fetch_values(const char *key, struct regval_ctr *values)
 		data[6] = form_index++;
 		data[7] = form->flag;
 
-		regval_ctr_addvalue( values, form->name, REG_BINARY, (char*)data, sizeof(data) );	
+		regval_ctr_addvalue(values, form->name, REG_BINARY, (uint8_t *)data, sizeof(data));
 	}
 
 	SAFE_FREE( forms_list );
@@ -148,7 +148,7 @@ static int key_forms_fetch_values(const char *key, struct regval_ctr *values)
 		data[6] = form_index++;
 		data[7] = form->flag;
 
-		regval_ctr_addvalue(values, form->name, REG_BINARY, (char*)data, sizeof(data) );
+		regval_ctr_addvalue(values, form->name, REG_BINARY, (uint8_t *)data, sizeof(data));
 	}
 
 	SAFE_FREE(forms_list);
@@ -391,16 +391,16 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
 
-	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
-	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
-	regval_ctr_addvalue( values, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
-	regval_ctr_addvalue( values, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
+	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (uint8_t *)&info2->attributes,       sizeof(info2->attributes) );
+	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (uint8_t *)&info2->priority,         sizeof(info2->attributes) );
+	regval_ctr_addvalue( values, "ChangeID",         REG_DWORD, (uint8_t *)&info2->changeid,         sizeof(info2->changeid) );
+	regval_ctr_addvalue( values, "Default Priority", REG_DWORD, (uint8_t *)&info2->default_priority, sizeof(info2->default_priority) );
 
 	/* lie and say everything is ok since we don't want to call print_queue_length() to get the real status */
-	regval_ctr_addvalue( values, "Status",           REG_DWORD, (char*)&printer_status,          sizeof(info2->status) );
+	regval_ctr_addvalue( values, "Status",           REG_DWORD, (uint8_t *)&printer_status,          sizeof(info2->status) );
 
-	regval_ctr_addvalue( values, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
-	regval_ctr_addvalue( values, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
+	regval_ctr_addvalue( values, "StartTime",        REG_DWORD, (uint8_t *)&info2->starttime,        sizeof(info2->starttime) );
+	regval_ctr_addvalue( values, "UntilTime",        REG_DWORD, (uint8_t *)&info2->untiltime,        sizeof(info2->untiltime) );
 
 	/* strip the \\server\ from this string */
 	if ( !(p = strrchr( info2->printername, '\\' ) ) )
@@ -431,7 +431,7 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			regval_ctr_addvalue(values, "Default Devmode", REG_BINARY,
-					    (const char *)blob.data, blob.length);
+					    blob.data, blob.length);
 		}
 	}
 
@@ -448,7 +448,7 @@ static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval
 					   &blob.data, &blob.length);
 		if (NT_STATUS_IS_OK(status)) {
 			regval_ctr_addvalue(values, "Security", REG_BINARY,
-					    (const char *)blob.data, blob.length);
+					    blob.data, blob.length);
 		}
 	}
 
@@ -889,7 +889,7 @@ static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys
 static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 				  struct regval_ctr *values)
 {
-	char *buffer = NULL;
+	uint8_t *buffer = NULL;
 	int buffer_size = 0;
 	int i, length;
 	const char *filename;
@@ -910,7 +910,7 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 	regval_ctr_addvalue_sz(values, "Datatype", r->default_datatype);
 	regval_ctr_addvalue_sz(values, "Monitor", r->monitor_name);
 
-	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&r->version,
+	regval_ctr_addvalue( values, "Version", REG_DWORD, (uint8_t *)&r->version,
 		sizeof(r->version) );
 
 	if (r->dependent_files) {
@@ -925,25 +925,25 @@ static void fill_in_driver_values(const struct spoolss_DriverInfo8 *r,
 
 			length = strlen(filename);
 
-			buffer = (char *)SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
+			buffer = (uint8_t *)SMB_REALLOC( buffer, buffer_size + (length + 1)*sizeof(uint16) );
 			if ( !buffer ) {
 				break;
 			}
 
 			push_reg_sz(talloc_tos(), &data, filename);
-			memcpy( buffer+buffer_size, (char*)data.data, data.length);
+			memcpy( buffer+buffer_size, data.data, data.length);
 
 			buffer_size += (length + 1)*sizeof(uint16);
 		}
 
 		/* terminated by double NULL.  Add the final one here */
 
-		buffer = (char *)SMB_REALLOC( buffer, buffer_size + 2 );
+		buffer = (uint8_t *)SMB_REALLOC( buffer, buffer_size + 2 );
 		if ( !buffer ) {
 			buffer_size = 0;
 		} else {
-			buffer[buffer_size++] = '\0';
-			buffer[buffer_size++] = '\0';
+			buffer[buffer_size++] = (uint8_t)'\0';
+			buffer[buffer_size++] = (uint8_t)'\0';
 		}
 	}
 

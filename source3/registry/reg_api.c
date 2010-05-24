@@ -626,7 +626,7 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 	}
 
 	res = regval_ctr_addvalue(key->values, name, val->type,
-				  (char *)value_data.data, value_data.length);
+				  value_data.data, value_data.length);
 	TALLOC_FREE(value_data.data);
 
 	if (res == 0) {
@@ -750,7 +750,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	for (i=0; i<key->num_values; i++) {
 		regval_ctr_addvalue(values, key->values[i].valuename,
 				    key->values[i].type,
-				    (char*)key->values[i].data,
+				    key->values[i].data,
 				    (key->values[i].data_size & ~VK_DATA_IN_OFFSET));
 	}
 
