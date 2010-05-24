@@ -1259,17 +1259,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		/*
-		 * Updates the DNS hostname when the client wishes that the
-		 * server should handle this for him
-		 * ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set).
-		 * See MS-NRPC section 3.5.4.3.9
-		 */
-		if ((r->in.query->workstation_info->workstation_flags
-		    & NETR_WS_FLAG_HANDLES_SPN_UPDATE) != 0) {
-			update_dns_hostname = false;
-		}
-
-		/*
 		 * Checks that the computer name parameter without possible "$"
 		 * matches as prefix with the DNS hostname in the workstation
 		 * info structure.
@@ -1301,6 +1290,20 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		/* Gets the old DNS hostname */
 		old_dns_hostname = samdb_result_string(res1[0], "dNSHostName",
 			NULL);
+
+		/*
+		 * Updates the DNS hostname when the client wishes that the
+		 * server should handle this for him
+		 * ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set). And this is
+		 * obviously only checked when we do already have a
+		 * "dNSHostName".
+		 * See MS-NRPC section 3.5.4.3.9
+		 */
+		if ((old_dns_hostname != NULL) &&
+		    (r->in.query->workstation_info->workstation_flags
+		    & NETR_WS_FLAG_HANDLES_SPN_UPDATE) != 0) {
+			update_dns_hostname = false;
+		}
 
 		/* Gets host informations and put them in our directory */
 		new_msg = ldb_msg_new(mem_ctx);
