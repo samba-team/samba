@@ -1799,7 +1799,7 @@ This example would connect to a computer named XP as the local administrator usi
 
 <para>
 Execute a shell command under a global lock. This might be useful to define the
-order in which serveral shell commands will be executed. The locking information
+order in which several shell commands will be executed. The locking information
 is stored in a file called <filename>g_lock.tdb</filename>. In setups with CTDB
 running, the locking information will be available on all cluster nodes.
 </para>
