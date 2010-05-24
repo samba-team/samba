@@ -22,6 +22,7 @@
 #define _CTDB_H
 #include <sys/types.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <tdb.h>
 
 /* All *_send() functions are guaranteed to be non-blocking and fully
@@ -97,9 +98,13 @@ struct ctdb_lock;
  *
  * When the lock is released, data is freed too, so make sure to copy the data
  * before that.
+ *
+ * This returns true on success, and req will be non-NULL if a request was
+ * actually sent, otherwise callback will have already been called.
  */
-struct ctdb_request *
+bool
 ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
+			 struct ctdb_request **req,
 			 ctdb_callback_t callback, void *private_data);
 struct ctdb_lock *ctdb_readrecordlock_recv(struct ctdb_db *ctdb_db,
 					   struct ctdb_request *handle,
@@ -215,8 +220,8 @@ int ctdb_cancel(struct ctdb_request *);
 	ctdb_attachdb_send((ctdb), (name), (persistent), (tdb_flags),	\
 			   ctdb_sendcb((cb), (cbdata)), (cbdata))
 
-#define ctdb_readrecordlock_send(ctdb_db, key, cb, cbdata)		\
-	ctdb_readrecordlock_send((ctdb_db), (key),			\
+#define ctdb_readrecordlock_send(ctdb_db, key, reqp, cb, cbdata)	\
+	ctdb_readrecordlock_send((ctdb_db), (key), (reqp),		\
 				 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_set_message_handler_send(ctdb, srvid, handler, cb, cbdata)	\

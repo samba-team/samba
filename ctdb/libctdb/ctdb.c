@@ -87,9 +87,10 @@ struct ctdb_connection *ctdb_connect(const char *addr)
 		goto fail;
 	ctdb->outq = NULL;
 	ctdb->doneq = NULL;
-	ctdb->immediateq = NULL;
 	ctdb->in = NULL;
 	ctdb->message_handlers = NULL;
+	ctdb->next_id = 0;
+	ctdb->broken = false;
 
 	memset(&sun, 0, sizeof(sun));
 	sun.sun_family = AF_UNIX;
@@ -270,8 +271,9 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 			if (io_elem_finished(ctdb->outq->io)) {
 				struct ctdb_request *done = ctdb->outq;
 				DLIST_REMOVE(ctdb->outq, done);
-				DLIST_ADD_END(ctdb->doneq, done,
-					      struct ctdb_request);
+				/* We add at the head: any dead ones
+				 * sit and end. */
+				DLIST_ADD(ctdb->doneq, done);
 			}
 		}
 	}
@@ -301,12 +303,6 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 			handle_incoming(ctdb, ctdb->in);
 			ctdb->in = NULL;
 		}
-	}
-
-	while (ctdb->immediateq) {
-		struct ctdb_request *imm = ctdb->immediateq;
-		imm->callback(ctdb, imm, imm->priv_data);
-		DLIST_REMOVE(ctdb->immediateq, imm);
 	}
 
 	return 0;
@@ -363,7 +359,7 @@ struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 	pkt->flags = 0;
 	pkt->datalen = extra;
 	memcpy(pkt->data, extra_data, extra);
-	DLIST_ADD_END(ctdb->outq, req, struct ctdb_request);
+	DLIST_ADD(ctdb->outq, req);
 	return req;
 }
 
@@ -610,12 +606,13 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 
 	/* Retransmit the same request again (we lost race). */
 	io_elem_reset(req->io);
-	DLIST_ADD_END(ctdb->outq, req, struct ctdb_request);
+	DLIST_ADD(ctdb->outq, req);
 	return;
 }
 
-struct ctdb_request *
+bool
 ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
+			 struct ctdb_request **reqp,
 			 ctdb_callback_t callback, void *cbdata)
 {
 	struct ctdb_request *req;
@@ -644,10 +641,9 @@ ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
 	req->extra_destructor = destroy_lock;
 
 	if (try_readrecordlock(lock)) {
-		/* Already got it: prepare for immediate callback. */
-		DLIST_ADD_END(ctdb_db->ctdb->immediateq,
-			      req, struct ctdb_request);
-		return req;
+		*reqp = NULL;
+		callback(ctdb_db->ctdb, req, cbdata);
+		return true;
 	}
 
 	/* We store the original callback in the lock, and use our own. */
@@ -664,8 +660,9 @@ ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
 	req->hdr.call->keylen = key.dsize;
 	req->hdr.call->calldatalen = 0;
 	memcpy(req->hdr.call->data, key.dptr, key.dsize);
-	DLIST_ADD_END(ctdb_db->ctdb->outq, req, struct ctdb_request);
-	return req;
+	DLIST_ADD(ctdb_db->ctdb->outq, req);
+	*reqp = req;
+	return true;
 }
 
 int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)

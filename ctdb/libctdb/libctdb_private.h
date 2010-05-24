@@ -42,8 +42,6 @@ struct ctdb_connection {
 	struct ctdb_request *outq;
 	/* Finished outgoings (awaiting response) */
 	struct ctdb_request *doneq;
-	/* Successful sync requests, waiting for next service. */
-	struct ctdb_request *immediateq;
 	/* Current incoming. */
 	struct io_elem *in;
 	/* Guess at a good reqid to try next. */

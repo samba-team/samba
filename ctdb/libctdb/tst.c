@@ -164,13 +164,14 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
-	handle = ctdb_readrecordlock_send(ctdb_db_context, key, rrl_cb,
-					  ctdb_db_context);
-	if (handle == NULL) {
+	if (!ctdb_readrecordlock_send(ctdb_db_context, key, &handle,
+				      rrl_cb, ctdb_db_context)) {
 		printf("Failed to send READRECORDLOCK\n");
 		exit(10);
 	}
-
+	if (handle) {
+		printf("READRECORDLOCK is async\n");
+	}
 	for (;;) {
 
 	  pfd.events = ctdb_which_events(ctdb_connection);

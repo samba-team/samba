@@ -49,8 +49,7 @@ int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 	}
 
 	/* Put ourselves in list of handlers. */
-	DLIST_ADD_END(ctdb->message_handlers, info,
-		      struct message_handler_info);
+	DLIST_ADD(ctdb->message_handlers, info);
 	/* Keep safe from destructor */
 	req->extra = NULL;
 	return 0;
