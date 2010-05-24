@@ -261,7 +261,7 @@ else
 fi
 AC_SUBST(BROKEN_CC)
 
-dnl Check if the C compiler understands -Werror
+dnl Check if the C compiler understands -Werror (GNU)
 AC_CACHE_CHECK([that the C compiler understands -Werror],samba_cv_HAVE_Werror, [
  AC_TRY_RUN_STRICT([
   int main(void)
@@ -283,7 +283,7 @@ AC_CACHE_CHECK([that the C compiler understands -w2],samba_cv_HAVE_w2, [
 if test x"$samba_cv_HAVE_w2" = x"yes"; then
    Werror_FLAGS="-w2"
 else
-dnl Check if the C compiler understands -errwarn
+dnl Check if the C compiler understands -errwarn (Sun)
 AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn, [
   AC_TRY_RUN_STRICT([
    int main(void)
@@ -293,6 +293,18 @@ AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn,
    samba_cv_HAVE_errwarn=yes,samba_cv_HAVE_errwarn=no,samba_cv_HAVE_errwarn=cross)])
 if test x"$samba_cv_HAVE_errwarn" = x"yes"; then
    Werror_FLAGS="-errwarn=%all"
+else
+dnl Check if the C compiler understands -qhalt (IBM)
+AC_CACHE_CHECK([that the C compiler understands -qhalt],samba_cv_HAVE_qhalt, [
+  AC_TRY_RUN_STRICT([
+   int main(void)
+   {
+	return 0;
+   }],[$CFLAGS -qhalt=w],[$CPPFLAGS],[$LDFLAGS],
+   samba_cv_HAVE_qhalt=yes,samba_cv_HAVE_qhalt=no,samba_cv_HAVE_qhalt=cross)])
+if test x"$samba_cv_HAVE_qhalt" = x"yes"; then
+   Werror_FLAGS="-qhalt=w"
+fi
 fi
 fi
 fi
