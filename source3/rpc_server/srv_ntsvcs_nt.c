@@ -149,22 +149,22 @@ WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
 			return WERR_GENERAL_FAILURE;
 		}
 
-		if (*r->in.buffer_size < val->size) {
-			*r->out.needed = val->size;
+		if (*r->in.buffer_size < regval_size(val)) {
+			*r->out.needed = regval_size(val);
 			*r->out.buffer_size = 0;
 			TALLOC_FREE( values );
 			return WERR_CM_BUFFER_SMALL;
 		}
 
-		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, val->data_p, val->size);
+		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, regval_data_p(val), regval_size(val));
 		TALLOC_FREE(values);
 		if (!r->out.buffer) {
 			return WERR_NOMEM;
 		}
 
 		*r->out.reg_data_type = REG_SZ;	/* always 1...tested using a remove device manager connection */
-		*r->out.buffer_size = val->size;
-		*r->out.needed = val->size;
+		*r->out.buffer_size = regval_size(val);
+		*r->out.needed = regval_size(val);
 
 		break;
 
