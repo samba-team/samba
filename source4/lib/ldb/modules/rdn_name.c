@@ -134,19 +134,33 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		attribute->num_values = 0;
 	}
 
-	if (ldb_msg_add_value(msg, "name", &rdn_val, NULL) != 0) {
+	ret = ldb_msg_add_value(msg, "name", &rdn_val, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	a = ldb_schema_attribute_by_name(ldb, rdn_name);
+	if (a == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	attribute = rdn_name_find_attribute(msg, rdn_name);
-
 	if (!attribute) {
-		if (ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
+		/* add entry with normalised RDN information if possible */
+		if (a->name != NULL) {
+			ret = ldb_msg_add_value(msg, a->name, &rdn_val, NULL);
+		} else {
+			ret = ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL);
+		}
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	} else {
-		a = ldb_schema_attribute_by_name(ldb, rdn_name);
-
+		/* normalise attribute name if possible */
+		if (a->name != NULL) {
+			attribute->name = a->name;
+		}
+		/* normalise attribute value */
 		for (i = 0; i < attribute->num_values; i++) {
 			ret = a->syntax->comparison_fn(ldb, msg,
 					&rdn_val, &attribute->values[i]);
