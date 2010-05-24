@@ -80,9 +80,9 @@ static void sid2gid_recv_gid(struct composite_context *ctx)
 		return;
 	}
 
-	if (ids->unixid->type == ID_TYPE_BOTH ||
-	    ids->unixid->type == ID_TYPE_GID) {
-		state->gid = ids->unixid->id;
+	if (ids->xid.type == ID_TYPE_BOTH ||
+	    ids->xid.type == ID_TYPE_GID) {
+		state->gid = ids->xid.id;
 		composite_done(state->ctx);
 	} else {
 		composite_error(state->ctx, NT_STATUS_INVALID_SID);

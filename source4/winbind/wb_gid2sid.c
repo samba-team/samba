@@ -37,7 +37,6 @@ struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *result, *ctx;
 	struct gid2sid_state *state;
-	struct unixid *unixid;
 	struct id_map *ids;
 
 	DEBUG(5, ("wb_gid2sid_send called\n"));
@@ -52,14 +51,10 @@ struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	unixid = talloc(result, struct unixid);
-	if (composite_nomem(unixid, result)) return result;
-	unixid->id = gid;
-	unixid->type = ID_TYPE_GID;
-
 	ids = talloc(result, struct id_map);
 	if (composite_nomem(ids, result)) return result;
-	ids->unixid = unixid;
+	ids->xid.id = gid;
+	ids->xid.type = ID_TYPE_GID;
 	ids->sid = NULL;
 
 	ctx = wb_xids2sids_send(result, service, 1, ids);

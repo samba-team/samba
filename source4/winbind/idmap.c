@@ -284,7 +284,7 @@ failed:
  * \param idmap_ctx idmap context to use
  * \param mem_ctx talloc context to use
  * \param sid SID to map to an unixid struct
- * \param unixid pointer to a unixid struct pointer
+ * \param unixid pointer to a unixid struct
  * \return NT_STATUS_OK on success, NT_STATUS_INVALID_SID if the sid is not from
  * a trusted domain and idmap trusted only = true, NT_STATUS_NONE_MAPPED if the
  * mapping failed.
@@ -292,7 +292,7 @@ failed:
 static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dom_sid *sid,
-				 struct unixid **unixid)
+				 struct unixid *unixid)
 {
 	int ret;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -312,13 +312,8 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
-		*unixid = talloc(mem_ctx, struct unixid);
-		if (*unixid == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-		(*unixid)->id = rid;
-		(*unixid)->type = ID_TYPE_UID;
+		unixid->id = rid;
+		unixid->type = ID_TYPE_UID;
 
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
@@ -330,13 +325,8 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
-		*unixid = talloc(mem_ctx, struct unixid);
-		if (*unixid == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-		(*unixid)->id = rid;
-		(*unixid)->type = ID_TYPE_GID;
+		unixid->id = rid;
+		unixid->type = ID_TYPE_GID;
 
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
@@ -368,20 +358,14 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 			goto failed;
 		}
 
-		*unixid = talloc(mem_ctx, struct unixid);
-		if (*unixid == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
-
-		(*unixid)->id = new_xid;
+		unixid->id = new_xid;
 
 		if (strcmp(type, "ID_TYPE_BOTH") == 0) {
-			(*unixid)->type = ID_TYPE_BOTH;
+			unixid->type = ID_TYPE_BOTH;
 		} else if (strcmp(type, "ID_TYPE_UID") == 0) {
-			(*unixid)->type = ID_TYPE_UID;
+			unixid->type = ID_TYPE_UID;
 		} else {
-			(*unixid)->type = ID_TYPE_GID;
+			unixid->type = ID_TYPE_GID;
 		}
 
 		talloc_free(tmp_ctx);
@@ -604,14 +588,8 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		goto failed;
 	}
 
-	*unixid = talloc(mem_ctx, struct unixid);
-	if (*unixid == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	(*unixid)->id = new_xid;
-	(*unixid)->type = ID_TYPE_BOTH;
+	unixid->id = new_xid;
+	unixid->type = ID_TYPE_BOTH;
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 
@@ -644,10 +622,10 @@ NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
 
 	for (i = 0; i < count; ++i) {
 		status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
-						id[i].unixid, &id[i].sid);
+						&id[i].xid, &id[i].sid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 			status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
-							id[i].unixid,
+							&id[i].xid,
 							&id[i].sid);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -693,11 +671,11 @@ NTSTATUS idmap_sids_to_xids(struct idmap_context *idmap_ctx,
 
 	for (i = 0; i < count; ++i) {
 		status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
-						id[i].sid, &id[i].unixid);
+						id[i].sid, &id[i].xid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 			status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
 							id[i].sid,
-							&id[i].unixid);
+							&id[i].xid);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]\n", i));

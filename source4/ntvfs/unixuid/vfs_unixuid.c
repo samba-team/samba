@@ -184,11 +184,11 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	ids = talloc_array(req, struct id_map, token->num_sids);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
-	ids[0].unixid = NULL;
+	ZERO_STRUCT(ids[0].xid);
 	ids[0].sid = token->user_sid;
 	ids[0].status = ID_UNKNOWN;
 
-	ids[1].unixid = NULL;
+	ZERO_STRUCT(ids[1].xid);
 	ids[1].sid = token->group_sid;
 	ids[1].status = ID_UNKNOWN;
 
@@ -197,7 +197,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
 
 	for (i=0;i<(*sec)->ngroups;i++) {
-		ids[i+2].unixid = NULL;
+		ZERO_STRUCT(ids[i+2].xid);
 		ids[i+2].sid = token->sids[i+2];
 		ids[i+2].status = ID_UNKNOWN;
 	}
@@ -208,24 +208,24 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	status = wbc_sids_to_xids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (ids[0].unixid->type == ID_TYPE_BOTH ||
-	    ids[0].unixid->type == ID_TYPE_UID) {
-		(*sec)->uid = ids[0].unixid->id;
+	if (ids[0].xid.type == ID_TYPE_BOTH ||
+	    ids[0].xid.type == ID_TYPE_UID) {
+		(*sec)->uid = ids[0].xid.id;
 	} else {
 		return NT_STATUS_INVALID_SID;
 	}
 
-	if (ids[1].unixid->type == ID_TYPE_BOTH ||
-	    ids[1].unixid->type == ID_TYPE_GID) {
-		(*sec)->gid = ids[1].unixid->id;
+	if (ids[1].xid.type == ID_TYPE_BOTH ||
+	    ids[1].xid.type == ID_TYPE_GID) {
+		(*sec)->gid = ids[1].xid.id;
 	} else {
 		return NT_STATUS_INVALID_SID;
 	}
 
 	for (i=0;i<(*sec)->ngroups;i++) {
-		if (ids[i+2].unixid->type == ID_TYPE_BOTH ||
-		    ids[i+2].unixid->type == ID_TYPE_GID) {
-			(*sec)->groups[i] = ids[i+2].unixid->id;
+		if (ids[i+2].xid.type == ID_TYPE_BOTH ||
+		    ids[i+2].xid.type == ID_TYPE_GID) {
+			(*sec)->groups[i] = ids[i+2].xid.id;
 		} else {
 			return NT_STATUS_INVALID_SID;
 		}

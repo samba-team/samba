@@ -169,18 +169,12 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	ids = talloc_zero_array(sd, struct id_map, 2);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
-	ids[0].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY(ids[0].unixid);
-
-	ids[0].unixid->id = name->st.st_uid;
-	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].xid.id = name->st.st_uid;
+	ids[0].xid.type = ID_TYPE_UID;
 	ids[0].sid = NULL;
 
-	ids[1].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY(ids[1].unixid);
-
-	ids[1].unixid->id = name->st.st_gid;
-	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].xid.id = name->st.st_gid;
+	ids[1].xid.type = ID_TYPE_GID;
 	ids[1].sid = NULL;
 
 	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
@@ -314,7 +308,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 
 	ids = talloc(req, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
-	ids->unixid = NULL;
+	ZERO_STRUCT(ids->xid);
 	ids->sid = NULL;
 	ids->status = ID_UNKNOWN;
 
@@ -336,9 +330,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
 
-			if (ids->unixid->type == ID_TYPE_BOTH ||
-			    ids->unixid->type == ID_TYPE_UID) {
-				new_uid = ids->unixid->id;
+			if (ids->xid.type == ID_TYPE_BOTH ||
+			    ids->xid.type == ID_TYPE_UID) {
+				new_uid = ids->xid.id;
 			}
 		}
 		sd->owner_sid = new_sd->owner_sid;
@@ -354,9 +348,9 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 			status = wbc_sids_to_xids_recv(ctx, &ids);
 			NT_STATUS_NOT_OK_RETURN(status);
 
-			if (ids->unixid->type == ID_TYPE_BOTH ||
-			    ids->unixid->type == ID_TYPE_GID) {
-				new_gid = ids->unixid->id;
+			if (ids->xid.type == ID_TYPE_BOTH ||
+			    ids->xid.type == ID_TYPE_GID) {
+				new_gid = ids->xid.id;
 			}
 
 		}
@@ -895,17 +889,13 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	ids = talloc_array(sd, struct id_map, 2);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids, tmp_ctx);
 
-	ids[0].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids[0].unixid, tmp_ctx);
-	ids[0].unixid->id = geteuid();
-	ids[0].unixid->type = ID_TYPE_UID;
+	ids[0].xid.id = geteuid();
+	ids[0].xid.type = ID_TYPE_UID;
 	ids[0].sid = NULL;
 	ids[0].status = ID_UNKNOWN;
 
-	ids[1].unixid = talloc(ids, struct unixid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids[1].unixid, tmp_ctx);
-	ids[1].unixid->id = getegid();
-	ids[1].unixid->type = ID_TYPE_GID;
+	ids[1].xid.id = getegid();
+	ids[1].xid.type = ID_TYPE_GID;
 	ids[1].sid = NULL;
 	ids[1].status = ID_UNKNOWN;
 
