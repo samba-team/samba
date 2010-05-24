@@ -302,12 +302,13 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 	int pos;
 	struct gp_link **gplinks;
 	char *buf, *end;
+	const char *gplink_start = "[LDAP://";
 
 	gplinks = talloc_array(mem_ctx, struct gp_link *, 1);
 	gplinks[0] = NULL;
 
 	/* Assuming every gPLink starts with "[LDAP://" */
-	start = 8;
+	start = strlen(gplink_start);
 
 	for (pos = start; pos < strlen(gplink_str); pos++) {
 		if (gplink_str[pos] == ';') {
@@ -329,7 +330,7 @@ static NTSTATUS parse_gplink (TALLOC_CTX *mem_ctx, const char *gplink_str, struc
 			/* Increment the array index, the string position past
 			   the next "[LDAP://", and set the start reference */
 			idx++;
-			pos += 9;
+			pos += strlen(gplink_start)+1;
 			start = pos;
 		}
 	}

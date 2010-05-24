@@ -346,6 +346,7 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 	int rv;
 	int fd;
 	NTSTATUS status;
+	const char *file_content = "[General]\r\nVersion=0\r\n";
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
@@ -388,8 +389,8 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	rv = write(fd, "[General]\r\nVersion=0\r\n", 23);
-	if (rv != 23) {
+	rv = write(fd, file_content, strlen(file_content));
+	if (rv != strlen(file_content)) {
 		DEBUG(0, ("Short write in GPT.INI\n"));
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
