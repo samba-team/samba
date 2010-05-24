@@ -145,11 +145,6 @@ struct registry_ops {
 	bool	(*values_need_update)(struct regval_ctr *values);
 };
 
-struct registry_hook {
-	const char	*keyname;	/* full path to name of key */
-	struct registry_ops	*ops;	/* registry function hooks */
-};
-
 
 /* structure to store the registry handles */
 

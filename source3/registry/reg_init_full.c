@@ -45,6 +45,11 @@ extern struct registry_ops regdb_ops;		/* these are the default */
 /* array of registry_hook's which are read into a tree for easy access */
 /* #define REG_TDB_ONLY		1 */
 
+struct registry_hook {
+	const char	*keyname;	/* full path to name of key */
+	struct registry_ops	*ops;	/* registry function hooks */
+};
+
 struct registry_hook reg_hooks[] = {
 #ifndef REG_TDB_ONLY 
   { KEY_PRINTING,    		&printing_ops },
