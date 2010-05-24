@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "lib/tsocket/tsocket.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
@@ -199,10 +200,33 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 	{
 		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
+		DATA_BLOB version_blob = data_blob_null;
+
+		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
+			enum ndr_err_code err;
+			struct VERSION vers;
+
+			/* "What Windows returns" as a version number. */
+			ZERO_STRUCT(vers);
+			vers.ProductMajorVersion = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
+			vers.ProductMinorVersion = NTLMSSP_WINDOWS_MINOR_VERSION_1;
+			vers.ProductBuild = 0;
+			vers.NTLMRevisionCurrent = NTLMSSP_REVISION_W2K3;
+
+			err = ndr_push_struct_blob(&version_blob,
+						out_mem_ctx,
+						&vers,
+						(ndr_push_flags_fn_t)ndr_push_VERSION);
+
+			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
 		if (ntlmssp_state->unicode) {
-			gen_string = "CdUdbddB";
+			gen_string = "CdUdbddBb";
 		} else {
-			gen_string = "CdAdbddB";
+			gen_string = "CdAdbddBb";
 		}
 		
 		msrpc_gen(out_mem_ctx, 
@@ -213,7 +237,10 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 			  chal_flags,
 			  cryptkey, 8,
 			  0, 0,
-			  struct_blob.data, struct_blob.length);
+			  struct_blob.data, struct_blob.length,
+			  version_blob.data, version_blob.length);
+
+		data_blob_free(&version_blob);
 	}
 		
 	ntlmssp_state->expected_state = NTLMSSP_AUTH;

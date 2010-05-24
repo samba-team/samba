@@ -5,7 +5,7 @@ bld.SAMBA_MODULE('gensec_ntlmssp',
 	autoproto='proto.h',
 	subsystem='gensec',
 	init_function='gensec_ntlmssp_init',
-	deps='MSRPC_PARSE CREDENTIALS',
+	deps='MSRPC_PARSE CREDENTIALS NDR_NTLMSSP',
 	internal_module=True
 	)
 
