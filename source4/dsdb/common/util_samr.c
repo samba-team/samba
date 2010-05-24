@@ -42,7 +42,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	int ret;
 	const char *container, *obj_class=NULL;
 	char *cn_name;
-	int cn_name_len;
+	size_t cn_name_len;
 
 	const char *attrs[] = {
 		"objectSid",
@@ -81,14 +81,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		return NT_STATUS_USER_EXISTS;
 	}
 
-	msg = ldb_msg_new(tmp_ctx);
-	if (msg == NULL) {
-		ldb_transaction_cancel(ldb);
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	cn_name   = talloc_strdup(tmp_ctx, account_name);
+	cn_name = talloc_strdup(tmp_ctx, account_name);
 	if (!cn_name) {
 		ldb_transaction_cancel(ldb);
 		talloc_free(tmp_ctx);
@@ -96,6 +89,18 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	}
 
 	cn_name_len = strlen(cn_name);
+	if (cn_name_len < 1) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* This must be one of these values *only* */
 	if (acct_flags == ACB_NORMAL) {
