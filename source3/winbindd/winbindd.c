@@ -574,7 +574,7 @@ static void process_request(struct winbindd_cli_state *state)
 	struct winbindd_dispatch_table *table = dispatch_table;
 	struct winbindd_async_dispatch_table *atable;
 
-	state->mem_ctx = talloc_init("winbind request");
+	state->mem_ctx = talloc_named(state, 0, "winbind request");
 	if (state->mem_ctx == NULL)
 		return;
 
