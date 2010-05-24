@@ -4,7 +4,6 @@
 dn: ${CONFIGDN}
 objectClass: top
 objectClass: configuration
-cn: Configuration
 msDS-NcType: 0
 nTSecurityDescriptor:: ${DESCRIPTOR}
 instanceType: 13
