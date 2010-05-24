@@ -561,7 +561,8 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 # registry-related objects
 #
 UTIL_REG_OBJ = ../libcli/registry/util_reg.o
-UTIL_REG_API_OBJ = lib/util_reg_api.o
+
+REG_UTIL_MARSHALLING_OBJ = registry/reg_util_marshalling.o
 
 REG_INIT_BASIC_OBJ = registry/reg_init_basic.o
 REG_INIT_SMBCONF_OBJ = registry/reg_init_smbconf.o
@@ -590,7 +591,7 @@ REG_BASE_OBJ = registry/reg_api.o \
 	       $(REGFIO_OBJ) \
 	       $(REGOBJS_OBJ) \
 	       registry/reg_util_internal.o \
-	       $(UTIL_REG_API_OBJ) \
+	       $(REG_UTIL_MARSHALLING_OBJ) \
 	       lib/util_nttoken.o \
 	       $(REG_BACKENDS_BASE_OBJ) \
 	       $(REG_INIT_BASIC_OBJ)
