@@ -67,6 +67,7 @@
 #include "reg_cachehook.h"
 #include "regfio.h"
 #include "reg_util.h"
+#include "reg_backend_db.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

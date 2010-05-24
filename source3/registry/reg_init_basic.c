@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "reg_cachehook.h"
+#include "reg_backend_db.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/smbconf/smbconf_private.h"
 #include "registry.h"
+#include "registry/reg_backend_db.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
 

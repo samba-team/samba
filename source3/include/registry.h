@@ -56,24 +56,6 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_delete_path(const struct nt_user_token *token,
 		       const char *orig_path);
 
-/* The following definitions come from registry/reg_backend_db.c  */
-
-WERROR init_registry_key(const char *add_path);
-WERROR init_registry_data(void);
-WERROR regdb_init(void);
-WERROR regdb_open( void );
-int regdb_close( void );
-WERROR regdb_transaction_start(void);
-WERROR regdb_transaction_commit(void);
-WERROR regdb_transaction_cancel(void);
-int regdb_get_seqnum(void);
-bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr);
-int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr);
-int regdb_fetch_values(const char* key, struct regval_ctr *values);
-bool regdb_store_values(const char *key, struct regval_ctr *values);
-bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys);
-bool regdb_values_need_update(struct regval_ctr *values);
-
 /* The following definitions come from registry/reg_dispatcher.c  */
 
 bool store_reg_keys(struct registry_key_handle *key,

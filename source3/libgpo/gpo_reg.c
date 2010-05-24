@@ -21,6 +21,7 @@
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
+#include "registry/reg_backend_db.h"
 
 
 /****************************************************************
