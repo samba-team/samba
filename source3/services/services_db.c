@@ -376,7 +376,8 @@ static void add_new_svc_name(struct registry_key_handle *key_parent,
 
 	/* now for the service values */
 
-	if ( !(values = TALLOC_ZERO_P( key_service, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key_service, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
 		TALLOC_FREE( key_service );
 		return;
@@ -405,7 +406,8 @@ static void add_new_svc_name(struct registry_key_handle *key_parent,
 	}
 	SAFE_FREE(path);
 
-	if ( !(values = TALLOC_ZERO_P( key_secdesc, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key_secdesc, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
 		TALLOC_FREE( key_secdesc );
 		return;
@@ -522,7 +524,8 @@ struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *nam
 		goto done;
 	}
 
-	if ( !(values = TALLOC_ZERO_P( key, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_get_secdesc: talloc() failed!\n"));
 		goto done;
 	}
@@ -585,7 +588,8 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	}
 	SAFE_FREE(path);
 
-	if ( !(values = TALLOC_ZERO_P( key, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_set_secdesc: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return False;
@@ -638,7 +642,8 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	}
 	SAFE_FREE(path);
 
-	if ( !(values = TALLOC_ZERO_P( key, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		goto fail;
@@ -690,7 +695,8 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 	}
 	SAFE_FREE(path);
 
-	if ( !(values = TALLOC_ZERO_P( key, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(key, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_lookup_description: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return NULL;
@@ -737,7 +743,8 @@ struct regval_ctr *svcctl_fetch_regvalues(const char *name, NT_USER_TOKEN *token
 	}
 	SAFE_FREE(path);
 
-	if ( !(values = TALLOC_ZERO_P( NULL, struct regval_ctr )) ) {
+	wresult = regval_ctr_init(NULL, &values);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_fetch_regvalues: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return NULL;
