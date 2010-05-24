@@ -66,7 +66,7 @@
 #include "registry.h"
 #include "reg_cachehook.h"
 #include "regfio.h"
-#include "reg_util.h"
+#include "reg_util_internal.h"
 #include "reg_backend_db.h"
 #include "reg_dispatcher.h"
 

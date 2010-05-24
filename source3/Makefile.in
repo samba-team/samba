@@ -589,7 +589,7 @@ REG_BASE_OBJ = registry/reg_api.o \
 	       registry/reg_cachehook.o \
 	       $(REGFIO_OBJ) \
 	       $(REGOBJS_OBJ) \
-	       registry/reg_util.o \
+	       registry/reg_util_internal.o \
 	       $(UTIL_REG_API_OBJ) \
 	       lib/util_nttoken.o \
 	       $(REG_BACKENDS_BASE_OBJ) \
