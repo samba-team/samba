@@ -22,7 +22,7 @@
 #ifndef _IDMAP_H_
 #define _IDMAP_H_
 
-#include "librpc/gen_ndr/winbind.h"
+#include "librpc/gen_ndr/idmap.h"
 
 struct idmap_context {
 	struct loadparm_context *lp_ctx;

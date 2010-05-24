@@ -28,6 +28,7 @@
 #include "auth/credentials/credentials.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/winbind.h"
 
 struct wb_sam_logon_state {
 	struct composite_context *ctx;
