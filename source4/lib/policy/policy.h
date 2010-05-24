@@ -18,8 +18,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GPO_H__
-#define __GPO_H__
+#ifndef __POLICY_H__
+#define __POLICY_H__
 #include "libcli/libcli.h"
 
 #define GPLINK_OPT_DISABLE		(1 << 0)
@@ -109,6 +109,11 @@ NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const st
 NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const char **path);
 NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *file_sys_path);
 NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_object *gpo, struct security_descriptor *sd);
+
+/* Ini functions */
+NTSTATUS gp_parse_ini(TALLOC_CTX *mem_ctx, struct gp_context *gp_ctx, const char *filename, struct gp_ini_context **ret);
+NTSTATUS gp_get_ini_string(struct gp_ini_context *ini, const char *section, const char *name, char **ret);
+NTSTATUS gp_get_ini_uint(struct gp_ini_context *ini, const char *section, const char *name, uint32_t *ret);
 
 /* Managing functions */
 NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, struct gp_object **ret);
