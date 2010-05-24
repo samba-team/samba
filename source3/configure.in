@@ -1654,7 +1654,7 @@ DSO_EXPORTS=""
 			# .po will just create compile warnings, use po.o:
 			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
-				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
+				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000 -qhalt=e"
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE,[The size of a block])
