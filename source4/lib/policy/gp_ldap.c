@@ -58,7 +58,7 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 	enum ndr_err_code ndr_err;
 	const DATA_BLOB *data;
 
-	gpo->dn = talloc_steal(mem_ctx, ldb_dn_get_linearized(msg->dn));
+	gpo->dn = talloc_strdup(mem_ctx, ldb_dn_get_linearized(msg->dn));
 
 	DEBUG(9, ("Parsing GPO LDAP data for %s\n", gpo->dn));
 
@@ -69,11 +69,11 @@ static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct g
 	gpo->file_sys_path = ldb_msg_find_attr_as_string(msg, "gPCFileSysPath", "");
 
 	if (gpo->display_name[0] != '\0')
-		gpo->display_name = talloc_steal(mem_ctx, gpo->display_name);
+		gpo->display_name = talloc_strdup(mem_ctx, gpo->display_name);
 	if (gpo->name[0] != '\0')
-		gpo->name = talloc_steal(mem_ctx, gpo->name);
+		gpo->name = talloc_strdup(mem_ctx, gpo->name);
 	if (gpo->file_sys_path[0] != '\0')
-		gpo->file_sys_path = talloc_steal(mem_ctx, gpo->file_sys_path);
+		gpo->file_sys_path = talloc_strdup(mem_ctx, gpo->file_sys_path);
 
 	/* Pull the security descriptor through the NDR library */
 	data = ldb_msg_find_ldb_val(msg, "nTSecurityDescriptor");
@@ -857,7 +857,7 @@ NTSTATUS gp_create_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	gpo->dn = talloc_steal(gpo, ldb_dn_get_linearized(gpo_dn));
+	gpo->dn = talloc_strdup(gpo, ldb_dn_get_linearized(gpo_dn));
 
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
