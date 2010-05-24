@@ -613,31 +613,31 @@ failed:
  */
 
 NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
-			    TALLOC_CTX *mem_ctx, int count,
-			    struct id_map *id)
+			    TALLOC_CTX *mem_ctx,
+			    struct id_map **id)
 {
-	int i;
-	int error_count = 0;
+	unsigned int i, error_count = 0;
 	NTSTATUS status;
 
-	for (i = 0; i < count; ++i) {
+	for (i = 0; id && id[i]; i++) {
 		status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
-						&id[i].xid, &id[i].sid);
+						&id[i]->xid, &id[i]->sid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 			status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
-							&id[i].xid,
-							&id[i].sid);
+							&id[i]->xid,
+							&id[i]->sid);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("idmapping xid_to_sid failed for id[%d]\n", i));
+			DEBUG(1, ("idmapping xid_to_sid failed for id[%d]=%lu: %s\n",
+				  i, (unsigned long)id[i]->xid.id, nt_errstr(status)));
 			error_count++;
-			id[i].status = ID_UNMAPPED;
+			id[i]->status = ID_UNMAPPED;
 		} else {
-			id[i].status = ID_MAPPED;
+			id[i]->status = ID_MAPPED;
 		}
 	}
 
-	if (error_count == count) {
+	if (error_count == i) {
 		/* Mapping did not work at all. */
 		return NT_STATUS_NONE_MAPPED;
 	} else if (error_count > 0) {
@@ -662,31 +662,33 @@ NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
  */
 
 NTSTATUS idmap_sids_to_xids(struct idmap_context *idmap_ctx,
-			    TALLOC_CTX *mem_ctx, int count,
-			    struct id_map *id)
+			    TALLOC_CTX *mem_ctx,
+			    struct id_map **id)
 {
-	int i;
-	int error_count = 0;
+	unsigned int i, error_count = 0;
 	NTSTATUS status;
 
-	for (i = 0; i < count; ++i) {
+	for (i = 0; id && id[i]; i++) {
 		status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
-						id[i].sid, &id[i].xid);
+					  id[i]->sid, &id[i]->xid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 			status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
-							id[i].sid,
-							&id[i].xid);
+						  id[i]->sid,
+						  &id[i]->xid);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]\n", i));
+			char *str = dom_sid_string(mem_ctx, id[i]->sid);
+			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]=%s: %s\n",
+				  i, str, nt_errstr(status)));
+			talloc_free(str);
 			error_count++;
-			id[i].status = ID_UNMAPPED;
+			id[i]->status = ID_UNMAPPED;
 		} else {
-			id[i].status = ID_MAPPED;
+			id[i]->status = ID_MAPPED;
 		}
 	}
 
-	if (error_count == count) {
+	if (error_count == i) {
 		/* Mapping did not work at all. */
 		return NT_STATUS_NONE_MAPPED;
 	} else if (error_count > 0) {

@@ -33,10 +33,12 @@ struct sids2xids_state {
 
 struct composite_context *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 					    struct wbsrv_service *service,
-					    int count, struct id_map *ids)
+					    unsigned int count, struct id_map *ids)
 {
 	struct composite_context *result;
 	struct sids2xids_state *state;
+	struct id_map **pointer_array;
+	unsigned int i;
 
 	DEBUG(5, ("wb_sids2xids_send called\n"));
 
@@ -52,8 +54,19 @@ struct composite_context *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 	state->count = count;
 	state->ids = ids;
 
+	/* We need to convert between calling conventions here - the
+	 * values are filled in by reference, so we just need to
+	 * provide pointers to them */
+	pointer_array = talloc_array(state, struct id_map *, count+1);
+	if (composite_nomem(pointer_array, result)) return result;
+
+	for (i=0; i < count; i++) {
+		pointer_array[i] = &ids[i];
+	}
+	pointer_array[i] = NULL;
+
 	state->ctx->status = idmap_sids_to_xids(service->idmap_ctx, mem_ctx,
-						count, state->ids);
+						pointer_array);
 	if (!composite_is_ok(state->ctx)) return result;
 
 	composite_done(state->ctx);
@@ -69,6 +82,9 @@ NTSTATUS wb_sids2xids_recv(struct composite_context *ctx,
 
 	DEBUG(5, ("wb_sids2xids_recv called\n"));
 
+	/* We don't have to mess with pointer_array on the way out, as
+	 * the results are filled into the pointers the caller
+	 * supplied */
 	*ids = state->ids;
 
 	talloc_free(ctx);
