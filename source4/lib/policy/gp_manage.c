@@ -20,6 +20,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security_descriptor.h"
 #include "../librpc/ndr/libndr.h"
+#include "../lib/util/charset/charset.h"
 #include "param/param.h"
 #include "lib/policy/policy.h"
 
@@ -117,7 +118,6 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	struct security_descriptor *sd;
 	TALLOC_CTX *mem_ctx;
 	struct gp_object *gpo;
-	unsigned int i;
 	NTSTATUS status;
 
 	/* Create a forked memory context, as a base for everything here */
@@ -128,11 +128,8 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 
 	/* Generate a GUID */
 	guid_struct = GUID_random();
-	guid_str = GUID_string(mem_ctx, &guid_struct);
-	name = talloc_asprintf(gpo, "{%s}", guid_str);
-	for (i = 0; name[i] != '\0'; i++) {
-		name[i] = toupper(name[i]);
-	}
+	guid_str = GUID_string2(mem_ctx, &guid_struct);
+	name = strupper_talloc(mem_ctx, guid_str);
 
 	/* Prepare the GPO struct */
 	gpo->dn = NULL;
@@ -140,7 +137,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	gpo->flags = 0;
 	gpo->version = 0;
 	gpo->display_name = talloc_strdup(gpo, display_name);
-	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lp_realm(gp_ctx->lp_ctx), lp_realm(gp_ctx->lp_ctx), name);
+	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lp_dnsdomain(gp_ctx->lp_ctx), lp_dnsdomain(gp_ctx->lp_ctx), name);
 
 	/* Create the GPT */
 	status = gp_create_gpt(gp_ctx, name, gpo->file_sys_path);

@@ -215,7 +215,7 @@ NTSTATUS gp_list_all_gpos(struct gp_context *gp_ctx, struct gp_object ***ret)
 
 	rv = ldb_search(gp_ctx->ldb_ctx, mem_ctx, &result, dn, LDB_SCOPE_ONELEVEL, attrs, "(objectClass=groupPolicyContainer)");
 	if (rv != LDB_SUCCESS) {
-		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -271,7 +271,7 @@ NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct g
 			attrs,
 			"objectClass=groupPolicyContainer");
 	if (rv != LDB_SUCCESS) {
-		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv),ldb_errstring(gp_ctx->ldb_ctx)));
+		DEBUG(0, ("LDB search failed: %s\n%s\n", ldb_strerror(rv), ldb_errstring(gp_ctx->ldb_ctx)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
