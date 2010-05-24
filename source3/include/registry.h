@@ -77,16 +77,6 @@ NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
 				     NT_USER_TOKEN **ptoken);
 WERROR registry_init_smbconf(const char *keyname);
 
-/* The following definitions come from registry/reg_perfcount.c  */
-
-void perfcount_init_keys( void );
-uint32 reg_perfcount_get_base_index(void);
-uint32 reg_perfcount_get_last_counter(uint32 base_index);
-uint32 reg_perfcount_get_last_help(uint32 last_counter);
-uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf);
-uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf);
-WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids);
-
 /* The following definitions come from lib/util_reg_api.c  */
 
 WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
