@@ -46,6 +46,8 @@ static const char *gp_tmpdir(TALLOC_CTX *mem_ctx)
 	const char *gp_dir = talloc_asprintf(mem_ctx, "%s/policy", tmpdir());
 	struct stat st;
 
+	if (gp_dir == NULL) return NULL;
+
 	if (stat(gp_dir, &st) != 0) {
 		mkdir(gp_dir, 0755);
 	}
@@ -67,12 +69,15 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 
 	/* Get local path by replacing backslashes with slashes */
 	local_rel_path = talloc_strdup(state, state->cur_rel_path);
+	if (local_rel_path == NULL) return;
+
 	for (i = 0; local_rel_path[i] != '\0'; i++) {
 		if (local_rel_path[i] == '\\') {
 			local_rel_path[i] = '/';
 		}
 	}
 	full_local_path = talloc_asprintf(state, "%s%s/%s", state->local_path, local_rel_path, info->name);
+	if (full_local_path == NULL) return;
 
 	/* Directory */
 	if (info->attrib & FILE_ATTRIBUTE_DIRECTORY) {
@@ -84,6 +89,7 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 		mkdir(full_local_path, 0755);
 
 		rel_path = talloc_asprintf(state, "%s\\%s", state->cur_rel_path, info->name);
+		if (rel_path == NULL) return;
 
 		/* Recurse into this directory */
 		gp_do_list(rel_path, state);
@@ -91,6 +97,7 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 	}
 
 	full_remote_path = talloc_asprintf(state, "%s%s\\%s", state->share_path, state->cur_rel_path, info->name);
+	if (full_remote_path == NULL) return;
 
 	/* Open the remote file */
 	fh_remote = smbcli_open(state->gp_ctx->cli->tree, full_remote_path, O_RDONLY, DENY_NONE);
@@ -108,6 +115,7 @@ static void gp_list_helper (struct clilist_file_info *info, const char *mask, vo
 
 	/* Copy the contents of the file */
 	buf = talloc_zero_array(state, uint8_t, buf_size);
+	if (buf == NULL) return;
 	while (1) {
 		int n = smbcli_read(state->gp_ctx->cli->tree, fh_remote, buf, nread, buf_size);
 		if (n <= 0) {
@@ -142,6 +150,7 @@ static NTSTATUS gp_do_list (const char *rel_path, struct gp_list_state *state)
 
 	/* Get the current mask */
 	mask = talloc_asprintf(state, "%s%s\\*", state->share_path, rel_path);
+	NT_STATUS_HAVE_NO_MEMORY(mask);
 	success = smbcli_list(state->gp_ctx->cli->tree, mask, attributes, gp_list_helper, state);
 	talloc_free(mask);
 
@@ -227,9 +236,12 @@ NTSTATUS gp_fetch_gpt (struct gp_context *gp_ctx, struct gp_object *gpo, const c
 
 	/* Prepare the state structure */
 	state = talloc_zero(mem_ctx, struct gp_list_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
 	state->gp_ctx = gp_ctx;
 	state->local_path = talloc_asprintf(mem_ctx, "%s/%s", gp_tmpdir(mem_ctx), gpo->name);
+	NT_STATUS_HAVE_NO_MEMORY(state->local_path);
 	state->share_path = gp_get_share_path(mem_ctx, gpo->file_sys_path);
+	NT_STATUS_HAVE_NO_MEMORY(state->share_path);
 
 
 	/* Create the GPO dir if it does not exist */
@@ -274,7 +286,9 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 		}
 
 		entry_local_path = talloc_asprintf(gp_ctx, "%s/%s", local_path, dirent->d_name);
+		NT_STATUS_HAVE_NO_MEMORY(entry_local_path);
 		entry_remote_path = talloc_asprintf(gp_ctx, "%s\\%s", remote_path, dirent->d_name);
+		NT_STATUS_HAVE_NO_MEMORY(entry_remote_path);
 		if (dirent->d_type == DT_DIR) {
 			DEBUG(6, ("Pushing directory %s to %s on sysvol\n", entry_local_path, entry_remote_path));
 			smbcli_mkdir(gp_ctx->cli->tree, entry_remote_path);
@@ -350,9 +364,12 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	tmp_dir = gp_tmpdir(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_dir);
 	policy_dir = talloc_asprintf(mem_ctx, "%s/%s", tmp_dir, name);
+	NT_STATUS_HAVE_NO_MEMORY(policy_dir);
 
 	/* Create the directories */
 
@@ -364,6 +381,7 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 	}
 
 	tmp_str = talloc_asprintf(mem_ctx, "%s/User", policy_dir);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_str);
 	rv = mkdir(tmp_str, 0755);
 	if (rv < 0) {
 		DEBUG(0, ("Could not create the User dir: %s\n", tmp_str));
@@ -372,6 +390,7 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 	}
 
 	tmp_str = talloc_asprintf(mem_ctx, "%s/Machine", policy_dir);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_str);
 	rv = mkdir(tmp_str, 0755);
 	if (rv < 0) {
 		DEBUG(0, ("Could not create the Machine dir: %s\n", tmp_str));
@@ -382,6 +401,7 @@ NTSTATUS gp_create_gpt(struct gp_context *gp_ctx, const char *name, const char *
 	/* Create a GPT.INI with version 0 */
 
 	tmp_str = talloc_asprintf(mem_ctx, "%s/GPT.INI", policy_dir);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_str);
 	fd = open(tmp_str, O_CREAT | O_WRONLY, 0644);
 	if (fd < 0) {
 		DEBUG(0, ("Could not create the GPT.INI: %s\n", tmp_str));
@@ -428,6 +448,7 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx, struct gp_obj
 
 	/* Create a forked memory context which can be freed easily */
 	mem_ctx = talloc_new(gp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	/* Open the directory with NTCreate AndX call */
 	io.generic.level = RAW_OPEN_NTCREATEX;

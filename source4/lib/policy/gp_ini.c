@@ -33,7 +33,9 @@ static bool gp_add_ini_section(const char *name, void *callback_data)
 	struct gp_ini_context *ini = parse->ini;
 
 	ini->sections = talloc_realloc(ini, ini->sections, struct gp_ini_section, ini->num_sections+1);
+	if (ini->sections == NULL) return false;
 	ini->sections[ini->num_sections].name = talloc_strdup(ini, name);
+	if (ini->sections[ini->num_sections].name == NULL) return false;
 	parse->cur_section = ini->num_sections;
 	ini->num_sections++;
 
@@ -53,8 +55,11 @@ static bool gp_add_ini_param(const char *name, const char *value, void *callback
 	section = &ini->sections[parse->cur_section];
 
 	section->params = talloc_realloc(ini, ini->sections[parse->cur_section].params, struct gp_ini_param, section->num_params+1);
+	if (section->params == NULL) return false;
 	section->params[section->num_params].name = talloc_strdup(ini, name);
+	if (section->params[section->num_params].name == NULL) return false;
 	section->params[section->num_params].value = talloc_strdup(ini, value);
+	if (section->params[section->num_params].value == NULL) return false;
 	section->num_params++;
 
 	return true;
@@ -66,6 +71,7 @@ NTSTATUS gp_parse_ini(TALLOC_CTX *mem_ctx, struct gp_context *gp_ctx, const char
 	bool rv;
 
 	parse.ini = talloc_zero(mem_ctx, struct gp_ini_context);
+	NT_STATUS_HAVE_NO_MEMORY(parse.ini);
 	parse.cur_section = -1;
 
 	rv = pm_process(filename, gp_add_ini_section, gp_add_ini_param, &parse);

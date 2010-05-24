@@ -58,22 +58,30 @@ static uint32_t gp_ads_to_dir_access_mask(uint32_t access_mask)
 NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security_descriptor *ds_sd, struct security_descriptor **ret)
 {
 	struct security_descriptor *fs_sd;
+	NTSTATUS status;
 	uint32_t i;
 
 	/* Allocate the file system security descriptor */
 	fs_sd = talloc(mem_ctx, struct security_descriptor);
+	NT_STATUS_HAVE_NO_MEMORY(fs_sd);
 
 	/* Copy the basic information from the directory server security descriptor */
 	fs_sd->owner_sid = talloc_memdup(fs_sd, ds_sd->owner_sid, sizeof(struct dom_sid));
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->owner_sid, fs_sd);
+
 	fs_sd->group_sid = talloc_memdup(fs_sd, ds_sd->group_sid, sizeof(struct dom_sid));
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->group_sid, fs_sd);
+
 	fs_sd->type = ds_sd->type;
 	fs_sd->revision = ds_sd->revision;
 
 	/* Copy the sacl */
 	fs_sd->sacl = security_acl_dup(fs_sd, ds_sd->sacl);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->sacl, fs_sd);
 
 	/* Copy the dacl */
 	fs_sd->dacl = talloc_zero(fs_sd, struct security_acl);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(fs_sd->dacl, fs_sd);
 
 	for (i = 0; i < ds_sd->dacl->num_aces; i++) {
 		char *trustee = dom_sid_string(fs_sd, &ds_sd->dacl->aces[i].trustee);
@@ -88,6 +96,7 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 
 		/* Copy the ace from the directory server security descriptor */
 		ace = talloc_memdup(fs_sd, &ds_sd->dacl->aces[i], sizeof(struct security_ace));
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ace, fs_sd);
 
 		/* Set specific inheritance flags for within the GPO */
 		ace->flags |= SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_CONTAINER_INHERIT;
@@ -99,7 +108,11 @@ NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security
 		ace->access_mask = gp_ads_to_dir_access_mask(ace->access_mask);
 
 		/* Add the ace to the security descriptor DACL */
-		security_descriptor_dacl_add(fs_sd, ace);
+		status = security_descriptor_dacl_add(fs_sd, ace);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to add a dacl to file system security descriptor\n"));
+			return status;
+		}
 
 		/* Clean up the allocated data in this iteration */
 		talloc_free(trustee);
@@ -122,14 +135,18 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	/* Create the gpo struct to return later */
 	gpo = talloc(gp_ctx, struct gp_object);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo, mem_ctx);
 
 	/* Generate a GUID */
 	guid_struct = GUID_random();
 	guid_str = GUID_string2(mem_ctx, &guid_struct);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(guid_str, mem_ctx);
 	name = strupper_talloc(mem_ctx, guid_str);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(name, mem_ctx);
 
 	/* Prepare the GPO struct */
 	gpo->dn = NULL;
@@ -137,7 +154,10 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	gpo->flags = 0;
 	gpo->version = 0;
 	gpo->display_name = talloc_strdup(gpo, display_name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, mem_ctx);
+
 	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lp_dnsdomain(gp_ctx->lp_ctx), lp_dnsdomain(gp_ctx->lp_ctx), name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, mem_ctx);
 
 	/* Create the GPT */
 	status = gp_create_gpt(gp_ctx, name, gpo->file_sys_path);
@@ -195,6 +215,7 @@ NTSTATUS gp_set_acl (struct gp_context *gp_ctx, const char *dn_str, const struct
 
 	/* Create a forked memory context, as a base for everything here */
 	mem_ctx = talloc_new(gp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	/* Set the ACL on LDAP database */
 	status = gp_set_ads_acl(gp_ctx, dn_str, sd);

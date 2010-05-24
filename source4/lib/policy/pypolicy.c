@@ -17,9 +17,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <Python.h>
 #include "includes.h"
 #include "policy.h"
-#include <Python.h>
 #include "libcli/util/pyerrors.h"
 
 static PyObject *py_get_gpo_flags(PyObject *self, PyObject *args)
