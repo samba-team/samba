@@ -596,6 +596,7 @@ REG_BASE_OBJ = registry/reg_api.o \
 	       $(REG_INIT_BASIC_OBJ)
 
 REG_SMBCONF_OBJ = $(REG_BASE_OBJ) \
+		  registry/reg_util_token.o \
 		  $(REG_BACKENDS_SMBCONF_OBJ) \
 		  $(REG_INIT_SMBCONF_OBJ)
 

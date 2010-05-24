@@ -28,44 +28,6 @@
 extern struct registry_ops smbconf_reg_ops;
 
 /*
- * create a fake token just with enough rights to
- * locally access the registry:
- *
- * - builtin administrators sid
- * - disk operators privilege
- */
-NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
-				     NT_USER_TOKEN **ptoken)
-{
-	NTSTATUS status;
-	NT_USER_TOKEN *token = NULL;
-
-	if (ptoken == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
-	if (token == NULL) {
-		DEBUG(1, ("talloc failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	token->privileges = se_disk_operators;
-	status = add_sid_to_array(token, &global_sid_Builtin_Administrators,
-				  &token->user_sids, &token->num_sids);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Error adding builtin administrators sid "
-			  "to fake token.\n"));
-		goto done;
-	}
-
-	*ptoken = token;
-
-done:
-	return status;
-}
-
-/*
  * init the smbconf portion of the registry.
  * for use in places where not the whole registry is needed,
  * e.g. utils/net_conf.c and loadparm.c
