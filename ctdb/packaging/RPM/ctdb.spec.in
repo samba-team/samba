@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.114
+Version: 1.9
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %changelog
+* Tue May 25 2010 : Version 1.9
+ - Lots of changes
 * Wed Mar 25 2010 : Version 1.0.114
  - Lots of changes from Metze
 * Wed Jan 13 2010 : Version 1.0.113
