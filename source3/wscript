@@ -426,6 +426,15 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
                             krb5_auth_con_set_req_cksumtype''',
                             headers='krb5.h', always=True)
         conf.CHECK_VARIABLE('AP_OPTS_USE_SUBKEY', headers='krb5.h')
+        conf.CHECK_VARIABLE('KV5M_KEYTAB', headers='krb5.h')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'key', headers='krb5.h',
+                                    define='HAVE_KRB5_KEYTAB_ENTRY_KEY')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'keyblock', headers='krb5.h',
+                                    define='HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'magic', headers='krb5.h',
+                                    define='HAVE_MAGIC_IN_KRB5_ADDRESS')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype', headers='krb5.h',
+                                    define='HAVE_ADDRTYPE_IN_KRB5_ADDRESS')
 
     else:
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
