@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Bartlett 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,13 +55,19 @@ struct ntlmssp_state
 	bool unicode;
 	bool use_ntlmv2;
 	bool use_ccache;
-	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
-	bool allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
-				  very secure anyway */
-
 	const char *user;
 	const char *domain;
-	const char *workstation;
+	uint8_t *nt_hash;
+	uint8_t *lm_hash;
+
+	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
+	bool allow_lm_key;      /* The LM_KEY code is not very
+				  secure... */
+
+	struct {
+		const char *netbios_name;
+		const char *netbios_domain;
+	} client;
 
 	struct {
 		bool is_standalone;

@@ -33,51 +33,6 @@
 #include "auth/auth.h"
 #include "param/param.h"
 
-/** 
- * Set a username on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-
-static NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user)
-{
-	if (!user) {
-		/* it should be at least "" */
-		DEBUG(1, ("NTLMSSP failed to set username - cannot accept NULL username\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
-	if (!ntlmssp_state->user) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a domain on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-static NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain)
-{
-	ntlmssp_state->domain = talloc_strdup(ntlmssp_state, domain);
-	if (!ntlmssp_state->domain) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a workstation on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-static NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation)
-{
-	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
-	if (!ntlmssp_state->workstation) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 /**
  * Determine correct target name flags for reply, given server role 
  * and negotiated flags
@@ -276,9 +231,6 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	uint8_t session_nonce_hash[16];
 
 	const char *parse_string;
-	char *domain = NULL;
-	char *user = NULL;
-	char *workstation = NULL;
 
 #if 0
 	file_save("ntlmssp_auth.dat", request.data, request.length);
@@ -297,7 +249,7 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 
 	ntlmssp_state->user = NULL;
 	ntlmssp_state->domain = NULL;
-	ntlmssp_state->workstation = NULL;
+	ntlmssp_state->client.netbios_name = NULL;
 
 	/* now the NTLMSSP encoded auth hashes */
 	if (!msrpc_parse(ntlmssp_state,
@@ -306,9 +258,9 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 			 &ntlmssp_command, 
 			 &ntlmssp_state->lm_resp,
 			 &ntlmssp_state->nt_resp,
-			 &domain, 
-			 &user, 
-			 &workstation,
+			 &ntlmssp_state->domain,
+			 &ntlmssp_state->user,
+			 &ntlmssp_state->client.netbios_name,
 			 &state->encrypted_session_key,
 			 &auth_flags)) {
 		DEBUG(10, ("ntlmssp_server_auth: failed to parse NTLMSSP (nonfatal):\n"));
@@ -332,9 +284,9 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 				 &ntlmssp_command, 
 				 &ntlmssp_state->lm_resp,
 				 &ntlmssp_state->nt_resp,
-				 &domain, 
-				 &user, 
-				 &workstation)) {
+				 &ntlmssp_state->domain,
+				 &ntlmssp_state->user,
+				 &ntlmssp_state->client.netbios_name)) {
 			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
 			dump_data(2, request.data, request.length);
 
@@ -347,20 +299,8 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	if (auth_flags)
 		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, ntlmssp_state->allow_lm_key);
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_workstation(ntlmssp_state, workstation))) {
-		return nt_status;
-	}
-
 	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
-		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
+		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->client.netbios_name, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
 
 #if 0
 	file_save("nthash1.dat",  &ntlmssp_state->nt_resp.data,  &ntlmssp_state->nt_resp.length);
@@ -702,7 +642,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	user_info->mapped_state = false;
 	user_info->client.account_name = ntlmssp_state->user;
 	user_info->client.domain_name = ntlmssp_state->domain;
-	user_info->workstation_name = ntlmssp_state->workstation;
+	user_info->workstation_name = ntlmssp_state->client.netbios_name;
 	user_info->remote_host = gensec_get_remote_address(gensec_ntlmssp->gensec_security);
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
