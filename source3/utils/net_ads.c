@@ -541,7 +541,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	char *escaped_user;
 	DOM_SID primary_group_sid;
 	uint32_t group_rid;
-	enum SID_NAME_USE type;
+	enum wbcSidType type;
 
 	if (argc < 1 || c->display_usage) {
 		return net_ads_user_usage(c, argc, argv);
@@ -596,7 +596,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	wbc_status = wbcLookupSid((struct wbcDomainSid *)&primary_group_sid,
 				  NULL, /* don't look up domain */
 				  &primary_group,
-				  (enum wbcSidType *) &type);
+				  &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "wbcLookupSid: %s\n",
 			  wbcErrorString(wbc_status));
