@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
+ *  Copyright (C) Michael Adam                      2007-2010
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
