@@ -39,7 +39,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
-#include "ntlmssp.h"
+#include "../libcli/auth/ntlmssp.h"
 #include "rpc_client/cli_netlogon.h"
 
 #undef DBGC_CLASS

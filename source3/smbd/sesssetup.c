@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
-#include "ntlmssp.h"
+#include "../libcli/auth/ntlmssp.h"
 #include "librpc/gen_ndr/messaging.h"
 
 /* For split krb5 SPNEGO blobs. */

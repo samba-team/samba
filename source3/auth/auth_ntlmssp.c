@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "ntlmssp.h"
+#include "../libcli/auth/ntlmssp.h"
 
 struct auth_ntlmssp_state {
 	TALLOC_CTX *mem_ctx;

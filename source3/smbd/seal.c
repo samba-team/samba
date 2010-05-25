@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
-#include "ntlmssp.h"
+#include "../libcli/auth/ntlmssp.h"
 
 /******************************************************************************
  Server side encryption.

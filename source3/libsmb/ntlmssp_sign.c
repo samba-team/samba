@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-#include "ntlmssp.h"
+#include "../libcli/auth/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/md5.h"
 #include "../lib/crypto/arcfour.h"
