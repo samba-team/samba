@@ -38,7 +38,7 @@
 
 static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 {
-	AUTH_NTLMSSP_STATE *a = auth->a_u.auth_ntlmssp_state;
+	struct auth_ntlmssp_state *a = auth->a_u.auth_ntlmssp_state;
 
 	if (a) {
 		auth_ntlmssp_end(&a);
@@ -67,7 +67,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	DATA_BLOB auth_blob;
 	RPC_HDR_AUTH auth_info;
 	uint8 auth_type, auth_level;
-	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
+	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -659,7 +659,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 {
 	DATA_BLOB session_key, reply;
 	NTSTATUS status;
-	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
+	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 	bool ret;
 
 	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n",
@@ -1215,7 +1215,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
         int i;
 	NTSTATUS status;
         bool got_kerberos_mechanism = false;
-	AUTH_NTLMSSP_STATE *a = NULL;
+	struct auth_ntlmssp_state *a = NULL;
 	RPC_HDR_AUTH auth_info;
 
 	ZERO_STRUCT(secblob);
@@ -1348,7 +1348,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	DATA_BLOB auth_blob;
 	DATA_BLOB auth_reply;
 	DATA_BLOB response;
-	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
+	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 
 	ZERO_STRUCT(spnego_blob);
 	ZERO_STRUCT(auth_blob);
@@ -1578,7 +1578,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
         DATA_BLOB blob;
 	DATA_BLOB response;
         NTSTATUS status;
-	AUTH_NTLMSSP_STATE *a = NULL;
+	struct auth_ntlmssp_state *a = NULL;
 
 	ZERO_STRUCT(blob);
 	ZERO_STRUCT(response);
@@ -2243,7 +2243,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	RPC_HDR_AUTH auth_info;
 	uint32 auth_len = p->hdr.auth_len;
 	uint32 save_offset = prs_offset(rpc_in);
-	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
+	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 	unsigned char *data = NULL;
 	size_t data_len;
 	unsigned char *full_packet_data = NULL;

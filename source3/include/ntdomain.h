@@ -147,7 +147,7 @@ struct pipe_auth_data {
 	enum dcerpc_AuthLevel auth_level;
 	union {
 		struct schannel_state *schannel_auth;
-		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+		struct auth_ntlmssp_state *auth_ntlmssp_state;
 /*		struct kerberos_auth_struct *kerberos_auth; TO BE ADDED... */
 	} a_u;
 	void (*auth_data_free_func)(struct pipe_auth_data *);

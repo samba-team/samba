@@ -62,7 +62,6 @@ const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *auth_ntlmssp_stat
 const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *auth_ntlmssp_state);
 bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *auth_ntlmssp_state);
 bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state);
-
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state);
 void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,

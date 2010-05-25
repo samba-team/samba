@@ -32,7 +32,7 @@
 
 struct smb_srv_trans_enc_ctx {
 	struct smb_trans_enc_state *es;
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state; /* Must be kept in sync with pointer in ec->ntlmssp_state. */
+	struct auth_ntlmssp_state *auth_ntlmssp_state; /* Must be kept in sync with pointer in ec->ntlmssp_state. */
 };
 
 /******************************************************************************

@@ -143,7 +143,7 @@ struct auth_init_function_entry {
 	struct auth_init_function_entry *prev, *next;
 };
 
-typedef struct auth_ntlmssp_state AUTH_NTLMSSP_STATE;
+struct auth_ntlmssp_state;
 
 /* Changed from 1 -> 2 to add the logon_parameters field. */
 #define AUTH_INTERFACE_VERSION 2
