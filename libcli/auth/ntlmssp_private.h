@@ -20,6 +20,25 @@
 
 /* For structures internal to the NTLMSSP implementation that should not be exposed */
 
+#include "../lib/crypto/arcfour.h"
+
+struct ntlmssp_crypt_direction {
+	uint32_t seq_num;
+	uint8_t sign_key[16];
+	struct arcfour_state seal_state;
+};
+
+union ntlmssp_crypt_state {
+	/* NTLM */
+	struct ntlmssp_crypt_direction ntlm;
+
+	/* NTLM2 */
+	struct {
+		struct ntlmssp_crypt_direction sending;
+		struct ntlmssp_crypt_direction receiving;
+	} ntlm2;
+};
+
 /* The following definitions come from libcli/auth/ntlmssp.c  */
 
 void debug_ntlmssp_flags(uint32_t neg_flags);

@@ -22,7 +22,6 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/md5.h"
-#include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/hmacmd5.h"
 #include "../lib/crypto/crc32.h"
 #include "../libcli/auth/ntlmssp_private.h"
@@ -62,23 +61,6 @@ static void calc_ntlmv2_key(uint8_t subkey[16],
 enum ntlmssp_direction {
 	NTLMSSP_SEND,
 	NTLMSSP_RECEIVE
-};
-
-struct ntlmssp_crypt_direction {
-	uint32_t seq_num;
-	uint8_t sign_key[16];
-	struct arcfour_state seal_state;
-};
-
-union ntlmssp_crypt_state {
-	/* NTLM */
-	struct ntlmssp_crypt_direction ntlm;
-
-	/* NTLM2 */
-	struct {
-		struct ntlmssp_crypt_direction sending;
-		struct ntlmssp_crypt_direction receiving;
-	} ntlm2;
 };
 
 static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
