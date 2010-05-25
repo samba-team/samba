@@ -61,7 +61,7 @@ static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 	struct tevent_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
 	if (search->handle == INVALID_SEARCH_HANDLE) return;
 	talloc_free(search->te);
-	search->te = event_add_timed(ev, search, 
+	search->te = tevent_add_timer(ev, search,
 				     timeval_current_ofs(search->pvfs->search.inactivity_time, 0), 
 				     pvfs_search_timer, search);
 }

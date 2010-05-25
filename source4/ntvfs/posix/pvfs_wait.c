@@ -156,7 +156,7 @@ struct pvfs_wait *pvfs_wait_message(struct pvfs_state *pvfs,
 
 	if (!timeval_is_zero(&end_time)) {
 		/* setup a timer */
-		event_add_timed(pwait->ev, pwait, end_time, pvfs_wait_timeout, pwait);
+		tevent_add_timer(pwait->ev, pwait, end_time, pvfs_wait_timeout, pwait);
 	}
 
 	/* register with the messaging subsystem for this message

@@ -109,7 +109,7 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 	/* we can't call pvfs_notify_send() directly here, as that
 	   would free the request, and the ntvfs modules above us
 	   could use it, so call it on the next event */
-	event_add_timed(req->ctx->event_ctx, 
+	tevent_add_timer(req->ctx->event_ctx,
 			req, timeval_zero(), pvfs_notify_send_next, req);
 }
 

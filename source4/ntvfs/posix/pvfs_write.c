@@ -68,12 +68,12 @@ static void pvfs_trigger_write_time_update(struct pvfs_file_handle *h)
 
 	h->write_time.update_triggered = true;
 	h->write_time.update_on_close = true;
-	h->write_time.update_event = event_add_timed(pvfs->ntvfs->ctx->event_ctx,
+	h->write_time.update_event = tevent_add_timer(pvfs->ntvfs->ctx->event_ctx,
 						     h, tv,
 						     pvfs_write_time_update_handler,
 						     h);
 	if (!h->write_time.update_event) {
-		DEBUG(0,("Failed event_add_timed\n"));
+		DEBUG(0,("Failed tevent_add_timer\n"));
 	}
 }
 
