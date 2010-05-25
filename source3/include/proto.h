@@ -3135,7 +3135,6 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
 /* The following definitions come from libsmb/ntlmssp.c  */
 
-void debug_ntlmssp_flags(uint32 neg_flags);
 NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
 NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 			    const uint8_t lm_hash[16],
@@ -3160,28 +3159,6 @@ NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
 			      const char *netbios_domain,
 			      bool use_ntlmv2,
 			      struct ntlmssp_state **_ntlmssp_state);
-
-/* The following definitions come from libsmb/ntlmssp_sign.c  */
-
-NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
-			     TALLOC_CTX *sig_mem_ctx,
-			     const uint8_t *data, size_t length,
-			     const uint8_t *whole_pdu, size_t pdu_length,
-			     DATA_BLOB *sig);
-NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
-			      const uint8_t *data, size_t length,
-			      const uint8_t *whole_pdu, size_t pdu_length,
-			      const DATA_BLOB *sig) ;
-NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
-			     TALLOC_CTX *sig_mem_ctx,
-			     uint8_t *data, size_t length,
-			     const uint8_t *whole_pdu, size_t pdu_length,
-			     DATA_BLOB *sig);
-NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
-			       uint8_t *data, size_t length,
-			       const uint8_t *whole_pdu, size_t pdu_length,
-			       const DATA_BLOB *sig);
-NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 /* The following definitions come from libsmb/passchange.c  */
 

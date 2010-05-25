@@ -137,3 +137,25 @@ struct ntlmssp_state
 
 	union ntlmssp_crypt_state *crypt;
 };
+
+/* The following definitions come from libcli/auth/ntlmssp_sign.c  */
+
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
+			     const uint8_t *data, size_t length,
+			     const uint8_t *whole_pdu, size_t pdu_length,
+			     DATA_BLOB *sig);
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
+			      const uint8_t *data, size_t length,
+			      const uint8_t *whole_pdu, size_t pdu_length,
+			      const DATA_BLOB *sig) ;
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
+			     uint8_t *data, size_t length,
+			     const uint8_t *whole_pdu, size_t pdu_length,
+			     DATA_BLOB *sig);
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
+			       uint8_t *data, size_t length,
+			       const uint8_t *whole_pdu, size_t pdu_length,
+			       const DATA_BLOB *sig);
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);

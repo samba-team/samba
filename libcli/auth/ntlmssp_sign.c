@@ -25,6 +25,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/hmacmd5.h"
 #include "../lib/crypto/crc32.h"
+#include "../libcli/auth/ntlmssp_private.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"
