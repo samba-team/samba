@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Bartlett 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +55,9 @@ struct ntlmssp_state
 	bool unicode;
 	bool use_ntlmv2;
 	bool use_ccache;
+	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
+	bool allow_lm_key;     /* The LM_KEY code is not very secure... */
+
 	const char *user;
 	const char *domain;
 	uint8_t *nt_hash;
