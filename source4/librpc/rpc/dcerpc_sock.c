@@ -134,7 +134,7 @@ static void sock_io_handler(struct tevent_context *ev, struct tevent_fd *fde,
 						      struct dcecli_connection);
 	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		packet_queue_run(sock->packet);
 		return;
 	}
@@ -143,7 +143,7 @@ static void sock_io_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		packet_recv(sock->packet);
 	}
 }
@@ -276,8 +276,8 @@ static void continue_socket_connect(struct composite_context *ctx)
 	sock->pending_reads = 0;
 	sock->server_name   = strupper_talloc(sock, s->target_hostname);
 
-	sock->fde = event_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
-				 EVENT_FD_READ, sock_io_handler, conn);
+	sock->fde = tevent_add_fd(conn->event_ctx, sock->sock, socket_get_fd(sock->sock),
+				 TEVENT_FD_READ, sock_io_handler, conn);
 	
 	conn->transport.private_data = sock;
 

@@ -1180,7 +1180,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 						    true);
 	if (!composite_is_ok(c)) return c;
 
-	event_add_timed(c->event_ctx, req,
+	tevent_add_timer(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			dcerpc_timeout_handler, req);
 
@@ -1413,7 +1413,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	dcerpc_ship_next_request(p->conn);
 
 	if (p->request_timeout) {
-		event_add_timed(dcerpc_event_context(p), req, 
+		tevent_add_timer(dcerpc_event_context(p), req,
 				timeval_current_ofs(p->request_timeout, 0), 
 				dcerpc_timeout_handler, req);
 	}
@@ -1560,7 +1560,7 @@ static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 
 	while (req->state != RPC_REQUEST_DONE) {
 		struct tevent_context *ctx = dcerpc_event_context(req->p);
-		if (event_loop_once(ctx) != 0) {
+		if (tevent_loop_once(ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 	}
@@ -1931,7 +1931,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	c->status = p->conn->transport.send_request(p->conn, &blob, true);
 	if (!composite_is_ok(c)) return c;
 
-	event_add_timed(c->event_ctx, req,
+	tevent_add_timer(c->event_ctx, req,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			dcerpc_timeout_handler, req);
 

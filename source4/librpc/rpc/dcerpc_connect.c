@@ -759,7 +759,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	s->credentials  = credentials;
 	s->lp_ctx 	= lp_ctx;
 
-	event_add_timed(c->event_ctx, c,
+	tevent_add_timer(c->event_ctx, c,
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
 			dcerpc_connect_timeout_handler, c);
 	
