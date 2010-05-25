@@ -204,7 +204,7 @@ static void gensec_socket_trigger_read(struct tevent_context *ev,
 	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 
 	gensec_socket->in_extra_read++;
-	gensec_socket->recv_handler(gensec_socket->recv_private, EVENT_FD_READ);
+	gensec_socket->recv_handler(gensec_socket->recv_private, TEVENT_FD_READ);
 	gensec_socket->in_extra_read--;
 
 	/* It may well be that, having run the recv handler, we still
@@ -212,7 +212,7 @@ static void gensec_socket_trigger_read(struct tevent_context *ev,
 	 */
 	if (gensec_socket->read_buffer.length && gensec_socket->recv_handler) {
 		/* Schedule this funcion to run again */
-		event_add_timed(gensec_socket->ev, gensec_socket, timeval_zero(), 
+		tevent_add_timer(gensec_socket->ev, gensec_socket, timeval_zero(), 
 				gensec_socket_trigger_read, gensec_socket);
 	}
 }
@@ -275,7 +275,7 @@ static NTSTATUS gensec_socket_recv(struct socket_context *sock, void *buf,
 		/* Manually call a read event, to get this moving
 		 * again (as the socket should be dry, so the normal
 		 * event handler won't trigger) */
-		event_add_timed(gensec_socket->ev, gensec_socket, timeval_zero(), 
+		tevent_add_timer(gensec_socket->ev, gensec_socket, timeval_zero(), 
 				gensec_socket_trigger_read, gensec_socket);
 	}
 

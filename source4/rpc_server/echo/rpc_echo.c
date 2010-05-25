@@ -192,7 +192,7 @@ static long dcesrv_echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	p->dce_call	= dce_call;
 	p->r		= r;
 
-	event_add_timed(dce_call->event_ctx, p, 
+	tevent_add_timer(dce_call->event_ctx, p,
 			timeval_add(&dce_call->time, r->in.seconds, 0),
 			echo_TestSleep_handler, p);
 

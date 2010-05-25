@@ -122,7 +122,7 @@ static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
-	event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
+	tevent_add_timer(iname->iface->nbtsrv->task->event_ctx,
 			iname, 
 			timeval_add(&iname->registration_time, refresh_time, 0),
 			name_refresh_handler, iname);

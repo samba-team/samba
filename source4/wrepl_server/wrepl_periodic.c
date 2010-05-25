@@ -89,7 +89,7 @@ NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t n
 	/* reset the next scheduled timestamp */
 	service->periodic.next_event = next_time;
 
-	new_te = event_add_timed(service->task->event_ctx, service,
+	new_te = tevent_add_timer(service->task->event_ctx, service,
 			         service->periodic.next_event,
 			         wreplsrv_periodic_handler_te, service);
 	NT_STATUS_HAVE_NO_MEMORY(new_te);

@@ -96,8 +96,8 @@ void websrv_output_headers(struct websrv_context *web, const char *status, struc
 void websrv_output(struct websrv_context *web, void *data, size_t length)
 {
 	data_blob_append(web, &web->output.content, data, length);
-	EVENT_FD_NOT_READABLE(web->conn->event.fde);
-	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	TEVENT_FD_NOT_READABLE(web->conn->event.fde);
+	TEVENT_FD_WRITEABLE(web->conn->event.fde);
 	web->output.output_pending = true;
 }
 
@@ -189,7 +189,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		if (web->input.partial.length > web->input.content_length) {
 			web->input.partial.data[web->input.content_length] = 0;
 		}
-		EVENT_FD_NOT_READABLE(web->conn->event.fde);
+		TEVENT_FD_NOT_READABLE(web->conn->event.fde);
 
 		/* the reference/unlink code here is quite subtle. It
 		 is needed because the rendering of the web-pages, and
@@ -260,7 +260,7 @@ static void websrv_accept(struct stream_connection *conn)
 	conn->private_data = web;
 	talloc_set_destructor(web, websrv_destructor);
 
-	event_add_timed(conn->event.ctx, web, 
+	tevent_add_timer(conn->event.ctx, web,
 			timeval_current_ofs(HTTP_TIMEOUT, 0),
 			websrv_timeout, web);
 
