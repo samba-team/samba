@@ -325,6 +325,12 @@ updwtmp updwtmpx utimensat vsyslog _write __write __xstat
 
     conf.find_program('awk', var='AWK')
 
+    # Darwin has extra options to xattr-family functions
+    conf.CHECK_CODE('getxattr(0, 0, 0, 0, 0, 0);',
+                    'XATTR_ADD_OPT',
+                    msg="Checking whether xattr interface takes additional options",
+                    headers='sys/types.h attr/xattr.h sys/xattr.h')
+
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
         conf.DEFINE('WITH_ADS', '1')
