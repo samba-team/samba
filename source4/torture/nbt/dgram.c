@@ -139,7 +139,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -235,7 +235,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -275,7 +275,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -327,7 +327,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -369,7 +369,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -408,7 +408,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -517,7 +517,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -561,7 +561,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -602,7 +602,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
@@ -640,7 +640,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
 	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
-		event_loop_once(dgmsock->event_ctx);
+		tevent_loop_once(dgmsock->event_ctx);
 	}
 
 	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);

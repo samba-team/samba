@@ -153,7 +153,7 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	status = smb_composite_connect_recv(ctx, state->mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(state->te);
-		state->te = event_add_timed(state->ev, state->mem_ctx, 
+		state->te = tevent_add_timer(state->ev, state->mem_ctx,
 					    timeval_current_ofs(1,0), 
 					    reopen_connection, state);
 		return;
@@ -163,7 +163,7 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	state->tree = io->out.tree;
 
 	/* do the reopen as a separate event */
-	event_add_timed(state->ev, state->mem_ctx, timeval_zero(), reopen_file, state);
+	tevent_add_timer(state->ev, state->mem_ctx, timeval_zero(), reopen_file, state);
 }
 
 	
@@ -233,7 +233,7 @@ static void lock_completion(struct smbcli_request *req)
 			num_connected--;	
 			DEBUG(0,("reopening connection to %s\n", state->dest_host));
 			talloc_free(state->te);
-			state->te = event_add_timed(state->ev, state->mem_ctx, 
+			state->te = tevent_add_timer(state->ev, state->mem_ctx,
 						    timeval_current_ofs(1,0), 
 						    reopen_connection, state);
 		} else {
@@ -272,7 +272,7 @@ static void echo_completion(struct smbcli_request *req)
 		num_connected--;	
 		DEBUG(0,("reopening connection to %s\n", state->dest_host));
 		talloc_free(state->te);
-		state->te = event_add_timed(state->ev, state->mem_ctx, 
+		state->te = tevent_add_timer(state->ev, state->mem_ctx,
 					    timeval_current_ofs(1,0), 
 					    reopen_connection, state);
 	}
@@ -290,7 +290,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 	}
 	printf("\r");
 	fflush(stdout);
-	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+	tevent_add_timer(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
 	/* send an echo on each interface to ensure it stays alive - this helps
 	   with IP takeover */
@@ -396,12 +396,12 @@ bool torture_bench_lock(struct torture_context *torture)
 	tv = timeval_current();	
 
 	if (progress) {
-		event_add_timed(torture->ev, state, timeval_current_ofs(1, 0), report_rate, state);
+		tevent_add_timer(torture->ev, state, timeval_current_ofs(1, 0), report_rate, state);
 	}
 
 	printf("Running for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		event_loop_once(torture->ev);
+		tevent_loop_once(torture->ev);
 
 		if (lock_failed) {
 			DEBUG(0,("locking failed\n"));

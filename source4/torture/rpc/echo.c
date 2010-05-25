@@ -258,7 +258,7 @@ static bool test_sleep(struct torture_context *tctx,
 
 	ctx = dcerpc_event_context(p);
 	while (total_done < ASYNC_COUNT) {
-		torture_assert(tctx, event_loop_once(ctx) == 0, 
+		torture_assert(tctx, tevent_loop_once(ctx) == 0, 
 					   "Event context loop failed");
 		for (i=0;i<ASYNC_COUNT;i++) {
 			if (done2[i] == false && done1[i] == true) {

@@ -866,7 +866,7 @@ static bool test_LookupSids_async(struct dcerpc_binding_handle *b,
 	}
 
 	while (replies >= 0 && replies < num_async_requests) {
-		event_loop_once(tctx->ev);
+		tevent_loop_once(tctx->ev);
 	}
 
 	talloc_free(req);

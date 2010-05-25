@@ -270,11 +270,11 @@ static bool bench_wins(struct torture_context *tctx)
 			}
 		}
 
-		event_loop_once(nbtsock->event_ctx);
+		tevent_loop_once(nbtsock->event_ctx);
 	}
 
 	while (num_sent != (state->pass_count + state->fail_count)) {
-		event_loop_once(nbtsock->event_ctx);
+		tevent_loop_once(nbtsock->event_ctx);
 	}
 
 	torture_comment(tctx, "%.1f queries per second (%d failures)  \n", 

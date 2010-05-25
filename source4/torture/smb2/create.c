@@ -966,8 +966,8 @@ static bool test_smb2_open_multi(struct torture_context *tctx,
 			break;
 		}
 
-		if (event_loop_once(tctx->ev) != 0) {
-			torture_comment(tctx, "event_loop_once failed\n");
+		if (tevent_loop_once(tctx->ev) != 0) {
+			torture_comment(tctx, "tevent_loop_once failed\n");
 			ret = false;
 			goto done;
 		}

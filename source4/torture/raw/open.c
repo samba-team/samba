@@ -1633,9 +1633,9 @@ static bool test_raw_open_multi(struct torture_context *tctx, struct smbcli_stat
 			break;
 		}
 
-		if (event_loop_once(tctx->ev) != 0) {
+		if (tevent_loop_once(tctx->ev) != 0) {
 			torture_result(tctx, TORTURE_FAIL,
-				"(%s): event_loop_once failed\n", __location__);
+				"(%s): tevent_loop_once failed\n", __location__);
 			return false;
 		}
 	}

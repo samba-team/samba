@@ -763,8 +763,8 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	}
 
 	while (NT_STATUS_IS_OK(s->error) && s->nprocs != s->nconns) {
-		int ev_ret = event_loop_once(torture->ev);
-		torture_assert(torture, ev_ret == 0, "event_loop_once failed");
+		int ev_ret = tevent_loop_once(torture->ev);
+		torture_assert(torture, ev_ret == 0, "tevent_loop_once failed");
 #endif
 	}
 	torture_assert_ntstatus_ok(torture, s->error, "Failed establish a connect");
@@ -851,8 +851,8 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	end = timeval_add(&start, s->timelimit, 0);
 
 	while (NT_STATUS_IS_OK(s->error) && !timeval_expired(&end)) {
-		int ev_ret = event_loop_once(torture->ev);
-		torture_assert(torture, ev_ret == 0, "event_loop_once failed");
+		int ev_ret = tevent_loop_once(torture->ev);
+		torture_assert(torture, ev_ret == 0, "tevent_loop_once failed");
 	}
 	torture_assert_ntstatus_ok(torture, s->error, "Failed some request");
 	s->stopped = true;

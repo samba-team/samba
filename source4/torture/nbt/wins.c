@@ -156,7 +156,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 		 */
 		req = nbt_name_register_send(nbtsock, &name_register);
 		while (true) {
-			event_loop_once(nbtsock->event_ctx);
+			tevent_loop_once(nbtsock->event_ctx);
 			if (req->state != NBT_REQUEST_WAIT) {
 				break;
 			}
@@ -170,7 +170,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 				req->state = NBT_REQUEST_SEND;
 				DLIST_ADD_END(nbtsock->send_queue, req,
 					      struct nbt_name_request *);
-				EVENT_FD_WRITEABLE(nbtsock->fde);
+				TEVENT_FD_WRITEABLE(nbtsock->fde);
 				break;
 			}
 		}

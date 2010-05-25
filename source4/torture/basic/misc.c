@@ -997,7 +997,7 @@ bool run_benchrw(struct torture_context *tctx)
 				finished++;
 				break;
 			default:
-				event_loop_once(ev);
+				tevent_loop_once(ev);
 			}
 		}
 	}

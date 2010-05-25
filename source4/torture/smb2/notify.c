@@ -101,7 +101,7 @@ static bool test_valid_request(struct torture_context *torture,
 	req = smb2_notify_send(tree, &n);
 
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			break;
 		}
 	}
@@ -123,7 +123,7 @@ static bool test_valid_request(struct torture_context *torture,
 	req = smb2_notify_send(tree, &n);
 
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			break;
 		}
 	}
@@ -142,7 +142,7 @@ static bool test_valid_request(struct torture_context *torture,
 	req = smb2_notify_send(tree, &n);
 
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			break;
 		}
 	}
@@ -174,7 +174,7 @@ static bool test_valid_request(struct torture_context *torture,
 	req = smb2_notify_send(tree, &n);
 
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			break;
 		}
 	}
@@ -188,7 +188,7 @@ static bool test_valid_request(struct torture_context *torture,
 	n.in.buffer_size        = max_buffer_size;
 	req = smb2_notify_send(tree, &n);
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			break;
 		}
 	}

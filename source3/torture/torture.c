@@ -6517,7 +6517,7 @@ static bool run_chain1(int dummy)
 	}
 
 	while (!done) {
-		event_loop_once(evt);
+		tevent_loop_once(evt);
 	}
 
 	torture_close_connection(cli1);
@@ -6573,7 +6573,7 @@ static bool run_chain2(int dummy)
 	}
 
 	while (!done) {
-		event_loop_once(evt);
+		tevent_loop_once(evt);
 	}
 
 	torture_close_connection(cli1);
@@ -8424,7 +8424,7 @@ static bool run_local_wbclient(int dummy)
 	i = 0;
 
 	while (i < nprocs * torture_numops) {
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	result = true;

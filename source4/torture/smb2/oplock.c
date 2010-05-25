@@ -329,7 +329,7 @@ static void torture_wait_for_oplock_break(struct torture_context *tctx)
 	/* Wait .1 seconds for an oplock break */
 	ne = tevent_timeval_current_ofs(0, 100000);
 
-	if ((te = event_add_timed(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup))
+	if ((te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup))
 	    == NULL)
 	{
 		torture_comment(tctx, "Failed to wait for an oplock break. "
@@ -338,7 +338,7 @@ static void torture_wait_for_oplock_break(struct torture_context *tctx)
 	}
 
 	while (!timesup && break_info.count < old_count + 1) {
-		if (event_loop_once(tctx->ev) != 0) {
+		if (tevent_loop_once(tctx->ev) != 0) {
 			torture_comment(tctx, "Failed to wait for an oplock "
 					      "break. test results may not be "
 					      "accurate.");
@@ -3606,7 +3606,7 @@ bool test_smb2_hold_oplock(struct torture_context *tctx,
 	}
 
 	torture_comment(tctx, "Waiting for oplock events\n");
-	event_loop_wait(ev);
+	tevent_loop_wait(ev);
 	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return true;

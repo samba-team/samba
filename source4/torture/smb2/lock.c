@@ -62,7 +62,7 @@
 
 #define WAIT_FOR_ASYNC_RESPONSE(req) \
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) { \
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) { \
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) { \
 			break; \
 		} \
 	}
