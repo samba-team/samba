@@ -120,7 +120,7 @@ static void onefork_new_task(struct tevent_context *ev,
 	/* setup this new connection: process will bind to it's sockets etc */
 	new_task_fn(ev, lp_ctx, cluster_id(pid, 0), private_data);
 
-	event_loop_wait(ev);
+	tevent_loop_wait(ev);
 
 	talloc_free(ev);
 	exit(0);

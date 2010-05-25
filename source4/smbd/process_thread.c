@@ -52,7 +52,7 @@ static void *thread_connection_fn(void *thread_parm)
 	new_conn->new_conn(new_conn->ev, new_conn->lp_ctx, new_conn->sock, pthread_self(), new_conn->private_data);
 
 	/* run this connection from here */
-	event_loop_wait(new_conn->ev);
+	tevent_loop_wait(new_conn->ev);
 
 	talloc_free(new_conn);
 
@@ -137,7 +137,7 @@ static void *thread_task_fn(void *thread_parm)
 			   new_task->private_data);
 
 	/* run this connection from here */
-	event_loop_wait(new_task->ev);
+	tevent_loop_wait(new_task->ev);
 
 	talloc_free(new_task);
 

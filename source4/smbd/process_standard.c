@@ -146,7 +146,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
 	   more to process */	   
-	event_loop_wait(ev);
+	tevent_loop_wait(ev);
 
 	talloc_free(ev);
 	exit(0);
@@ -196,7 +196,7 @@ static void standard_new_task(struct tevent_context *ev,
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
 	   more to process */	   
-	event_loop_wait(ev);
+	tevent_loop_wait(ev);
 
 	talloc_free(ev);
 	exit(0);
