@@ -451,7 +451,7 @@ WERROR dreplsrv_notify_schedule(struct dreplsrv_service *service, uint32_t next_
 	/* reset the next scheduled timestamp */
 	service->notify.next_event = next_time;
 
-	new_te = event_add_timed(service->task->event_ctx, service,
+	new_te = tevent_add_timer(service->task->event_ctx, service,
 			         service->notify.next_event,
 			         dreplsrv_notify_handler_te, service);
 	W_ERROR_HAVE_NO_MEMORY(new_te);

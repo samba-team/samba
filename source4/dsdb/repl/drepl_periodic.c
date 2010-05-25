@@ -74,7 +74,7 @@ WERROR dreplsrv_periodic_schedule(struct dreplsrv_service *service, uint32_t nex
 	/* reset the next scheduled timestamp */
 	service->periodic.next_event = next_time;
 
-	new_te = event_add_timed(service->task->event_ctx, service,
+	new_te = tevent_add_timer(service->task->event_ctx, service,
 			         service->periodic.next_event,
 			         dreplsrv_periodic_handler_te, service);
 	W_ERROR_HAVE_NO_MEMORY(new_te);
