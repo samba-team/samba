@@ -310,6 +310,7 @@ if test x"$samba_cv_HAVE_qhalt" = x"yes"; then
 fi
 fi
 fi
+fi
 
 ############################################
 # check if the compiler can handle negative enum values
