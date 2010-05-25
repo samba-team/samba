@@ -110,14 +110,14 @@ static bool test_ping_speed(struct torture_context *tctx)
 		ping_count++;
 
 		while (ping_count > pong_count + 20) {
-			event_loop_once(ev);
+			tevent_loop_once(ev);
 		}
 	}
 
 	torture_comment(tctx, "waiting for %d remaining replies (done %d)\n", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	torture_comment(tctx, "sending exit\n");

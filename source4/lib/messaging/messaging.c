@@ -273,7 +273,7 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 					      struct imessaging_rec *);
 				if (msg->retry_te == NULL) {
 					msg->retry_te = 
-						event_add_timed(msg->event.ev, msg, 
+						tevent_add_timer(msg->event.ev, msg,
 								timeval_current_ofs(1, 0), 
 								msg_retry_timer, msg);
 				}
@@ -625,7 +625,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	set_blocking(socket_get_fd(msg->sock), false);
 
 	msg->event.ev   = ev;
-	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
+	msg->event.fde	= tevent_add_fd(ev, msg, socket_get_fd(msg->sock),
 				       EVENT_FD_READ, imessaging_handler, msg);
 	tevent_fd_set_auto_close(msg->event.fde);
 

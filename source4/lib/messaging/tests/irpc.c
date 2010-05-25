@@ -74,7 +74,7 @@ static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te
 static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r)
 {
 	irpc->defer_reply = true;
-	event_add_timed(irpc->ev, irpc, timeval_zero(), deferred_echodata, irpc);
+	tevent_add_timer(irpc->ev, irpc, timeval_zero(), deferred_echodata, irpc);
 	return NT_STATUS_OK;
 }
 
@@ -218,14 +218,14 @@ static bool test_speed(struct torture_context *tctx,
 		ping_count++;
 
 		while (ping_count > pong_count + 20) {
-			event_loop_once(data->ev);
+			tevent_loop_once(data->ev);
 		}
 	}
 
 	torture_comment(tctx, "waiting for %d remaining replies (done %d)\n", 
 	       ping_count - pong_count, pong_count);
 	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
-		event_loop_once(data->ev);
+		tevent_loop_once(data->ev);
 	}
 
 	torture_assert_int_equal(tctx, ping_count, pong_count, "ping test failed");
