@@ -1706,6 +1706,7 @@ fi
 
 AC_MSG_RESULT($BLDSHARED)
 
+saved_before_as_needed_ldflags="$LDFLAGS"
 for flags in "-Wl,--as-needed" "-Wl,-z,ignore" "-z ignore" ; do
 	saved_ldflags="$LDFLAGS"
 	AC_MSG_CHECKING([if $flags works])
@@ -1718,6 +1719,25 @@ for flags in "-Wl,--as-needed" "-Wl,-z,ignore" "-z ignore" ; do
 	LDFLAGS="$LD_AS_NEEDED_FLAG $saved_ldflags"
 	test x"$ld_as_needed_flag_found" = xyes && break
 done
+
+# check if we have to disable LD_AS_NEEDED_FLAG:
+# On some systems for a veriety of reasons linking with
+# -Wl,--as-needed -lreadline -lncurses fails
+# we have to retest, if these combination is detected before.
+# Bugzilla #7209
+
+if test x$ac_cv_lib_readline_rl_callback_handler_install = xyes ; then
+	if test x$ld_as_needed_flag_found = xyes ; then
+		AC_MSG_CHECKING([if $LD_AS_NEEDED_FLAG works with readline])
+		# try if check no fails
+		save_LIBS=$LIBS
+		LIBS="$LIBS $TERMLIBS"
+		AC_TRY_LINK([], [rl_callback_handler_install();], [AC_MSG_RESULT([yes])],[ AC_MSG_RESULT([no]); LDFLAGS="$saved_before_as_needed_ldflags"])
+		LIBS="$save_LIBS"
+        fi
+fi
+
+
 
 # for historical reasons almost all linkers don't complain about unresolved
 # symbols in shared libs. Except for the internal samba modules we want to get
