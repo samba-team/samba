@@ -22,7 +22,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "../include/ctdb_private.h"
-#include "../include/ctdb.h"
+#include "../include/ctdb_client.h"
 
 int log_ringbuf_size;
 

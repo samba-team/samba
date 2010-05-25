@@ -2,6 +2,9 @@
 
 
 CC = @CC@
+AR = ar
+ARFLAGS = cru
+RANLIB = ranlib
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
@@ -41,7 +44,10 @@ UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util
 CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
 	lib/util/debug.o common/rb_tree.o @CTDB_SYSTEM_OBJ@ common/system_common.o \
-	common/ctdb_logging.c
+	common/ctdb_logging.c libctdb/libctdb.a
+
+CTDB_LIB_OBJ = libctdb/ctdb.o libctdb/io_elem.o libctdb/local_tdb.o \
+	libctdb/messages.o libctdb/sync.o libctdb/control.o
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
@@ -101,6 +107,12 @@ dirs:
 bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
+
+libctdb/libctdb.a: $(CTDB_LIB_OBJ)
+	@echo Linking $@
+	-rm -f libctdb.a
+	@$(AR) $(ARFLAGS) libctdb/libctdb.a $(CTDB_LIB_OBJ)
+	@$(RANLIB) libctdb/libctdb.a
 
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
@@ -184,7 +196,7 @@ doc: doc/ctdb.1 doc/ctdb.1.html \
 	doc/onnode.1 doc/onnode.1.html
 
 clean:
-	rm -f *.o */*.o */*/*.o */*~
+	rm -f *.o */*.o */*.a */*/*.o */*~
 	rm -f utils/smnotify/gen_xdr.c
 	rm -f $(BINS) $(SBINS) $(TEST_BINS)
 
@@ -208,6 +220,8 @@ install: all
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m 644 include/ctdb_client.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m 644 include/ctdb_protocol.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb

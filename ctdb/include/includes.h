@@ -6,7 +6,7 @@
 #include "system/network.h"
 #include "tdb.h"
 #include "idtree.h"
-#include "ctdb.h"
+#include "ctdb_client.h"
 
 typedef bool BOOL;
 
