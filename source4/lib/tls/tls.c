@@ -126,21 +126,21 @@ static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
 		return 0;
 	}
 	if (NT_STATUS_IS_ERR(status)) {
-		EVENT_FD_NOT_READABLE(tls->fde);
-		EVENT_FD_NOT_WRITEABLE(tls->fde);
+		TEVENT_FD_NOT_READABLE(tls->fde);
+		TEVENT_FD_NOT_WRITEABLE(tls->fde);
 		errno = EBADF;
 		return -1;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		EVENT_FD_READABLE(tls->fde);
+		TEVENT_FD_READABLE(tls->fde);
 		errno = EAGAIN;
 		return -1;
 	}
 	if (tls->output_pending) {
-		EVENT_FD_WRITEABLE(tls->fde);
+		TEVENT_FD_WRITEABLE(tls->fde);
 	}
 	if (size != nread) {
-		EVENT_FD_READABLE(tls->fde);
+		TEVENT_FD_READABLE(tls->fde);
 	}
 	return nread;
 }
@@ -168,11 +168,11 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 		return -1;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		EVENT_FD_WRITEABLE(tls->fde);
+		TEVENT_FD_WRITEABLE(tls->fde);
 		return -1;
 	}
 	if (size != nwritten) {
-		EVENT_FD_WRITEABLE(tls->fde);
+		TEVENT_FD_WRITEABLE(tls->fde);
 	}
 	return nwritten;
 }
@@ -205,7 +205,7 @@ static NTSTATUS tls_handshake(struct tls_context *tls)
 	ret = gnutls_handshake(tls->session);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
 		if (gnutls_record_get_direction(tls->session) == 1) {
-			EVENT_FD_WRITEABLE(tls->fde);
+			TEVENT_FD_WRITEABLE(tls->fde);
 		}
 		return STATUS_MORE_ENTRIES;
 	}
@@ -298,7 +298,7 @@ static NTSTATUS tls_socket_recv(struct socket_context *sock, void *buf,
 	ret = gnutls_record_recv(tls->session, buf, wantlen);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
 		if (gnutls_record_get_direction(tls->session) == 1) {
-			EVENT_FD_WRITEABLE(tls->fde);
+			TEVENT_FD_WRITEABLE(tls->fde);
 		}
 		tls->interrupted = true;
 		return STATUS_MORE_ENTRIES;
@@ -334,7 +334,7 @@ static NTSTATUS tls_socket_send(struct socket_context *sock,
 	ret = gnutls_record_send(tls->session, blob->data, blob->length);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
 		if (gnutls_record_get_direction(tls->session) == 1) {
-			EVENT_FD_WRITEABLE(tls->fde);
+			TEVENT_FD_WRITEABLE(tls->fde);
 		}
 		tls->interrupted = true;
 		return STATUS_MORE_ENTRIES;

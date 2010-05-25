@@ -251,7 +251,7 @@ static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te,
 		DLIST_ADD_END(msg->pending, rec, struct imessaging_rec *);
 	}
 
-	EVENT_FD_WRITEABLE(msg->event.fde);	
+	TEVENT_FD_WRITEABLE(msg->event.fde);
 }
 
 /*
@@ -294,7 +294,7 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 		talloc_free(rec);
 	}
 	if (msg->pending == NULL) {
-		EVENT_FD_NOT_WRITEABLE(msg->event.fde);
+		TEVENT_FD_NOT_WRITEABLE(msg->event.fde);
 	}
 }
 
@@ -366,10 +366,10 @@ static void imessaging_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct imessaging_context *msg = talloc_get_type(private_data,
 							struct imessaging_context);
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		imessaging_send_handler(msg);
 	}
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		imessaging_recv_handler(msg);
 	}
 }
@@ -514,7 +514,7 @@ NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server
 
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		if (msg->pending == NULL) {
-			EVENT_FD_WRITEABLE(msg->event.fde);
+			TEVENT_FD_WRITEABLE(msg->event.fde);
 		}
 		DLIST_ADD_END(msg->pending, rec, struct imessaging_rec *);
 		return NT_STATUS_OK;
@@ -626,7 +626,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->event.ev   = ev;
 	msg->event.fde	= tevent_add_fd(ev, msg, socket_get_fd(msg->sock),
-				       EVENT_FD_READ, imessaging_handler, msg);
+				        TEVENT_FD_READ, imessaging_handler, msg);
 	tevent_fd_set_auto_close(msg->event.fde);
 
 	if (auto_remove) {

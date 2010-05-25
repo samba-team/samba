@@ -161,7 +161,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 		/* note that this timer is a child of the single
 		   connect attempt state, so it will go away when this
 		   request completes */
-		event_add_timed(result->event_ctx, state,
+		tevent_add_timer(result->event_ctx, state,
 				timeval_current_ofs_usec(MULTI_PORT_DELAY),
 				connect_multi_timer, result);
 	}

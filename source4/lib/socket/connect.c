@@ -58,9 +58,9 @@ static void socket_send_connect(struct composite_context *result)
 		return;
 	}
 
-	fde = event_add_fd(result->event_ctx, result,
+	fde = tevent_add_fd(result->event_ctx, result,
 			   socket_get_fd(state->sock),
-			   EVENT_FD_READ|EVENT_FD_WRITE, 
+			   TEVENT_FD_READ|TEVENT_FD_WRITE,
 			   socket_connect_handler, result);
 	composite_nomem(fde, result);
 }

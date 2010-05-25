@@ -251,14 +251,14 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 	bool recv_retry = false;
 
 	if (pc->processing) {
-		EVENT_FD_NOT_READABLE(pc->fde);
+		TEVENT_FD_NOT_READABLE(pc->fde);
 		pc->processing++;
 		return;
 	}
 
 	if (pc->recv_disable) {
 		pc->recv_need_enable = true;
-		EVENT_FD_NOT_READABLE(pc->fde);
+		TEVENT_FD_NOT_READABLE(pc->fde);
 		return;
 	}
 
@@ -424,7 +424,7 @@ next_partial:
 
 	if (pc->processing) {
 		if (pc->processing > 1) {
-			EVENT_FD_READABLE(pc->fde);
+			TEVENT_FD_READABLE(pc->fde);
 		}
 		pc->processing = 0;
 	}
@@ -457,7 +457,7 @@ next_partial:
 		return;
 	}
 
-	event_add_timed(pc->ev, pc, timeval_zero(), packet_next_event, pc);
+	tevent_add_timer(pc->ev, pc, timeval_zero(), packet_next_event, pc);
 }
 
 
@@ -476,11 +476,11 @@ _PUBLIC_ void packet_recv_enable(struct packet_context *pc)
 {
 	if (pc->recv_need_enable) {
 		pc->recv_need_enable = false;
-		EVENT_FD_READABLE(pc->fde);
+		TEVENT_FD_READABLE(pc->fde);
 	}
 	pc->recv_disable = false;
 	if (pc->num_read != 0 && pc->packet_size >= pc->num_read) {
-		event_add_timed(pc->ev, pc, timeval_zero(), packet_next_event, pc);
+		tevent_add_timer(pc->ev, pc, timeval_zero(), packet_next_event, pc);
 	}
 }
 
@@ -523,7 +523,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 
 	/* we're out of requests to send, so don't wait for write
 	   events any more */
-	EVENT_FD_NOT_WRITEABLE(pc->fde);
+	TEVENT_FD_NOT_WRITEABLE(pc->fde);
 }
 
 /*
@@ -561,7 +561,7 @@ _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	EVENT_FD_WRITEABLE(pc->fde);
+	TEVENT_FD_WRITEABLE(pc->fde);
 
 	return NT_STATUS_OK;
 }
