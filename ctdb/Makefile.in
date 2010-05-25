@@ -78,7 +78,7 @@ DIRS = lib bin tests/bin
 
 .SUFFIXES: .c .o .h .1 .1.xml .1.html
 
-all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
