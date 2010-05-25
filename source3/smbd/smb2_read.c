@@ -310,6 +310,12 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	DEBUG(3,("smbd_smb2_read: fnum=[%d/%s] length=%lu offset=%lu read=%lu\n",
+		fsp->fnum, fsp_str_dbg(fsp),
+		(unsigned long)in_length,
+		(unsigned long)in_offset,
+		(unsigned long)nread));
+
 	state->out_data.length = nread;
 	state->out_remaining = 0;
 	tevent_req_done(req);

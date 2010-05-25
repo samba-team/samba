@@ -287,9 +287,11 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	DEBUG(3,("smbd_smb2_write: fnum=[%d/%s] length=%d offset=%d wrote=%d\n",
-		fsp->fnum, fsp_str_dbg(fsp), (int)in_data.length,
-		(int)in_offset, (int)nwritten));
+	DEBUG(3,("smbd_smb2_write: fnum=[%d/%s] length=%lu offset=%lu wrote=%lu\n",
+		fsp->fnum, fsp_str_dbg(fsp),
+		(unsigned long)in_data.length,
+		(unsigned long)in_offset,
+		(unsigned long)nwritten));
 
 	if (in_flags & 0x00000001) {
 		write_through = true;
