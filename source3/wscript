@@ -417,6 +417,8 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
         conf.CHECK_DECLS('''krb5_get_credentials_for_user
                             krb5_auth_con_set_req_cksumtype''',
                             headers='krb5.h', always=True)
+        conf.CHECK_VARIABLE('AP_OPTS_USE_SUBKEY', headers='krb5.h')
+
     else:
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
