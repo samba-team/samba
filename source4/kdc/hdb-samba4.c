@@ -119,16 +119,6 @@ static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigne
 
 static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 {
-	struct samba_kdc_db_context *kdc_db_ctx;
-
-	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
-					   struct samba_kdc_db_context);
-
-	if (kdc_db_ctx) {
-		talloc_free(kdc_db_ctx->samdb);
-		kdc_db_ctx->samdb = NULL;
-	}
-
 	talloc_free(db);
 	return 0;
 }

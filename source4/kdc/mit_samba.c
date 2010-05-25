@@ -98,7 +98,7 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 	cli_credentials_set_kerberos_state(ctx->session_info->credentials,
 					   CRED_DONT_USE_KERBEROS);
 
-	ctx->db_ctx->samdb = samdb_connect(ctx,
+	ctx->db_ctx->samdb = samdb_connect(ctx->db_ctx,
 					   ctx->db_ctx->ev_ctx,
 					   ctx->db_ctx->lp_ctx,
 					   ctx->session_info);
