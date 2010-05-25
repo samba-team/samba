@@ -1976,10 +1976,13 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	DATA_BLOB auth_blob = data_blob_null;
 	uint16 data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	TALLOC_CTX *frame;
 
 	if (!cli->auth->a_u.ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	frame = talloc_stackframe();
 
 	/* Init and marshall the auth header. */
 	init_rpc_hdr_auth(&auth_info,
@@ -1991,7 +1994,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, outgoing_pdu, 0)) {
 		DEBUG(0,("add_ntlmssp_auth_footer: failed to marshall RPC_HDR_AUTH.\n"));
-		data_blob_free(&auth_blob);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1999,13 +2002,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(cli->auth->a_u.ntlmssp_state,
+						     frame,
 					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 					data_and_pad_len,
 					(unsigned char *)prs_data_p(outgoing_pdu),
 					(size_t)prs_offset(outgoing_pdu),
 					&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
-				data_blob_free(&auth_blob);
+				talloc_free(frame);
 				return status;
 			}
 			break;
@@ -2013,13 +2017,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = ntlmssp_sign_packet(cli->auth->a_u.ntlmssp_state,
+						     frame,
 					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 					data_and_pad_len,
 					(unsigned char *)prs_data_p(outgoing_pdu),
 					(size_t)prs_offset(outgoing_pdu),
 					&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
-				data_blob_free(&auth_blob);
+				talloc_free(frame);
 				return status;
 			}
 			break;
@@ -2036,11 +2041,11 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	if (!prs_copy_data_in(outgoing_pdu, (const char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
 			(unsigned int)NTLMSSP_SIG_SIZE));
-		data_blob_free(&auth_blob);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data_blob_free(&auth_blob);
+	talloc_free(frame);
 	return NT_STATUS_OK;
 }
 

@@ -30,19 +30,23 @@ static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 	ADS_STATUS status;
 	NTSTATUS nt_status;
 	DATA_BLOB sig;
+	TALLOC_CTX *frame;
 	uint8 *dptr = ads->ldap.out.buf + (4 + NTLMSSP_SIG_SIZE);
 
+	frame = talloc_stackframe();
 	/* copy the data to the right location */
 	memcpy(dptr, buf, len);
 
 	/* create the signature and may encrypt the data */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
 		nt_status = ntlmssp_seal_packet(ntlmssp_state,
+						frame,
 						dptr, len,
 						dptr, len,
 						&sig);
 	} else {
 		nt_status = ntlmssp_sign_packet(ntlmssp_state,
+						frame,
 						dptr, len,
 						dptr, len,
 						&sig);
@@ -54,7 +58,7 @@ static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 	memcpy(ads->ldap.out.buf + 4,
 	       sig.data, NTLMSSP_SIG_SIZE);
 
-	data_blob_free(&sig);
+	TALLOC_FREE(frame);
 
 	/* set how many bytes must be written to the underlying socket */
 	ads->ldap.out.left = 4 + NTLMSSP_SIG_SIZE + len;

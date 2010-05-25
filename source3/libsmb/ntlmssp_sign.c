@@ -81,6 +81,7 @@ union ntlmssp_crypt_state {
 };
 
 static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
+					      TALLOC_CTX *sig_mem_ctx,
 					      const uint8_t *data, size_t length,
 					      const uint8_t *whole_pdu, size_t pdu_length,
 					      enum ntlmssp_direction direction,
@@ -91,7 +92,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		uint8_t digest[16];
 		uint8_t seq_num[4];
 
-		*sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
+		*sig = data_blob_talloc(sig_mem_ctx, NULL, NTLMSSP_SIG_SIZE);
 		if (!sig->data) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -151,7 +152,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 
 		crc = crc32_calc_buffer(data, length);
 
-		ok = msrpc_gen(ntlmssp_state,
+		ok = msrpc_gen(sig_mem_ctx,
 			       sig, "dddd",
 			       NTLMSSP_SIGN_VERSION, 0, crc,
 			       ntlmssp_state->crypt->ntlm.seq_num);
@@ -170,6 +171,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 }
 
 NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
 			     const uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
@@ -187,6 +189,7 @@ NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+						  sig_mem_ctx,
 						  data, length,
 						  whole_pdu, pdu_length,
 						  NTLMSSP_SEND, sig, true);
@@ -207,6 +210,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 {
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
+	TALLOC_CTX *tmp_ctx;
 
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot check packet signature\n"));
@@ -218,7 +222,13 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			  (unsigned long)sig->length));
 	}
 
+	tmp_ctx = talloc_new(ntlmssp_state);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+						  tmp_ctx,
 						  data, length,
 						  whole_pdu, pdu_length,
 						  NTLMSSP_RECEIVE,
@@ -227,7 +237,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("NTLMSSP packet sig creation failed with %s\n",
 			 nt_errstr(nt_status)));
-		data_blob_free(&local_sig);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
@@ -241,7 +251,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			dump_data(5, sig->data, sig->length);
 
 			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature!\n"));
-			data_blob_free(&local_sig);
+			talloc_free(tmp_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
@@ -254,14 +264,14 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			dump_data(5, sig->data, sig->length);
 
 			DEBUG(0, ("NTLMSSP NTLM1 packet check failed due to invalid signature!\n"));
-			data_blob_free(&local_sig);
+			talloc_free(tmp_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 	dump_data_pw("checked ntlmssp signature\n", sig->data, sig->length);
 	DEBUG(10,("ntlmssp_check_packet: NTLMSSP signature OK !\n"));
 
-	data_blob_free(&local_sig);
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -271,6 +281,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
  */
 
 NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
 			     uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig)
@@ -297,6 +308,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		 * updated with each iteration
 		 */
 		nt_status = ntlmssp_make_packet_signature(ntlmssp_state,
+							  sig_mem_ctx,
 							  data, length,
 							  whole_pdu, pdu_length,
 							  NTLMSSP_SEND,
@@ -317,7 +329,7 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 
 		crc = crc32_calc_buffer(data, length);
 
-		ok = msrpc_gen(ntlmssp_state,
+		ok = msrpc_gen(sig_mem_ctx,
 			       sig, "dddd",
 			       NTLMSSP_SIGN_VERSION, 0, crc,
 			       ntlmssp_state->crypt->ntlm.seq_num);
@@ -362,6 +374,7 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 			       const uint8_t *whole_pdu, size_t pdu_length,
 			       const DATA_BLOB *sig)
 {
+	NTSTATUS status;
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -380,7 +393,16 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 				   data, length);
 		dump_data_pw("ntlmv1 clear data\n", data, length);
 	}
-	return ntlmssp_check_packet(ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+	status = ntlmssp_check_packet(ntlmssp_state,
+				      data, length,
+				      whole_pdu, pdu_length,
+				      sig);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("NTLMSSP packet check for unseal failed due to invalid signature on %llu bytes of input:\n",
+			 (unsigned long long)length));
+	}
+	return status;
 }
 
 /**

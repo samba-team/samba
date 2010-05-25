@@ -31,11 +31,12 @@ struct auth_ntlmssp_state {
 };
 
 NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  TALLOC_CTX *sig_mem_ctx,
 				  const uint8_t *data, size_t length,
 				  const uint8_t *whole_pdu, size_t pdu_length,
 				  DATA_BLOB *sig)
 {
-	return ntlmssp_sign_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+	return ntlmssp_sign_packet(auth_ntlmssp_state->ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
@@ -47,11 +48,12 @@ NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state
 }
 
 NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  TALLOC_CTX *sig_mem_ctx,
 				  uint8_t *data, size_t length,
 				  const uint8_t *whole_pdu, size_t pdu_length,
 				  DATA_BLOB *sig)
 {
-	return ntlmssp_seal_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+	return ntlmssp_seal_packet(auth_ntlmssp_state->ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,

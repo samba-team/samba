@@ -68,6 +68,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	RPC_HDR_AUTH auth_info;
 	uint8 auth_type, auth_level;
 	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
+	TALLOC_CTX *frame;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -222,11 +223,12 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 	/* Generate the sign blob. */
 
+	frame = talloc_stackframe();
 	switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = auth_ntlmssp_seal_packet(
-				a,
+				a, frame,
 				(uint8_t *)prs_data_p(&p->out_data.frag)
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
@@ -234,7 +236,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				(size_t)prs_offset(&p->out_data.frag),
 				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
-				data_blob_free(&auth_blob);
+				talloc_free(frame);
 				prs_mem_free(&p->out_data.frag);
 				return False;
 			}
@@ -242,7 +244,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
 			status = auth_ntlmssp_sign_packet(
-				a,
+				a, frame,
 				(unsigned char *)prs_data_p(&p->out_data.frag)
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
@@ -250,12 +252,13 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				(size_t)prs_offset(&p->out_data.frag),
 				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
-				data_blob_free(&auth_blob);
+				talloc_free(frame);
 				prs_mem_free(&p->out_data.frag);
 				return False;
 			}
 			break;
 		default:
+			talloc_free(frame);
 			prs_mem_free(&p->out_data.frag);
 			return False;
 	}
@@ -265,12 +268,11 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 			      NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes auth blob.\n",
 				(unsigned int)NTLMSSP_SIG_SIZE));
-		data_blob_free(&auth_blob);
+		talloc_free(frame);
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
-
-	data_blob_free(&auth_blob);
+	talloc_free(frame);
 
 	/*
 	 * Setup the counts for this PDU.

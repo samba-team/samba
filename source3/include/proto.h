@@ -67,6 +67,7 @@ void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
 			     const DATA_BLOB request, DATA_BLOB *reply) ;
 NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  TALLOC_CTX *sig_mem_ctx,
 				  const uint8_t *data, size_t length,
 				  const uint8_t *whole_pdu, size_t pdu_length,
 				  DATA_BLOB *sig);
@@ -75,6 +76,7 @@ NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state
 				   const uint8_t *whole_pdu, size_t pdu_length,
 				   const DATA_BLOB *sig) ;
 NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  TALLOC_CTX *sig_mem_ctx,
 				  uint8_t *data, size_t length,
 				  const uint8_t *whole_pdu, size_t pdu_length,
 				  DATA_BLOB *sig);
@@ -3162,6 +3164,7 @@ NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
 /* The following definitions come from libsmb/ntlmssp_sign.c  */
 
 NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
 			     const uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig);
@@ -3170,6 +3173,7 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			      const uint8_t *whole_pdu, size_t pdu_length,
 			      const DATA_BLOB *sig) ;
 NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *sig_mem_ctx,
 			     uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     DATA_BLOB *sig);
