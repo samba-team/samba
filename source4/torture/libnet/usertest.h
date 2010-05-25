@@ -26,12 +26,13 @@
 	}
 
 
-#define USER_FIELD_FIRST	account_name
+#define USER_FIELD_FIRST	acct_name
 #define USER_FIELD_LAST 	acct_flags
 
 enum test_fields { none = 0,
-		   account_name, full_name, description, home_directory, home_drive,
-		   comment, logon_script, profile_path, acct_expiry, acct_flags };
+		   acct_name, acct_full_name, acct_description,
+		   acct_home_directory, acct_home_drive, acct_comment,
+		   acct_logon_script, acct_profile_path, acct_expiry, acct_flags };
 
 
 #define TEST_CHG_ACCOUNTNAME   "newlibnetusertest%02d"

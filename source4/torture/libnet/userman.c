@@ -118,7 +118,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 		gettimeofday(&now, NULL);
 
 		switch (testfld) {
-		case account_name:
+		case acct_name:
 			continue_if_field_set(mod->in.change.account_name);
 			mod->in.change.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
 								      (int)(random() % 100));
@@ -127,7 +127,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			*username = talloc_strdup(mem_ctx, mod->in.change.account_name);
 			break;
 
-		case full_name:
+		case acct_full_name:
 			continue_if_field_set(mod->in.change.full_name);
 			mod->in.change.full_name = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
 								  (int)random(), (int)random());
@@ -135,7 +135,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "full_name";
 			break;
 
-		case description:
+		case acct_description:
 			continue_if_field_set(mod->in.change.description);
 			mod->in.change.description = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
 								    random());
@@ -143,7 +143,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "description";
 			break;
 
-		case home_directory:
+		case acct_home_directory:
 			continue_if_field_set(mod->in.change.home_directory);
 			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
 			mod->in.change.home_directory = talloc_strdup(mem_ctx, homedir);
@@ -151,7 +151,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "home_directory";
 			break;
 
-		case home_drive:
+		case acct_home_drive:
 			continue_if_field_set(mod->in.change.home_drive);
 			homedrive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
 			mod->in.change.home_drive = talloc_strdup(mem_ctx, homedrive);
@@ -159,7 +159,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "home_drive";
 			break;
 
-		case comment:
+		case acct_comment:
 			continue_if_field_set(mod->in.change.comment);
 			mod->in.change.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
 								random(), random());
@@ -167,7 +167,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "comment";
 			break;
 
-		case logon_script:
+		case acct_logon_script:
 			continue_if_field_set(mod->in.change.logon_script);
 			logonscript = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
 			mod->in.change.logon_script = talloc_strdup(mem_ctx, logonscript);
@@ -175,7 +175,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 			fldname = "logon_script";
 			break;
 
-		case profile_path:
+		case acct_profile_path:
 			continue_if_field_set(mod->in.change.profile_path);
 			mod->in.change.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
 								     (long int)random(), (unsigned int)random());

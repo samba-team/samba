@@ -365,7 +365,7 @@ static void set_test_changes(struct torture_context *tctx,
 		gettimeofday(&now, NULL);
 
 		switch (testfld) {
-		case account_name:
+		case acct_name:
 			continue_if_field_set(r->in.account_name);
 			r->in.account_name = talloc_asprintf(mem_ctx, TEST_CHG_ACCOUNTNAME,
 							     (int)(random() % 100));
@@ -375,49 +375,49 @@ static void set_test_changes(struct torture_context *tctx,
 			*user_name = talloc_strdup(mem_ctx, r->in.account_name);
 			break;
 
-		case full_name:
+		case acct_full_name:
 			continue_if_field_set(r->in.full_name);
 			r->in.full_name = talloc_asprintf(mem_ctx, TEST_CHG_FULLNAME,
 							  (unsigned int)random(), (unsigned int)random());
 			fldname = "full_name";
 			break;
 
-		case description:
+		case acct_description:
 			continue_if_field_set(r->in.description);
 			r->in.description = talloc_asprintf(mem_ctx, TEST_CHG_DESCRIPTION,
 							    (long)random());
 			fldname = "description";
 			break;
 
-		case home_directory:
+		case acct_home_directory:
 			continue_if_field_set(r->in.home_directory);
 			homedir = home_dirs[random() % ARRAY_SIZE(home_dirs)];
 			r->in.home_directory = talloc_strdup(mem_ctx, homedir);
 			fldname = "home_dir";
 			break;
 
-		case home_drive:
+		case acct_home_drive:
 			continue_if_field_set(r->in.home_drive);
 			homedrive = home_drives[random() % ARRAY_SIZE(home_drives)];
 			r->in.home_drive = talloc_strdup(mem_ctx, homedrive);
 			fldname = "home_drive";
 			break;
 
-		case comment:
+		case acct_comment:
 			continue_if_field_set(r->in.comment);
 			r->in.comment = talloc_asprintf(mem_ctx, TEST_CHG_COMMENT,
 							(unsigned long)random(), (unsigned long)random());
 			fldname = "comment";
 			break;
 
-		case logon_script:
+		case acct_logon_script:
 			continue_if_field_set(r->in.logon_script);
 			logonscript = logon_scripts[random() % ARRAY_SIZE(logon_scripts)];
 			r->in.logon_script = talloc_strdup(mem_ctx, logonscript);
 			fldname = "logon_script";
 			break;
 
-		case profile_path:
+		case acct_profile_path:
 			continue_if_field_set(r->in.profile_path);
 			r->in.profile_path = talloc_asprintf(mem_ctx, TEST_CHG_PROFILEPATH,
 							     (unsigned long)random(), (unsigned int)random());
@@ -551,21 +551,21 @@ bool torture_modifyuser(struct torture_context *torture)
 		}
 
 		switch (fld) {
-		case account_name: TEST_STR_FLD(account_name);
+		case acct_name: TEST_STR_FLD(account_name);
 			break;
-		case full_name: TEST_STR_FLD(full_name);
+		case acct_full_name: TEST_STR_FLD(full_name);
 			break;
-		case comment: TEST_STR_FLD(comment);
+		case acct_comment: TEST_STR_FLD(comment);
 			break;
-		case description: TEST_STR_FLD(description);
+		case acct_description: TEST_STR_FLD(description);
 			break;
-		case home_directory: TEST_STR_FLD(home_directory);
+		case acct_home_directory: TEST_STR_FLD(home_directory);
 			break;
-		case home_drive: TEST_STR_FLD(home_drive);
+		case acct_home_drive: TEST_STR_FLD(home_drive);
 			break;
-		case logon_script: TEST_STR_FLD(logon_script);
+		case acct_logon_script: TEST_STR_FLD(logon_script);
 			break;
-		case profile_path: TEST_STR_FLD(profile_path);
+		case acct_profile_path: TEST_STR_FLD(profile_path);
 			break;
 		case acct_expiry: TEST_TIME_FLD(acct_expiry);
 			break;
@@ -575,7 +575,7 @@ bool torture_modifyuser(struct torture_context *torture)
 			break;
 		}
 
-		if (fld == account_name) {
+		if (fld == acct_name) {
 			/* restore original testing username - it's useful when test fails
 			   because it prevents from problems with recreating account */
 			ZERO_STRUCT(req);
