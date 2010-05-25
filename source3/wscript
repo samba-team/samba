@@ -323,6 +323,8 @@ updwtmp updwtmpx utimensat vsyslog _write __write __xstat
         conf.env.build_winbind = True
         conf.DEFINE('WITH_WINBIND', '1')
 
+    conf.find_program('awk', var='AWK')
+
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
         conf.DEFINE('WITH_ADS', '1')

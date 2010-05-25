@@ -773,8 +773,6 @@ EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
 
 LIBS='ICONV'
 
-bld.env.AWK = 'gawk'
-
 bld.SAMBA_GENERATOR('build_options',
                     source='include/config.h script/mkbuildoptions.awk',
                     target='smbd/build_options.c',
