@@ -55,7 +55,7 @@ _PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
 	c->used_wait = true;
 
 	while (c->state < COMPOSITE_STATE_DONE) {
-		if (event_loop_once(c->event_ctx) != 0) {
+		if (tevent_loop_once(c->event_ctx) != 0) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -106,7 +106,7 @@ _PUBLIC_ void composite_error(struct composite_context *ctx, NTSTATUS status)
 		return;
 	}
 	if (!ctx->used_wait && !ctx->async.fn) {
-		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
+		tevent_add_timer(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
 	}
 	ctx->status = status;
 	ctx->state = COMPOSITE_STATE_ERROR;
@@ -136,7 +136,7 @@ _PUBLIC_ bool composite_is_ok(struct composite_context *ctx)
 _PUBLIC_ void composite_done(struct composite_context *ctx)
 {
 	if (!ctx->used_wait && !ctx->async.fn) {
-		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
+		tevent_add_timer(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
 	}
 	ctx->state = COMPOSITE_STATE_DONE;
 	if (ctx->async.fn != NULL) {
@@ -157,7 +157,7 @@ _PUBLIC_ void composite_continue(struct composite_context *ctx,
 	   already finished, then we should run the callback with an
 	   immediate event, otherwise we can be stuck forever */
 	if (new_ctx->state >= COMPOSITE_STATE_DONE && continuation) {
-		event_add_timed(new_ctx->event_ctx, new_ctx, timeval_zero(), composite_trigger, new_ctx);
+		tevent_add_timer(new_ctx->event_ctx, new_ctx, timeval_zero(), composite_trigger, new_ctx);
 	}
 }
 

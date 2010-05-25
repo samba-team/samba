@@ -214,7 +214,7 @@ bool smb2_request_receive(struct smb2_request *req)
 
 	/* keep receiving packets until this one is replied to */
 	while (req->state <= SMB2_REQUEST_RECV) {
-		if (event_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
 			return false;
 		}
 	}

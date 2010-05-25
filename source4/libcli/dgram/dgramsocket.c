@@ -131,7 +131,7 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 		talloc_free(req);
 	}
 
-	EVENT_FD_NOT_WRITEABLE(dgmsock->fde);
+	TEVENT_FD_NOT_WRITEABLE(dgmsock->fde);
 	return;
 }
 
@@ -144,10 +144,10 @@ static void dgm_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct nbt_dgram_socket *dgmsock = talloc_get_type(private_data,
 							   struct nbt_dgram_socket);
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		dgm_socket_send(dgmsock);
 	} 
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		dgm_socket_recv(dgmsock);
 	}
 }
@@ -175,7 +175,7 @@ struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx,
 
 	talloc_steal(dgmsock, dgmsock->sock);
 
-	dgmsock->fde = event_add_fd(dgmsock->event_ctx, dgmsock, 
+	dgmsock->fde = tevent_add_fd(dgmsock->event_ctx, dgmsock,
 				    socket_get_fd(dgmsock->sock), 0,
 				    dgm_socket_handler, dgmsock);
 
@@ -202,7 +202,7 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 {
 	dgmsock->incoming.handler = handler;
 	dgmsock->incoming.private_data = private_data;
-	EVENT_FD_READABLE(dgmsock->fde);
+	TEVENT_FD_READABLE(dgmsock->fde);
 	return NT_STATUS_OK;
 }
 
@@ -233,7 +233,7 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 
 	DLIST_ADD_END(dgmsock->send_queue, req, struct nbt_dgram_request *);
 
-	EVENT_FD_WRITEABLE(dgmsock->fde);
+	TEVENT_FD_WRITEABLE(dgmsock->fde);
 
 	return NT_STATUS_OK;
 

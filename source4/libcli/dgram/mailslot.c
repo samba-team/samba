@@ -71,7 +71,7 @@ struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dg
 	DLIST_ADD(dgmsock->mailslot_handlers, dgmslot);
 	talloc_set_destructor(dgmslot, dgram_mailslot_destructor);
 
-	EVENT_FD_READABLE(dgmsock->fde);
+	TEVENT_FD_READABLE(dgmsock->fde);
 
 	return dgmslot;
 }

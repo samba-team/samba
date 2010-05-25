@@ -39,11 +39,11 @@ static void smbcli_transport_event_handler(struct tevent_context *ev,
 {
 	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		packet_recv(transport->packet);
 		return;
 	}
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		packet_queue_run(transport->packet);
 	}
 }
@@ -113,10 +113,10 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	/* take over event handling from the socket layer - it only
 	   handles events up until we are connected */
 	talloc_free(transport->socket->event.fde);
-	transport->socket->event.fde = event_add_fd(transport->socket->event.ctx,
+	transport->socket->event.fde = tevent_add_fd(transport->socket->event.ctx,
 						    transport->socket->sock,
 						    socket_get_fd(transport->socket->sock),
-						    EVENT_FD_READ,
+						    TEVENT_FD_READ,
 						    smbcli_transport_event_handler,
 						    transport);
 
@@ -312,7 +312,7 @@ static void idle_handler(struct tevent_context *ev,
 	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
 	struct timeval next = timeval_add(&t, 0, transport->idle.period);
-	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
+	transport->socket->event.te = tevent_add_timer(transport->socket->event.ctx, 
 						      transport,
 						      next,
 						      idle_handler, transport);
@@ -336,7 +336,7 @@ _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 		talloc_free(transport->socket->event.te);
 	}
 
-	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
+	transport->socket->event.te = tevent_add_timer(transport->socket->event.ctx, 
 						      transport,
 						      timeval_current_ofs_usec(period),
 						      idle_handler, transport);
@@ -609,7 +609,7 @@ void smbcli_transport_send(struct smbcli_request *req)
 
 	/* add a timeout */
 	if (req->transport->options.request_timeout) {
-		event_add_timed(req->transport->socket->event.ctx, req, 
+		tevent_add_timer(req->transport->socket->event.ctx, req,
 				timeval_current_ofs(req->transport->options.request_timeout, 0), 
 				smbcli_timeout_handler, req);
 	}

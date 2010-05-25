@@ -531,7 +531,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 
 	/* we need to put the child in our event context so
 	   we know when the dns_lookup() has finished */
-	state->fde = event_add_fd(c->event_ctx, c, state->child_fd, EVENT_FD_READ, 
+	state->fde = tevent_add_fd(c->event_ctx, c, state->child_fd, TEVENT_FD_READ,
 				  pipe_handler, c);
 	if (composite_nomem(state->fde, c)) {
 		close(fd[0]);
