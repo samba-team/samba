@@ -304,7 +304,7 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
 # registry-related objects
 #
 UTIL_REG_SRC = '''../libcli/registry/util_reg.c'''
-UTIL_REG_API_SRC = '''lib/util_reg_api.c'''
+REG_UTIL_MARSHALLING_OBJ = '''registry/reg_util_marshalling.c'''
 
 REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
 REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
@@ -332,15 +332,16 @@ REG_BASE_SRC = '''registry/reg_api.c
                registry/reg_cachehook.c
                ${REGFIO_SRC}
                ${REGSRCS_SRC}
-               registry/reg_util.c
-               ${UTIL_REG_API_SRC}
+               registry/reg_util_internal.c
+	       ${REG_UTIL_MARSHALLING_OBJ}
                lib/util_nttoken.c
                ${REG_BACKENDS_BASE_SRC}
                ${REG_INIT_BASIC_SRC}'''
 
 REG_SMBCONF_SRC = '''${REG_BASE_SRC}
                   ${REG_BACKENDS_SMBCONF_SRC}
-                  ${REG_INIT_SMBCONF_SRC}'''
+                  ${REG_INIT_SMBCONF_SRC}
+		  registry/reg_util_token.c'''
 
 REG_FULL_SRC = '''${REG_SMBCONF_SRC}
                ${REG_BACKENDS_EXTRA_SRC}
