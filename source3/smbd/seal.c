@@ -85,7 +85,7 @@ static NTSTATUS make_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
 	 * We must remember to update the pointer copy for the common
 	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
 	 */
-	ec->es->s.ntlmssp_state = ec->auth_ntlmssp_state->ntlmssp_state;
+	ec->es->s.ntlmssp_state = auth_ntlmssp_get_ntlmssp_state(ec->auth_ntlmssp_state);
 	return status;
 }
 
@@ -710,8 +710,11 @@ static NTSTATUS check_enc_good(struct smb_srv_trans_enc_ctx *ec)
 	}
 
 	if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if ((ec->es->s.ntlmssp_state->neg_flags & (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL)) !=
-				(NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL)) {
+		if (!auth_ntlmssp_negotiated_sign((ec->auth_ntlmssp_state))) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (!auth_ntlmssp_negotiated_seal((ec->auth_ntlmssp_state))) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

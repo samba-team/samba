@@ -23,6 +23,93 @@
 #include "includes.h"
 #include "ntlmssp.h"
 
+struct auth_ntlmssp_state {
+	TALLOC_CTX *mem_ctx;
+	struct auth_context *auth_context;
+	struct auth_serversupplied_info *server_info;
+	struct ntlmssp_state *ntlmssp_state;
+};
+
+NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  const uint8_t *data, size_t length,
+				  const uint8_t *whole_pdu, size_t pdu_length,
+				  DATA_BLOB *sig)
+{
+	return ntlmssp_sign_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+}
+
+NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				   const uint8_t *data, size_t length,
+				   const uint8_t *whole_pdu, size_t pdu_length,
+				   const DATA_BLOB *sig)
+{
+	return ntlmssp_check_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+}
+
+NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  uint8_t *data, size_t length,
+				  const uint8_t *whole_pdu, size_t pdu_length,
+				  DATA_BLOB *sig)
+{
+	return ntlmssp_seal_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+}
+
+NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
+				    uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
+				    const DATA_BLOB *sig)
+{
+	return ntlmssp_unseal_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
+}
+
+bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN;
+}
+
+bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
+}
+
+struct auth_serversupplied_info *auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
+							  struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	struct auth_serversupplied_info *server_info = auth_ntlmssp_state->server_info;
+	data_blob_free(&server_info->user_session_key);
+	server_info->user_session_key =
+		data_blob_talloc(
+			server_info,
+			auth_ntlmssp_state->ntlmssp_state->session_key.data,
+			auth_ntlmssp_state->ntlmssp_state->session_key.length);
+	if (auth_ntlmssp_state->ntlmssp_state->session_key.length && !server_info->user_session_key.data) {
+		return NULL;
+	}
+	auth_ntlmssp_state->server_info = NULL;
+	return talloc_steal(mem_ctx, server_info);
+}
+
+struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state;
+}
+
+/* Needed for 'map to guest' and 'smb username' processing */
+const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state->user;
+}
+
+const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state->domain;
+}
+
+const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_ntlmssp_state->ntlmssp_state->client.netbios_name;
+}
+
 /**
  * Return the challenge as determined by the authentication subsystem 
  * @return an 8 byte random challenge

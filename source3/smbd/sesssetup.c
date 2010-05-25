@@ -634,12 +634,16 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		server_info = (*auth_ntlmssp_state)->server_info;
+		server_info = auth_ntlmssp_server_info(talloc_tos(), (*auth_ntlmssp_state));
 	} else {
+		/* Note that this server_info won't have a session
+		 * key.  But for map to guest, that's exactly the right
+		 * thing - we can't reasonably guess the key the
+		 * client wants, as the password was wrong */
 		nt_status = do_map_to_guest(nt_status,
-			    &server_info,
-			    (*auth_ntlmssp_state)->ntlmssp_state->user,
-			    (*auth_ntlmssp_state)->ntlmssp_state->domain);
+					    &server_info,
+					    auth_ntlmssp_get_username(*auth_ntlmssp_state),
+					    auth_ntlmssp_get_domain(*auth_ntlmssp_state));
 	}
 
 	reply_outbuf(req, 4, 0);
@@ -654,23 +658,14 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 			goto out;
 		}
 
-		data_blob_free(&server_info->user_session_key);
-		server_info->user_session_key =
-			data_blob_talloc(
-			server_info,
-			(*auth_ntlmssp_state)->ntlmssp_state->session_key.data,
-			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
-
 		/* register_existing_vuid keeps the server info */
 		if (register_existing_vuid(sconn, vuid,
-				server_info, nullblob,
-				(*auth_ntlmssp_state)->ntlmssp_state->user) !=
-					vuid) {
+					   server_info, nullblob,
+					   auth_ntlmssp_get_username(*auth_ntlmssp_state)) !=
+					   vuid) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
 			goto out;
 		}
-
-		(*auth_ntlmssp_state)->server_info = NULL;
 
 		/* current_user_info is changed on new vuid */
 		reload_services( True );

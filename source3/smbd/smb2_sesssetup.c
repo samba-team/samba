@@ -605,13 +605,19 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 					uint64_t *out_session_id)
 {
 	fstring tmp;
+	session->server_info = auth_ntlmssp_server_info(session, session->auth_ntlmssp_state);
+	if (!session->server_info) {
+		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == Required) {
 		session->do_signing = true;
 	}
 
-	if (session->auth_ntlmssp_state->server_info->guest) {
+	if (session->server_info->guest) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -619,20 +625,6 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		session->do_signing = false;
 	}
 
-	session->server_info = session->auth_ntlmssp_state->server_info;
-	data_blob_free(&session->server_info->user_session_key);
-	session->server_info->user_session_key =
-		data_blob_talloc(
-			session->server_info,
-			session->auth_ntlmssp_state->ntlmssp_state->session_key.data,
-			session->auth_ntlmssp_state->ntlmssp_state->session_key.length);
-	if (session->auth_ntlmssp_state->ntlmssp_state->session_key.length > 0) {
-		if (session->server_info->user_session_key.data == NULL) {
-			auth_ntlmssp_end(&session->auth_ntlmssp_state);
-			TALLOC_FREE(session);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
 	session->session_key = session->server_info->user_session_key;
 
 	session->compat_vuser = talloc_zero(session, user_struct);
@@ -650,11 +642,11 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(tmp,
-		session->auth_ntlmssp_state->ntlmssp_state->user,
-		". _-$",
-		sizeof(tmp));
+		     auth_ntlmssp_get_username(session->auth_ntlmssp_state),
+		     ". _-$",
+		     sizeof(tmp));
 	session->server_info->sanitized_username = talloc_strdup(
-			session->server_info, tmp);
+		session->server_info, tmp);
 
 	if (!session->compat_vuser->server_info->guest) {
 		session->compat_vuser->homes_snum =

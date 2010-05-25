@@ -225,8 +225,8 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
-			status = ntlmssp_seal_packet(
-				a->ntlmssp_state,
+			status = auth_ntlmssp_seal_packet(
+				a,
 				(uint8_t *)prs_data_p(&p->out_data.frag)
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
@@ -241,8 +241,8 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 			break;
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
-			status = ntlmssp_sign_packet(
-				a->ntlmssp_state,
+			status = auth_ntlmssp_sign_packet(
+				a,
 				(unsigned char *)prs_data_p(&p->out_data.frag)
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
@@ -684,7 +684,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	   refuse the bind. */
 
 	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+		if (!auth_ntlmssp_negotiated_sign(a)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
 				"but client declined signing.\n",
 				 get_pipe_name_from_syntax(talloc_tos(),
@@ -693,7 +693,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		}
 	}
 	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+		if (!auth_ntlmssp_negotiated_seal(a)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
 				"but client declined sealing.\n",
 				 get_pipe_name_from_syntax(talloc_tos(),
@@ -703,21 +703,22 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	}
 
 	DEBUG(5, ("pipe_ntlmssp_verify_final: OK: user: %s domain: %s "
-		  "workstation: %s\n", a->ntlmssp_state->user,
-		  a->ntlmssp_state->domain,
-		  a->ntlmssp_state->client.netbios_name));
-
-	if (a->server_info->ptok == NULL) {
-		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
-		return False;
-	}
+		  "workstation: %s\n",
+		  auth_ntlmssp_get_username(a),
+		  auth_ntlmssp_get_domain(a),
+		  auth_ntlmssp_get_client(a)));
 
 	TALLOC_FREE(p->server_info);
 
-	p->server_info = copy_serverinfo(p, a->server_info);
+	p->server_info = auth_ntlmssp_server_info(p, a);
 	if (p->server_info == NULL) {
-		DEBUG(0, ("copy_serverinfo failed\n"));
+		DEBUG(0, ("auth_ntlmssp_server_info failed to obtain the server info for authenticated user\n"));
 		return false;
+	}
+
+	if (p->server_info->ptok == NULL) {
+		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
+		return False;
 	}
 
 	/*
@@ -2324,22 +2325,22 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data is encrypted. */
-			*pstatus = ntlmssp_unseal_packet(a->ntlmssp_state,
-							data, data_len,
-							full_packet_data,
-							full_packet_data_len,
-							&auth_blob);
+			*pstatus = auth_ntlmssp_unseal_packet(a,
+							      data, data_len,
+							      full_packet_data,
+							      full_packet_data_len,
+							      &auth_blob);
 			if (!NT_STATUS_IS_OK(*pstatus)) {
 				return False;
 			}
 			break;
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
-			*pstatus = ntlmssp_check_packet(a->ntlmssp_state,
-							data, data_len,
-							full_packet_data,
-							full_packet_data_len,
-							&auth_blob);
+			*pstatus = auth_ntlmssp_check_packet(a,
+							     data, data_len,
+							     full_packet_data,
+							     full_packet_data_len,
+							     &auth_blob);
 			if (!NT_STATUS_IS_OK(*pstatus)) {
 				return False;
 			}
