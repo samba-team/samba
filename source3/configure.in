@@ -296,7 +296,6 @@ AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn,
    samba_cv_HAVE_errwarn=yes,samba_cv_HAVE_errwarn=no,samba_cv_HAVE_errwarn=cross)])
 if test x"$samba_cv_HAVE_errwarn" = x"yes"; then
    Werror_FLAGS="-errwarn=%all"
-fi
 else
 dnl Check if the C compiler understands -qhalt (IBM)
 AC_CACHE_CHECK([that the C compiler understands -qhalt],samba_cv_HAVE_errwarn, [
