@@ -122,7 +122,7 @@ ADS_STATUS ads_add_printer_entry(ADS_STRUCT *ads, char *prt_dn,
   map a REG_SZ to an ldap mod
 */
 static bool map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-		   const struct regval_blob *value)
+		   struct regval_blob *value)
 {
 	char *str_value = NULL;
 	size_t converted_size;
@@ -149,7 +149,7 @@ static bool map_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
   map a REG_DWORD to an ldap mod
 */
 static bool map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-		      const struct regval_blob *value)
+		      struct regval_blob *value)
 {
 	char *str_value = NULL;
 	ADS_STATUS status;
@@ -168,7 +168,7 @@ static bool map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
   map a boolean REG_BINARY to an ldap mod
 */
 static bool map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-		     const struct regval_blob *value)
+		     struct regval_blob *value)
 {
 	char *str_value;
 	ADS_STATUS status;
@@ -188,7 +188,7 @@ static bool map_bool(TALLOC_CTX *ctx, ADS_MODLIST *mods,
   map a REG_MULTI_SZ to an ldap mod
 */
 static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
-			 const struct regval_blob *value)
+			 struct regval_blob *value)
 {
 	char **str_values = NULL;
 	size_t converted_size;
@@ -229,7 +229,7 @@ static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 struct valmap_to_ads {
 	const char *valname;
-	bool (*fn)(TALLOC_CTX *, ADS_MODLIST *, const struct regval_blob *);
+	bool (*fn)(TALLOC_CTX *, ADS_MODLIST *, struct regval_blob *);
 };
 
 /*
