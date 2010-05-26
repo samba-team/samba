@@ -1,15 +1,17 @@
 %define initdir %{_sysconfdir}/init.d
-
+Name: ctdb
 Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
-Name: ctdb
 Version: 1.9
 Release: 1GITHASH
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
 URL: http://ctdb.samba.org/
+%package devel
+Summary: CTDB developmnet libraries
+Group: Development
 
 Source: ctdb-%{version}.tar.gz
 
@@ -25,8 +27,13 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 %description
 ctdb is the clustered database used by samba
 
+%description devel
+development libraries for ctdb
+
 
 #######################################################################
+
+
 
 %prep
 %setup -q
@@ -121,13 +128,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/onnode.1.gz
+%{_libdir}/pkgconfig/ctdb.pc
+
+%{_docdir}/ctdb/tests/bin/ctdb_transaction
+
+%files devel
+%defattr(-,root,root)
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_client.h
 %{_includedir}/ctdb_protocol.h
 %{_includedir}/ctdb_private.h
-%{_libdir}/pkgconfig/ctdb.pc
-
-%{_docdir}/ctdb/tests/bin/ctdb_transaction
+%{_libdir}/libctdb.a
 
 %changelog
 * Tue May 25 2010 : Version 1.9
