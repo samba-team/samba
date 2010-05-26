@@ -65,6 +65,19 @@ const char *lp_workgroup(void)
 	return smb_myworkgroup;
 }
 
+/******************************************************************
+ get the default domain/netbios name to be used when dealing
+ with our passdb list of accounts
+******************************************************************/
+
+const char *get_global_sam_name(void)
+{
+	if (IS_DC) {
+		return lp_workgroup();
+	}
+	return global_myname();
+}
+
 void gfree_netbios_names(void)
 {
 	SAFE_FREE( smb_myname );

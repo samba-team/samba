@@ -1131,6 +1131,7 @@ bool set_global_myname(const char *myname);
 const char *global_myname(void);
 bool set_global_myworkgroup(const char *myworkgroup);
 const char *lp_workgroup(void);
+const char *get_global_sam_name(void);
 
 /* The following definitions come from lib/util.c  */
 
@@ -1357,7 +1358,6 @@ bool is_setuid_root(void) ;
 
 const char *sid_type_lookup(uint32 sid_type) ;
 NT_USER_TOKEN *get_system_token(void) ;
-const char *get_global_sam_name(void) ;
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid);
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_string_dbg(const struct dom_sid *sid);

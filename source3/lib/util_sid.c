@@ -155,19 +155,6 @@ NT_USER_TOKEN *get_system_token(void)
 	return &system_token;
 }
 
-/******************************************************************
- get the default domain/netbios name to be used when dealing 
- with our passdb list of accounts
-******************************************************************/
-
-const char *get_global_sam_name(void) 
-{
-	if (IS_DC) {
-		return lp_workgroup();
-	}
-	return global_myname();
-}
-
 /*****************************************************************
  Convert a SID to an ascii string.
 *****************************************************************/
