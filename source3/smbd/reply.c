@@ -3055,8 +3055,8 @@ void reply_readbraw(struct smb_request *req)
 	}
 
 	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
-		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of"
-			 "'fork echo handler = yes'\n"));
+		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of "
+			 "'async smb echo handler = yes'\n"));
 		reply_readbraw_error();
 		END_PROFILE(SMBreadbraw);
 		return;
@@ -3787,8 +3787,8 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
-		DEBUG(2,("SMBwritebraw rejected with NOT_SUPPORTED because of"
-			 "'fork echo handler = yes'\n"));
+		DEBUG(2,("SMBwritebraw rejected with NOT_SUPPORTED because of "
+			 "'async smb echo handler = yes'\n"));
 		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
