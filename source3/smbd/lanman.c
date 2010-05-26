@@ -4027,15 +4027,18 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	char *endp;
 	const char *level_string;
 
-	/* get NIS home of a previously validated user - simeon */
-	/* With share level security vuid will always be zero.
-	   Don't depend on vuser being non-null !!. JRA */
-	user_struct *vuser = get_valid_user_struct(sconn, vuid);
-	if(vuser != NULL) {
-		DEBUG(3,("  Username of UID %d is %s\n",
-			 (int)vuser->server_info->utok.uid,
-			 vuser->server_info->unix_name));
-	}
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle connect_handle, domain_handle, user_handle;
+	struct lsa_String domain_name;
+	struct dom_sid2 *domain_sid;
+	struct lsa_String names;
+	struct samr_Ids rids;
+	struct samr_Ids types;
+	int errcode = W_ERROR_V(WERR_USER_NOT_FOUND);
+	uint32_t rid;
+	union samr_UserInfo *info;
 
 	if (!str1 || !str2 || !UserName || !p) {
 		return False;
@@ -4072,14 +4075,109 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	SSVAL(*rparam,0,NERR_Success);
-	SSVAL(*rparam,2,0);		/* converter word */
-
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 	p2 = get_safe_ptr(*rdata,*rdata_len,p,usri11_end);
 	if (!p2) {
 		return False;
+	}
+
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(user_handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+					rpc_samr_dispatch, conn->server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("api_RNetUserGetInfo: could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	status = rpccli_samr_Connect2(cli, mem_ctx,
+				      global_myname(),
+				      SAMR_ACCESS_CONNECT_TO_SERVER |
+				      SAMR_ACCESS_ENUM_DOMAINS |
+				      SAMR_ACCESS_LOOKUP_DOMAIN,
+				      &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	init_lsa_String(&domain_name, get_global_sam_name());
+
+	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+					  &connect_handle,
+					  &domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	init_lsa_String(&names, UserName);
+
+	status = rpccli_samr_LookupNames(cli, mem_ctx,
+					 &domain_handle,
+					 1,
+					 &names,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	if (rids.count != 1) {
+		errcode = W_ERROR_V(WERR_NO_SUCH_USER);
+		goto out;
+	}
+	if (rids.count != types.count) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+	if (types.ids[0] != SID_NAME_USER) {
+		errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
+	rid = rids.ids[0];
+
+	status = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_LOCALE |
+				      SAMR_USER_ACCESS_GET_LOGONINFO |
+				      SAMR_USER_ACCESS_GET_ATTRIBUTES |
+				      SAMR_USER_ACCESS_GET_GROUPS |
+				      SAMR_USER_ACCESS_GET_GROUP_MEMBERSHIP |
+				      SEC_STD_READ_CONTROL,
+				      rid,
+				      &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+					    &user_handle,
+					    UserAllInformation,
+					    &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
 	}
 
 	memset(p,0,21);
@@ -4107,9 +4205,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		strlcpy(p2,((vuser != NULL)
-			    ? pdb_get_fullname(vuser->server_info->sam_account)
-			    : UserName),PTR_DIFF(endp,p2));
+		strlcpy(p2,info->info21.full_name.string,PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
 			return False;
@@ -4117,11 +4213,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	if (uLevel == 11) {
-		const char *homedir = "";
-		if (vuser != NULL) {
-			homedir = pdb_get_homedir(
-				vuser->server_info->sam_account);
-		}
+		const char *homedir = info->info21.home_directory.string;
 		/* modelled after NTAS 3.51 reply */
 		SSVAL(p,usri11_priv,
 			(get_current_uid(conn) == sec_initial_uid())?
@@ -4181,8 +4273,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 			(get_current_uid(conn) == sec_initial_uid())?
 			USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		strlcpy(p2, vuser ? pdb_get_homedir(
-				vuser->server_info->sam_account) : "",
+		strlcpy(p2, info->info21.home_directory.string,
 			PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
@@ -4192,8 +4283,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		*p2++ = 0;
 		SSVAL(p,52,0);		/* flags */
 		SIVAL(p,54,PTR_DIFF(p2,*rdata));		/* script_path */
-		strlcpy(p2, vuser ? pdb_get_logon_script(
-				vuser->server_info->sam_account) : "",
+		strlcpy(p2, info->info21.logon_script.string,
 			PTR_DIFF(endp,p2));
 		p2 = skip_string(*rdata,*rdata_len,p2);
 		if (!p2) {
@@ -4202,9 +4292,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		if (uLevel == 2) {
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-			strlcpy(p2,((vuser != NULL)
-				    ? pdb_get_fullname(vuser->server_info->sam_account)
-				    : UserName),PTR_DIFF(endp,p2));
+			strlcpy(p2,info->info21.full_name.string,PTR_DIFF(endp,p2));
 			p2 = skip_string(*rdata,*rdata_len,p2);
 			if (!p2) {
 				return False;
@@ -4262,8 +4350,23 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 		}
 	}
 
+	errcode = NERR_Success;
+
+ out:
 	*rdata_len = PTR_DIFF(p2,*rdata);
 
+	if (cli && is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	}
+	if (cli && is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	}
+	if (cli && is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	}
+
+	SSVAL(*rparam,0,errcode);
+	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);	/* is this right?? */
 
 	return(True);
