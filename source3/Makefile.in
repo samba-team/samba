@@ -2874,14 +2874,14 @@ bin/rpc_open_tcp@EXEEXT@: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) $(LIBTALLOC) $(L
 bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(TEST_LP_LOAD_OBJ) \
-		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) \
 		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TOOL_OBJ)\
-		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
@@ -2891,7 +2891,7 @@ install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@
 bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TORTURE_OBJ)\
-		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
+		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) \
 		$(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
@@ -2902,7 +2902,7 @@ install-dbwrap_torture:: bin/dbwrap_torture@EXEEXT@
 bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(SPLIT_TOKENS_OBJ) \
-		$(LDFLAGS) $(DYNEEXP) \
+		$(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(POPT_LIBS) \
 		$(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
