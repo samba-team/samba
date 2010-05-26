@@ -362,6 +362,7 @@ RPC_NETLOG_SRC = '''rpc_server/srv_netlog_nt.c
 
 RPC_SAMR_SRC = '''rpc_server/srv_samr_nt.c
                rpc_server/srv_samr_util.c
+	       rpc_server/srv_samr_chgpasswd.c
                ../librpc/gen_ndr/srv_samr.c'''
 
 RPC_INITSHUTDOWN_SRC = ''' ../librpc/gen_ndr/srv_initshutdown.c rpc_server/srv_initshutdown_nt.c'''
@@ -640,7 +641,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    auth/server_info.c
                    auth/server_info_sam.c
                    auth/user_info.c
-                   smbd/chgpasswd.c
+		   rpc_server/srv_samr_chgpasswd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
@@ -664,7 +665,7 @@ SMBD_SRC_MAIN = '''smbd/server.c'''
 
 BUILDOPT_SRC = '''smbd/build_options.c'''
 
-SMBD_SRC_SRV = '''smbd/files.c smbd/chgpasswd.c smbd/connection.c
+SMBD_SRC_SRV = '''smbd/files.c smbd/connection.c
                smbd/utmp.c smbd/session.c smbd/map_username.c
                smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn.c
                smbd/share_access.c smbd/fileio.c
