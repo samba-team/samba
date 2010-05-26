@@ -2300,7 +2300,9 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
  */
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	killtcp->vnn->killtcp = NULL;
+	if (killtcp->vnn) {
+		killtcp->vnn->killtcp = NULL;
+	}
 	return 0;
 }
 
