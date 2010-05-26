@@ -23,8 +23,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
-#include "utils/net.h"
 #include "../librpc/gen_ndr/rap.h"
+#include "utils/net.h"
 
 /* The following messages were for error checking that is not properly
    reported at the moment.  Which should be reinstated? */
