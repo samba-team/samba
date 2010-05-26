@@ -427,6 +427,8 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
                             headers='krb5.h', always=True)
         conf.CHECK_VARIABLE('AP_OPTS_USE_SUBKEY', headers='krb5.h')
         conf.CHECK_VARIABLE('KV5M_KEYTAB', headers='krb5.h')
+        conf.CHECK_VARIABLE('KRB5_KU_OTHER_CKSUM', headers='krb5.h')
+        conf.CHECK_VARIABLE('KRB5_KEYUSAGE_APP_DATA_CKSUM', headers='krb5.h')
         conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'key', headers='krb5.h',
                                     define='HAVE_KRB5_KEYTAB_ENTRY_KEY')
         conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'keyblock', headers='krb5.h',
@@ -435,6 +437,34 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
                                     define='HAVE_MAGIC_IN_KRB5_ADDRESS')
         conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype', headers='krb5.h',
                                     define='HAVE_ADDRTYPE_IN_KRB5_ADDRESS')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_ticket', 'enc_part2', headers='krb5.h',
+                                    define='HAVE_KRB5_TKT_ENC_PART2')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_creds', 'keyblock', headers='krb5.h',
+                                    define='HAVE_KRB5_KEYBLOCK_IN_CREDS')
+        conf.CHECK_STRUCTURE_MEMBER('krb5_creds', 'session', headers='krb5.h',
+                                    define='HAVE_KRB5_SESSION_IN_CREDS')
+        conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
+        conf.CHECK_CODE('''
+krb5_context ctx;
+krb5_get_init_creds_opt *opt = NULL;
+krb5_get_init_creds_opt_free(ctx, opt);
+''',
+                        'KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT',
+                        headers='krb5.h', link=False,
+                        msg="Checking whether krb5_get_init_creds_opt_free takes a context argument")
+        conf.CHECK_CODE('krb5_mk_error(0,0,0)',
+                        'HAVE_SHORT_KRB5_MK_ERROR_INTERFACE',
+                        headers='krb5.h', link=False,
+                        msg="Checking whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal")
+        conf.CHECK_CODE('''
+const krb5_data *pkdata;
+krb5_context context;
+krb5_principal principal;
+pkdata = krb5_princ_component(context, principal, 0);
+''',
+                        'HAVE_KRB5_PRINC_COMPONENT',
+                        headers='krb5.h', lib='krb5',
+                        msg="Checking whether krb5_princ_component is available")
 
     else:
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
