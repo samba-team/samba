@@ -1689,6 +1689,181 @@ NTSTATUS smbcli_rap_netoemchangepassword(struct smbcli_tree *tree,
 	return result;
 }
 
+static NTSTATUS rap_pull_rap_NetUserInfo0(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_NetUserInfo0 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->Name, 21, sizeof(uint8_t), CH_DOS));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_NetUserInfo1(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_NetUserInfo1 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->Name, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+	NDR_RETURN(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Password, 16));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->PasswordAge));
+	NDR_RETURN(ndr_pull_rap_UserPriv(ndr, NDR_SCALARS, &r->Priv));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->HomeDir));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Comment));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Flags));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->ScriptPath));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_NetUserInfo2(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_NetUserInfo2 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->Name, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+	NDR_RETURN(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->Password, 16));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->PasswordAge));
+	NDR_RETURN(ndr_pull_rap_UserPriv(ndr, NDR_SCALARS, &r->Priv));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->HomeDir));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Comment));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Flags));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->ScriptPath));
+	NDR_RETURN(ndr_pull_rap_AuthFlags(ndr, NDR_SCALARS, &r->AuthFlags));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->FullName));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UsrComment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->pParms));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->WorkStations));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->LastLogon));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->LastLogOff));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->AcctExpires));
+	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->MaxStorage));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->UnitsPerWeek));
+	/* NDR_RETURN(ndr_pull_rap_LogonHours(ndr, NDR_SCALARS, r->LogonHours)); */
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->BadPwCount));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->NumLogons));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->LogonServer));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->CountryCode));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->CodePage));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_NetUserInfo10(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_NetUserInfo10 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->Name, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Comment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UsrComment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->FullName));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rap_pull_rap_NetUserInfo11(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr, uint16_t convert, struct rap_NetUserInfo11 *r)
+{
+	NDR_RETURN(ndr_pull_charset(ndr, NDR_SCALARS, &r->Name, 21, sizeof(uint8_t), CH_DOS));
+	NDR_RETURN(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Pad));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Comment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->UsrComment));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->FullName));
+	NDR_RETURN(ndr_pull_rap_UserPriv(ndr, NDR_SCALARS, &r->Priv));
+	NDR_RETURN(ndr_pull_rap_AuthFlags(ndr, NDR_SCALARS, &r->AuthFlags));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->PasswordAge));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->HomeDir));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->Parms));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->LastLogon));
+	NDR_RETURN(ndr_pull_time_t(ndr, NDR_SCALARS, &r->LastLogOff));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->BadPWCount));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->NumLogons));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->LogonServer));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->CountryCode));
+	RAP_RETURN(rap_pull_string(mem_ctx, ndr, convert, &r->WorkStations));
+	NDR_RETURN(ndr_pull_uint32(ndr, NDR_SCALARS, &r->MaxStorage));
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->UnitsPerWeek));
+	/* NDR_RETURN(ndr_pull_rap_LogonHours(ndr, NDR_SCALARS, r->LogonHours)); */
+	NDR_RETURN(ndr_pull_uint16(ndr, NDR_SCALARS, &r->CodePage));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbcli_rap_netusergetinfo(struct smbcli_tree *tree,
+				   TALLOC_CTX *mem_ctx,
+				   struct rap_NetUserGetInfo *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_WUserGetInfo))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_string(call, r->in.UserName);
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_word(call);
+
+	switch(r->in.level) {
+	case 0:
+		rap_cli_expect_format(call, "B21");
+		break;
+	case 1:
+		rap_cli_expect_format(call, "B21BB16DWzzWz");
+		break;
+	case 2:
+		rap_cli_expect_format(call, "B21BB16DWzzWzDzzzzDDDDWb21WWzWW");
+		break;
+	case 10:
+		rap_cli_expect_format(call, "B21Bzzz");
+		break;
+	case 11:
+		rap_cli_expect_format(call, "B21BzzzWDDzzDDWWzWzDWb21W");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetUserGetInfo, r);
+	}
+
+	result = rap_cli_do_call(tree, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	switch(r->in.level) {
+	case 0:
+		result = rap_pull_rap_NetUserInfo0(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info0);
+		break;
+	case 1:
+		result = rap_pull_rap_NetUserInfo1(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info1);
+		break;
+	case 2:
+		result = rap_pull_rap_NetUserInfo2(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info2);
+		break;
+	case 10:
+		result = rap_pull_rap_NetUserInfo10(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info10);
+		break;
+	case 11:
+		result = rap_pull_rap_NetUserInfo11(mem_ctx, call->ndr_pull_data, r->out.convert, &r->out.info.info11);
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetUserGetInfo, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
+
 static bool test_netservergetinfo(struct torture_context *tctx, 
 				  struct smbcli_state *cli)
 {
