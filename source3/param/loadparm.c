@@ -5569,9 +5569,9 @@ FN_GLOBAL_BOOL(lp_domain_logons, &Globals.bDomainLogons)
 FN_GLOBAL_LIST(lp_init_logon_delayed_hosts, &Globals.szInitLogonDelayedHosts)
 FN_GLOBAL_INTEGER(lp_init_logon_delay, &Globals.InitLogonDelay)
 FN_GLOBAL_BOOL(lp_load_printers, &Globals.bLoadPrinters)
-FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
+FN_GLOBAL_BOOL(_lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
-FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
+FN_GLOBAL_BOOL(_lp_writeraw, &Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
 FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
@@ -10020,4 +10020,20 @@ bool lp_widelinks(int snum)
 	}
 
 	return lp_widelinks_internal(snum);
+}
+
+bool lp_writeraw(void)
+{
+	if (lp_async_smb_echo_handler()) {
+		return false;
+	}
+	return _lp_writeraw();
+}
+
+bool lp_readraw(void)
+{
+	if (lp_async_smb_echo_handler()) {
+		return false;
+	}
+	return _lp_readraw();
 }
