@@ -1033,7 +1033,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	}
 	unbecome_root();
 
-	info3 = talloc(talloc_tos(), struct netr_SamInfo3);
+	info3 = talloc_zero(talloc_tos(), struct netr_SamInfo3);
 	if (info3 == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
