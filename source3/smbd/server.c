@@ -58,32 +58,6 @@ struct event_context *smbd_event_context(void)
 	return smbd_event_ctx;
 }
 
-struct messaging_context *smbd_messaging_context(void)
-{
-	if (smbd_msg_ctx == NULL) {
-		smbd_msg_ctx = messaging_init(talloc_autofree_context(),
-					      procid_self(),
-					      smbd_event_context());
-	}
-	if (smbd_msg_ctx == NULL) {
-		DEBUG(0, ("Could not init smbd messaging context.\n"));
-	}
-	return smbd_msg_ctx;
-}
-
-struct memcache *smbd_memcache(void)
-{
-	if (!smbd_memcache_ctx) {
-		smbd_memcache_ctx = memcache_init(talloc_autofree_context(),
-						  lp_max_stat_cache_size()*1024);
-	}
-	if (!smbd_memcache_ctx) {
-		smb_panic("Could not init smbd memcache");
-	}
-
-	return smbd_memcache_ctx;
-}
-
 /*******************************************************************
  What to do when smb.conf is updated.
  ********************************************************************/

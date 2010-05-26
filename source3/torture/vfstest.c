@@ -432,30 +432,6 @@ struct event_context *smbd_event_context(void)
 	return ctx;
 }
 
-struct messaging_context *smbd_messaging_context(void)
-{
-	static struct messaging_context *ctx;
-
-	if (!ctx && !(ctx = messaging_init(NULL, procid_self(),
-					   smbd_event_context()))) {
-		smb_panic("Could not init smbd messaging context\n");
-	}
-	return ctx;
-}
-
-struct memcache *smbd_memcache(void)
-{
-	static struct memcache *cache;
-
-	if (!cache
-	    && !(cache = memcache_init(NULL,
-				       lp_max_stat_cache_size()*1024))) {
-
-		smb_panic("Could not init smbd memcache");
-	}
-	return cache;
-}
-
 /* Main function */
 
 int main(int argc, char *argv[])
