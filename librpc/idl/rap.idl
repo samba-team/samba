@@ -780,7 +780,7 @@ interface rap
 	typedef [public] enum {
 		USER_PRIV_GUEST = 0,
 		USER_PRIV_USER	= 1,
-		USER_PRV_ADMIN	= 2
+		USER_PRIV_ADMIN	= 2
 	} rap_UserPriv;
 
 	typedef struct {
