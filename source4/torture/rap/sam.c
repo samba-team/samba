@@ -186,12 +186,37 @@ static bool test_oemchangepassword(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_usergetinfo(struct torture_context *tctx,
+			     struct smbcli_state *cli)
+{
+	struct rap_NetUserGetInfo r;
+	int i;
+	uint16_t levels[] = { 0, 1, /*2,*/ 10, /*11*/ };
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.UserName = TEST_RAP_USER;
+		r.in.level = levels[i];
+		r.in.bufsize = 8192;
+
+		torture_comment(tctx,
+			"Testing rap_NetUserGetInfo(%s) level %d\n", r.in.UserName, r.in.level);
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netusergetinfo(cli->tree, tctx, &r),
+			"smbcli_rap_netusergetinfo failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAM");
 
 	torture_suite_add_1smb_test(suite, "userpasswordset2", test_userpasswordset2);
 	torture_suite_add_1smb_test(suite, "oemchangepassword", test_oemchangepassword);
+	torture_suite_add_1smb_test(suite, "usergetinfo", test_usergetinfo);
 
 	return suite;
 }
