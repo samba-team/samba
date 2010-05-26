@@ -4010,16 +4010,6 @@ There is no auxiliary data in the response.
 #define usri11_code_page      84
 #define usri11_end            86
 
-#define USER_PRIV_GUEST 0
-#define USER_PRIV_USER 1
-#define USER_PRIV_ADMIN 2
-
-#define AF_OP_PRINT     0 
-#define AF_OP_COMM      1
-#define AF_OP_SERVER    2
-#define AF_OP_ACCOUNTS  3
-
-
 static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
