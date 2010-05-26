@@ -884,7 +884,7 @@ interface rap
 		uint16 WorkStationsHigh;
 		uint32 MaxStorage;
 		uint16 UnitsPerWeek;
-		[relative_short] uint8 *LogonHours[21];
+		[relative_short] rap_LogonHours *LogonHours;
 		uint16 LogonHoursHigh;
 		uint16 CodePage;
 	} rap_NetUserInfo11;
