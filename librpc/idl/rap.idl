@@ -773,6 +773,140 @@ interface rap
 		[out] uint16 convert
 	);
 
+	typedef struct {
+		[charset(DOS)] uint8 Name[21];
+	} rap_NetUserInfo0;
+
+	typedef [public] enum {
+		USER_PRIV_GUEST = 0,
+		USER_PRIV_USER	= 1,
+		USER_PRV_ADMIN	= 2
+	} rap_UserPriv;
+
+	typedef struct {
+		[charset(DOS)] uint8 Name[21];
+		uint8 Pad;
+		uint8 Password[16];
+		time_t PasswordAge;
+		rap_UserPriv Priv;
+		[relative_short] astring *HomeDir;
+		uint16 HomeDirHigh;
+		[relative_short] astring *Comment;
+		uint16 CommentHigh;
+		uint16 Flags; /* FIXME */
+		[relative_short] astring *ScriptPath;
+		uint16 ScriptPathHigh;
+	} rap_NetUserInfo1;
+
+	typedef [public,v1_enum] enum {
+		AF_OP_PRINT	= 0,
+		AF_OP_COMM	= 1,
+		AF_OP_SERVER	= 2,
+		AF_OP_ACCOUNTS	= 3
+	} rap_AuthFlags;
+
+	typedef [public] struct {
+		uint8 LogonHours[21];
+	} rap_LogonHours;
+
+	typedef struct {
+		[charset(DOS)] uint8 Name[21];
+		uint8 Pad;
+		uint8 Password[16];
+		time_t PasswordAge;
+		rap_UserPriv Priv;
+		[relative_short] astring *HomeDir;
+		uint16 HomeDirHigh;
+		[relative_short] astring *Comment;
+		uint16 CommentHigh;
+		uint16 Flags; /* FIXME */
+		[relative_short] astring *ScriptPath;
+		uint16 ScriptPathHigh;
+		rap_AuthFlags AuthFlags;
+		[relative_short] astring *FullName;
+		uint16 FullNameHigh;
+		[relative_short] astring *UsrComment;
+		uint16 UsrCommentHigh;
+		[relative_short] astring *pParms;
+		uint16 pParmsHigh;
+		[relative_short] astring *WorkStations;
+		uint16 WorkStationsHigh;
+		time_t LastLogon;
+		time_t LastLogOff;
+		time_t AcctExpires;
+		uint32 MaxStorage;
+		uint16 UnitsPerWeek;
+		[relative_short] rap_LogonHours *LogonHours;
+		uint16 LogonHoursHigh;
+		uint16 BadPwCount;
+		uint16 NumLogons;
+		[relative_short] astring *LogonServer;
+		uint16 LogonServerHigh;
+		uint16 CountryCode;
+		uint16 CodePage;
+	} rap_NetUserInfo2;
+
+	typedef struct {
+		[charset(DOS)] uint8 Name[21];
+		uint8 Pad;
+		[relative_short] astring *Comment;
+		uint16 CommentHigh;
+		[relative_short] astring *UsrComment;
+		uint16 UsrCommentHigh;
+		[relative_short] astring *FullName;
+		uint16 FullNameHigh;
+	} rap_NetUserInfo10;
+
+	typedef struct {
+		[charset(DOS)] uint8 Name[21];
+		uint8 Pad;
+		[relative_short] astring *Comment;
+		uint16 CommentHigh;
+		[relative_short] astring *UsrComment;
+		uint16 UsrCommentHigh;
+		[relative_short] astring *FullName;
+		uint16 FullNameHigh;
+		rap_UserPriv Priv;
+		rap_AuthFlags AuthFlags;
+		time_t PasswordAge;
+		[relative_short] astring *HomeDir;
+		uint16 HomeDirHigh;
+		[relative_short] astring *Parms;
+		uint16 ParmsHigh;
+		time_t LastLogon;
+		time_t LastLogOff;
+		uint16 BadPWCount;
+		uint16 NumLogons;
+		[relative_short] astring *LogonServer;
+		uint16 LogonServerHigh;
+		uint16 CountryCode;
+		[relative_short] astring *WorkStations;
+		uint16 WorkStationsHigh;
+		uint32 MaxStorage;
+		uint16 UnitsPerWeek;
+		[relative_short] uint8 *LogonHours[21];
+		uint16 LogonHoursHigh;
+		uint16 CodePage;
+	} rap_NetUserInfo11;
+
+	typedef [public,nodiscriminant] union {
+		[case(0)] rap_NetUserInfo0 info0;
+		[case(1)] rap_NetUserInfo1 info1;
+		[case(2)] rap_NetUserInfo2 info2;
+		[case(10)] rap_NetUserInfo10 info10;
+		[case(11)] rap_NetUserInfo11 info11;
+	} rap_netuser_info;
+
+	[public] void rap_NetUserGetInfo(
+		[in] astring UserName,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_netuser_info info
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
