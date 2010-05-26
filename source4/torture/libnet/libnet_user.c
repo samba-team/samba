@@ -27,8 +27,70 @@
 #include "torture/rpc/torture_rpc.h"
 #include "torture/libnet/usertest.h"
 #include "param/param.h"
+#include "lib/ldb_wrap.h"
 
 
+/**
+ * Find out user's samAccountName for given
+ * user RDN. We need samAccountName value
+ * when deleting users.
+ */
+static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *user_rdn,
+					   TALLOC_CTX *mem_ctx,
+					   const char **_account_name)
+{
+	const char *url;
+	struct ldb_context *ldb;
+	TALLOC_CTX *tmp_ctx;
+	bool test_res = true;
+	struct dcerpc_pipe *p = talloc_get_type_abort(b->private_data, struct dcerpc_pipe);
+	int ldb_ret;
+	struct ldb_result *ldb_res;
+	const char *account_name = NULL;
+	static const char *attrs[] = {
+		"samAccountName",
+		NULL
+	};
+
+	tmp_ctx = talloc_new(tctx);
+	torture_assert(tctx, tmp_ctx != NULL, "Failed to create temporary mem context");
+
+	url = talloc_asprintf(tmp_ctx, "ldap://%s/", p->binding->target_hostname);
+	torture_assert_goto(tctx, url != NULL, test_res, done, "Failed to allocate URL for ldb");
+
+	ldb = ldb_wrap_connect(tmp_ctx,
+	                       tctx->ev, tctx->lp_ctx,
+	                       url, NULL, cmdline_credentials, 0);
+	torture_assert_goto(tctx, ldb != NULL, test_res, done, "Failed to make LDB connection");
+
+	ldb_ret = ldb_search(ldb, tmp_ctx, &ldb_res,
+	                     ldb_get_default_basedn(ldb), LDB_SCOPE_SUBTREE,
+	                     attrs,
+	                     "(&(objectClass=user)(name=%s))", user_rdn);
+	if (LDB_SUCCESS == ldb_ret && 1 == ldb_res->count) {
+		account_name = ldb_msg_find_attr_as_string(ldb_res->msgs[0], "samAccountName", NULL);
+	}
+
+	/* return user_rdn by default */
+	if (!account_name) {
+		account_name = user_rdn;
+	}
+
+	/* duplicate memory in parent context */
+	*_account_name = talloc_strdup(mem_ctx, account_name);
+
+done:
+	talloc_free(tmp_ctx);
+	return test_res;
+}
+
+/**
+ * Deletes a user account when given user RDN name
+ *
+ * @param username RDN for the user to be deleted
+ */
 static bool test_cleanup(struct torture_context *tctx,
 			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *domain_handle, const char *username)
@@ -40,8 +102,15 @@ static bool test_cleanup(struct torture_context *tctx,
 	uint32_t rid;
 	struct policy_handle user_handle;
 	struct samr_Ids rids, types;
+	const char *account_name;
 
-	names[0].string = username;
+	if (!_get_account_name_for_user_rdn(tctx, b, username, mem_ctx, &account_name)) {
+		torture_result(tctx, TORTURE_FAIL,
+		               __location__": Failed to find samAccountName for %s", username);
+		return false;
+	}
+
+	names[0].string = account_name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
@@ -49,7 +118,7 @@ static bool test_cleanup(struct torture_context *tctx,
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
 
-	torture_comment(tctx, "user account lookup '%s'\n", username);
+	torture_comment(tctx, "user account lookup '%s'\n", account_name);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
@@ -206,7 +275,7 @@ static bool test_createuser(struct torture_context *tctx,
 
 		if (NT_STATUS_EQUAL(r1.out.result, NT_STATUS_USER_EXISTS)) {
 			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", user);
-			if (!test_cleanup(tctx, b, mem_ctx, handle, TEST_USERNAME)) {
+			if (!test_cleanup(tctx, b, mem_ctx, handle, user)) {
 				return false;
 			}
 
@@ -595,7 +664,8 @@ bool torture_modifyuser(struct torture_context *torture)
 	}
 
 cleanup:
-	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, torture, &ctx->samr.handle, name)) {
+	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle,
+	                  torture, &ctx->samr.handle, TEST_USERNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
