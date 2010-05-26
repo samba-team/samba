@@ -547,7 +547,9 @@ return 0;
             conf.DEFINE('QNX', '1')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('darwin') > -1):
+        conf.DEFINE('DARWINOS', 1)
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+        conf.ADD_CFLAGS('-fno-common')
     # FIXME: Add more checks here.
     else:
         print "Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os
