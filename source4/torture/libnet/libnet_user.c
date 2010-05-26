@@ -643,24 +643,6 @@ bool torture_modifyuser(struct torture_context *torture)
 		default:
 			break;
 		}
-
-		if (fld == acct_name) {
-			/* restore original testing username - it's useful when test fails
-			   because it prevents from problems with recreating account */
-			ZERO_STRUCT(req);
-			req.in.domain_name = lp_workgroup(torture->lp_ctx);
-			req.in.user_name = name;
-			req.in.account_name = TEST_USERNAME;
-
-			status = libnet_ModifyUser(ctx, torture, &req);
-			if (!NT_STATUS_IS_OK(status)) {
-				torture_comment(torture, "libnet_ModifyUser call failed: %s\n", nt_errstr(status));
-				ret = false;
-				goto done;
-			}
-
-			name = talloc_strdup(torture, TEST_USERNAME);
-		}
 	}
 
 cleanup:
