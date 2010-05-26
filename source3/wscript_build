@@ -771,6 +771,17 @@ EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
 		../librpc/gen_ndr/ndr_eventlog.c
 		../librpc/gen_ndr/ndr_lsa.c'''
 
+DISPLAY_SEC_SRC= '../libcli/security/display_sec.c'
+
+CLIENT_SRC1 = '''client/client.c client/clitar.c ${RPC_CLIENT_SRC}
+                 ../librpc/rpc/binding.c client/dnsbrowse.c
+                 ${RPC_CLIENT_SRC1} ${RPC_PARSE_SRC2}'''
+
+CLIENT_SRC = '''${CLIENT_SRC1} ${PARAM_SRC}
+	        ${KRBCLIENT_SRC} ${LIBMSRPC_GEN_SRC}
+                ${READLINE_SRC} ${DISPLAY_SEC_SRC}'''
+
+
 LIBS='ICONV'
 
 bld.SAMBA_GENERATOR('build_options',
@@ -932,6 +943,12 @@ bld.SAMBA_BINARY('web/swat',
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
+                 vars=locals())
+
+bld.SAMBA_BINARY('smbclient',
+                 source=CLIENT_SRC,
+                 deps='''talloc tdb POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
+                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
