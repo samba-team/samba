@@ -542,10 +542,34 @@ static void set_test_changes(struct torture_context *tctx,
 	}
 
 
+static bool _libnet_context_init_pipes(struct torture_context *tctx,
+				       struct libnet_context *libnet_ctx)
+{
+	NTSTATUS status;
+
+	/* connect SAMR pipe */
+	status = torture_rpc_connection(tctx,
+					&libnet_ctx->samr.pipe,
+					&ndr_table_samr);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to open SAMR pipe");
+
+	libnet_ctx->samr.samr_handle = libnet_ctx->samr.pipe->binding_handle;
+
+
+	/* connect LSARPC pipe */
+	status = torture_rpc_connection(tctx,
+					&libnet_ctx->lsa.pipe,
+					&ndr_table_lsarpc);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to open LSA pipe");
+
+	libnet_ctx->lsa.lsa_handle = libnet_ctx->lsa.pipe->binding_handle;
+
+	return true;
+}
+
 bool torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
-	struct dcerpc_binding *binding;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *prep_mem_ctx;
 	struct policy_handle h;
@@ -585,13 +609,11 @@ bool torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	status = torture_rpc_binding(torture, &binding);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		goto done;
-	}
-
 	torture_comment(torture, "Testing change of all fields - each single one in turn\n");
+
+	if (!_libnet_context_init_pipes(torture, ctx)) {
+		return false;
+	}
 
 	for (fld = USER_FIELD_FIRST; fld <= USER_FIELD_LAST; fld++) {
 		ZERO_STRUCT(req);
