@@ -771,8 +771,8 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
-	char *vfskey;
-        struct parmlist_entry *data;
+	char *vfskey = NULL;
+	struct parmlist_entry *data;
 
 	if (lp_ctx == NULL)
 		return NULL;
@@ -780,6 +780,7 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
 
 	asprintf(&vfskey, "%s:%s", type, option);
+	if (vfskey == NULL) return NULL;
 	strlower(vfskey);
 
 	while (data) {
