@@ -192,7 +192,7 @@ static bool test_usergetinfo_byname(struct torture_context *tctx,
 {
 	struct rap_NetUserGetInfo r;
 	int i;
-	uint16_t levels[] = { 0, 1, /*2,*/ 10, /*11*/ };
+	uint16_t levels[] = { 0, 1, 2, 10, 11 };
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
