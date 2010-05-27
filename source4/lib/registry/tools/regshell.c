@@ -614,7 +614,7 @@ int main(int argc, char **argv)
 
 	if (ctx->current == NULL) {
 		fprintf(stderr, "Unable to access any of the predefined keys\n");
-		return -1;
+		return 1;
 	}
 
 	poptFreeContext(pc);
