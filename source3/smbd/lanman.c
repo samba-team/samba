@@ -4017,7 +4017,6 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *UserName = skip_string(param,tpscnt,str2);
