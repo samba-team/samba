@@ -2669,7 +2669,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 
 	DEBUG(10,("echo_handler[%d]: reading pdu\n", (int)sys_getpid()));
 
-	status = receive_smb_talloc(state, smbd_server_fd(),
+	status = receive_smb_talloc(state->pending, smbd_server_fd(),
 				    (char **)(void *)&state->pending[num_pending].iov_base,
 				    0 /* timeout */,
 				    &unread,
