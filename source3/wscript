@@ -406,7 +406,8 @@ utimensat vsyslog _write __write __xstat
         conf.CHECK_FUNCS_IN('crypto', 'des_set_key')
         conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
         conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
-        conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5')
+        if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
+            conf.DEFINE('HAVE_GSSAPI', '1')
         conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
         conf.CHECK_FUNCS('''
 krb5_set_real_time krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
