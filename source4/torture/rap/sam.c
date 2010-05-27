@@ -186,8 +186,9 @@ static bool test_oemchangepassword(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_usergetinfo(struct torture_context *tctx,
-			     struct smbcli_state *cli)
+static bool test_usergetinfo_byname(struct torture_context *tctx,
+				    struct smbcli_state *cli,
+				    const char *UserName)
 {
 	struct rap_NetUserGetInfo r;
 	int i;
@@ -195,7 +196,7 @@ static bool test_usergetinfo(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
-		r.in.UserName = TEST_RAP_USER;
+		r.in.UserName = UserName;
 		r.in.level = levels[i];
 		r.in.bufsize = 8192;
 
@@ -208,6 +209,29 @@ static bool test_usergetinfo(struct torture_context *tctx,
 	}
 
 	return true;
+}
+
+static bool test_usergetinfo(struct torture_context *tctx,
+			     struct smbcli_state *cli)
+{
+
+	struct test_join *join_ctx;
+	const char *password;
+	bool ret;
+
+	join_ctx = torture_create_testuser_max_pwlen(tctx, TEST_RAP_USER,
+						     torture_setting_string(tctx, "workgroup", NULL),
+						     ACB_NORMAL,
+						     &password, 14);
+	if (join_ctx == NULL) {
+		torture_fail(tctx, "failed to create user\n");
+	}
+
+	ret = test_usergetinfo_byname(tctx, cli, TEST_RAP_USER);
+
+	torture_leave_domain(tctx, join_ctx);
+
+	return ret;
 }
 
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
