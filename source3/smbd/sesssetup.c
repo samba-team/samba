@@ -504,6 +504,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 			DEBUG(10, ("found user %s in passdb, calling "
 				   "make_server_info_sam\n", real_username));
 			ret = make_server_info_sam(&server_info, sampass);
+			TALLOC_FREE(sampass);
 		} else {
 			/*
 			 * User not in passdb, make it up artificially

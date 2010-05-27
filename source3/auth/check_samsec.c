@@ -484,11 +484,8 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	become_root();
 	nt_status = make_server_info_sam(server_info, sampass);
 	unbecome_root();
-	/*
-	 * sampass has been stolen to server_info.
-	 * So NULL it out to prevent segfaults.
-	 */
-	sampass = NULL;
+
+	TALLOC_FREE(sampass);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));

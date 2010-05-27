@@ -345,6 +345,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 			DEBUG(10, ("smb2: found user %s in passdb, calling "
 				"make_server_info_sam\n", real_username));
 			status = make_server_info_sam(&tmp_server_info, sampass);
+			TALLOC_FREE(sampass);
 		} else {
 			/*
 			 * User not in passdb, make it up artificially

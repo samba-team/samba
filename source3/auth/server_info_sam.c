@@ -149,8 +149,6 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		 pdb_get_username(sampass), result->unix_name));
 
 	*server_info = result;
-	/* Ensure that the sampass will be freed with the result */
-	talloc_steal(result, sampass);
 
 	return NT_STATUS_OK;
 }

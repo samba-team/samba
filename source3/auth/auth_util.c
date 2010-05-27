@@ -733,6 +733,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 		return status;
 	}
 
+	TALLOC_FREE(sampass);
+
 	(*server_info)->guest = True;
 
 	status = create_local_token(*server_info);
@@ -747,7 +749,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
-	alpha_strcpy(tmp, pdb_get_username(sampass), ". _-$", sizeof(tmp));
+	alpha_strcpy(tmp, (*server_info)->info3->base.account_name.string,
+		     ". _-$", sizeof(tmp));
 	(*server_info)->sanitized_username = talloc_strdup(*server_info, tmp);
 
 	return NT_STATUS_OK;
