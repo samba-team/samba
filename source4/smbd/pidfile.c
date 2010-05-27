@@ -38,7 +38,9 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 	pid_t ret;
 	char *pidFile;
 
-	asprintf(&pidFile, "%s/%s.pid", piddir, name);
+	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
+		return 0;
+	}
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 
@@ -85,7 +87,10 @@ void pidfile_create(const char *piddir, const char *name)
 	char *pidFile;
 	pid_t pid;
 
-	asprintf(&pidFile, "%s/%s.pid", piddir, name);
+	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
+		DEBUG(0,("ERROR: Out of memory\n"));
+		exit(1);
+	}
 
 	pid = pidfile_pid(piddir, name);
 	if (pid != 0) {
