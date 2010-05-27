@@ -622,7 +622,11 @@ int main(int argc, char **argv)
 	while (true) {
 		char *line, *prompt;
 
-		asprintf(&prompt, "%s\\%s> ", ctx->predef?ctx->predef:"", ctx->path);
+		if (asprintf(&prompt, "%s\\%s> ", ctx->predef?ctx->predef:"",
+			     ctx->path) < 0) {
+			ret = false;
+			break;
+		}
 
 		current_key = ctx->current; 		/* No way to pass a void * pointer
 							   via readline :-( */
