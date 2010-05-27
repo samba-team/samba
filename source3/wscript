@@ -61,7 +61,7 @@ def configure(conf):
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
-        conv.env['developer'] = True
+        conf.env['developer'] = True
 
     if Options.options.with_swat:
         conf.env['build_swat'] = True
