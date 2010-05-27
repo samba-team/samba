@@ -863,18 +863,19 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 		return;
 
 	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)
-		asprintf(&quest, "Get directory %s? ",finfo->name);
+		quest = talloc_asprintf(ctx, "Get directory %s? ",finfo->name);
 	else
-		asprintf(&quest, "Get file %s? ",finfo->name);
+		quest = talloc_asprintf(ctx, "Get file %s? ",finfo->name);
 
 	if (ctx->prompt && !yesno(quest)) return;
 
-	SAFE_FREE(quest);
+	talloc_free(quest);
 
 	if (!(finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-		asprintf(&rname, "%s%s",ctx->remote_cur_dir,finfo->name);
+		rname = talloc_asprintf(&ctx, "%s%s",ctx->remote_cur_dir,
+					finfo->name);
 		do_get(ctx, rname, finfo->name, false);
-		SAFE_FREE(rname);
+		talloc_free(rname);
 		return;
 	}
 
@@ -2832,7 +2833,7 @@ static void completion_remote_filter(struct clilist_file_info *f, const char *ma
 static char **remote_completion(const char *text, int len)
 {
 	char *dirmask;
-	int i;
+	int i, ret;
 	completion_remote_t info;
 
 	info.samelen = len;
@@ -2855,9 +2856,14 @@ static char **remote_completion(const char *text, int len)
 	if (i > 0) {
 		info.dirmask = talloc_strndup(NULL, text, i+1);
 		info.dirmask[i+1] = 0;
-		asprintf(&dirmask, "%s%*s*", rl_ctx->remote_cur_dir, i-1, text);
-	} else
-		asprintf(&dirmask, "%s*", rl_ctx->remote_cur_dir);
+		ret = asprintf(&dirmask, "%s%*s*", rl_ctx->remote_cur_dir, i-1,
+			       text);
+	} else {
+		ret = asprintf(&dirmask, "%s*", rl_ctx->remote_cur_dir);
+	}
+	if (ret < 0) {
+		goto cleanup;
+	}
 
 	if (smbcli_list(rl_ctx->cli->tree, dirmask, 
 		     FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN, 
