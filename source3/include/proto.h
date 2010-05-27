@@ -182,6 +182,8 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			  struct samu *samu,
 			  const char *login_server,
 			  struct netr_SamInfo3 **_info3);
+struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+					 struct netr_SamInfo3 *orig);
 
 /* The following definitions come from auth/auth_wbc.c  */
 
