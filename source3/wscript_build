@@ -640,6 +640,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_chauthtok.c
                    winbindd/winbindd_pam_auth_crap.c
                    winbindd/winbindd_pam_chng_pswd_auth_crap.c
+                   auth/auth_util.c
                    auth/token_util.c
                    auth/check_samsec.c
                    auth/server_info.c

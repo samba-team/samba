@@ -1289,6 +1289,11 @@ int main(int argc, char **argv, char **envp)
 
 	winbindd_register_handlers();
 
+	if (!init_system_info()) {
+		DEBUG(0,("ERROR: failed to setup system user info.\n"));
+		exit(1);
+	}
+
 	/* setup listen sockets */
 
 	if (!winbindd_setup_listeners()) {

@@ -1255,6 +1255,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_pam_chauthtok.o \
 		winbindd/winbindd_pam_chng_pswd_auth_crap.o \
 		winbindd/winbindd_pam_logoff.o \
+		auth/auth_util.o \
 		auth/token_util.o \
 		auth/check_samsec.o \
 		auth/server_info.o \
