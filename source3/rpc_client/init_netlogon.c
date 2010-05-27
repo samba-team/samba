@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
+#include "rpc_client/init_netlogon.h"
 
 /*************************************************************************
  inits a netr_CryptPassword structure
