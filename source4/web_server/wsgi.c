@@ -300,7 +300,9 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 		if (!strcasecmp(hdr->name, "Content-Type")) {
 			PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(hdr->value));
 		} else { 
-			asprintf(&name, "HTTP_%s", hdr->name);
+			if (asprintf(&name, "HTTP_%s", hdr->name) < 0) {
+				continue;
+			}
 			PyDict_SetItemString(env, name, PyString_FromString(hdr->value));
 			free(name);
 		}
