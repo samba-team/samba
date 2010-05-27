@@ -120,14 +120,15 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
 		dir->files[i].name = low_name;
 		if (!dir->files[i].name) { continue; }
 
-		asprintf(&full_name, "%s/%s", dir->unix_dir, dir->files[i].name);
+		full_name = talloc_asprintf(mem_ctx, "%s/%s", dir->unix_dir,
+					    dir->files[i].name);
 		if (!full_name) { continue; }
 
 		if (stat(full_name, &dir->files[i].st) == 0) { 
 			dir->count++;
 		}
 
-		free(full_name); 
+		talloc_free(full_name);
 	}
 
 	closedir(odir);
