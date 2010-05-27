@@ -104,13 +104,13 @@ static bool check_user_ok(connection_struct *conn,
 	}
 
 	if (!user_ok_token(server_info->unix_name,
-			   pdb_get_domain(server_info->sam_account),
+			   server_info->info3->base.domain.string,
 			   server_info->ptok, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
 		server_info->unix_name,
-		pdb_get_domain(server_info->sam_account),
+		server_info->info3->base.domain.string,
 		server_info->ptok,
 		conn);
 
@@ -132,7 +132,7 @@ static bool check_user_ok(connection_struct *conn,
 
 	admin_user = token_contains_name_in_list(
 		server_info->unix_name,
-		pdb_get_domain(server_info->sam_account),
+		server_info->info3->base.domain.string,
 		NULL, server_info->ptok, lp_admin_users(snum));
 
 	if (valid_vuid) {

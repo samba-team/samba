@@ -2487,7 +2487,7 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 	standard_sub_advanced(sharename, server_info->sanitized_username,
 			      path, server_info->utok.gid,
 			      server_info->sanitized_username,
-			      pdb_get_domain(server_info->sam_account),
+			      server_info->info3->base.domain.string,
 			      pjob.user, sizeof(pjob.user)-1);
 	/* ensure NULL termination */
 	pjob.user[sizeof(pjob.user)-1] = '\0';

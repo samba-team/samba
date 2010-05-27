@@ -455,7 +455,7 @@ static NTSTATUS log_nt_token(NT_USER_TOKEN *token)
 }
 
 /*
- * Create the token to use from server_info->sam_account and
+ * Create the token to use from server_info->info3 and
  * server_info->sids (the info3/sam groups). Find the unix gids.
  */
 
@@ -464,6 +464,7 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
+	struct dom_sid user_sid;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -482,9 +483,13 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 						    &server_info->ptok);
 
 	} else {
+		sid_compose(&user_sid,
+			    server_info->info3->base.domain_sid,
+			    server_info->info3->base.rid);
+
 		server_info->ptok = create_local_nt_token(
 			server_info,
-			pdb_get_user_sid(server_info->sam_account),
+			&user_sid,
 			server_info->guest,
 			server_info->num_sids, server_info->sids);
 		status = server_info->ptok ?
@@ -592,7 +597,16 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->sam_account = sampass;
+	status = samu_to_SamInfo3(result, sampass,
+				  global_myname(), &result->info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Failed to convert samu to info3: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(sampass);
+		TALLOC_FREE(result);
+		return status;
+	}
+
 
 	result->unix_name = talloc_strdup(result, unix_username);
 	result->sanitized_username = sanitize_username(result, unix_username);
@@ -614,9 +628,12 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
 			   nt_errstr(status)));
+		TALLOC_FREE(sampass);
 		TALLOC_FREE(result);
 		return status;
 	}
+
+	TALLOC_FREE(sampass);
 
 	/*
 	 * The SID returned in server_info->sam_account is based
@@ -661,6 +678,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	/* FIXME: add to info3 too ? */
 	status = add_sid_to_array_unique(result, &u_sid,
 					 &result->sids,
 					 &result->num_sids);
@@ -812,13 +830,8 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
 						src->lm_session_key.length);
 
-	dst->sam_account = samu_new(NULL);
-	if (!dst->sam_account) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
-	if (!pdb_copy_sam_account(dst->sam_account, src->sam_account)) {
+	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
+	if (!dst->info3) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
@@ -901,15 +914,12 @@ bool copy_current_user(struct current_user *dst, struct current_user *src)
 
 /***************************************************************************
  Purely internal function for make_server_info_info3
- Fill the sam account from getpwnam
 ***************************************************************************/
-static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx, 
-				 const char *domain,
-				 const char *username,
-				 char **found_username,
-				 uid_t *uid, gid_t *gid,
-				 struct samu *account,
-				 bool *username_was_mapped)
+
+static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
+			      const char *username, char **found_username,
+			      uid_t *uid, gid_t *gid,
+			      bool *username_was_mapped)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	NTSTATUS nt_status;
@@ -923,7 +933,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	fstr_sprintf(dom_user, "%s%c%s", domain, *lp_winbind_separator(), 
 		lower_username);
 
-	/* Get the passwd struct.  Try to create the account is necessary. */
+	/* Get the passwd struct.  Try to create the account if necessary. */
 
 	*username_was_mapped = map_username(sconn, dom_user);
 
@@ -940,10 +950,6 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	                                 --jerry              */
 
 	*found_username = talloc_strdup( mem_ctx, real_username );
-
-	DEBUG(5,("fill_sam_account: located username was [%s]\n", *found_username));
-
-	nt_status = samu_set_unix( account, passwd );
 
 	TALLOC_FREE(passwd);
 
@@ -1051,7 +1057,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	char *found_username = NULL;
 	const char *nt_domain;
 	const char *nt_username;
-	struct samu *sam_account = NULL;
 	struct dom_sid user_sid;
 	struct dom_sid group_sid;
 	bool username_was_mapped;
@@ -1090,8 +1095,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		nt_domain = domain;
 	}
 
-	/* try to fill the SAM account..  If getpwnam() fails, then try the 
-	   add user script (2.2.x behavior).
+	/* If getpwnam() fails try the add user script (2.2.x behavior).
 
 	   We use the _unmapped_ username here in an attempt to provide
 	   consistent username mapping behavior between kerberos and NTLM[SSP]
@@ -1102,129 +1106,18 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   that is how the current code is designed.  Making the change here
 	   is the least disruptive place.  -- jerry */
 
-	if ( !(sam_account = samu_new( NULL )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* this call will try to create the user if necessary */
 
-	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
-				     &found_username, &uid, &gid, sam_account,
+	nt_status = check_account(mem_ctx, nt_domain, sent_nt_username,
+				     &found_username, &uid, &gid,
 				     &username_was_mapped);
-
-
-	/* if we still don't have a valid unix account check for 
-	  'map to guest = bad uid' */
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE( sam_account );
-		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
-			make_server_info_guest(NULL, server_info);
-			return NT_STATUS_OK;
-		}
-		return nt_status;
-	}
-
-	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_username(sam_account, nt_username, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_user_sid(sam_account, &user_sid, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_group_sid(sam_account, &group_sid, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_fullname(sam_account,
-			      info3->base.full_name.string,
-			      PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_logon_script(sam_account,
-				  info3->base.logon_script.string,
-				  PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_profile_path(sam_account,
-				  info3->base.profile_path.string,
-				  PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_homedir(sam_account,
-			     info3->base.home_directory.string,
-			     PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_dir_drive(sam_account,
-			       info3->base.home_drive.string,
-			       PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_acct_ctrl(sam_account, info3->base.acct_flags, PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_last_set_time(
-		    sam_account,
-		    nt_time_to_unix(info3->base.last_password_change),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_can_change_time(
-		    sam_account,
-		    nt_time_to_unix(info3->base.allow_password_change),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_must_change_time(
-		    sam_account,
-		    nt_time_to_unix(info3->base.force_password_change),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	result = make_server_info(NULL);
 	if (result == NULL) {
 		DEBUG(4, ("make_server_info failed!\n"));
-		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* save this here to _net_sam_logon() doesn't fail (it assumes a 
-	   valid struct samu) */
-
-	result->sam_account = sam_account;
 	result->unix_name = talloc_strdup(result, found_username);
 
 	result->sanitized_username = sanitize_username(result,
@@ -1233,6 +1126,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/* copy in the info3 */
+	result->info3 = copy_netr_SamInfo3(result, info3);
 
 	/* Fill in the unix info we found on the way */
 
@@ -1294,237 +1190,16 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const struct wbcAuthUserInfo *info,
 					  struct auth_serversupplied_info **server_info)
 {
-	static const char zeros[16] = {0, };
+	struct netr_SamInfo3 *info3;
 
-	NTSTATUS nt_status = NT_STATUS_OK;
-	char *found_username = NULL;
-	const char *nt_domain;
-	const char *nt_username;
-	struct samu *sam_account = NULL;
-	struct dom_sid user_sid;
-	struct dom_sid group_sid;
-	bool username_was_mapped;
-	uint32_t i;
-
-	uid_t uid = (uid_t)-1;
-	gid_t gid = (gid_t)-1;
-
-	struct auth_serversupplied_info *result;
-
-	result = make_server_info(NULL);
-	if (result == NULL) {
-		DEBUG(4, ("make_server_info failed!\n"));
+	info3 = wbcAuthUserInfo_to_netr_SamInfo3(mem_ctx, info);
+	if (!info3) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/*
-	   Here is where we should check the list of
-	   trusted domains, and verify that the SID
-	   matches.
-	*/
-
-	memcpy(&user_sid, &info->sids[0].sid, sizeof(user_sid));
-	memcpy(&group_sid, &info->sids[1].sid, sizeof(group_sid));
-
-	if (info->account_name) {
-		nt_username = talloc_strdup(result, info->account_name);
-	} else {
-		/* If the server didn't give us one, just use the one we sent
-		 * them */
-		nt_username = talloc_strdup(result, sent_nt_username);
-	}
-	if (!nt_username) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (info->domain_name) {
-		nt_domain = talloc_strdup(result, info->domain_name);
-	} else {
-		/* If the server didn't give us one, just use the one we sent
-		 * them */
-		nt_domain = talloc_strdup(result, domain);
-	}
-	if (!nt_domain) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* try to fill the SAM account..  If getpwnam() fails, then try the
-	   add user script (2.2.x behavior).
-
-	   We use the _unmapped_ username here in an attempt to provide
-	   consistent username mapping behavior between kerberos and NTLM[SSP]
-	   authentication in domain mode security.  I.E. Username mapping
-	   should be applied to the fully qualified username
-	   (e.g. DOMAIN\user) and not just the login name.  Yes this means we
-	   called map_username() unnecessarily in make_user_info_map() but
-	   that is how the current code is designed.  Making the change here
-	   is the least disruptive place.  -- jerry */
-
-	if ( !(sam_account = samu_new( result )) ) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* this call will try to create the user if necessary */
-
-	nt_status = fill_sam_account(result, nt_domain, sent_nt_username,
-				     &found_username, &uid, &gid, sam_account,
-				     &username_was_mapped);
-
-	/* if we still don't have a valid unix account check for
-	  'map to guest = bad uid' */
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE( result );
-		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
-			make_server_info_guest(NULL, server_info);
-			return NT_STATUS_OK;
-		}
-		return nt_status;
-	}
-
-	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_username(sam_account, nt_username, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_user_sid(sam_account, &user_sid, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_group_sid(sam_account, &group_sid, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_fullname(sam_account, info->full_name, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_logon_script(sam_account, info->logon_script, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_profile_path(sam_account, info->profile_path, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_homedir(sam_account, info->home_directory, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_dir_drive(sam_account, info->home_drive, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_acct_ctrl(sam_account, info->acct_flags, PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_last_set_time(
-		    sam_account,
-		    nt_time_to_unix(info->pass_last_set_time),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_can_change_time(
-		    sam_account,
-		    nt_time_to_unix(info->pass_can_change_time),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_pass_must_change_time(
-		    sam_account,
-		    nt_time_to_unix(info->pass_must_change_time),
-		    PDB_CHANGED)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* save this here to _net_sam_logon() doesn't fail (it assumes a
-	   valid struct samu) */
-
-	result->sam_account = sam_account;
-	result->unix_name = talloc_strdup(result, found_username);
-
-	result->sanitized_username = sanitize_username(result,
-						       result->unix_name);
-	result->login_server = talloc_strdup(result, info->logon_server);
-
-	if ((result->unix_name == NULL)
-	    || (result->sanitized_username == NULL)
-	    || (result->login_server == NULL)) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Fill in the unix info we found on the way */
-
-	result->utok.uid = uid;
-	result->utok.gid = gid;
-
-	/* Create a 'combined' list of all SIDs we might want in the SD */
-
-	result->num_sids = info->num_sids - 2;
-	result->sids = talloc_array(result, struct dom_sid, result->num_sids);
-	if (result->sids == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0; i < result->num_sids; i++) {
-		memcpy(&result->sids[i], &info->sids[i+2].sid, sizeof(result->sids[i]));
-	}
-
-	/* Ensure the primary group sid is at position 0. */
-	sort_sid_array_for_smbd(result, &group_sid);
-
-	/* ensure we are never given NULL session keys */
-
-	if (memcmp(info->user_session_key, zeros, sizeof(zeros)) == 0) {
-		result->user_session_key = data_blob_null;
-	} else {
-		result->user_session_key = data_blob_talloc(
-			result, info->user_session_key,
-			sizeof(info->user_session_key));
-	}
-
-	if (memcmp(info->lm_session_key, zeros, 8) == 0) {
-		result->lm_session_key = data_blob_null;
-	} else {
-		result->lm_session_key = data_blob_talloc(
-			result, info->lm_session_key,
-			sizeof(info->lm_session_key));
-	}
-
-	result->nss_token |= username_was_mapped;
-
-	*server_info = result;
-
-	return NT_STATUS_OK;
+	return make_server_info_info3(mem_ctx,
+				      sent_nt_username, domain,
+				      server_info, info3);
 }
 
 /**

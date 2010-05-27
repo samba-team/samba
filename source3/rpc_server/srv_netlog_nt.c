@@ -194,7 +194,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	acct_ctrl = pdb_get_acct_ctrl(p->server_info->sam_account);
+	acct_ctrl = p->server_info->info3->base.acct_flags;
 
 	switch (r->in.function_code) {
 	case NETLOGON_CONTROL_TC_VERIFY:

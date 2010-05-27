@@ -371,9 +371,9 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		 * we end up with the local netbios name in substitutions for
 		 * %D. */
 
-		if (session->server_info->sam_account != NULL) {
-			pdb_set_domain(session->server_info->sam_account,
-					domain, PDB_SET);
+		if (session->server_info->info3 != NULL) {
+			session->server_info->info3->base.domain.string =
+				talloc_strdup(session->server_info->info3, domain);
 		}
 
 	}
@@ -979,7 +979,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	set_current_user_info(session->server_info->sanitized_username,
 			      session->server_info->unix_name,
-			      pdb_get_domain(session->server_info->sam_account));
+			      session->server_info->info3->base.domain.string);
 
 	req->session = session;
 

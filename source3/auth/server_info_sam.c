@@ -77,7 +77,13 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	result->sam_account = sampass;
+	status = samu_to_SamInfo3(result, sampass,
+				  global_myname(), &result->info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(result);
+		return status;
+	}
+
 	result->unix_name = pwd->pw_name;
 	/* Ensure that we keep pwd->pw_name, because we will free pwd below */
 	talloc_steal(result, pwd->pw_name);
@@ -128,7 +134,6 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
 				   nt_errstr(status)));
-			result->sam_account = NULL; /* Don't free on error exit. */
 			TALLOC_FREE(result);
 			return status;
 		}

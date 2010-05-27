@@ -467,7 +467,7 @@ static int recycle_unlink(vfs_handle_struct *handle,
 					conn->connectpath,
 					conn->server_info->utok.gid,
 					conn->server_info->sanitized_username,
-					pdb_get_domain(conn->server_info->sam_account),
+					conn->server_info->info3->base.domain.string,
 					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */

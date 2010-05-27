@@ -1654,7 +1654,7 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 		}
 	} else {
 		username = p->server_info->sanitized_username;
-		domname = pdb_get_domain(p->server_info->sam_account);
+		domname = p->server_info->info3->base.domain.string;
 	}
 
 	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);

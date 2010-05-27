@@ -274,12 +274,12 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		  (unsigned int)vuser->server_info->utok.gid,
 		  vuser->server_info->unix_name,
 		  vuser->server_info->sanitized_username,
-		  pdb_get_domain(vuser->server_info->sam_account),
+		  vuser->server_info->info3->base.domain.string,
 		  vuser->server_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
 		  "Real name: %s\n", vuser->server_info->unix_name,
-		  pdb_get_fullname(vuser->server_info->sam_account)));
+		  vuser->server_info->info3->base.full_name.string));
 
 	if (!vuser->server_info->ptok) {
 		DEBUG(1, ("register_existing_vuid: server_info does not "
@@ -324,7 +324,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 	set_current_user_info(
 		vuser->server_info->sanitized_username,
 		vuser->server_info->unix_name,
-		pdb_get_domain(vuser->server_info->sam_account));
+		vuser->server_info->info3->base.domain.string);
 
 	return vuser->vuid;
 

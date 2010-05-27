@@ -113,7 +113,7 @@ static int CopyExpanded(connection_struct *conn,
 				conn->connectpath,
 				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
-				pdb_get_domain(conn->server_info->sam_account),
+				conn->server_info->info3->base.domain.string,
 				buf);
 	if (!buf) {
 		*p_space_remaining = 0;
@@ -164,7 +164,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				conn->connectpath,
 				conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
-				pdb_get_domain(conn->server_info->sam_account),
+				conn->server_info->info3->base.domain.string,
 				buf);
 	if (!buf) {
 		return 0;
@@ -4455,8 +4455,9 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 		}
 
 		PACKS(&desc,"z",lp_workgroup());/* domain */
-		PACKS(&desc,"z", vuser ? pdb_get_logon_script(
-			      vuser->server_info->sam_account) : ""); /* script path */
+		PACKS(&desc,"z", vuser ?
+			vuser->server_info->info3->base.logon_script.string
+			: ""); /* script path */
 		PACKI(&desc,"D",0x00000000);		/* reserved */
 	}
 

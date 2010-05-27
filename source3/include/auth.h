@@ -58,7 +58,7 @@ struct auth_serversupplied_info {
 
         char *login_server; /* which server authorized the login? */
 
-	struct samu *sam_account;
+	struct netr_SamInfo3 *info3;
 
 	void *pam_handle;
 

@@ -529,9 +529,9 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		 * we end up with the local netbios name in substitutions for
 		 * %D. */
 
-		if (server_info->sam_account != NULL) {
-			pdb_set_domain(server_info->sam_account,
-					domain, PDB_SET);
+		if (server_info->info3 != NULL) {
+			server_info->info3->base.domain.string =
+				talloc_strdup(server_info->info3, domain);
 		}
 	}
 
