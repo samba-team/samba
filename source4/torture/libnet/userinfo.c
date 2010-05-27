@@ -48,10 +48,7 @@ static bool test_userinfo(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (SID argument)\n");
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Calling sync libnet_rpc_userinfo() failed");
 
 	ZERO_STRUCT(user);
 
@@ -62,10 +59,7 @@ static bool test_userinfo(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (username argument)\n");
 	status = libnet_rpc_userinfo(p, mem_ctx, &user);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Calling sync libnet_rpc_userinfo failed");
 
 	return true;
 }
@@ -92,16 +86,10 @@ static bool test_userinfo_async(struct torture_context *tctx,
 	torture_comment(tctx, "Testing async libnet_rpc_userinfo (SID argument)\n");
 
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
-	if (!c) {
-		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo_send\n");
-		return false;
-	}
+	torture_assert(tctx, c != NULL, "Failed to call async libnet_rpc_userinfo_send");
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Calling async libnet_rpc_userinfo_recv failed");
 
 	ZERO_STRUCT(user);
 
@@ -113,16 +101,10 @@ static bool test_userinfo_async(struct torture_context *tctx,
 	torture_comment(tctx, "Testing async libnet_rpc_userinfo (username argument)\n");
 
 	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
-	if (!c) {
-		torture_comment(tctx, "Failed to call sync libnet_rpc_userinfo_send\n");
-		return false;
-	}
+	torture_assert(tctx, c != NULL, "Failed to call async libnet_rpc_userinfo_send");
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Calling async libnet_rpc_userinfo_recv failed");
 
 	return true;
 }
