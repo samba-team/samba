@@ -341,3 +341,169 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 
 	return NT_STATUS_OK;
 }
+
+static NTSTATUS sids_to_samr_RidWithAttributeArray(
+				TALLOC_CTX *mem_ctx,
+				struct samr_RidWithAttributeArray *groups,
+				const struct dom_sid *domain_sid,
+				const struct dom_sid *sids,
+				size_t num_sids)
+{
+	unsigned int i;
+	bool ok;
+
+	groups->rids = talloc_array(mem_ctx,
+				    struct samr_RidWithAttribute, num_sids);
+	if (!groups->rids) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_sids; i++) {
+		ok = sid_peek_check_rid(domain_sid, &sids[i],
+					&groups->rids[i].rid);
+		if (!ok) continue;
+
+		groups->rids[i].attributes = SE_GROUP_MANDATORY |
+					     SE_GROUP_ENABLED_BY_DEFAULT |
+					     SE_GROUP_ENABLED;
+		groups->count++;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+#define RET_NOMEM(ptr) do { \
+	if (!ptr) { \
+		TALLOC_FREE(info3); \
+		return NT_STATUS_NO_MEMORY; \
+	} } while(0)
+
+NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
+			  struct samu *samu,
+			  const char *login_server,
+			  struct netr_SamInfo3 **_info3)
+{
+	struct netr_SamInfo3 *info3;
+	const struct dom_sid *user_sid;
+	const struct dom_sid *group_sid;
+	struct dom_sid domain_sid;
+	struct dom_sid *group_sids;
+	size_t num_group_sids;
+	const char *tmp;
+	gid_t *gids;
+	NTSTATUS status;
+	bool ok;
+
+	user_sid = pdb_get_user_sid(samu);
+	group_sid = pdb_get_group_sid(samu);
+
+	if (!user_sid || !group_sid) {
+		DEBUG(1, ("Sam account is missing sids!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+	if (!info3) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	unix_to_nt_time(&info3->base.last_logon, pdb_get_logon_time(samu));
+	unix_to_nt_time(&info3->base.last_logoff, get_time_t_max());
+	unix_to_nt_time(&info3->base.acct_expiry, get_time_t_max());
+	unix_to_nt_time(&info3->base.last_password_change,
+			pdb_get_pass_last_set_time(samu));
+	unix_to_nt_time(&info3->base.allow_password_change,
+			pdb_get_pass_can_change_time(samu));
+	unix_to_nt_time(&info3->base.force_password_change,
+			pdb_get_pass_must_change_time(samu));
+
+	tmp = pdb_get_username(samu);
+	if (tmp) {
+		info3->base.account_name.string	= talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.account_name.string);
+	}
+	tmp = pdb_get_fullname(samu);
+	if (tmp) {
+		info3->base.full_name.string = talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.full_name.string);
+	}
+	tmp = pdb_get_logon_script(samu);
+	if (tmp) {
+		info3->base.logon_script.string = talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.logon_script.string);
+	}
+	if (tmp) {
+		info3->base.profile_path.string	= talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.profile_path.string);
+	}
+	if (tmp) {
+		info3->base.home_directory.string = talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.home_directory.string);
+	}
+	if (tmp) {
+		info3->base.home_drive.string = talloc_strdup(info3, tmp);
+		RET_NOMEM(info3->base.home_drive.string);
+	}
+
+	info3->base.logon_count	= pdb_get_logon_count(samu);
+	info3->base.bad_password_count = pdb_get_bad_password_count(samu);
+
+	sid_copy(&domain_sid, user_sid);
+	sid_split_rid(&domain_sid, &info3->base.rid);
+
+	ok = sid_peek_check_rid(&domain_sid, group_sid,
+				&info3->base.primary_gid);
+	if (!ok) {
+		DEBUG(1, ("The primary group sid domain does not"
+			  "match user sid domain for user: %s\n",
+			  pdb_get_username(samu)));
+		TALLOC_FREE(info3);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = pdb_enum_group_memberships(mem_ctx, samu,
+					    &group_sids, &gids,
+					    &num_group_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to get groups from sam account.\n"));
+		TALLOC_FREE(info3);
+		return status;
+	}
+
+	status = sids_to_samr_RidWithAttributeArray(info3,
+						    &info3->base.groups,
+						    &domain_sid,
+						    group_sids,
+						    num_group_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		return status;
+	}
+
+	/* We don't need sids and gids after the conversion */
+	TALLOC_FREE(group_sids);
+	TALLOC_FREE(gids);
+	num_group_sids = 0;
+
+	/* FIXME: should we add other flags ? */
+	info3->base.user_flags = NETLOGON_EXTRA_SIDS;
+
+	if (login_server) {
+		info3->base.logon_server.string = talloc_strdup(info3, login_server);
+		RET_NOMEM(info3->base.logon_server.string);
+	}
+
+	info3->base.domain.string = talloc_strdup(info3,
+						  pdb_get_domain(samu));
+	RET_NOMEM(info3->base.domain.string);
+
+	info3->base.domain_sid = sid_dup_talloc(info3, &domain_sid);
+	RET_NOMEM(info3->base.domain_sid);
+
+	info3->base.acct_flags = pdb_get_acct_ctrl(samu);
+
+	*_info3 = info3;
+	return NT_STATUS_OK;
+}
+

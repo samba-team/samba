@@ -178,6 +178,11 @@ NTSTATUS auth_winbind_init(void);
 
 struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx);
 
+NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
+			  struct samu *samu,
+			  const char *login_server,
+			  struct netr_SamInfo3 **_info3);
+
 /* The following definitions come from auth/auth_wbc.c  */
 
 NTSTATUS auth_wbc_init(void);
