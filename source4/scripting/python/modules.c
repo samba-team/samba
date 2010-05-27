@@ -94,14 +94,18 @@ bool py_update_path(const char *bindir)
 		return false;
 	}
 
-	asprintf(&newpath, "%s/../scripting/python", bindir);
+	if (asprintf(&newpath, "%s/../scripting/python", bindir) < 0) {
+		return false;
+	}
 	if (!PySys_PathPrepend(py_path, newpath)) {
 		free(newpath);
 		return false;
 	}
 	free(newpath);
 
-	asprintf(&newpath, "%s/python", bindir);
+	if (asprintf(&newpath, "%s/python", bindir) < 0) {
+		return false;
+	}
 	if (!PySys_PathPrepend(py_path, newpath)) {
 		free(newpath);
 		return false;
