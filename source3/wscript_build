@@ -394,13 +394,15 @@ RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
 RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
                    ${LIB_EVENTLOG_SRC} ../librpc/gen_ndr/srv_eventlog.c'''
 
+NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
+
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c
                rpc_server/srv_pipe.c rpc_server/srv_lsa_hnd.c'''
 
 RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
 #TODO: RPC_SERVER_SRC used to include RPC_STATIC modules
-RPC_SERVER_SRC = '''${RPC_PIPE_SRC}'''
+RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
 
 RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
 
