@@ -225,10 +225,11 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (unix_name) {
-				asprintf(unix_name, 
-					 "%s%c%s", domain,
-					 *lp_winbind_separator(lp_ctx), 
-					 username);
+				if (asprintf(unix_name, "%s%c%s", domain,
+					     *lp_winbind_separator(lp_ctx),
+					     username) < 0) {
+					nt_status = NT_STATUS_NO_MEMORY;
+				}
 			}
 		} else {
 			DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
@@ -759,7 +760,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
 			if (!full_username) {
-				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(lp_ctx), username) == -1) {
+				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(lp_ctx), username) < 0) {
 					mux_printf(mux_id, "Error: Out of memory in asprintf!\n.\n");
 					return;
 				}
@@ -1169,7 +1170,11 @@ int main(int argc, const char **argv)
 	{
 		char *user;
 
-		asprintf(&user, "%s%c%s", opt_domain, *lp_winbind_separator(cmdline_lp_ctx), opt_username);
+		if (asprintf(&user, "%s%c%s", opt_domain,
+		             *lp_winbind_separator(cmdline_lp_ctx),
+			     opt_username) < 0) {
+			return 1;
+		}
 		if (!check_plaintext_auth(user, opt_password, true)) {
 			return 1;
 		}
