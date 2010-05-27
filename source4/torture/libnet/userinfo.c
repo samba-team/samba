@@ -57,7 +57,7 @@ static bool test_userinfo(struct torture_context *tctx,
 
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = NULL;
-	user.in.username      = TEST_USERNAME;
+	user.in.username      = user_name;
 	user.in.level         = level;
 
 	torture_comment(tctx, "Testing sync libnet_rpc_userinfo (username argument)\n");
@@ -107,7 +107,7 @@ static bool test_userinfo_async(struct torture_context *tctx,
 
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = NULL;
-	user.in.username      = TEST_USERNAME;
+	user.in.username      = user_name;
 	user.in.level         = level;
 
 	torture_comment(tctx, "Testing async libnet_rpc_userinfo (username argument)\n");
