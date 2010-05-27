@@ -41,7 +41,10 @@ static void delete_fn(struct clilist_file_info *finfo, const char *name, void *s
 
 	n = strdup(name);
 	n[strlen(n)-1] = 0;
-	asprintf(&s, "%s%s", n, finfo->name);
+	if (asprintf(&s, "%s%s", n, finfo->name) < 0) {
+		free(n);
+		return;
+	}
 
 	if (finfo->attrib & FILE_ATTRIBUTE_READONLY) {
 		if (NT_STATUS_IS_ERR(smbcli_setatr(dstate->tree, s, 0, 0))) {
@@ -52,7 +55,11 @@ static void delete_fn(struct clilist_file_info *finfo, const char *name, void *s
 
 	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
-		asprintf(&s2, "%s\\*", s);
+		if (asprintf(&s2, "%s\\*", s) < 0) {
+			free(s);
+			free(n);
+			return;
+		}
 		smbcli_unlink(dstate->tree, s2);
 		smbcli_list(dstate->tree, s2, 
 			 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
@@ -109,7 +116,9 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 		}
 	}
 
-	asprintf(&mask, "%s\\*", dname);
+	if (asprintf(&mask, "%s\\*", dname) < 0) {
+		return -1;
+	}
 	smbcli_unlink(dstate.tree, mask);
 	smbcli_list(dstate.tree, mask, 
 		 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
