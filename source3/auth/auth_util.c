@@ -1155,9 +1155,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* Ensure the primary group sid is at position 0. */
 	sort_sid_array_for_smbd(result, &group_sid);
 
-	result->login_server = talloc_strdup(result,
-					     info3->base.logon_server.string);
-
 	/* ensure we are never given NULL session keys */
 
 	if (memcmp(info3->base.key.key, zeros, sizeof(zeros)) == 0) {

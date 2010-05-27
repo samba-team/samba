@@ -56,8 +56,6 @@ struct auth_serversupplied_info {
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 
-        char *login_server; /* which server authorized the login? */
-
 	struct netr_SamInfo3 *info3;
 
 	void *pam_handle;
