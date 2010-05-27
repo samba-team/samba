@@ -389,6 +389,7 @@ RPC_NTSVCS_SRC = '''rpc_server/srv_ntsvcs_nt.c
 RPC_DFS_SRC = ''' ../librpc/gen_ndr/srv_dfs.c rpc_server/srv_dfs_nt.c'''
 
 RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
+                     rpc_server/srv_spoolss_util.c
                   ../librpc/gen_ndr/srv_spoolss.c'''
 
 RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
