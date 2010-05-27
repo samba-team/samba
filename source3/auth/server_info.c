@@ -393,51 +393,73 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 {
 	struct netr_SamInfo3 *info3;
 
-	info3 = talloc(mem_ctx, struct netr_SamInfo3);
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) return NULL;
 
 	/* first copy all, then realloc pointers */
 	info3->base = orig->base;
 
-	info3->base.account_name.string	=
-		talloc_strdup(info3, orig->base.account_name.string);
-	RET_NOMEM(info3->base.account_name.string);
-	info3->base.full_name.string =
-		talloc_strdup(info3, orig->base.full_name.string);
-	RET_NOMEM(info3->base.full_name.string);
-	info3->base.logon_script.string =
-		talloc_strdup(info3, orig->base.logon_script.string);
-	RET_NOMEM(info3->base.logon_script.string);
-	info3->base.profile_path.string	=
-		talloc_strdup(info3, orig->base.profile_path.string);
-	RET_NOMEM(info3->base.profile_path.string);
-	info3->base.home_directory.string =
-		talloc_strdup(info3, orig->base.home_directory.string);
-	RET_NOMEM(info3->base.home_directory.string);
-	info3->base.home_drive.string =
-		talloc_strdup(info3, orig->base.home_drive.string);
-	RET_NOMEM(info3->base.home_drive.string);
+	if (orig->base.account_name.string) {
+		info3->base.account_name.string	=
+			talloc_strdup(info3, orig->base.account_name.string);
+		RET_NOMEM(info3->base.account_name.string);
+	}
+	if (orig->base.full_name.string) {
+		info3->base.full_name.string =
+			talloc_strdup(info3, orig->base.full_name.string);
+		RET_NOMEM(info3->base.full_name.string);
+	}
+	if (orig->base.logon_script.string) {
+		info3->base.logon_script.string =
+			talloc_strdup(info3, orig->base.logon_script.string);
+		RET_NOMEM(info3->base.logon_script.string);
+	}
+	if (orig->base.profile_path.string) {
+		info3->base.profile_path.string	=
+			talloc_strdup(info3, orig->base.profile_path.string);
+		RET_NOMEM(info3->base.profile_path.string);
+	}
+	if (orig->base.home_directory.string) {
+		info3->base.home_directory.string =
+			talloc_strdup(info3, orig->base.home_directory.string);
+		RET_NOMEM(info3->base.home_directory.string);
+	}
+	if (orig->base.home_drive.string) {
+		info3->base.home_drive.string =
+			talloc_strdup(info3, orig->base.home_drive.string);
+		RET_NOMEM(info3->base.home_drive.string);
+	}
 
-	info3->base.groups.rids =
-		talloc_memdup(info3, orig->base.groups.rids,
-			(sizeof(struct samr_RidWithAttribute) *
-				orig->base.groups.count));
-	RET_NOMEM(info3->base.groups.rids);
+	if (orig->base.groups.count) {
+		info3->base.groups.rids =
+			talloc_memdup(info3, orig->base.groups.rids,
+				(sizeof(struct samr_RidWithAttribute) *
+					orig->base.groups.count));
+		RET_NOMEM(info3->base.groups.rids);
+	}
 
-	info3->base.logon_server.string =
-		talloc_strdup(info3, orig->base.logon_server.string);
-	RET_NOMEM(info3->base.logon_server.string);
-	info3->base.domain.string =
-		talloc_strdup(info3, orig->base.domain.string);
-	RET_NOMEM(info3->base.domain.string);
+	if (orig->base.logon_server.string) {
+		info3->base.logon_server.string =
+			talloc_strdup(info3, orig->base.logon_server.string);
+		RET_NOMEM(info3->base.logon_server.string);
+	}
+	if (orig->base.domain.string) {
+		info3->base.domain.string =
+			talloc_strdup(info3, orig->base.domain.string);
+		RET_NOMEM(info3->base.domain.string);
+	}
 
-	info3->base.domain_sid = sid_dup_talloc(info3, orig->base.domain_sid);
-	RET_NOMEM(info3->base.domain_sid);
+	if (orig->base.domain_sid) {
+		info3->base.domain_sid = sid_dup_talloc(info3, orig->base.domain_sid);
+		RET_NOMEM(info3->base.domain_sid);
+	}
 
-	info3->sids = talloc_memdup(info3, orig->sids,
-				    (sizeof(struct netr_SidAttr) *
+	if (orig->sidcount) {
+		info3->sids = talloc_memdup(info3, orig->sids,
+					    (sizeof(struct netr_SidAttr) *
 							orig->sidcount));
-	RET_NOMEM(info3->sids);
+		RET_NOMEM(info3->sids);
+	}
 
 	return info3;
 }
