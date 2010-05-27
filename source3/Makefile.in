@@ -780,7 +780,8 @@ SMBD_OBJ_MAIN = smbd/server.o smbd/server_exit.o
 
 BUILDOPT_OBJ = smbd/build_options.o
 
-SMBD_OBJ_SRV = smbd/files.o smbd/connection.o \
+SMBD_OBJ_SRV = smbd/server_reload.o \
+	       smbd/files.o smbd/connection.o \
 	       smbd/utmp.o smbd/session.o smbd/map_username.o \
                smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
 	       smbd/share_access.o smbd/fileio.o \

@@ -422,62 +422,6 @@ int smbd_server_fd(void)
 		return server_fd;
 }
 
-void reload_printers(void)
-{
-	return;
-}
-
-/****************************************************************************
- Reload the services file.
-**************************************************************************/
-
-bool reload_services(bool test)
-{
-	bool ret;
-
-	if (lp_loaded()) {
-		const char *fname = lp_configfile();
-		if (file_exist(fname) &&
-		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
-			set_dyn_CONFIGFILE(fname);
-			test = False;
-		}
-	}
-
-	reopen_logs();
-
-	if (test && !lp_file_list_changed())
-		return(True);
-
-	lp_killunused(conn_snum_used);
-
-	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
-
-	/* perhaps the config filename is now set */
-	if (!test)
-		reload_services(True);
-
-	reopen_logs();
-
-	load_interfaces();
-
-	{
-		if (smbd_server_fd() != -1) {      
-			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(),
-					   lp_socket_options());
-		}
-	}
-
-	mangle_reset_cache();
-	reset_stat_cache();
-
-	/* this forces service parameters to be flushed */
-	set_current_service(NULL,0,True);
-
-	return (ret);
-}
-
 struct event_context *smbd_event_context(void)
 {
 	static struct event_context *ctx;
