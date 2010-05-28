@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
