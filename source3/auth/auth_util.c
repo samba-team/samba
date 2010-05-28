@@ -463,7 +463,6 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
-	struct dom_sid user_sid;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -482,17 +481,11 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 						    &server_info->ptok);
 
 	} else {
-		sid_compose(&user_sid,
-			    server_info->info3->base.domain_sid,
-			    server_info->info3->base.rid);
-
-		server_info->ptok = create_local_nt_token(
-			server_info,
-			&user_sid,
-			server_info->guest,
-			server_info->num_sids, server_info->sids);
-		status = server_info->ptok ?
-			NT_STATUS_OK : NT_STATUS_NO_SUCH_USER;
+		status = create_local_nt_token_from_info3(server_info,
+							  server_info->guest,
+							  server_info->info3,
+							  &server_info->extra,
+							  &server_info->ptok);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
