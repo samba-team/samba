@@ -228,7 +228,7 @@ ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
 getgrent getgrnam getgrouplist getmntent getnetgrent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
-getutmpx getutxent glob grantpt hstrerror initgroups innetgr
+glob grantpt hstrerror initgroups innetgr
 inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
 llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek lseek64
 lsetea lsetxattr _lstat __lstat lstat64 _lstat64 __lstat64 lutimes
@@ -236,7 +236,7 @@ __lxstat memalign mknod mknod64 mlock mlockall munlock munlockall
 nl_langinfo _open __open open64 _open64 __open64 _opendir __opendir
 opendir64 pathconf poll posix_fallocate posix_fallocate64
 posix_memalign prctl pread _pread __pread pread64 _pread64 __pread64
-pututline pututxline pwrite _pwrite __pwrite pwrite64 _pwrite64
+pwrite _pwrite __pwrite pwrite64 _pwrite64
 __pwrite64 rdchk _read __read _readdir __readdir readdir64 _readdir64
 __readdir64 removeea removexattr rewinddir64 _seekdir __seekdir
 seekdir64 select setea setenv setgidx setgroups setlocale setluid
@@ -245,7 +245,7 @@ setxattr shmget shm_open sigaction sigblock sigprocmask sigset
 sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctlbyname
 __sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
-updwtmp updwtmpx utimensat vsyslog _write __write __xstat
+utimensat vsyslog _write __write __xstat
 ''')
 
     conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
@@ -499,6 +499,37 @@ return 0;
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
+
+    if Options.options.with_utmp:
+        conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx getutxent')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_name', headers='utmp.h',
+                                    define='HAVE_UT_UT_NAME')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_user', headers='utmp.h',
+                                    define='HAVE_UT_UT_USER')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_id', headers='utmp.h',
+                                    define='HAVE_UT_UT_ID')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_host', headers='utmp.h',
+                                    define='HAVE_UT_UT_HOST')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_time', headers='utmp.h',
+                                    define='HAVE_UT_UT_TIME')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_tv', headers='utmp.h',
+                                    define='HAVE_UT_UT_TV')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_type', headers='utmp.h',
+                                    define='HAVE_UT_UT_TYPE')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_pid', headers='utmp.h',
+                                    define='HAVE_UT_UT_PID')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_exit.e_exit', headers='utmp.h',
+                                    define='HAVE_UT_UT_EXIT')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_addr_v6', headers='utmp.h',
+                                    define='HAVE_UT_UT_ADDR_V6')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_addr', headers='utmp.h',
+                                    define='HAVE_UT_UT_ADDR')
+        conf.CHECK_STRUCTURE_MEMBER('struct utmpx', 'ut_syslen', headers='utmpx.h',
+                                    define='HAVE_UX_UT_SYSLEN')
+        conf.CHECK_CODE('struct utmp utarg; struct utmp *utreturn; utreturn = pututline(&utarg);',
+                        'PUTUTLINE_RETURNS_UTMP', headers='utmp.h',
+                        msg="Checking whether pututline returns pointer")
+        conf.DEFINE('WITH_UTMP', 1)
 
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
