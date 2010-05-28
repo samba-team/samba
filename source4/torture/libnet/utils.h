@@ -49,4 +49,8 @@ bool test_group_cleanup(struct torture_context *tctx,
 			struct policy_handle *domain_handle,
 			const char *name);
 
+bool test_samr_close_handle(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+			    struct policy_handle *samr_handle);
+
 void msg_handler(struct monitor_msg *m);

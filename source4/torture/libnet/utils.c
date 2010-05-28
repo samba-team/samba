@@ -295,6 +295,28 @@ bool test_group_create(struct torture_context *tctx,
 	return true;
 }
 
+/**
+ * Closes SAMR handle obtained from Connect, Open User/Domain, etc
+ */
+bool test_samr_close_handle(struct torture_context *tctx,
+			    struct dcerpc_binding_handle *b,
+			    TALLOC_CTX *mem_ctx,
+			    struct policy_handle *samr_handle)
+{
+	struct samr_Close r;
+
+	r.in.handle = samr_handle;
+	r.out.handle = samr_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_samr_Close_r(b, mem_ctx, &r),
+				   "Close SAMR handle RPC call failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+				   "Close SAMR handle failed");
+
+	return true;
+}
+
 
 void msg_handler(struct monitor_msg *m)
 {
