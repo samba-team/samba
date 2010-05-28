@@ -872,7 +872,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	talloc_free(quest);
 
 	if (!(finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-		rname = talloc_asprintf(&ctx, "%s%s",ctx->remote_cur_dir,
+		rname = talloc_asprintf(ctx, "%s%s",ctx->remote_cur_dir,
 					finfo->name);
 		do_get(ctx, rname, finfo->name, false);
 		talloc_free(rname);
