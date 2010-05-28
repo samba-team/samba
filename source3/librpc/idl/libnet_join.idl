@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "wkssvc.idl", "security.idl";
+import "wkssvc.idl", "security.idl", "misc.idl";
 
 /*
   libnetjoin interface definition

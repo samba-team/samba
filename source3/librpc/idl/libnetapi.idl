@@ -7,6 +7,8 @@ cpp_quote("#ifndef MAXSUBAUTHS")
 cpp_quote("#define MAXSUBAUTHS 15 /* max sub authorities in a SID */")
 cpp_quote("#endif")
 
+import "misc.idl";
+
 [
 	pointer_default(unique)
 ]
