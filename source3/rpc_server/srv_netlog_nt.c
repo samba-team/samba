@@ -28,7 +28,10 @@
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/srv_netlogon.h"
 #include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
+#include "rpc_client/cli_lsarpc.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/crypto/md4.h"
 
@@ -391,39 +394,77 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct trustdom_info **domains;
-	uint32_t num_domains;
-	const char **trusted_domains;
+	int num_domains = 0;
+	const char **trusted_domains = NULL;
+	struct lsa_DomainList domain_list;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle pol;
+	uint32_t enum_ctx = 0;
 	int i;
+	uint32_t max_size = (uint32_t)-1;
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
-	/* set up the Trusted Domain List response */
-
-	become_root();
-	status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
-	unbecome_root();
-
+	status = rpc_pipe_open_internal(p->mem_ctx, &ndr_table_lsarpc.syntax_id,
+					rpc_lsarpc_dispatch, p->server_info,
+					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains + 1);
+	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains);
 	if (!trusted_domains) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
-	for (i = 0; i < num_domains; i++) {
-		trusted_domains[i] = talloc_strdup(trusted_domains, domains[i]->name);
-		if (!trusted_domains[i]) {
-			TALLOC_FREE(trusted_domains);
-			return NT_STATUS_NO_MEMORY;
+	status = rpccli_lsa_open_policy2(cli, p->mem_ctx,
+					 true,
+					 LSA_POLICY_VIEW_LOCAL_INFORMATION,
+					 &pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = STATUS_MORE_ENTRIES;
+
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+
+		/* Lookup list of trusted domains */
+
+		status = rpccli_lsa_EnumTrustDom(cli, p->mem_ctx,
+						 &pol,
+						 &enum_ctx,
+						 &domain_list,
+						 max_size);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			goto out;
+		}
+
+		for (i = 0; i < domain_list.count; i++) {
+			if (!add_string_to_array(p->mem_ctx, domain_list.domains[i].name.string,
+						 &trusted_domains, &num_domains)) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
 		}
 	}
 
+	/* multi sz terminate */
+	trusted_domains = talloc_realloc(p->mem_ctx, trusted_domains, const char *, num_domains + 1);
+	if (trusted_domains == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	trusted_domains[num_domains+1] = NULL;
+
 	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
 		TALLOC_FREE(trusted_domains);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	r->out.trusted_domains_blob->data = blob.data;
@@ -431,7 +472,14 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+
+ out:
+	if (cli && is_valid_policy_hnd(&pol)) {
+		rpccli_lsa_Close(cli, p->mem_ctx, &pol);
+	}
+
+	return status;
 }
 
 /*************************************************************************
