@@ -964,7 +964,6 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 			      bool *username_was_mapped)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
-	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
 	fstring real_username;
 	struct passwd *passwd;
@@ -979,8 +978,12 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 
 	*username_was_mapped = map_username(sconn, dom_user);
 
-	if ( !(passwd = smb_getpwnam( NULL, dom_user, real_username, True )) )
+	passwd = smb_getpwnam( NULL, dom_user, real_username, True );
+	if (!passwd) {
+		DEBUG(3, ("Failed to find authenticated user %s via "
+			  "getpwnam(), denying access.\n", dom_user));
 		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	*uid = passwd->pw_uid;
 	*gid = passwd->pw_gid;
@@ -995,7 +998,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 
 	TALLOC_FREE(passwd);
 
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1153,6 +1156,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	nt_status = check_account(mem_ctx, nt_domain, sent_nt_username,
 				     &found_username, &uid, &gid,
 				     &username_was_mapped);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	result = make_server_info(NULL);
 	if (result == NULL) {
