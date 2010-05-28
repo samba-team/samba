@@ -28,12 +28,22 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "torture/libnet/utils.h"
 
+/**
+ * Opens handle on Domain using SAMR
+ *
+ * @param _domain_handle [out] Ptr to storage to store Domain handle
+ * @param _dom_sid [out] If NULL, Domain SID won't be returned
+ * @return
+ */
 bool test_opendomain(struct torture_context *tctx,
-		     struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-		     struct policy_handle *handle, struct lsa_String *domname,
-		     struct dom_sid2 *sid_p)
+		     struct dcerpc_binding_handle *b,
+		     TALLOC_CTX *mem_ctx,
+		     struct policy_handle *_domain_handle,
+		     struct lsa_String *domname,
+		     struct dom_sid2 *_dom_sid)
 {
-	struct policy_handle h, domain_handle;
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
 	struct dom_sid2 *sid = NULL;
@@ -43,7 +53,7 @@ bool test_opendomain(struct torture_context *tctx,
 
 	r1.in.system_name = 0;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.connect_handle = &h;
+	r1.out.connect_handle = &connect_handle;
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
@@ -51,33 +61,40 @@ bool test_opendomain(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r1.out.result,
 		"Connect failed");
 
-	r2.in.connect_handle = &h;
+	r2.in.connect_handle = &connect_handle;
 	r2.in.domain_name = domname;
 	r2.out.sid = &sid;
 
 	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
-		"LookupDomain failed");
+				   dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
+				   "LookupDomain failed");
 	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"LookupDomain failed");
+				   "LookupDomain failed");
 
-	r3.in.connect_handle = &h;
+	r3.in.connect_handle = &connect_handle;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r3.in.sid = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
-	torture_comment(tctx, "opening domain\n");
+	torture_comment(tctx, "opening domain %s\n", domname->string);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
-		"OpenDomain failed");
+				   dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
+				   "OpenDomain failed");
 	torture_assert_ntstatus_ok(tctx, r3.out.result,
-		"OpenDomain failed");
-	*handle = domain_handle;
+				   "OpenDomain failed");
 
-	*sid_p = **r2.out.sid;
+	*_domain_handle = domain_handle;
+
+	if (_dom_sid) {
+		*_dom_sid = **r2.out.sid;
+	}
+
+	/* Close connect_handle, we don't need it anymore */
+	test_samr_close_handle(tctx, b, mem_ctx, &connect_handle);
+
 	return true;
 }
 
