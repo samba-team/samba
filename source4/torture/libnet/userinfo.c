@@ -138,7 +138,7 @@ bool torture_userinfo(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_opendomain(torture, b, mem_ctx, &h, &name, &sid)) {
+	if (!test_domain_open(torture, b, &name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;
 	}
@@ -161,7 +161,7 @@ bool torture_userinfo(struct torture_context *torture)
 	/*
 	 * Testing asynchronous version and monitor messages
 	 */
-	if (!test_opendomain(torture, b, mem_ctx, &h, &name, &sid)) {
+	if (!test_domain_open(torture, b, &name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;
 	}

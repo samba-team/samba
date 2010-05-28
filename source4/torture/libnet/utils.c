@@ -35,11 +35,11 @@
  * @param _dom_sid [out] If NULL, Domain SID won't be returned
  * @return
  */
-bool test_opendomain(struct torture_context *tctx,
+bool test_domain_open(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b,
+		     struct lsa_String *domname,
 		     TALLOC_CTX *mem_ctx,
 		     struct policy_handle *_domain_handle,
-		     struct lsa_String *domname,
 		     struct dom_sid2 *_dom_sid)
 {
 	struct policy_handle connect_handle;

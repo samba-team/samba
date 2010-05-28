@@ -72,7 +72,7 @@ bool torture_groupadd(struct torture_context *torture)
 	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, b, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_domain_open(torture, b, &domain_name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;
 	}

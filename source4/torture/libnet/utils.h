@@ -19,11 +19,12 @@
 */
 
 
-bool test_opendomain(struct torture_context *tctx,
+bool test_domain_open(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b,
+		     struct lsa_String *domname,
 		     TALLOC_CTX *mem_ctx,
-		     struct policy_handle *handle, struct lsa_String *domname,
-		     struct dom_sid2 *sid);
+		     struct policy_handle *_domain_handle,
+		     struct dom_sid2 *_dom_sid);
 
 bool test_user_create(struct torture_context *tctx,
 		      struct dcerpc_binding_handle *b,
