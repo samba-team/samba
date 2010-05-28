@@ -424,6 +424,15 @@ sub provision($$$$$$)
 	my $driver64dir="$shrdir/x64";
 	push(@dirs,$driver64dir);
 
+	my $ro_shrdir="$shrdir/root-tmp";
+	push(@dirs,$ro_shrdir);
+
+	my $msdfs_shrdir="$shrdir/msdfsshare";
+	push(@dirs,$msdfs_shrdir);
+
+	my $msdfs_deeppath="$msdfs_shrdir/deeppath";
+	push(@dirs,$msdfs_deeppath);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -438,6 +447,23 @@ sub provision($$$$$$)
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
 	system("rm -rf $prefix_abs/*");
 	mkdir($_, 0777) foreach(@dirs);
+
+	##
+	## create ro and msdfs share layout
+	##
+
+	chmod 755, $ro_shrdir;
+	my $unreadable_file = "$ro_shrdir/unreadable_file";
+	open(UNREADABLE_FILE, ">$unreadable_file") or die("Unable to open $unreadable_file");
+	close(UNREADABLE_FILE);
+	chmod 600, $unreadable_file;
+
+	my $msdfs_target = "$ro_shrdir/msdfs-target";
+	open(MSDFS_TARGET, ">$msdfs_target") or die("Unable to open $msdfs_target");
+	close(MSDFS_TARGET);
+	chmod 666, $msdfs_target;
+	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
+	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
 
 	my $conffile="$libdir/server.conf";
 
@@ -535,9 +561,11 @@ sub provision($$$$$$)
 
 	read only = no
 	smbd:sharedelay = 100000
-	smbd:writetimeupdatedelay = 500000
-	map hidden = yes
-	map system = yes
+#	smbd:writetimeupdatedelay = 500000
+	map hidden = no
+	map system = no
+	map readonly = no
+	store dos attributes = yes
 	create mask = 755
 	vfs objects = $bindir_abs/xattr_tdb.so $bindir_abs/streams_depot.so
 
@@ -565,9 +593,19 @@ sub provision($$$$$$)
 	print CONF "
 [tmp]
 	path = $shrdir
+[ro-tmp]
+	path = $ro_shrdir
+	guest ok = yes
+[msdfs-share]
+	path = $msdfs_shrdir
+	msdfs root = yes
+	guest ok = yes
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
+[tmpcase]
+	copy = tmp
+	case sensitive = yes
 [hideunwrite]
 	copy = tmp
 	hide unwriteable files = yes
