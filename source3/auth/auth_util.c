@@ -765,16 +765,24 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 					    struct auth_serversupplied_info **server_info)
 {
 	struct passwd *pwd;
+	NTSTATUS status;
 
 	pwd = getpwuid_alloc(mem_ctx, sec_initial_uid());
 	if (pwd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	return make_serverinfo_from_username(mem_ctx,
+	status = make_serverinfo_from_username(mem_ctx,
 					     pwd->pw_name,
 					     false,
 					     server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	(*server_info)->system = true;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -829,6 +837,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	}
 
 	dst->guest = src->guest;
+	dst->system = src->system;
 	dst->utok.uid = src->utok.uid;
 	dst->utok.gid = src->utok.gid;
 	dst->utok.ngroups = src->utok.ngroups;

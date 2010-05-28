@@ -42,6 +42,7 @@ struct auth_usersupplied_info {
 
 struct auth_serversupplied_info {
 	bool guest;
+	bool system;
 
 	struct dom_sid *sids; 	/* These SIDs are preliminary between
 			   check_ntlm_password and the token creation. */
