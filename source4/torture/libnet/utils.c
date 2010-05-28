@@ -158,48 +158,74 @@ bool test_user_cleanup(struct torture_context *tctx,
 }
 
 
+/**
+ * Creates new user using SAMR
+ */
+/**
+ * Creates new user using SAMR
+ *
+ * @param name [in] Username for user to create
+ * @param rid [out] If NULL, User's RID is not returned
+ */
 bool test_user_create(struct torture_context *tctx,
 		      struct dcerpc_binding_handle *b,
 		      TALLOC_CTX *mem_ctx,
-		      struct policy_handle *handle, const char *name,
+		      struct policy_handle *domain_handle,
+		      const char *name,
 		      uint32_t *rid)
 {
+	struct policy_handle user_handle;
 	struct lsa_String username;
 	struct samr_CreateUser r;
-	struct policy_handle user_handle;
+	uint32_t user_rid;
 
 	username.string = name;
 
-	r.in.domain_handle = handle;
+	r.in.domain_handle = domain_handle;
 	r.in.account_name  = &username;
 	r.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.user_handle  = &user_handle;
-	r.out.rid          = rid;
+	r.out.rid 	   = &user_rid;
 
-	torture_comment(tctx, "creating user account %s\n", name);
+	torture_comment(tctx, "creating user '%s'\n", username.string);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_CreateUser_r(b, mem_ctx, &r),
-		"CreateUser failed");
+				   dcerpc_samr_CreateUser_r(b, mem_ctx, &r),
+				   "CreateUser RPC call failed");
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		printf("CreateUser failed - %s\n", nt_errstr(r.out.result));
+		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(r.out.result));
+
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_USER_EXISTS)) {
-			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", name);
-			if (!test_user_cleanup(tctx, b, mem_ctx, handle, name)) {
+			torture_comment(tctx,
+			                "User (%s) already exists - "
+			                "attempting to delete and recreate account again\n",
+			                username.string);
+			if (!test_user_cleanup(tctx, b, mem_ctx, domain_handle, username.string)) {
 				return false;
 			}
 
 			torture_comment(tctx, "creating user account\n");
 
 			torture_assert_ntstatus_ok(tctx,
-				dcerpc_samr_CreateUser_r(b, mem_ctx, &r),
-				"CreateUser failed");
+						   dcerpc_samr_CreateUser_r(b, mem_ctx, &r),
+						   "CreateUser RPC call failed");
 			torture_assert_ntstatus_ok(tctx, r.out.result,
-				"CreateUser failed");
+						   "CreateUser failed");
 
 			return true;
 		}
 		return false;
+	}
+
+	torture_comment(tctx, "closing user '%s'\n", username.string);
+
+	if (!test_samr_close_handle(tctx, b, mem_ctx, &user_handle)) {
+		return false;
+	}
+
+	/* return user RID only if requested */
+	if (rid) {
+		*rid = user_rid;
 	}
 
 	return true;
