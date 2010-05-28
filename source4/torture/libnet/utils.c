@@ -26,7 +26,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "torture/libnet/utils.h"
+#include "torture/libnet/proto.h"
 
 /**
  * Opens handle on Domain using SAMR

@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "torture/libnet/usertest.h"
+#include "torture/libnet/proto.h"
 #include "param/param.h"
 #include "lib/ldb_wrap.h"
 
@@ -151,59 +152,6 @@ static bool test_cleanup(struct torture_context *tctx,
 		"DeleteUser failed");
 	torture_assert_ntstatus_ok(tctx, r3.out.result,
 		"DeleteUser failed");
-
-	return true;
-}
-
-
-static bool test_opendomain(struct torture_context *tctx,
-			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, struct lsa_String *domname)
-{
-	struct policy_handle h, domain_handle;
-	struct samr_Connect r1;
-	struct samr_LookupDomain r2;
-	struct dom_sid2 *sid = NULL;
-	struct samr_OpenDomain r3;
-
-	torture_comment(tctx, "connecting\n");
-
-	r1.in.system_name = 0;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.connect_handle = &h;
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
-		"Connect failed");
-	torture_assert_ntstatus_ok(tctx, r1.out.result,
-		"Connect failed");
-
-	r2.in.connect_handle = &h;
-	r2.in.domain_name = domname;
-	r2.out.sid = &sid;
-
-	torture_comment(tctx, "domain lookup on %s\n", domname->string);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_LookupDomain_r(b, mem_ctx, &r2),
-		"LookupDomain failed");
-	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"LookupDomain failed");
-
-	r3.in.connect_handle = &h;
-	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r3.in.sid = *r2.out.sid;
-	r3.out.domain_handle = &domain_handle;
-
-	torture_comment(tctx, "opening domain\n");
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_OpenDomain_r(b, mem_ctx, &r3),
-		"OpenDomain failed");
-	torture_assert_ntstatus_ok(tctx, r3.out.result,
-		"OpenDomain failed");
-
-	*handle = domain_handle;
 
 	return true;
 }
@@ -378,7 +326,7 @@ bool torture_deleteuser(struct torture_context *torture)
 	}
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, p->binding_handle, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_domain_open(torture, p->binding_handle, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
 	}
@@ -599,7 +547,7 @@ bool torture_modifyuser(struct torture_context *torture)
 	name = talloc_strdup(prep_mem_ctx, TEST_USERNAME);
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, b, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_domain_open(torture, b, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
 	}
@@ -714,7 +662,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 	b = p->binding_handle;
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(torture, b, prep_mem_ctx, &h, &domain_name)) {
+	if (!test_domain_open(torture, b, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
 	}
