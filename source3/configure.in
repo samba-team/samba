@@ -1436,9 +1436,9 @@ then
 	[
 		cat > conftest.c <<EOF
 int foo;
-main () { return 0;}
+int main () { return 0;}
 EOF
-		if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -pie -fPIE -o conftest conftest.c 1>&AS_MESSAGE_LOG_FD])
+		if AC_TRY_COMMAND_NO_STDERR([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -pie -fPIE -o conftest conftest.c])
 		then
 			samba_cv_fpie=yes
 		else
