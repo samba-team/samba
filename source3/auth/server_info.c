@@ -53,6 +53,7 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 
 	result->utok.uid = -1;
 	result->utok.gid = -1;
+
 	return result;
 }
 
@@ -215,36 +216,80 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS sids_to_samr_RidWithAttributeArray(
-				TALLOC_CTX *mem_ctx,
-				struct samr_RidWithAttributeArray *groups,
-				const struct dom_sid *domain_sid,
-				const struct dom_sid *sids,
-				size_t num_sids)
+static NTSTATUS append_netr_SidAttr(TALLOC_CTX *mem_ctx,
+				    struct netr_SidAttr **sids,
+				    uint32_t *count,
+				    const struct dom_sid2 *asid,
+				    uint32_t attributes)
 {
+	uint32_t t = *count;
+
+	*sids = talloc_realloc(mem_ctx, *sids, struct netr_SidAttr, t + 1);
+	if (*sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	(*sids)[t].sid = sid_dup_talloc(*sids, asid);
+	if ((*sids)[t].sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	(*sids)[t].attributes = attributes;
+	*count = t + 1;
+
+	return NT_STATUS_OK;
+}
+
+/* Fils the samr_RidWithAttributeArray with the provided sids.
+ * If it happens that we have additional groups that do not belong
+ * to the domain, add their sids as extra sids */
+static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
+				    const struct dom_sid *sids,
+				    size_t num_sids)
+{
+	uint32_t attributes = SE_GROUP_MANDATORY |
+				SE_GROUP_ENABLED_BY_DEFAULT |
+				SE_GROUP_ENABLED;
+	struct samr_RidWithAttributeArray *groups;
+	struct dom_sid *domain_sid;
 	unsigned int i;
+	NTSTATUS status;
+	uint32_t rid;
 	bool ok;
 
-	groups->rids = talloc_array(mem_ctx,
+	domain_sid = info3->base.domain_sid;
+	groups = &info3->base.groups;
+
+	groups->rids = talloc_array(info3,
 				    struct samr_RidWithAttribute, num_sids);
 	if (!groups->rids) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		ok = sid_peek_check_rid(domain_sid, &sids[i],
-					&groups->rids[i].rid);
-		if (!ok) continue;
+		ok = sid_peek_check_rid(domain_sid, &sids[i], &rid);
+		if (ok) {
 
-		groups->rids[i].attributes = SE_GROUP_MANDATORY |
-					     SE_GROUP_ENABLED_BY_DEFAULT |
-					     SE_GROUP_ENABLED;
-		groups->count++;
+			/* if it is the primary gid, skip it, we
+			 * obviously already have it */
+			if (info3->base.primary_gid == rid) continue;
+
+			/* store domain group rid */
+			groups->rids[i].rid = rid;
+			groups->rids[i].attributes = attributes;
+			groups->count++;
+			continue;
+		}
+
+		/* if this wasn't a domain sid, add it as extra sid */
+		status = append_netr_SidAttr(info3, &info3->sids,
+					     &info3->sidcount,
+					     &sids[i], attributes);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;
 }
-
 
 #define RET_NOMEM(ptr) do { \
 	if (!ptr) { \
@@ -255,7 +300,8 @@ static NTSTATUS sids_to_samr_RidWithAttributeArray(
 NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			  struct samu *samu,
 			  const char *login_server,
-			  struct netr_SamInfo3 **_info3)
+			  struct netr_SamInfo3 **_info3,
+			  struct extra_auth_info *extra)
 {
 	struct netr_SamInfo3 *info3;
 	const struct dom_sid *user_sid;
@@ -279,6 +325,67 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(domain_sid);
+
+	/* check if this is a "Unix Users" domain user,
+	 * we need to handle it in a special way if that's the case */
+	if (sid_compare_domain(user_sid, &global_sid_Unix_Users) == 0) {
+		/* in info3 you can only set rids for the user and the
+		 * primary group, and the domain sid must be that of
+		 * the sam domain.
+		 *
+		 * Store a completely bogus value here.
+		 * The real SID is stored in the extra sids.
+		 * Other code will know to look there if (-1) is found
+		 */
+		info3->base.rid = (uint32_t)(-1);
+		sid_copy(&extra->user_sid, user_sid);
+
+		DEBUG(10, ("Unix User found in struct samu. Rid marked as "
+			   "special and sid (%s) saved as extra sid\n",
+			   sid_string_dbg(user_sid)));
+	} else {
+		sid_copy(&domain_sid, user_sid);
+		sid_split_rid(&domain_sid, &info3->base.rid);
+	}
+
+	if (is_null_sid(&domain_sid)) {
+		sid_copy(&domain_sid, get_global_sam_sid());
+	}
+
+	/* check if this is a "Unix Groups" domain group,
+	 * if so we need special handling */
+	if (sid_compare_domain(group_sid, &global_sid_Unix_Groups) == 0) {
+		/* in info3 you can only set rids for the user and the
+		 * primary group, and the domain sid must be that of
+		 * the sam domain.
+		 *
+		 * Store a completely bogus value here.
+		 * The real SID is stored in the extra sids.
+		 * Other code will know to look there if (-1) is found
+		 */
+		info3->base.primary_gid = (uint32_t)(-1);
+		sid_copy(&extra->pgid_sid, group_sid);
+
+		DEBUG(10, ("Unix Group found in struct samu. Rid marked as "
+			   "special and sid (%s) saved as extra sid\n",
+			   sid_string_dbg(group_sid)));
+
+	} else {
+		ok = sid_peek_check_rid(&domain_sid, group_sid,
+					&info3->base.primary_gid);
+		if (!ok) {
+			DEBUG(1, ("The primary group domain sid(%s) does not"
+				  "match the domain sid(%s) for %s(%s)\n",
+				  sid_string_dbg(group_sid),
+				  sid_string_dbg(&domain_sid),
+				  pdb_get_username(samu),
+				  sid_string_dbg(user_sid)));
+			TALLOC_FREE(info3);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	unix_to_nt_time(&info3->base.last_logon, pdb_get_logon_time(samu));
@@ -322,19 +429,6 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	info3->base.logon_count	= pdb_get_logon_count(samu);
 	info3->base.bad_password_count = pdb_get_bad_password_count(samu);
 
-	sid_copy(&domain_sid, user_sid);
-	sid_split_rid(&domain_sid, &info3->base.rid);
-
-	ok = sid_peek_check_rid(&domain_sid, group_sid,
-				&info3->base.primary_gid);
-	if (!ok) {
-		DEBUG(1, ("The primary group sid domain does not"
-			  "match user sid domain for user: %s\n",
-			  pdb_get_username(samu)));
-		TALLOC_FREE(info3);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	status = pdb_enum_group_memberships(mem_ctx, samu,
 					    &group_sids, &gids,
 					    &num_group_sids);
@@ -344,11 +438,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = sids_to_samr_RidWithAttributeArray(info3,
-						    &info3->base.groups,
-						    &domain_sid,
-						    group_sids,
-						    num_group_sids);
+	status = group_sids_to_info3(info3, group_sids, num_group_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);
 		return status;

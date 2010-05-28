@@ -77,8 +77,8 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = samu_to_SamInfo3(result, sampass,
-				  global_myname(), &result->info3);
+	status = samu_to_SamInfo3(result, sampass, global_myname(),
+				  &result->info3, &result->extra);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
 		return status;

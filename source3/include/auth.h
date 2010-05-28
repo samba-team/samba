@@ -40,6 +40,11 @@ struct auth_usersupplied_info {
 
 };
 
+struct extra_auth_info {
+	struct dom_sid user_sid;
+	struct dom_sid pgid_sid;
+};
+
 struct auth_serversupplied_info {
 	bool guest;
 	bool system;
@@ -68,6 +73,13 @@ struct auth_serversupplied_info {
 	DATA_BLOB lm_session_key;
 
 	struct netr_SamInfo3 *info3;
+
+	/* this structure is filled *only* in pathological cases where the user
+	 * sid or the primary group sid are not sids of the domain. Normally
+	 * this happens only for unix accounts that have unix domain sids.
+	 * This is checked only when info3.rid and/or info3.primary_gid are set
+	 * to the special invalid value of 0xFFFFFFFF */
+	struct extra_auth_info extra;
 
 	void *pam_handle;
 

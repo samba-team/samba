@@ -643,8 +643,8 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = samu_to_SamInfo3(result, sampass,
-				  global_myname(), &result->info3);
+	status = samu_to_SamInfo3(result, sampass, global_myname(),
+				  &result->info3, &result->extra);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to convert samu to info3: %s\n",
 			   nt_errstr(status)));
@@ -871,6 +871,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(dst);
 		return NULL;
 	}
+	dst->extra = src->extra;
 
 	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);

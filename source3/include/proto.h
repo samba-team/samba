@@ -221,7 +221,8 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			  struct samu *samu,
 			  const char *login_server,
-			  struct netr_SamInfo3 **_info3);
+			  struct netr_SamInfo3 **_info3,
+			  struct extra_auth_info *extra);
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					 struct netr_SamInfo3 *orig);
 struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
