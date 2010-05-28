@@ -943,7 +943,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
-                 LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT''',
+                 LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
