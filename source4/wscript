@@ -15,6 +15,11 @@ VERSION=version.STRING
 
 samba_dist.DIST_DIRS('.')
 
+#This is a list of files that we don't want in the package, for
+#whatever reason.  Directories should be listed with a trailing / to
+#avoid over-exclusion.
+samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap source3/ ' +
+                          'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 

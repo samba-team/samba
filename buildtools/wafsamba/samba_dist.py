@@ -5,6 +5,7 @@ import Utils, os, sys, tarfile, stat, Scripting, Logs
 from samba_utils import *
 
 dist_dirs = None
+dist_blacklist = None
 
 def add_symlink(tar, fname, abspath, basedir):
     '''handle symlinks to directories that may move during packaging'''
@@ -88,6 +89,7 @@ def dist(appname='',version=''):
     dist_name = '%s.tar.gz' % (dist_base)
 
     tar = tarfile.open(dist_name, 'w:gz')
+    blacklist = dist_blacklist.split()
 
     for dir in dist_dirs.split():
         if dir.find(':') != -1:
@@ -106,6 +108,17 @@ def dist(appname='',version=''):
             abspath = os.path.join(srcdir, f)
             if dir != '.':
                 f = f[len(dir)+1:]
+
+            # Remove files in the blacklist
+            if f in dist_blacklist:
+                continue
+            blacklisted = False
+            # Remove directories in the blacklist
+            for d in blacklist:
+                if f.startswith(d):
+                    blacklisted = True
+            if blacklisted:
+                continue
             if destdir != '.':
                 f = destdir + '/' + f
             fname = dist_base + '/' + f
@@ -123,5 +136,12 @@ def DIST_DIRS(dirs):
     global dist_dirs
     if not dist_dirs:
         dist_dirs = dirs
+
+@conf
+def DIST_BLACKLIST(blacklist):
+    '''set the directories to package, relative to top srcdir'''
+    global dist_blacklist
+    if not dist_blacklist:
+        dist_blacklist = blacklist
 
 Scripting.dist = dist
