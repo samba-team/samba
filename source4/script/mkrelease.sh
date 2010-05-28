@@ -11,8 +11,6 @@ echo "WARNING:  This script prepares an autotools based release, which has known
 OUTDIR=`mktemp -d samba-XXXXX`
 (git archive --format=tar HEAD | (cd $OUTDIR/ && tar xf -))
 
-echo SAMBA_VERSION_IS_GIT_SNAPSHOT=no >> $OUTDIR/source4/VERSION
-
 #Prepare the tarball for a Samba4 release, with some generated files,
 #but without Samba3 stuff (to avoid confusion)
 ( cd $OUTDIR/ || exit 1
