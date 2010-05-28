@@ -634,6 +634,9 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	 * using unix_username */
 	pdb_set_username(sampass, unix_username, PDB_SET);
 
+	/* set the user sid to be the calculated u_sid */
+	pdb_set_user_sid(sampass, &u_sid, PDB_SET);
+
 	result = make_server_info(NULL);
 	if (result == NULL) {
 		TALLOC_FREE(sampass);
