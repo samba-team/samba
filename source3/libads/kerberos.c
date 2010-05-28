@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "smb_krb5.h"
+#include "../librpc/gen_ndr/ndr_misc.h"
 
 #ifdef HAVE_KRB5
 
