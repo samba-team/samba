@@ -2769,6 +2769,10 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 
 	ZERO_STRUCTP(r);
 
+	if (p->server_info->system) {
+		goto query;
+	}
+
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2777,6 +2781,7 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+ query:
 	/*
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
 	 */
