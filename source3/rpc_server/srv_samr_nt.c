@@ -2735,6 +2735,8 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 {
 	struct samu *smbpass=NULL;
 	bool ret;
+	const uint8_t *nt_pass = NULL;
+	const uint8_t *lm_pass = NULL;
 
 	ZERO_STRUCTP(r);
 
@@ -2769,10 +2771,17 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	r->lm_pwd_active = true;
-	r->nt_pwd_active = true;
-	memcpy(r->lm_pwd.hash, pdb_get_lanman_passwd(smbpass), 16);
-	memcpy(r->nt_pwd.hash, pdb_get_nt_passwd(smbpass), 16);
+	lm_pass = pdb_get_lanman_passwd(smbpass);
+	if (lm_pass != NULL) {
+		memcpy(r->lm_pwd.hash, lm_pass, 16);
+		r->lm_pwd_active = true;
+	}
+
+	nt_pass = pdb_get_nt_passwd(smbpass);
+	if (nt_pass != NULL) {
+		memcpy(r->nt_pwd.hash, nt_pass, 16);
+		r->nt_pwd_active = true;
+	}
 	r->password_expired = 0; /* FIXME */
 
 	TALLOC_FREE(smbpass);
