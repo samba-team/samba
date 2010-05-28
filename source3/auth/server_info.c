@@ -431,7 +431,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (orig->base.groups.count) {
-		info3->base.groups.rids =
+		info3->base.groups.rids = (struct samr_RidWithAttribute *)
 			talloc_memdup(info3, orig->base.groups.rids,
 				(sizeof(struct samr_RidWithAttribute) *
 					orig->base.groups.count));
@@ -455,7 +455,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (orig->sidcount) {
-		info3->sids = talloc_memdup(info3, orig->sids,
+		info3->sids = (struct netr_SidAttr *)talloc_memdup(info3, orig->sids,
 					    (sizeof(struct netr_SidAttr) *
 							orig->sidcount));
 		RET_NOMEM(info3->sids);
