@@ -27,26 +27,26 @@ static struct perm_mask_str {
 } perms[] = {
 	{SEC_RIGHTS_FULL_CTRL,		"[Full Control]"},
 
-	{SEC_RIGHTS_LIST_CONTENTS,	"[List Contents]"},
-	{SEC_RIGHTS_LIST_OBJECT,	"[List Object]"},
+	{SEC_ADS_LIST,			"[List Contents]"},
+	{SEC_ADS_LIST_OBJECT,		"[List Object]"},
 
-	{SEC_RIGHTS_READ_ALL_PROP,	"[Read All Properties]"},	
-	{SEC_RIGHTS_READ_PERMS,		"[Read Permissions]"},	
+	{SEC_ADS_READ_PROP,		"[Read All Properties]"},
+	{SEC_STD_READ_CONTROL,		"[Read Permissions]"},
 
-	{SEC_RIGHTS_WRITE_ALL_VALID,	"[All validate writes]"},
-	{SEC_RIGHTS_WRITE_ALL_PROP,  	"[Write All Properties]"},
+	{SEC_ADS_SELF_WRITE,		"[All validate writes]"},
+	{SEC_ADS_WRITE_PROP,		"[Write All Properties]"},
 
-	{SEC_RIGHTS_MODIFY_PERMS,	"[Modify Permissions]"},
-	{SEC_RIGHTS_MODIFY_OWNER,	"[Modify Owner]"},
+	{SEC_STD_WRITE_DAC,		"[Modify Permissions]"},
+	{SEC_STD_WRITE_OWNER,		"[Modify Owner]"},
 
-	{SEC_RIGHTS_CREATE_CHILD,	"[Create All Child Objects]"},
+	{SEC_ADS_CREATE_CHILD,		"[Create All Child Objects]"},
 
-	{SEC_RIGHTS_DELETE,		"[Delete]"},
-	{SEC_RIGHTS_DELETE_SUBTREE,	"[Delete Subtree]"},
-	{SEC_RIGHTS_DELETE_CHILD,	"[Delete All Child Objects]"},
+	{SEC_STD_DELETE,		"[Delete]"},
+	{SEC_ADS_DELETE_TREE,		"[Delete Subtree]"},
+	{SEC_ADS_DELETE_CHILD,		"[Delete All Child Objects]"},
 
-	{SEC_RIGHTS_CHANGE_PASSWD,	"[Change Password]"},	
-	{SEC_RIGHTS_RESET_PASSWD,	"[Reset Password]"},
+	{SEC_ADS_CONTROL_ACCESS,	"[Change Password]"},
+	{SEC_ADS_CONTROL_ACCESS,	"[Reset Password]"},
 
 	{0,				0}
 };
