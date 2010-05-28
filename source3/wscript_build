@@ -23,7 +23,7 @@ AFS_SRC = 'lib/afs.c'
 
 AFS_SETTOKEN_SRC = 'lib/afs_settoken.c'
 
-AVAHI_SRC = '' # TODO: fix
+AVAHI_SRC = 'lib/avahi.c smbd/avahi_register.c'
 
 SERVER_MUTEX_SRC = 'lib/server_mutex.c'
 
@@ -715,7 +715,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${PROFILE_SRC} ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${LIBMSRPC_SRC}
-                ${LIBMSRPC_GEN_SRC} ${AVAHI_SRC} ${LIBADS_SRC}
+                ${LIBMSRPC_GEN_SRC} ${LIBADS_SRC}
                 ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
@@ -851,6 +851,10 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
+bld.SAMBA_SUBSYSTEM('AVAHI',
+                    source=AVAHI_SRC,
+                    enabled=bld.env.with_avahi)
+
 bld.SAMBA_SUBSYSTEM('GROUPDB',
                     source=GROUPDB_SRC)
 
@@ -919,7 +923,7 @@ bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT''',
+                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI''',
                  install_path='${SBINDIR}',
                  vars=locals())
 

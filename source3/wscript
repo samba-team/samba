@@ -48,6 +48,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('sendfile-support')
     opt.SAMBA3_ADD_OPTION('utmp')
     opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable")
+    opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
 
 
 def configure(conf):
@@ -531,6 +532,17 @@ return 0;
                         'PUTUTLINE_RETURNS_UTMP', headers='utmp.h',
                         msg="Checking whether pututline returns pointer")
         conf.DEFINE('WITH_UTMP', 1)
+
+    if Options.options.with_avahi:
+        conf.env.with_avahi = True
+        if not conf.CHECK_HEADERS('avahi-common/watch.h avahi-client/client.h'): conf.env.with_avahi = False
+        if not conf.CHECK_FUNCS_IN('avahi_client_new', 'avahi-client'): conf.env.with_avahi = False
+        if not conf.CHECK_FUNCS_IN('avahi_strerror', 'avahi-common'): conf.env.with_avahi = False
+        if conf.env.with_avahi:
+            conf.DEFINE('WITH_AVAHI_SUPPORT', 1)
+    else:
+        conf.SET_TARGET_TYPE('avahi-common', 'EMPTY')
+        conf.SET_TARGET_TYPE('avahi-client', 'EMPTY')
 
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
