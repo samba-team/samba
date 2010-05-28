@@ -392,6 +392,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					 struct netr_SamInfo3 *orig)
 {
 	struct netr_SamInfo3 *info3;
+	unsigned int i;
 
 	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) return NULL;
@@ -455,10 +456,14 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (orig->sidcount) {
-		info3->sids = (struct netr_SidAttr *)talloc_memdup(info3, orig->sids,
-					    (sizeof(struct netr_SidAttr) *
-							orig->sidcount));
+		info3->sids = talloc_array(info3, struct netr_SidAttr,
+					   orig->sidcount);
 		RET_NOMEM(info3->sids);
+		for (i = 0; i < orig->sidcount; i++) {
+			info3->sids[i].sid = sid_dup_talloc(info3->sids,
+							    orig->sids[i].sid);
+			RET_NOMEM(info3->sids[i].sid);
+		}
 	}
 
 	return info3;
