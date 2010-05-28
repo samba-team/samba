@@ -452,16 +452,16 @@ sub provision($$$$$$)
 	## create ro and msdfs share layout
 	##
 
-	chmod 755, $ro_shrdir;
+	chmod 0755, $ro_shrdir;
 	my $unreadable_file = "$ro_shrdir/unreadable_file";
 	open(UNREADABLE_FILE, ">$unreadable_file") or die("Unable to open $unreadable_file");
 	close(UNREADABLE_FILE);
-	chmod 600, $unreadable_file;
+	chmod 0600, $unreadable_file;
 
 	my $msdfs_target = "$ro_shrdir/msdfs-target";
 	open(MSDFS_TARGET, ">$msdfs_target") or die("Unable to open $msdfs_target");
 	close(MSDFS_TARGET);
-	chmod 666, $msdfs_target;
+	chmod 0666, $msdfs_target;
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
 
