@@ -1,7 +1,7 @@
 # customised version of 'waf dist' for Samba tools
 # uses git ls-files to get file lists
 
-import Utils, os, sys, tarfile, stat, Scripting, Logs
+import Utils, os, sys, tarfile, gzip, stat, Scripting, Logs, Options
 from samba_utils import *
 
 dist_dirs = None
@@ -86,9 +86,14 @@ def dist(appname='',version=''):
         sys.exit(1)
 
     dist_base = '%s-%s' % (appname, version)
-    dist_name = '%s.tar.gz' % (dist_base)
 
-    tar = tarfile.open(dist_name, 'w:gz')
+    if Options.options.SIGN_RELEASE:
+        dist_name = '%s.tar' % (dist_base)
+        tar = tarfile.open(dist_name, 'w')
+    else:
+        dist_name = '%s.tar.gz' % (dist_base)
+        tar = tarfile.open(dist_name, 'w:gz')
+
     blacklist = dist_blacklist.split()
 
     for dir in dist_dirs.split():
@@ -126,7 +131,30 @@ def dist(appname='',version=''):
 
     tar.close()
 
-    Logs.info('Created %s' % dist_name)
+    if Options.options.SIGN_RELEASE:
+        try:
+            os.unlink(dist_name + '.asc')
+        except OSError:
+            pass
+
+        cmd = "gpg --detach-sign --armor " + dist_name
+        os.system(cmd)
+        uncompressed_tar = open(dist_name, 'rb')
+        compressed_tar = gzip.open(dist_name + '.gz', 'wb')
+        while 1:
+            buffer = uncompressed_tar.read(1048576)
+            if buffer:
+                compressed_tar.write(buffer)
+            else:
+                break
+        uncompressed_tar.close()
+        compressed_tar.close()
+        os.unlink(dist_name)
+        Logs.info('Created %s.gz %s.asc' % (dist_name, dist_name))
+        dist_name = dist_name + '.gz'
+    else:
+        Logs.info('Created %s' % dist_name)
+
     return dist_name
 
 

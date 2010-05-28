@@ -130,6 +130,14 @@ def set_options(opt):
 		   help=SUPPRESS_HELP,
 		   action='store_true', dest='AUTOCONF_DISABLE_DEPENDENCY_TRACKING', default=False)
 
+    gr = opt.option_group('dist options')
+    gr.add_option('--sign-release',
+                   help='sign the release tarball created by waf dist',
+                   action='store_true', dest='SIGN_RELEASE')
+    gr.add_option('--tag',
+                   help='tag release in git at the same time',
+                   type='string', action='store', dest='TAG_RELEASE')
+
 
 @wafsamba.runonce
 def configure(conf):
