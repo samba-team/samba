@@ -27,6 +27,8 @@
 #include "includes.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/srv_netlogon.h"
+#include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/cli_samr.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/crypto/md4.h"
 
@@ -432,6 +434,110 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+/*************************************************************************
+ *************************************************************************/
+
+static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
+					  struct rpc_pipe_client *cli,
+					  const char *account_name,
+					  uint32_t access_mask,
+					  struct dom_sid2 **domain_sid_p,
+					  uint32_t *user_rid_p,
+					  struct policy_handle *user_handle)
+{
+	NTSTATUS status;
+	struct policy_handle connect_handle, domain_handle;
+	struct lsa_String domain_name;
+	struct dom_sid2 *domain_sid;
+	struct lsa_String names;
+	struct samr_Ids rids;
+	struct samr_Ids types;
+	uint32_t rid;
+
+	status = rpccli_samr_Connect2(cli, mem_ctx,
+				      global_myname(),
+				      SAMR_ACCESS_CONNECT_TO_SERVER |
+				      SAMR_ACCESS_ENUM_DOMAINS |
+				      SAMR_ACCESS_LOOKUP_DOMAIN,
+				      &connect_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	init_lsa_String(&domain_name, get_global_sam_name());
+
+	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+					  &connect_handle,
+					  &domain_name,
+					  &domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+					&connect_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					domain_sid,
+					&domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	init_lsa_String(&names, account_name);
+
+	status = rpccli_samr_LookupNames(cli, mem_ctx,
+					 &domain_handle,
+					 1,
+					 &names,
+					 &rids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (rids.count != 1) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto out;
+	}
+	if (rids.count != types.count) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+	if (types.ids[0] != SID_NAME_USER) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto out;
+	}
+
+	rid = rids.ids[0];
+
+	status = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_handle,
+				      access_mask,
+				      rid,
+				      user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (user_rid_p) {
+		*user_rid_p = rid;
+	}
+
+	if (domain_sid_p) {
+		*domain_sid_p = domain_sid;
+	}
+
+ out:
+	if (cli && is_valid_policy_hnd(&domain_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	}
+	if (cli && is_valid_policy_hnd(&connect_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	}
+
+	return status;
+}
+
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
@@ -829,113 +935,81 @@ static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
 /*************************************************************************
  *************************************************************************/
 
-static NTSTATUS netr_find_machine_account(TALLOC_CTX *mem_ctx,
-					  const char *account_name,
-					  struct samu **sampassp)
+static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
+						  struct auth_serversupplied_info *server_info,
+						  const char *account_name,
+						  struct samr_Password *nt_hash)
 {
-	struct samu *sampass;
-	bool ret = false;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle user_handle;
 	uint32_t acct_ctrl;
+	union samr_UserInfo *info;
+	struct samr_UserInfo18 info18;
+	DATA_BLOB in,out;
 
-	sampass = samu_new(mem_ctx);
-	if (!sampass) {
-		return NT_STATUS_NO_MEMORY;
+	ZERO_STRUCT(user_handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+					rpc_samr_dispatch, server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
-	become_root();
-	ret = pdb_getsampwnam(sampass, account_name);
-	unbecome_root();
-
-	if (!ret) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCESS_DENIED;
+	status = samr_find_machine_account(mem_ctx, cli, account_name,
+					   SEC_FLAG_MAXIMUM_ALLOWED,
+					   NULL, NULL,
+					   &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
-	/* Ensure the account exists and is a machine account. */
+	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+					    &user_handle,
+					    UserControlInformation,
+					    &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	acct_ctrl = info->info16.acct_flags;
 
 	if (!(acct_ctrl & ACB_WSTRUST ||
 	      acct_ctrl & ACB_SVRTRUST ||
 	      acct_ctrl & ACB_DOMTRUST)) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER;
+		status = NT_STATUS_NO_SUCH_USER;
+		goto out;
 	}
 
 	if (acct_ctrl & ACB_DISABLED) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCOUNT_DISABLED;
+		status = NT_STATUS_ACCOUNT_DISABLED;
+		goto out;
 	}
 
-	*sampassp = sampass;
+	ZERO_STRUCT(info18);
 
-	return NT_STATUS_OK;
-}
+	in = data_blob_const(nt_hash->hash, 16);
+	out = data_blob_talloc_zero(mem_ctx, 16);
+	sess_crypt_blob(&out, &in, &server_info->user_session_key, true);
+	memcpy(info18.nt_pwd.hash, out.data, out.length);
 
-/*************************************************************************
- *************************************************************************/
+	info18.nt_pwd_active = true;
 
-static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
-						  struct samu *sampass,
-						  DATA_BLOB *plaintext_blob,
-						  struct samr_Password *nt_hash,
-						  struct samr_Password *lm_hash)
-{
-	NTSTATUS status;
-	const uchar *old_pw;
-	const char *plaintext = NULL;
-	size_t plaintext_len;
-	struct samr_Password nt_hash_local;
+	info->info18 = info18;
 
-	if (!sampass) {
-		return NT_STATUS_INVALID_PARAMETER;
+	status = rpccli_samr_SetUserInfo2(cli, mem_ctx,
+					  &user_handle,
+					  UserInternal1Information,
+					  info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
-	if (plaintext_blob) {
-		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
-					   plaintext_blob->data, plaintext_blob->length,
-					   &plaintext, &plaintext_len, false))
-		{
-			plaintext = NULL;
-			mdfour(nt_hash_local.hash, plaintext_blob->data, plaintext_blob->length);
-			nt_hash = &nt_hash_local;
-		}
+ out:
+	if (cli && is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &user_handle);
 	}
-
-	if (plaintext) {
-		if (!pdb_set_plaintext_passwd(sampass, plaintext)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		goto done;
-	}
-
-	if (nt_hash) {
-		old_pw = pdb_get_nt_passwd(sampass);
-
-		if (old_pw && memcmp(nt_hash->hash, old_pw, 16) == 0) {
-			/* Avoid backend modificiations and other fun if the
-			   client changed the password to the *same thing* */
-		} else {
-			/* LM password should be NULL for machines */
-			if (!pdb_set_lanman_passwd(sampass, NULL, PDB_CHANGED)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			if (!pdb_set_nt_passwd(sampass, nt_hash->hash, PDB_CHANGED)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
-				/* Not quite sure what this one qualifies as, but this will do */
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-		}
-	}
-
- done:
-	become_root();
-	status = pdb_update_sam_account(sampass);
-	unbecome_root();
 
 	return status;
 }
@@ -948,7 +1022,6 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 				 struct netr_ServerPasswordSet *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct samu *sampass=NULL;
 	int i;
 	struct netlogon_creds_CredentialState *creds;
 
@@ -980,19 +1053,10 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 		DEBUG(100,("%02X ", r->in.new_password->hash[i]));
 	DEBUG(100,("\n"));
 
-	status = netr_find_machine_account(p->mem_ctx,
-					   creds->account_name,
-					   &sampass);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = netr_set_machine_account_password(sampass,
-						   sampass,
-						   NULL,
-						   r->in.new_password,
-						   NULL);
-	TALLOC_FREE(sampass);
+	status = netr_set_machine_account_password(p->mem_ctx,
+						   p->server_info,
+						   creds->account_name,
+						   r->in.new_password);
 	return status;
 }
 
@@ -1005,7 +1069,6 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 {
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
-	struct samu *sampass;
 	DATA_BLOB plaintext;
 	struct samr_CryptPassword password_buf;
 	struct samr_Password nt_hash;
@@ -1036,19 +1099,10 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
 
 	mdfour(nt_hash.hash, plaintext.data, plaintext.length);
 
-	status = netr_find_machine_account(p->mem_ctx,
-					   creds->account_name,
-					   &sampass);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = netr_set_machine_account_password(sampass,
-						   sampass,
-						   NULL,
-						   &nt_hash,
-						   NULL);
-	TALLOC_FREE(sampass);
+	status = netr_set_machine_account_password(p->mem_ctx,
+						   p->server_info,
+						   creds->account_name,
+						   &nt_hash);
 	return status;
 }
 
