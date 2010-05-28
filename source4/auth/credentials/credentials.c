@@ -94,6 +94,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->kvno = 0;
 
+	cred->password_last_changed_time = 0;
+
 	cred->smb_krb5_context = NULL;
 
 	cred->machine_account_pending = false;
