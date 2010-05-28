@@ -26,6 +26,7 @@
 #include "lib/util/util_net.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "../libcli/nbt/libnbt.h"
 
 /********************************************************
  Start parsing the lmhosts file.
