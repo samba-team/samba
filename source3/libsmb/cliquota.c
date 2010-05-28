@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 {

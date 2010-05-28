@@ -19,6 +19,7 @@
 #define TALLOC_DEPRECATED 1
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 #include "../libgpo/gpo.h"
 #if _SAMBA_BUILD_ == 4
 #include "system/filesys.h"

@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 /* Map generic permissions to file object specific permissions */
 

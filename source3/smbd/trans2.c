@@ -28,6 +28,7 @@
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/xattr.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

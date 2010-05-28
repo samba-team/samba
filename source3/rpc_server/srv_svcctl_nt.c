@@ -27,6 +27,7 @@
 #include "services/services.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

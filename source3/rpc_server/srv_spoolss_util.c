@@ -23,6 +23,7 @@
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"

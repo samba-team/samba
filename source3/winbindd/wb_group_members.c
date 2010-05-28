@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/cli_wbint.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 /*
  * We have 3 sets of routines here:

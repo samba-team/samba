@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

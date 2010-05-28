@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS

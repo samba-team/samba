@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "regfio.h"
 #include "reg_objects.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

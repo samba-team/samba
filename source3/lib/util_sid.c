@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 /*
  * Some useful sids, more well known sids can be found at

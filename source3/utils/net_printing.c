@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"

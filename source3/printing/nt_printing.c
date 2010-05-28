@@ -24,6 +24,7 @@
 #include "printing/pcap.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
 static TDB_CONTEXT *tdb_drivers; /* used for driver files */
