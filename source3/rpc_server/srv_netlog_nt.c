@@ -545,11 +545,15 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 			  enum netr_SchannelType sec_chan_type, struct dom_sid *sid)
 {
-	struct samu *sampass = NULL;
-	const uint8 *pass;
-	bool ret;
-	uint32 acct_ctrl;
-
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle user_handle;
+	uint32_t user_rid;
+	struct dom_sid *domain_sid;
+	uint32_t acct_ctrl;
+	union samr_UserInfo *info;
+	struct auth_serversupplied_info *server_info;
 #if 0
 	char addr[INET6_ADDRSTRLEN];
 
@@ -570,26 +574,50 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	}
 #endif /* 0 */
 
-	if ( !(sampass = samu_new( NULL )) ) {
-		return NT_STATUS_NO_MEMORY;
+	mem_ctx = talloc_new(talloc_tos());
+	if (mem_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
-	/* JRA. This is ok as it is only used for generating the challenge. */
+	status = make_server_info_system(mem_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	ZERO_STRUCT(user_handle);
+
+	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+					rpc_samr_dispatch, server_info,
+					&cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	become_root();
-	ret = pdb_getsampwnam(sampass, mach_acct);
+	status = samr_find_machine_account(mem_ctx, cli, mach_acct,
+					   SEC_FLAG_MAXIMUM_ALLOWED,
+					   &domain_sid, &user_rid,
+					   &user_handle);
 	unbecome_root();
-
- 	if (!ret) {
- 		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCESS_DENIED;
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
-	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+					    &user_handle,
+					    UserControlInformation,
+					    &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	acct_ctrl = info->info16.acct_flags;
+
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("get_md4pw: Workstation %s: account is disabled\n", mach_acct));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_ACCOUNT_DISABLED;
+		status = NT_STATUS_ACCOUNT_DISABLED;
+		goto out;
 	}
 
 	if (!(acct_ctrl & ACB_SVRTRUST) &&
@@ -597,8 +625,8 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	    !(acct_ctrl & ACB_DOMTRUST))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s: account is not a trust account\n", mach_acct));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		status = NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		goto out;
 	}
 
 	switch (sec_chan_type) {
@@ -606,46 +634,58 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 			if (!(acct_ctrl & ACB_SVRTRUST)) {
 				DEBUG(0,("get_md4pw: Workstation %s: BDC secure channel requested "
 					 "but not a server trust account\n", mach_acct));
-				TALLOC_FREE(sampass);
-				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				status = NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				goto out;
 			}
 			break;
 		case SEC_CHAN_WKSTA:
 			if (!(acct_ctrl & ACB_WSTRUST)) {
 				DEBUG(0,("get_md4pw: Workstation %s: WORKSTATION secure channel requested "
 					 "but not a workstation trust account\n", mach_acct));
-				TALLOC_FREE(sampass);
-				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				status = NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				goto out;
 			}
 			break;
 		case SEC_CHAN_DOMAIN:
 			if (!(acct_ctrl & ACB_DOMTRUST)) {
 				DEBUG(0,("get_md4pw: Workstation %s: DOMAIN secure channel requested "
 					 "but not a interdomain trust account\n", mach_acct));
-				TALLOC_FREE(sampass);
-				return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				status = NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+				goto out;
 			}
 			break;
 		default:
 			break;
 	}
 
-	if ((pass = pdb_get_nt_passwd(sampass)) == NULL) {
+	become_root();
+	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+					    &user_handle,
+					    UserInternal1Information,
+					    &info);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (info->info18.nt_pwd_active == 0) {
 		DEBUG(0,("get_md4pw: Workstation %s: account does not have a password\n", mach_acct));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_LOGON_FAILURE;
+		status = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
-	memcpy(md4pw->hash, pass, 16);
-	dump_data(5, md4pw->hash, 16);
+	/* samr gives out nthash unencrypted (!) */
+	memcpy(md4pw->hash, info->info18.nt_pwd.hash, 16);
 
-	sid_copy(sid, pdb_get_user_sid(sampass));
+	sid_compose(sid, domain_sid, user_rid);
 
-	TALLOC_FREE(sampass);
+ out:
+	if (cli && is_valid_policy_hnd(&user_handle)) {
+		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	}
 
-	return NT_STATUS_OK;
+	talloc_free(mem_ctx);
 
-
+	return status;
 }
 
 /*************************************************************************
