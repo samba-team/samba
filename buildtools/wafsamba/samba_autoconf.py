@@ -84,6 +84,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
         return False
     d = h.upper().replace('/', '_')
     d = d.replace('.', '_')
+    d = d.replace('-', '_')
     d = 'HAVE_%s' % d
     if CONFIG_SET(conf, d):
         if add_headers:
