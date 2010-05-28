@@ -195,66 +195,6 @@ static bool test_lsa_close(struct torture_context *tctx,
 }
 
 
-static bool test_createuser(struct torture_context *tctx,
-			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
- 			    struct policy_handle *handle, const char* user)
-{
-	struct policy_handle user_handle;
-	struct lsa_String username;
-	struct samr_CreateUser r1;
-	struct samr_Close r2;
-	uint32_t user_rid;
-
-	username.string = user;
-
-	r1.in.domain_handle = handle;
-	r1.in.account_name = &username;
-	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r1.out.user_handle = &user_handle;
-	r1.out.rid = &user_rid;
-
-	torture_comment(tctx, "creating user '%s'\n", username.string);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_CreateUser_r(b, mem_ctx, &r1),
-		"CreateUser failed");
-	if (!NT_STATUS_IS_OK(r1.out.result)) {
-		torture_comment(tctx, "CreateUser failed - %s\n", nt_errstr(r1.out.result));
-
-		if (NT_STATUS_EQUAL(r1.out.result, NT_STATUS_USER_EXISTS)) {
-			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", user);
-			if (!test_cleanup(tctx, b, mem_ctx, handle, user)) {
-				return false;
-			}
-
-			torture_comment(tctx, "creating user account\n");
-
-			torture_assert_ntstatus_ok(tctx,
-				dcerpc_samr_CreateUser_r(b, mem_ctx, &r1),
-				"CreateUser failed");
-			torture_assert_ntstatus_ok(tctx, r1.out.result,
-				"CreateUser failed");
-
-			return true;
-		}
-		return false;
-	}
-
-	r2.in.handle = &user_handle;
-	r2.out.handle = &user_handle;
-
-	torture_comment(tctx, "closing user '%s'\n", username.string);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_Close_r(b, mem_ctx, &r2),
-		"Close failed");
-	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"Close failed");
-
-	return true;
-}
-
-
 bool torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -331,7 +271,7 @@ bool torture_deleteuser(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_createuser(torture, p->binding_handle, prep_mem_ctx, &h, name)) {
+	if (!test_user_create(torture, p->binding_handle, prep_mem_ctx, &h, name, NULL)) {
 		ret = false;
 		goto done;
 	}
@@ -552,7 +492,7 @@ bool torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_createuser(torture, b, prep_mem_ctx, &h, name)) {
+	if (!test_user_create(torture, b, prep_mem_ctx, &h, name, NULL)) {
 		ret = false;
 		goto done;
 	}
@@ -667,7 +607,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_createuser(torture, b, prep_mem_ctx, &h, name)) {
+	if (!test_user_create(torture, b, prep_mem_ctx, &h, name, NULL)) {
 		ret = false;
 		goto done;
 	}
