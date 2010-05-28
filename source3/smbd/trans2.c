@@ -3396,7 +3396,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			}
 
 			SIVAL(pdata, 24, conn->server_info->utok.ngroups);
-			SIVAL(pdata, 28, conn->server_info->num_sids);
+			SIVAL(pdata, 28, conn->server_info->ptok->num_sids);
 
 			/* We walk the SID list twice, but this call is fairly
 			 * infrequent, and I don't expect that it's performance
