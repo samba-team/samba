@@ -53,6 +53,16 @@ struct auth_serversupplied_info {
 
 	NT_USER_TOKEN *ptok;
 
+	/* This is the final session key, as used by SMB signing, and
+	 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
+	 * when over ncacn_np.
+	 * It is calculated by NTLMSSP from the session key in the info3,
+	 * and is  set from the Kerberos session key using
+	 * krb5_auth_con_getremotesubkey().
+	 *
+	 * Bootom line, it is not the same as the session keys in info3.
+	 */
+
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 
