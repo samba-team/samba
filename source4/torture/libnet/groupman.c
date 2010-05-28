@@ -24,7 +24,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
-#include "torture/libnet/utils.h"
+#include "torture/libnet/proto.h"
 
 
 static bool test_groupadd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,

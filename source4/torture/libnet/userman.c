@@ -25,7 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 
-#include "torture/libnet/utils.h"
+#include "torture/libnet/proto.h"
 
 
 static bool test_useradd(struct torture_context *tctx,
