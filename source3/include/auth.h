@@ -49,10 +49,6 @@ struct auth_serversupplied_info {
 	bool guest;
 	bool system;
 
-	struct dom_sid *sids; 	/* These SIDs are preliminary between
-			   check_ntlm_password and the token creation. */
-	size_t num_sids;
-
 	struct unix_user_token utok;
 
 	/* NT group information taken from the info3 structure */

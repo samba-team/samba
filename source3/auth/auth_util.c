@@ -30,34 +30,6 @@
 #define DBGC_CLASS DBGC_AUTH
 
 /****************************************************************************
- Ensure primary group SID is always at position 0 in a 
- auth_serversupplied_info struct.
-****************************************************************************/
-
-static void sort_sid_array_for_smbd(struct auth_serversupplied_info *result,
-				const struct dom_sid *pgroup_sid)
-{
-	unsigned int i;
-
-	if (!result->sids) {
-		return;
-	}
-
-	if (sid_compare(&result->sids[0], pgroup_sid)==0) {
-		return;
-	}
-
-	for (i = 1; i < result->num_sids; i++) {
-		if (sid_compare(pgroup_sid,
-				&result->sids[i]) == 0) {
-			sid_copy(&result->sids[i], &result->sids[0]);
-			sid_copy(&result->sids[0], pgroup_sid);
-			return;
-		}
-	}
-}
-
-/****************************************************************************
  Create a UNIX user on demand.
 ****************************************************************************/
 
@@ -567,7 +539,6 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 {
 	NTSTATUS status;
 	struct samu *sampass = NULL;
-	gid_t *gids;
 	char *qualified_name = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	struct dom_sid u_sid;
@@ -646,47 +617,19 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return status;
 	}
 
+	TALLOC_FREE(sampass);
 
 	result->unix_name = talloc_strdup(result, unix_username);
 	result->sanitized_username = sanitize_username(result, unix_username);
 
 	if ((result->unix_name == NULL)
 	    || (result->sanitized_username == NULL)) {
-		TALLOC_FREE(sampass);
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	result->utok.uid = pwd->pw_uid;
 	result->utok.gid = pwd->pw_gid;
-
-	status = pdb_enum_group_memberships(result, sampass,
-					    &result->sids, &gids,
-					    &result->num_sids);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(sampass);
-		TALLOC_FREE(result);
-		return status;
-	}
-
-	TALLOC_FREE(sampass);
-
-	/* FIXME: add to info3 too ? */
-	status = add_sid_to_array_unique(result, &u_sid,
-					 &result->sids,
-					 &result->num_sids);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return status;
-	}
-
-	/* For now we throw away the gids and convert via sid_to_gid
-	 * later. This needs fixing, but I'd like to get the code straight and
-	 * simple first. */
-	TALLOC_FREE(gids);
 
 	*server_info = result;
 
@@ -1188,23 +1131,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	result->utok.uid = uid;
 	result->utok.gid = gid;
-
-	/* Create a 'combined' list of all SIDs we might want in the SD */
-
-	result->num_sids = 0;
-	result->sids = NULL;
-
-	nt_status = sid_array_from_info3(result, info3,
-					 &result->sids,
-					 &result->num_sids,
-					 false, false);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(result);
-		return nt_status;
-	}
-
-	/* Ensure the primary group sid is at position 0. */
-	sort_sid_array_for_smbd(result, &group_sid);
 
 	/* ensure we are never given NULL session keys */
 

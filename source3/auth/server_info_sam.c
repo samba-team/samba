@@ -61,7 +61,6 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass)
 {
 	struct passwd *pwd;
-	gid_t *gids;
 	struct auth_serversupplied_info *result;
 	const char *username = pdb_get_username(sampass);
 	NTSTATUS status;
@@ -101,16 +100,6 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 
 	if (IS_DC && is_our_machine_account(username)) {
 		/*
-		 * Ensure for a connection from our own
-		 * machine account (from winbindd on a DC)
-		 * there are no supplementary groups.
-		 * Prevents loops in calling gid_to_sid().
-		 */
-		result->sids = NULL;
-		gids = NULL;
-		result->num_sids = 0;
-
-		/*
 		 * This is a hack of monstrous proportions.
 		 * If we know it's winbindd talking to us,
 		 * we know we must never recurse into it,
@@ -123,27 +112,8 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		(void)winbind_off();
 
 		DEBUG(10, ("make_server_info_sam: our machine account %s "
-			"setting supplementary group list empty and "
-			"turning off winbindd requests.\n",
-			username));
-	} else {
-		status = pdb_enum_group_memberships(result, sampass,
-					    &result->sids, &gids,
-					    &result->num_sids);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
-				   nt_errstr(status)));
-			TALLOC_FREE(result);
-			return status;
-		}
+			   "turning off winbindd requests.\n", username));
 	}
-
-	/* For now we throw away the gids and convert via sid_to_gid
-	 * later. This needs fixing, but I'd like to get the code straight and
-	 * simple first. */
-
-	TALLOC_FREE(gids);
 
 	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
 		 pdb_get_username(sampass), result->unix_name));
