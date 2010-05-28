@@ -11,6 +11,10 @@ import build.charset
 import samba_utils
 import samba3
 
+version = wafsamba.samba_version_file("./VERSION")
+
+VERSION=version.STRING
+
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.BUNDLED_EXTENSION_DEFAULT('s3')
@@ -49,15 +53,15 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    conf.define('PACKAGE_NAME', 'Samba')
-    conf.define('PACKAGE_STRING', 'Samba 3')
-    conf.define('PACKAGE_TARNAME', 'samba')
-    conf.define('PACKAGE_URL', '')
-    conf.define('PACKAGE_VERSION', '3')
-    conf.define('PACKAGE_BUGREPORT', 'samba-technical@samba.org')
+    conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
+    conf.DEFINE('PACKAGE_STRING', 'Samba ' + version.STRING, quote=True)
+    conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
+    conf.DEFINE('PACKAGE_URL', "http://www.samba.org/", quote=True)
+    conf.DEFINE('PACKAGE_VERSION', version.STRING, quote=True)
+    conf.DEFINE('PACKAGE_BUGREPORT', 'http://bugzilla.samba.org/', quote=True)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
-    conf.DEFINE('_SAMBA_BUILD_', 3, add_to_cflags=True)
+    conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')

@@ -4,11 +4,14 @@ srcdir = '..'
 blddir = 'bin'
 
 APPNAME='samba'
-VERSION='4.0.0-alpha13'
 
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options, samba_dist, Scripting
+
+version = wafsamba.samba_version_file("./VERSION")
+
+VERSION=version.STRING
 
 samba_dist.DIST_DIRS('.')
 
@@ -38,14 +41,14 @@ def set_options(opt):
 
 def configure(conf):
     conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
-    conf.DEFINE('PACKAGE_STRING', 'samba 4', quote=True)
+    conf.DEFINE('PACKAGE_STRING', 'Samba ' + version.STRING, quote=True)
     conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
     conf.DEFINE('PACKAGE_URL', "http://www.samba.org/", quote=True)
-    conf.DEFINE('PACKAGE_VERSION', "4", quote=True)
+    conf.DEFINE('PACKAGE_VERSION', version.STRING, quote=True)
     conf.DEFINE('PACKAGE_BUGREPORT', 'http://bugzilla.samba.org/', quote=True)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
-    conf.DEFINE('_SAMBA_BUILD_', 4, add_to_cflags=True)
+    conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
     if Options.options.developer:

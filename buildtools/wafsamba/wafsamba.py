@@ -9,6 +9,7 @@ from samba_utils import SUBST_VARS_RECURSIVE
 # bring in the other samba modules
 from samba_optimisation import *
 from samba_utils import *
+from samba_version import *
 from samba_autoconf import *
 from samba_patterns import *
 from samba_pidl import *

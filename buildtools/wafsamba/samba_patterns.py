@@ -3,15 +3,26 @@
 import Task
 from TaskGen import extension
 from samba_utils import *
+from wafsamba import samba_version_file
+
+def write_version_header(task):
+    '''print version.h contents'''
+    src = task.inputs[0].srcpath(task.env)
+    tgt = task.outputs[0].bldpath(task.env)
+
+    version = samba_version_file(src)
+    string = str(version)
+   
+    f = open(tgt, 'w')
+    s = f.write(string)
+    f.close()
+    return 0
+
 
 def SAMBA_MKVERSION(bld, target):
     '''generate the version.h header for Samba'''
-    bld.SET_BUILD_GROUP('setup')
-    t = bld(rule="cd .. && ${SRC[0].abspath(env)} VERSION ${TGT[0].abspath(env)}",
-            source= [ "script/mkversion.sh", 'VERSION' ],
-            target=target,
-            shell=True,
-            on_results=True,
-            before="cc")
+    t = bld.SAMBA_GENERATOR('VERSION', 
+                            rule=write_version_header,
+                            source= 'VERSION',
+                            target=target)
 Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION
-
