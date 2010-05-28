@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/rpc/torture_rpc.h"
+#include "torture/libnet/proto.h"
 #include "param/param.h"
 
 
@@ -191,25 +192,6 @@ static bool test_opendomain(struct torture_context *tctx,
 }
 
 
-static bool test_samr_close(struct torture_context *tctx,
-			    struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *domain_handle)
-{
-	struct samr_Close r;
-
-	r.in.handle = domain_handle;
-	r.out.handle = domain_handle;
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_Close_r(b, mem_ctx, &r),
-		"Close samr domain failed");
-	torture_assert_ntstatus_ok(tctx, r.out.result,
-		"Close samr domain failed");
-
-	return true;
-}
-
-
 static bool test_lsa_close(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
@@ -285,7 +267,8 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close_handle(torture,
+	                            ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
 		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
@@ -341,7 +324,8 @@ bool torture_grouplist(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close_handle(torture,
+	                            ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
 		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
@@ -389,7 +373,8 @@ bool torture_creategroup(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_samr_close(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
+	if (!test_samr_close_handle(torture,
+	                            ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle)) {
 		torture_comment(torture, "domain close failed\n");
 		ret = false;
 	}
