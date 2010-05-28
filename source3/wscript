@@ -53,12 +53,12 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
-    conf.DEFINE('PACKAGE_STRING', 'Samba ' + version.STRING, quote=True)
+    conf.DEFINE('PACKAGE_NAME', 'Samba', quote=True)
+    conf.DEFINE('PACKAGE_STRING', 'Samba %s' % version.MAJOR, quote=True)
     conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
-    conf.DEFINE('PACKAGE_URL', "http://www.samba.org/", quote=True)
-    conf.DEFINE('PACKAGE_VERSION', version.STRING, quote=True)
-    conf.DEFINE('PACKAGE_BUGREPORT', 'http://bugzilla.samba.org/', quote=True)
+    conf.DEFINE('PACKAGE_URL', "", quote=True)
+    conf.DEFINE('PACKAGE_VERSION', "%s" % version.MAJOR, quote=True)
+    conf.DEFINE('PACKAGE_BUGREPORT', 'samba-technical@samba.org', quote=True)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
