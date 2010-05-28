@@ -590,6 +590,11 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return status;
 	}
 
+	/* In pathological cases the above call can set the account
+	 * name to the DOMAIN\username form. Reset the account name
+	 * using unix_username */
+	pdb_set_username(sampass, unix_username, PDB_SET);
+
 	result = make_server_info(NULL);
 	if (result == NULL) {
 		TALLOC_FREE(sampass);
