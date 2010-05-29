@@ -1406,7 +1406,6 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules:: SHOWFLAGS $(MODULES)
 
-$(LIBSMBCLIENT_THREAD_OBJ) ../nsswitch/wins.o ../nsswitch/winbind_nss_linux.o: EXTRA_FLAGS := $(PTHREAD_CFLAGS)
 
 #####################################################################
 ## Perl IDL Compiler
@@ -1466,11 +1465,11 @@ MAKEDIR = || exec false; \
 	  exec false; fi || exec false
 
 # Run a static checker.
-CHECK_CC = $(CC_CHECKER) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
+CHECK_CC = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file.
-COMPILE_CC = $(CC) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC = $(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
 # Compile a source file with the installation paths defined.
-COMPILE_CC_PATH = $(CC) $(PATH_FLAGS) $(CFLAGS) $(EXTRA_FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE_CC_PATH = $(CC) $(PATH_FLAGS) $(CFLAGS) $(PICFLAG) -c $< -o $@
 
 COMPILE = $(COMPILE_CC)
 
@@ -1520,6 +1519,36 @@ dynconfig.o: dynconfig.c Makefile
 		echo "The following command failed:" 1>&2;\
 		echo "$(COMPILE_CC_PATH)" 1>&2;\
 		$(COMPILE_CC_PATH) >/dev/null 2>&1
+
+### Start section of object files that require PTHREAD_CFLAGS
+../nsswitch/wins.o: ../nsswitch/wins.c
+	@echo Compiling $*.c
+	@$(COMPILE) $(PTHREAD_CFLAGS) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
+		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
+
+../nsswitch/winbind_nss_linux.o: ../nsswitch/winbind_nss_linux.c
+	@echo Compiling $*.c
+	@$(COMPILE_CC) $(PTHREAD_CFLAGS) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
+		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
+
+libsmb/libsmb_thread_impl.o: libsmb/libsmb_thread_impl.c
+	@echo Compiling $*.c
+	@$(COMPILE) $(PTHREAD_CFLAGS) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
+		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
+
+libsmb/libsmb_thread_posix.o: libsmb/libsmb_thread_posix.c
+	@echo Compiling $*.c
+	@$(COMPILE) $(PTHREAD_CFLAGS) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
+		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
+### End section of object files that require PTHREAD_CFLAGS
 
 localedir.o: localedir.c Makefile
 	@echo Compiling $*.c
