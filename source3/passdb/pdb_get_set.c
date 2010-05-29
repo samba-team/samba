@@ -182,105 +182,27 @@ const struct dom_sid *pdb_get_user_sid(const struct samu *sampass)
 
 const struct dom_sid *pdb_get_group_sid(struct samu *sampass)
 {
-	struct dom_sid *gsid;
-	struct passwd *pwd;
-	bool need_lookup_sid = false;
+	NTSTATUS status;
 
 	/* Return the cached group SID if we have that */
-	if ( sampass->group_sid ) {
+	if (sampass->group_sid) {
 		return sampass->group_sid;
-	}
-
-	/* generate the group SID from the user's primary Unix group */
-
-	if ( !(gsid  = TALLOC_ZERO_P( sampass, struct dom_sid )) ) {
-		return NULL;
 	}
 
 	/* No algorithmic mapping, meaning that we have to figure out the
 	   primary group SID according to group mapping and the user SID must
 	   be a newly allocated one.  We rely on the user's Unix primary gid.
 	   We have no choice but to fail if we can't find it. */
-
-	if ( sampass->unix_pw ) {
-		pwd = sampass->unix_pw;
-	} else {
-		pwd = Get_Pwnam_alloc( sampass, pdb_get_username(sampass) );
-		sampass->unix_pw = pwd;
-	}
-
-	if ( !pwd ) {
-		DEBUG(0,("pdb_get_group_sid: Failed to find Unix account for %s\n", pdb_get_username(sampass) ));
+	status = get_primary_group_sid(sampass,
+					pdb_get_username(sampass),
+					&sampass->unix_pw,
+					&sampass->group_sid);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
-	gid_to_sid(gsid, pwd->pw_gid);
-	if (!is_null_sid(gsid)) {
-		struct dom_sid dgsid;
-		uint32_t rid;
-
-		sid_copy(&dgsid, gsid);
-		sid_split_rid(&dgsid, &rid);
-		if (sid_equal(&dgsid, get_global_sam_sid())) {
-			/*
-			 * As shortcut for the expensive lookup_sid call
-			 * compare the domain sid part
-			 */
-			switch (rid) {
-			case DOMAIN_RID_ADMINS:
-			case DOMAIN_RID_USERS:
-				sampass->group_sid = gsid;
-				return sampass->group_sid;
-			default:
-				need_lookup_sid = true;
-				break;
-			}
-		} else {
-			ZERO_STRUCTP(gsid);
-			if (pdb_gid_to_sid(pwd->pw_gid, gsid)) {
-				need_lookup_sid = true;
-			}
-		}
-	}
-
-	if (need_lookup_sid) {
-		enum lsa_SidType type = SID_NAME_UNKNOWN;
-		TALLOC_CTX *mem_ctx;
-		bool lookup_ret;
-		const struct dom_sid *usid = pdb_get_user_sid(sampass);
-
-		mem_ctx = talloc_init("pdb_get_group_sid");
-		if (!mem_ctx) {
-			return NULL;
-		}
-
-		DEBUG(10,("do lookup_sid(%s) for group of user %s\n",
-			  sid_string_dbg(gsid), sid_string_dbg(usid)));
-
-		/* Now check that it's actually a domain group and not something else */
-
-		lookup_ret = lookup_sid(mem_ctx, gsid, NULL, NULL, &type);
-
-		TALLOC_FREE( mem_ctx );
-
-		if ( lookup_ret && (type == SID_NAME_DOM_GRP) ) {
-			sampass->group_sid = gsid;
-			return sampass->group_sid;
-		}
-
-		DEBUG(3, ("Primary group %s for user %s is a %s and not a domain group\n",
-			sid_string_dbg(gsid), pwd->pw_name, sid_type_lookup(type)));
-	}
-
-	/* Just set it to the 'Domain Users' RID of 513 which will
-	   always resolve to a name */
-
-	sid_compose(gsid, get_global_sam_sid(), DOMAIN_RID_USERS);
-
-	sampass->group_sid = gsid;
-
 	return sampass->group_sid;
-}	
+}
 
 /**
  * Get flags showing what is initalised in the struct samu

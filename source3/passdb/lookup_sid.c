@@ -1514,3 +1514,127 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	store_gid_sid_cache(psid, *pgid);
 	return true;
 }
+
+/**
+ * @brief This function gets the primary group SID mapping the primary
+ *        GID of the user as obtained by an actual getpwnam() call.
+ *        This is necessary to avoid issues with arbitrary group SIDs
+ *        stored in passdb. We try as hard as we can to get the SID
+ *        corresponding to the GID, including trying group mapping.
+ *        If nothing else works, we will force "Domain Users" as the
+ *        primary group.
+ *        This is needed because we must always be able to lookup the
+ *        primary group SID, so we cannot settle for an arbitrary SID.
+ *
+ *        This call can be expensive. Use with moderation.
+ *        If you have a "samu" struct around use pdb_get_group_sid()
+ *        instead as it does properly cache results.
+ *
+ * @param mem_ctx[in]     The memory context iused to allocate the result.
+ * @param username[in]    The user's name
+ * @param _pwd[in|out]    If available, pass in user's passwd struct.
+ *                        It will contain a tallocated passwd if NULL was
+ *                        passed in.
+ * @param _group_sid[out] The user's Primary Group SID
+ *
+ * @return NTSTATUS error code.
+ */
+NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
+				const char *username,
+				struct passwd **_pwd,
+				struct dom_sid **_group_sid)
+{
+	TALLOC_CTX *tmp_ctx;
+	bool need_lookup_sid = false;
+	struct dom_sid *group_sid;
+	struct passwd *pwd = *_pwd;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pwd) {
+		pwd = Get_Pwnam_alloc(mem_ctx, username);
+		if (!pwd) {
+			DEBUG(0, ("Failed to find a Unix account for %s",
+				  username));
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+	}
+
+	group_sid = talloc_zero(mem_ctx, struct dom_sid);
+	if (!group_sid) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gid_to_sid(group_sid, pwd->pw_gid);
+	if (!is_null_sid(group_sid)) {
+		struct dom_sid domain_sid;
+		uint32_t rid;
+
+		/* We need a sid within our domain */
+		sid_copy(&domain_sid, group_sid);
+		sid_split_rid(&domain_sid, &rid);
+		if (sid_equal(&domain_sid, get_global_sam_sid())) {
+			/*
+			 * As shortcut for the expensive lookup_sid call
+			 * compare the domain sid part
+			 */
+			switch (rid) {
+			case DOMAIN_RID_ADMINS:
+			case DOMAIN_RID_USERS:
+				goto done;
+			default:
+				need_lookup_sid = true;
+				break;
+			}
+		} else {
+			/* Try group mapping */
+			ZERO_STRUCTP(group_sid);
+			if (pdb_gid_to_sid(pwd->pw_gid, group_sid)) {
+				need_lookup_sid = true;
+			}
+		}
+	}
+
+	/* We must verify that this is a valid SID that resolves to a
+	 * group of the correct type */
+	if (need_lookup_sid) {
+		enum lsa_SidType type = SID_NAME_UNKNOWN;
+		bool lookup_ret;
+
+		DEBUG(10, ("do lookup_sid(%s) for group of user %s\n",
+			   sid_string_dbg(group_sid), username));
+
+		/* Now check that it's actually a domain group and
+		 * not something else */
+		lookup_ret = lookup_sid(tmp_ctx, group_sid,
+					NULL, NULL, &type);
+
+		if (lookup_ret && (type == SID_NAME_DOM_GRP)) {
+			goto done;
+		}
+
+		DEBUG(3, ("Primary group %s for user %s is"
+			  " a %s and not a domain group\n",
+			  sid_string_dbg(group_sid), username,
+			  sid_type_lookup(type)));
+	}
+
+	/* Everything else, failed.
+	 * Just set it to the 'Domain Users' RID of 513 which will
+	   always resolve to a name */
+	DEBUG(3, ("Forcing Primary Group to 'Domain Users' for %s\n",
+		  username));
+
+	sid_compose(group_sid, get_global_sam_sid(), DOMAIN_RID_USERS);
+
+done:
+	*_pwd = talloc_move(mem_ctx, &pwd);
+	*_group_sid = talloc_move(mem_ctx, &group_sid);
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_OK;
+}

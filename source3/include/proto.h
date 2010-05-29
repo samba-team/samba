@@ -4351,6 +4351,10 @@ void uid_to_sid(struct dom_sid *psid, uid_t uid);
 void gid_to_sid(struct dom_sid *psid, gid_t gid);
 bool sid_to_uid(const struct dom_sid *psid, uid_t *puid);
 bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid);
+NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
+				const char *username,
+				struct passwd **_pwd,
+				struct dom_sid **_group_sid);
 
 /* The following definitions come from passdb/machine_sid.c  */
 
