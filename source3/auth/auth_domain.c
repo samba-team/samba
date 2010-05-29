@@ -393,6 +393,8 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+
 	/* 
 	 * Check that the requested domain is not our own machine name.
 	 * If it is, we should never check the PDC here, we use our own local
@@ -460,6 +462,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 		DEBUG(1,("check_trustdomain_security: Critical variables not present.  Failing.\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
 
 	/* 
 	 * Check that the requested domain is not our own machine name or domain name.

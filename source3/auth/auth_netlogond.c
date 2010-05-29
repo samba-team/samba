@@ -170,6 +170,8 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	struct named_mutex *mutex = NULL;
 	const char *ncalrpcsock;
 
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+
 	ncalrpcsock = lp_parm_const_string(
 		GLOBAL_SECTION_SNUM, "auth_netlogond", "socket", NULL);
 

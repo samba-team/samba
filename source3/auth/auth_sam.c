@@ -72,6 +72,8 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+
 	is_local_name = is_myname(user_info->domain);
 	is_my_domain  = strequal(user_info->domain, lp_workgroup());
 

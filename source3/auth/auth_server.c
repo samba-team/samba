@@ -281,6 +281,8 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	bool locally_made_cli = False;
 
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+
 	cli = state->cli;
 
 	if (cli) {

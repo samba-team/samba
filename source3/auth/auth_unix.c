@@ -91,6 +91,8 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
 
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+
 	become_root();
 	pass = Get_Pwnam_alloc(talloc_tos(), user_info->internal_username);
 
