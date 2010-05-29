@@ -20,9 +20,13 @@
 */
 
 #include "includes.h"
+
+#ifndef NSS_WRAPPER
+#define NSS_WRAPPER
+#endif
+
 #include "torture/torture.h"
 #include "lib/replace/system/passwd.h"
-#include "lib/nss_wrapper/nss_wrapper.h"
 
 static bool copy_passwd(struct torture_context *tctx,
 			const struct passwd *pwd,
