@@ -206,6 +206,7 @@ const struct dom_sid *pdb_get_group_sid(struct samu *sampass)
 		pwd = sampass->unix_pw;
 	} else {
 		pwd = Get_Pwnam_alloc( sampass, pdb_get_username(sampass) );
+		sampass->unix_pw = pwd;
 	}
 
 	if ( !pwd ) {
