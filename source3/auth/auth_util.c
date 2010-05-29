@@ -909,7 +909,7 @@ bool copy_current_user(struct current_user *dst, struct current_user *src)
 
 static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 			      const char *username, char **found_username,
-			      uid_t *uid, gid_t *gid,
+			      struct passwd **pwd,
 			      bool *username_was_mapped)
 {
 	fstring dom_user, lower_username;
@@ -933,8 +933,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	*uid = passwd->pw_uid;
-	*gid = passwd->pw_gid;
+	*pwd = passwd;
 
 	/* This is pointless -- there is no suport for differing 
 	   unix and windows names.  Make sure to always store the 
@@ -943,8 +942,6 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 	                                 --jerry              */
 
 	*found_username = talloc_strdup( mem_ctx, real_username );
-
-	TALLOC_FREE(passwd);
 
 	return NT_STATUS_OK;
 }
@@ -1053,10 +1050,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	struct dom_sid user_sid;
 	struct dom_sid group_sid;
 	bool username_was_mapped;
-
-	uid_t uid = (uid_t)-1;
-	gid_t gid = (gid_t)-1;
-
+	struct passwd *pwd;
 	struct auth_serversupplied_info *result;
 
 	/* 
@@ -1102,7 +1096,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* this call will try to create the user if necessary */
 
 	nt_status = check_account(mem_ctx, nt_domain, sent_nt_username,
-				     &found_username, &uid, &gid,
+				     &found_username, &pwd,
 				     &username_was_mapped);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1129,8 +1123,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* Fill in the unix info we found on the way */
 
-	result->utok.uid = uid;
-	result->utok.gid = gid;
+	result->utok.uid = pwd->pw_uid;
+	result->utok.gid = pwd->pw_gid;
 
 	/* ensure we are never given NULL session keys */
 
