@@ -47,6 +47,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -257,6 +258,7 @@ int dsdb_module_modify(struct ldb_module *module,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -312,6 +314,7 @@ int dsdb_module_rename(struct ldb_module *module,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -366,6 +369,7 @@ int dsdb_module_add(struct ldb_module *module,
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -681,7 +685,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 
 	p_ctrl = talloc(req, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
@@ -760,6 +764,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 
 	res = talloc_zero(msg, struct ldb_result);
 	if (!res) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
