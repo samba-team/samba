@@ -620,7 +620,7 @@ fail:
  idmap allocator interface functions
 **************************************************************************/
 
-NTSTATUS idmap_allocate_uid(struct unixid *id)
+static NTSTATUS idmap_allocate_unixid(struct unixid *id)
 {
 	struct idmap_alloc_context *ctx;
 	NTSTATUS ret;
@@ -629,21 +629,20 @@ NTSTATUS idmap_allocate_uid(struct unixid *id)
 		return ret;
 	}
 
-	id->type = ID_TYPE_UID;
 	return ctx->methods->allocate_id(id);
+}
+
+
+NTSTATUS idmap_allocate_uid(struct unixid *id)
+{
+	id->type = ID_TYPE_UID;
+	return idmap_allocate_unixid(id);
 }
 
 NTSTATUS idmap_allocate_gid(struct unixid *id)
 {
-	struct idmap_alloc_context *ctx;
-	NTSTATUS ret;
-
-	if (!NT_STATUS_IS_OK(ret = idmap_alloc_init(&ctx))) {
-		return ret;
-	}
-
 	id->type = ID_TYPE_GID;
-	return ctx->methods->allocate_id(id);
+	return idmap_allocate_unixid(id);
 }
 
 NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
