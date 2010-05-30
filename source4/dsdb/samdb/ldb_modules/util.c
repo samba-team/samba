@@ -113,12 +113,22 @@ int dsdb_module_search(struct ldb_module *module,
 
 	tmp_ctx = talloc_new(mem_ctx);
 
-	va_start(ap, format);
-	expression = talloc_vasprintf(tmp_ctx, format, ap);
-	va_end(ap);
+	if (format) {
+		va_start(ap, format);
+		expression = talloc_vasprintf(tmp_ctx, format, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		expression = NULL;
+	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
