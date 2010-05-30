@@ -116,8 +116,18 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			       &dce_conn->auth_state.auth_info->credentials);
 	
 	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(dce_conn->auth_state.gensec_security,
-					     &dce_conn->auth_state.session_info);
+		if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)
+		    && (talloc_get_type(dce_conn->auth_state.session_info,
+					struct auth_session_info) != NULL)) {
+			/* This is a small hack to make some Windows 2000 RPC
+			 * operations work. It should be removed (always call
+			 * "gensec_session_info") when we fully support header
+			 * signing. */
+			status = NT_STATUS_OK;
+		} else {
+			status = gensec_session_info(dce_conn->auth_state.gensec_security,
+						     &dce_conn->auth_state.session_info);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return status;
