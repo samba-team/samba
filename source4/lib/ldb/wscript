@@ -177,7 +177,7 @@ def build(bld):
 
     LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
     for t in LDB_TOOLS.split():
-        bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='LIBLDB_CMDLINE')
+        bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='LIBLDB_CMDLINE', manpages='man/%s.1' % t)
 
     # ldbtest doesn't get installed
     bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='LIBLDB_CMDLINE', install=False)
@@ -187,9 +187,7 @@ def build(bld):
                      realname='ldb.so')
 
     if bld.env.XSLTPROC:
-        manpages = 'man/ad2oLschema.1 man/ldb.3 man/ldbadd.1 man/ldbdel.1 ' \
-                   'man/ldbedit.1 man/ldbmodify.1 man/ldbrename.1 ' \
-                   'man/ldbsearch.1 man/oLschema2ldif.1'
+        manpages = 'man/ad2oLschema.1 man/ldb.3 man/oLschema2ldif.1'
 
         bld.env.LDB_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
 
@@ -200,7 +198,7 @@ def build(bld):
                                 target=m,
                                 rule='${XSLTPROC} -o ${TGT} ${LDB_MAN_XSL} ${SRC}'
                                 )
-            bld.INSTALL_FILES('${MANDIR}/man1 ${MANDIR}/man3', m, flat=True)
+            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
 
 
 def test(ctx):
