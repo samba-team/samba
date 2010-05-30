@@ -3099,7 +3099,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 	int ret;
 	struct ldb_message_element *el;
 	struct ldb_result *root_res;
-	int i;
+	unsigned int i;
 	struct ldb_dn **nc_dns;
 
 	tmp_ctx = talloc_new(samdb);
