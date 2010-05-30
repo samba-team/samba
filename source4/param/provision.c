@@ -90,7 +90,6 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
-	py_load_samba_modules();
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
@@ -249,7 +248,6 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	py_load_samba_modules();
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 	provision_mod = provision_module();
@@ -348,7 +346,6 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	
 	DEBUG(0,("Schema for DRS tests using python\n"));
 
-	py_load_samba_modules();
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 

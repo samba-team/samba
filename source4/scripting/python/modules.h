@@ -20,7 +20,6 @@
 #ifndef __SAMBA_PYTHON_MODULES_H__
 #define __SAMBA_PYTHON_MODULES_H__
 
-void py_load_samba_modules(void);
 bool py_update_path(const char *bindir);
 
 #endif /* __SAMBA_PYTHON_MODULES_H__ */ 
