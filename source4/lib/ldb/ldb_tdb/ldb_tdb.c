@@ -77,6 +77,8 @@ int ltdb_err_map(enum TDB_ERROR tdb_code)
 		return LDB_ERR_NO_SUCH_OBJECT;
 	case TDB_ERR_RDONLY:
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	default:
+		break;
 	}
 	return LDB_ERR_OTHER;
 }
