@@ -295,6 +295,17 @@ def SAMBA_BINARY(bld, binname, source,
     if subsystem_name is not None:
         bld.TARGET_ALIAS(subsystem_name, binname)
 
+    if manpages is not None and bld.env.XSLTPROC is not None:
+        bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+        for m in manpages.split():
+            source = m + '.xml'
+            bld.SAMBA_GENERATOR(m,
+                                source=source,
+                                target=m,
+                                rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
+                                )
+            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
 
