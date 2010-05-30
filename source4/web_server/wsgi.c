@@ -301,6 +301,8 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 			PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(hdr->value));
 		} else { 
 			if (asprintf(&name, "HTTP_%s", hdr->name) < 0) {
+				Py_DECREF(env);
+				Py_DECREF(inputstream);
 				PyErr_NoMemory();
 				return NULL;
 			}
