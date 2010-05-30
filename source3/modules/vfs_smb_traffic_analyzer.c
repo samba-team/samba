@@ -298,6 +298,8 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	char *usersid = NULL;
 	char *buf = NULL;
 	char *vfs_operation_str = NULL;
+	const char *service_name = lp_const_servicename(handle->conn->params->service);
+
 	/*
 	 * first create the data that is transfered with any VFS op
 	 * These are, in the following order:
@@ -343,6 +345,7 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		tm->tm_sec, \
 		(int)seconds);
 	len = strlen( timestr );
+
 	/* create the string of common data */
 	buf = talloc_asprintf(ctx,
 		"%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s",
@@ -353,8 +356,8 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		username,
 		(unsigned int) strlen(sidstr),
 		sidstr,
-		(unsigned int) strlen(handle->conn->connectpath),
-		handle->conn->connectpath,
+		(unsigned int) strlen(service_name),
+		service_name,
 		(unsigned int)
 		strlen(handle->conn->server_info->info3->base.domain.string),
 		handle->conn->server_info->info3->base.domain.string,
