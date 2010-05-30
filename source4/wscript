@@ -77,6 +77,7 @@ def configure(conf):
 
     conf.find_program('python', var='PYTHON', mandatory=True)
     conf.find_program('perl', var='PERL', mandatory=True)
+    conf.find_program('xsltproc', var='XSLTPROC')
 
     # enable tool to build python extensions
     conf.check_tool('python')
