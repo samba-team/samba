@@ -76,7 +76,7 @@ def parse_results(msg_ops, statistics, fh):
             if result in ("success", "successful"):
                 try:
                     open_tests.remove(testname)
-                except KeyError:
+                except ValueError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.end_test(testname, "error", True, 
                             "Test was never started")
@@ -86,7 +86,7 @@ def parse_results(msg_ops, statistics, fh):
             elif result in ("xfail", "knownfail"):
                 try:
                     open_tests.remove(testname)
-                except KeyError:
+                except ValueError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.end_test(testname, "error", True, 
                             "Test was never started")
@@ -97,7 +97,7 @@ def parse_results(msg_ops, statistics, fh):
             elif result in ("failure", "fail"):
                 try:
                     open_tests.remove(testname)
-                except KeyError:
+                except ValueError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.end_test(testname, "error", True, 
                             "Test was never started")
@@ -115,7 +115,7 @@ def parse_results(msg_ops, statistics, fh):
                 statistics['TESTS_ERROR']+=1
                 try:
                     open_tests.remove(testname)
-                except KeyError:
+                except ValueError:
                     pass
                 msg_ops.end_test(testname, "error", True, reason)
             elif result == "skip-testsuite":
