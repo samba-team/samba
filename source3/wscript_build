@@ -149,7 +149,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
           lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
           lib/wins_srv.c
           lib/util_str.c lib/clobber.c lib/util_sid.c lib/util_uuid.c
-          lib/util_unistr.c lib/util_file.c
+          lib/util_unistr.c lib/util_file.c lib/util_names.c
           lib/util.c lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/dbwrap_util.c
           lib/ms_fnmatch.c lib/select.c lib/errmap_unix.c
@@ -663,11 +663,11 @@ LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
 
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
-SMBD_SRC_MAIN = '''smbd/server.c'''
+SMBD_SRC_MAIN = '''smbd/server.c smbd/server_exit.c'''
 
 BUILDOPT_SRC = '''smbd/build_options.c'''
 
-SMBD_SRC_SRV = '''smbd/files.c smbd/connection.c
+SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/utmp.c smbd/session.c smbd/map_username.c
                smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn.c
                smbd/share_access.c smbd/fileio.c
