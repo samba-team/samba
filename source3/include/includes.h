@@ -440,6 +440,14 @@ typedef long blksize_t;
 typedef long blkcnt_t;
 #endif
 
+#ifndef HAVE_STRUCT_TIMESPEC
+struct timespec {
+	time_t tv_sec;            /* Seconds.  */
+	long tv_nsec;           /* Nanoseconds.  */
+};
+#endif
+
+
 /*
  * Type for stat structure.
  */
@@ -550,13 +558,6 @@ typedef struct stat_ex SMB_STRUCT_STAT;
 #  else
 #    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */
 #  endif
-#endif
-
-#ifndef HAVE_STRUCT_TIMESPEC
-struct timespec {
-	time_t tv_sec;            /* Seconds.  */
-	long tv_nsec;           /* Nanoseconds.  */
-};
 #endif
 
 enum timestamp_set_resolution {
