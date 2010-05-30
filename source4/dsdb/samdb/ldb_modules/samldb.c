@@ -68,20 +68,6 @@ struct samldb_ctx {
 	/* used in conjunction with "sid" in "samldb_dn_from_sid" */
 	struct ldb_dn *res_dn;
 
-	/* used in conjunction with "dn" in "samldb_sid_from_dn" */
-	struct dom_sid *res_sid;
-
-	/* used in "samldb_user_dn_to_prim_group_rid" */
-	uint32_t prim_group_rid;
-
-	/* used in "samldb_group_add_member" and "samldb_group_del_member" */
-	struct ldb_dn *group_dn;
-	struct ldb_dn *member_dn;
-
-	/* used in "samldb_primary_group_change" */
-	struct ldb_dn *user_dn;
-	struct ldb_dn *old_prim_group_dn, *new_prim_group_dn;
-
 	/* all the async steps necessary to complete the operation */
 	struct samldb_step *steps;
 	struct samldb_step *curstep;
@@ -1133,337 +1119,113 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
-/*
- * samldb_user_dn_to_prim_group_rid (async)
- */
-
-static int samldb_user_dn_to_prim_group_rid(struct samldb_ctx *ac);
-
-static int samldb_user_dn_to_prim_group_rid_callback(struct ldb_request *req,
-	struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if (ac->prim_group_rid != 0) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain objects!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-		ac->prim_group_rid = samdb_result_uint(ares->message,
-			"primaryGroupID", ~0);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-		if (ac->prim_group_rid == 0) {
-			ldb_asprintf_errstring(ldb,
-				"Unable to get the primary group RID!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-
-		/* found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Locates the "primaryGroupID" attribute from a certain user specified as
- * "user_dn". Saves the result in "prim_group_rid". */
-static int samldb_user_dn_to_prim_group_rid(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[] = { "primaryGroupID", NULL };
-	struct ldb_request *req;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->user_dn == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				ac->user_dn,
-				LDB_SCOPE_BASE,
-				NULL, attrs,
-				NULL,
-				ac, samldb_user_dn_to_prim_group_rid_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-/*
- * samldb_group_add_member (async)
- * samldb_group_del_member (async)
- */
-
-static int samldb_group_add_del_member_callback(struct ldb_request *req,
-	struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		return ldb_module_send_referral(ac->req, ares->referral);
-	}
-
-	if (ares->error != LDB_SUCCESS) {
-		if (ares->error == LDB_ERR_NO_SUCH_ATTRIBUTE) {
-			/* On error "NO_SUCH_ATTRIBUTE" (delete of an invalid
-			 * "member" attribute) return "UNWILLING_TO_PERFORM" */
-			ares->error = LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb,
-			"Invalid reply type!");
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = samldb_next_step(ac);
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Adds a member with DN "member_dn" to a group with DN "group_dn" */
-static int samldb_group_add_member(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct ldb_request *req;
-	struct ldb_message *msg;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if ((ac->group_dn == NULL) || (ac->member_dn == NULL))
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	msg = ldb_msg_new(ac);
-	msg->dn = ac->group_dn;
-	samdb_msg_add_addval(ldb, ac, msg, "member",
-		ldb_dn_get_linearized(ac->member_dn));
-
-	ret = ldb_build_mod_req(&req, ldb, ac,
-				msg, NULL,
-				ac, samldb_group_add_del_member_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-/* Removes a member with DN "member_dn" from a group with DN "group_dn" */
-static int samldb_group_del_member(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct ldb_request *req;
-	struct ldb_message *msg;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if ((ac->group_dn == NULL) || (ac->member_dn == NULL))
-		return LDB_ERR_OPERATIONS_ERROR;
-
-	msg = ldb_msg_new(ac);
-	msg->dn = ac->group_dn;
-	samdb_msg_add_delval(ldb, ac, msg, "member",
-		ldb_dn_get_linearized(ac->member_dn));
-
-	ret = ldb_build_mod_req(&req, ldb, ac,
-				msg, NULL,
-				ac, samldb_group_add_del_member_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-
-static int samldb_prim_group_change_1(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	uint32_t rid;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	ac->user_dn = ac->msg->dn;
-
-	rid = samdb_result_uint(ac->msg, "primaryGroupID", ~0);
-	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (ac->sid == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	ac->res_dn = NULL;
-
-	ac->prim_group_rid = 0;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_change_2(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->res_dn != NULL)
-		ac->new_prim_group_dn = ac->res_dn;
-	else
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-
-	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
-		ac->prim_group_rid);
-	if (ac->sid == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
-	ac->res_dn = NULL;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_change_4(struct samldb_ctx *ac);
-static int samldb_prim_group_change_5(struct samldb_ctx *ac);
-static int samldb_prim_group_change_6(struct samldb_ctx *ac);
-
-static int samldb_prim_group_change_3(struct samldb_ctx *ac)
-{
-	int ret;
-
-	if (ac->res_dn != NULL)
-		ac->old_prim_group_dn = ac->res_dn;
-	else
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-
-	/* Only update when the primary group changed */
-	if (ldb_dn_compare(ac->old_prim_group_dn, ac->new_prim_group_dn) != 0) {
-		ac->member_dn = ac->user_dn;
-		/* Remove the "member" attribute of the actual (new) primary
-		 * group */
-
-		ret = samldb_add_step(ac, samldb_prim_group_change_4);
-		if (ret != LDB_SUCCESS) return ret;
-
-		ret = samldb_add_step(ac, samldb_group_del_member);
-		if (ret != LDB_SUCCESS) return ret;
-
-		/* Add a "member" attribute for the previous primary group */
-
-		ret = samldb_add_step(ac, samldb_prim_group_change_5);
-		if (ret != LDB_SUCCESS) return ret;
-
-		ret = samldb_add_step(ac, samldb_group_add_member);
-		if (ret != LDB_SUCCESS) return ret;
-	}
-
-	ret = samldb_add_step(ac, samldb_prim_group_change_6);
-	if (ret != LDB_SUCCESS) return ret;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_change_4(struct samldb_ctx *ac)
-{
-	ac->group_dn = ac->new_prim_group_dn;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_change_5(struct samldb_ctx *ac)
-{
-	ac->group_dn = ac->old_prim_group_dn;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_prim_group_change_6(struct samldb_ctx *ac)
-{
-	return ldb_next_request(ac->module, ac->req);
-}
 
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
+	struct ldb_context *ldb;
+	const char * attrs[] = { "primaryGroupID", "memberOf", NULL };
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+	struct ldb_message *msg;
+	uint32_t rid;
+	struct dom_sid *sid;
+	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
 
-	/* Finds out the DN of the new primary group */
+	ldb = ldb_module_get_ctx(ac->module);
 
-	ret = samldb_add_step(ac, samldb_prim_group_change_1);
-	if (ret != LDB_SUCCESS) return ret;
+	/* Fetch informations from the existing object */
 
-	ret = samldb_add_step(ac, samldb_dn_from_sid);
-	if (ret != LDB_SUCCESS) return ret;
-
-	ret = samldb_add_step(ac, samldb_user_dn_to_prim_group_rid);
-	if (ret != LDB_SUCCESS) return ret;
+	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+			 NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* Finds out the DN of the old primary group */
 
-	ret = samldb_add_step(ac, samldb_prim_group_change_2);
-	if (ret != LDB_SUCCESS) return ret;
+	rid = samdb_result_uint(res->msgs[0], "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		/* User objects do always have a mandatory "primaryGroupID"
+		 * attribute. If this doesn't exist then the object is of the
+		 * wrong type. This is the exact Windows error code */
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
 
-	ret = samldb_add_step(ac, samldb_dn_from_sid);
-	if (ret != LDB_SUCCESS) return ret;
+	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
+	if (sid == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	ret = samldb_add_step(ac, samldb_prim_group_change_3);
-	if (ret != LDB_SUCCESS) return ret;
+	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
+					     dom_sid_string(ac, sid));
+	if (prev_prim_group_dn == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-	return samldb_first_step(ac);
+	/* Finds out the DN of the new primary group */
+
+	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		/* we aren't affected of any primary group change */
+		return ldb_next_request(ac->module, ac->req);
+	}
+
+	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
+	if (sid == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
+					    dom_sid_string(ac, sid));
+	if (new_prim_group_dn == NULL) {
+		/* Here we know if the specified new primary group candidate is
+		 * valid or not. */
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	el = samdb_find_attribute(ldb, res->msgs[0], "memberOf",
+				  ldb_dn_get_linearized(new_prim_group_dn));
+	if (el == NULL) {
+		/* We need to be already a normal member of the new primary
+		 * group in order to be successful. */
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* Only update the "member" attributes when we really do have a change */
+	if (ldb_dn_compare(new_prim_group_dn, prev_prim_group_dn) != 0) {
+		/* Remove the "member" attribute on the new primary group */
+		msg = talloc_zero(ac, struct ldb_message);
+		msg->dn = new_prim_group_dn;
+
+		ret = samdb_msg_add_delval(ldb, ac, msg, "member",
+					   ldb_dn_get_linearized(ac->msg->dn));
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ret = dsdb_module_modify(ac->module, msg, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* Add a "member" attribute for the previous primary group */
+		msg = talloc_zero(ac, struct ldb_message);
+		msg->dn = prev_prim_group_dn;
+
+		ret = samdb_msg_add_addval(ldb, ac, msg, "member",
+					   ldb_dn_get_linearized(ac->msg->dn));
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ret = dsdb_module_modify(ac->module, msg, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return ldb_next_request(ac->module, ac->req);
 }
 
 
