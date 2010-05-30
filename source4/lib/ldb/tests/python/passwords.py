@@ -87,7 +87,7 @@ class PasswordTests(unittest.TestCase):
              "objectclass": ["user", "person"],
              "sAMAccountName": "testuser",
              "userPassword": "thatsAcomplPASS1" })
-        ldb.enable_account("(cn=testuser)" + self.base_dn)
+        ldb.enable_account("(sAMAccountName=testuser)")
 
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
