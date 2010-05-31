@@ -202,6 +202,9 @@ main() {
         conf.CHECK_CODE('uint32 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
                         headers='sys/types.h rpc/rpc.h',
                         msg="Checking for uint32 typedef included by rpc/rpc.h")
+    conf.CHECK_CODE('int i;', 'BROKEN_NISPLUS_INCLUDE_FILES',
+                    headers='sys/types.h sys/acl.h rpcsvc/nis.h',
+                    msg="Checking for broken nisplus include files")
 
     # Check if the compiler will optimize out functions
     conf.CHECK_CODE('''
