@@ -346,6 +346,8 @@ utimensat vsyslog _write __write __xstat
                     msg="Checking whether xattr interface takes additional options",
                     headers='sys/types.h attr/xattr.h sys/xattr.h')
 
+    conf.CHECK_HEADERS('asm/types.h')
+
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
         conf.DEFINE('WITH_ADS', '1')
