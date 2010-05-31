@@ -348,6 +348,14 @@ utimensat vsyslog _write __write __xstat
 
     conf.CHECK_HEADERS('asm/types.h')
 
+    conf.CHECK_CODE('dev_t dev; int i = major(dev); return 0', "HAVE_DEVICE_MAJOR_FN",
+                    headers='unistd.h sys/types.h',
+                    msg="Checking for major macro")
+
+    conf.CHECK_CODE('dev_t dev; int i = minor(dev); return 0', "HAVE_DEVICE_MINOR_FN",
+                    headers='unistd.h sys/types.h',
+                    msg="Checking for minor macro")
+
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
         conf.DEFINE('WITH_ADS', '1')
