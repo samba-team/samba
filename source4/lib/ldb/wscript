@@ -39,19 +39,18 @@ def configure(conf):
 
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
-    if not s4_build:
-        if not conf.env.standalone_ldb:
-            if conf.CHECK_BUNDLED_SYSTEM('ldb', minversion=VERSION,
-                                         onlyif='talloc tdb tevent',
-                                         implied_deps='replace talloc tdb tevent'):
-                conf.define('USING_SYSTEM_LDB', 1)
+    if not conf.env.standalone_ldb:
+        if conf.CHECK_BUNDLED_SYSTEM('ldb', minversion=VERSION,
+                                     onlyif='talloc tdb tevent',
+                                     implied_deps='replace talloc tdb tevent'):
+            conf.define('USING_SYSTEM_LDB', 1)
 
-        if conf.env.standalone_ldb:
-            conf.find_program('xsltproc', var='XSLTPROC')
+    if conf.env.standalone_ldb:
+        conf.find_program('xsltproc', var='XSLTPROC')
 
-        # we need this for the ldap backend
-        if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
-            conf.env.ENABLE_LDAP_BACKEND = True
+    # we need this for the ldap backend
+    if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
+        conf.env.ENABLE_LDAP_BACKEND = True
 
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
