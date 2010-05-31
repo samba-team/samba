@@ -1753,16 +1753,6 @@ void wins_srv_tags_free(char **list);
 struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip);
 unsigned wins_srv_count_tag(const char *tag);
 
-/* The following definitions come from libads/ads_status.c  */
-
-ADS_STATUS ads_build_error(enum ads_error_type etype, 
-			   int rc, int minor_status);
-ADS_STATUS ads_build_nt_error(enum ads_error_type etype, 
-			   NTSTATUS nt_status);
-NTSTATUS ads_ntstatus(ADS_STATUS status);
-const char *ads_errstr(ADS_STATUS status);
-NTSTATUS gss_err_to_ntstatus(uint32 maj, uint32 min);
-
 /* The following definitions come from libads/ads_struct.c  */
 
 char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse);
