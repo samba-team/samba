@@ -6010,8 +6010,6 @@ bool idmap_is_offline(void);
 bool idmap_is_online(void);
 NTSTATUS smb_register_idmap(int version, const char *name,
 			    struct idmap_methods *methods);
-NTSTATUS smb_register_idmap_alloc(int version, const char *name,
-				  struct idmap_alloc_methods *methods);
 void idmap_close(void);
 NTSTATUS idmap_init_cache(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);

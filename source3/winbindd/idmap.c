@@ -185,55 +185,6 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 	return NT_STATUS_OK;
 }
 
-/**********************************************************************
- Allow a module to register itself as an alloc method.
-**********************************************************************/
-
-NTSTATUS smb_register_idmap_alloc(int version, const char *name,
-				  struct idmap_alloc_methods *methods)
-{
-	struct idmap_alloc_methods *test;
-	struct idmap_alloc_backend *entry;
-
- 	if ((version != SMB_IDMAP_INTERFACE_VERSION)) {
-		DEBUG(0, ("Failed to register idmap alloc module.\n"
-		          "The module was compiled against "
-			  "SMB_IDMAP_INTERFACE_VERSION %d,\n"
-		          "current SMB_IDMAP_INTERFACE_VERSION is %d.\n"
-		          "Please recompile against the current version "
-			  "of samba!\n",
-			  version, SMB_IDMAP_INTERFACE_VERSION));
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-  	}
-
-	if (!name || !name[0] || !methods) {
-		DEBUG(0,("Called with NULL pointer or empty name!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	test = get_alloc_methods(name);
-	if (test) {
-		DEBUG(0,("idmap_alloc module %s already registered!\n", name));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
-	}
-
-	entry = talloc(NULL, struct idmap_alloc_backend);
-	if ( ! entry) {
-		DEBUG(0,("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-	entry->name = talloc_strdup(entry, name);
-	if ( ! entry->name) {
-		DEBUG(0,("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-	entry->methods = methods;
-
-	DLIST_ADD(alloc_backends, entry);
-	DEBUG(5, ("Successfully added idmap alloc backend '%s'\n", name));
-	return NT_STATUS_OK;
-}
-
 static int close_domain_destructor(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
