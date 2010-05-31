@@ -1080,7 +1080,7 @@ interface netlogon
 		[size_is(length)] uint8 *data;
 	} netr_Blob;
 
-	WERROR netr_NetrEnumerateTrustedDomains(
+	NTSTATUS netr_NetrEnumerateTrustedDomains(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[out,ref] netr_Blob *trusted_domains_blob
 		);

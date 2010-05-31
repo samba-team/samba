@@ -2139,7 +2139,7 @@ static bool test_netr_NetrEnumerateTrustedDomains(struct torture_context *tctx,
 
 	status = dcerpc_netr_NetrEnumerateTrustedDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_NetrEnumerateTrustedDomains");
-	torture_assert_werr_ok(tctx, r.out.result, "NetrEnumerateTrustedDomains");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "NetrEnumerateTrustedDomains");
 
 	return true;
 }

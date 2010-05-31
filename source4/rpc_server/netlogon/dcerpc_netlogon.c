@@ -1066,9 +1066,9 @@ static NTSTATUS dcesrv_netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TAL
 
 
 /*
-  netr_NetrEnumerateTurstedDomains
+  netr_NetrEnumerateTrustedDomains
 */
-static WERROR dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_NetrEnumerateTrustedDomains *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);

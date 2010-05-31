@@ -384,8 +384,8 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
  _netr_NetrEnumerateTrustedDomains
  *************************************************************************/
 
-WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
-					 struct netr_NetrEnumerateTrustedDomains *r)
+NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
+					   struct netr_NetrEnumerateTrustedDomains *r)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -403,25 +403,25 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
+		return status;
 	}
 
 	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains + 1);
 	if (!trusted_domains) {
-		return WERR_NOMEM;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i = 0; i < num_domains; i++) {
 		trusted_domains[i] = talloc_strdup(trusted_domains, domains[i]->name);
 		if (!trusted_domains[i]) {
 			TALLOC_FREE(trusted_domains);
-			return WERR_NOMEM;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
 		TALLOC_FREE(trusted_domains);
-		return WERR_NOMEM;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	r->out.trusted_domains_blob->data = blob.data;
@@ -429,7 +429,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
-	return WERR_OK;
+	return NT_STATUS_OK;
 }
 
 /******************************************************************
