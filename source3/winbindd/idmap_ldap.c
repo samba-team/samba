@@ -1304,12 +1304,6 @@ static struct idmap_alloc_methods idmap_ldap_alloc_methods = {
 	.close_fn = idmap_ldap_alloc_close,
 };
 
-static NTSTATUS idmap_alloc_ldap_init(void)
-{
-	return smb_register_idmap_alloc(SMB_IDMAP_INTERFACE_VERSION, "ldap",
-					&idmap_ldap_alloc_methods);
-}
-
 NTSTATUS idmap_ldap_init(void);
 NTSTATUS idmap_ldap_init(void)
 {
