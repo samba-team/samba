@@ -299,7 +299,7 @@ def SAMBA_BINARY(bld, binname, source,
     if subsystem_name is not None:
         bld.TARGET_ALIAS(subsystem_name, binname)
 
-    if manpages is not None and bld.env.XSLTPROC is not None:
+    if manpages is not None and 'XSLTPROC' in bld.env:
         bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
         for m in manpages.split():
             source = m + '.xml'
