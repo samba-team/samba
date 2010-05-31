@@ -1980,7 +1980,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 
 	/* NOTE: we currently are always the root of the forest */
 	if (r->in.trust_flags & NETR_TRUST_FLAG_IN_FOREST) {
-		int n = trusts->count;
+		uint32_t n = trusts->count;
 
 		ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
 				      &dom_res, dom_attrs);
