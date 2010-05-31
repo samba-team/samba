@@ -115,6 +115,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   abi_file=None,
                   abi_match=None,
                   hide_symbols=False,
+                  is_bundled=False,
                   enabled=True):
     '''define a Samba library'''
 
@@ -163,8 +164,11 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
-    if target_type == 'PYTHON' or realname:
-        bundled_name = libname
+    if target_type == 'PYTHON' or realname or not is_bundled:
+        # Sanitize the library name
+        bundled_name = libname.lower().replace('_', '-')
+        while bundled_name.startswith("lib"):
+            bundled_name = bundled_name[3:]
     else:
         bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
 

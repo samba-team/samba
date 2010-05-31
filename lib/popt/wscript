@@ -14,5 +14,6 @@ def build(bld):
 
     bld.SAMBA_LIBRARY('popt',
                       source='findme.c popt.c poptconfig.c popthelp.c poptparse.c',
-                      cflags='-DDBL_EPSILON=__DBL_EPSILON__'
+                      cflags='-DDBL_EPSILON=__DBL_EPSILON__',
+					  is_bundled=True,
                       )
