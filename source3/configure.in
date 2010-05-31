@@ -1864,7 +1864,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    # variables so they need to be eval'ed.
    if AC_TRY_COMMAND([$CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.o ${srcdir-.}/../tests/shlib.c 1>&AS_MESSAGE_LOG_FD])
    then
-     if AC_TRY_COMMAND([`eval echo "$SHLD $LDSHFLAGS $PIE_LDFLAGS"` -o "shlib.$SHLIBEXT" shlib.o 1>&AS_MESSAGE_LOG_FD])
+     if AC_TRY_COMMAND([`eval echo "$SHLD $LDSHFLAGS $PICFLAG"` -o "shlib.$SHLIBEXT" shlib.o 1>&AS_MESSAGE_LOG_FD])
      then
        ac_cv_shlib_works=yes
      fi
