@@ -57,15 +57,4 @@ struct idmap_methods {
 	NTSTATUS (*close_fn)(struct idmap_domain *dom);
 };
 
-struct idmap_alloc_methods {
-
-	/* Called when backend is first loaded */
-	NTSTATUS (*init)(const char *compat_params);
-
-	NTSTATUS (*allocate_id)(struct unixid *id);
-
-	/* Called when backend is unloaded */
-	NTSTATUS (*close_fn)(void);
-};
-
 #endif /* _IDMAP_H_ */
