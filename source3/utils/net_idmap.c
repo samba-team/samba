@@ -322,12 +322,10 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 
 	if (argc != 2 || c->display_usage) {
 		d_printf("%s\n%s",
-			 _("Usage:"),
-			 _("net idmap secret {<DOMAIN>|alloc} <secret>\n"
-			   "  Set the secret for the specified domain "
-			   "(or alloc module)\n"
+			 _("Usage:\n"),
+			 _("net idmap secret <DOMAIN> <secret>\n"
+			   "  Set the secret for the specified domain\n"
 			   "    DOMAIN\tDomain to set secret for.\n"
-			   "    alloc\tSet secret for the alloc module\n"
 			   "    secret\tNew secret to set.\n"));
 		return c->display_usage?0:-1;
 	}
@@ -337,19 +335,14 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	ctx = talloc_new(NULL);
 	ALLOC_CHECK(ctx);
 
-	if (strcmp(argv[0], "alloc") == 0) {
-		domain = NULL;
-		backend = lp_idmap_alloc_backend();
-	} else {
-		domain = talloc_strdup(ctx, argv[0]);
-		ALLOC_CHECK(domain);
+	domain = talloc_strdup(ctx, argv[0]);
+	ALLOC_CHECK(domain);
 
-		opt = talloc_asprintf(ctx, "idmap config %s", domain);
-		ALLOC_CHECK(opt);
+	opt = talloc_asprintf(ctx, "idmap config %s", domain);
+	ALLOC_CHECK(opt);
 
-		backend = talloc_strdup(ctx, lp_parm_const_string(-1, opt, "backend", "tdb"));
-		ALLOC_CHECK(backend);
-	}
+	backend = talloc_strdup(ctx, lp_parm_const_string(-1, opt, "backend", "tdb"));
+	ALLOC_CHECK(backend);
 
 	if ( ( ! backend) || ( ! strequal(backend, "ldap"))) {
 		d_fprintf(stderr,
@@ -358,30 +351,16 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (domain) {
-
-		dn = lp_parm_const_string(-1, opt, "ldap_user_dn", NULL);
-		if ( ! dn) {
-			d_fprintf(stderr,
-				  _("Missing ldap_user_dn option for domain "
-				    "%s\n"), domain);
-			talloc_free(ctx);
-			return -1;
-		}
-
-		ret = idmap_store_secret("ldap", false, domain, dn, secret);
-	} else {
-		dn = lp_parm_const_string(-1, "idmap alloc config", "ldap_user_dn", NULL);
-		if ( ! dn) {
-			d_fprintf(stderr,
-				  _("Missing ldap_user_dn option for alloc "
-				    "backend\n"));
-			talloc_free(ctx);
-			return -1;
-		}
-
-		ret = idmap_store_secret("ldap", true, NULL, dn, secret);
+	dn = lp_parm_const_string(-1, opt, "ldap_user_dn", NULL);
+	if ( ! dn) {
+		d_fprintf(stderr,
+			  _("Missing ldap_user_dn option for domain %s\n"),
+			  domain);
+		talloc_free(ctx);
+		return -1;
 	}
+
+	ret = idmap_store_secret("ldap", false, domain, dn, secret);
 
 	if ( ! ret) {
 		d_fprintf(stderr, _("Failed to store secret\n"));
