@@ -56,16 +56,6 @@ struct idmap_backend {
 static struct idmap_backend *backends = NULL;
 
 /**
- * The idmap alloc context that is configured via "idmap alloc
- * backend". Defaults to "idmap backend" in case the module (tdb, ldap) also
- * provides alloc methods.
- */
-struct idmap_alloc_context {
-	struct idmap_alloc_methods *methods;
-};
-static struct idmap_alloc_context *idmap_alloc_ctx = NULL;
-
-/**
  * Default idmap domain configured via "idmap backend".
  */
 static struct idmap_domain *default_idmap_domain;
@@ -453,10 +443,6 @@ static struct idmap_domain *idmap_find_domain(const char *domname)
 
 void idmap_close(void)
 {
-        if (idmap_alloc_ctx) {
-                idmap_alloc_ctx->methods->close_fn();
-                idmap_alloc_ctx->methods = NULL;
-        }
 	TALLOC_FREE(default_idmap_domain);
 	TALLOC_FREE(passdb_idmap_domain);
 	TALLOC_FREE(idmap_domains);
