@@ -215,6 +215,12 @@ if (0) {
 }''', 'HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS',
         msg="Checking if the compiler will optimize out functions")
 
+    # Check if the compiler supports the LL suffix on long long integers
+    # AIX needs this
+    conf.CHECK_CODE('long long i = 0x8000000000LL', 'COMPILER_SUPPORTS_LL',
+                    headers='stdio.h',
+                    msg="Checking for LL suffix on long long integers")
+
     conf.CHECK_FUNCS('''
 _acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
 attropen attr_remove attr_removef attr_set attr_setf backtrace_symbols
