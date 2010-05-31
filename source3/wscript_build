@@ -234,7 +234,8 @@ LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1} ${RPC_PARSE_SRC1}'
 LIBSMB_SRC0 = '''
                ../libcli/auth/ntlm_check.c
                libsmb/ntlmssp.c
-               libsmb/ntlmssp_sign.c
+               ../libcli/auth/ntlmssp.c
+               ../libcli/auth/ntlmssp_sign.c
                ${LIBNDR_NTLMSSP_SRC}
                ../libcli/auth/ntlmssp_ndr.c'''
 
