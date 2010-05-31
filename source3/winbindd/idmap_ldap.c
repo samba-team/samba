@@ -1313,14 +1313,6 @@ static NTSTATUS idmap_alloc_ldap_init(void)
 NTSTATUS idmap_ldap_init(void);
 NTSTATUS idmap_ldap_init(void)
 {
-	NTSTATUS ret;
-
-	/* FIXME: bad hack to actually register also the alloc_ldap module
-	 * without changining configure.in */
-	ret = idmap_alloc_ldap_init();
-	if (! NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ldap",
 				  &idmap_ldap_methods);
 }
