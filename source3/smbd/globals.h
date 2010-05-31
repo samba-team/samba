@@ -64,9 +64,6 @@ extern unsigned char char_flags[256];
 extern unsigned mangle_prefix;
 extern unsigned char base_reverse[256];
 
-extern char *last_from;
-extern char *last_to;
-
 struct msg_state;
 extern struct msg_state *smbd_msg_state;
 

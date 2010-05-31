@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "smbd/globals.h"
 
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username
@@ -32,6 +31,9 @@
  every time Get_Pwnam_alloc was called.
  Returns True if username was changed, false otherwise.
 ********************************************************************/
+
+static char *last_from = NULL;
+static char *last_to = NULL;
 
 static const char *get_last_from(void)
 {

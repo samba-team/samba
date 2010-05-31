@@ -67,9 +67,6 @@ unsigned char char_flags[256];
 unsigned mangle_prefix = 0;
 unsigned char base_reverse[256];
 
-char *last_from = NULL;
-char *last_to = NULL;
-
 struct msg_state *smbd_msg_state = NULL;
 
 bool logged_ioctl_message = false;
