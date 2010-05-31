@@ -179,18 +179,6 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 
 
 /*
-  Initialise idmap alloc database. 
-*/
-static NTSTATUS idmap_tdb2_alloc_init(const char *params)
-{
-	/* nothing to do - we want to avoid opening the permanent
-	   database if possible. Instead we load the params when we
-	   first need it. */
-	return NT_STATUS_OK;
-}
-
-
-/*
   Allocate a new id. 
 */
 
