@@ -515,9 +515,6 @@ struct smbd_server_connection {
 			user_struct *validated_users;
 			uint16_t next_vuid;
 			int num_validated_vuids;
-#ifdef HAVE_NETGROUP
-			char *my_yp_domain;
-#endif
 		} sessions;
 		struct {
 			connection_struct *Connections;

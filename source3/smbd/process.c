@@ -3061,9 +3061,6 @@ void smbd_process(void)
 	smbd_server_conn->smb1.sessions.validated_users = NULL;
 	smbd_server_conn->smb1.sessions.next_vuid = VUID_OFFSET;
 	smbd_server_conn->smb1.sessions.num_validated_vuids = 0;
-#ifdef HAVE_NETGROUP
-	smbd_server_conn->smb1.sessions.my_yp_domain = NULL;
-#endif
 
 	conn_init(smbd_server_conn);
 	if (!init_dptrs(smbd_server_conn)) {

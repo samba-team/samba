@@ -412,24 +412,22 @@ bool user_in_netgroup(struct smbd_server_connection *sconn,
 		      const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
+	static char *my_yp_domain = NULL;
 	fstring lowercase_user;
 
-	if (sconn->smb1.sessions.my_yp_domain == NULL) {
-		yp_get_default_domain(&sconn->smb1.sessions.my_yp_domain);
+	if (my_yp_domain == NULL) {
+		yp_get_default_domain(&my_yp_domain);
 	}
 
-	if (sconn->smb1.sessions.my_yp_domain == NULL) {
+	if (my_yp_domain == NULL) {
 		DEBUG(5,("Unable to get default yp domain, "
 			"let's try without specifying it\n"));
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		user,
-		sconn->smb1.sessions.my_yp_domain?
-		sconn->smb1.sessions.my_yp_domain:"(ANY)",
-		ngname));
+		user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
 
-	if (innetgr(ngname, NULL, user, sconn->smb1.sessions.my_yp_domain)) {
+	if (innetgr(ngname, NULL, user, my_yp_domain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
 		return true;
 	}
@@ -447,13 +445,9 @@ bool user_in_netgroup(struct smbd_server_connection *sconn,
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		lowercase_user,
-		sconn->smb1.sessions.my_yp_domain?
-		sconn->smb1.sessions.my_yp_domain:"(ANY)",
-		ngname));
+		lowercase_user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
 
-	if (innetgr(ngname, NULL, lowercase_user,
-		    sconn->smb1.sessions.my_yp_domain)) {
+	if (innetgr(ngname, NULL, lowercase_user, my_yp_domain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
 		return true;
 	}
