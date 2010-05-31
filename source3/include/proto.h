@@ -6006,7 +6006,6 @@ NTSTATUS idmap_passdb_init(void);
 
 /* The following definitions come from winbindd/idmap_tdb.c  */
 
-NTSTATUS idmap_alloc_tdb_init(void);
 NTSTATUS idmap_tdb_init(void);
 
 /* The following definitions come from winbindd/idmap_util.c  */
