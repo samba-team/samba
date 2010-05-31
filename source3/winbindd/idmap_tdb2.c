@@ -890,14 +890,5 @@ static struct idmap_alloc_methods db_alloc_methods = {
 
 NTSTATUS idmap_tdb2_init(void)
 {
-	NTSTATUS ret;
-
-	/* register both backends */
-	ret = smb_register_idmap_alloc(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_alloc_methods);
-	if (! NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Unable to register idmap alloc tdb2 module: %s\n", get_friendly_nt_error_msg(ret)));
-		return ret;
-	}
-
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_methods);
 }
