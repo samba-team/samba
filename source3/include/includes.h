@@ -739,7 +739,7 @@ enum flush_reason_enum {
 #endif
 
 #ifdef HAVE_LDAP
-#include "ads_protos.h"
+#include "libads/ads_ldap_protos.h"
 #endif
 
 /* We need this after proto.h to reference GetTimeOfDay(). */
