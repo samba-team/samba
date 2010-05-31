@@ -1267,7 +1267,7 @@ Restore the mappings from the specified file or stdin.
 </refsect2>
 
 <refsect2>
-<title>IDMAP SECRET &lt;DOMAIN&gt;|ALLOC &lt;secret&gt;</title>
+<title>IDMAP SECRET &lt;DOMAIN&gt; &lt;secret&gt;</title>
 
 <para>
 Store a secret for the specified domain, used primarily for domains
