@@ -3310,7 +3310,7 @@ int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		     struct drsuapi_DsReplicaCursor **cursors, uint32_t *count)
 {
 	struct drsuapi_DsReplicaCursor2 *v2;
-	unsigned int i;
+	uint32_t i;
 	int ret;
 
 	ret = dsdb_load_udv_v2(samdb, dn, mem_ctx, &v2, count);
