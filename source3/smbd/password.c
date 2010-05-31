@@ -459,8 +459,7 @@ bool user_in_netgroup(const char *user, const char *ngname)
  and netgroup lists.
 ****************************************************************************/
 
-bool user_in_list(struct smbd_server_connection *sconn,
-		  const char *user,const char **list)
+bool user_in_list(const char *user,const char **list)
 {
 	if (!list || !*list)
 		return False;
@@ -558,7 +557,7 @@ static bool user_ok(struct smbd_server_connection *sconn,
 			 * around to pass to str_list_sub_basic() */
 
 			if ( invalid && str_list_sub_basic(invalid, "", "") ) {
-				ret = !user_in_list(sconn, user,
+				ret = !user_in_list(user,
 						    (const char **)invalid);
 			}
 		}
@@ -575,7 +574,7 @@ static bool user_ok(struct smbd_server_connection *sconn,
 			 * around to pass to str_list_sub_basic() */
 
 			if ( valid && str_list_sub_basic(valid, "", "") ) {
-				ret = user_in_list(sconn, user,
+				ret = user_in_list(user,
 						   (const char **)valid);
 			}
 		}
@@ -588,7 +587,7 @@ static bool user_ok(struct smbd_server_connection *sconn,
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
-			ret = user_in_list(sconn, user,
+			ret = user_in_list(user,
 					   (const char **)user_list);
 		}
 		TALLOC_FREE(user_list);

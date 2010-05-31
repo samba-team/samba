@@ -5972,8 +5972,7 @@ void add_session_workgroup(struct smbd_server_connection *sconn,
 			   const char *workgroup);
 const char *get_session_workgroup(struct smbd_server_connection *sconn);
 bool user_in_netgroup(const char *user, const char *ngname);
-bool user_in_list(struct smbd_server_connection *sconn,
-		  const char *user,const char **list);
+bool user_in_list(const char *user,const char **list);
 bool authorise_login(struct smbd_server_connection *sconn,
 		     int snum, fstring user, DATA_BLOB password,
 		     bool *guest);
