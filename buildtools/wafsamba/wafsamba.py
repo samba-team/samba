@@ -213,7 +213,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     if pc_files is not None:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
-    if manpages is not None and 'XSLTPROC' in bld.env:
+    if manpages is not None and 'XSLTPROC' in bld.env and bld.env['XSLTPROC']:
         bld.MANPAGES(manpages)
 
 
@@ -304,7 +304,7 @@ def SAMBA_BINARY(bld, binname, source,
     if subsystem_name is not None:
         bld.TARGET_ALIAS(subsystem_name, binname)
 
-    if manpages is not None and 'XSLTPROC' in bld.env:
+    if manpages is not None and 'XSLTPROC' in bld.env and bld.env['XSLTPROC']:
         bld.MANPAGES(manpages)
 
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
