@@ -109,19 +109,6 @@ static struct idmap_methods *get_methods(const char *name)
 	return NULL;
 }
 
-static struct idmap_alloc_methods *get_alloc_methods(const char *name)
-{
-	struct idmap_alloc_backend *b;
-
-	for (b = alloc_backends; b; b = b->next) {
-		if (strequal(b->name, name)) {
-			return b->methods;
-		}
-	}
-
-	return NULL;
-}
-
 bool idmap_is_offline(void)
 {
 	return ( lp_winbind_offline_logon() &&
