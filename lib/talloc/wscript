@@ -60,7 +60,8 @@ def build(bld):
                           abi_file='ABI/talloc-%s.sigs' % VERSION,
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,
-                          vnum=VERSION, is_bundled=True, 
+                          vnum=VERSION,
+						  is_bundled=not bld.env.standalone_talloc, 
 						  manpages='talloc.3')
 
         # should we also install the symlink to libtalloc1.so here?
@@ -68,7 +69,8 @@ def build(bld):
                           'compat/talloc_compat1.c',
                           deps='talloc',
                           enabled = bld.env.TALLOC_COMPAT1,
-                          vnum=VERSION, is_bundled=True)
+                          vnum=VERSION,
+						  is_bundled=not bld.env.standalone_talloc)
 
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
         # s4 already has the talloc testsuite builtin to smbtorture
