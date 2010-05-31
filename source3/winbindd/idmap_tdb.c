@@ -924,13 +924,6 @@ static struct idmap_methods db_methods = {
 	.close_fn = idmap_tdb_close
 };
 
-static struct idmap_alloc_methods db_alloc_methods = {
-
-	.init = idmap_tdb_alloc_init,
-	.allocate_id = idmap_tdb_allocate_id,
-	.close_fn = idmap_tdb_alloc_close
-};
-
 NTSTATUS idmap_tdb_init(void)
 {
 	DEBUG(10, ("calling idmap_tdb_init\n"));
