@@ -882,12 +882,6 @@ static struct idmap_methods db_methods = {
 	.close_fn        = idmap_tdb2_close
 };
 
-static struct idmap_alloc_methods db_alloc_methods = {
-	.init        = idmap_tdb2_alloc_init,
-	.allocate_id = idmap_tdb2_allocate_id,
-	.close_fn    = idmap_tdb2_alloc_close
-};
-
 NTSTATUS idmap_tdb2_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_methods);
