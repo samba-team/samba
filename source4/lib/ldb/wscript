@@ -156,8 +156,8 @@ def build(bld):
         abi_file='ABI/ldb-%s.sigs' % VERSION
 
     bld.SAMBA_PYTHON('pyldb_util',
-			deps='ldb LIBPYTHON',
-			source='pyldb_util.c')
+            deps='ldb LIBPYTHON',
+            source='pyldb_util.c')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
@@ -166,7 +166,7 @@ def build(bld):
                           deps='tevent LIBLDB',
                           includes='include',
                           public_headers='include/ldb.h include/ldb_errors.h '\
-                                         'include/ldb_module.h',
+                              'include/ldb_module.h include/ldb_handlers.h',
                           pc_files='ldb.pc',
                           cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
                           abi_file=abi_file,
