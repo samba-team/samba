@@ -60,7 +60,8 @@ def build(bld):
                           abi_file='ABI/talloc-%s.sigs' % VERSION,
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,
-                          vnum=VERSION, is_bundled=True)
+                          vnum=VERSION, is_bundled=True, 
+						  manpages='talloc.3')
 
         # should we also install the symlink to libtalloc1.so here?
         bld.SAMBA_LIBRARY('talloc-compat1',
@@ -81,22 +82,6 @@ def build(bld):
         bld.env.TALLOC_VERSION = VERSION
         bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
         bld.INSTALL_FILES('${INCLUDEDIR}', 'talloc.h')
-
-        if bld.env.XSLTPROC:
-            bld.env.TALLOC_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-            bld.env.TALLOC_WEB_XSL = 'http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl'
-            bld.SAMBA_GENERATOR('talloc.3',
-                                source='talloc.3.xml',
-                                target='talloc.3',
-                                rule='${XSLTPROC} -o ${TGT} ${TALLOC_MAN_XSL} ${SRC}'
-                                )
-            bld.SAMBA_GENERATOR('talloc.3.html',
-                                source='talloc.3.xml',
-                                target='talloc.3.html',
-                                rule='${XSLTPROC} -o ${TGT} ${TALLOC_WEB_XSL} ${SRC}'
-                                )
-            bld.INSTALL_FILES('${MANDIR}/man3', 'talloc.3')
-
 
 def test(ctx):
     '''run talloc testsuite'''

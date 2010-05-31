@@ -116,6 +116,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   abi_match=None,
                   hide_symbols=False,
                   is_bundled=False,
+                  manpages=None,
                   enabled=True):
     '''define a Samba library'''
 
@@ -196,7 +197,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         vnum            = vnum,
         install_path    = None,
         samba_inst_path = install_path,
-        name	        = libname,
+        name            = libname,
         samba_realname  = realname,
         samba_install   = install,
         abi_file        = abi_file,
@@ -211,6 +212,18 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if pc_files is not None:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
+
+    if manpages is not None and 'XSLTPROC' in bld.env:
+        bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+        for m in manpages.split():
+            source = m + '.xml'
+            bld.SAMBA_GENERATOR(m,
+                                source=source,
+                                target=m,
+                                rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
+                                )
+            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
 

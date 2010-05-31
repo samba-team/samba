@@ -163,12 +163,13 @@ def build(bld):
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
                           deps=ldb_deps,
                           includes='include',
-                          public_headers='include/ldb.h include/ldb_errors.h',
+                          public_headers='include/ldb.h include/ldb_errors.h '\
+								         'include/ldb_module.h',
                           pc_files='ldb.pc',
                           cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
                           abi_file=abi_file,
                           abi_match='!ldb_*module_ops !ldb_*backend_ops ldb_*',
-                          vnum=VERSION)
+                          vnum=VERSION, manpages='man/ldb3.')
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
@@ -184,20 +185,6 @@ def build(bld):
     bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                      deps='ldb',
                      realname='ldb.so')
-
-    if bld.env.XSLTPROC:
-        manpages = 'man/ldb.3'
-
-        bld.env.LDB_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-
-        for m in manpages.split():
-            source = m + '.xml'
-            bld.SAMBA_GENERATOR(m,
-                                source=source,
-                                target=m,
-                                rule='${XSLTPROC} -o ${TGT} ${LDB_MAN_XSL} ${SRC}'
-                                )
-            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
 
 
 def test(ctx):
