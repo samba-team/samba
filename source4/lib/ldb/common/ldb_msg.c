@@ -255,6 +255,11 @@ int ldb_msg_add_steal_string(struct ldb_message *msg,
 	val.data = (uint8_t *)str;
 	val.length = strlen(str);
 
+	if (val.length == 0) {
+		/* allow empty strings as non-existent attributes */
+		return LDB_SUCCESS;
+	}
+
 	return ldb_msg_add_steal_value(msg, attr_name, &val);
 }
 
