@@ -818,6 +818,7 @@ def MANPAGES(bld, manpages):
         bld.SAMBA_GENERATOR(m,
                             source=source,
                             target=m,
+                            group='final',
                             rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
                             )
         bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
