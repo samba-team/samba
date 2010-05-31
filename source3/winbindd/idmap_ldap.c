@@ -1297,13 +1297,6 @@ static struct idmap_methods idmap_ldap_methods = {
 	.close_fn = idmap_ldap_close
 };
 
-static struct idmap_alloc_methods idmap_ldap_alloc_methods = {
-
-	.init = idmap_ldap_alloc_init,
-	.allocate_id = idmap_ldap_allocate_id,
-	.close_fn = idmap_ldap_alloc_close,
-};
-
 NTSTATUS idmap_ldap_init(void);
 NTSTATUS idmap_ldap_init(void)
 {
