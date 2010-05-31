@@ -5,7 +5,7 @@ import Utils, os, sys, tarfile, gzip, stat, Scripting, Logs, Options
 from samba_utils import *
 
 dist_dirs = None
-dist_blacklist = None
+dist_blacklist = ""
 
 def add_symlink(tar, fname, abspath, basedir):
     '''handle symlinks to directories that may move during packaging'''
