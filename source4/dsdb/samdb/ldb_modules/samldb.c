@@ -1168,7 +1168,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
 		/* we aren't affected of any primary group change */
-		return ldb_next_request(ac->module, ac->req);
+		return LDB_SUCCESS;
 	}
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
@@ -1225,7 +1225,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		}
 	}
 
-	return ldb_next_request(ac->module, ac->req);
+	return LDB_SUCCESS;
 }
 
 
@@ -1241,6 +1241,11 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	el = ldb_msg_find_element(ac->msg, "member");
+	if (el == NULL) {
+		/* we aren't affected */
+		return LDB_SUCCESS;
+	}
+
 	for (i = 0; i < el->num_values; i++) {
 		/* Denies to add "member"s to groups which are primary ones
 		 * for them */
@@ -1275,7 +1280,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 		}
 	}
 
-	return ldb_next_request(ac->module, ac->req);
+	return LDB_SUCCESS;
 }
 
 
@@ -1294,7 +1299,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 				   NULL);
 	if (sid == NULL) {
 		/* No SID - it might not be a SAM object - therefore ok */
-		return ldb_next_request(ac->module, ac->req);
+		return LDB_SUCCESS;
 	}
 	status = dom_sid_split_rid(ac, sid, NULL, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1302,7 +1307,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 	if (rid == 0) {
 		/* Special object (security principal?) */
-		return ldb_next_request(ac->module, ac->req);
+		return LDB_SUCCESS;
 	}
 
 	/* Deny delete requests from groups which are primary ones */
@@ -1316,7 +1321,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
-	return ldb_next_request(ac->module, ac->req);
+	return LDB_SUCCESS;
 }
 
 
@@ -1507,7 +1512,10 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
 			req->op.mod.message);
 
-		return samldb_prim_group_change(ac);
+		ret = samldb_prim_group_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -1568,10 +1576,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
 			req->op.mod.message);
 
-		return samldb_member_check(ac);
+		ret = samldb_member_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
-	/* nothing matched, go on */
 	return ldb_next_request(module, req);
 }
 
@@ -1579,6 +1589,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct samldb_ctx *ac;
+	int ret;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		/* do not manipulate our control entries */
@@ -1589,7 +1600,12 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 	if (ac == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
 
-	return samldb_prim_group_users_check(ac);
+	ret = samldb_prim_group_users_check(ac);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(module, req);
 }
 
 static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct ldb_request *req)
