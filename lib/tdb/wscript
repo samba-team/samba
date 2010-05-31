@@ -71,23 +71,23 @@ def build(bld):
                           hide_symbols=True,
                           vnum=VERSION, is_bundled=not bld.env.standalone_tdb)
 
-    bld.SAMBA_BINARY('tdbtorture',
-                     'tools/tdbtorture.c',
-                     'tdb',
-                     install=False)
+        bld.SAMBA_BINARY('tdbtorture',
+                         'tools/tdbtorture.c',
+                         'tdb',
+                         install=False)
 
-    bld.SAMBA_BINARY('tdbdump',
-                     'tools/tdbdump.c',
-                     'tdb', manpages='manpages/tdbdump.8')
+        bld.SAMBA_BINARY('tdbdump',
+                         'tools/tdbdump.c',
+                         'tdb', manpages='manpages/tdbdump.8')
 
-    bld.SAMBA_BINARY('tdbbackup',
-                     'tools/tdbbackup.c',
-                     'tdb',
-					 manpages='manpages/tdbbackup.8')
+        bld.SAMBA_BINARY('tdbbackup',
+                         'tools/tdbbackup.c',
+                         'tdb',
+                         manpages='manpages/tdbbackup.8')
 
-    bld.SAMBA_BINARY('tdbtool',
-                     'tools/tdbtool.c',
-                     'tdb', manpages='manpages/tdbtool.8')
+        bld.SAMBA_BINARY('tdbtool',
+                         'tools/tdbtool.c',
+                         'tdb', manpages='manpages/tdbtool.8')
 
     s4_build = getattr(bld.env, '_SAMBA_BUILD_', 0) == 4
 
