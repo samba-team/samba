@@ -6497,7 +6497,6 @@ NTSTATUS idmap_passdb_init(void);
 
 /* The following definitions come from winbindd/idmap_tdb.c  */
 
-bool idmap_tdb_tdb_close(TDB_CONTEXT *tdbctx);
 NTSTATUS idmap_alloc_tdb_init(void);
 NTSTATUS idmap_tdb_init(void);
 
