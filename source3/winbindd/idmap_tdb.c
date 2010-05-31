@@ -938,14 +938,7 @@ static NTSTATUS idmap_alloc_tdb_init(void)
 
 NTSTATUS idmap_tdb_init(void)
 {
-	NTSTATUS ret;
-
 	DEBUG(10, ("calling idmap_tdb_init\n"));
 
-	/* FIXME: bad hack to actually register also the alloc_tdb module without changining configure.in */
-	ret = idmap_alloc_tdb_init();
-	if (! NT_STATUS_IS_OK(ret)) {
-		return ret;
-	}
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb", &db_methods);
 }
