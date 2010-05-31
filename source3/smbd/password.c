@@ -540,8 +540,7 @@ bool user_in_list(const char *user,const char **list)
  Check if a username is valid.
 ****************************************************************************/
 
-static bool user_ok(struct smbd_server_connection *sconn,
-		    const char *user, int snum)
+static bool user_ok(const char *user, int snum)
 {
 	bool ret;
 
@@ -611,7 +610,7 @@ static char *validate_group(struct smbd_server_connection *sconn,
 		setnetgrent(group);
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
-				if (user_ok(sconn, user, snum) &&
+				if (user_ok(user, snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
 						user,password)) {
@@ -677,7 +676,7 @@ static char *validate_group(struct smbd_server_connection *sconn,
 
 			member = member_list;
 			while (*member) {
-				if (user_ok(sconn, member,snum) &&
+				if (user_ok(member,snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
 						member,password)) {
@@ -756,7 +755,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 		     auser = strtok_r(NULL, LIST_SEP, &saveptr)) {
 			fstring user2;
 			fstrcpy(user2,auser);
-			if (!user_ok(sconn,user2,snum))
+			if (!user_ok(user2,snum))
 				continue;
 
 			if (password_ok(actx, enc,
@@ -809,7 +808,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 			} else {
 				fstring user2;
 				fstrcpy(user2,auser);
-				if (user_ok(sconn,user2,snum) &&
+				if (user_ok(user2,snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
 						user2,password)) {
@@ -845,7 +844,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 		*guest = True;
 	}
 
-	if (ok && !user_ok(sconn, user, snum)) {
+	if (ok && !user_ok(user, snum)) {
 		DEBUG(0,("authorise_login: rejected invalid user %s\n",user));
 		ok = False;
 	}
