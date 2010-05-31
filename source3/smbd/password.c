@@ -408,8 +408,7 @@ const char *get_session_workgroup(struct smbd_server_connection *sconn)
  try lower case.
 ****************************************************************************/
 
-bool user_in_netgroup(struct smbd_server_connection *sconn,
-		      const char *user, const char *ngname)
+bool user_in_netgroup(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *my_yp_domain = NULL;
@@ -489,7 +488,7 @@ bool user_in_list(struct smbd_server_connection *sconn,
 			 * Old behaviour. Check netgroup list
 			 * followed by UNIX list.
 			 */
-			if(user_in_netgroup(sconn, user, *list +1))
+			if(user_in_netgroup(user, *list +1))
 				return True;
 			if(user_in_group(user, *list +1))
 				return True;
@@ -501,7 +500,7 @@ bool user_in_list(struct smbd_server_connection *sconn,
 				 */
 				if(user_in_group(user, *list +2))
 					return True;
-				if(user_in_netgroup(sconn, user, *list +2))
+				if(user_in_netgroup(user, *list +2))
 					return True;
 
 			} else {
@@ -520,7 +519,7 @@ bool user_in_list(struct smbd_server_connection *sconn,
 				/*
 				 * Search netgroup list followed by UNIX list.
 				 */
-				if(user_in_netgroup(sconn, user, *list +2))
+				if(user_in_netgroup(user, *list +2))
 					return True;
 				if(user_in_group(user, *list +2))
 					return True;
@@ -528,7 +527,7 @@ bool user_in_list(struct smbd_server_connection *sconn,
 				/*
 				 * Just search netgroup list.
 				 */
-				if(user_in_netgroup(sconn, user, *list +1))
+				if(user_in_netgroup(user, *list +1))
 					return True;
 			}
 		}
