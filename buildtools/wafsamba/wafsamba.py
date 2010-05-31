@@ -214,15 +214,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
     if manpages is not None and 'XSLTPROC' in bld.env:
-        bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-        for m in manpages.split():
-            source = m + '.xml'
-            bld.SAMBA_GENERATOR(m,
-                                source=source,
-                                target=m,
-                                rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
-                                )
-            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+        bld.MANPAGES(manpages)
 
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
@@ -313,15 +305,7 @@ def SAMBA_BINARY(bld, binname, source,
         bld.TARGET_ALIAS(subsystem_name, binname)
 
     if manpages is not None and 'XSLTPROC' in bld.env:
-        bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-        for m in manpages.split():
-            source = m + '.xml'
-            bld.SAMBA_GENERATOR(m,
-                                source=source,
-                                target=m,
-                                rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
-                                )
-            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+        bld.MANPAGES(manpages)
 
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
@@ -825,6 +809,19 @@ def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
         INSTALL_FILES(bld, dest, f, flat=True, destname=base)
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
 
+
+def MANPAGES(bld, manpages):
+    '''build and install manual pages'''
+    bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+    for m in manpages.split():
+        source = m + '.xml'
+        bld.SAMBA_GENERATOR(m,
+                            source=source,
+                            target=m,
+                            rule='${XSLTPROC} -o ${TGT} ${MAN_XSL} ${SRC}'
+                            )
+        bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+Build.BuildContext.MANPAGES = MANPAGES
 
 
 #############################################################
