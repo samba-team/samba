@@ -152,7 +152,6 @@ def build(bld):
 
     ldb_deps = 'tevent LIBLDB'
     if s4_build:
-        ldb_deps += ' LDBSAMBA POPT_CREDENTIALS POPT_SAMBA LIBCMDLINE_CREDENTIALS gensec'
         abi_file='ABI/ldb-samba4-%s.sigs' % VERSION
     else:
         abi_file='ABI/ldb-%s.sigs' % VERSION
@@ -172,9 +171,18 @@ def build(bld):
                           vnum=VERSION, manpages='man/ldb.3',
                           is_bundled=not bld.env.standalone_ldb)
 
+        bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                         deps='ldb',
+                         realname='ldb.so')
+
+    extra_cmdline_deps = ''
+    if s4_build:
+        extra_cmdline_deps += ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \
+				'LIBCMDLINE_CREDENTIALS gensec'
+
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
-                        'ldb dl popt')
+                        'ldb dl popt' + extra_cmdline_deps)
 
     LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
     for t in LDB_TOOLS.split():
@@ -184,10 +192,6 @@ def build(bld):
     # ldbtest doesn't get installed
     bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='LIBLDB_CMDLINE',
                      install=False)
-
-    bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                     deps='ldb',
-                     realname='ldb.so')
 
 
 def test(ctx):

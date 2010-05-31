@@ -21,12 +21,9 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ldb_includes.h"
-#include "ldb.h"
-#include "tools/cmdline.h"
-
 #if (_SAMBA_BUILD_ >= 4)
 #include "includes.h"
+#include <ldb.h>
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "auth/gensec/gensec.h"
@@ -36,7 +33,12 @@
 #include "librpc/gen_ndr/drsblobs.h"
 #include "dsdb/schema/schema.h"
 #include "dsdb/common/proto.h"
+#else
+#include "ldb_includes.h"
+#include "ldb.h"
 #endif
+
+#include "tools/cmdline.h"
 
 static struct ldb_cmdline options; /* needs to be static for older compilers */
 

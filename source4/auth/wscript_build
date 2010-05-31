@@ -12,7 +12,7 @@ bld.SAMBA_SUBSYSTEM('auth_session',
 	public_deps='CREDENTIALS',
 	public_headers='session.h',
         header_path='samba',
-	deps='SAMDB'
+	deps='SAMDB auth_sam'
 	)
 
 

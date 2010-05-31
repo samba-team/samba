@@ -31,7 +31,12 @@
  *  Author: Andrew Tridgell
  */
 
+#ifdef _SAMBA_BUILD_
+#include "includes.h"
+#else
 #include "ldb_includes.h"
+#endif
+
 #include "ldb.h"
 #include "tools/cmdline.h"
 
