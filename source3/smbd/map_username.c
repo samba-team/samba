@@ -118,7 +118,7 @@ static void store_map_in_gencache(const char *from, const char *to)
 	TALLOC_FREE(key);
 }
 
-bool map_username(struct smbd_server_connection *sconn, fstring user)
+bool map_username(fstring user)
 {
 	XFILE *f;
 	char *mapfile = lp_username_map();

@@ -170,7 +170,6 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	fstring tmp;
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		status = NT_STATUS_LOGON_FAILURE;
@@ -265,7 +264,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 
 	/* lookup the passwd struct, create a new user if necessary */
 
-	username_was_mapped = map_username(sconn, user);
+	username_was_mapped = map_username(user);
 
 	pw = smb_getpwnam(talloc_tos(), user, real_username, true );
 	if (pw) {

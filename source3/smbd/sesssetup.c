@@ -413,7 +413,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	/* lookup the passwd struct, create a new user if necessary */
 
-	username_was_mapped = map_username(sconn, user);
+	username_was_mapped = map_username(user);
 
 	pw = smb_getpwnam( mem_ctx, user, real_username, True );
 
@@ -1676,7 +1676,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		data_blob_free(&nt_resp);
 		data_blob_clear_free(&plaintext_password);
 
-		map_username(sconn, sub_user);
+		map_username(sub_user);
 		add_session_user(sconn, sub_user);
 		add_session_workgroup(sconn, domain);
 		/* Then force it to null for the benfit of the code below */

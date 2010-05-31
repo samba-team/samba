@@ -1922,7 +1922,6 @@ NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 				   struct samr_ChangePasswordUser2 *r)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	NTSTATUS status;
 	fstring user_name;
 	fstring wks;
@@ -1939,7 +1938,7 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(sconn, user_name);
+	(void)map_username(user_name);
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
@@ -1969,7 +1968,6 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 				      struct samr_OemChangePasswordUser2 *r)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	NTSTATUS status;
 	fstring user_name;
 	const char *wks = NULL;
@@ -1988,7 +1986,7 @@ NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(sconn, user_name);
+	(void)map_username(user_name);
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
@@ -2022,7 +2020,6 @@ NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 				   struct samr_ChangePasswordUser3 *r)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	NTSTATUS status;
 	fstring user_name;
 	const char *wks = NULL;
@@ -2045,7 +2042,7 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(sconn, user_name);
+	(void)map_username(user_name);
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change

@@ -306,7 +306,6 @@ int add_home_service(const char *service, const char *username, const char *home
 int find_service(fstring service)
 {
 	int iService;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	all_string_sub(service,"\\","/",0);
 
@@ -321,7 +320,7 @@ int find_service(fstring service)
 			 * Try mapping the servicename, it may
 			 * be a Windows to unix mapped user name.
 			 */
-			if(map_username(sconn, service))
+			if(map_username(service))
 				phome_dir = get_user_home_dir(
 					talloc_tos(), service);
 		}
@@ -1158,7 +1157,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				fstring unix_username;
 				fstrcpy(unix_username,
 					current_user_info.smb_name);
-				map_username(sconn, unix_username);
+				map_username(unix_username);
 				snum = find_service(unix_username);
 			} 
 			if (snum != -1) {

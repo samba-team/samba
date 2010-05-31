@@ -5689,7 +5689,7 @@ const struct mangle_fns *posix_mangle_init(void);
 
 /* The following definitions come from smbd/map_username.c  */
 
-bool map_username(struct smbd_server_connection *sconn, fstring user);
+bool map_username(fstring user);
 
 /* The following definitions come from smbd/message.c  */
 

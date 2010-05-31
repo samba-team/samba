@@ -119,13 +119,12 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    DATA_BLOB *plaintext,
 			    bool encrypted)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	const char *domain;
 	NTSTATUS result;
 	bool was_mapped;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
-	was_mapped = map_username(sconn, internal_username);
+	was_mapped = map_username(internal_username);
 
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
 		 client_domain, smb_name, wksta_name));
@@ -972,7 +971,6 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 			      uid_t *uid, gid_t *gid,
 			      bool *username_was_mapped)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	fstring dom_user, lower_username;
 	fstring real_username;
 	struct passwd *passwd;
@@ -985,7 +983,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* Get the passwd struct.  Try to create the account if necessary. */
 
-	*username_was_mapped = map_username(sconn, dom_user);
+	*username_was_mapped = map_username(dom_user);
 
 	passwd = smb_getpwnam( NULL, dom_user, real_username, True );
 	if (!passwd) {
