@@ -298,15 +298,6 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 }
 
 /*
-  Close the alloc tdb 
-*/
-static NTSTATUS idmap_tdb2_alloc_close(void)
-{
-	/* don't actually close it */
-	return NT_STATUS_OK;
-}
-
-/*
   IDMAP MAPPING TDB BACKEND
 */
 struct idmap_tdb2_context {
