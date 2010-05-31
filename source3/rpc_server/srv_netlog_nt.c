@@ -412,12 +412,6 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 		return status;
 	}
 
-	trusted_domains = talloc_zero_array(p->mem_ctx, const char *, num_domains);
-	if (!trusted_domains) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
 	status = rpccli_lsa_open_policy2(cli, p->mem_ctx,
 					 true,
 					 LSA_POLICY_VIEW_LOCAL_INFORMATION,
@@ -426,10 +420,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 		goto out;
 	}
 
-	status = STATUS_MORE_ENTRIES;
-
-	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-
+	do {
 		/* Lookup list of trusted domains */
 
 		status = rpccli_lsa_EnumTrustDom(cli, p->mem_ctx,
@@ -450,16 +441,18 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 				goto out;
 			}
 		}
-	}
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 
-	/* multi sz terminate */
-	trusted_domains = talloc_realloc(p->mem_ctx, trusted_domains, const char *, num_domains + 1);
-	if (trusted_domains == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
+	if (num_domains > 0) {
+		/* multi sz terminate */
+		trusted_domains = talloc_realloc(p->mem_ctx, trusted_domains, const char *, num_domains + 1);
+		if (trusted_domains == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 
-	trusted_domains[num_domains+1] = NULL;
+		trusted_domains[num_domains] = NULL;
+	}
 
 	if (!push_reg_multi_sz(trusted_domains, &blob, trusted_domains)) {
 		TALLOC_FREE(trusted_domains);
