@@ -81,34 +81,6 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 }
 
 /**
- * Obtain a ldb DN from a Python object.
- *
- * @param mem_ctx Memory context
- * @param object Python object
- * @param ldb_ctx LDB context
- * @return Whether or not the conversion succeeded
- */
-bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
-		   struct ldb_context *ldb_ctx, struct ldb_dn **dn)
-{
-	struct ldb_dn *odn;
-
-	if (ldb_ctx != NULL && PyString_Check(object)) {
-		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
-		*dn = odn;
-		return true;
-	}
-
-	if (PyLdbDn_Check(object)) {
-		*dn = PyLdbDn_AsDn(object);
-		return true;
-	}
-
-	PyErr_SetString(PyExc_TypeError, "Expected DN");
-	return false;
-}
-
-/**
  * Create a Python object from a ldb_result.
  *
  * @param result LDB result to convert
