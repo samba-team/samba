@@ -56,17 +56,6 @@ struct idmap_backend {
 static struct idmap_backend *backends = NULL;
 
 /**
- * Pointer to the alloc backend methods. Modules register themselves here via
- * smb_register_idmap_alloc.
- */
-struct idmap_alloc_backend {
-	const char *name;
-	struct idmap_alloc_methods *methods;
-	struct idmap_alloc_backend *prev, *next;
-};
-static struct idmap_alloc_backend *alloc_backends = NULL;
-
-/**
  * The idmap alloc context that is configured via "idmap alloc
  * backend". Defaults to "idmap backend" in case the module (tdb, ldap) also
  * provides alloc methods.
@@ -468,7 +457,6 @@ void idmap_close(void)
                 idmap_alloc_ctx->methods->close_fn();
                 idmap_alloc_ctx->methods = NULL;
         }
-        alloc_backends = NULL;
 	TALLOC_FREE(default_idmap_domain);
 	TALLOC_FREE(passdb_idmap_domain);
 	TALLOC_FREE(idmap_domains);
