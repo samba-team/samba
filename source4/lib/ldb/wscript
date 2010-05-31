@@ -164,12 +164,13 @@ def build(bld):
                           deps=ldb_deps,
                           includes='include',
                           public_headers='include/ldb.h include/ldb_errors.h '\
-								         'include/ldb_module.h',
+                                         'include/ldb_module.h',
                           pc_files='ldb.pc',
                           cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
                           abi_file=abi_file,
                           abi_match='!ldb_*module_ops !ldb_*backend_ops ldb_*',
-                          vnum=VERSION, manpages='man/ldb.3')
+                          vnum=VERSION, manpages='man/ldb.3',
+                          is_bundled=not bld.env.standalone_ldb)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
@@ -178,11 +179,11 @@ def build(bld):
     LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
     for t in LDB_TOOLS.split():
         bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='LIBLDB_CMDLINE',
-				         manpages='man/%s.1' % t)
+                         manpages='man/%s.1' % t)
 
     # ldbtest doesn't get installed
     bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='LIBLDB_CMDLINE',
-			         install=False)
+                     install=False)
 
     bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                      deps='ldb',
