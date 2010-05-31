@@ -78,15 +78,16 @@ def build(bld):
 
     bld.SAMBA_BINARY('tdbdump',
                      'tools/tdbdump.c',
-                     'tdb')
+                     'tdb', manpages='manpages/tdbdump.8')
 
     bld.SAMBA_BINARY('tdbbackup',
                      'tools/tdbbackup.c',
-                     'tdb')
+                     'tdb',
+					 manpages='manpages/tdbbackup.8')
 
     bld.SAMBA_BINARY('tdbtool',
                      'tools/tdbtool.c',
-                     'tdb')
+                     'tdb', manpages='manpages/tdbtool.8')
 
     s4_build = getattr(bld.env, '_SAMBA_BUILD_', 0) == 4
 
@@ -100,20 +101,6 @@ def build(bld):
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
         bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
-
-        if bld.env.XSLTPROC:
-            manpages = 'manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8'
-
-            bld.env.TDB_MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-
-            for m in manpages.split():
-                source = m + '.xml'
-                bld.SAMBA_GENERATOR(m,
-                                    source=source,
-                                    target=m,
-                                    rule='${XSLTPROC} -o ${TGT} ${TDB_MAN_XSL} ${SRC}'
-                                    )
-                bld.INSTALL_FILES('${MANDIR}/man8', m, flat=True)
 
 
 def test(ctx):
