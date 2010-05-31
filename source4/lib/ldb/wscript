@@ -155,8 +155,7 @@ def build(bld):
     else:
         abi_file='ABI/ldb-%s.sigs' % VERSION
 
-    bld.SAMBA_PYTHON('pyldb_util',
-            deps='ldb LIBPYTHON',
+    bld.SAMBA_PYTHON('pyldb_util', deps='ldb',
             source='pyldb_util.c')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
