@@ -212,7 +212,6 @@ struct global {
 	bool bWinbindRpcOnly;
 	bool bCreateKrb5Conf;
 	char *szIdmapBackend;
-	char *szIdmapAllocBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -4502,15 +4501,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "idmap alloc backend",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.szIdmapAllocBackend,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
 		.label		= "idmap cache time",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
@@ -5524,7 +5514,6 @@ FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
 FN_GLOBAL_BOOL(lp_create_krb5_conf, &Globals.bCreateKrb5Conf)
 
 FN_GLOBAL_CONST_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
-FN_GLOBAL_STRING(lp_idmap_alloc_backend, &Globals.szIdmapAllocBackend)
 FN_GLOBAL_INTEGER(lp_idmap_cache_time, &Globals.iIdmapCacheTime)
 FN_GLOBAL_INTEGER(lp_idmap_negative_cache_time, &Globals.iIdmapNegativeCacheTime)
 FN_GLOBAL_INTEGER(lp_keepalive, &Globals.iKeepalive)
