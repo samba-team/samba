@@ -144,7 +144,7 @@ static void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr
 	DEBUG(DEBUG_ERR,("Marshalling log entries into a blob of %d bytes\n", (int)data.dsize));
 
 	DEBUG(DEBUG_ERR,("Send log to %d:%d\n", (int)log_addr->pnn, (int)log_addr->srvid));
-	ctdb_send_message(ctdb, log_addr->pnn, log_addr->srvid, data);
+	ctdb_client_send_message(ctdb, log_addr->pnn, log_addr->srvid, data);
 
 	talloc_free(data.dptr);
 }

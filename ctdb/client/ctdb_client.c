@@ -517,7 +517,7 @@ int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void 
 /*
   send a message - from client context
  */
-int ctdb_send_message(struct ctdb_context *ctdb, uint32_t pnn,
+int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data)
 {
 	struct ctdb_req_message *r;

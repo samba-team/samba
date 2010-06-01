@@ -1641,7 +1641,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */
-	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
+	ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
 
@@ -1802,7 +1802,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn, bool u
 
 	/* send an election message to all active nodes */
 	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
-	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
+	ctdb_client_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
 
 
 	/* A new node that is already frozen has entered the cluster.
@@ -1900,7 +1900,7 @@ static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));		
 
-	ret = ctdb_send_message(ctdb, rd->pnn, rd->srvid, *dump);
+	ret = ctdb_client_send_message(ctdb, rd->pnn, rd->srvid, *dump);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send rd memdump reply message\n"));
 		talloc_free(tmp_ctx);
@@ -2059,7 +2059,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to "
 				  "%u:%llu\n", (unsigned)callers->rd->pnn,
 				  (unsigned long long)callers->rd->srvid));
-		ret = ctdb_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
+		ret = ctdb_client_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply "
 					 "message to %u:%llu\n",
@@ -2607,7 +2607,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 		data.dptr = (uint8_t *)&rd;
 		data.dsize = sizeof(rd);
 
-		ret = ctdb_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+		ret = ctdb_client_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
 		}

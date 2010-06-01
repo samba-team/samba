@@ -99,7 +99,7 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	nulldata.dsize = 0;
 
 	dest = (ctdb_get_pnn(ctdb) + 1) % num_nodes;
-	ctdb_send_message(ctdb, dest, 0, nulldata);
+	ctdb_client_send_message(ctdb, dest, 0, nulldata);
 }
 
 /*

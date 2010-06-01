@@ -94,7 +94,7 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	(*count)++;
 	dest = (ctdb_get_pnn(ctdb) + num_nodes + incr) % num_nodes;
-	ctdb_send_message(ctdb, dest, srvid, data);
+	ctdb_client_send_message(ctdb, dest, srvid, data);
 	if (incr == 1) {
 		msg_plus++;
 	} else {
@@ -114,7 +114,7 @@ static void send_start_messages(struct ctdb_context *ctdb, int incr)
 	data.dsize = sizeof(incr);
 
 	dest = (ctdb_get_pnn(ctdb) + num_nodes + incr) % num_nodes;
-	ctdb_send_message(ctdb, dest, 0, data);
+	ctdb_client_send_message(ctdb, dest, 0, data);
 }
 
 static void each_second(struct event_context *ev, struct timed_event *te, 

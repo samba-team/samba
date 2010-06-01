@@ -1012,7 +1012,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 	disable_time = 30;
 	data.dptr  = (uint8_t*)&disable_time;
 	data.dsize = sizeof(disable_time);
-	ret = ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_DISABLE_IP_CHECK, data);
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_DISABLE_IP_CHECK, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send message to disable ipcheck\n"));
 		return -1;
@@ -1076,7 +1076,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 	/* update the recovery daemon so it now knows to expect the new
 	   node assignment for this ip.
 	*/
-	ret = ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECD_UPDATE_IP, data);
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECD_UPDATE_IP, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send message to update the ip on the recovery master.\n"));
 		return -1;
@@ -2066,7 +2066,7 @@ again:
 	} 
 
 	ipreallocate_finished = 0;
-	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+	ret = ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
 		return -1;
@@ -4145,7 +4145,7 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 	data.dptr = (uint8_t *)&rd;
 	data.dsize = sizeof(rd);
 
-	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_MEM_DUMP, data);
+	ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_MEM_DUMP, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send memdump request message to %u\n", options.pnn));
 		return -1;
@@ -4177,7 +4177,7 @@ static int control_msgsend(struct ctdb_context *ctdb, int argc, const char **arg
 	data.dptr = (uint8_t *)discard_const(argv[1]);
 	data.dsize= strlen(argv[1]);
 
-	ret = ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, srvid, data);
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, srvid, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send memdump request message to %u\n", options.pnn));
 		return -1;

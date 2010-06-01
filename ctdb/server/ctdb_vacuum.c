@@ -272,7 +272,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 
 			data.dsize = talloc_get_size(vdata->list[i]);
 			data.dptr  = (void *)vdata->list[i];
-			if (ctdb_send_message(ctdb, ctdb->vnn_map->map[i], CTDB_SRVID_VACUUM_FETCH, data) != 0) {
+			if (ctdb_client_send_message(ctdb, ctdb->vnn_map->map[i], CTDB_SRVID_VACUUM_FETCH, data) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to send vacuum fetch message to %u\n",
 					 ctdb->vnn_map->map[i]));
 				return -1;		
