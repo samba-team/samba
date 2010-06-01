@@ -211,7 +211,7 @@ int ctdb_cancel(struct ctdb_request *);
 
 
 /* These ugly macro wrappers make the callbacks typesafe. */
-#include <ccan/typesafe_cb.h>
+#include <ctdb_typesafe_cb.h>
 #define ctdb_sendcb(cb, cbdata)						\
 	 typesafe_cb_preargs(void, (cb), (cbdata),			\
 			     struct ctdb_connection *, struct ctdb_request *)
