@@ -176,7 +176,7 @@ static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
 			SEC_DESC_SACL_AUTO_INHERITED|SEC_DESC_SACL_PROTECTED |
 			SEC_DESC_SERVER_SECURITY);
 	} 
-	else if (old_sd) {
+	else if (old_sd && old_sd->sacl) {
 		final_sd->sacl = security_acl_dup(mem_ctx,old_sd->sacl);
 		final_sd->type |= old_sd->type & (SEC_DESC_SACL_PRESENT |
 			SEC_DESC_SACL_DEFAULTED|SEC_DESC_SACL_AUTO_INHERIT_REQ |
@@ -191,7 +191,7 @@ static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
 			SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_PROTECTED |
 			SEC_DESC_DACL_TRUSTED);
 	} 
-	else if (old_sd) {
+	else if (old_sd && old_sd->dacl) {
 		final_sd->dacl = security_acl_dup(mem_ctx,old_sd->dacl);
 		final_sd->type |= old_sd->type & (SEC_DESC_DACL_PRESENT |
 			SEC_DESC_DACL_DEFAULTED|SEC_DESC_DACL_AUTO_INHERIT_REQ |
