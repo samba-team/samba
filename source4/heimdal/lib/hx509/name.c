@@ -43,7 +43,7 @@
  * (RDN). Each RDN consists of an unordered list of typed strings. The
  * types are defined by OID and have long and short description. For
  * example id-at-commonName (2.5.4.3) have the long name CommonName
- * and short name CN. The string itself can be of serveral encoding,
+ * and short name CN. The string itself can be of several encoding,
  * UTF8, UTF16, Teltex string, etc. The type limit what encoding
  * should be used.
  *
