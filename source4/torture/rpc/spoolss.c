@@ -3258,6 +3258,35 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	uint32_t *job_ids;
 	int i;
 
+	torture_comment(tctx, "Testing real print operations\n");
+
+	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
+
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_DoPrintTest_add_one_job(tctx, b, handle, &job_ids[i]);
+	}
+
+	for (i=0; i < num_jobs; i++) {
+		ret &= test_SetJob(tctx, b, handle, job_ids[i], NULL, SPOOLSS_JOB_CONTROL_DELETE);
+	}
+
+	if (ret == true) {
+		torture_comment(tctx, "real print operations test succeeded\n\n");
+	}
+
+	return ret;
+}
+
+static bool test_DoPrintTest_extended(struct torture_context *tctx,
+				      struct dcerpc_binding_handle *b,
+				      struct policy_handle *handle)
+{
+	bool ret = true;
+	uint32_t num_jobs = 8;
+	uint32_t *job_ids;
+	int i;
+	torture_comment(tctx, "Testing real print operations (extended)\n");
+
 	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
 
 	for (i=0; i < num_jobs; i++) {
@@ -3268,6 +3297,10 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 
 	for (i=0; i < num_jobs; i++) {
 		ret &= test_SetJob(tctx, b, handle, job_ids[i], NULL, SPOOLSS_JOB_CONTROL_DELETE);
+	}
+
+	if (ret == true) {
+		torture_comment(tctx, "real print operations (extended) test succeeded\n\n");
 	}
 
 	return ret;
@@ -6345,6 +6378,10 @@ static bool test_one_printer(struct torture_context *tctx,
 
 	if (!test_DoPrintTest(tctx, b, handle)) {
 		ret = false;
+	}
+
+	if (!test_DoPrintTest_extended(tctx, b, handle)) {
+		torture_comment(tctx, "extended printing test failed!\n");
 	}
 
 	if (!test_ResumePrinter(tctx, b, handle)) {
