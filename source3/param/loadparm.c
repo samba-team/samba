@@ -212,6 +212,7 @@ struct global {
 	bool bWinbindRpcOnly;
 	bool bCreateKrb5Conf;
 	char *szIdmapBackend;
+	bool bIdmapReadOnly;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -4501,6 +4502,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "idmap read only",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bIdmapReadOnly,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "idmap cache time",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
@@ -5211,6 +5221,7 @@ static void init_globals(bool first_time_only)
 
 	Globals.bAllowTrustedDomains = True;
 	string_set(&Globals.szIdmapBackend, "tdb");
+	Globals.bIdmapReadOnly = false;
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
@@ -5514,6 +5525,7 @@ FN_GLOBAL_BOOL(lp_winbind_rpc_only, &Globals.bWinbindRpcOnly)
 FN_GLOBAL_BOOL(lp_create_krb5_conf, &Globals.bCreateKrb5Conf)
 
 FN_GLOBAL_CONST_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
+FN_GLOBAL_BOOL(lp_idmap_read_only, &Globals.bIdmapReadOnly)
 FN_GLOBAL_INTEGER(lp_idmap_cache_time, &Globals.iIdmapCacheTime)
 FN_GLOBAL_INTEGER(lp_idmap_negative_cache_time, &Globals.iIdmapNegativeCacheTime)
 FN_GLOBAL_INTEGER(lp_keepalive, &Globals.iKeepalive)
