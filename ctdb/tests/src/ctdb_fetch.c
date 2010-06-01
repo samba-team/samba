@@ -209,7 +209,7 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_client(ev);
 
-	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
 				 &cluster_ready);
 
 	/* attach to a specific database */
@@ -219,7 +219,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
+	ctdb_client_set_message_handler(ctdb, 0, message_handler, &msg_count);
 
 	printf("Waiting for cluster\n");
 	while (1) {

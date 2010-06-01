@@ -474,7 +474,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   tell the daemon what messaging srvid we will use, and register the message
   handler function in the client
 */
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     ctdb_message_fn_t handler,
 			     void *private_data)
 				    
@@ -1849,7 +1849,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	state.private_data = private_data;
 	state.fn = fn;
 
-	ret = ctdb_set_message_handler(ctdb_db->ctdb, srvid, traverse_handler, &state);
+	ret = ctdb_client_set_message_handler(ctdb_db->ctdb, srvid, traverse_handler, &state);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to setup traverse handler\n"));
 		return -1;

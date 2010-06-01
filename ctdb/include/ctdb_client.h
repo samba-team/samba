@@ -154,7 +154,7 @@ uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 /* setup a handler for ctdb messages */
 typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid,
 				  TDB_DATA data, void *);
-int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     ctdb_message_fn_t handler,
 			     void *private_data);
 

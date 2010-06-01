@@ -235,7 +235,7 @@ int main(int argc, const char *argv[])
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
 
-	if (ctdb_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
+	if (ctdb_client_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
 		goto error;
 
 	printf("Waiting for cluster\n");
