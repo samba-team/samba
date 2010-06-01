@@ -28,7 +28,7 @@ struct auth_usersupplied_info {
 
 	bool encrypted;
 	struct {
-		char *account_name;   /* username before mapping */
+		char *account_name;   /* username before/after mapping */
 	} client, mapped;
 
 	bool was_mapped;	      /* Did the username map actually match? */
