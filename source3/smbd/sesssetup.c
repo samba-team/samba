@@ -629,6 +629,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 				 const char *OID,
 				 bool wrap)
 {
+	bool do_invalidate = true;
 	DATA_BLOB response;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct smbd_server_connection *sconn = smbd_server_conn;
@@ -663,6 +664,11 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 					   server_info, nullblob,
 					   auth_ntlmssp_get_username(*auth_ntlmssp_state)) !=
 					   vuid) {
+			/* The problem is, *auth_ntlmssp_state points
+			 * into the vuser this will have
+			 * talloc_free()'ed in
+			 * register_existing_vuid() */
+			do_invalidate = false;
 			nt_status = NT_STATUS_LOGON_FAILURE;
 			goto out;
 		}
@@ -696,10 +702,12 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		/* NB. This is *NOT* an error case. JRA */
-		auth_ntlmssp_end(auth_ntlmssp_state);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			/* Kill the intermediate vuid */
-			invalidate_vuid(sconn, vuid);
+		if (do_invalidate) {
+			auth_ntlmssp_end(auth_ntlmssp_state);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				/* Kill the intermediate vuid */
+				invalidate_vuid(sconn, vuid);
+			}
 		}
 	}
 }
