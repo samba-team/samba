@@ -1,9 +1,6 @@
 /*
  * Example program to demonstrate the libctdb api
  *
- * This program needs to be linked with libtdb.
- * (libtdb and libtdb-devel packages)
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
@@ -17,6 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
+
+/*
+ * This program needs to be linked with libtdb and libctdb
+ * (You need these packages installed: libtdb libtdb-devel
+ *  ctdb and ctdb-devel)
+ *
+ * This program can then be compiled using
+ *    gcc -o tst tst.c -ltdb -lctdb
+ *
+ *
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <poll.h>
@@ -25,8 +33,8 @@
 #include <stdlib.h>
 #include <err.h>
 #include <stdbool.h>
-#include "lib/tdb/include/tdb.h"
-#include "include/ctdb.h"
+#include <tdb.h>
+#include <ctdb.h>
 
 TDB_DATA key;
 
