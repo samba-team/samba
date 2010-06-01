@@ -308,7 +308,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						      mem_ctx,
 						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
 						      dc_name,                    /* server name */
-						      user_info->smb_name,        /* user name logging on. */
+						      user_info->client.account_name,        /* user name logging on. */
 						      user_info->client_domain,   /* domain name */
 						      user_info->workstation_name,/* workstation name */
 						      chal,                       /* 8 byte challenge. */
@@ -324,7 +324,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
-                         "Error was %s.\n", user_info->smb_name,
+                         "Error was %s.\n", user_info->client.account_name,
                          user_info->client_domain, dc_name, 
                          nt_errstr(nt_status)));
 
@@ -334,7 +334,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx,
-						user_info->smb_name,
+						user_info->client.account_name,
 						domain,
 						server_info,
 						info3);
@@ -355,7 +355,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		netsamlogon_cache_store(user_info->smb_name, info3);
+		netsamlogon_cache_store(user_info->client.account_name, info3);
 		TALLOC_FREE(info3);
 	}
 

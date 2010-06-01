@@ -83,7 +83,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		user_info->logon_parameters,           /* flags such as 'allow
 					                * workstation logon' */
 		global_myname(),                       /* server name */
-		user_info->smb_name,                   /* user name logging on. */
+		user_info->client.account_name,                   /* user name logging on. */
 		user_info->client_domain,              /* domain name */
 		user_info->workstation_name,           /* workstation name */
 		(uchar *)auth_context->challenge.data, /* 8 byte challenge. */
@@ -281,7 +281,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 
  okay:
 
-	status = make_server_info_info3(mem_ctx, user_info->smb_name,
+	status = make_server_info_info3(mem_ctx, user_info->client.account_name,
 					user_info->domain, server_info,
 					info3);
 	if (!NT_STATUS_IS_OK(status)) {

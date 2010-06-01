@@ -63,7 +63,7 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 
 	DEBUG(10, ("Check auth for: [%s]", user_info->internal_username));
 
-	params.account_name	= user_info->smb_name;
+	params.account_name	= user_info->client.account_name;
 	params.domain_name	= user_info->domain;
 	params.workstation_name	= user_info->workstation_name;
 
@@ -120,7 +120,7 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 	DEBUG(10,("wbcAuthenticateUserEx succeeded\n"));
 
 	nt_status = make_server_info_wbcAuthUserInfo(mem_ctx,
-						     user_info->smb_name,
+						     user_info->client.account_name,
 						     user_info->domain,
 						     info, server_info);
 	wbcFreeMemory(info);

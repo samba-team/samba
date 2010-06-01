@@ -59,7 +59,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	/* Send off request */
 
-	params.account_name	= user_info->smb_name;
+	params.account_name	= user_info->client.account_name;
 	params.domain_name	= user_info->domain;
 	params.workstation_name	= user_info->workstation_name;
 
@@ -114,7 +114,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	}
 
 	nt_status = make_server_info_wbcAuthUserInfo(mem_ctx,
-						     user_info->smb_name,
+						     user_info->client.account_name,
 						     user_info->domain,
 						     info, server_info);
 	wbcFreeMemory(info);

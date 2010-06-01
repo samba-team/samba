@@ -395,14 +395,14 @@ use this machine as the password server.\n"));
 	if (!user_info->encrypted) {
 		/* Plaintext available */
 		nt_status = cli_session_setup(
-			cli, user_info->smb_name, 
+			cli, user_info->client.account_name,
 			(char *)user_info->plaintext_password.data, 
 			user_info->plaintext_password.length, 
 			NULL, 0, user_info->domain);
 
 	} else {
 		nt_status = cli_session_setup(
-			cli, user_info->smb_name, 
+			cli, user_info->client.account_name,
 			(char *)user_info->lm_resp.data, 
 			user_info->lm_resp.length, 
 			(char *)user_info->nt_resp.data, 

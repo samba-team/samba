@@ -52,8 +52,8 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 
 	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
 
-	(*user_info)->smb_name = SMB_STRDUP(smb_name);
-	if ((*user_info)->smb_name == NULL) {
+	(*user_info)->client.account_name = SMB_STRDUP(smb_name);
+	if ((*user_info)->client.account_name == NULL) {
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -113,11 +113,11 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 {
 	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
 	if (*user_info != NULL) {
-		if ((*user_info)->smb_name) {
+		if ((*user_info)->client.account_name) {
 			DEBUG(10,("structure was created for %s\n",
-				  (*user_info)->smb_name));
+				  (*user_info)->client.account_name));
 		}
-		SAFE_FREE((*user_info)->smb_name);
+		SAFE_FREE((*user_info)->client.account_name);
 		SAFE_FREE((*user_info)->internal_username);
 		SAFE_FREE((*user_info)->client_domain);
 		SAFE_FREE((*user_info)->domain);

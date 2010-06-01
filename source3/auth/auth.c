@@ -214,7 +214,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
-		  user_info->client_domain, user_info->smb_name, user_info->workstation_name));
+		  user_info->client_domain, user_info->client.account_name, user_info->workstation_name));
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain, user_info->internal_username, user_info->workstation_name));
@@ -241,14 +241,14 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 #endif
 
 	/* This needs to be sorted:  If it doesn't match, what should we do? */
-  	if (!check_domain_match(user_info->smb_name, user_info->domain))
+	if (!check_domain_match(user_info->client.account_name, user_info->domain))
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
 		NTSTATUS result;
 
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
-					    user_info->domain, user_info->smb_name);
+					    user_info->domain, user_info->client.account_name);
 
 		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 
@@ -263,10 +263,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
-				  auth_method->name, user_info->smb_name));
+				  auth_method->name, user_info->client.account_name));
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
-				  auth_method->name, user_info->smb_name, nt_errstr(nt_status)));
+				  auth_method->name, user_info->client.account_name, nt_errstr(nt_status)));
 		}
 
 		talloc_destroy(mem_ctx);
@@ -300,7 +300,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 			DEBUG((*server_info)->guest ? 5 : 2, 
 			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
-			       user_info->smb_name, 
+			       user_info->client.account_name,
 			       user_info->internal_username, 
 			       unix_username));
 		}
@@ -311,7 +311,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	/* failed authentication; check for guest lapping */
 
 	DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
-		  user_info->smb_name, user_info->internal_username, 
+		  user_info->client.account_name, user_info->internal_username,
 		  nt_errstr(nt_status)));
 	ZERO_STRUCTP(server_info); 
 

@@ -93,7 +93,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
 
-	fstrcpy(user, user_info->smb_name);
+	fstrcpy(user, user_info->client.account_name);
 
 	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
 		strupper_m(user);
