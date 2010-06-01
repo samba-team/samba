@@ -175,7 +175,8 @@ READLINE_SRC = '''lib/readline.c'''
 
 POPT_LIB_SRC = '''lib/popt_common.c'''
 
-PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c lib/sharesec.c lib/ldap_debug_handler.c'''
+PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
+                           lib/sharesec.c lib/ldap_debug_handler.c'''
 PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC} ${LIBSMBCONF_SRC} ${PRIVILEGES_BASIC_SRC}'''
 PARAM_SRC = '''${PARAM_REG_ADD_SRC}'''
 
