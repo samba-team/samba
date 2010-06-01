@@ -30,13 +30,12 @@ extern bool global_encrypted_passwords_negotiated;
  ***************************************************************************/
 
 /****************************************************************************
-check if a username/password is OK assuming the password is a 24 byte
-SMB hash
+check if a username/password is OK assuming the password is in plaintext
 return True if the password is correct, False otherwise
 ****************************************************************************/
 
 NTSTATUS check_plaintext_password(const char *smb_name,
-				  DATA_BLOB plaintext_password,
+				  DATA_BLOB plaintext_blob,
 				  struct auth_serversupplied_info **server_info)
 {
 	struct auth_context *plaintext_auth_context = NULL;
@@ -52,7 +51,7 @@ NTSTATUS check_plaintext_password(const char *smb_name,
 
 	if (!make_user_info_for_reply(&user_info, 
 				      smb_name, lp_workgroup(), chal,
-				      plaintext_password)) {
+				      plaintext_blob)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -68,27 +67,21 @@ static NTSTATUS pass_check_smb(struct auth_context *actx,
 			       const char *smb_name,
 			       const char *domain, 
 			       DATA_BLOB lm_pwd,
-			       DATA_BLOB nt_pwd,
-			       DATA_BLOB plaintext_password,
-			       bool encrypted)
+			       DATA_BLOB nt_pwd)
 
 {
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info = NULL;
-	if (encrypted) {
-		struct auth_usersupplied_info *user_info = NULL;
-		if (actx == NULL) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		make_user_info_for_reply_enc(&user_info, smb_name, 
-					     domain,
-					     lm_pwd, 
-					     nt_pwd);
-		nt_status = actx->check_ntlm_password(actx, user_info, &server_info);
-		free_user_info(&user_info);
-	} else {
-		nt_status = check_plaintext_password(smb_name, plaintext_password, &server_info);
-	}		
+	struct auth_usersupplied_info *user_info = NULL;
+	if (actx == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	make_user_info_for_reply_enc(&user_info, smb_name,
+				     domain,
+				     lm_pwd,
+				     nt_pwd);
+	nt_status = actx->check_ntlm_password(actx, user_info, &server_info);
+	free_user_info(&user_info);
 	TALLOC_FREE(server_info);
 	return nt_status;
 }
@@ -113,23 +106,26 @@ bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 * Vista sends NTLMv2 here - we need to try the client given workgroup.
 		 */
 		if (session_workgroup) {
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, null_password, password_blob, null_password, encrypted))) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, null_password, password_blob))) {
 				return True;
 			}
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, password_blob, null_password, null_password, encrypted))) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, password_blob, null_password))) {
 				return True;
 			}
 		}
 
-		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
+		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), null_password, password_blob))) {
 			return True;
 		}
 
-		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), password_blob, null_password, null_password, encrypted))) {
+		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), password_blob, null_password))) {
 			return True;
 		}
 	} else {
-		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), null_password, null_password, password_blob, encrypted))) {
+		struct auth_serversupplied_info *server_info = NULL;
+		NTSTATUS nt_status = check_plaintext_password(smb_name, password_blob, &server_info);
+		TALLOC_FREE(server_info);
+		if (NT_STATUS_IS_OK(nt_status)) {
 			return True;
 		}
 	}

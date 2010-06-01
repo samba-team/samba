@@ -101,8 +101,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->mapped.account_name,
-				(char *)user_info->plaintext_password.data,
-				user_info->plaintext_password.length-1,
+				user_info->password.plaintext,
 				lp_update_encrypted() ? 
 				update_smbpassword_file : NULL,
 				True);

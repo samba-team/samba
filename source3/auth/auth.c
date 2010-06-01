@@ -233,11 +233,11 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
-		    (int)user_info->lm_resp.length, (int)user_info->nt_resp.length));
+		    (int)user_info->password.response.lanman.length, (int)user_info->password.response.nt.length));
 	DEBUG(100, ("lm:\n"));
-	dump_data(100, user_info->lm_resp.data, user_info->lm_resp.length);
+	dump_data(100, user_info->password.response.lanman.data, user_info->password.response.lanman.length);
 	DEBUG(100, ("nt:\n"));
-	dump_data(100, user_info->nt_resp.data, user_info->nt_resp.length);
+	dump_data(100, user_info->password.response.nt.data, user_info->password.response.nt.length);
 #endif
 
 	/* This needs to be sorted:  If it doesn't match, what should we do? */

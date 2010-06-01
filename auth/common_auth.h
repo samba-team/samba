@@ -25,9 +25,9 @@
 #define USER_INFO_INTERACTIVE_LOGON         0x08 /* don't check unix account status */
 
 enum auth_password_state {
-	AUTH_PASSWORD_RESPONSE,
-	AUTH_PASSWORD_HASH,
-	AUTH_PASSWORD_PLAIN
+	AUTH_PASSWORD_PLAIN = 1,
+	AUTH_PASSWORD_HASH = 2,
+	AUTH_PASSWORD_RESPONSE = 3
 };
 
 struct auth_usersupplied_info

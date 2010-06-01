@@ -374,7 +374,7 @@ static bool cgi_handle_authorization(char *line)
 	 */
 
 	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, 
-		      strlen(user_pass), NULL, False)) {
+				      NULL, False)) {
 
 		if (pass) {
 			/*

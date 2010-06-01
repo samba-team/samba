@@ -1139,7 +1139,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 
 	status = make_user_info(&user_info, user, user, domain, domain,
 				global_myname(), lm_resp, nt_resp, NULL, NULL,
-				NULL, True);
+				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
 		return status;

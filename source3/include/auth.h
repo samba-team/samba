@@ -19,27 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct auth_usersupplied_info {
- 	DATA_BLOB lm_resp;
-	DATA_BLOB nt_resp;
- 	DATA_BLOB lm_interactive_pwd;
-	DATA_BLOB nt_interactive_pwd;
- 	DATA_BLOB plaintext_password;
-
-	bool encrypted;
-	struct {
-		char *account_name;   /* username before/after mapping */
-		char *domain_name;    /* username before/after mapping */
-	} client, mapped;
-
-	bool was_mapped;	      /* Did the username map actually match? */
-	char *internal_username;      /* username after mapping */
-	const char *workstation_name; /* workstation name (netbios calling
-				       * name) unicode string */
-
-	uint32 logon_parameters;
-
-};
+#include "../auth/common_auth.h"
 
 struct extra_auth_info {
 	struct dom_sid user_sid;
@@ -155,6 +135,7 @@ struct auth_init_function_entry {
 struct auth_ntlmssp_state;
 
 /* Changed from 1 -> 2 to add the logon_parameters field. */
-#define AUTH_INTERFACE_VERSION 2
+/* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */
+#define AUTH_INTERFACE_VERSION 3
 
 #endif /* _SMBAUTH_H_ */

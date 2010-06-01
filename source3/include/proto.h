@@ -79,13 +79,15 @@ NTSTATUS auth_unix_init(void);
 /* The following definitions come from auth/auth_util.c  */
 
 NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
-			    const char *smb_name, 
-			    const char *client_domain, 
+			    const char *smb_name,
+			    const char *client_domain,
 			    const char *workstation_name,
- 			    DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
- 			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
-			    DATA_BLOB *plaintext, 
-			    bool encrypted);
+			    DATA_BLOB *lm_pwd,
+			    DATA_BLOB *nt_pwd,
+			    const struct samr_Password *lm_interactive_pwd,
+			    const struct samr_Password *nt_interactive_pwd,
+			    const char *plaintext,
+			    enum auth_password_state password_state);
 bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
@@ -160,7 +162,7 @@ bool is_trusted_domain(const char* dom_name);
 
 /* The following definitions come from auth/user_info.c  */
 
-NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
+NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 			const char *smb_name,
 			const char *internal_username,
 			const char *client_domain,
@@ -168,10 +170,10 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 			const char *workstation_name,
 			const DATA_BLOB *lm_pwd,
 			const DATA_BLOB *nt_pwd,
-			const DATA_BLOB *lm_interactive_pwd,
-			const DATA_BLOB *nt_interactive_pwd,
-			const DATA_BLOB *plaintext,
-			bool encrypted);
+			const struct samr_Password *lm_interactive_pwd,
+			const struct samr_Password *nt_interactive_pwd,
+			const char *plaintext_password,
+			enum auth_password_state password_state);
 void free_user_info(struct auth_usersupplied_info **user_info);
 
 /* The following definitions come from auth/auth_winbind.c  */
@@ -226,7 +228,7 @@ bool smb_pam_close_session(char *in_user, char *tty, char *rhost);
 
 void dfs_unlogin(void);
 NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
-		    int pwlen, bool (*fn) (const char *, const char *), bool run_cracker);
+		    bool (*fn) (const char *, const char *), bool run_cracker);
 
 /* The following definitions come from auth/token_util.c  */
 

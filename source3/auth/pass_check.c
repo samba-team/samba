@@ -648,7 +648,7 @@ return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
 NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
-		    int pwlen, bool (*fn) (const char *, const char *), bool run_cracker)
+		    bool (*fn) (const char *, const char *), bool run_cracker)
 {
 	char *pass2 = NULL;
 	int level = lp_passwordlevel();
@@ -662,7 +662,7 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	if (!password)
 		return NT_STATUS_LOGON_FAILURE;
 
-	if (((!*password) || (!pwlen)) && !lp_null_passwords())
+	if ((!*password) && !lp_null_passwords())
 		return NT_STATUS_LOGON_FAILURE;
 
 #if defined(WITH_PAM) 
@@ -676,11 +676,11 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(4, ("pass_check: Checking (PAM) password for user %s (l=%d)\n", user, pwlen));
+	DEBUG(4, ("pass_check: Checking (PAM) password for user %s\n", user));
 
 #else /* Not using PAM */
 
-	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
+	DEBUG(4, ("pass_check: Checking password for user %s\n", user));
 
 	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));

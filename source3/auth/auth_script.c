@@ -84,17 +84,17 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 	safe_strcat( secret_str, hex_str, secret_str_len - 1);
 	safe_strcat( secret_str, "\n", secret_str_len - 1);
 
-	if (user_info->lm_resp.data) {
+	if (user_info->password.response.lanman.data) {
 		for (i = 0; i < 24; i++) {
-			slprintf(&hex_str[i*2], 3, "%02X", user_info->lm_resp.data[i]);
+			slprintf(&hex_str[i*2], 3, "%02X", user_info->password.response.lanman.data[i]);
 		}
 		safe_strcat( secret_str, hex_str, secret_str_len - 1);
 	}
 	safe_strcat( secret_str, "\n", secret_str_len - 1);
 
-	if (user_info->nt_resp.data) {
+	if (user_info->password.response.nt.data) {
 		for (i = 0; i < 24; i++) {
-			slprintf(&hex_str[i*2], 3, "%02X", user_info->nt_resp.data[i]);
+			slprintf(&hex_str[i*2], 3, "%02X", user_info->password.response.nt.data[i]);
 		}
 		safe_strcat( secret_str, hex_str, secret_str_len - 1);
 	}

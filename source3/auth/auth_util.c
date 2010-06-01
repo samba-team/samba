@@ -86,10 +86,10 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *workstation_name,
 			    DATA_BLOB *lm_pwd,
 			    DATA_BLOB *nt_pwd,
-			    DATA_BLOB *lm_interactive_pwd,
-			    DATA_BLOB *nt_interactive_pwd,
-			    DATA_BLOB *plaintext,
-			    bool encrypted)
+			    const struct samr_Password *lm_interactive_pwd,
+			    const struct samr_Password *nt_interactive_pwd,
+			    const char *plaintext,
+			    enum auth_password_state password_state)
 {
 	const char *domain;
 	NTSTATUS result;
@@ -131,8 +131,11 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			      client_domain, domain, workstation_name,
 			      lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
-			      plaintext, encrypted);
+			      plaintext, password_state);
 	if (NT_STATUS_IS_OK(result)) {
+		/* We have tried mapping */
+		(*user_info)->mapped_state = True;
+		/* did we actually map the user to a different name? */
 		(*user_info)->was_mapped = was_mapped;
 	}
 	return result;
@@ -164,7 +167,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				    lm_pwd_len ? &lm_blob : NULL, 
 				    nt_pwd_len ? &nt_blob : NULL,
 				    NULL, NULL, NULL,
-				    True);
+				    AUTH_PASSWORD_RESPONSE);
 
 	if (NT_STATUS_IS_OK(status)) {
 		(*user_info)->logon_parameters = logon_parameters;
@@ -191,8 +194,8 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 const uchar nt_interactive_pwd[16], 
 					 const uchar *dc_sess_key)
 {
-	unsigned char lm_pwd[16];
-	unsigned char nt_pwd[16];
+	struct samr_Password lm_pwd;
+	struct samr_Password nt_pwd;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
@@ -200,42 +203,42 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	memcpy(key, dc_sess_key, 16);
 
 	if (lm_interactive_pwd)
-		memcpy(lm_pwd, lm_interactive_pwd, sizeof(lm_pwd));
+		memcpy(lm_pwd.hash, lm_interactive_pwd, sizeof(lm_pwd.hash));
 
 	if (nt_interactive_pwd)
-		memcpy(nt_pwd, nt_interactive_pwd, sizeof(nt_pwd));
+		memcpy(nt_pwd.hash, nt_interactive_pwd, sizeof(nt_pwd.hash));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
 	dump_data(100, key, sizeof(key));
 
 	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, lm_pwd.hash, sizeof(lm_pwd.hash));
 
 	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, nt_pwd.hash, sizeof(nt_pwd.hash));
 #endif
 
 	if (lm_interactive_pwd)
-		arcfour_crypt(lm_pwd, key, sizeof(lm_pwd));
+		arcfour_crypt(lm_pwd.hash, key, sizeof(lm_pwd.hash));
 
 	if (nt_interactive_pwd)
-		arcfour_crypt(nt_pwd, key, sizeof(nt_pwd));
+		arcfour_crypt(nt_pwd.hash, key, sizeof(nt_pwd.hash));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, sizeof(lm_pwd));
+	dump_data(100, lm_pwd.hash, sizeof(lm_pwd));
 
 	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, sizeof(nt_pwd));
+	dump_data(100, nt_pwd.hash, sizeof(nt_pwd));
 #endif
 
 	if (lm_interactive_pwd)
-		SMBOWFencrypt(lm_pwd, chal,
+		SMBOWFencrypt(lm_pwd.hash, chal,
 			      local_lm_response);
 
 	if (nt_interactive_pwd)
-		SMBOWFencrypt(nt_pwd, chal,
+		SMBOWFencrypt(nt_pwd.hash, chal,
 			      local_nt_response);
 
 	/* Password info paranoia */
@@ -247,23 +250,14 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 		DATA_BLOB local_lm_blob;
 		DATA_BLOB local_nt_blob;
 
-		DATA_BLOB lm_interactive_blob;
-		DATA_BLOB nt_interactive_blob;
-
 		if (lm_interactive_pwd) {
 			local_lm_blob = data_blob(local_lm_response,
 						  sizeof(local_lm_response));
-			lm_interactive_blob = data_blob(lm_pwd,
-							sizeof(lm_pwd));
-			ZERO_STRUCT(lm_pwd);
 		}
 
 		if (nt_interactive_pwd) {
 			local_nt_blob = data_blob(local_nt_response,
 						  sizeof(local_nt_response));
-			nt_interactive_blob = data_blob(nt_pwd,
-							sizeof(nt_pwd));
-			ZERO_STRUCT(nt_pwd);
 		}
 
 		nt_status = make_user_info_map(
@@ -271,9 +265,9 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 			smb_name, client_domain, workstation_name,
 			lm_interactive_pwd ? &local_lm_blob : NULL,
 			nt_interactive_pwd ? &local_nt_blob : NULL,
-			lm_interactive_pwd ? &lm_interactive_blob : NULL,
-			nt_interactive_pwd ? &nt_interactive_blob : NULL,
-			NULL, True);
+			lm_interactive_pwd ? &lm_pwd : NULL,
+			nt_interactive_pwd ? &nt_pwd : NULL,
+			NULL, AUTH_PASSWORD_HASH);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			(*user_info)->logon_parameters = logon_parameters;
@@ -282,8 +276,6 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 		ret = NT_STATUS_IS_OK(nt_status) ? True : False;
 		data_blob_free(&local_lm_blob);
 		data_blob_free(&local_nt_blob);
-		data_blob_free(&lm_interactive_blob);
-		data_blob_free(&nt_interactive_blob);
 		return ret;
 	}
 }
@@ -303,14 +295,13 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-
+	char *plaintext_password_string;
 	/*
 	 * Not encrypted - do so.
 	 */
 
 	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted "
 		 "format.\n"));
-
 	if (plaintext_password.data && plaintext_password.length) {
 		unsigned char local_lm_response[24];
 
@@ -333,14 +324,26 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		local_nt_blob = data_blob_null; 
 	}
 
+	plaintext_password_string = talloc_strndup(talloc_tos(),
+						   (const char *)plaintext_password.data,
+						   plaintext_password.length);
+	if (!plaintext_password_string) {
+		return False;
+	}
+
 	ret = make_user_info_map(
 		user_info, smb_name, client_domain, 
 		get_remote_machine_name(),
 		local_lm_blob.data ? &local_lm_blob : NULL,
 		local_nt_blob.data ? &local_nt_blob : NULL,
 		NULL, NULL,
-		plaintext_password.data && plaintext_password.length ? &plaintext_password : NULL, 
-		False);
+		plaintext_password_string,
+		AUTH_PASSWORD_PLAIN);
+
+	if (plaintext_password_string) {
+		memset(plaintext_password_string, '\0', strlen(plaintext_password_string));
+		talloc_free(plaintext_password_string);
+	}
 
 	data_blob_free(&local_lm_blob);
 	return NT_STATUS_IS_OK(ret) ? True : False;
@@ -361,7 +364,7 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
 				  lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
 				  nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
 				  NULL, NULL, NULL,
-				  True);
+				  AUTH_PASSWORD_RESPONSE);
 }
 
 /****************************************************************************
@@ -379,7 +382,7 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 				   NULL, NULL, 
 				   NULL, NULL, 
 				   NULL,
-				   True);
+				   AUTH_PASSWORD_RESPONSE);
 
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }

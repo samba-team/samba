@@ -34,10 +34,10 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 			const char *workstation_name,
 			const DATA_BLOB *lm_pwd,
 			const DATA_BLOB *nt_pwd,
-			const DATA_BLOB *lm_interactive_pwd,
-			const DATA_BLOB *nt_interactive_pwd,
-			const DATA_BLOB *plaintext,
-			bool encrypted)
+			const struct samr_Password *lm_interactive_pwd,
+			const struct samr_Password *nt_interactive_pwd,
+			const char *plaintext_password,
+			enum auth_password_state password_state)
 {
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
@@ -85,22 +85,27 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
 
 	if (lm_pwd)
-		(*user_info)->lm_resp = data_blob(lm_pwd->data, lm_pwd->length);
+		(*user_info)->password.response.lanman = data_blob(lm_pwd->data, lm_pwd->length);
 	if (nt_pwd)
-		(*user_info)->nt_resp = data_blob(nt_pwd->data, nt_pwd->length);
-	if (lm_interactive_pwd)
-		(*user_info)->lm_interactive_pwd = data_blob(lm_interactive_pwd->data, lm_interactive_pwd->length);
-	if (nt_interactive_pwd)
-		(*user_info)->nt_interactive_pwd = data_blob(nt_interactive_pwd->data, nt_interactive_pwd->length);
+		(*user_info)->password.response.nt = data_blob(nt_pwd->data, nt_pwd->length);
+	if (lm_interactive_pwd) {
+		(*user_info)->password.hash.lanman = SMB_MALLOC_P(struct samr_Password);
+		memcpy((*user_info)->password.hash.lanman->hash, lm_interactive_pwd->hash, sizeof((*user_info)->password.hash.lanman->hash));
+	}
 
-	if (plaintext)
-		(*user_info)->plaintext_password = data_blob(plaintext->data, plaintext->length);
+	if (nt_interactive_pwd) {
+		(*user_info)->password.hash.nt = SMB_MALLOC_P(struct samr_Password);
+		memcpy((*user_info)->password.hash.nt->hash, nt_interactive_pwd->hash, sizeof((*user_info)->password.hash.nt->hash));
+	}
 
-	(*user_info)->encrypted = encrypted;
+	if (plaintext_password)
+		(*user_info)->password.plaintext = SMB_STRDUP(plaintext_password);
+
+	(*user_info)->password_state = password_state;
 
 	(*user_info)->logon_parameters = 0;
 
-	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
+	DEBUG(10,("made a user_info for %s (%s)\n", internal_username, smb_name));
 
 	return NT_STATUS_OK;
 }
@@ -122,11 +127,20 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 		SAFE_FREE((*user_info)->client.domain_name);
 		SAFE_FREE((*user_info)->mapped.domain_name);
 		SAFE_FREE((*user_info)->workstation_name);
-		data_blob_free(&(*user_info)->lm_resp);
-		data_blob_free(&(*user_info)->nt_resp);
-		data_blob_clear_free(&(*user_info)->lm_interactive_pwd);
-		data_blob_clear_free(&(*user_info)->nt_interactive_pwd);
-		data_blob_clear_free(&(*user_info)->plaintext_password);
+		data_blob_free(&(*user_info)->password.response.lanman);
+		data_blob_free(&(*user_info)->password.response.nt);
+		if ((*user_info)->password.hash.lanman) {
+			ZERO_STRUCTP((*user_info)->password.hash.lanman);
+			SAFE_FREE((*user_info)->password.hash.lanman);
+		}
+		if ((*user_info)->password.hash.nt) {
+			ZERO_STRUCTP((*user_info)->password.hash.nt);
+			SAFE_FREE((*user_info)->password.hash.nt);
+		}
+		if ((*user_info)->password.plaintext) {
+			memset((*user_info)->password.plaintext, '\0', strlen(((*user_info)->password.plaintext)));
+			SAFE_FREE((*user_info)->password.plaintext);
+		}
 		ZERO_STRUCT(**user_info);
 	}
 	SAFE_FREE(*user_info);
