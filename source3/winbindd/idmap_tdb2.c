@@ -852,7 +852,7 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 
 	ret = idmap_tdb2_sids_to_unixids_action(idmap_tdb2, &state);
 
-	if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED)) {
+	if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED) && !dom->read_only) {
 		state.allocate_unmapped = true;
 		ret = dbwrap_trans_do(idmap_tdb2,
 				      idmap_tdb2_sids_to_unixids_action,
