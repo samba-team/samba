@@ -73,6 +73,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 {
 	char *tdbname = elog_tdbname(talloc_tos(), info->logname );
 	struct security_descriptor *sec_desc;
+	struct security_ace *ace;
 	NTSTATUS status;
 
 	if ( !tdbname )
@@ -89,11 +90,28 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 		return False;
 	}
 
+	ace = talloc_zero(sec_desc, struct security_ace);
+	if (ace == NULL) {
+		TALLOC_FREE(sec_desc);
+		return false;
+	}
+
+	ace->type		= SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace->flags		= 0;
+	ace->access_mask	= REG_KEY_ALL;
+	ace->trustee		= global_sid_System;
+
+	status = security_descriptor_dacl_add(sec_desc, ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sec_desc);
+		return false;
+	}
+
 	/* root free pass */
 
 	if ( geteuid() == sec_initial_uid() ) {
-		DEBUG(5,("elog_check_access: using root's token\n"));
-		token = get_root_nt_token();
+		DEBUG(5,("elog_check_access: running as root, using system token\n"));
+		token = get_system_token();
 	}
 
 	/* run the check, try for the max allowed */
@@ -101,8 +119,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 	status = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
 		&info->access_granted);
 
-	if ( sec_desc )
-		TALLOC_FREE( sec_desc );
+	TALLOC_FREE(sec_desc);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(8,("elog_check_access: se_access_check() return %s\n",
@@ -317,7 +334,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 		goto done;
 	}
 
-	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_root_nt_token(),
+	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_system_token(),
 				&key);
 
 	if ( !W_ERROR_IS_OK( wresult ) ) {
