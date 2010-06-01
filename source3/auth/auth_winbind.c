@@ -51,16 +51,16 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		return NT_STATUS_INVALID_PARAMETER;
 	}		
 
-	if (strequal(user_info->domain, get_global_sam_name())) {
+	if (strequal(user_info->mapped.domain_name, get_global_sam_name())) {
 		DEBUG(3,("check_winbind_security: Not using winbind, requested domain [%s] was for this SAM.\n",
-			user_info->domain));
+			user_info->mapped.domain_name));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	/* Send off request */
 
 	params.account_name	= user_info->client.account_name;
-	params.domain_name	= user_info->domain;
+	params.domain_name	= user_info->mapped.domain_name;
 	params.workstation_name	= user_info->workstation_name;
 
 	params.flags		= 0;
@@ -115,7 +115,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	nt_status = make_server_info_wbcAuthUserInfo(mem_ctx,
 						     user_info->client.account_name,
-						     user_info->domain,
+						     user_info->mapped.domain_name,
 						     info, server_info);
 	wbcFreeMemory(info);
 	if (!NT_STATUS_IS_OK(nt_status)) {

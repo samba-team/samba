@@ -348,7 +348,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 						      sizeof(badpass), 
 						      (char *)badpass,
 						      sizeof(badpass),
-						      user_info->domain))) {
+						      user_info->mapped.domain_name))) {
 
 			/*
 			 * We connected to the password server so we
@@ -396,9 +396,9 @@ use this machine as the password server.\n"));
 		/* Plaintext available */
 		nt_status = cli_session_setup(
 			cli, user_info->client.account_name,
-			(char *)user_info->plaintext_password.data, 
-			user_info->plaintext_password.length, 
-			NULL, 0, user_info->domain);
+			(char *)user_info->plaintext_password.data,
+			user_info->plaintext_password.length,
+			NULL, 0, user_info->mapped.domain_name);
 
 	} else {
 		nt_status = cli_session_setup(
@@ -407,7 +407,7 @@ use this machine as the password server.\n"));
 			user_info->lm_resp.length, 
 			(char *)user_info->nt_resp.data, 
 			user_info->nt_resp.length, 
-			user_info->domain);
+			user_info->mapped.domain_name);
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

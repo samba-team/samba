@@ -217,7 +217,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
-		  user_info->domain, user_info->mapped.account_name, user_info->workstation_name));
+		  user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
 
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
@@ -241,14 +241,14 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 #endif
 
 	/* This needs to be sorted:  If it doesn't match, what should we do? */
-	if (!check_domain_match(user_info->client.account_name, user_info->domain))
+	if (!check_domain_match(user_info->client.account_name, user_info->mapped.domain_name))
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
 		NTSTATUS result;
 
-		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
-					    user_info->domain, user_info->client.account_name);
+		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name,
+					    user_info->mapped.domain_name, user_info->client.account_name);
 
 		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 

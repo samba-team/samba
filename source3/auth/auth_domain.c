@@ -401,7 +401,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 * password file.
 	 */
 
-	if(strequal(get_global_sam_name(), user_info->domain)) {
+	if(strequal(get_global_sam_name(), user_info->mapped.domain_name)) {
 		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
@@ -410,7 +410,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	if ( !get_dc_name(domain, NULL, dc_name, &dc_ss) ) {
 		DEBUG(5,("check_ntdomain_security: unable to locate a DC for domain %s\n",
-			user_info->domain));
+			user_info->mapped.domain_name));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
@@ -469,9 +469,9 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * Check that the requested domain is not our own machine name or domain name.
 	 */
 
-	if( strequal(get_global_sam_name(), user_info->domain)) {
+	if( strequal(get_global_sam_name(), user_info->mapped.domain_name)) {
 		DEBUG(3,("check_trustdomain_security: Requested domain [%s] was for this machine.\n",
-			user_info->domain));
+			user_info->mapped.domain_name));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -480,7 +480,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	   The logic is that if we know nothing about the domain, that
 	   user is not known to us and does not exist */
 
-	if ( !is_trusted_domain( user_info->domain ) )
+	if ( !is_trusted_domain( user_info->mapped.domain_name ) )
 		return NT_STATUS_NOT_IMPLEMENTED;
 
 	/*
@@ -488,16 +488,16 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
-	if (!pdb_get_trusteddom_pw(user_info->domain, &trust_password,
+	if (!pdb_get_trusteddom_pw(user_info->mapped.domain_name, &trust_password,
 				   NULL, NULL)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust "
 			  "account password for domain %s\n",
-			  user_info->domain));
+			  user_info->mapped.domain_name));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->domain,
+	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->mapped.domain_name,
 		    trust_password));
 #endif
 	E_md4hash(trust_password, trust_md4_password);
@@ -514,15 +514,15 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
 
-	if ( !get_dc_name(user_info->domain, NULL, dc_name, &dc_ss) ) {
+	if ( !get_dc_name(user_info->mapped.domain_name, NULL, dc_name, &dc_ss) ) {
 		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
-			user_info->domain));
+			user_info->mapped.domain_name));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
 	nt_status = domain_client_validate(mem_ctx,
 					user_info,
-					user_info->domain,
+					user_info->mapped.domain_name,
 					(uchar *)auth_context->challenge.data,
 					server_info,
 					dc_name,

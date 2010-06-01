@@ -282,7 +282,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
  okay:
 
 	status = make_server_info_info3(mem_ctx, user_info->client.account_name,
-					user_info->domain, server_info,
+					user_info->mapped.domain_name, server_info,
 					info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_server_info_info3 failed: %s\n",

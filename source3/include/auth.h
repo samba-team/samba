@@ -33,7 +33,6 @@ struct auth_usersupplied_info {
 	} client, mapped;
 
 	bool was_mapped;	      /* Did the username map actually match? */
-	char *domain;                 /* domain name after mapping */
 	char *internal_username;      /* username after mapping */
 	const char *workstation_name; /* workstation name (netbios calling
 				       * name) unicode string */

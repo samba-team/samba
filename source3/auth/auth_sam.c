@@ -74,8 +74,8 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
-	is_local_name = is_myname(user_info->domain);
-	is_my_domain  = strequal(user_info->domain, lp_workgroup());
+	is_local_name = is_myname(user_info->mapped.domain_name);
+	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup());
 
 	/* check whether or not we service this domain/workgroup name */
 
@@ -84,7 +84,7 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 		case ROLE_DOMAIN_MEMBER:
 			if ( !is_local_name ) {
 				DEBUG(6,("check_samstrict_security: %s is not one of my local names (%s)\n",
-					user_info->domain, (lp_server_role() == ROLE_DOMAIN_MEMBER 
+					user_info->mapped.domain_name, (lp_server_role() == ROLE_DOMAIN_MEMBER
 					? "ROLE_DOMAIN_MEMBER" : "ROLE_STANDALONE") ));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
@@ -92,7 +92,7 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 		case ROLE_DOMAIN_BDC:
 			if ( !is_local_name && !is_my_domain ) {
 				DEBUG(6,("check_samstrict_security: %s is not one of my local names or domain name (DC)\n",
-					user_info->domain));
+					user_info->mapped.domain_name));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
 		default: /* name is ok */
