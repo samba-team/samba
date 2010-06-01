@@ -65,7 +65,7 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 
 	params.account_name	= user_info->smb_name;
 	params.domain_name	= user_info->domain;
-	params.workstation_name	= user_info->wksta_name;
+	params.workstation_name	= user_info->workstation_name;
 
 	params.flags		= 0;
 	params.parameter_control= user_info->logon_parameters;

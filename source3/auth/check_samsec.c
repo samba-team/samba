@@ -234,15 +234,15 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		bool invalid_ws = True;
 		char *tok = NULL;
 		const char *s = workstation_list;
-		char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->wksta_name);
+		char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->workstation_name);
 
 		if (machine_name == NULL)
 			return NT_STATUS_NO_MEMORY;
 
 		while (next_token_talloc(mem_ctx, &s, &tok, ",")) {
 			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s\n",
-				  tok, user_info->wksta_name));
-			if(strequal(tok, user_info->wksta_name)) {
+				  tok, user_info->workstation_name));
+			if(strequal(tok, user_info->workstation_name)) {
 				invalid_ws = False;
 				break;
 			}

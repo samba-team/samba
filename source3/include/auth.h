@@ -33,7 +33,7 @@ struct auth_usersupplied_info {
 	char *domain;                 /* domain name after mapping */
 	char *internal_username;      /* username after mapping */
 	char *smb_name;               /* username before mapping */
-	char *wksta_name;             /* workstation name (netbios calling
+	const char *workstation_name; /* workstation name (netbios calling
 				       * name) unicode string */
 
 	uint32 logon_parameters;

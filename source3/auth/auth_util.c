@@ -111,7 +111,7 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
 NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name,
 			    const char *client_domain,
-			    const char *wksta_name,
+			    const char *workstation_name,
 			    DATA_BLOB *lm_pwd,
 			    DATA_BLOB *nt_pwd,
 			    DATA_BLOB *lm_interactive_pwd,
@@ -127,7 +127,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 	was_mapped = map_username(internal_username);
 
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
-		 client_domain, smb_name, wksta_name));
+		 client_domain, smb_name, workstation_name));
 
 	domain = client_domain;
 
@@ -148,7 +148,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			domain = get_global_sam_name();
 		DEBUG(5, ("Mapped domain from [%s] to [%s] for user [%s] from "
 			  "workstation [%s]\n",
-			  client_domain, domain, smb_name, wksta_name));
+			  client_domain, domain, smb_name, workstation_name));
 	}
 
 	/* We know that the given domain is trusted (and we are allowing them),
@@ -156,7 +156,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 	 * primary domain name */
 
 	result = make_user_info(user_info, smb_name, internal_username,
-			      client_domain, domain, wksta_name,
+			      client_domain, domain, workstation_name,
 			      lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
 			      plaintext, encrypted);
@@ -174,7 +174,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
-				     const char *wksta_name, 
+				     const char *workstation_name,
 				     uint32 logon_parameters,
 				     const uchar *lm_network_pwd,
 				     int lm_pwd_len,
@@ -188,7 +188,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 
 	status = make_user_info_map(user_info,
 				    smb_name, client_domain, 
-				    wksta_name, 
+				    workstation_name,
 				    lm_pwd_len ? &lm_blob : NULL, 
 				    nt_pwd_len ? &nt_blob : NULL,
 				    NULL, NULL, NULL,
@@ -212,7 +212,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
-					 const char *wksta_name, 
+					 const char *workstation_name,
 					 uint32 logon_parameters,
 					 const uchar chal[8], 
 					 const uchar lm_interactive_pwd[16], 
@@ -296,7 +296,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 
 		nt_status = make_user_info_map(
 			user_info, 
-			smb_name, client_domain, wksta_name, 
+			smb_name, client_domain, workstation_name,
 			lm_interactive_pwd ? &local_lm_blob : NULL,
 			nt_interactive_pwd ? &local_nt_blob : NULL,
 			lm_interactive_pwd ? &lm_interactive_blob : NULL,

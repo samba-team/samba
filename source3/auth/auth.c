@@ -214,10 +214,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
-		  user_info->client_domain, user_info->smb_name, user_info->wksta_name));
+		  user_info->client_domain, user_info->smb_name, user_info->workstation_name));
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
-		  user_info->domain, user_info->internal_username, user_info->wksta_name));
+		  user_info->domain, user_info->internal_username, user_info->workstation_name));
 
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));

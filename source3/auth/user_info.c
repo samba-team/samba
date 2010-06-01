@@ -31,7 +31,7 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 			const char *internal_username,
 			const char *client_domain,
 			const char *domain,
-			const char *wksta_name,
+			const char *workstation_name,
 			const DATA_BLOB *lm_pwd,
 			const DATA_BLOB *nt_pwd,
 			const DATA_BLOB *lm_interactive_pwd,
@@ -76,8 +76,8 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->wksta_name = SMB_STRDUP(wksta_name);
-	if ((*user_info)->wksta_name == NULL) {
+	(*user_info)->workstation_name = SMB_STRDUP(workstation_name);
+	if ((*user_info)->workstation_name == NULL) {
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -121,7 +121,7 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 		SAFE_FREE((*user_info)->internal_username);
 		SAFE_FREE((*user_info)->client_domain);
 		SAFE_FREE((*user_info)->domain);
-		SAFE_FREE((*user_info)->wksta_name);
+		SAFE_FREE((*user_info)->workstation_name);
 		data_blob_free(&(*user_info)->lm_resp);
 		data_blob_free(&(*user_info)->nt_resp);
 		data_blob_clear_free(&(*user_info)->lm_interactive_pwd);
