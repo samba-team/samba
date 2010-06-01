@@ -274,7 +274,7 @@ static const char *gensec_ntlmssp_oids[] = {
 
 static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
-	.sasl_name	= "NTLM",
+	.sasl_name	= GENSEC_SASL_NAME_NTLMSSP, /* "NTLM" */
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
 	.oid            = gensec_ntlmssp_oids,
 	.client_start   = gensec_ntlmssp_client_start,
