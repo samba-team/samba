@@ -289,7 +289,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 
 	if (NT_STATUS_IS_OK(status)) {
 		xid->id = state.hwm;
-		DEBUG(10,("New %s = %d\n", hwmtype, hwm));
+		DEBUG(10,("New %s = %d\n", hwmtype, state.hwm));
 	} else {
 		DEBUG(1, ("Error allocating a new %s\n", hwmtype));
 	}
