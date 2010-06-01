@@ -1020,13 +1020,13 @@ static int test_memmem(void)
 
 	printf("test: memmem\n");
 
-	s = memmem("foo", 3, "fo", 2);
+	s = (char *)memmem("foo", 3, "fo", 2);
 	if (strcmp(s, "foo") != 0) {
 		printf(__location__ ": Failed memmem\n");
 		return false;
 	}
 
-	s = memmem("foo", 3, "", 0);
+	s = (char *)memmem("foo", 3, "", 0);
 	/* it is allowable for this to return NULL (as happens on
 	   FreeBSD) */
 	if (s && strcmp(s, "foo") != 0) {
@@ -1034,13 +1034,13 @@ static int test_memmem(void)
 		return false;
 	}
 
-	s = memmem("foo", 4, "o", 1);
+	s = (char *)memmem("foo", 4, "o", 1);
 	if (strcmp(s, "oo") != 0) {
 		printf(__location__ ": Failed memmem\n");
 		return false;
 	}
 
-	s = memmem("foobarfodx", 11, "fod", 3);
+	s = (char *)memmem("foobarfodx", 11, "fod", 3);
 	if (strcmp(s, "fodx") != 0) {
 		printf(__location__ ": Failed memmem\n");
 		return false;
