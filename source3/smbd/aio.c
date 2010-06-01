@@ -36,6 +36,20 @@
 #endif
 
 /****************************************************************************
+ The buffer we keep around whilst an aio request is in process.
+*****************************************************************************/
+
+struct aio_extra {
+	struct aio_extra *next, *prev;
+	SMB_STRUCT_AIOCB acb;
+	files_struct *fsp;
+	struct smb_request *req;
+	char *outbuf;
+	struct lock_struct lock;
+	int (*handle_completion)(struct aio_extra *ex, int errcode);
+};
+
+/****************************************************************************
  Initialize the signal handler for aio read/write.
 *****************************************************************************/
 
@@ -45,11 +59,10 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 				    void *_info, void *private_data)
 {
 	siginfo_t *info = (siginfo_t *)_info;
-	/* This won't work for SMB2.
-	 * We need a mapping table from sival_int -> uint64_t mid. */
-	uint64_t mid = (uint64_t)info->si_value.sival_int;
+	struct aio_extra *aio_ex = (struct aio_extra *)
+				info->si_value.sival_ptr;
 
-	smbd_aio_complete_mid(mid);
+	smbd_aio_complete_mid(aio_ex->req->mid);
 }
 
 
@@ -71,21 +84,6 @@ static void initialize_async_io_handler(void)
 	/* tevent supports 100 signal with SA_SIGINFO */
 	aio_pending_size = 100;
 }
-
-
-/****************************************************************************
- The buffer we keep around whilst an aio request is in process.
-*****************************************************************************/
-
-struct aio_extra {
-	struct aio_extra *next, *prev;
-	SMB_STRUCT_AIOCB acb;
-	files_struct *fsp;
-	struct smb_request *req;
-	char *outbuf;
-	struct lock_struct lock;
-	int (*handle_completion)(struct aio_extra *ex, int errcode);
-};
 
 static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode);
 static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode);
@@ -159,6 +157,9 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	int ret;
 
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
+
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
@@ -193,9 +194,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 	bufsize = smb_size + 12 * 2 + smb_maxcnt;
 
-	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
-
 	if ((aio_ex = create_aio_extra(fsp, bufsize)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -226,7 +224,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_int = req->mid;
+	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
 	ret = SMB_VFS_AIO_READ(fsp, a);
 	if (ret == -1) {
@@ -265,6 +263,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	int ret;
 
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
+
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
@@ -300,9 +301,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
-
 	bufsize = smb_size + 6*2;
 
 	if (!(aio_ex = create_aio_extra(fsp, bufsize))) {
@@ -335,7 +333,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_int = req->mid;
+	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
 	ret = SMB_VFS_AIO_WRITE(fsp, a);
 	if (ret == -1) {
@@ -692,17 +690,7 @@ int wait_for_aio_completion(files_struct *fsp)
 		/* One or more events might have completed - process them if
 		 * so. */
 		for( i = 0; i < aio_completion_count; i++) {
-			/* FIXME. Won't work for SMB2. */
-			uint64_t mid = (uint64_t)aiocb_list[i]->aio_sigevent.sigev_value.sival_int;
-
-			aio_ex = find_aio_ex(mid);
-
-			if (!aio_ex) {
-				DEBUG(0, ("wait_for_aio_completion: mid %llu "
-					  "doesn't match an aio record\n",
-					  (unsigned long long)mid ));
-				continue;
-			}
+			aio_ex = (struct aio_extra *)aiocb_list[i]->aio_sigevent.sigev_value.sival_ptr;
 
 			if (!handle_aio_completed(aio_ex, &err)) {
 				continue;
