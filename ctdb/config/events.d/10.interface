@@ -76,6 +76,9 @@ monitor_interfaces()
 	    }
 
 	    case $IFACE in
+	    lo*)
+		# loopback is always working
+		;;
 	    ib*)
 		# we dont know how to test ib links
 		;;
