@@ -845,7 +845,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 					  result_attrs);
 	} else {
 		/* Can't happen */
-		DEBUG(0, ("LOGIC ERROR: DsCrackNameOneFilter domain ref search not availible: This can't happen..."));
+		DEBUG(0, ("LOGIC ERROR: DsCrackNameOneFilter domain ref search not available: This can't happen..."));
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 		return WERR_OK;
 	}
