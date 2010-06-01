@@ -217,7 +217,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		  user_info->client_domain, user_info->client.account_name, user_info->workstation_name));
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
-		  user_info->domain, user_info->internal_username, user_info->workstation_name));
+		  user_info->domain, user_info->mapped.account_name, user_info->workstation_name));
 
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
@@ -298,10 +298,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n", 
-			       (*server_info)->guest ? "guest " : "", 
+			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n",
+			       (*server_info)->guest ? "guest " : "",
 			       user_info->client.account_name,
-			       user_info->internal_username, 
+			       user_info->mapped.account_name,
 			       unix_username));
 		}
 
@@ -310,10 +310,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 	/* failed authentication; check for guest lapping */
 
-	DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
-		  user_info->client.account_name, user_info->internal_username,
+	DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n",
+		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status)));
-	ZERO_STRUCTP(server_info); 
+	ZERO_STRUCTP(server_info);
 
 	return nt_status;
 }

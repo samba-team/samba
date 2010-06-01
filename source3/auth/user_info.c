@@ -58,8 +58,8 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **user_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user_info)->internal_username = SMB_STRDUP(internal_username);
-	if ((*user_info)->internal_username == NULL) {
+	(*user_info)->mapped.account_name = SMB_STRDUP(internal_username);
+	if ((*user_info)->mapped.account_name == NULL) {
 		free_user_info(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -118,7 +118,7 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 				  (*user_info)->client.account_name));
 		}
 		SAFE_FREE((*user_info)->client.account_name);
-		SAFE_FREE((*user_info)->internal_username);
+		SAFE_FREE((*user_info)->mapped.account_name);
 		SAFE_FREE((*user_info)->client_domain);
 		SAFE_FREE((*user_info)->domain);
 		SAFE_FREE((*user_info)->workstation_name);

@@ -281,7 +281,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	bool locally_made_cli = False;
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
 	cli = state->cli;
 
@@ -427,7 +427,7 @@ use this machine as the password server.\n"));
 		fstring real_username;
 		struct passwd *pass;
 
-		if ( (pass = smb_getpwnam( NULL, user_info->internal_username, 
+		if ( (pass = smb_getpwnam( NULL, user_info->mapped.account_name,
 			real_username, True )) != NULL ) 
 		{
 			/* if a real user check pam account restrictions */

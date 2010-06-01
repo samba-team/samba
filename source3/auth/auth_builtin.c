@@ -40,10 +40,10 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 	/* mark this as 'not for me' */
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
-	if (!(user_info->internal_username 
-	      && *user_info->internal_username)) {
+	if (!(user_info->mapped.account_name
+	      && *user_info->mapped.account_name)) {
 		nt_status = make_server_info_guest(NULL, server_info);
 	}
 
@@ -91,7 +91,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	fstring user;
 	long error_num;
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
 	fstrcpy(user, user_info->client.account_name);
 

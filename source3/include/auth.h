@@ -29,7 +29,7 @@ struct auth_usersupplied_info {
 	bool encrypted;
 	struct {
 		char *account_name;   /* username before mapping */
-	} client;
+	} client, mapped;
 
 	bool was_mapped;	      /* Did the username map actually match? */
 	char *client_domain;          /* domain name string */

@@ -388,12 +388,12 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	/* get the account information */
 
 	become_root();
-	ret = pdb_getsampwnam(sampass, user_info->internal_username);
+	ret = pdb_getsampwnam(sampass, user_info->mapped.account_name);
 	unbecome_root();
 
 	if (ret == False) {
 		DEBUG(3,("check_sam_security: Couldn't find user '%s' in "
-			 "passdb.\n", user_info->internal_username));
+			 "passdb.\n", user_info->mapped.account_name));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}

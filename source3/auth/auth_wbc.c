@@ -61,7 +61,7 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 	}
 	/* Send off request */
 
-	DEBUG(10, ("Check auth for: [%s]", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]", user_info->mapped.account_name));
 
 	params.account_name	= user_info->client.account_name;
 	params.domain_name	= user_info->domain;
@@ -73,13 +73,13 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 	/* Handle plaintext */
 	if (!user_info->encrypted) {
 		DEBUG(3,("Checking plaintext password for %s.\n",
-			 user_info->internal_username));
+			 user_info->mapped.account_name));
 		params.level = WBC_AUTH_USER_LEVEL_PLAIN;
 
 		params.password.plaintext = (char *)user_info->plaintext_password.data;
 	} else {
 		DEBUG(3,("Checking encrypted password for %s.\n",
-			 user_info->internal_username));
+			 user_info->mapped.account_name));
 		params.level = WBC_AUTH_USER_LEVEL_RESPONSE;
 
 		memcpy(params.password.response.challenge,

@@ -91,15 +91,15 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
 	become_root();
-	pass = Get_Pwnam_alloc(talloc_tos(), user_info->internal_username);
+	pass = Get_Pwnam_alloc(talloc_tos(), user_info->mapped.account_name);
 
 	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
-				pass ? pass->pw_name : user_info->internal_username, 
+				pass ? pass->pw_name : user_info->mapped.account_name,
 				(char *)user_info->plaintext_password.data,
 				user_info->plaintext_password.length-1,
 				lp_update_encrypted() ? 

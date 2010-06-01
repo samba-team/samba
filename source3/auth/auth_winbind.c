@@ -43,11 +43,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10, ("Check auth for: [%s]", user_info->internal_username));
+	DEBUG(10, ("Check auth for: [%s]", user_info->mapped.account_name));
 
 	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
-			 user_info->internal_username));
+			 user_info->mapped.account_name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}		
 
