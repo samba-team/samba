@@ -248,7 +248,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		NTSTATUS result;
 
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name,
-					    user_info->mapped.domain_name, user_info->client.account_name);
+				      user_info->mapped.domain_name, user_info->client.account_name);
 
 		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 

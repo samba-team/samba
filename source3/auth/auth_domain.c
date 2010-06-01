@@ -307,15 +307,15 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
 						      mem_ctx,
-						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
-						      dc_name,                    /* server name */
-						      user_info->client.account_name,        /* user name logging on. */
-						      user_info->client.domain_name,   /* domain name */
-						      user_info->workstation_name,/* workstation name */
-						      chal,                       /* 8 byte challenge. */
+						      user_info->logon_parameters,         /* flags such as 'allow workstation logon' */
+						      dc_name,                             /* server name */
+						      user_info->client.account_name,      /* user name logging on. */
+						      user_info->client.domain_name,       /* domain name */
+						      user_info->workstation_name,         /* workstation name */
+						      chal,                                /* 8 byte challenge. */
 						      user_info->password.response.lanman, /* lanman 24 byte response */
 						      user_info->password.response.nt,     /* nt 24 byte response */
-						      &info3);                    /* info3 out */
+						      &info3);                             /* info3 out */
 
 	/* Let go as soon as possible so we avoid any potential deadlocks
 	   with winbind lookup up users or groups. */
@@ -335,10 +335,10 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx,
-						user_info->client.account_name,
-						domain,
-						server_info,
-						info3);
+						   user_info->client.account_name,
+						   domain,
+						   server_info,
+						   info3);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			(*server_info)->nss_token |= user_info->was_mapped;
@@ -522,12 +522,12 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	}
 
 	nt_status = domain_client_validate(mem_ctx,
-					user_info,
-					user_info->mapped.domain_name,
-					(uchar *)auth_context->challenge.data,
-					server_info,
-					dc_name,
-					&dc_ss);
+					   user_info,
+					   user_info->mapped.domain_name,
+					   (uchar *)auth_context->challenge.data,
+					   server_info,
+					   dc_name,
+					   &dc_ss);
 
 	return nt_status;
 }
