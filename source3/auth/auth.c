@@ -214,7 +214,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
-		  user_info->client_domain, user_info->client.account_name, user_info->workstation_name));
+		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
 
 	DEBUG(3, ("check_ntlm_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain, user_info->mapped.account_name, user_info->workstation_name));

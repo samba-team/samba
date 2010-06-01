@@ -309,7 +309,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						      user_info->logon_parameters,/* flags such as 'allow workstation logon' */ 
 						      dc_name,                    /* server name */
 						      user_info->client.account_name,        /* user name logging on. */
-						      user_info->client_domain,   /* domain name */
+						      user_info->client.domain_name,   /* domain name */
 						      user_info->workstation_name,/* workstation name */
 						      chal,                       /* 8 byte challenge. */
 						      user_info->lm_resp,         /* lanman 24 byte response */
@@ -325,7 +325,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->client.account_name,
-                         user_info->client_domain, dc_name, 
+                         user_info->client.domain_name, dc_name,
                          nt_errstr(nt_status)));
 
 		/* map to something more useful */

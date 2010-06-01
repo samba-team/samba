@@ -100,7 +100,7 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 					   &user_info->lm_resp, &user_info->nt_resp,
 					   username,
 					   user_info->client.account_name,
-					   user_info->client_domain,
+					   user_info->client.domain_name,
 					   lm_hash,
 					   nt_hash,
 					   user_sess_key, lm_sess_key);

@@ -29,10 +29,10 @@ struct auth_usersupplied_info {
 	bool encrypted;
 	struct {
 		char *account_name;   /* username before/after mapping */
+		char *domain_name;    /* username before/after mapping */
 	} client, mapped;
 
 	bool was_mapped;	      /* Did the username map actually match? */
-	char *client_domain;          /* domain name string */
 	char *domain;                 /* domain name after mapping */
 	char *internal_username;      /* username after mapping */
 	const char *workstation_name; /* workstation name (netbios calling
