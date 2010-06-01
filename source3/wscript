@@ -356,6 +356,10 @@ utimensat vsyslog _write __write __xstat
                     headers='unistd.h sys/types.h',
                     msg="Checking for minor macro")
 
+    conf.CHECK_STRUCTURE_MEMBER('struct dirent', 'd_off',
+                                headers='unistd.h sys/types.h dirent.h',
+                                define='HAVE_DIRENT_D_OFF')
+
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
         conf.DEFINE('WITH_ADS', '1')
