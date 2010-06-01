@@ -92,7 +92,7 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 		# with AC_CONFIG_COMMANDS_PRE
 		# as that's the deferrs the commands
 		# to location after $prefix and $exec_prefix
-		# have usefull values and directly before
+		# have useful values and directly before
 		# creating config.status.
 		#
 		# The 'eval eval echo' trick is used to
