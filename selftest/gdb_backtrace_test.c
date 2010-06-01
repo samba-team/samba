@@ -1,6 +1,6 @@
 /*
 
-add a usefull tool to test the gdb_backtrace script
+add a useful tool to test the gdb_backtrace script
 
 just compile it with
 cc -g -o gdb_backtrace_test gdb_backtrace_test.c
