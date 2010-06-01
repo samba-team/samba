@@ -5343,7 +5343,7 @@ do {\
 		"failed to query Printer level 2");
 
 	TEST_SZ("description", info.info2.comment);
-/*	TEST_SZ("driverName", info.info2.drivername); */
+	TEST_SZ("driverName", info.info2.drivername);
 	TEST_SZ("location", info.info2.location);
 
 	pname = strrchr(info.info2.printername, '\\');
@@ -5352,7 +5352,7 @@ do {\
 	} else {
 		pname++;
 	}
-/*	TEST_SZ("printerName", pname); */
+	TEST_SZ("printerName", pname);
 	/* TEST_SZ("printSeparatorFile", info.info2.sepfile); */
 	/* TEST_SZ("printShareName", info.info2.sharename); */
 
