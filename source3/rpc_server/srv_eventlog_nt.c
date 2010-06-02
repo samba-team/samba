@@ -129,7 +129,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 
 	/* we have to have READ permission for a successful open */
 
-	return ( info->access_granted & SA_RIGHT_FILE_READ_DATA );
+	return ( info->access_granted & SEC_FILE_READ_DATA );
 }
 
 /********************************************************************
@@ -439,7 +439,7 @@ NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
 
 	/* check for WRITE access to the file */
 
-	if ( !(info->access_granted&SA_RIGHT_FILE_WRITE_DATA) )
+	if ( !(info->access_granted & SEC_FILE_WRITE_DATA) )
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* Force a close and reopen */
