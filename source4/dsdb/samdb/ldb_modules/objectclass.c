@@ -485,14 +485,15 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 	} else {
 
-		/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
+		/* Fix up the DN to be in the standard form, taking
+		 * particular care to match the parent DN */
 		ret = fix_dn(msg, 
 			     ac->req->op.add.message->dn,
 			     ac->search_res->message->dn,
 			     &msg->dn);
 
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb, "Could not munge DN %s into normal form", 
+			ldb_asprintf_errstring(ldb, "objectclass: Could not munge DN %s into normal form",
 					       ldb_dn_get_linearized(ac->req->op.add.message->dn));
 			talloc_free(mem_ctx);
 			return ret;
