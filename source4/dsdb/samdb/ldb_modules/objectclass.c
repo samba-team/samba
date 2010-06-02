@@ -53,6 +53,7 @@ struct oc_context {
 	struct ldb_request *req;
 
 	struct ldb_reply *search_res;
+	struct ldb_reply *search_res2;
 
 	int (*step_fn)(struct oc_context *);
 };
@@ -1027,7 +1028,7 @@ static int objectclass_do_rename(struct oc_context *ac);
 
 static int objectclass_rename(struct ldb_module *module, struct ldb_request *req)
 {
-	static const char * const attrs[] = { NULL };
+	static const char * const attrs[] = { "objectClass", NULL };
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct oc_context *ac;
@@ -1038,16 +1039,9 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectclass_rename\n");
 
-	if (ldb_dn_is_special(req->op.rename.newdn)) { /* do not manipulate our control entries */
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.rename.newdn)) {
 		return ldb_next_request(module, req);
-	}
-
-	/* Firstly ensure we are not trying to rename it to be a child of itself */
-	if ((ldb_dn_compare_base(req->op.rename.olddn, req->op.rename.newdn) == 0) 
-	    && (ldb_dn_compare(req->op.rename.olddn, req->op.rename.newdn) != 0)) {
-		ldb_asprintf_errstring(ldb, "Cannot rename %s to be a child of itself",
-				       ldb_dn_get_linearized(req->op.rename.olddn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	ac = oc_init_context(module, req);
@@ -1061,10 +1055,8 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/*
-	  it makes a search request, looking for the parent DN to fix up the new DN
-	  to a standard one, at objectclass_do_rename()
-	 */
+	/* this looks up the parent object for fetching some important
+	 * informations (objectclasses, DN normalisation...) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
@@ -1087,39 +1079,152 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	ac->step_fn = objectclass_do_rename;
 
 	return ldb_next_request(ac->module, search_req);
-
-
 }
+
+static int objectclass_do_rename2(struct oc_context *ac);
 
 static int objectclass_do_rename(struct oc_context *ac)
 {
+	static const char * const attrs[] = { "objectClass", NULL };
 	struct ldb_context *ldb;
+	struct ldb_request *search_req;
+	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
+
+	/* Check if we have a valid parent - this check is needed since
+	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
+	if (ac->search_res == NULL) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, parent does not exist!",
+				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
+		return LDB_ERR_OTHER;
+	}
+
+	/* now assign "search_res2" to the parent entry to have "search_res"
+	 * free for another lookup */
+	ac->search_res2 = ac->search_res;
+	ac->search_res = NULL;
+
+	/* this looks up the real existing object for fetching some important
+	 * informations (objectclasses) */
+	ret = ldb_build_search_req(&search_req, ldb,
+				   ac, ac->req->op.rename.olddn,
+				   LDB_SCOPE_BASE,
+				   "(objectClass=*)",
+				   attrs, NULL,
+				   ac, get_search_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ac->step_fn = objectclass_do_rename2;
+
+	return ldb_next_request(ac->module, search_req);
+}
+
+static int objectclass_do_rename2(struct oc_context *ac)
+{
+	struct ldb_context *ldb;
+	const struct dsdb_schema *schema;
 	struct ldb_request *rename_req;
 	struct ldb_dn *fixed_dn;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	/* Check we have a valid parent */
+	/* Check if we have a valid entry - this check is needed since
+	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
-		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, parent does not exist!", 
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, entry does not exist!",
 				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-	
-	/* Fix up the DN to be in the standard form,
-	 * taking particular care to match the parent DN */
-	ret = fix_dn(ac,
-		     ac->req->op.rename.newdn,
-		     ac->search_res->message->dn,
-		     &fixed_dn);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
-	/* TODO: Check this is a valid child to this parent,
-	 * by reading the allowedChildClasses and
-	 * allowedChildClasssesEffective attributes */
+	schema = dsdb_get_schema(ldb, ac);
+	if (schema) {
+		struct ldb_message_element *oc_el_entry, *oc_el_parent;
+		const struct dsdb_class *objectclass;
+		const char *rdn_name;
+		bool allowed_class = false;
+		unsigned int i, j;
+
+		oc_el_entry = ldb_msg_find_element(ac->search_res->message,
+						   "objectClass");
+		if (oc_el_entry == NULL) {
+			/* existing entry without a valid object class? */
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		objectclass = get_last_structural_class(schema, oc_el_entry);
+		if (objectclass == NULL) {
+			/* existing entry without a valid object class? */
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
+		if ((objectclass->rDNAttID != NULL) &&
+		    (ldb_attr_cmp(rdn_name, objectclass->rDNAttID) != 0)) {
+			ldb_asprintf_errstring(ldb,
+					       "objectclass: RDN %s is not correct for most specific structural objectclass %s, should be %s",
+					       rdn_name,
+					       objectclass->lDAPDisplayName,
+					       objectclass->rDNAttID);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		oc_el_parent = ldb_msg_find_element(ac->search_res2->message,
+						    "objectClass");
+		if (oc_el_parent == NULL) {
+			/* existing entry without a valid object class? */
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		for (i=0; allowed_class == false && i < oc_el_parent->num_values; i++) {
+			const struct dsdb_class *sclass;
+
+			sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el_parent->values[i]);
+			if (!sclass) {
+				/* We don't know this class?  what is going on? */
+				continue;
+			}
+			for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+				if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+					allowed_class = true;
+					break;
+				}
+			}
+		}
+
+		if (!allowed_class) {
+			ldb_asprintf_errstring(ldb,
+					       "objectclass: structural objectClass %s is not a valid child class for %s",
+					       objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res2->message->dn));
+			return LDB_ERR_NAMING_VIOLATION;
+		}
+	}
+
+	/* Ensure we are not trying to rename it to be a child of itself */
+	if ((ldb_dn_compare_base(ac->req->op.rename.olddn,
+				 ac->req->op.rename.newdn) == 0)  &&
+	    (ldb_dn_compare(ac->req->op.rename.olddn,
+			    ac->req->op.rename.newdn) != 0)) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s to be a child of itself",
+				       ldb_dn_get_linearized(ac->req->op.rename.olddn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* Fix up the DN to be in the standard form, taking
+	 * particular care to match the parent DN */
+	ret = fix_dn(ac,
+		     ac->req->op.rename.newdn,
+		     ac->search_res2->message->dn,
+		     &fixed_dn);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "objectclass: Could not munge DN %s into normal form",
+				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
+		return ret;
+
+	}
 
 	ret = ldb_build_rename_req(&rename_req, ldb, ac,
 				   ac->req->op.rename.olddn, fixed_dn,
