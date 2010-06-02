@@ -506,6 +506,20 @@ objectClass: container
         """Tests the rename operation"""
         print "Tests the rename operations"""
 
+        try:
+            # cannot rename to be a child of itself
+            ldb.rename(self.base_dn, "dc=test," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        try:
+            # inexistent object
+            ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
         self.ldb.add({
              "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
              "objectclass": ["user", "person"] })
@@ -513,11 +527,34 @@ objectClass: container
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
         ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestUSER3,cn=users," + self.base_dn)
+
         try:
+            # containment problem: a user entry cannot contain user entries
+            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestuser4,cn=ldaptestuser3,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NAMING_VIOLATION)
+
+        try:
+            # invalid parent
+            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=people,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+
+        try:
+            # invalid target DN syntax
             ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, ",cn=users," + self.base_dn)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        try:
+            # invalid RDN name
+            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "ou=ldaptestuser3,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
 
