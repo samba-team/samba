@@ -1063,24 +1063,6 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 	return samldb_first_step(ac);
 }
 
-static int samldb_check_rdn(struct ldb_module *module, struct ldb_dn *dn)
-{
-	struct ldb_context *ldb;
-	const char *rdn_name;
-
-	ldb = ldb_module_get_ctx(module);
-	rdn_name = ldb_dn_get_rdn_name(dn);
-
-	if (strcasecmp(rdn_name, "cn") != 0) {
-		ldb_asprintf_errstring(ldb,
-					"Bad RDN (%s=) for samldb object, "
-					"should be CN=!", rdn_name);
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	return LDB_SUCCESS;
-}
-
 static int samldb_schema_info_update(struct samldb_ctx *ac)
 {
 	WERROR werr;
@@ -1356,25 +1338,11 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
-
-		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-
 		return samldb_fill_object(ac, "user");
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "group") != NULL) {
-
-		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-
 		return samldb_fill_object(ac, "group");
 	}
 
@@ -1382,25 +1350,11 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass",
 				 "foreignSecurityPrincipal") != NULL) {
-
-		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-
 		return samldb_fill_foreignSecurityPrincipal_object(ac);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "classSchema") != NULL) {
-
-		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-
 		ret = samldb_schema_info_update(ac);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
@@ -1412,13 +1366,6 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "attributeSchema") != NULL) {
-
-		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-
 		ret = samldb_schema_info_update(ac);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
