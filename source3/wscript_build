@@ -855,6 +855,7 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
 
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
+                    deps='avahi-common avahi-client',
                     enabled=bld.env.with_avahi)
 
 bld.SAMBA_SUBSYSTEM('GROUPDB',
