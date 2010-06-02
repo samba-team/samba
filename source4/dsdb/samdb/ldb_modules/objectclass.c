@@ -3,6 +3,7 @@
 
    Copyright (C) Simo Sorce  2006-2008
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
+   Copyright (C) Matthias Dieter Wallnöfer 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,13 +22,14 @@
 /*
  *  Name: ldb
  *
- *  Component: objectClass sorting module
+ *  Component: objectClass sorting and constraint checking module
  *
  *  Description: 
  *  - sort the objectClass attribute into the class
- *    hierarchy, 
- *  - fix DNs and attributes into 'standard' case
- *  - Add objectCategory and ntSecurityDescriptor defaults
+ *    hierarchy and perform constraint checks (correct RDN name,
+ *    valid parent),
+ *  - fix DNs into 'standard' case
+ *  - Add objectCategory and some other attribute defaults
  *
  *  Author: Andrew Bartlett
  */
