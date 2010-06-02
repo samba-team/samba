@@ -584,19 +584,10 @@ static int objectclass_do_add(struct oc_context *ac)
 					/* We don't know this class?  what is going on? */
 					continue;
 				}
-				if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-					for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
-						if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
-							allowed_class = true;
-							break;
-						}
-					}
-				} else {
-					for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
-						if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
-							allowed_class = true;
-							break;
-						}
+				for (j=0; sclass->systemPossibleInferiors && sclass->systemPossibleInferiors[j]; j++) {
+					if (ldb_attr_cmp(objectclass->lDAPDisplayName, sclass->systemPossibleInferiors[j]) == 0) {
+						allowed_class = true;
+						break;
 					}
 				}
 			}
