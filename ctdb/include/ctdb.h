@@ -26,13 +26,13 @@
 #include <tdb.h>
 
 /* All *_send() functions are guaranteed to be non-blocking and fully
- * asynchronous.  The non-_send variants are synchronous. */
+ * asynchronous.  The non-_send variants are synchronous.
+ */
 
 /*
  * Connect to ctdb using the specified domain socket.
  * Returns a ctdb context if successful or NULL.
  *
- * Use ctdb_free() to release the returned ctdb_connection when finished.
  */
 struct ctdb_connection *ctdb_connect(const char *addr);
 
@@ -48,7 +48,8 @@ void ctdb_request_free(struct ctdb_request *req);
 
 /*
  * Callback for completed requests: it would normally unpack the request
- * using ctdb_*_recv().  You must free the request using ctdb_request_free().
+ * using ctdb_*_recv().
+ * You must free the request using ctdb_request_free().
  *
  * Note that due to macro magic, your callback doesn't have to take void *,
  * it can take a type which matches the actual private parameter.

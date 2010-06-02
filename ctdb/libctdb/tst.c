@@ -50,6 +50,7 @@ static void pnn_cb(struct ctdb_connection *ctdb,
 	uint32_t pnn;
 
 	status = ctdb_getpnn_recv(req, &pnn);
+	ctdb_request_free(req);
 	if (status != 0) {
 		printf("Error reading PNN\n");
 		return;
@@ -64,6 +65,7 @@ static void rm_cb(struct ctdb_connection *ctdb,
 	uint32_t rm;
 
 	status = ctdb_getrecmaster_recv(req, &rm);
+	ctdb_request_free(req);
 	if (status != 0) {
 		printf("Error reading RECMASTER\n");
 		return;
@@ -118,6 +120,7 @@ void message_handler_cb(struct ctdb_connection *ctdb,
 	if (ctdb_set_message_handler_recv(ctdb, req) != 0) {
 		err(1, "registering message");
 	}
+	ctdb_request_free(req);
 	printf("Message handler registered\n");
 	registered = true;
 }

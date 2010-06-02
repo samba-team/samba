@@ -75,6 +75,7 @@ static void set_pnn(struct ctdb_connection *ctdb,
 		/* FIXME: Report error. */
 		ctdb->broken = true;
 	}
+	ctdb_request_free(req);
 }
 
 struct ctdb_connection *ctdb_connect(const char *addr)
@@ -240,7 +241,6 @@ static void handle_incoming(struct ctdb_connection *ctdb, struct io_elem *in)
 			DLIST_REMOVE(ctdb->doneq, i);
 			i->reply = in;
 			i->callback(ctdb, i, i->priv_data);
-			ctdb_request_free(i);
 			return;
 		}
 	}
