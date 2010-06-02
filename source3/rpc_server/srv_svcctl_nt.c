@@ -931,7 +931,7 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 			required_access = STD_RIGHT_WRITE_OWNER_ACCESS;
 			break;
 
-		case SACL_SECURITY_INFORMATION:
+		case SECINFO_SACL:
 			return WERR_INVALID_PARAM;
 		default:
 			return WERR_INVALID_PARAM;

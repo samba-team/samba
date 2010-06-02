@@ -49,7 +49,7 @@ uint32_t get_sec_info(const struct security_descriptor *sd)
 		sec_info &= ~SECINFO_GROUP;
 	}
 	if (sd->sacl == NULL) {
-		sec_info &= ~SACL_SECURITY_INFORMATION;
+		sec_info &= ~SECINFO_SACL;
 	}
 	if (sd->dacl == NULL) {
 		sec_info &= ~DACL_SECURITY_INFORMATION;

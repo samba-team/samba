@@ -39,7 +39,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 #define HASH_SECURITY_INFO (SECINFO_OWNER | \
 				SECINFO_GROUP | \
 				DACL_SECURITY_INFORMATION | \
-				SACL_SECURITY_INFORMATION)
+				SECINFO_SACL)
 
 /*******************************************************************
  Hash a security descriptor.
@@ -380,7 +380,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	if (!(security_info & DACL_SECURITY_INFORMATION)) {
 		psd->dacl = NULL;
 	}
-	if (!(security_info & SACL_SECURITY_INFORMATION)) {
+	if (!(security_info & SECINFO_SACL)) {
 		psd->sacl = NULL;
 	}
 

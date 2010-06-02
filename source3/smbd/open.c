@@ -3212,7 +3212,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		if (sec_info_sent & (SECINFO_OWNER|
 					SECINFO_GROUP|
 					DACL_SECURITY_INFORMATION|
-					SACL_SECURITY_INFORMATION)) {
+					SECINFO_SACL)) {
 			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
 		}
 

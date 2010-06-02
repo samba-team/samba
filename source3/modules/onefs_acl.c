@@ -629,7 +629,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	if (lp_parm_bool(SNUM(fsp->conn), PARM_ONEFS_TYPE,
 		PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
 		DEBUG(5, ("Ignoring SACL on %s.\n", fsp_str_dbg(fsp)));
-		security_info &= ~SACL_SECURITY_INFORMATION;
+		security_info &= ~SECINFO_SACL;
 	}
 
 	if (fsp->fh->fd == -1) {
@@ -733,7 +733,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Copy SACL into ppdesc */
-	if (security_info & SACL_SECURITY_INFORMATION) {
+	if (security_info & SECINFO_SACL) {
 		if (!onefs_acl_to_samba_acl(sd->sacl, &sacl)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
@@ -870,12 +870,12 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 	}
 
 	/* Setup SACL */
-	if (security_info_sent & SACL_SECURITY_INFORMATION) {
+	if (security_info_sent & SECINFO_SACL) {
 
 		if (lp_parm_bool(snum, PARM_ONEFS_TYPE,
 			    PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
 			DEBUG(5, ("Ignoring SACL.\n"));
-			*security_info_effective &= ~SACL_SECURITY_INFORMATION;
+			*security_info_effective &= ~SECINFO_SACL;
 		} else {
 			if (psd->sacl) {
 				if (!onefs_samba_acl_to_acl(psd->sacl,
@@ -884,7 +884,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 
 				if (ignore_aces == true) {
 					*security_info_effective &=
-					    ~SACL_SECURITY_INFORMATION;
+					    ~SECINFO_SACL;
 				}
 			}
 		}

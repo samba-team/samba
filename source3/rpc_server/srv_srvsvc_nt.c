@@ -2286,7 +2286,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		security_info_sent &= ~SECINFO_GROUP;
 	}
 	if (psd->sacl==0) {
-		security_info_sent &= ~SACL_SECURITY_INFORMATION;
+		security_info_sent &= ~SECINFO_SACL;
 	}
 	if (psd->dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
