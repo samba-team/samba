@@ -44,7 +44,7 @@ struct aio_extra {
 	SMB_STRUCT_AIOCB acb;
 	files_struct *fsp;
 	struct smb_request *req;
-	char *outbuf;
+	DATA_BLOB outbuf;
 	struct lock_struct lock;
 	int (*handle_completion)(struct aio_extra *ex, int errcode);
 };
@@ -111,8 +111,8 @@ static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
 	   the smb return buffer. The buffer used in the acb
 	   is the start of the reply data portion of that buffer. */
 
-	aio_ex->outbuf = TALLOC_ARRAY(aio_ex, char, buflen);
-	if (!aio_ex->outbuf) {
+	aio_ex->outbuf = data_blob_talloc(aio_ex, NULL, buflen);
+	if (!aio_ex->outbuf.data) {
 		TALLOC_FREE(aio_ex);
 		return NULL;
 	}
@@ -200,9 +200,9 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	}
 	aio_ex->handle_completion = handle_aio_read_complete;
 
-	construct_reply_common_req(req, aio_ex->outbuf);
-	srv_set_message(aio_ex->outbuf, 12, 0, True);
-	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
+	construct_reply_common_req(req, (char *)aio_ex->outbuf.data);
+	srv_set_message((char *)aio_ex->outbuf.data, 12, 0, True);
+	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
@@ -219,7 +219,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	/* Now set up the aio record for the read call. */
 
 	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = smb_buf(aio_ex->outbuf);
+	a->aio_buf = smb_buf(aio_ex->outbuf.data);
 	a->aio_nbytes = smb_maxcnt;
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
@@ -309,9 +309,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 	aio_ex->handle_completion = handle_aio_write_complete;
 
-	construct_reply_common_req(req, aio_ex->outbuf);
-	srv_set_message(aio_ex->outbuf, 6, 0, True);
-	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
+	construct_reply_common_req(req, (char *)aio_ex->outbuf.data);
+	srv_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
+	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 		(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
@@ -355,10 +355,10 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	    && fsp->aio_write_behind) {
 		/* Lie to the client and immediately claim we finished the
 		 * write. */
-	        SSVAL(aio_ex->outbuf,smb_vwv2,numtowrite);
-                SSVAL(aio_ex->outbuf,smb_vwv4,(numtowrite>>16)&1);
-		show_msg(aio_ex->outbuf);
-		if (!srv_send_smb(smbd_server_fd(),aio_ex->outbuf,
+	        SSVAL(aio_ex->outbuf.data,smb_vwv2,numtowrite);
+                SSVAL(aio_ex->outbuf.data,smb_vwv4,(numtowrite>>16)&1);
+		show_msg((char *)aio_ex->outbuf.data);
+		if (!srv_send_smb(smbd_server_fd(),(char *)aio_ex->outbuf.data,
 				true, aio_ex->req->seqnum+1,
 				IS_CONN_ENCRYPTED(fsp->conn),
 				&aio_ex->req->pcd)) {
@@ -386,7 +386,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 {
 	int outsize;
-	char *outbuf = aio_ex->outbuf;
+	char *outbuf = (char *)aio_ex->outbuf.data;
 	char *data = smb_buf(outbuf);
 	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
@@ -444,7 +444,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 {
 	files_struct *fsp = aio_ex->fsp;
-	char *outbuf = aio_ex->outbuf;
+	char *outbuf = (char *)aio_ex->outbuf.data;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
 	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
 
