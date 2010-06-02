@@ -108,6 +108,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			}
 		}
 		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
+		ctdb->statistics.statistics_current_time = timeval_current();
+
 		outdata->dptr = (uint8_t *)&ctdb->statistics;
 		outdata->dsize = sizeof(ctdb->statistics);
 		return 0;
@@ -128,6 +130,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_STATISTICS_RESET: {
 		CHECK_CONTROL_DATA_SIZE(0);
 		ZERO_STRUCT(ctdb->statistics);
+		ctdb->statistics.statistics_start_time = timeval_current();
 		return 0;
 	}
 

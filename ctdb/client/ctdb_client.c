@@ -2925,6 +2925,8 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 		return NULL;
 	}
 
+	ctdb->statistics.statistics_start_time = timeval_current();
+
 	return ctdb;
 }
 

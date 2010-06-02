@@ -162,6 +162,7 @@ static void show_statistics(struct ctdb_statistics *s)
 	int i;
 	const char *prefix=NULL;
 	int preflen=0;
+	int tmp, days, hours, minutes, seconds;
 	const struct {
 		const char *name;
 		uint32_t offset;
@@ -200,7 +201,19 @@ static void show_statistics(struct ctdb_statistics *s)
 		STATISTICS_FIELD(memory_used),
 		STATISTICS_FIELD(max_hop_count),
 	};
+	tmp = s->statistics_current_time.tv_sec - s->statistics_start_time.tv_sec;
+	seconds = tmp%60;
+	tmp    /= 60;
+	minutes = tmp%60;
+	tmp    /= 60;
+	hours   = tmp%24;
+	tmp    /= 24;
+	days    = tmp;
+
 	printf("CTDB version %u\n", CTDB_VERSION);
+	printf("Current time of statistics  :                %s", ctime(&s->statistics_start_time.tv_sec));
+	printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&s->statistics_start_time.tv_sec));
+
 	for (i=0;i<ARRAY_SIZE(fields);i++) {
 		if (strchr(fields[i].name, '.')) {
 			preflen = strcspn(fields[i].name, ".")+1;
@@ -223,6 +236,8 @@ static void show_statistics(struct ctdb_statistics *s)
 	printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
 	printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
 	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+
 	talloc_free(tmp_ctx);
 }
 
