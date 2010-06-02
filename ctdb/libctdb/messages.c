@@ -99,7 +99,7 @@ int ctdb_send_message(struct ctdb_connection *ctdb,
 	struct ctdb_req_message *pkt;
 
 	/* We just discard it once it's finished: no reply. */
-	req = new_ctdb_request(sizeof(*pkt) + data.dsize,
+	req = new_ctdb_request(offsetof(struct ctdb_req_message, data) + data.dsize,
 			       ctdb_cancel_callback, NULL);
 	if (!req) {
 		return -1;

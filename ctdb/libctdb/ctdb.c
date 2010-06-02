@@ -346,7 +346,7 @@ struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 	struct ctdb_request *req;
 	struct ctdb_req_control *pkt;
 
-	req = new_ctdb_request(sizeof(*pkt) + extra, callback, cbdata);
+	req = new_ctdb_request(offsetof(struct ctdb_req_control, data) + extra, callback, cbdata);
 	if (!req)
 		return NULL;
 
@@ -632,7 +632,7 @@ ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
 	lock->held = false;
 
 	/* Get ready in case we need to send a migrate request. */
-	req = new_ctdb_request(sizeof(*req->hdr.call)
+	req = new_ctdb_request(offsetof(struct ctdb_req_call, data)
 			       + key.dsize, callback, cbdata);
 	if (!req) {
 		ctdb_release_lock(lock);

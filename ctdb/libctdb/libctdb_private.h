@@ -7,6 +7,10 @@
 #include <ctdb.h>
 #include <ctdb_protocol.h>
 
+#ifndef offsetof
+#define offsetof(t,f) ((unsigned int)&((t *)0)->f)
+#endif
+
 struct message_handler_info;
 struct ctdb_reply_call;
 
