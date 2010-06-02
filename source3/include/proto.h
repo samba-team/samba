@@ -2061,10 +2061,6 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 const char *ndr_errstr(enum ndr_err_code err);
 extern const struct ndr_syntax_id null_ndr_syntax_id;
 
-/* The following definitions come from librpc/ndr/sid.c  */
-
-char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
