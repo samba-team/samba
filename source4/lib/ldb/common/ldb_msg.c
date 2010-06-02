@@ -299,7 +299,7 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 
 /*
   compare two ldb_message_element structures
-  assumes case senistive comparison
+  assumes case sensitive comparison
 */
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
 			    struct ldb_message_element *el2)
