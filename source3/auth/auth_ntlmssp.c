@@ -74,6 +74,16 @@ bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
 	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
 }
 
+void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+
+}
+
+void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+
+}
+
 NTSTATUS auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
 				  struct auth_ntlmssp_state *auth_ntlmssp_state,
 				  struct auth_serversupplied_info **_server_info)

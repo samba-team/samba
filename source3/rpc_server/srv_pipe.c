@@ -1189,6 +1189,16 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 			goto err;
 		}
 
+		switch (auth_info.auth_level) {
+			case DCERPC_AUTH_LEVEL_INTEGRITY:
+				auth_ntlmssp_want_sign(a);
+				break;
+			case DCERPC_AUTH_LEVEL_PRIVACY:
+				auth_ntlmssp_want_seal(a);
+				break;
+			default:
+				break;
+		}
 		/*
 		 * Pass the first security blob of data to it.
 		 * This can return an error or NT_STATUS_MORE_PROCESSING_REQUIRED
@@ -1522,6 +1532,17 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		DEBUG(0,("pipe_ntlmssp_auth_bind: auth_ntlmssp_start failed: %s\n",
 			nt_errstr(status) ));
 		goto err;
+	}
+
+	switch (pauth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		auth_ntlmssp_want_sign(a);
+		break;
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		auth_ntlmssp_want_seal(a);
+		break;
+	default:
+		break;
 	}
 
 	status = auth_ntlmssp_update(a, blob, &response);
