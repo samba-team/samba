@@ -469,7 +469,8 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 
-	/* Check we have a valid parent */
+	/* Check if we have a valid parent - this check is needed since
+	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
 		if (ldb_dn_compare(ldb_get_root_basedn(ldb), msg->dn) == 0) {
 			/* Allow the tree to be started */
