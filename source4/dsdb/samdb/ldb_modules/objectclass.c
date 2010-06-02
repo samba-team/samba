@@ -437,7 +437,6 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	talloc_steal(search_req, parent_dn);
 
 	ac->step_fn = objectclass_do_add;
 
