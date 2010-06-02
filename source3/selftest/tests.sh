@@ -131,16 +131,16 @@ export PASSWORD
 )
 
 # plain
-plantest "blackbox.smbclient_s3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
-plantest "blackbox.smbclient_s3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
-plantest "blackbox.smbclient_s3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
+plantest "blackbox.smbclient_s3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH
+plantest "blackbox.smbclient_s3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH
+plantest "blackbox.smbclient_s3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD \$USERID \$LOCAL_PATH
 
 # sign, only the member server allows signing
-plantest "blackbox.smbclient_s3.sign member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "--signing=required"
-plantest "blackbox.smbclient_s3.sign domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "--signing=required"
+plantest "blackbox.smbclient_s3.sign member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH "--signing=required"
+plantest "blackbox.smbclient_s3.sign domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD \$USERID \$LOCAL_PATH "--signing=required"
 
 # encrypted
-plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD "-e"
+plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH "-e"
 
 # these don't work yet
 #plantest "blackbox.smbclient_s3.crypt member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "-e"

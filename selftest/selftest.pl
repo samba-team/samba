@@ -787,6 +787,7 @@ my @exported_envvars = (
 
 	# user stuff
 	"USERNAME",
+	"USERID",
 	"PASSWORD",
 	"DC_USERNAME",
 	"DC_PASSWORD",
@@ -794,7 +795,8 @@ my @exported_envvars = (
 	# misc stuff
 	"KRB5_CONFIG",
 	"WINBINDD_SOCKET_DIR",
-	"WINBINDD_PRIV_PIPE_DIR"
+	"WINBINDD_PRIV_PIPE_DIR",
+	"LOCAL_PATH"
 );
 
 $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 

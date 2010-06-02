@@ -677,6 +677,7 @@ $unix_name-group:x:$unix_gids[0]:
 	$ret{CONFIGURATION} ="-s $conffile";
 	$ret{SERVER} = $server;
 	$ret{USERNAME} = $unix_name;
+	$ret{USERID} = $unix_uid;
 	$ret{DOMAIN} = $domain;
 	$ret{NETBIOSNAME} = $server;
 	$ret{PASSWORD} = $password;
@@ -687,6 +688,7 @@ $unix_name-group:x:$unix_gids[0]:
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
+	$ret{LOCAL_PATH} = "$shrdir";
 
 	return \%ret;
 }
