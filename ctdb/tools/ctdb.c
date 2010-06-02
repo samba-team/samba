@@ -26,6 +26,7 @@
 #include "system/locale.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "../include/ctdb.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
@@ -34,6 +35,8 @@
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */
 #define ERR_DISNODE	22	/* node is disconnected */
+
+struct ctdb_connection *ctdb_connection;
 
 static void usage(void);
 
@@ -365,11 +368,12 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int mypnn;
+	uint32_t mypnn;
+	int ret;
 
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (mypnn == -1) {
-		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node."));
+	ret = ctdb_getpnn(ctdb_connection, options.pnn, &mypnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get pnn from node."));
 		return -1;
 	}
 
@@ -4536,6 +4540,7 @@ int main(int argc, const char *argv[])
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
 			int j;
+			const char *socket_name;
 
 			if (ctdb_commands[i].without_daemon == true) {
 				close(2);
@@ -4544,6 +4549,14 @@ int main(int argc, const char *argv[])
 			/* initialise ctdb */
 			ctdb = ctdb_cmdline_client(ev);
 
+			/* initialize a libctdb connection as well */
+			socket_name = ctdb_get_socketname(ctdb);
+			ctdb_connection = ctdb_connect(socket_name);
+			if (ctdb_connection == NULL) {
+				fprintf(stderr, "Failed to connect to daemon from libctdb\n");
+				exit(1);
+			}				
+			
 			if (ctdb_commands[i].without_daemon == false) {
 				if (ctdb == NULL) {
 					DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));

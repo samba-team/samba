@@ -118,9 +118,9 @@ bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o
+bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o libctdb/libctdb.a
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) libctdb/libctdb.a
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
