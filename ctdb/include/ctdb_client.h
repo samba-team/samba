@@ -157,6 +157,8 @@ typedef void (*ctdb_msg_fn_t)(struct ctdb_context *, uint64_t srvid,
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 			     ctdb_msg_fn_t handler,
 			     void *private_data);
+int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
+				       uint64_t srvid, void *private_data);
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);

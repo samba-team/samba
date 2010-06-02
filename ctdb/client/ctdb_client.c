@@ -496,7 +496,7 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   tell the daemon we no longer want a srvid
 */
-int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
 {
 	int res;
 	int32_t status;
@@ -1866,7 +1866,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 			   data, NULL, NULL, &status, NULL, NULL);
 	if (ret != 0 || status != 0) {
 		DEBUG(DEBUG_ERR,("ctdb_traverse_all failed\n"));
-		ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
+		ctdb_client_remove_message_handler(ctdb_db->ctdb, srvid, &state);
 		return -1;
 	}
 
@@ -1874,7 +1874,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 		event_loop_once(ctdb_db->ctdb->ev);
 	}
 
-	ret = ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
+	ret = ctdb_client_remove_message_handler(ctdb_db->ctdb, srvid, &state);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to remove ctdb_traverse handler\n"));
 		return -1;
