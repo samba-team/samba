@@ -782,8 +782,7 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c ${RPC_CLIENT_SRC}
                  ../librpc/rpc/binding.c client/dnsbrowse.c
                  ${RPC_CLIENT_SRC1} ${RPC_PARSE_SRC2}'''
 
-CLIENT_SRC = '''${CLIENT_SRC1} ${PARAM_SRC}
-	        ${KRBCLIENT_SRC} ${LIBMSRPC_GEN_SRC}
+CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
                 ${READLINE_SRC} ${DISPLAY_SEC_SRC}'''
 
 
@@ -959,7 +958,7 @@ bld.SAMBA_BINARY('web/swat',
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG''',
+                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG PARAM KRBCLIENT''',
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
