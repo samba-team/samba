@@ -42,7 +42,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 	}
 
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
-				    (OWNER_SECURITY_INFORMATION |
+				    (SECINFO_OWNER |
 				     GROUP_SECURITY_INFORMATION |
 				     DACL_SECURITY_INFORMATION),
 				    &secdesc);

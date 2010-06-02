@@ -322,7 +322,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 
 	DEBUG(10,("after make sec_acl\n"));
 	*ppdesc = make_sec_desc(mem_ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
-	                        (security_info & OWNER_SECURITY_INFORMATION) ? &sid_owner : NULL,
+	                        (security_info & SECINFO_OWNER) ? &sid_owner : NULL,
 	                        (security_info & GROUP_SECURITY_INFORMATION) ? &sid_group : NULL,
 	                        NULL, psa, &sd_size);
 	if (*ppdesc==NULL) {
@@ -735,7 +735,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
 	if ((security_info_sent & (DACL_SECURITY_INFORMATION |
-		GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION)) == 0)
+		GROUP_SECURITY_INFORMATION | SECINFO_OWNER)) == 0)
 	{
 		DEBUG(9, ("security_info_sent (0x%x) ignored\n",
 			security_info_sent));

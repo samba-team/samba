@@ -43,7 +43,7 @@ uint32_t get_sec_info(const struct security_descriptor *sd)
 	SMB_ASSERT(sd);
 
 	if (sd->owner_sid == NULL) {
-		sec_info &= ~OWNER_SECURITY_INFORMATION;
+		sec_info &= ~SECINFO_OWNER;
 	}
 	if (sd->group_sid == NULL) {
 		sec_info &= ~GROUP_SECURITY_INFORMATION;

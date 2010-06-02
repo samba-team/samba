@@ -93,7 +93,7 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 	if (sd->dacl)
 		sec_info |= DACL_SECURITY_INFORMATION;
 	if (sd->owner_sid)
-		sec_info |= OWNER_SECURITY_INFORMATION;
+		sec_info |= SECINFO_OWNER;
 	if (sd->group_sid)
 		sec_info |= GROUP_SECURITY_INFORMATION;
 	SSVAL(param, 4, sec_info);

@@ -1197,7 +1197,7 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	 * This may be a group chown only set.
 	 */
 
-	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+	if (security_info_sent & SECINFO_OWNER) {
 		sid_copy(&owner_sid, psd->owner_sid);
 		if (!sid_to_uid(&owner_sid, puser)) {
 			if (lp_force_unknown_acl_user(SNUM(conn))) {
@@ -3388,7 +3388,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	} /* security_info & DACL_SECURITY_INFORMATION */
 
 	psd = make_standard_sec_desc( talloc_tos(),
-			(security_info & OWNER_SECURITY_INFORMATION) ? &owner_sid : NULL,
+			(security_info & SECINFO_OWNER) ? &owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION) ? &group_sid : NULL,
 			psa,
 			&sd_size);

@@ -644,7 +644,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 
 	*ppdesc = make_sec_desc(mem_ctx, SD_REVISION,
 				SEC_DESC_SELF_RELATIVE,
-				(security_info & OWNER_SECURITY_INFORMATION)
+				(security_info & SECINFO_OWNER)
 				? &owner_sid : NULL,
 				(security_info & GROUP_SECURITY_INFORMATION)
 				? &group_sid : NULL,

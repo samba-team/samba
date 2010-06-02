@@ -705,7 +705,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	sacl = NULL;
 
 	/* Copy owner into ppdesc */
-	if (security_info & OWNER_SECURITY_INFORMATION) {
+	if (security_info & SECINFO_OWNER) {
 		if (!onefs_identity_to_sid(sd->owner, &owner_sid)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
@@ -840,7 +840,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 	*security_info_effective = security_info_sent;
 
 	/* Setup owner */
-	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+	if (security_info_sent & SECINFO_OWNER) {
 		if (!onefs_og_to_identity(psd->owner_sid, &owner, false, snum))
 			return NT_STATUS_ACCESS_DENIED;
 

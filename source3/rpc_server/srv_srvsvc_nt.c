@@ -2146,7 +2146,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	}
 
 	nt_status = SMB_VFS_FGET_NT_ACL(fsp,
-				       (OWNER_SECURITY_INFORMATION
+				       (SECINFO_OWNER
 					|GROUP_SECURITY_INFORMATION
 					|DACL_SECURITY_INFORMATION), &psd);
 
@@ -2280,7 +2280,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 	security_info_sent = r->in.securityinformation;
 
 	if (psd->owner_sid==0) {
-		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
+		security_info_sent &= ~SECINFO_OWNER;
 	}
 	if (psd->group_sid==0) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
