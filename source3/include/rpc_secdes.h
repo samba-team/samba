@@ -24,23 +24,6 @@
 /* for ADS */
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
 
-/* A type to describe the mapping of generic access rights to object
-   specific access rights. */
-
-struct generic_mapping {
-	uint32 generic_read;
-	uint32 generic_write;
-	uint32 generic_execute;
-	uint32 generic_all;
-};
-
-struct standard_mapping {
-	uint32 std_read;
-	uint32 std_write;
-	uint32 std_execute;
-	uint32 std_all;
-};
-
 /* Standard access rights. */
 
 #define STD_RIGHT_DELETE_ACCESS		0x00010000

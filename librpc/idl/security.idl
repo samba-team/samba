@@ -519,4 +519,22 @@ interface security
 	const string GUID_DRS_MONITOR_TOPOLOGY        = "f98340fb-7c5b-4cdb-a00b-2ebdfa115a96";
 	const string GUID_DRS_REPL_SYNCRONIZE         = "1131f6ab-9c07-11d1-f79f-00c04fc2dcd2";
 	const string GUID_DRS_RO_REPL_SECRET_SYNC     = "1131f6ae-9c07-11d1-f79f-00c04fc2dcd2";
+
+
+	/* A type to describe the mapping of generic access rights to object
+	   specific access rights. */
+
+	typedef struct {
+		uint32 generic_read;
+		uint32 generic_write;
+		uint32 generic_execute;
+		uint32 generic_all;
+	} generic_mapping;
+
+	typedef	struct {
+		uint32 std_read;
+		uint32 std_write;
+		uint32 std_execute;
+		uint32 std_all;
+	} standard_mapping;
 }
