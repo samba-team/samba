@@ -74,7 +74,7 @@ static int message_handler_destructor(struct ctdb_message_list *m)
 int ctdb_register_message_handler(struct ctdb_context *ctdb, 
 				  TALLOC_CTX *mem_ctx,
 				  uint64_t srvid,
-				  ctdb_message_fn_t handler,
+				  ctdb_msg_fn_t handler,
 				  void *private_data)
 {
 	struct ctdb_message_list *m;

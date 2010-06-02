@@ -475,7 +475,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   handler function in the client
 */
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     ctdb_message_fn_t handler,
+			     ctdb_msg_fn_t handler,
 			     void *private_data)
 				    
 {

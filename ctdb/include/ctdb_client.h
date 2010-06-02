@@ -152,10 +152,10 @@ uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
 uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 
 /* setup a handler for ctdb messages */
-typedef void (*ctdb_message_fn_t)(struct ctdb_context *, uint64_t srvid,
+typedef void (*ctdb_msg_fn_t)(struct ctdb_context *, uint64_t srvid,
 				  TDB_DATA data, void *);
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
-			     ctdb_message_fn_t handler,
+			     ctdb_msg_fn_t handler,
 			     void *private_data);
 
 
@@ -184,7 +184,7 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 int ctdb_register_message_handler(struct ctdb_context *ctdb,
 				  TALLOC_CTX *mem_ctx,
 				  uint64_t srvid,
-				  ctdb_message_fn_t handler,
+				  ctdb_msg_fn_t handler,
 				  void *private_data);
 
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);

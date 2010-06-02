@@ -272,7 +272,7 @@ struct ctdb_message_list {
 	struct ctdb_context *ctdb;
 	struct ctdb_message_list *next, *prev;
 	uint64_t srvid;
-	ctdb_message_fn_t message_handler;
+	ctdb_msg_fn_t message_handler;
 	void *message_private;
 };
 
@@ -724,10 +724,6 @@ struct ctdb_call_state *ctdb_client_call_send(struct ctdb_db_context *ctdb_db,
   results. This call will block unless the call has already completed.
 */
 int ctdb_client_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
-
-int ctdb_daemon_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     ctdb_message_fn_t handler,
-			     void *private_data);
 
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint64_t srvid, TDB_DATA data);
