@@ -156,10 +156,6 @@ static int smbd_smb2_request_parent_destructor(struct smbd_smb2_request **req)
 
 static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
 {
-	if (req->out.vector) {
-		DLIST_REMOVE(req->sconn->smb2.requests, req);
-	}
-
 	if (req->parent) {
 		*req->parent = NULL;
 		talloc_free(req->mem_pool);
@@ -1245,6 +1241,11 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_writev_done, req);
+	/*
+	 * We're done with this request -
+	 * move it off the "being processed" queue.
+	 */
+	DLIST_REMOVE(req->sconn->smb2.requests, req);
 
 	return NT_STATUS_OK;
 }
