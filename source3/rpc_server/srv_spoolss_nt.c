@@ -1537,7 +1537,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 		/* Deny any object specific bits that don't apply to print
 		   servers (i.e printer and job specific bits) */
 
-		r->in.access_mask &= SPECIFIC_RIGHTS_MASK;
+		r->in.access_mask &= SEC_MASK_SPECIFIC;
 
 		if (r->in.access_mask &
 		    ~(SERVER_ACCESS_ADMINISTER | SERVER_ACCESS_ENUMERATE)) {
@@ -1638,7 +1638,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 			return WERR_ACCESS_DENIED;
 		}
 
-		if ((r->in.access_mask & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
+		if ((r->in.access_mask & SEC_MASK_SPECIFIC)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
 			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
 			close_printer_handle(p, r->out.handle);
 			ZERO_STRUCTP(r->out.handle);

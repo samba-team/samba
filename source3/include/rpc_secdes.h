@@ -41,13 +41,6 @@ struct standard_mapping {
 	uint32 std_all;
 };
 
-
-/* Security Access Masks Rights */
-
-#define SPECIFIC_RIGHTS_MASK	0x0000FFFF
-#define STANDARD_RIGHTS_MASK	0x00FF0000
-#define GENERIC_RIGHTS_MASK	0xF0000000
-
 /* Generic access rights */
 
 #define GENERIC_RIGHT_ALL_ACCESS	0x10000000
