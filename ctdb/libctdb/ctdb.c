@@ -354,6 +354,7 @@ struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 				CTDB_REQ_CONTROL, destnode, new_reqid(ctdb));
 
 	pkt = req->hdr.control;
+	pkt->pad = 0;
 	pkt->opcode = opcode;
 	pkt->srvid = 0;
 	pkt->client_id = 0;

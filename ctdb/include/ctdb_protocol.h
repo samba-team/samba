@@ -410,6 +410,7 @@ struct ctdb_reply_getdbpath {
 struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
+	uint32_t pad;
 	uint64_t srvid;
 	uint32_t client_id;
 #define CTDB_CTRL_FLAG_NOREPLY   1

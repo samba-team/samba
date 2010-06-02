@@ -17,6 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -34,6 +35,8 @@ struct io_elem {
 struct io_elem *new_io_elem(size_t len)
 {
 	struct io_elem *elem;
+	size_t ask = len;
+
 	len = (len + (CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 
 	elem = malloc(sizeof(*elem));
@@ -45,6 +48,10 @@ struct io_elem *new_io_elem(size_t len)
 		return NULL;
 	}
 
+	/* stamp out any padding to keep valgrind happy */
+	if (ask != len) {
+		memset(elem->data + ask, 0, len-ask);
+	}
 	elem->len = len;
 	elem->off = 0;
 	return elem;
