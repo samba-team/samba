@@ -74,8 +74,9 @@ bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
 	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
 }
 
-struct auth_serversupplied_info *auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
-							  struct auth_ntlmssp_state *auth_ntlmssp_state)
+NTSTATUS auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
+				  struct auth_ntlmssp_state *auth_ntlmssp_state,
+				  struct auth_serversupplied_info **_server_info)
 {
 	struct auth_serversupplied_info *server_info = auth_ntlmssp_state->server_info;
 	data_blob_free(&server_info->user_session_key);
@@ -85,10 +86,11 @@ struct auth_serversupplied_info *auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
 			auth_ntlmssp_state->ntlmssp_state->session_key.data,
 			auth_ntlmssp_state->ntlmssp_state->session_key.length);
 	if (auth_ntlmssp_state->ntlmssp_state->session_key.length && !server_info->user_session_key.data) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	auth_ntlmssp_state->server_info = NULL;
-	return talloc_steal(mem_ctx, server_info);
+	*_server_info = talloc_steal(mem_ctx, server_info);
+	return NT_STATUS_OK;
 }
 
 struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(struct auth_ntlmssp_state *auth_ntlmssp_state)

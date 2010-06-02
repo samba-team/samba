@@ -713,9 +713,10 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	TALLOC_FREE(p->server_info);
 
-	p->server_info = auth_ntlmssp_server_info(p, a);
-	if (p->server_info == NULL) {
-		DEBUG(0, ("auth_ntlmssp_server_info failed to obtain the server info for authenticated user\n"));
+	status = auth_ntlmssp_server_info(p, a, &p->server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("auth_ntlmssp_server_info failed to obtain the server info for authenticated user: %s\n",
+			  nt_errstr(status)));
 		return false;
 	}
 
