@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Username handling
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1997-2001.
    Copyright (C) Volker Lendecke 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -118,6 +118,139 @@ static void store_map_in_gencache(const char *from, const char *to)
         }
 	gencache_set(key, to, cache_time + time(NULL));
 	TALLOC_FREE(key);
+}
+
+/****************************************************************************
+ Check if a user is in a netgroup user list. If at first we don't succeed,
+ try lower case.
+****************************************************************************/
+
+bool user_in_netgroup(const char *user, const char *ngname)
+{
+#ifdef HAVE_NETGROUP
+	static char *my_yp_domain = NULL;
+	fstring lowercase_user;
+
+	if (my_yp_domain == NULL) {
+		yp_get_default_domain(&my_yp_domain);
+	}
+
+	if (my_yp_domain == NULL) {
+		DEBUG(5,("Unable to get default yp domain, "
+			"let's try without specifying it\n"));
+	}
+
+	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+		user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
+
+	if (innetgr(ngname, NULL, user, my_yp_domain)) {
+		DEBUG(5,("user_in_netgroup: Found\n"));
+		return true;
+	}
+
+	/*
+	 * Ok, innetgr is case sensitive. Try once more with lowercase
+	 * just in case. Attempt to fix #703. JRA.
+	 */
+	fstrcpy(lowercase_user, user);
+	strlower_m(lowercase_user);
+
+	if (strcmp(user,lowercase_user) == 0) {
+		/* user name was already lower case! */
+		return false;
+	}
+
+	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+		lowercase_user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
+
+	if (innetgr(ngname, NULL, lowercase_user, my_yp_domain)) {
+		DEBUG(5,("user_in_netgroup: Found\n"));
+		return true;
+	}
+#endif /* HAVE_NETGROUP */
+	return false;
+}
+
+/****************************************************************************
+ Check if a user is in a user list - can check combinations of UNIX
+ and netgroup lists.
+****************************************************************************/
+
+bool user_in_list(const char *user,const char **list)
+{
+	if (!list || !*list)
+		return False;
+
+	DEBUG(10,("user_in_list: checking user %s in list\n", user));
+
+	while (*list) {
+
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n",
+			  user, *list));
+
+		/*
+		 * Check raw username.
+		 */
+		if (strequal(user, *list))
+			return(True);
+
+		/*
+		 * Now check to see if any combination
+		 * of UNIX and netgroups has been specified.
+		 */
+
+		if(**list == '@') {
+			/*
+			 * Old behaviour. Check netgroup list
+			 * followed by UNIX list.
+			 */
+			if(user_in_netgroup(user, *list +1))
+				return True;
+			if(user_in_group(user, *list +1))
+				return True;
+		} else if (**list == '+') {
+
+			if((*(*list +1)) == '&') {
+				/*
+				 * Search UNIX list followed by netgroup.
+				 */
+				if(user_in_group(user, *list +2))
+					return True;
+				if(user_in_netgroup(user, *list +2))
+					return True;
+
+			} else {
+
+				/*
+				 * Just search UNIX list.
+				 */
+
+				if(user_in_group(user, *list +1))
+					return True;
+			}
+
+		} else if (**list == '&') {
+
+			if(*(*list +1) == '+') {
+				/*
+				 * Search netgroup list followed by UNIX list.
+				 */
+				if(user_in_netgroup(user, *list +2))
+					return True;
+				if(user_in_group(user, *list +2))
+					return True;
+			} else {
+				/*
+				 * Just search netgroup list.
+				 */
+				if(user_in_netgroup(user, *list +1))
+					return True;
+			}
+		}
+
+		list++;
+	}
+	return(False);
 }
 
 bool map_username(fstring user)

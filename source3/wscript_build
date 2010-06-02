@@ -524,7 +524,7 @@ AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
 AUTH_STATIC = ''
 AUTH_SRC = '''${AUTH_STATIC} auth/auth.c auth/auth_util.c auth/token_util.c
            auth/auth_compat.c auth/auth_ntlmssp.c auth/user_info.c auth/check_samsec.c
-           auth/server_info.c auth/server_info_sam.c
+           auth/user_util.c auth/server_info.c auth/server_info_sam.c
            ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
 
 #FIXME: set IDMAP_STATIC during configuration

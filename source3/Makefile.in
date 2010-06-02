@@ -772,6 +772,7 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 	   auth/server_info.o \
 	   auth/server_info_sam.o \
 	   auth/user_info.o \
+	   auth/user_util.o \
 	   auth/auth_compat.o auth/auth_ntlmssp.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
@@ -783,7 +784,7 @@ BUILDOPT_OBJ = smbd/build_options.o
 
 SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/files.o smbd/connection.o \
-	       smbd/utmp.o smbd/session.o smbd/map_username.o \
+	       smbd/utmp.o smbd/session.o \
                smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
 	       smbd/share_access.o smbd/fileio.o \
                smbd/ipc.o smbd/lanman.o smbd/negprot.o \
