@@ -849,7 +849,7 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 		security_info_sent &= ~SECINFO_OWNER;
 	}
 	if (psd->group_sid == NULL) {
-		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
+		security_info_sent &= ~SECINFO_GROUP;
 	}
 
 	/* Convert all the generic bits. */

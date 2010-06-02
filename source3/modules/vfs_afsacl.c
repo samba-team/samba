@@ -646,7 +646,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 				SEC_DESC_SELF_RELATIVE,
 				(security_info & SECINFO_OWNER)
 				? &owner_sid : NULL,
-				(security_info & GROUP_SECURITY_INFORMATION)
+				(security_info & SECINFO_GROUP)
 				? &group_sid : NULL,
 				NULL, psa, &sd_size);
 

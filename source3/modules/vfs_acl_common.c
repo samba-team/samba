@@ -37,7 +37,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 			DATA_BLOB *pblob);
 
 #define HASH_SECURITY_INFO (SECINFO_OWNER | \
-				GROUP_SECURITY_INFORMATION | \
+				SECINFO_GROUP | \
 				DACL_SECURITY_INFORMATION | \
 				SACL_SECURITY_INFORMATION)
 
@@ -374,7 +374,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	if (!(security_info & SECINFO_OWNER)) {
 		psd->owner_sid = NULL;
 	}
-	if (!(security_info & GROUP_SECURITY_INFORMATION)) {
+	if (!(security_info & SECINFO_GROUP)) {
 		psd->group_sid = NULL;
 	}
 	if (!(security_info & DACL_SECURITY_INFORMATION)) {
@@ -437,7 +437,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 
 	return SMB_VFS_FSET_NT_ACL(fsp,
 				(SECINFO_OWNER |
-				 GROUP_SECURITY_INFORMATION |
+				 SECINFO_GROUP |
 				 DACL_SECURITY_INFORMATION),
 				psd);
 }
@@ -460,7 +460,7 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 					NULL,
 					parent_name,
 					(SECINFO_OWNER |
-					 GROUP_SECURITY_INFORMATION |
+					 SECINFO_GROUP |
 					 DACL_SECURITY_INFORMATION),
 					&parent_desc);
 
@@ -533,7 +533,7 @@ static int open_acl_common(vfs_handle_struct *handle,
 				NULL,
 				fname,
 				(SECINFO_OWNER |
-				 GROUP_SECURITY_INFORMATION |
+				 SECINFO_GROUP |
 				 DACL_SECURITY_INFORMATION),
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
@@ -679,10 +679,10 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
         /* Ensure we have OWNER/GROUP/DACL set. */
 
 	if ((security_info_sent & (SECINFO_OWNER|
-				GROUP_SECURITY_INFORMATION|
+				SECINFO_GROUP|
 				DACL_SECURITY_INFORMATION)) !=
 				(SECINFO_OWNER|
-				 GROUP_SECURITY_INFORMATION|
+				 SECINFO_GROUP|
 				 DACL_SECURITY_INFORMATION)) {
 		/* No we don't - read from the existing SD. */
 		struct security_descriptor *nc_psd = NULL;
@@ -690,7 +690,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		status = get_nt_acl_internal(handle, fsp,
 				NULL,
 				(SECINFO_OWNER|
-				 GROUP_SECURITY_INFORMATION|
+				 SECINFO_GROUP|
 				 DACL_SECURITY_INFORMATION),
 				&nc_psd);
 
@@ -704,10 +704,10 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		security_info_sent |= SECINFO_OWNER;
 
-		if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+		if (security_info_sent & SECINFO_GROUP) {
 			nc_psd->group_sid = psd->group_sid;
 		}
-		security_info_sent |= GROUP_SECURITY_INFORMATION;
+		security_info_sent |= SECINFO_GROUP;
 
 		if (security_info_sent & DACL_SECURITY_INFORMATION) {
 			nc_psd->dacl = dup_sec_acl(talloc_tos(), psd->dacl);

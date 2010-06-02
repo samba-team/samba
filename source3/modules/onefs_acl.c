@@ -715,7 +715,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Copy group into ppdesc */
-	if (security_info & GROUP_SECURITY_INFORMATION) {
+	if (security_info & SECINFO_GROUP) {
 		if (!onefs_identity_to_sid(sd->group, &group_sid)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
@@ -850,7 +850,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 	}
 
 	/* Setup group */
-	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+	if (security_info_sent & SECINFO_GROUP) {
 		if (!onefs_og_to_identity(psd->group_sid, &group, true, snum))
 			return NT_STATUS_ACCESS_DENIED;
 

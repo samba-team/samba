@@ -46,7 +46,7 @@ uint32_t get_sec_info(const struct security_descriptor *sd)
 		sec_info &= ~SECINFO_OWNER;
 	}
 	if (sd->group_sid == NULL) {
-		sec_info &= ~GROUP_SECURITY_INFORMATION;
+		sec_info &= ~SECINFO_GROUP;
 	}
 	if (sd->sacl == NULL) {
 		sec_info &= ~SACL_SECURITY_INFORMATION;

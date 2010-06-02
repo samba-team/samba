@@ -927,7 +927,7 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 			break;
 
 		case SECINFO_OWNER:
-		case GROUP_SECURITY_INFORMATION:
+		case SECINFO_GROUP:
 			required_access = STD_RIGHT_WRITE_OWNER_ACCESS;
 			break;
 

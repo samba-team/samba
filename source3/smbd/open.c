@@ -90,7 +90,7 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(SECINFO_OWNER |
-			GROUP_SECURITY_INFORMATION |
+			SECINFO_GROUP |
 			DACL_SECURITY_INFORMATION),&sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1414,7 +1414,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 
 			status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 					(SECINFO_OWNER |
-					GROUP_SECURITY_INFORMATION |
+					SECINFO_GROUP |
 					DACL_SECURITY_INFORMATION),&sd);
 
 			if (!NT_STATUS_IS_OK(status)) {
@@ -3210,7 +3210,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		security_acl_map_generic(sd->sacl, &file_generic_mapping);
 
 		if (sec_info_sent & (SECINFO_OWNER|
-					GROUP_SECURITY_INFORMATION|
+					SECINFO_GROUP|
 					DACL_SECURITY_INFORMATION|
 					SACL_SECURITY_INFORMATION)) {
 			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
