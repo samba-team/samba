@@ -211,7 +211,7 @@ static void show_statistics(struct ctdb_statistics *s)
 	days    = tmp;
 
 	printf("CTDB version %u\n", CTDB_VERSION);
-	printf("Current time of statistics  :                %s", ctime(&s->statistics_start_time.tv_sec));
+	printf("Current time of statistics  :                %s", ctime(&s->statistics_current_time.tv_sec));
 	printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&s->statistics_start_time.tv_sec));
 
 	for (i=0;i<ARRAY_SIZE(fields);i++) {
