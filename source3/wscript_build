@@ -884,6 +884,7 @@ bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
 
 bld.SAMBA_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
+                    deps='krb5 gssapi gssapi_krb5',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBS',
