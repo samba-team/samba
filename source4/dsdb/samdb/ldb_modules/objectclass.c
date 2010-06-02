@@ -575,7 +575,7 @@ static int objectclass_do_add(struct oc_context *ac)
 				= ldb_msg_find_element(ac->search_res->message, "objectClass");
 
 			bool allowed_class = false;
-			int i, j;
+			unsigned int i, j;
 			for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
 				const struct dsdb_class *sclass;
 
