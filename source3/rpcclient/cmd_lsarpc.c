@@ -1040,7 +1040,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct sec_desc_buf *sdb;
-	uint32 sec_info = DACL_SECURITY_INFORMATION;
+	uint32 sec_info = SECINFO_DACL;
 
 	if (argc < 1 || argc > 2) {
 		printf("Usage: %s [sec_info]\n", argv[0]);

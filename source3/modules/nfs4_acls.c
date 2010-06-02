@@ -734,7 +734,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 
 	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
-	if ((security_info_sent & (DACL_SECURITY_INFORMATION |
+	if ((security_info_sent & (SECINFO_DACL |
 		SECINFO_GROUP | SECINFO_OWNER)) == 0)
 	{
 		DEBUG(9, ("security_info_sent (0x%x) ignored\n",
@@ -784,7 +784,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		}
 	}
 
-	if (!(security_info_sent & DACL_SECURITY_INFORMATION) || psd->dacl ==NULL) {
+	if (!(security_info_sent & SECINFO_DACL) || psd->dacl ==NULL) {
 		DEBUG(10, ("no dacl found; security_info_sent = 0x%x\n", security_info_sent));
 		return NT_STATUS_OK;
 	}

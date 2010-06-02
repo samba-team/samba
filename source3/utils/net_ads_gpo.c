@@ -248,7 +248,7 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 					    LDAP_SCOPE_SUBTREE,
 					    "(objectclass=groupPolicyContainer)",
 					    attrs,
-					    DACL_SECURITY_INFORMATION,
+					    SECINFO_DACL,
 					    &res);
 
 	if (!ADS_ERR_OK(status)) {

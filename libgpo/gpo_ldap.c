@@ -485,7 +485,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		"ntSecurityDescriptor",
 		"versionNumber",
 		NULL};
-	uint32_t sd_flags = DACL_SECURITY_INFORMATION;
+	uint32_t sd_flags = SECINFO_DACL;
 
 	ZERO_STRUCTP(gpo);
 

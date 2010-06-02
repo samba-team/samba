@@ -725,7 +725,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Copy DACL into ppdesc */
-	if (security_info & DACL_SECURITY_INFORMATION) {
+	if (security_info & SECINFO_DACL) {
 		if (!onefs_acl_to_samba_acl(sd->dacl, &dacl)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto out;
@@ -860,13 +860,13 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 	}
 
 	/* Setup DACL */
-	if ((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl)) {
+	if ((security_info_sent & SECINFO_DACL) && (psd->dacl)) {
 		if (!onefs_samba_acl_to_acl(psd->dacl, &daclp, &ignore_aces,
 			snum))
 			return NT_STATUS_ACCESS_DENIED;
 
 		if (ignore_aces == true)
-			*security_info_effective &= ~DACL_SECURITY_INFORMATION;
+			*security_info_effective &= ~SECINFO_DACL;
 	}
 
 	/* Setup SACL */

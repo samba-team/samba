@@ -2160,7 +2160,7 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 sec_info = DACL_SECURITY_INFORMATION;
+	uint32 sec_info = SECINFO_DACL;
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	struct sec_desc_buf *sec_desc_buf=NULL;

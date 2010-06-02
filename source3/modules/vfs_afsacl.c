@@ -731,7 +731,7 @@ static bool nt_to_afs_acl(const char *filename,
 
 	/* Currently we *only* look at the dacl */
 
-	if (((security_info_sent & DACL_SECURITY_INFORMATION) == 0) ||
+	if (((security_info_sent & SECINFO_DACL) == 0) ||
 	    (psd->dacl == NULL))
 		return True;
 

@@ -872,9 +872,9 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 	if ( !(info->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
 		return WERR_ACCESS_DENIED;
 
-	/* TODO: handle something besides DACL_SECURITY_INFORMATION */
+	/* TODO: handle something besides SECINFO_DACL */
 
-	if ( (r->in.security_flags & DACL_SECURITY_INFORMATION) != DACL_SECURITY_INFORMATION )
+	if ( (r->in.security_flags & SECINFO_DACL) != SECINFO_DACL )
 		return WERR_INVALID_PARAM;
 
 	/* lookup the security descriptor and marshall it up for a reply */
@@ -922,7 +922,7 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 	/* check the access on the open handle */
 
 	switch ( r->in.security_flags ) {
-		case DACL_SECURITY_INFORMATION:
+		case SECINFO_DACL:
 			required_access = STD_RIGHT_WRITE_DAC_ACCESS;
 			break;
 

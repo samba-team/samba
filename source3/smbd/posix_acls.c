@@ -2337,7 +2337,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 	 * If no DACL then this is a chown only security descriptor.
 	 */
 
-	if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !psd->dacl)
+	if(!(security_info_sent & SECINFO_DACL) || !psd->dacl)
 		return True;
 
 	/*
@@ -3206,7 +3206,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		num_profile_acls = 3;
 	}
 
-	if ((security_info & DACL_SECURITY_INFORMATION) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
+	if ((security_info & SECINFO_DACL) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
 
 		/*
 		 * In the optimum case Creator Owner and Creator Group would be used for
@@ -3385,7 +3385,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				goto done;
 			}
 		}
-	} /* security_info & DACL_SECURITY_INFORMATION */
+	} /* security_info & SECINFO_DACL */
 
 	psd = make_standard_sec_desc( talloc_tos(),
 			(security_info & SECINFO_OWNER) ? &owner_sid : NULL,
@@ -3682,7 +3682,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 	}
 
 	status = SMB_VFS_GET_NT_ACL(parent_fsp->conn, smb_dname->base_name,
-				    DACL_SECURITY_INFORMATION, &parent_sd );
+				    SECINFO_DACL, &parent_sd );
 
 	close_file(NULL, parent_fsp, NORMAL_CLOSE);
 	TALLOC_FREE(smb_dname);
@@ -3937,7 +3937,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 	 * Only change security if we got a DACL.
 	 */
 
-	if(!(security_info_sent & DACL_SECURITY_INFORMATION) || (psd->dacl == NULL)) {
+	if(!(security_info_sent & SECINFO_DACL) || (psd->dacl == NULL)) {
 		free_canon_ace_list(file_ace_list);
 		free_canon_ace_list(dir_ace_list);
 		return NT_STATUS_OK;
@@ -4747,7 +4747,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 		return NULL;
 	}
 
-	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
+	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, SECINFO_DACL, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		TALLOC_FREE(finfo.fsp_name);
 		conn_free(conn);

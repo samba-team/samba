@@ -2148,7 +2148,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	nt_status = SMB_VFS_FGET_NT_ACL(fsp,
 				       (SECINFO_OWNER
 					|SECINFO_GROUP
-					|DACL_SECURITY_INFORMATION), &psd);
+					|SECINFO_DACL), &psd);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL "
@@ -2289,7 +2289,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		security_info_sent &= ~SECINFO_SACL;
 	}
 	if (psd->dacl==0) {
-		security_info_sent &= ~DACL_SECURITY_INFORMATION;
+		security_info_sent &= ~SECINFO_DACL;
 	}
 
 	/* Convert all the generic bits. */

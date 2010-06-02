@@ -38,7 +38,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 
 #define HASH_SECURITY_INFO (SECINFO_OWNER | \
 				SECINFO_GROUP | \
-				DACL_SECURITY_INFORMATION | \
+				SECINFO_DACL | \
 				SECINFO_SACL)
 
 /*******************************************************************
@@ -377,7 +377,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	if (!(security_info & SECINFO_GROUP)) {
 		psd->group_sid = NULL;
 	}
-	if (!(security_info & DACL_SECURITY_INFORMATION)) {
+	if (!(security_info & SECINFO_DACL)) {
 		psd->dacl = NULL;
 	}
 	if (!(security_info & SECINFO_SACL)) {
@@ -438,7 +438,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	return SMB_VFS_FSET_NT_ACL(fsp,
 				(SECINFO_OWNER |
 				 SECINFO_GROUP |
-				 DACL_SECURITY_INFORMATION),
+				 SECINFO_DACL),
 				psd);
 }
 
@@ -461,7 +461,7 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 					parent_name,
 					(SECINFO_OWNER |
 					 SECINFO_GROUP |
-					 DACL_SECURITY_INFORMATION),
+					 SECINFO_DACL),
 					&parent_desc);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -534,7 +534,7 @@ static int open_acl_common(vfs_handle_struct *handle,
 				fname,
 				(SECINFO_OWNER |
 				 SECINFO_GROUP |
-				 DACL_SECURITY_INFORMATION),
+				 SECINFO_DACL),
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
@@ -680,10 +680,10 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 
 	if ((security_info_sent & (SECINFO_OWNER|
 				SECINFO_GROUP|
-				DACL_SECURITY_INFORMATION)) !=
+				SECINFO_DACL)) !=
 				(SECINFO_OWNER|
 				 SECINFO_GROUP|
-				 DACL_SECURITY_INFORMATION)) {
+				 SECINFO_DACL)) {
 		/* No we don't - read from the existing SD. */
 		struct security_descriptor *nc_psd = NULL;
 
@@ -691,7 +691,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 				NULL,
 				(SECINFO_OWNER|
 				 SECINFO_GROUP|
-				 DACL_SECURITY_INFORMATION),
+				 SECINFO_DACL),
 				&nc_psd);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -709,13 +709,13 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		security_info_sent |= SECINFO_GROUP;
 
-		if (security_info_sent & DACL_SECURITY_INFORMATION) {
+		if (security_info_sent & SECINFO_DACL) {
 			nc_psd->dacl = dup_sec_acl(talloc_tos(), psd->dacl);
 			if (nc_psd->dacl == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-		security_info_sent |= DACL_SECURITY_INFORMATION;
+		security_info_sent |= SECINFO_DACL;
 		psd = nc_psd;
 	}
 

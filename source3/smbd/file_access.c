@@ -44,7 +44,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 				    (SECINFO_OWNER |
 				     SECINFO_GROUP |
-				     DACL_SECURITY_INFORMATION),
+				     SECINFO_DACL),
 				    &secdesc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Could not get acl: %s\n", nt_errstr(status)));
@@ -252,7 +252,7 @@ bool directory_has_default_acl(connection_struct *conn, const char *fname)
 	struct security_descriptor *secdesc = NULL;
 	unsigned int i;
 	NTSTATUS status = SMB_VFS_GET_NT_ACL(conn, fname,
-				DACL_SECURITY_INFORMATION, &secdesc);
+				SECINFO_DACL, &secdesc);
 
 	if (!NT_STATUS_IS_OK(status) || secdesc == NULL) {
 		return false;
