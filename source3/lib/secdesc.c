@@ -23,6 +23,13 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 
+#define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
+					SECINFO_DACL|SECINFO_SACL|\
+					SECINFO_UNPROTECTED_SACL|\
+					SECINFO_UNPROTECTED_DACL|\
+					SECINFO_PROTECTED_SACL|\
+					SECINFO_PROTECTED_DACL)
+
 /* Map generic permissions to file object specific permissions */
 
 const struct generic_mapping file_generic_mapping = {

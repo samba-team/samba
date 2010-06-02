@@ -24,13 +24,6 @@
 /* for ADS */
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
 
-#define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
-					SECINFO_DACL|SECINFO_SACL|\
-					SECINFO_UNPROTECTED_SACL|\
-					SECINFO_UNPROTECTED_DACL|\
-					SECINFO_PROTECTED_SACL|\
-					SECINFO_PROTECTED_DACL)
-
 /* A type to describe the mapping of generic access rights to object
    specific access rights. */
 
