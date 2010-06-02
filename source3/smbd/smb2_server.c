@@ -911,6 +911,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	 * we don't need the request anymore
 	 * cancel requests never have a response
 	 */
+	DLIST_REMOVE(req->sconn->smb2.requests, req);
 	TALLOC_FREE(req);
 
 	for (cur = sconn->smb2.requests; cur; cur = cur->next) {
