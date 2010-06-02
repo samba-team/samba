@@ -514,7 +514,7 @@ static struct static_dir_ace_mapping {
 
 	/* FULL inherit only -- counterpart to previous one */
 	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY,
-	  PERMS_FULL | GENERIC_RIGHT_WRITE_ACCESS, 127 /* rlidwka */ },
+	  PERMS_FULL | SEC_GENERIC_WRITE, 127 /* rlidwka */ },
 
 	/* CHANGE without inheritance -- in all cases here we also get
 	   the corresponding INHERIT_ONLY ACE in the same ACL */
@@ -522,7 +522,7 @@ static struct static_dir_ace_mapping {
 
 	/* CHANGE inherit only -- counterpart to previous one */
 	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY,
-	  PERMS_CHANGE | GENERIC_RIGHT_WRITE_ACCESS, 63 /* rlidwk */ },
+	  PERMS_CHANGE | SEC_GENERIC_WRITE, 63 /* rlidwk */ },
 
 	/* End marker, hopefully there's no afs right 9999 :-) */
 	{ 0, 0, 0, 9999 }

@@ -41,13 +41,6 @@ struct standard_mapping {
 	uint32 std_all;
 };
 
-/* Generic access rights */
-
-#define GENERIC_RIGHT_ALL_ACCESS	0x10000000
-#define GENERIC_RIGHT_EXECUTE_ACCESS	0x20000000
-#define GENERIC_RIGHT_WRITE_ACCESS	0x40000000
-#define GENERIC_RIGHT_READ_ACCESS	0x80000000
-
 /* Standard access rights. */
 
 #define STD_RIGHT_DELETE_ACCESS		0x00010000
