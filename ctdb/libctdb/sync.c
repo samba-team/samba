@@ -92,3 +92,20 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 	}
 	return ret;
 }
+
+int ctdb_getpnn(struct ctdb_connection *ctdb,
+		uint32_t destnode, uint32_t *pnn)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	int ret = -1;
+
+	req = wait_for(ctdb,
+		       ctdb_getpnn_send(ctdb, destnode, set, &done),
+		       &done);
+	if (req != NULL) {
+		ret = ctdb_getpnn_recv(req, pnn);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
