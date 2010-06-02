@@ -475,7 +475,7 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 	memset(paiv, '\0', sizeof(struct pai_val));
 
 	paiv->sd_type = (CVAL(buf,PAI_V1_FLAG_OFFSET) == PAI_V1_ACL_FLAG_PROTECTED) ?
-			SE_DESC_DACL_PROTECTED : 0;
+			SEC_DESC_DACL_PROTECTED : 0;
 
 	paiv->num_entries = SVAL(buf,PAI_V1_NUM_ENTRIES_OFFSET);
 	paiv->num_def_entries = SVAL(buf,PAI_V1_NUM_DEFAULT_ENTRIES_OFFSET);
@@ -3813,8 +3813,8 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 
 	psd->dacl->aces = new_ace;
 	psd->dacl->num_aces = i;
-	psd->type &= ~(SE_DESC_DACL_AUTO_INHERITED|
-                         SE_DESC_DACL_AUTO_INHERIT_REQ);
+	psd->type &= ~(SEC_DESC_DACL_AUTO_INHERITED|
+                         SEC_DESC_DACL_AUTO_INHERIT_REQ);
 
 	*pp_new_sd = psd;
 	return status;
