@@ -6003,14 +6003,6 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	/* Ok, this looks wrong to me, but appears to
-	 * be how SMB2 renames work. CHECK WITH Microsoft !
-	 * jra.
-	 */
-	if (fsp->oplock_type != NO_OPLOCK) {
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
 	if (fsp->base_fsp) {
 		/* newname must be a stream name. */
 		if (newname[0] != ':') {
