@@ -87,6 +87,7 @@ void ctdb_set_max_lacount(struct ctdb_context *ctdb, unsigned count);
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
 
 int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
+const char *ctdb_get_socketname(struct ctdb_context *ctdb);
 
 /*
   tell ctdb what nodes are available. This takes a filename, which will contain
