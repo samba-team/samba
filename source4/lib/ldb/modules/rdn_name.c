@@ -116,10 +116,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	
 	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(msg->dn));
 	
-	/* Perhaps someone above us tried to set this? */
-	if ((attribute = ldb_msg_find_element(msg, "name")) != NULL ) {
-		attribute->num_values = 0;
-	}
+	/* Perhaps someone above us tried to set this? Then ignore it */
+	ldb_msg_remove_attr(msg, "name");
 
 	ret = ldb_msg_add_value(msg, "name", &rdn_val, NULL);
 	if (ret != LDB_SUCCESS) {
