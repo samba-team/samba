@@ -770,7 +770,8 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
 				     auth,
 				     &auth_out);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+			!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		auth_ntlmssp_end(&session->auth_ntlmssp_state);
 		data_blob_free(&auth);
 		TALLOC_FREE(session);
@@ -793,6 +794,11 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 
 	*out_session_id = session->vuid;
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	/* We're done - claim the session. */
 	return smbd_smb2_common_ntlmssp_auth_return(session,
 						smb2req,
 						in_security_mode,
