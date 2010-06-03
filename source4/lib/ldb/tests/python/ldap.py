@@ -445,9 +445,11 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
 
+        # a wrong "name" attribute is obviously tolerated
         self.ldb.add({
              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group"})
+             "objectclass": "group",
+             "name": "ldaptestgroupx"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
