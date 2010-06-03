@@ -46,19 +46,6 @@ struct rename_context {
 	struct ldb_reply *ares;
 };
 
-static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_message *msg, const char *name)
-{
-	unsigned int i;
-
-	for (i = 0; i < msg->num_elements; i++) {
-		if (ldb_attr_cmp(name, msg->elements[i].name) == 0) {
-			return &msg->elements[i];
-		}
-	}
-
-	return NULL;
-}
-
 static int rdn_name_add_callback(struct ldb_request *req,
 				 struct ldb_reply *ares)
 {
@@ -130,7 +117,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(msg->dn));
 	
 	/* Perhaps someone above us tried to set this? */
-	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
+	if ((attribute = ldb_msg_find_element(msg, "name")) != NULL ) {
 		attribute->num_values = 0;
 	}
 
@@ -144,7 +131,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	attribute = rdn_name_find_attribute(msg, rdn_name);
+	attribute = ldb_msg_find_element(msg, rdn_name);
 	if (!attribute) {
 		/* add entry with normalised RDN information if possible */
 		if (a->name != NULL) {
