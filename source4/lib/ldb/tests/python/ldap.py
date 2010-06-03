@@ -113,6 +113,196 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
 
+    def test_objectclasses(self):
+        """Test objectClass behaviour"""
+        print "Test objectClass behaviour"""
+
+        # Invalid objectclass specified
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": "X" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
+        # We cannot instanciate from an abstract objectclass
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": "connectionPoint" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.ldb.add({
+             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+             "objectClass": "person" })
+
+        # We can remove derivation classes of the structural objectclass
+        # but they're going to be readded afterwards
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("top", FLAG_MOD_DELETE,
+          "objectClass")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["objectClass"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("top" in res[0]["objectClass"])
+
+        # The top-most structural class cannot be deleted since there are
+        # attributes of it in use
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("person", FLAG_MOD_DELETE,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # We cannot delete classes which weren't specified
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("computer", FLAG_MOD_DELETE,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
+        # An invalid class cannot be added
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("X", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
+        # The top-most structural class cannot be changed by adding another
+        # structural one
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("user", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # An already specified objectclass cannot be added another time
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("person", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        # Auxiliary classes can always be added
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_ADD,
+          "objectClass")
+        ldb.modify(m)
+
+        # It's only possible to replace with the same objectclass combination.
+        # So the replace action on "objectClass" attributes is really useless.
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement(["top", "person", "bootableDevice"],
+          FLAG_MOD_REPLACE, "objectClass")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement(["person", "bootableDevice"],
+          FLAG_MOD_REPLACE, "objectClass")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement(["top", "person", "bootableDevice",
+          "connectionPoint"], FLAG_MOD_REPLACE, "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement(["top", "computer"], FLAG_MOD_REPLACE,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Classes can be removed unless attributes of them are used.
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
+          "objectClass")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["objectClass"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("bootableDevice" in res[0]["objectClass"])
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_ADD,
+          "objectClass")
+        ldb.modify(m)
+
+        # Add an attribute specific to the "bootableDevice" class
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["bootParameter"] = MessageElement("test", FLAG_MOD_ADD,
+          "bootParameter")
+        ldb.modify(m)
+
+        # Classes can be removed unless attributes of them are used. Now there
+        # exist such attributes on the entry.
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Remove the previously specified attribute
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["bootParameter"] = MessageElement("test", FLAG_MOD_DELETE,
+          "bootParameter")
+        ldb.modify(m)
+
+        # Classes can be removed unless attributes of them are used.
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
+          "objectClass")
+        ldb.modify(m)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+
     def test_system_only(self):
         """Test systemOnly objects"""
         print "Test systemOnly objects"""
