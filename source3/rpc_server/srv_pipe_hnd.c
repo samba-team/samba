@@ -906,13 +906,15 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					  data_blob_null /* delegated_creds */);
 	if (subreq == NULL) {
 		unbecome_root();
-		DEBUG(0, ("tstream_npa_connect_send failed\n"));
+		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and user %s\\%s failed\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string));
 		goto fail;
 	}
 	ok = tevent_req_poll(subreq, ev);
 	unbecome_root();
 	if (!ok) {
-		DEBUG(0, ("tevent_req_poll failed for tstream_npa_connect: %s\n",
+		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s failed for tstream_npa_connect: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string,
 			  strerror(errno)));
 		goto fail;
 
@@ -925,7 +927,8 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				       &result->allocation_size);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		DEBUG(0, ("tstream_npa_connect_recv failed: %s\n",
+		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and user %s\\%s failed: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string,
 			  strerror(sys_errno)));
 		goto fail;
 	}
