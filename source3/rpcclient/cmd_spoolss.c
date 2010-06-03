@@ -506,27 +506,8 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 
 
 	/* Modify the comment. */
-	info2.servername	= info.info2.servername;
-	info2.printername	= info.info2.printername;
-	info2.sharename		= info.info2.sharename;
-	info2.portname		= info.info2.portname;
-	info2.drivername	= info.info2.drivername;
-	info2.comment		= comment;
-	info2.location		= info.info2.location;
-	info2.devmode_ptr	= 0;
-	info2.sepfile		= info.info2.sepfile;
-	info2.printprocessor	= info.info2.printprocessor;
-	info2.datatype		= info.info2.datatype;
-	info2.parameters	= info.info2.parameters;
-	info2.secdesc_ptr	= 0;
-	info2.attributes	= info.info2.attributes;
-	info2.priority		= info.info2.priority;
-	info2.defaultpriority	= info.info2.defaultpriority;
-	info2.starttime		= info.info2.starttime;
-	info2.untiltime		= info.info2.untiltime;
-	info2.status		= info.info2.status;
-	info2.cjobs		= info.info2.cjobs;
-	info2.averageppm	= info.info2.averageppm;
+	spoolss_printerinfo2_to_setprinterinfo2(&info.info2, &info2);
+	info2.comment = comment;
 
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;
@@ -601,27 +582,8 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
                 goto done;
 
 	/* Modify the printername. */
-	info2.servername	= info.info2.servername;
-	info2.printername	= new_printername;
-	info2.sharename		= info.info2.sharename;
-	info2.portname		= info.info2.portname;
-	info2.drivername	= info.info2.drivername;
-	info2.comment		= info.info2.comment;
-	info2.location		= info.info2.location;
-	info2.devmode_ptr	= 0;
-	info2.sepfile		= info.info2.sepfile;
-	info2.printprocessor	= info.info2.printprocessor;
-	info2.datatype		= info.info2.datatype;
-	info2.parameters	= info.info2.parameters;
-	info2.secdesc_ptr	= 0;
-	info2.attributes	= info.info2.attributes;
-	info2.priority		= info.info2.priority;
-	info2.defaultpriority	= info.info2.defaultpriority;
-	info2.starttime		= info.info2.starttime;
-	info2.untiltime		= info.info2.untiltime;
-	info2.status		= info.info2.status;
-	info2.cjobs		= info.info2.cjobs;
-	info2.averageppm	= info.info2.averageppm;
+	spoolss_printerinfo2_to_setprinterinfo2(&info.info2, &info2);
+	info2.printername = new_printername;
 
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;
@@ -1818,27 +1780,8 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 
 	/* Set the printer driver */
 
-	info2.servername	= info.info2.servername;
-	info2.printername	= info.info2.printername;
-	info2.sharename		= info.info2.sharename;
-	info2.portname		= info.info2.portname;
-	info2.drivername	= argv[2];
-	info2.comment		= info.info2.comment;
-	info2.location		= info.info2.location;
-	info2.devmode_ptr	= 0;
-	info2.sepfile		= info.info2.sepfile;
-	info2.printprocessor	= info.info2.printprocessor;
-	info2.datatype		= info.info2.datatype;
-	info2.parameters	= info.info2.parameters;
-	info2.secdesc_ptr	= 0;
-	info2.attributes	= info.info2.attributes;
-	info2.priority		= info.info2.priority;
-	info2.defaultpriority	= info.info2.defaultpriority;
-	info2.starttime		= info.info2.starttime;
-	info2.untiltime		= info.info2.untiltime;
-	info2.status		= info.info2.status;
-	info2.cjobs		= info.info2.cjobs;
-	info2.averageppm	= info.info2.averageppm;
+	spoolss_printerinfo2_to_setprinterinfo2(&info.info2, &info2);
+	info2.drivername = argv[2];
 
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;
