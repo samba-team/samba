@@ -44,6 +44,7 @@ static bool run_matching(struct torture_context *torture,
 	bool ret = true;
 	struct torture_suite *o;
 	struct torture_tcase *t;
+	struct torture_test *p;
 
 	for (o = suite->children; o; o = o->next) {
 		char *name = NULL;
@@ -70,6 +71,15 @@ static bool run_matching(struct torture_context *torture,
 			reload_charcnv(torture->lp_ctx);
 			torture->active_testname = name;
 			ret &= torture_run_tcase(torture, t);
+		}
+		for (p = t->tests; p; p = p->next) {
+			name = talloc_asprintf(torture, "%s-%s-%s", prefix, t->name, p->name);
+			if (gen_fnmatch(expr, name) == 0) {
+				*matched = true;
+				reload_charcnv(torture->lp_ctx);
+				torture->active_testname = name;
+				ret &= torture_run_test(torture, t, p);
+			}
 		}
 	}
 
