@@ -548,7 +548,11 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 		return 0;
 	}
 
+#ifdef HAVE_FDATASYNC
 	if (fdatasync(tdb->fd) != 0) {
+#else
+	if (fsync(tdb->fd) != 0) {
+#endif
 		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction: fsync failed\n"));
 		return -1;
