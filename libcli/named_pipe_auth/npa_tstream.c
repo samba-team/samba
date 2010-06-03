@@ -73,6 +73,11 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	int ret;
 	enum ndr_err_code ndr_err;
+	char *lower_case_npipe = strlower_talloc(talloc_tos(), npipe);
+
+	if (!lower_case_npipe) {
+		return NULL;
+	}
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_npa_connect_state);
@@ -84,7 +89,8 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->unix_path = talloc_asprintf(state, "%s/%s",
 					   directory,
-					   npipe);
+					   lower_case_npipe);
+	talloc_free(lower_case_npipe);
 	if (tevent_req_nomem(state->unix_path, req)) {
 		goto post;
 	}
