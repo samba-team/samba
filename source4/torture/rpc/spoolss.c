@@ -787,53 +787,72 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_EnumPrintProcessors_level(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *environment,
+					   uint32_t level,
+					   uint32_t *count_p,
+					   union spoolss_PrintProcessorInfo **info_p)
+{
+	struct spoolss_EnumPrintProcessors r;
+	DATA_BLOB blob;
+	uint32_t needed;
+	uint32_t count;
+	union spoolss_PrintProcessorInfo *info;
+
+	r.in.servername = "";
+	r.in.environment = environment;
+	r.in.level = level;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+	r.out.count = &count;
+	r.out.info = &info;
+
+	torture_comment(tctx, "Testing EnumPrintProcessors level %u\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumPrintProcessors_r(b, tctx, &r),
+		"EnumPrintProcessors failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		blob = data_blob_talloc_zero(tctx, needed);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_EnumPrintProcessors_r(b, tctx, &r),
+			"EnumPrintProcessors failed");
+	}
+	torture_assert_werr_ok(tctx, r.out.result,
+		"EnumPrintProcessors failed");
+
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessors, info, level, count, needed, 4);
+
+	if (count_p) {
+		*count_p = count;
+	}
+	if (info_p) {
+		*info_p = info;
+	}
+
+	return true;
+}
+
 static bool test_EnumPrintProcessors(struct torture_context *tctx,
 				     struct dcerpc_binding_handle *b,
 				     struct test_spoolss_context *ctx,
 				     const char *environment)
 {
-	NTSTATUS status;
-	struct spoolss_EnumPrintProcessors r;
 	uint16_t levels[] = { 1 };
 	int i, j;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
-		DATA_BLOB blob;
-		uint32_t needed;
-		uint32_t count;
 		union spoolss_PrintProcessorInfo *info;
+		uint32_t count;
 
-		r.in.servername = "";
-		r.in.environment = environment;
-		r.in.level = level;
-		r.in.buffer = NULL;
-		r.in.offered = 0;
-		r.out.needed = &needed;
-		r.out.count = &count;
-		r.out.info = &info;
-
-		torture_comment(tctx, "Testing EnumPrintProcessors level %u\n", r.in.level);
-
-		status = dcerpc_spoolss_EnumPrintProcessors_r(b, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcessors failed");
-		if (W_ERROR_IS_OK(r.out.result)) {
-			/* TODO: do some more checks here */
-			continue;
-		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
-			"EnumPrintProcessors unexpected return code");
-
-		blob = data_blob_talloc_zero(ctx, needed);
-		r.in.buffer = &blob;
-		r.in.offered = needed;
-
-		status = dcerpc_spoolss_EnumPrintProcessors_r(b, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcessors failed");
-
-		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcessors failed");
-
-		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessors, info, r.in.level, count, needed, 4);
+		torture_assert(tctx,
+			test_EnumPrintProcessors_level(tctx, b, environment, level, &count, &info),
+			"test_EnumPrintProcessors_level failed");
 
 		ctx->print_processor_count[level]	= count;
 		ctx->print_processors[level]		= info;
