@@ -4365,7 +4365,6 @@ do {\
 
 static bool test_PrintProcessors(struct torture_context *tctx,
 				 struct dcerpc_binding_handle *b,
-				 struct policy_handle *handle,
 				 const char *environment,
 				 struct dcerpc_binding_handle *winreg_handle,
 				 struct policy_handle *hive_handle)
@@ -5054,7 +5053,6 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 
 static bool test_PrintProcessors_winreg(struct torture_context *tctx,
 					struct dcerpc_binding_handle *b,
-					struct policy_handle *handle,
 					const char *environment)
 {
 	struct dcerpc_pipe *p2;
@@ -5069,7 +5067,7 @@ static bool test_PrintProcessors_winreg(struct torture_context *tctx,
 
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
-	ret = test_PrintProcessors(tctx, b, handle, environment, b2, &hive_handle);
+	ret = test_PrintProcessors(tctx, b, environment, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -6510,10 +6508,6 @@ static bool test_one_printer(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_PrintProcessors_winreg(tctx, b, handle, environment)) {
-		ret = false;
-	}
-
 	if (!test_PrinterData_DsSpooler(tctx, p, handle, name)) {
 		ret = false;
 	}
@@ -6954,6 +6948,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPrinters_old(torture, p, environment);
 	ret &= test_EnumPrinterDrivers_old(torture, p, environment);
 	ret &= test_architecture_buffer(torture, p);
+	ret &= test_PrintProcessors_winreg(torture, b, environment);
 
 	return ret;
 }
