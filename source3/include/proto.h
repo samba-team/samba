@@ -4901,6 +4901,10 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_pipe_client **presult);
+struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+					      const struct ndr_syntax_id *syntax,
+					      const char *client_address,
+					      struct auth_serversupplied_info *server_info);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax,
 				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r),
 				struct auth_serversupplied_info *serversupplied_info,
