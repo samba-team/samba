@@ -798,8 +798,9 @@ void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element 
 */
 void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr)
 {
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
-	if (el) {
+	struct ldb_message_element *el;
+
+	while ((el = ldb_msg_find_element(msg, attr)) != NULL) {
 		ldb_msg_remove_element(msg, el);
 	}
 }
