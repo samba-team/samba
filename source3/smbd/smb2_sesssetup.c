@@ -553,15 +553,25 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	}
 #endif
 
-	/* Fall back to NTLMSSP. */
-	status = auth_ntlmssp_start(&session->auth_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
+	if (kerb_mech) {
+		/* The mechtoken is a krb5 ticket, but
+		 * we need to fall back to NTLM. */
 
-	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-				     secblob_in,
-				     &chal_out);
+		DEBUG(3,("smb2: Got krb5 ticket in SPNEGO "
+			"but set to downgrade to NTLMSSP\n"));
+
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else {
+		/* Fall back to NTLMSSP. */
+		status = auth_ntlmssp_start(&session->auth_ntlmssp_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+					     secblob_in,
+					     &chal_out);
+	}
 
 	if (!NT_STATUS_IS_OK(status) &&
 			!NT_STATUS_EQUAL(status,
@@ -743,6 +753,17 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 			data_blob_free(&secblob_in);
 			SAFE_FREE(kerb_mech);
 			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		data_blob_free(&secblob_in);
+	}
+
+	if (session->auth_ntlmssp_state == NULL) {
+		status = auth_ntlmssp_start(&session->auth_ntlmssp_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			data_blob_free(&auth);
+			TALLOC_FREE(session);
+			return status;
 		}
 	}
 
