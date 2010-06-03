@@ -73,3 +73,32 @@ WERROR push_spoolss_PrinterData(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	}
 	return WERR_OK;
 }
+
+/*******************************************************************
+ ********************************************************************/
+
+void spoolss_printerinfo2_to_setprinterinfo2(const struct spoolss_PrinterInfo2 *i,
+					     struct spoolss_SetPrinterInfo2 *s)
+{
+	s->servername		= i->servername;
+	s->printername		= i->printername;
+	s->sharename		= i->sharename;
+	s->portname		= i->portname;
+	s->drivername		= i->drivername;
+	s->comment		= i->comment;
+	s->location		= i->location;
+	s->devmode_ptr		= 0;
+	s->sepfile		= i->sepfile;
+	s->printprocessor	= i->printprocessor;
+	s->datatype		= i->datatype;
+	s->parameters		= i->parameters;
+	s->secdesc_ptr		= 0;
+	s->attributes		= i->attributes;
+	s->priority		= i->priority;
+	s->defaultpriority	= i->defaultpriority;
+	s->starttime		= i->starttime;
+	s->untiltime		= i->untiltime;
+	s->status		= i->status;
+	s->cjobs		= i->cjobs;
+	s->averageppm		= i->averageppm;
+}

@@ -754,6 +754,7 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 	WERROR result;
 	NTSTATUS status;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo2 info2;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
 
@@ -773,8 +774,8 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 			(void *)&info->info1;
 		break;
 	case 2:
-		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)
-			(void *)&info->info2;
+		spoolss_printerinfo2_to_setprinterinfo2(&info->info2, &info2);
+		info_ctr.info.info2 = &info2;
 		break;
 	case 3:
 		info_ctr.info.info3 = (struct spoolss_SetPrinterInfo3 *)
@@ -2044,6 +2045,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
 
+		struct spoolss_SetPrinterInfo2 info2;
+
 		/* do some initialization */
 		printername = info_enum[i].info2.printername;
 		sharename = info_enum[i].info2.sharename;
@@ -2095,8 +2098,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 		d_printf(_("creating printer: %s\n"), printername);
 
 		info_ctr.level = level;
-		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)
-			(void *)&info_src.info2;
+		spoolss_printerinfo2_to_setprinterinfo2(&info_src.info2, &info2);
+		info_ctr.info.info2 = &info2;
 
 		result = rpccli_spoolss_addprinterex(pipe_hnd_dst,
 						     mem_ctx,
