@@ -354,9 +354,10 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
-		int j, found;
+		unsigned int j;
+		int found = 0;
 		
-		for (j = 0, found = 0; attrs[j]; j++) {
+		for (j = 0; attrs[j]; j++) {
 			if (ldb_attr_cmp(msg->elements[i].name, attrs[j]) == 0) {
 				found = 1;
 				break;
