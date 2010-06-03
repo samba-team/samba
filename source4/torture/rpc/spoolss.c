@@ -7059,25 +7059,25 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 				  torture_rpc_spoolss_setup,
 				  torture_rpc_spoolss_teardown);
 
+	torture_tcase_add_simple_test(tcase, "openprinter_badnamelist", test_OpenPrinter_badname_list);
 	torture_tcase_add_simple_test(tcase, "printer_data_list", test_GetPrinterData_list);
 	torture_tcase_add_simple_test(tcase, "enum_forms", test_PrintServer_EnumForms);
 	torture_tcase_add_simple_test(tcase, "forms", test_PrintServer_Forms);
 	torture_tcase_add_simple_test(tcase, "forms_winreg", test_PrintServer_Forms_Winreg);
 	torture_tcase_add_simple_test(tcase, "enum_ports", test_EnumPorts);
+	torture_tcase_add_simple_test(tcase, "add_port", test_AddPort);
 	torture_tcase_add_simple_test(tcase, "get_printer_driver_directory", test_GetPrinterDriverDirectory);
 	torture_tcase_add_simple_test(tcase, "get_print_processor_directory", test_GetPrintProcessorDirectory);
 	torture_tcase_add_simple_test(tcase, "enum_printer_drivers", test_EnumPrinterDrivers);
 	torture_tcase_add_simple_test(tcase, "enum_monitors", test_EnumMonitors);
 	torture_tcase_add_simple_test(tcase, "enum_print_processors", test_EnumPrintProcessors);
+	torture_tcase_add_simple_test(tcase, "print_processors_winreg", test_print_processors_winreg);
 	torture_tcase_add_simple_test(tcase, "enum_printprocdata", test_EnumPrintProcDataTypes);
 	torture_tcase_add_simple_test(tcase, "enum_printers", test_EnumPrinters);
-	torture_tcase_add_simple_test(tcase, "openprinter_badnamelist", test_OpenPrinter_badname_list);
-	torture_tcase_add_simple_test(tcase, "add_port", test_AddPort);
 	torture_tcase_add_simple_test(tcase, "enum_ports_old", test_EnumPorts_old);
 	torture_tcase_add_simple_test(tcase, "enum_printers_old", test_EnumPrinters_old);
 	torture_tcase_add_simple_test(tcase, "enum_printer_drivers_old", test_EnumPrinterDrivers_old);
 	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
-	torture_tcase_add_simple_test(tcase, "printprocessors_winreg", test_print_processors_winreg);
 
 	return suite;
 }
