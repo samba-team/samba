@@ -2266,22 +2266,11 @@ static int password_hash_add_do_add(struct ph_context *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* remove attributes that we just read into 'io' (handle also superfluous
-	 * "password modify" trials - multiple attributes with the same name -
-	 * on add operations) */
-	while (ldb_msg_find_element(msg, "userPassword") != NULL) {
-		ldb_msg_remove_attr(msg, "userPassword");
-	}
-	while (ldb_msg_find_element(msg, "clearTextPassword") != NULL) {
-		ldb_msg_remove_attr(msg, "clearTextPassword");
-	}
-	while (ldb_msg_find_element(msg, "unicodePwd") != NULL) {
-		ldb_msg_remove_attr(msg, "unicodePwd");
-	}
-	while (ldb_msg_find_element(msg, "dBCSPwd") != NULL) {
-		ldb_msg_remove_attr(msg, "dBCSPwd");
-	}
-
+	/* remove attributes that we just read into 'io' */
+	ldb_msg_remove_attr(msg, "userPassword");
+	ldb_msg_remove_attr(msg, "clearTextPassword");
+	ldb_msg_remove_attr(msg, "unicodePwd");
+	ldb_msg_remove_attr(msg, "dBCSPwd");
 	ldb_msg_remove_attr(msg, "pwdLastSet");
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -2452,7 +2441,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 						       *l);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
-			ldb_msg_remove_attr(msg, *l);
+			ldb_msg_remove_element(msg, passwordAttr);
 		}
 	}
 	if ((del_attr_cnt > 0) && (add_attr_cnt == 0)) {
