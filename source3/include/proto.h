@@ -2046,8 +2046,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 				       char **returned_principal);
 
-#include "librpc/gen_ndr/ndr_spoolss.h"
-
 /* The following definitions come from librpc/ndr/util.c  */
 
 enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r);
