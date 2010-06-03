@@ -59,10 +59,10 @@ RPCCLIENT_NDR_SRC = '''rpc_client/ndr.c'''
 LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c
                   ../librpc/gen_ndr/ndr_lsa.c'''
 
-LIBNDR_GEN_SRC1 = '''../librpc/gen_ndr/ndr_netlogon.c
+LIBNDR_NETLOGON_SRC = '''../librpc/gen_ndr/ndr_netlogon.c
                   ../librpc/ndr/ndr_netlogon.c'''
 
-LIBNDR_GEN_SRC2 = '''../librpc/gen_ndr/ndr_spoolss.c
+LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
                   ../librpc/ndr/ndr_spoolss_buf.c'''
 
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
@@ -73,7 +73,7 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_initshutdown.c
                  ../librpc/gen_ndr/ndr_srvsvc.c
                  ../librpc/gen_ndr/ndr_eventlog.c
-                 ${LIBNDR_GEN_SRC1}
+                 ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
                  librpc/gen_ndr/ndr_notify.c
                  ../librpc/gen_ndr/ndr_xattr.c
@@ -81,13 +81,11 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_epmapper.c
                  ../librpc/gen_ndr/ndr_named_pipe_auth.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
-                 ${LIBNDR_GEN_SRC2}'''
-
-RPC_PARSE_SRC0 = '''rpc_parse/parse_prs.c rpc_parse/parse_misc.c'''
+                 ${LIBNDR_SPOOLSS_SRC}'''
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
-RPC_PARSE_SRC1 = '''${RPC_PARSE_SRC0}'''
+RPC_PARSE_SRC1 = '''rpc_parse/parse_prs.c rpc_parse/parse_misc.c'''
 
 RPC_PARSE_SRC2 = '''rpc_parse/parse_rpc.c
                  rpc_client/init_netlogon.c
