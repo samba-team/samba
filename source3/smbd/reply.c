@@ -2024,7 +2024,7 @@ void reply_open_and_X(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv11,smb_action);
 
 	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
-		SIVAL(req->outbuf, smb_vwv15, STD_RIGHT_ALL_ACCESS);
+		SIVAL(req->outbuf, smb_vwv15, SEC_STD_ALL);
 	}
 
 	chain_reply(req);

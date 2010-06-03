@@ -1770,8 +1770,8 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 				    SAMR_USER_ACCESS_GET_GROUPS;
 			break;
 		case 3:
-			user_mask = STD_RIGHT_READ_CONTROL_ACCESS |
-				    STD_RIGHT_WRITE_DAC_ACCESS |
+			user_mask = SEC_STD_READ_CONTROL |
+				    SEC_STD_WRITE_DAC |
 				    SAMR_USER_ACCESS_GET_GROUPS |
 				    SAMR_USER_ACCESS_SET_PASSWORD |
 				    SAMR_USER_ACCESS_SET_ATTRIBUTES |

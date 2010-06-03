@@ -779,7 +779,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	size_t sd_size = 0;
 
 	cinfo = policy_handle_find(p, r->in.handle,
-				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_connect_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("_samr_QuerySecurity: querying security on SAM\n"));
@@ -789,7 +789,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	}
 
 	dinfo = policy_handle_find(p, r->in.handle,
-				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_domain_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("_samr_QuerySecurity: querying security on Domain "
@@ -804,7 +804,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	}
 
 	uinfo = policy_handle_find(p, r->in.handle,
-				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_user_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("_samr_QuerySecurity: querying security on user "
@@ -825,7 +825,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	}
 
 	ginfo = policy_handle_find(p, r->in.handle,
-				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_group_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		/*
@@ -843,7 +843,7 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 	}
 
 	ainfo = policy_handle_find(p, r->in.handle,
-				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_alias_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
 		/*
@@ -5699,7 +5699,7 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 	DEBUG(5, ("_samr_DeleteUser: %d\n", __LINE__));
 
 	uinfo = policy_handle_find(p, r->in.user_handle,
-				   STD_RIGHT_DELETE_ACCESS, NULL,
+				   SEC_STD_DELETE, NULL,
 				   struct samr_user_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5767,7 +5767,7 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 	DEBUG(5, ("samr_DeleteDomainGroup: %d\n", __LINE__));
 
 	ginfo = policy_handle_find(p, r->in.group_handle,
-				   STD_RIGHT_DELETE_ACCESS, NULL,
+				   SEC_STD_DELETE, NULL,
 				   struct samr_group_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -5817,7 +5817,7 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 	DEBUG(5, ("_samr_DeleteDomAlias: %d\n", __LINE__));
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
-				   STD_RIGHT_DELETE_ACCESS, NULL,
+				   SEC_STD_DELETE, NULL,
 				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

@@ -553,7 +553,7 @@ static bool smbacl4_fill_ace4(
 	ace_v4->aceType = ace_nt->type; /* only ACCESS|DENY supported right now */
 	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
 	ace_v4->aceMask = ace_nt->access_mask &
-		(STD_RIGHT_ALL_ACCESS | SEC_FILE_ALL);
+		(SEC_STD_ALL | SEC_FILE_ALL);
 
 	se_map_generic(&ace_v4->aceMask, &file_generic_mapping);
 

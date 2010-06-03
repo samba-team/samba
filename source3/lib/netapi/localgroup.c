@@ -934,7 +934,7 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_lsa_open_policy2(lsa_pipe, mem_ctx,
 					 false,
-					 STD_RIGHT_READ_CONTROL_ACCESS |
+					 SEC_STD_READ_CONTROL |
 					 LSA_POLICY_VIEW_LOCAL_INFORMATION |
 					 LSA_POLICY_LOOKUP_NAMES,
 					 &lsa_handle);

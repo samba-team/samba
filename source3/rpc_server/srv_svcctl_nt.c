@@ -869,7 +869,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 
 	/* check access reights (according to MSDN) */
 
-	if ( !(info->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+	if ( !(info->access_granted & SEC_STD_READ_CONTROL) )
 		return WERR_ACCESS_DENIED;
 
 	/* TODO: handle something besides SECINFO_DACL */
@@ -923,12 +923,12 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 
 	switch ( r->in.security_flags ) {
 		case SECINFO_DACL:
-			required_access = STD_RIGHT_WRITE_DAC_ACCESS;
+			required_access = SEC_STD_WRITE_DAC;
 			break;
 
 		case SECINFO_OWNER:
 		case SECINFO_GROUP:
-			required_access = STD_RIGHT_WRITE_OWNER_ACCESS;
+			required_access = SEC_STD_WRITE_OWNER;
 			break;
 
 		case SECINFO_SACL:

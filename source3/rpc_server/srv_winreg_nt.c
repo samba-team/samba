@@ -851,7 +851,7 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
 
 	/* access checks first */
 
-	if ( !(key->key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+	if ( !(key->key->access_granted & SEC_STD_READ_CONTROL) )
 		return WERR_ACCESS_DENIED;
 
 	err = reg_getkeysecurity(p->mem_ctx, key, &secdesc);
@@ -892,7 +892,7 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
 
 	/* access checks first */
 
-	if ( !(key->key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
+	if ( !(key->key->access_granted & SEC_STD_WRITE_DAC) )
 		return WERR_ACCESS_DENIED;
 
 	err = ntstatus_to_werror(unmarshall_sec_desc(p->mem_ctx, r->in.sd->data,

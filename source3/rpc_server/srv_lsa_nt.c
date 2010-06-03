@@ -1414,7 +1414,7 @@ NTSTATUS _lsa_DeleteObject(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!(info->access & STD_RIGHT_DELETE_ACCESS)) {
+	if (!(info->access & SEC_STD_DELETE)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2261,7 +2261,7 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 	status = access_check_object(psd, p->server_info->ptok,
 				     NULL, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
-				     LSA_ACCOUNT_VIEW|STD_RIGHT_DELETE_ACCESS,
+				     LSA_ACCOUNT_VIEW|SEC_STD_DELETE,
 				     &acc_granted, "_lsa_RemoveAccountRights");
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
