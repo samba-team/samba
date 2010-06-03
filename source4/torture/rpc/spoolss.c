@@ -4736,7 +4736,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		REG_DWORD,
 		REG_BINARY
 	};
-	const char *str = "abcdefghijklmnopqrstuvwxzy";
+	const char *str = "abcdefghi";
 	int i, t, s;
 
 
