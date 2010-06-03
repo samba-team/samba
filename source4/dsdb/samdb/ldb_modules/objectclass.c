@@ -51,6 +51,7 @@ struct oc_context {
 
 	struct ldb_module *module;
 	struct ldb_request *req;
+	const struct dsdb_schema *schema;
 
 	struct ldb_reply *search_res;
 	struct ldb_reply *search_res2;
@@ -79,6 +80,7 @@ static struct oc_context *oc_init_context(struct ldb_module *module,
 
 	ac->module = module;
 	ac->req = req;
+	ac->schema = dsdb_get_schema(ldb, ac);
 
 	return ac;
 }
@@ -447,7 +449,6 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 static int objectclass_do_add(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
-	const struct dsdb_schema *schema;
 	struct ldb_request *add_req;
 	char *value;
 	struct ldb_message_element *objectclass_element, *el;
@@ -460,7 +461,6 @@ static int objectclass_do_add(struct oc_context *ac)
 	const char *rdn_name = NULL;
 
 	ldb = ldb_module_get_ctx(ac->module);
-	schema = dsdb_get_schema(ldb, ac);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
@@ -501,8 +501,9 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 
 	}
-	if (schema) {
-		ret = fix_check_attributes(ldb, schema, msg, ac->req->operation);
+	if (ac->schema != NULL) {
+		ret = fix_check_attributes(ldb, ac->schema, msg,
+					   ac->req->operation);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -516,7 +517,8 @@ static int objectclass_do_add(struct oc_context *ac)
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ret = objectclass_sort(ac->module, schema, mem_ctx, objectclass_element, &sorted);
+		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+				       objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -555,7 +557,8 @@ static int objectclass_do_add(struct oc_context *ac)
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 
 		/* Make sure its valid to add an object of this type */
-		objectclass = get_last_structural_class(schema,objectclass_element);
+		objectclass = get_last_structural_class(ac->schema,
+							objectclass_element);
 		if(objectclass == NULL) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to find a structural class for %s",
@@ -581,7 +584,8 @@ static int objectclass_do_add(struct oc_context *ac)
 			for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
 				const struct dsdb_class *sclass;
 
-				sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el->values[i]);
+				sclass = dsdb_class_by_lDAPDisplayName_ldb_val(ac->schema,
+									       &oc_el->values[i]);
 				if (!sclass) {
 					/* We don't know this class?  what is going on? */
 					continue;
@@ -695,7 +699,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	struct class_list *sorted, *current;
 	struct ldb_request *down_req;
 	struct oc_context *ac;
@@ -707,11 +710,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
-	}
-	
-	/* Without schema, there isn't much to do here */
-	if (!schema) {
 		return ldb_next_request(module, req);
 	}
 
@@ -727,9 +725,10 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (!talloc_reference(ac, schema)) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (ac->schema == NULL) {
+		/* Without schema, there isn't much to do here */
+		talloc_free(ac);
+		return ldb_next_request(module, req);
 	}
 
 	/* If no part of this touches the objectClass, then we don't
@@ -744,7 +743,8 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = fix_check_attributes(ldb, schema, msg, req->operation);
+		ret = fix_check_attributes(ldb, ac->schema, msg,
+					   req->operation);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -781,13 +781,15 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = fix_check_attributes(ldb, schema, msg, req->operation);
+		ret = fix_check_attributes(ldb, ac->schema, msg,
+					   req->operation);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
 
-		ret = objectclass_sort(module, schema, mem_ctx, objectclass_element, &sorted);
+		ret = objectclass_sort(module, ac->schema, mem_ctx,
+				       objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -857,7 +859,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = fix_check_attributes(ldb, schema, msg, req->operation);
+	ret = fix_check_attributes(ldb, ac->schema, msg, req->operation);
 	if (ret != LDB_SUCCESS) {
 		ldb_oom(ldb);
 		return ret;
@@ -930,7 +932,6 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int objectclass_do_mod(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
-	const struct dsdb_schema *schema;
 	struct ldb_request *mod_req;
 	char *value;
 	struct ldb_message_element *objectclass_element;
@@ -944,7 +945,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 	if (ac->search_res == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	schema = dsdb_get_schema(ldb, ac);
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
@@ -972,7 +972,8 @@ static int objectclass_do_mod(struct oc_context *ac)
 	/* modify dn */
 	msg->dn = ac->req->op.mod.message->dn;
 
-	ret = objectclass_sort(ac->module, schema, mem_ctx, objectclass_element, &sorted);
+	ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+			       objectclass_element, &sorted);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1126,7 +1127,6 @@ static int objectclass_do_rename(struct oc_context *ac)
 static int objectclass_do_rename2(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
-	const struct dsdb_schema *schema;
 	struct ldb_request *rename_req;
 	struct ldb_dn *fixed_dn;
 	int ret;
@@ -1141,8 +1141,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
-	schema = dsdb_get_schema(ldb, ac);
-	if (schema) {
+	if (ac->schema != NULL) {
 		struct ldb_message_element *oc_el_entry, *oc_el_parent;
 		const struct dsdb_class *objectclass;
 		const char *rdn_name;
@@ -1155,7 +1154,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 			/* existing entry without a valid object class? */
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		objectclass = get_last_structural_class(schema, oc_el_entry);
+		objectclass = get_last_structural_class(ac->schema, oc_el_entry);
 		if (objectclass == NULL) {
 			/* existing entry without a valid object class? */
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -1182,7 +1181,8 @@ static int objectclass_do_rename2(struct oc_context *ac)
 		for (i=0; allowed_class == false && i < oc_el_parent->num_values; i++) {
 			const struct dsdb_class *sclass;
 
-			sclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &oc_el_parent->values[i]);
+			sclass = dsdb_class_by_lDAPDisplayName_ldb_val(ac->schema,
+								       &oc_el_parent->values[i]);
 			if (!sclass) {
 				/* We don't know this class?  what is going on? */
 				continue;
