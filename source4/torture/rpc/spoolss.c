@@ -4363,6 +4363,47 @@ do {\
 	return true;
 }
 
+static bool test_PrintProcessors(struct torture_context *tctx,
+				 struct dcerpc_binding_handle *b,
+				 struct policy_handle *handle,
+				 const char *environment,
+				 struct dcerpc_binding_handle *winreg_handle,
+				 struct policy_handle *hive_handle)
+{
+	union spoolss_PrintProcessorInfo *info;
+	uint32_t count;
+	int i;
+
+	torture_comment(tctx, "Testing Print Processor Info and winreg consistency\n");
+
+	torture_assert(tctx,
+		test_EnumPrintProcessors_level(tctx, b, environment, 1, &count, &info),
+		"failed to enum print processors level 1");
+
+	for (i=0; i < count; i++) {
+
+		const char *processor_key;
+		struct policy_handle key_handle;
+
+		processor_key = talloc_asprintf(tctx, "%s\\%s\\Print Processors\\%s",
+						TOP_LEVEL_CONTROL_ENVIRONMENTS_KEY,
+						environment,
+						info[i].info1.print_processor_name);
+
+		torture_assert(tctx,
+			test_winreg_OpenKey(tctx, winreg_handle, hive_handle, processor_key, &key_handle), "");
+
+		/* nothing to check in there so far */
+
+		torture_assert(tctx,
+			test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
+	}
+
+	torture_comment(tctx, "Print Processor Info and winreg consistency test succeeded\n\n");
+
+	return true;
+}
+
 static bool test_GetPrinterDriver2_level(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -5003,6 +5044,32 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
 	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, b2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
+}
+
+static bool test_PrintProcessors_winreg(struct torture_context *tctx,
+					struct dcerpc_binding_handle *b,
+					struct policy_handle *handle,
+					const char *environment)
+{
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+	struct dcerpc_binding_handle *b2;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+	b2 = p2->binding_handle;
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+	ret = test_PrintProcessors(tctx, b, handle, environment, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -6440,6 +6507,10 @@ static bool test_one_printer(struct torture_context *tctx,
 	}
 
 	if (!test_PrinterData_winreg(tctx, p, handle, name)) {
+		ret = false;
+	}
+
+	if (!test_PrintProcessors_winreg(tctx, b, handle, environment)) {
 		ret = false;
 	}
 
