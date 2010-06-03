@@ -649,7 +649,6 @@ extern void *cmdline_lp_ctx;
 #include "rpc_dce.h"
 #include "mapping.h"
 #include "passdb.h"
-#include "rpc_secdes.h"
 #include "msdfs.h"
 
 struct ntlmssp_state;

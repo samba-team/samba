@@ -19,6 +19,9 @@
 
 #include "includes.h"
 
+/* for ADS */
+#define SEC_RIGHTS_FULL_CTRL		0xf01ff
+
 #ifdef HAVE_LDAP
 
 static struct perm_mask_str {
