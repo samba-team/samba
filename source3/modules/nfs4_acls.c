@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "nfs4_acls.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
@@ -331,7 +332,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	}
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4_common successfully exited with sd_size %d\n",
-		   (int)ndr_size_security_descriptor(*ppdesc, NULL, 0)));
+		   (int)ndr_size_security_descriptor(*ppdesc, 0)));
 
 	return NT_STATUS_OK;
 }
