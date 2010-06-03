@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "srv_pipe_internal.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
@@ -742,23 +743,6 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 }
 
 /*******************************************************************
- The switch table for the pipe names and the functions to handle them.
-*******************************************************************/
-
-struct rpc_table {
-	struct {
-		const char *clnt;
-		const char *srv;
-	} pipe;
-	struct ndr_syntax_id rpc_interface;
-	const struct api_struct *cmds;
-	int n_cmds;
-};
-
-static struct rpc_table *rpc_lookup;
-static int rpc_lookup_size;
-
-/*******************************************************************
  This is the "stage3" NTLMSSP response after a bind request and reply.
 *******************************************************************/
 
@@ -1044,25 +1028,18 @@ static bool check_bind_req(struct pipes_struct *p,
 			   struct ndr_syntax_id* transfer,
 			   uint32 context_id)
 {
-	int i=0;
 	struct pipe_rpc_fns *context_fns;
 
 	DEBUG(3,("check_bind_req for %s\n",
 		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
-
-	for (i=0; i<rpc_lookup_size; i++) {
-		DEBUGADD(10, ("checking %s\n", rpc_lookup[i].pipe.clnt));
-		if (ndr_syntax_id_equal(
-			    abstract, &rpc_lookup[i].rpc_interface)
-		    && ndr_syntax_id_equal(
-			    transfer, &ndr_transfer_syntax)) {
-			break;
-		}
-	}
-
-	if (i == rpc_lookup_size) {
+	if (rpc_srv_pipe_exists_by_id(abstract) &&
+	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax)) {
+		DEBUG(3, ("check_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+			rpc_srv_get_pipe_cli_name(abstract),
+			rpc_srv_get_pipe_srv_name(abstract)));
+	} else {
 		return false;
 	}
 
@@ -1072,8 +1049,8 @@ static bool check_bind_req(struct pipes_struct *p,
 		return False;
 	}
 
-	context_fns->cmds = rpc_lookup[i].cmds;
-	context_fns->n_cmds = rpc_lookup[i].n_cmds;
+	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
+	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
 
 	/* add to the list of open contexts */
@@ -1081,59 +1058,6 @@ static bool check_bind_req(struct pipes_struct *p,
 	DLIST_ADD( p->contexts, context_fns );
 
 	return True;
-}
-
-/*******************************************************************
- Register commands to an RPC pipe
-*******************************************************************/
-
-NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
-			  const struct ndr_interface_table *iface,
-			  const struct api_struct *cmds, int size)
-{
-        struct rpc_table *rpc_entry;
-
-	if (!clnt || !srv || !cmds) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (version != SMB_RPC_INTERFACE_VERSION) {
-		DEBUG(0,("Can't register rpc commands!\n"
-			 "You tried to register a rpc module with SMB_RPC_INTERFACE_VERSION %d"
-			 ", while this version of samba uses version %d!\n", 
-			 version,SMB_RPC_INTERFACE_VERSION));
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	/* TODO: 
-	 *
-	 * we still need to make sure that don't register the same commands twice!!!
-	 * 
-	 * --metze
-	 */
-
-        /* We use a temporary variable because this call can fail and 
-           rpc_lookup will still be valid afterwards.  It could then succeed if
-           called again later */
-	rpc_lookup_size++;
-        rpc_entry = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(rpc_lookup, struct rpc_table, rpc_lookup_size);
-        if (NULL == rpc_entry) {
-                rpc_lookup_size--;
-                DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
-                return NT_STATUS_NO_MEMORY;
-        } else {
-                rpc_lookup = rpc_entry;
-        }
-
-        rpc_entry = rpc_lookup + (rpc_lookup_size - 1);
-        ZERO_STRUCTP(rpc_entry);
-        rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
-        rpc_entry->pipe.srv = SMB_STRDUP(srv);
-	rpc_entry->rpc_interface = iface->syntax_id;
-        rpc_entry->cmds = cmds;
-        rpc_entry->n_cmds = size;
-
-        return NT_STATUS_OK;
 }
 
 /**
@@ -1144,7 +1068,6 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 {
 	const char *pipename = cli_filename;
-	int i;
 	NTSTATUS status;
 
 	if (strnequal(pipename, "\\PIPE\\", 6)) {
@@ -1160,11 +1083,8 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 		return false;
 	}
 
-	for (i=0; i<rpc_lookup_size; i++) {
-		if (strequal(pipename, rpc_lookup[i].pipe.clnt)) {
-			*syntax = rpc_lookup[i].rpc_interface;
-			return true;
-		}
+	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
+		return true;
 	}
 
 	status = smb_probe_module("rpc", pipename);
@@ -1177,12 +1097,8 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 	/*
 	 * Scan the list again for the interface id
 	 */
-
-	for (i=0; i<rpc_lookup_size; i++) {
-		if (strequal(pipename, rpc_lookup[i].pipe.clnt)) {
-			*syntax = rpc_lookup[i].rpc_interface;
-			return true;
-		}
+	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
+		return true;
 	}
 
 	DEBUG(10, ("is_known_pipename: pipe %s did not register itself!\n",
@@ -1664,10 +1580,11 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
 	prs_struct out_auth;
-	int i = 0;
 	int auth_len = 0;
 	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	uint32_t ss_padding_len = 0;
+	NTSTATUS status;
+	struct ndr_syntax_id id;
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
@@ -1724,19 +1641,12 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
 	 */
-
-	for (i = 0; i < rpc_lookup_size; i++) {
-		if (ndr_syntax_id_equal(&rpc_lookup[i].rpc_interface,
-					&hdr_rb.rpc_context[0].abstract)) {
-			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-				rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-			break;
-		}
-	}
-
-	if (i == rpc_lookup_size) {
-		NTSTATUS status;
-
+	id = hdr_rb.rpc_context[0].abstract;
+	if (rpc_srv_pipe_exists_by_id(&id)) {
+		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+			rpc_srv_get_pipe_cli_name(&id),
+			rpc_srv_get_pipe_srv_name(&id)));
+	} else {
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
@@ -1752,19 +1662,16 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			prs_mem_free(&out_auth);
 
 			return setup_bind_nak(p);
-                }
+		}
 
-                for (i = 0; i < rpc_lookup_size; i++) {
-                       if (strequal(rpc_lookup[i].pipe.clnt,
-				    get_pipe_name_from_syntax(talloc_tos(),
-							      &p->syntax))) {
-                               DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-                                         rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-                               break;
-                       }
-                }
-
-		if (i == rpc_lookup_size) {
+		if (rpc_srv_get_pipe_interface_by_cli_name(
+				get_pipe_name_from_syntax(talloc_tos(),
+							  &p->syntax),
+				&id)) {
+			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+				rpc_srv_get_pipe_cli_name(&id),
+				rpc_srv_get_pipe_srv_name(&id)));
+		} else {
 			DEBUG(0, ("module %s doesn't provide functions for "
 				  "pipe %s!\n",
 				  get_pipe_name_from_syntax(talloc_tos(),
@@ -1777,7 +1684,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	/* name has to be \PIPE\xxxxx */
 	fstrcpy(ack_pipe_name, "\\PIPE\\");
-	fstrcat(ack_pipe_name, rpc_lookup[i].pipe.srv);
+	fstrcat(ack_pipe_name, rpc_srv_get_pipe_srv_name(&id));
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 

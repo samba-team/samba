@@ -396,8 +396,7 @@ RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
 
 NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
 
-RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c
-               rpc_server/srv_pipe.c rpc_server/srv_lsa_hnd.c'''
+RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c rpc_server/srv_pipe_register.c'''
 
 RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 

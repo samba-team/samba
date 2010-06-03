@@ -653,8 +653,7 @@ RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
 
 NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o
 
-RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o \
-               rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
+RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o rpc_server/srv_pipe_register.c
 
 RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
