@@ -71,11 +71,11 @@ static void set_pnn(struct ctdb_connection *ctdb,
 		    struct ctdb_request *req,
 		    void *unused)
 {
-	if (ctdb_getpnn_recv(req, &ctdb->pnn) != 0) {
+	if (ctdb_getpnn_recv(ctdb, req, &ctdb->pnn) != 0) {
 		/* FIXME: Report error. */
 		ctdb->broken = true;
 	}
-	ctdb_request_free(req);
+	ctdb_request_free(ctdb, req);
 }
 
 struct ctdb_connection *ctdb_connect(const char *addr)
@@ -156,10 +156,10 @@ struct ctdb_request *new_ctdb_request(size_t len,
 	return req;
 }
 
-void ctdb_request_free(struct ctdb_request *req)
+void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
 	if (req->extra_destructor) {
-		req->extra_destructor(req);
+		req->extra_destructor(ctdb, req);
 	}
 	if (req->reply) {
 		free_io_elem(req->reply);
@@ -170,7 +170,8 @@ void ctdb_request_free(struct ctdb_request *req)
 
 /* Sanity-checking wrapper for reply.
  * FIXME: logging! */
-static struct ctdb_reply_call *unpack_reply_call(struct ctdb_request *req,
+static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
+						 struct ctdb_request *req,
 						 uint32_t callid)
 {
 	size_t len;
@@ -194,7 +195,8 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_request *req,
 
 /* Sanity-checking wrapper for reply.
  * FIXME: logging! */
-struct ctdb_reply_control *unpack_reply_control(struct ctdb_request *req,
+struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
+						struct ctdb_request *req,
 						enum ctdb_controls control)
 {
 	size_t len;
@@ -369,10 +371,10 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 			  struct ctdb_request *req,
 			  void *unused)
 {
-	ctdb_request_free(req);
+	ctdb_request_free(ctdb, req);
 }
 
-int ctdb_cancel(struct ctdb_request *req)
+int ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
 	/* FIXME: If it's not sent, we could just free it right now. */
 	req->callback = ctdb_cancel_callback;
@@ -400,7 +402,8 @@ static void attachdb_getdbpath_done(struct ctdb_connection *ctdb,
 	db->callback(ctdb, req->extra, db->private_data);
 }
 
-struct ctdb_db *ctdb_attachdb_recv(struct ctdb_request *req)
+struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
+				   struct ctdb_request *req)
 {
 	struct ctdb_request *dbpath_req = req->extra;
 	struct ctdb_reply_control *reply;
@@ -414,7 +417,7 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_request *req)
 		return NULL;
 	}
 
-	reply = unpack_reply_control(dbpath_req, CTDB_CONTROL_GETDBPATH);
+	reply = unpack_reply_control(ctdb, dbpath_req, CTDB_CONTROL_GETDBPATH);
 	if (!reply || reply->status != 0) {
 		return NULL;
 	}
@@ -445,7 +448,7 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 		control = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
 	}
 
-	reply = unpack_reply_control(req, control);
+	reply = unpack_reply_control(ctdb, req, control);
 	if (!reply || reply->status != 0) {
 		/* We failed.  Hand request to user and have them discover it
 		 * via ctdb_attachdb_recv. */
@@ -467,13 +470,14 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 	req2->extra = req;
 }
 
-static void destroy_req_db(struct ctdb_request *req)
+static void destroy_req_db(struct ctdb_connection *ctdb,
+			   struct ctdb_request *req)
 {
 	/* Incomplete db is in priv_data. */
 	free(req->priv_data);
 	/* second request is chained off this one. */
 	if (req->extra) {
-		ctdb_request_free(req->extra);
+		ctdb_request_free(ctdb, req->extra);
 	}
 }
 
@@ -573,7 +577,8 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 }
 
 /* If they shutdown before we hand them the lock, we free it here. */
-static void destroy_lock(struct ctdb_request *req)
+static void destroy_lock(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req)
 {
 	ctdb_release_lock(req->extra);
 	ctdb_free_lock(req->extra);
@@ -587,10 +592,10 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	TDB_DATA data;
 
 	/* OK, we've received reply to noop migration */
-	reply = unpack_reply_call(req, CTDB_NULL_FUNC);
+	reply = unpack_reply_call(ctdb, req, CTDB_NULL_FUNC);
 	if (!reply || reply->status != 0) {
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
-		ctdb_request_free(req); /* Also frees lock. */
+		ctdb_request_free(ctdb, req); /* Also frees lock. */
 		ctdb_free_lock(lock);
 		return;
 	}

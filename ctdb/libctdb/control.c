@@ -24,11 +24,12 @@
 #undef ctdb_getrecmaster_send
 #undef ctdb_getpnn_send
 
-int ctdb_getrecmaster_recv(struct ctdb_request *req, uint32_t *recmaster)
+int ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
+			   struct ctdb_request *req, uint32_t *recmaster)
 {
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(req, CTDB_CONTROL_GET_RECMASTER);
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_RECMASTER);
 	if (!reply || reply->status == -1)
 		return -1;
 	*recmaster = reply->status;
@@ -45,11 +46,12 @@ struct ctdb_request *ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 					callback, private_data);
 }
 
-int ctdb_getpnn_recv(struct ctdb_request *req, uint32_t *pnn)
+int ctdb_getpnn_recv(struct ctdb_connection *ctdb,
+		     struct ctdb_request *req, uint32_t *pnn)
 {
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(req, CTDB_CONTROL_GET_PNN);
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_PNN);
 	if (!reply || reply->status == -1)
 		return -1;
 	*pnn = reply->status;

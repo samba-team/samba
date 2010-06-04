@@ -21,11 +21,12 @@
 #include <poll.h>
 #include <errno.h>
 #include <stdlib.h>
+#include "libctdb_private.h"
 
 /* On failure, frees req and returns NULL. */
-static struct ctdb_request *wait_for(struct ctdb_connection *ctdb,
-				     struct ctdb_request *req,
-				     bool *done)
+static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
+					struct ctdb_request *req,
+					bool *done)
 {
 	struct pollfd fds;
 
@@ -40,11 +41,11 @@ static struct ctdb_request *wait_for(struct ctdb_connection *ctdb,
 			/* Signalled is OK, other error is bad. */
 			if (errno == EINTR)
 				continue;
-			ctdb_request_free(req);
+			ctdb_request_free(ctdb, req);
 			return NULL;
 		}
 		if (ctdb_service(ctdb, fds.revents) < 0) {
-			ctdb_request_free(req);
+			ctdb_request_free(ctdb, req);
 			return NULL;
 		}
 	}
@@ -64,12 +65,12 @@ int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 	bool done = false;
 	int ret = -1;
 
-	req = wait_for(ctdb,
-		       ctdb_getrecmaster_send(ctdb, destnode, set, &done),
-		       &done);
+	req = synchronous(ctdb,
+			  ctdb_getrecmaster_send(ctdb, destnode, set, &done),
+			  &done);
 	if (req != NULL) {
-		ret = ctdb_getrecmaster_recv(req, recmaster);
-		ctdb_request_free(req);
+		ret = ctdb_getrecmaster_recv(ctdb, req, recmaster);
+		ctdb_request_free(ctdb, req);
 	}
 	return ret;
 }
@@ -82,13 +83,13 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 	bool done = false;
 	struct ctdb_db *ret = NULL;
 
-	req = wait_for(ctdb,
-		       ctdb_attachdb_send(ctdb, name, persistent, tdb_flags,
-					  set, &done),
-		       &done);
+	req = synchronous(ctdb,
+			  ctdb_attachdb_send(ctdb, name, persistent, tdb_flags,
+					     set, &done),
+			  &done);
 	if (req != NULL) {
-		ret = ctdb_attachdb_recv(req);
-		ctdb_request_free(req);
+		ret = ctdb_attachdb_recv(ctdb, req);
+		ctdb_request_free(ctdb, req);
 	}
 	return ret;
 }
@@ -100,12 +101,12 @@ int ctdb_getpnn(struct ctdb_connection *ctdb,
 	bool done = false;
 	int ret = -1;
 
-	req = wait_for(ctdb,
-		       ctdb_getpnn_send(ctdb, destnode, set, &done),
-		       &done);
+	req = synchronous(ctdb,
+			  ctdb_getpnn_send(ctdb, destnode, set, &done),
+			  &done);
 	if (req != NULL) {
-		ret = ctdb_getpnn_recv(req, pnn);
-		ctdb_request_free(req);
+		ret = ctdb_getpnn_recv(ctdb, req, pnn);
+		ctdb_request_free(ctdb, req);
 	}
 	return ret;
 }

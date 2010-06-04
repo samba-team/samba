@@ -43,7 +43,7 @@ int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 	struct message_handler_info *info = req->extra;
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(req, CTDB_CONTROL_REGISTER_SRVID);
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
 	if (!reply || reply->status != 0) {
 		return -1;
 	}
@@ -55,7 +55,7 @@ int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 	return 0;
 }
 
-static void free_info(struct ctdb_request *req)
+static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
 	free(req->extra);
 }
