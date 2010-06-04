@@ -69,6 +69,8 @@ struct ctdb_connection {
 	struct message_handler_info *message_handlers;
 	/* PNN of this ctdb: valid by the time we do our first db connection. */
 	uint32_t pnn;
+	/* Chain of locks we hold. */
+	struct ctdb_lock *locks;
 	/* Extra logging. */
 	ctdb_log_fn_t log;
 	void *log_priv;
