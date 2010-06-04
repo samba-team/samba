@@ -372,25 +372,6 @@ static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ClosePrinter(struct torture_context *tctx,
-			      struct dcerpc_binding_handle *b,
-			      struct policy_handle *handle)
-{
-	struct spoolss_ClosePrinter r;
-
-	r.in.handle = handle;
-	r.out.handle = handle;
-
-	torture_comment(tctx, "Testing ClosePrinter\n");
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_ClosePrinter_r(b, tctx, &r),
-		"ClosePrinter failed");
-	torture_assert_werr_ok(tctx, r.out.result,
-		"ClosePrinter failed");
-
-	return true;
-}
-
 static bool test_SetPrinter(struct torture_context *tctx,
 			    struct dcerpc_pipe *p,
 			    struct policy_handle *handle)
