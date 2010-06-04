@@ -73,7 +73,8 @@ static void set_pnn(struct ctdb_connection *ctdb,
 		    void *unused)
 {
 	if (ctdb_getpnn_recv(ctdb, req, &ctdb->pnn) != 0) {
-		/* FIXME: Report error. */
+		DEBUG(ctdb, LOG_CRIT,
+		      "ctdb_connect(async): failed to get pnn");
 		ctdb->broken = true;
 	}
 	ctdb_request_free(ctdb, req);
@@ -86,8 +87,14 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	struct sockaddr_un sun;
 
 	ctdb = malloc(sizeof(*ctdb));
-	if (!ctdb)
+	if (!ctdb) {
+		/* With no format string, we hope it doesn't use ap! */
+		va_list ap;
+		memset(&ap, 0, sizeof(ap));
+		errno = ENOMEM;
+		log_fn(log_priv, LOG_ERR, "ctdb_connect: no memory", ap);
 		goto fail;
+	}
 	ctdb->outq = NULL;
 	ctdb->doneq = NULL;
 	ctdb->in = NULL;
@@ -172,8 +179,7 @@ void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req)
 	free(req);
 }
 
-/* Sanity-checking wrapper for reply.
- * FIXME: logging! */
+/* Sanity-checking wrapper for reply. */
 static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 						 struct ctdb_request *req,
 						 uint32_t callid)
@@ -181,24 +187,36 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 	size_t len;
 	struct ctdb_reply_call *inhdr = io_elem_data(req->reply, &len);
 
-	/* ctdbd or our error if this isn't a reply call. */
-	if (len < sizeof(*inhdr) || inhdr->hdr.operation != CTDB_REPLY_CALL) {
-		errno = EIO;
+	/* Library user error if this isn't a reply to a call. */
+	if (req->hdr.hdr->operation != CTDB_REQ_CALL) {
+		errno = EINVAL;
+		DEBUG(ctdb, LOG_ERR,
+		      "This was not a ctdbd call request: operation %u",
+		      req->hdr.hdr->operation);
 		return NULL;
 	}
 
-	/* Library user error if this isn't a reply to a call. */
-	if (req->hdr.hdr->operation != CTDB_REQ_CALL
-	    || req->hdr.call->callid != callid) {
+	if (req->hdr.call->callid != callid) {
 		errno = EINVAL;
+		DEBUG(ctdb, LOG_ERR,
+		      "This was not a ctdbd %u call request: %u",
+		      callid, req->hdr.call->callid);
+		return NULL;
+	}
+
+	/* ctdbd or our error if this isn't a reply call. */
+	if (len < sizeof(*inhdr) || inhdr->hdr.operation != CTDB_REPLY_CALL) {
+		errno = EIO;
+		DEBUG(ctdb, LOG_CRIT,
+		      "Invalid ctdbd call reply: len %zu, operation %u",
+		      len, inhdr->hdr.operation);
 		return NULL;
 	}
 
 	return inhdr;
 }
 
-/* Sanity-checking wrapper for reply.
- * FIXME: logging! */
+/* Sanity-checking wrapper for reply. */
 struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 						struct ctdb_request *req,
 						enum ctdb_controls control)
@@ -207,21 +225,35 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *inhdr = io_elem_data(req->reply, &len);
 
 	/* Library user error if this isn't a reply to a call. */
-	if (len < sizeof(*inhdr)
-	    || req->hdr.hdr->operation != CTDB_REQ_CONTROL) {
+	if (len < sizeof(*inhdr)) {
 		errno = EINVAL;
+		DEBUG(ctdb, LOG_CRIT,
+		      "Short ctdbd control reply: %zu bytes", len);
+		return NULL;
+	}
+	if (req->hdr.hdr->operation != CTDB_REQ_CONTROL) {
+		errno = EINVAL;
+		DEBUG(ctdb, LOG_ERR,
+		      "This was not a ctdbd control request: operation %u",
+		      req->hdr.hdr->operation);
 		return NULL;
 	}
 
 	/* ... or if it was a different control from what we expected. */
 	if (req->hdr.control->opcode != control) {
 		errno = EINVAL;
+		DEBUG(ctdb, LOG_ERR,
+		      "This was not an opcode %u ctdbd control request: %u",
+		      control, req->hdr.control->opcode);
 		return NULL;
 	}
 
 	/* ctdbd or our error if this isn't a reply call. */
 	if (inhdr->hdr.operation != CTDB_REPLY_CONTROL) {
 		errno = EIO;
+		DEBUG(ctdb, LOG_CRIT,
+		      "Invalid ctdbd control reply: operation %u",
+		      inhdr->hdr.operation);
 		return NULL;
 	}
 
@@ -250,7 +282,9 @@ static void handle_incoming(struct ctdb_connection *ctdb, struct io_elem *in)
 			return;
 		}
 	}
-	/* FIXME: report this error. */
+	DEBUG(ctdb, LOG_WARNING,
+	      "Unexpected ctdbd request reply: operation %u reqid %u",
+	      hdr->operation, hdr->reqid);
 	free_io_elem(in);
 }
 
@@ -272,6 +306,8 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 		while (ctdb->outq) {
 			if (real_error(write_io_elem(ctdb->fd,
 						     ctdb->outq->io)) < 0) {
+				DEBUG(ctdb, LOG_ERR,
+				      "ctdb_service: error writing to ctdbd");
 				ctdb->broken = true;
 				return -1;
 			}
@@ -291,6 +327,8 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 		if (!ctdb->in) {
 			ctdb->in = new_io_elem(sizeof(struct ctdb_req_header));
 			if (!ctdb->in) {
+				DEBUG(ctdb, LOG_ERR,
+				      "ctdb_service: allocating readbuf");
 				ctdb->broken = true;
 				return -1;
 			}
@@ -301,6 +339,8 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 			/* They closed fd? */
 			if (ret == 0)
 				errno = EBADF;
+			DEBUG(ctdb, LOG_ERR,
+			      "ctdb_service: error reading from ctdbd");
 			ctdb->broken = true;
 			return -1;
 		} else if (ret < 0) {
@@ -380,6 +420,9 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 
 int ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
+	DEBUG(ctdb, LOG_DEBUG, "ctdb_cancel: %p (id %u)",
+	      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
+
 	/* FIXME: If it's not sent, we could just free it right now. */
 	req->callback = ctdb_cancel_callback;
 	return 0;
@@ -422,20 +465,31 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
 	}
 
 	reply = unpack_reply_control(ctdb, dbpath_req, CTDB_CONTROL_GETDBPATH);
-	if (!reply || reply->status != 0) {
+	if (!reply) {
+		return NULL;
+	}
+	if (reply->status != 0) {
+		DEBUG(db->ctdb, LOG_ERR,
+		      "ctdb_attachdb_recv: reply status %i", reply->status);
 		return NULL;
 	}
 
 	tdb_flags = db->persistent ? TDB_DEFAULT : TDB_NOSYNC;
 	tdb_flags |= TDB_DISALLOW_NESTING;
 
+	/* FIXME: Setup logging to go through our logging. */
 	db->tdb = tdb_open((char *)reply->data, 0, tdb_flags, O_RDWR, 0);
 	if (db->tdb == NULL) {
+		DEBUG(db->ctdb, LOG_ERR,
+		      "ctdb_attachdb_recv: failed to tdb_open %s",
+		      (char *)reply->data);
 		return NULL;
 	}
 
 	/* Finally, separate the db from the request (see destroy_req_db). */
 	req->priv_data = NULL;
+	DEBUG(db->ctdb, LOG_DEBUG,
+	      "ctdb_attachdb_recv: db %p, tdb %s", db, (char *)reply->data);
 	return db;
 }
 
@@ -454,6 +508,11 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 
 	reply = unpack_reply_control(ctdb, req, control);
 	if (!reply || reply->status != 0) {
+		if (reply) {
+			DEBUG(ctdb, LOG_ERR,
+			      "ctdb_attachdb_send(async): DB_ATTACH status %i",
+			      reply->status);
+		}
 		/* We failed.  Hand request to user and have them discover it
 		 * via ctdb_attachdb_recv. */
 		db->callback(ctdb, req, db->private_data);
@@ -467,11 +526,15 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 					&db->id, sizeof(db->id),
 					attachdb_getdbpath_done, db);
 	if (!req2) {
+		DEBUG(db->ctdb, LOG_ERR,
+		      "ctdb_attachdb_send(async): failed to allocate");
 		db->callback(ctdb, req, db->private_data);
 		return;
 	}
 	req->extra = req2;
 	req2->extra = req;
+	DEBUG(db->ctdb, LOG_DEBUG,
+	      "ctdb_attachdb_send(async): created getdbpath request");
 }
 
 static void destroy_req_db(struct ctdb_connection *ctdb,
@@ -509,6 +572,8 @@ ctdb_attachdb_send(struct ctdb_connection *ctdb,
 	req = new_ctdb_control_request(ctdb, opcode, CTDB_CURRENT_NODE, name,
 				       strlen(name) + 1, attachdb_done, db);
 	if (!req) {
+		DEBUG(db->ctdb, LOG_ERR,
+		      "ctdb_attachdb_send: failed allocating DB_ATTACH");
 		free(db);
 		return NULL;
 	}
@@ -525,6 +590,8 @@ ctdb_attachdb_send(struct ctdb_connection *ctdb,
 
 	/* Flags get overloaded into srvid. */
 	req->hdr.control->srvid = tdb_flags;
+	DEBUG(db->ctdb, LOG_DEBUG,
+	      "ctdb_attachdb_send: DB_ATTACH request %p", req);
 	return req;
 }
 
@@ -543,6 +610,8 @@ struct ctdb_lock {
 void ctdb_release_lock(struct ctdb_lock *lock)
 {
 	if (lock->held) {
+		DEBUG(lock->ctdb_db->ctdb, LOG_DEBUG,
+		      "ctdb_attachdb_send: ctdb_release_lock %p", lock);
 		tdb_chainunlock(lock->ctdb_db->tdb, lock->key);
 		lock->held = false;
 	}
@@ -565,11 +634,15 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 	struct ctdb_ltdb_header *hdr;
 
 	if (tdb_chainlock(lock->ctdb_db->tdb, lock->key) != 0) {
+		DEBUG(lock->ctdb_db->ctdb, LOG_WARNING,
+		      "ctdb_readrecordlock_async: failed to chainlock");
 		return NULL;
 	}
 
 	hdr = ctdb_local_fetch(lock->ctdb_db->tdb, lock->key, data);
 	if (hdr && hdr->dmaster == lock->ctdb_db->ctdb->pnn) {
+		DEBUG(lock->ctdb_db->ctdb, LOG_DEBUG,
+		      "ctdb_readrecordlock_async: got local lock");
 		lock->held = true;
 		lock->hdr = hdr;
 		return true;
@@ -598,6 +671,11 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	/* OK, we've received reply to noop migration */
 	reply = unpack_reply_call(ctdb, req, CTDB_NULL_FUNC);
 	if (!reply || reply->status != 0) {
+		if (reply) {
+			DEBUG(ctdb, LOG_ERR,
+			      "ctdb_readrecordlock_async(async):"
+			      " NULL_FUNC returned %i", reply->status);
+		}
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
 		ctdb_request_free(ctdb, req); /* Also frees lock. */
 		ctdb_free_lock(lock);
@@ -629,6 +707,8 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	/* Setup lock */
 	lock = malloc(sizeof(*lock) + key.dsize);
 	if (!lock) {
+		DEBUG(ctdb_db->ctdb, LOG_ERR,
+		      "ctdb_readrecordlock_async: lock allocation failed");
 		return false;
 	}
 	lock->key.dptr = (void *)(lock + 1);
@@ -649,6 +729,8 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	req = new_ctdb_request(offsetof(struct ctdb_req_call, data)
 			       + key.dsize, readrecordlock_retry, cbdata);
 	if (!req) {
+		DEBUG(ctdb_db->ctdb, LOG_ERR,
+		      "ctdb_readrecordlock_async: allocation failed");
 		ctdb_release_lock(lock);
 		ctdb_free_lock(lock);
 		return NULL;
@@ -675,7 +757,9 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)
 {
 	if (lock->ctdb_db->persistent) {
-		/* FIXME: Report error. */
+		errno = EINVAL;
+		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
+		      "ctdb_writerecord: cannot write to persistent db");
 		return -1;
 	}
 

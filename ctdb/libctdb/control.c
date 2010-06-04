@@ -30,8 +30,13 @@ int ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 
 	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_RECMASTER);
-	if (!reply || reply->status == -1)
+	if (!reply) {
 		return -1;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getrecmaster_recv: status -1");
+		return -1;
+	}
 	*recmaster = reply->status;
 	return 0;
 }
@@ -52,8 +57,13 @@ int ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 
 	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_PNN);
-	if (!reply || reply->status == -1)
+	if (!reply) {
 		return -1;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getpnn_recv: status -1");
+		return -1;
+	}
 	*pnn = reply->status;
 	return 0;
 }

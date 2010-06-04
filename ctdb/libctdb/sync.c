@@ -42,6 +42,7 @@ static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 			if (errno == EINTR)
 				continue;
 			ctdb_request_free(ctdb, req);
+			DEBUG(ctdb, LOG_ERR, "ctdb_synchronous: poll failed");
 			return NULL;
 		}
 		if (ctdb_service(ctdb, fds.revents) < 0) {

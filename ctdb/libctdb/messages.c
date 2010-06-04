@@ -25,6 +25,7 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	struct message_handler_info *i;
 	struct ctdb_req_message *msg = (struct ctdb_req_message *)hdr;
 	TDB_DATA data;
+	bool found;
 
 	data.dptr = msg->data;
 	data.dsize = msg->datalen;
@@ -32,9 +33,14 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	for (i = ctdb->message_handlers; i; i = i->next) {
 		if (i->srvid == msg->srvid) {
 			i->handler(ctdb, msg->srvid, data, i->private_data);
+			found = true;
 		}
 	}
-	/* FIXME: Report unknown messages */
+	if (!found) {
+		DEBUG(ctdb, LOG_WARNING,
+		      "ctdb_service: messsage for unregistered srvid %llu",
+		      msg->srvid);
+	}
 }
 
 int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
@@ -44,7 +50,13 @@ int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 
 	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
-	if (!reply || reply->status != 0) {
+	if (!reply) {
+		return -1;
+	}
+	if (reply->status != 0) {
+		DEBUG(ctdb, LOG_WARNING,
+		      "ctdb_set_message_handler_recv: status %i",
+		      reply->status);
 		return -1;
 	}
 
@@ -70,6 +82,8 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 
 	info = malloc(sizeof(*info));
 	if (!info) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_set_message_handler_send: allocating info");
 		return NULL;
 	}
 
@@ -77,6 +91,8 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 				       CTDB_CURRENT_NODE, NULL, 0,
 				       callback, private_data);
 	if (!req) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_set_message_handler_send: allocating request");
 		free(info);
 		return NULL;
 	}
@@ -88,6 +104,9 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 	info->handler = handler;
 	info->private_data = private_data;
 
+	DEBUG(ctdb, LOG_DEBUG,
+	      "ctdb_set_message_handler_send: sending request %u for id %llu",
+	      req->hdr.hdr->reqid, srvid);
 	return req;
 }
 
@@ -102,6 +121,7 @@ int ctdb_send_message(struct ctdb_connection *ctdb,
 	req = new_ctdb_request(offsetof(struct ctdb_req_message, data) + data.dsize,
 			       ctdb_cancel_callback, NULL);
 	if (!req) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_set_message: allocating message");
 		return -1;
 	}
 

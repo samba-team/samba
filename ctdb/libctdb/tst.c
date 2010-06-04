@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <err.h>
 #include <stdbool.h>
+#include <syslog.h>
 #include <tdb.h>
 #include <ctdb.h>
 
@@ -136,7 +137,7 @@ int main(int argc, char *argv[])
 	TDB_DATA msg;
 	bool rrl_cb_called = false;
 
-
+	ctdb_log_level = LOG_DEBUG;
 	ctdb_connection = ctdb_connect("/tmp/ctdb.socket",
 				       ctdb_log_file, stderr);
 	if (!ctdb_connection)
