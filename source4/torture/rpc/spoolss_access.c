@@ -357,7 +357,7 @@ static bool spoolss_access_setup_sd(struct torture_context *tctx,
 }
 
 static bool test_EnumPrinters_findone(struct torture_context *tctx,
-				      struct dcerpc_binding_handle *b,
+				      struct dcerpc_pipe *p,
 				      const char **printername)
 {
 	struct spoolss_EnumPrinters r;
@@ -365,11 +365,12 @@ static bool test_EnumPrinters_findone(struct torture_context *tctx,
 	union spoolss_PrinterInfo *info;
 	uint32_t needed;
 	int i;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	*printername = NULL;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
-	r.in.server = NULL;
+	r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
@@ -414,9 +415,11 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 	const char *printername;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
 
-	testuser = torture_create_testuser(tctx, t->user.username,
-					   torture_setting_string(tctx, "workgroup", NULL),
-					   ACB_NORMAL, &testuser_passwd);
+	testuser = torture_create_testuser_max_pwlen(tctx, t->user.username,
+						     torture_setting_string(tctx, "workgroup", NULL),
+						     ACB_NORMAL,
+						     &testuser_passwd,
+						     32);
 	if (!testuser) {
 		torture_fail(tctx, "Failed to create test user");
 	}
@@ -464,7 +467,7 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 		"Error connecting to server");
 
 	torture_assert(tctx,
-		test_EnumPrinters_findone(tctx, spoolss_pipe->binding_handle, &printername),
+		test_EnumPrinters_findone(tctx, spoolss_pipe, &printername),
 		"failed to enumerate printers");
 
 	if (t->user.sd) {
