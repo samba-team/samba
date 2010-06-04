@@ -1963,4 +1963,7 @@ struct deferred_open_record;
 #define CSC_POLICY_PROGRAMS 2
 #define CSC_POLICY_DISABLE 3
 
+/* Used inside aio code. */
+struct aio_extra;
+
 #endif /* _SMB_H */

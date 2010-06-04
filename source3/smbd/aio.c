@@ -62,7 +62,7 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 	struct aio_extra *aio_ex = (struct aio_extra *)
 				info->si_value.sival_ptr;
 
-	smbd_aio_complete_mid(aio_ex->req->mid);
+	smbd_aio_complete_aio_ex(aio_ex);
 }
 
 
@@ -121,26 +121,6 @@ static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
 	aio_ex->fsp = fsp;
 	return aio_ex;
 }
-
-/****************************************************************************
- Given the mid find the extended aio struct containing it.
-*****************************************************************************/
-
-static struct aio_extra *find_aio_ex(uint64_t mid)
-{
-	struct aio_extra *p;
-
-	for( p = aio_list_head; p; p = p->next) {
-		if (mid == p->req->mid) {
-			return p;
-		}
-	}
-	return NULL;
-}
-
-/****************************************************************************
- We can have these many aio buffers in flight.
-*****************************************************************************/
 
 /****************************************************************************
  Set up an aio request from a SMBreadX call.
@@ -577,23 +557,15 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
  Handle any aio completion inline.
 *****************************************************************************/
 
-void smbd_aio_complete_mid(uint64_t mid)
+void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 {
 	files_struct *fsp = NULL;
-	struct aio_extra *aio_ex = find_aio_ex(mid);
 	int ret = 0;
 
 	outstanding_aio_calls--;
 
 	DEBUG(10,("smbd_aio_complete_mid: mid[%llu]\n",
-		(unsigned long long)mid));
-
-	if (!aio_ex) {
-		DEBUG(3,("smbd_aio_complete_mid: Can't find record to "
-			"match mid %llu.\n",
-			(unsigned long long)mid));
-		return;
-	}
+		(unsigned long long)aio_ex->req->mid));
 
 	fsp = aio_ex->fsp;
 	if (fsp == NULL) {
@@ -601,7 +573,7 @@ void smbd_aio_complete_mid(uint64_t mid)
 		 * ignore. */
 		DEBUG( 3,( "smbd_aio_complete_mid: file closed whilst "
 			"aio outstanding (mid[%llu]).\n",
-			(unsigned long long)mid));
+			(unsigned long long)aio_ex->req->mid));
 		return;
 	}
 

@@ -5321,7 +5321,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      size_t numtowrite);
 int wait_for_aio_completion(files_struct *fsp);
 void cancel_aio_by_fsp(files_struct *fsp);
-void smbd_aio_complete_mid(uint64_t mid);
+void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex);
 
 /* The following definitions come from smbd/blocking.c  */
 
