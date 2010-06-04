@@ -556,9 +556,9 @@ static int objectclass_do_add(struct oc_context *ac)
 		objectclass = get_last_structural_class(schema,objectclass_element);
 		if(objectclass == NULL) {
 			ldb_asprintf_errstring(ldb,
-						"Failed to find a structural class for %s",
-						  ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_NAMING_VIOLATION;
+					       "Failed to find a structural class for %s",
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
 		rdn_name = ldb_dn_get_rdn_name(msg->dn);
