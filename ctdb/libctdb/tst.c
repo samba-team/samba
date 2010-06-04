@@ -47,32 +47,32 @@ void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *pr
 static void pnn_cb(struct ctdb_connection *ctdb,
 		   struct ctdb_request *req, void *private)
 {
-	int status;
+	bool status;
 	uint32_t pnn;
 
 	status = ctdb_getpnn_recv(ctdb, req, &pnn);
 	ctdb_request_free(ctdb, req);
-	if (status != 0) {
+	if (!status) {
 		printf("Error reading PNN\n");
 		return;
 	}
-	printf("status:%d pnn:%d\n", status, pnn);
+	printf("pnn:%d\n", pnn);
 }
 
 static void rm_cb(struct ctdb_connection *ctdb,
 		  struct ctdb_request *req, void *private)
 {
-	int status;
+	bool status;
 	uint32_t rm;
 
 	status = ctdb_getrecmaster_recv(ctdb, req, &rm);
 	ctdb_request_free(ctdb, req);
-	if (status != 0) {
+	if (!status) {
 		printf("Error reading RECMASTER\n");
 		return;
 	}
 
-	printf("GETRECMASTER ASYNC: status:%d recmaster:%d\n", status, rm);
+	printf("GETRECMASTER ASYNC: recmaster:%d\n", rm);
 }
 
 /*
@@ -118,7 +118,7 @@ static bool registered = false;
 void message_handler_cb(struct ctdb_connection *ctdb,
 			struct ctdb_request *req, void *private)
 {
-	if (ctdb_set_message_handler_recv(ctdb, req) != 0) {
+	if (!ctdb_set_message_handler_recv(ctdb, req)) {
 		err(1, "registering message");
 	}
 	ctdb_request_free(ctdb, req);
@@ -133,7 +133,6 @@ int main(int argc, char *argv[])
 	struct ctdb_db *ctdb_db_context;
 	struct pollfd pfd;
 	uint32_t recmaster;
-	int ret;
 	TDB_DATA msg;
 	bool rrl_cb_called = false;
 
@@ -160,8 +159,7 @@ int main(int argc, char *argv[])
 	msg.dptr="HelloWorld";
 	msg.dsize = strlen(msg.dptr);
 
-	ret = ctdb_send_message(ctdb_connection, 0, 55, msg);
-	if (ret != 0) {
+	if (!ctdb_send_message(ctdb_connection, 0, 55, msg)) {
 		printf("Failed to send message. Aborting\n");
 		exit(10);
 	}
@@ -183,12 +181,11 @@ int main(int argc, char *argv[])
 	 * calls the blocking sync function.
 	 * Avoid this mode for performance critical tasks
 	 */
-	ret = ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster);
-	if (ret != 0) {
+	if (!ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster)) {
 		printf("Failed to receive response to getrecmaster\n");
 		exit(10);
 	}
-	printf("GETRECMASTER SYNC: status:%d recmaster:%d\n", ret, recmaster);
+	printf("GETRECMASTER SYNC: recmaster:%d\n", recmaster);
 
 
 	handle = ctdb_getpnn_send(ctdb_connection, CTDB_CURRENT_NODE,

@@ -103,7 +103,7 @@ static void set_pnn(struct ctdb_connection *ctdb,
 		    struct ctdb_request *req,
 		    void *unused)
 {
-	if (ctdb_getpnn_recv(ctdb, req, &ctdb->pnn) != 0) {
+	if (!ctdb_getpnn_recv(ctdb, req, &ctdb->pnn)) {
 		DEBUG(ctdb, LOG_CRIT,
 		      "ctdb_connect(async): failed to get pnn");
 		ctdb->broken = true;
@@ -327,10 +327,10 @@ static ssize_t real_error(ssize_t ret)
 	return ret;
 }
 
-int ctdb_service(struct ctdb_connection *ctdb, int revents)
+bool ctdb_service(struct ctdb_connection *ctdb, int revents)
 {
 	if (ctdb->broken) {
-		return -1;
+		return false;
 	}
 
 	if (holding_lock(ctdb)) {
@@ -344,7 +344,7 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 				DEBUG(ctdb, LOG_ERR,
 				      "ctdb_service: error writing to ctdbd");
 				ctdb->broken = true;
-				return -1;
+				return false;
 			}
 			if (io_elem_finished(ctdb->outq->io)) {
 				struct ctdb_request *done = ctdb->outq;
@@ -365,7 +365,7 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 				DEBUG(ctdb, LOG_ERR,
 				      "ctdb_service: allocating readbuf");
 				ctdb->broken = true;
-				return -1;
+				return false;
 			}
 		}
 
@@ -377,7 +377,7 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 			DEBUG(ctdb, LOG_ERR,
 			      "ctdb_service: error reading from ctdbd");
 			ctdb->broken = true;
-			return -1;
+			return false;
 		} else if (ret < 0) {
 			/* No progress, stop loop. */
 			revents = 0;
@@ -387,7 +387,7 @@ int ctdb_service(struct ctdb_connection *ctdb, int revents)
 		}
 	}
 
-	return 0;
+	return true;
 }
 
 /* This is inefficient.  We could pull in idtree.c. */
@@ -453,14 +453,13 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 	ctdb_request_free(ctdb, req);
 }
 
-int ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
+void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
 	DEBUG(ctdb, LOG_DEBUG, "ctdb_cancel: %p (id %u)",
 	      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
 
 	/* FIXME: If it's not sent, we could just free it right now. */
 	req->callback = ctdb_cancel_callback;
-	return 0;
 }
 
 struct ctdb_db {

@@ -59,12 +59,12 @@ static void set(struct ctdb_connection *ctdb,
 	*done = true;
 }
 
-int ctdb_getrecmaster(struct ctdb_connection *ctdb,
-		      uint32_t destnode, uint32_t *recmaster)
+bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
+		       uint32_t destnode, uint32_t *recmaster)
 {
 	struct ctdb_request *req;
 	bool done = false;
-	int ret = -1;
+	bool ret = false;
 
 	req = synchronous(ctdb,
 			  ctdb_getrecmaster_send(ctdb, destnode, set, &done),
@@ -95,12 +95,12 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 	return ret;
 }
 
-int ctdb_getpnn(struct ctdb_connection *ctdb,
-		uint32_t destnode, uint32_t *pnn)
+bool ctdb_getpnn(struct ctdb_connection *ctdb,
+		 uint32_t destnode, uint32_t *pnn)
 {
 	struct ctdb_request *req;
 	bool done = false;
-	int ret = -1;
+	bool ret = false;
 
 	req = synchronous(ctdb,
 			  ctdb_getpnn_send(ctdb, destnode, set, &done),

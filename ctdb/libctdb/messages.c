@@ -43,28 +43,28 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	}
 }
 
-int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
-				  struct ctdb_request *req)
+bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
+				   struct ctdb_request *req)
 {
 	struct message_handler_info *info = req->extra;
 	struct ctdb_reply_control *reply;
 
 	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
 	if (!reply) {
-		return -1;
+		return false;
 	}
 	if (reply->status != 0) {
 		DEBUG(ctdb, LOG_WARNING,
 		      "ctdb_set_message_handler_recv: status %i",
 		      reply->status);
-		return -1;
+		return false;
 	}
 
 	/* Put ourselves in list of handlers. */
 	DLIST_ADD(ctdb->message_handlers, info);
 	/* Keep safe from destructor */
 	req->extra = NULL;
-	return 0;
+	return true;
 }
 
 static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req)
@@ -110,7 +110,7 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 	return req;
 }
 
-int ctdb_send_message(struct ctdb_connection *ctdb,
+bool ctdb_send_message(struct ctdb_connection *ctdb,
 		      uint32_t pnn, uint64_t srvid,
 		      TDB_DATA data)
 {
@@ -122,7 +122,7 @@ int ctdb_send_message(struct ctdb_connection *ctdb,
 			       ctdb_cancel_callback, NULL);
 	if (!req) {
 		DEBUG(ctdb, LOG_ERR, "ctdb_set_message: allocating message");
-		return -1;
+		return false;
 	}
 
 	io_elem_init_req_header(req->io,
@@ -133,5 +133,5 @@ int ctdb_send_message(struct ctdb_connection *ctdb,
 	pkt->datalen = data.dsize;
 	memcpy(pkt->data, data.dptr, data.dsize);
 	DLIST_ADD_END(ctdb->outq, req, struct ctdb_request);
-	return 0;
+	return true;
 }

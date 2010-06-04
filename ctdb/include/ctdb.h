@@ -48,7 +48,7 @@ int ctdb_get_fd(struct ctdb_connection *ctdb);
 
 int ctdb_which_events(struct ctdb_connection *ctdb);
 
-int ctdb_service(struct ctdb_connection *ctdb, int revents);
+bool ctdb_service(struct ctdb_connection *ctdb, int revents);
 
 struct ctdb_request;
 
@@ -148,11 +148,11 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 			      ctdb_callback_t callback,
 			      void *private_data);
 
-int ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
-				  struct ctdb_request *handle);
+bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
+				   struct ctdb_request *handle);
 
-int ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
-			     ctdb_message_fn_t handler, void *private_data);
+bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
+			      ctdb_message_fn_t handler, void *private_data);
 
 
 
@@ -164,9 +164,9 @@ ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 				 ctdb_callback_t callback,
 				 void *private_data);
 
-int ctdb_remove_message_handler_recv(struct ctdb_request *handle);
+bool ctdb_remove_message_handler_recv(struct ctdb_request *handle);
 
-int ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
+bool ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
 
 
 
@@ -174,7 +174,7 @@ int ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
  * send a message to a specific node/port
  * this function is non-blocking
  */
-int ctdb_send_message(struct ctdb_connection *ctdb, uint32_t pnn, uint64_t srvid, TDB_DATA data);
+bool ctdb_send_message(struct ctdb_connection *ctdb, uint32_t pnn, uint64_t srvid, TDB_DATA data);
 
 
 
@@ -186,12 +186,12 @@ ctdb_getpnn_send(struct ctdb_connection *ctdb,
 		 uint32_t destnode,
 		 ctdb_callback_t callback,
 		 void *private_data);
-int ctdb_getpnn_recv(struct ctdb_connection *ctdb,
-		     struct ctdb_request *req, uint32_t *pnn);
+bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, uint32_t *pnn);
 
-int ctdb_getpnn(struct ctdb_connection *ctdb,
-		uint32_t destnode,
-		uint32_t *pnn);
+bool ctdb_getpnn(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 uint32_t *pnn);
 
 
 
@@ -204,12 +204,12 @@ ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 			uint32_t destnode,
 			ctdb_callback_t callback,
 			void *private_data);
-int ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
-			   struct ctdb_request *handle,
-			   uint32_t *recmaster);
-int ctdb_getrecmaster(struct ctdb_connection *ctdb,
-			uint32_t destnode,
-			uint32_t *recmaster);
+bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
+			    struct ctdb_request *handle,
+			    uint32_t *recmaster);
+bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
+		       uint32_t destnode,
+		       uint32_t *recmaster);
 
 
 
@@ -217,7 +217,7 @@ int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 /*
  * cancel a request
  */
-int ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req);
+void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req);
 
 
 /*
