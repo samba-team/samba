@@ -206,6 +206,8 @@ static bool test_usergetinfo_byname(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			smbcli_rap_netusergetinfo(cli->tree, tctx, &r),
 			"smbcli_rap_netusergetinfo failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"smbcli_rap_netusergetinfo failed");
 	}
 
 	return true;
