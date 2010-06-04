@@ -731,7 +731,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 
 int wait_for_aio_completion(files_struct *fsp)
 {
-	return ENOSYS;
+	return 0;
 }
 
 void smbd_aio_complete_mid(uint64_t mid);
