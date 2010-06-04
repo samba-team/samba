@@ -81,15 +81,15 @@ static void rm_cb(struct ctdb_connection *ctdb,
  *
  * Pure read, or pure write are just special cases of this cycle.
  */
-static bool rrl_cb_called;
-
 static void rrl_cb(struct ctdb_db *ctdb_db,
 		   struct ctdb_lock *lock, TDB_DATA outdata, void *private)
 {
 	TDB_DATA data;
 	char tmp[256];
+	bool *rrl_cb_called = private;
 
-	rrl_cb_called = true;
+	*rrl_cb_called = true;
+
 	if (!lock) {
 		printf("rrl_cb returned error\n");
 		return;
@@ -134,6 +134,8 @@ int main(int argc, char *argv[])
 	uint32_t recmaster;
 	int ret;
 	TDB_DATA msg;
+	bool rrl_cb_called = false;
+
 
 	ctdb_connection = ctdb_connect("/tmp/ctdb.socket");
 	if (!ctdb_connection)
@@ -194,8 +196,17 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
+	/* In the non-contended case the callback might be invoked
+	 * immediately, before ctdb_readrecordlock_async() returns.
+	 * In the contended case the callback will be invoked later.
+	 *
+	 * Normally an application would not care whether the callback
+	 * has already been invoked here or not, but if the application
+	 * needs to know, it can use the *private_data pointer
+	 * to pass data through to the callback and back.
+	 */
 	if (!ctdb_readrecordlock_async(ctdb_db_context, key,
-				       rrl_cb, ctdb_db_context)) {
+				       rrl_cb, &rrl_cb_called)) {
 		printf("Failed to send READRECORDLOCK\n");
 		exit(10);
 	}
