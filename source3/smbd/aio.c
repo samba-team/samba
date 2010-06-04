@@ -43,7 +43,7 @@ struct aio_extra {
 	struct aio_extra *next, *prev;
 	SMB_STRUCT_AIOCB acb;
 	files_struct *fsp;
-	struct smb_request *req;
+	struct smb_request *smbreq;
 	DATA_BLOB outbuf;
 	struct lock_struct lock;
 	int (*handle_completion)(struct aio_extra *ex, int errcode);
@@ -127,7 +127,7 @@ static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
 *****************************************************************************/
 
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
-			     struct smb_request *req,
+			     struct smb_request *smbreq,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
@@ -158,7 +158,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
+        if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -180,11 +180,11 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	}
 	aio_ex->handle_completion = handle_aio_read_complete;
 
-	construct_reply_common_req(req, (char *)aio_ex->outbuf.data);
+	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
 	srv_set_message((char *)aio_ex->outbuf.data, 12, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
-	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
+	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
 		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
 		&aio_ex->lock);
 
@@ -216,12 +216,12 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	}
 
 	outstanding_aio_calls++;
-	aio_ex->req = talloc_move(aio_ex, &req);
+	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
 		  "offset %.0f, len = %u (mid = %u)\n",
 		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)smb_maxcnt,
-		  (unsigned int)aio_ex->req->mid ));
+		  (unsigned int)aio_ex->smbreq->mid ));
 
 	return NT_STATUS_OK;
 }
@@ -231,7 +231,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 *****************************************************************************/
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *req,
+			      struct smb_request *smbreq,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
@@ -239,7 +239,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
-	bool write_through = BITSETW(req->vwv+7,0);
+	bool write_through = BITSETW(smbreq->vwv+7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	int ret;
 
@@ -264,7 +264,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
+        if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -277,7 +277,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			  "(mid = %u)\n",
 			  fsp_str_dbg(fsp), (double)startpos,
 			  (unsigned int)numtowrite,
-			  (unsigned int)req->mid ));
+			  (unsigned int)smbreq->mid ));
 		return NT_STATUS_RETRY;
 	}
 
@@ -289,11 +289,11 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 	aio_ex->handle_completion = handle_aio_write_complete;
 
-	construct_reply_common_req(req, (char *)aio_ex->outbuf.data);
+	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
 	srv_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
 	SCVAL(aio_ex->outbuf.data,smb_vwv0,0xFF); /* Never a chained reply. */
 
-	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
+	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
 		(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		&aio_ex->lock);
 
@@ -325,7 +325,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 
 	outstanding_aio_calls++;
-	aio_ex->req = talloc_move(aio_ex, &req);
+	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
 	/* This should actually be improved to span the write. */
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
@@ -339,9 +339,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
                 SSVAL(aio_ex->outbuf.data,smb_vwv4,(numtowrite>>16)&1);
 		show_msg((char *)aio_ex->outbuf.data);
 		if (!srv_send_smb(smbd_server_fd(),(char *)aio_ex->outbuf.data,
-				true, aio_ex->req->seqnum+1,
+				true, aio_ex->smbreq->seqnum+1,
 				IS_CONN_ENCRYPTED(fsp->conn),
-				&aio_ex->req->pcd)) {
+				&aio_ex->smbreq->pcd)) {
 			exit_server_cleanly("handle_aio_write: srv_send_smb "
 					    "failed.");
 		}
@@ -353,7 +353,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		  "%s, offset %.0f, len = %u (mid = %u) "
 		  "outstanding_aio_calls = %d\n",
 		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)numtowrite,
-		  (unsigned int)aio_ex->req->mid, outstanding_aio_calls ));
+		  (unsigned int)aio_ex->smbreq->mid, outstanding_aio_calls ));
 
 	return NT_STATUS_OK;
 }
@@ -402,7 +402,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!srv_send_smb(smbd_server_fd(),outbuf,
-			true, aio_ex->req->seqnum+1,
+			true, aio_ex->smbreq->seqnum+1,
 			IS_CONN_ENCRYPTED(aio_ex->fsp->conn), NULL)) {
 		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
 				    "failed.");
@@ -465,7 +465,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		ERROR_NT(map_nt_error_from_unix(errcode));
 		srv_set_message(outbuf,0,0,true);
         } else {
-		bool write_through = BITSETW(aio_ex->req->vwv+7,0);
+		bool write_through = BITSETW(aio_ex->smbreq->vwv+7,0);
 		NTSTATUS status;
 
         	SSVAL(outbuf,smb_vwv2,nwritten);
@@ -492,7 +492,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 
 	show_msg(outbuf);
 	if (!srv_send_smb(smbd_server_fd(),outbuf,
-			  true, aio_ex->req->seqnum+1,
+			  true, aio_ex->smbreq->seqnum+1,
 			  IS_CONN_ENCRYPTED(fsp->conn),
 			  NULL)) {
 		exit_server_cleanly("handle_aio_write: srv_send_smb failed.");
@@ -528,7 +528,7 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 	if (err == EINPROGRESS) {
 		DEBUG(10,( "handle_aio_completed: operation mid %llu still in "
 			"process for file %s\n",
-			(unsigned long long)aio_ex->req->mid,
+			(unsigned long long)aio_ex->smbreq->mid,
 			fsp_str_dbg(aio_ex->fsp)));
 		return False;
 	}
@@ -541,7 +541,7 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 		 * client. */
 	        DEBUG(10,( "handle_aio_completed: operation mid %llu"
 			" canceled\n",
-			(unsigned long long)aio_ex->req->mid));
+			(unsigned long long)aio_ex->smbreq->mid));
 		return True;
         }
 
@@ -565,7 +565,7 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 	outstanding_aio_calls--;
 
 	DEBUG(10,("smbd_aio_complete_mid: mid[%llu]\n",
-		(unsigned long long)aio_ex->req->mid));
+		(unsigned long long)aio_ex->smbreq->mid));
 
 	fsp = aio_ex->fsp;
 	if (fsp == NULL) {
@@ -573,7 +573,7 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 		 * ignore. */
 		DEBUG( 3,( "smbd_aio_complete_mid: file closed whilst "
 			"aio outstanding (mid[%llu]).\n",
-			(unsigned long long)aio_ex->req->mid));
+			(unsigned long long)aio_ex->smbreq->mid));
 		return;
 	}
 
@@ -709,7 +709,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 
 #else
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
-			     struct smb_request *req,
+			     struct smb_request *smbreq,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
@@ -717,7 +717,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 }
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *req,
+			      struct smb_request *smbreq,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
