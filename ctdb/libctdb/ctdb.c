@@ -449,7 +449,7 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 	if (!reply || reply->status != 0) {
 		/* We failed.  Hand request to user and have them discover it
 		 * via ctdb_attachdb_recv. */
-		db->callback(ctdb, req, db);
+		db->callback(ctdb, req, db->private_data);
 		return;
 	}
 	db->id = *(uint32_t *)reply->data;
@@ -460,7 +460,7 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 					&db->id, sizeof(db->id),
 					attachdb_getdbpath_done, db);
 	if (!req2) {
-		db->callback(ctdb, req, db);
+		db->callback(ctdb, req, db->private_data);
 		return;
 	}
 	req->extra = req2;
