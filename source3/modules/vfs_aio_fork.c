@@ -411,6 +411,7 @@ static void handle_aio_completion(struct event_context *event_ctx,
 		       child->retval.size);
 	}
 
+	aio_ex = (struct aio_extra *)child->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
 }
 
