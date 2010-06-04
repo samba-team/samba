@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <tdb.h>
+#include <ctdb_protocol.h>
 
 /* The type of the first arg should match the arg given to ctdb_connect() */
 typedef void (*ctdb_log_fn_t)(void *log_priv,
@@ -64,18 +65,6 @@ void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req);
  */
 typedef void (*ctdb_callback_t)(struct ctdb_connection *ctdb,
 				struct ctdb_request *req, void *private);
-
-/*
- * Special node addresses :
- */
-/* used on the domain socket, send a pdu to the local daemon */
-#define CTDB_CURRENT_NODE     0xF0000001
-/* send a broadcast to all nodes in the cluster, active or not */
-#define CTDB_BROADCAST_ALL    0xF0000002
-/* send a broadcast to all nodes in the current vnn map */
-#define CTDB_BROADCAST_VNNMAP 0xF0000003
-/* send a broadcast to all connected nodes */
-#define CTDB_BROADCAST_CONNECTED 0xF0000004
 
 
 /*
