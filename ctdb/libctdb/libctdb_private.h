@@ -6,10 +6,24 @@
 #include <stdlib.h>
 #include <ctdb.h>
 #include <ctdb_protocol.h>
+#include <syslog.h>
 
 #ifndef offsetof
 #define offsetof(t,f) ((unsigned int)&((t *)0)->f)
 #endif
+
+#ifndef COLD_ATTRIBUTE
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+#define COLD_ATTRIBUTE __attribute__((cold))
+#else
+#define COLD_ATTRIBUTE
+#endif
+#endif /* COLD_ATTRIBUTE */
+
+#define DEBUG(ctdb, lvl, format, args...) do { if (lvl <= ctdb_log_level) { ctdb_do_debug(ctdb, lvl, format , ## args ); }} while(0)
+
+void ctdb_do_debug(struct ctdb_connection *, int, const char *format, ...)
+	PRINTF_ATTRIBUTE(3, 4) COLD_ATTRIBUTE;
 
 struct message_handler_info;
 struct ctdb_reply_call;
@@ -55,6 +69,9 @@ struct ctdb_connection {
 	struct message_handler_info *message_handlers;
 	/* PNN of this ctdb: valid by the time we do our first db connection. */
 	uint32_t pnn;
+	/* Extra logging. */
+	ctdb_log_fn_t log;
+	void *log_priv;
 };
 
 /* ctdb.c */

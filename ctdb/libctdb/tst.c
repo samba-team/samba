@@ -137,7 +137,8 @@ int main(int argc, char *argv[])
 	bool rrl_cb_called = false;
 
 
-	ctdb_connection = ctdb_connect("/tmp/ctdb.socket");
+	ctdb_connection = ctdb_connect("/tmp/ctdb.socket",
+				       ctdb_log_file, stderr);
 	if (!ctdb_connection)
 		err(1, "Connecting to /tmp/ctdb.socket");
 

@@ -34,6 +34,7 @@
 /* Remove type-safety macros. */
 #undef ctdb_attachdb_send
 #undef ctdb_readrecordlock_async
+#undef ctdb_connect
 
 /* FIXME: Could be in shared util code with rest of ctdb */
 static void close_noerr(int fd)
@@ -78,7 +79,8 @@ static void set_pnn(struct ctdb_connection *ctdb,
 	ctdb_request_free(ctdb, req);
 }
 
-struct ctdb_connection *ctdb_connect(const char *addr)
+struct ctdb_connection *ctdb_connect(const char *addr,
+				     ctdb_log_fn_t log_fn, void *log_priv)
 {
 	struct ctdb_connection *ctdb;
 	struct sockaddr_un sun;
@@ -92,6 +94,8 @@ struct ctdb_connection *ctdb_connect(const char *addr)
 	ctdb->message_handlers = NULL;
 	ctdb->next_id = 0;
 	ctdb->broken = false;
+	ctdb->log = log_fn;
+	ctdb->log_priv = log_priv;
 
 	memset(&sun, 0, sizeof(sun));
 	sun.sun_family = AF_UNIX;

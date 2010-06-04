@@ -23,7 +23,14 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <tdb.h>
+
+/* The type of the first arg should match the arg given to ctdb_connect() */
+typedef void (*ctdb_log_fn_t)(void *log_priv,
+			      int severity, const char *format, va_list ap);
+
 
 /* All *_send() functions are guaranteed to be non-blocking and fully
  * asynchronous.  The non-_send variants are synchronous.
@@ -34,7 +41,8 @@
  * Returns a ctdb context if successful or NULL.
  *
  */
-struct ctdb_connection *ctdb_connect(const char *addr);
+struct ctdb_connection *ctdb_connect(const char *addr,
+				     ctdb_log_fn_t log_fn, void *log_priv);
 
 int ctdb_get_fd(struct ctdb_connection *ctdb);
 
@@ -212,11 +220,25 @@ int ctdb_getrecmaster(struct ctdb_connection *ctdb,
 int ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req);
 
 
+/*
+ * functions for logging errors
+ */
+extern int ctdb_log_level; /* LOG_WARNING and above by default. */
+void ctdb_log_file(FILE *, int severity, const char *format, va_list ap);
+
+
 /* These ugly macro wrappers make the callbacks typesafe. */
 #include <ctdb_typesafe_cb.h>
 #define ctdb_sendcb(cb, cbdata)						\
 	 typesafe_cb_preargs(void, (cb), (cbdata),			\
 			     struct ctdb_connection *, struct ctdb_request *)
+
+#define ctdb_connect(addr, log, logpriv)				\
+	ctdb_connect((addr),						\
+		     typesafe_cb_postargs(void, (log), (logpriv),	\
+					  int, const char *, va_list),	\
+		     (logpriv))
+
 
 #define ctdb_attachdb_send(ctdb, name, persistent, tdb_flags, cb, cbdata) \
 	ctdb_attachdb_send((ctdb), (name), (persistent), (tdb_flags),	\
