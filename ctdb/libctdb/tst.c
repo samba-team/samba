@@ -81,15 +81,15 @@ static void rm_cb(struct ctdb_connection *ctdb,
  *
  * Pure read, or pure write are just special cases of this cycle.
  */
-static void rrl_cb(struct ctdb_connection *ctdb,
-		  struct ctdb_request *req, void *private)
+static bool rrl_cb_called;
+
+static void rrl_cb(struct ctdb_db *ctdb_db,
+		   struct ctdb_lock *lock, TDB_DATA outdata, void *private)
 {
-	struct ctdb_lock *lock;
-	TDB_DATA outdata;
 	TDB_DATA data;
 	char tmp[256];
 
-	lock = ctdb_readrecordlock_recv(private, req, &outdata);
+	rrl_cb_called = true;
 	if (!lock) {
 		printf("rrl_cb returned error\n");
 		return;
@@ -194,12 +194,12 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
-	if (!ctdb_readrecordlock_send(ctdb_db_context, key, &handle,
-				      rrl_cb, ctdb_db_context)) {
+	if (!ctdb_readrecordlock_async(ctdb_db_context, key,
+				       rrl_cb, ctdb_db_context)) {
 		printf("Failed to send READRECORDLOCK\n");
 		exit(10);
 	}
-	if (handle) {
+	if (!rrl_cb_called) {
 		printf("READRECORDLOCK is async\n");
 	}
 	for (;;) {

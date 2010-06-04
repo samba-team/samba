@@ -100,16 +100,16 @@ struct ctdb_lock;
  * When the lock is released, data is freed too, so make sure to copy the data
  * before that.
  *
- * This returns true on success, and req will be non-NULL if a request was
- * actually sent, otherwise callback will have already been called.
+ * This returns true on success: the callback may have already been called,
+ * or it might be awaiting a response from ctdbd.
  */
+typedef void (*ctdb_rrl_callback_t)(struct ctdb_db *ctdb_db,
+				    struct ctdb_lock *lock,
+				    TDB_DATA data,
+				    void *private);
 bool
-ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
-			 struct ctdb_request **req,
-			 ctdb_callback_t callback, void *private_data);
-struct ctdb_lock *ctdb_readrecordlock_recv(struct ctdb_db *ctdb_db,
-					   struct ctdb_request *handle,
-					   TDB_DATA *data);
+ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
+			  ctdb_rrl_callback_t callback, void *private_data);
 
 /* Returns null on failure. */
 struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
@@ -118,9 +118,7 @@ struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
 /*
  * Function to write data to a record
  * This function may ONLY be called while holding a lock to the record
- * created by ctdb_readrecordlock*
- * Either from the callback provided to ctdb_readrecordlock_send()
- * or after calling ctdb_readrecordlock_recv() but before calling
+ * created by ctdb_readrecordlock*, and before calling
  * ctdb_release_lock() to release the lock.
  */
 int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data);
@@ -221,9 +219,11 @@ int ctdb_cancel(struct ctdb_request *);
 	ctdb_attachdb_send((ctdb), (name), (persistent), (tdb_flags),	\
 			   ctdb_sendcb((cb), (cbdata)), (cbdata))
 
-#define ctdb_readrecordlock_send(ctdb_db, key, reqp, cb, cbdata)	\
-	ctdb_readrecordlock_send((ctdb_db), (key), (reqp),		\
-				 ctdb_sendcb((cb), (cbdata)), (cbdata))
+#define ctdb_readrecordlock_async(_ctdb_db, key, cb, cbdata)		\
+	ctdb_readrecordlock_async((_ctdb_db), (key),			\
+		typesafe_cb_preargs(void, (cb), (cbdata),		\
+				    struct ctdb_db *, struct ctdb_lock *, \
+				    TDB_DATA), (cbdata))
 
 #define ctdb_set_message_handler_send(ctdb, srvid, handler, cb, cbdata)	\
 	ctdb_set_message_handler_send((ctdb), (srvid), (handler),	\

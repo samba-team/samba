@@ -33,7 +33,7 @@
 
 /* Remove type-safety macros. */
 #undef ctdb_attachdb_send
-#undef ctdb_readrecordlock_send
+#undef ctdb_readrecordlock_async
 
 /* FIXME: Could be in shared util code with rest of ctdb */
 static void close_noerr(int fd)
@@ -527,10 +527,9 @@ struct ctdb_lock {
 	/* This will always be true by the time user sees this. */
 	bool held;
 	struct ctdb_ltdb_header *hdr;
-	TDB_DATA data;
 
 	/* For convenience, we stash original callback here. */
-	ctdb_callback_t callback;
+	ctdb_rrl_callback_t callback;
 };
 
 void ctdb_release_lock(struct ctdb_lock *lock)
@@ -543,7 +542,7 @@ void ctdb_release_lock(struct ctdb_lock *lock)
 }
 
 /* We keep the lock if local node is the dmaster. */
-static bool try_readrecordlock(struct ctdb_lock *lock)
+static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 {
 	struct ctdb_ltdb_header *hdr;
 
@@ -551,7 +550,7 @@ static bool try_readrecordlock(struct ctdb_lock *lock)
 		return NULL;
 	}
 
-	hdr = ctdb_local_fetch(lock->ctdb_db->tdb, lock->key, &lock->data);
+	hdr = ctdb_local_fetch(lock->ctdb_db->tdb, lock->key, data);
 	if (hdr && hdr->dmaster == lock->ctdb_db->ctdb->pnn) {
 		lock->held = true;
 		lock->hdr = hdr;
@@ -563,28 +562,10 @@ static bool try_readrecordlock(struct ctdb_lock *lock)
 	return NULL;
 }
 
-/* If they cancel *before* we hand them the lock from
- * ctdb_readrecordlock_recv, we free it here. */
+/* If they shutdown before we hand them the lock, we free it here. */
 static void destroy_lock(struct ctdb_request *req)
 {
 	ctdb_release_lock(req->extra);
-}
-
-struct ctdb_lock *ctdb_readrecordlock_recv(struct ctdb_db *ctdb_db,
-					   struct ctdb_request *req,
-					   TDB_DATA *data)
-{
-	struct ctdb_lock *lock = req->extra;
-
-	if (!lock->held) {
-		/* Something went wrong. */
-		return NULL;
-	}
-
-	/* Now it's their responsibility to free! */
-	req->extra_destructor = NULL;
-	*data = lock->data;
-	return lock;
 }
 
 static void readrecordlock_retry(struct ctdb_connection *ctdb,
@@ -592,38 +573,41 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 {
 	struct ctdb_lock *lock = req->extra;
 	struct ctdb_reply_call *reply;
+	TDB_DATA data;
 
 	/* OK, we've received reply to noop migration */
 	reply = unpack_reply_call(req, CTDB_NULL_FUNC);
 	if (!reply || reply->status != 0) {
-		lock->callback(ctdb, req, private);
+		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
+		ctdb_request_free(req); /* Also frees lock. */
 		return;
 	}
 
 	/* Can we get lock now? */
-	if (try_readrecordlock(lock)) {
-		lock->callback(ctdb, req, private);
+	if (try_readrecordlock(lock, &data)) {
+		/* Now it's their responsibility to free lock & request! */
+		req->extra_destructor = NULL;
+		lock->callback(lock->ctdb_db, lock, data, private);
 		return;
 	}
 
 	/* Retransmit the same request again (we lost race). */
 	io_elem_reset(req->io);
 	DLIST_ADD(ctdb->outq, req);
-	return;
 }
 
 bool
-ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
-			 struct ctdb_request **reqp,
-			 ctdb_callback_t callback, void *cbdata)
+ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
+			  ctdb_rrl_callback_t callback, void *cbdata)
 {
 	struct ctdb_request *req;
 	struct ctdb_lock *lock;
+	TDB_DATA data;
 
-	/* Setup lock. */
+	/* Setup lock */
 	lock = malloc(sizeof(*lock) + key.dsize);
 	if (!lock) {
-		return NULL;
+		return false;
 	}
 	lock->key.dptr = (void *)(lock + 1);
 	memcpy(lock->key.dptr, key.dptr, key.dsize);
@@ -632,25 +616,23 @@ ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
 	lock->hdr = NULL;
 	lock->held = false;
 
-	/* Get ready in case we need to send a migrate request. */
+	/* Fast path. */
+	if (try_readrecordlock(lock, &data)) {
+		callback(ctdb_db, lock, data, cbdata);
+		return true;
+	}
+
+	/* Slow path: create request. */
 	req = new_ctdb_request(offsetof(struct ctdb_req_call, data)
-			       + key.dsize, callback, cbdata);
+			       + key.dsize, readrecordlock_retry, cbdata);
 	if (!req) {
 		ctdb_release_lock(lock);
 		return NULL;
 	}
 	req->extra = lock;
 	req->extra_destructor = destroy_lock;
-
-	if (try_readrecordlock(lock)) {
-		*reqp = NULL;
-		callback(ctdb_db->ctdb, req, cbdata);
-		return true;
-	}
-
 	/* We store the original callback in the lock, and use our own. */
 	lock->callback = callback;
-	req->callback = readrecordlock_retry;
 
 	io_elem_init_req_header(req->io, CTDB_REQ_CALL, CTDB_CURRENT_NODE,
 				new_reqid(ctdb_db->ctdb));
@@ -663,7 +645,6 @@ ctdb_readrecordlock_send(struct ctdb_db *ctdb_db, TDB_DATA key,
 	req->hdr.call->calldatalen = 0;
 	memcpy(req->hdr.call->data, key.dptr, key.dsize);
 	DLIST_ADD(ctdb_db->ctdb->outq, req);
-	*reqp = req;
 	return true;
 }
 
