@@ -2185,10 +2185,6 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct spoolss_DeviceMode *devmode,
 			       struct policy_handle *handle);
 
-static bool test_ClosePrinter(struct torture_context *tctx,
-			      struct dcerpc_binding_handle *b,
-			      struct policy_handle *handle);
-
 static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 				      struct dcerpc_pipe *p,
 				      struct policy_handle *handle,
@@ -2373,9 +2369,9 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_ClosePrinter(struct torture_context *tctx,
-			      struct dcerpc_binding_handle *b,
-			      struct policy_handle *handle)
+bool test_ClosePrinter(struct torture_context *tctx,
+		       struct dcerpc_binding_handle *b,
+		       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_ClosePrinter r;

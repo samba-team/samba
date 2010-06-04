@@ -116,9 +116,6 @@ static bool test_OpenPrinterAsAdmin(struct torture_context *tctx,
 }
 
 
-static bool test_ClosePrinter(struct torture_context *tctx,
-				struct dcerpc_binding_handle *b,
-				struct policy_handle *handle);
 
 /* This replicates the opening sequence of OpenPrinterEx calls XP does */
 static bool test_OpenPrinterSequence(struct torture_context *tctx,
@@ -449,22 +446,6 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 
 	torture_assert_werr_equal(tctx, epde.out.result, expected_error,
 			"EnumPrinterDataEx failed.");
-
-	return true;
-}
-
-static bool test_ClosePrinter(struct torture_context *tctx,
-				struct dcerpc_binding_handle *b,
-				struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct spoolss_ClosePrinter cp;
-
-	cp.in.handle  = handle;
-	cp.out.handle = handle;
-
-	status = dcerpc_spoolss_ClosePrinter_r(b, tctx, &cp);
-	torture_assert_ntstatus_ok(tctx, status, "ClosePrinter failed");
 
 	return true;
 }
