@@ -536,8 +536,18 @@ void ctdb_release_lock(struct ctdb_lock *lock)
 {
 	if (lock->held) {
 		tdb_chainunlock(lock->ctdb_db->tdb, lock->key);
+		lock->held = false;
 	}
-	free(lock->hdr); /* Also frees data */
+}
+
+static void ctdb_free_lock(struct ctdb_lock *lock)
+{
+	if (lock->held) {
+		/* FIXME: report error. Callback never released the lock */
+		ctdb_release_lock(lock);
+	}
+
+	free(lock->hdr);
 	free(lock);
 }
 
@@ -566,6 +576,7 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 static void destroy_lock(struct ctdb_request *req)
 {
 	ctdb_release_lock(req->extra);
+	ctdb_free_lock(req->extra);
 }
 
 static void readrecordlock_retry(struct ctdb_connection *ctdb,
@@ -580,6 +591,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	if (!reply || reply->status != 0) {
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
 		ctdb_request_free(req); /* Also frees lock. */
+		ctdb_free_lock(lock);
 		return;
 	}
 
@@ -588,6 +600,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 		/* Now it's their responsibility to free lock & request! */
 		req->extra_destructor = NULL;
 		lock->callback(lock->ctdb_db, lock, data, private);
+		ctdb_free_lock(lock);
 		return;
 	}
 
@@ -619,6 +632,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	/* Fast path. */
 	if (try_readrecordlock(lock, &data)) {
 		callback(ctdb_db, lock, data, cbdata);
+		ctdb_free_lock(lock);
 		return true;
 	}
 
@@ -627,6 +641,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 			       + key.dsize, readrecordlock_retry, cbdata);
 	if (!req) {
 		ctdb_release_lock(lock);
+		ctdb_free_lock(lock);
 		return NULL;
 	}
 	req->extra = lock;
@@ -651,6 +666,11 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)
 {
 	if (lock->ctdb_db->persistent) {
+		/* FIXME: Report error. */
+		return -1;
+	}
+
+	if (!lock->held) {
 		/* FIXME: Report error. */
 		return -1;
 	}
