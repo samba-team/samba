@@ -420,7 +420,7 @@ const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *sc
 			continue;
 		}
 
-		if(tmp_class->objectClassCategory == 3) {
+		if(tmp_class->objectClassCategory > 1) {
 			continue;
 		}
 
