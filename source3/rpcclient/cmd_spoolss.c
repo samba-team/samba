@@ -105,20 +105,22 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
 {
 	WERROR 	        werror;
 	struct policy_handle	hnd;
+	uint32_t access_mask = PRINTER_ALL_ACCESS;
 
-	if (argc != 2) {
-		printf("Usage: %s <printername>\n", argv[0]);
+	if (argc < 2) {
+		printf("Usage: %s <printername> [access_mask]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (!cli)
-            return WERR_GENERAL_FAILURE;
+	if (argc >= 3) {
+		sscanf(argv[2], "%x", &access_mask);
+	}
 
 	/* Open the printer handle */
 
 	werror = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
 					       argv[1],
-					       PRINTER_ALL_ACCESS,
+					       access_mask,
 					       &hnd);
 	if (W_ERROR_IS_OK(werror)) {
 		printf("Printer %s opened successfully\n", argv[1]);
