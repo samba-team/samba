@@ -1016,7 +1016,7 @@ dn: CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRefContainer
 systemFlags: -2147483648
-msDS-Behavior-Version: ${FOREST_FUNCTIONALALITY}
+msDS-Behavior-Version: ${FOREST_FUNCTIONALITY}
 showInAdvancedViewOnly: TRUE
 
 # Partitions for DNS are missing since we don't support AD DNS
