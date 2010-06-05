@@ -411,7 +411,8 @@ static int acl_childClasses(struct ldb_module *module,
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedClasses;
 	const struct dsdb_class *sclass;
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 
 	/* If we don't have a schema yet, we can't do anything... */
 	if (schema == NULL) {
@@ -468,7 +469,8 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	struct ldb_control *as_system = ldb_request_get_control(ac->req,
 								LDB_CONTROL_AS_SYSTEM_OID);
 	struct dom_sid *sid = NULL;
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 
 	if (as_system != NULL) {
 		as_system->critical = 0;
