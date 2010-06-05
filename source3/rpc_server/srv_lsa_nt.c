@@ -1449,7 +1449,7 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
 	uint32 enum_context = *r->in.resume_handle;
 	int num_privs = count_all_privileges();
 	struct lsa_PrivEntry *entries = NULL;
-	LUID_ATTR luid;
+	struct lsa_LUIDAttribute luid;
 
 	/* remember that the enum_context starts at 0 and not 1 */
 
@@ -1873,9 +1873,7 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 		}
 
 		for (i=0; i<privileges.count; i++) {
-			luid_attrs[i].luid.low = privileges.set[i].luid.low;
-			luid_attrs[i].luid.high = privileges.set[i].luid.high;
-			luid_attrs[i].attribute = privileges.set[i].attr;
+			luid_attrs[i] = privileges.set[i];
 		}
 
 		priv_set->count = privileges.count;
@@ -2086,7 +2084,7 @@ NTSTATUS _lsa_LookupPrivName(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	name = luid_to_privilege_name((LUID *)r->in.luid);
+	name = luid_to_privilege_name(r->in.luid);
 	if (!name) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
@@ -2401,7 +2399,7 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
 {
 	struct lsa_info *info = NULL;
 	const char *name = NULL;
-	LUID_ATTR priv_luid;
+	struct lsa_LUIDAttribute priv_luid;
 	SE_PRIV mask;
 
 	/* find the connection policy handle. */

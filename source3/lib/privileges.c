@@ -441,7 +441,7 @@ void privilege_set_free(PRIVILEGE_SET *priv_set)
  duplicate alloc luid_attr
  ****************************************************************************/
 
-NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_la, int count)
+NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, struct lsa_LUIDAttribute **new_la, struct lsa_LUIDAttribute *old_la, int count)
 {
 	int i;
 
@@ -449,9 +449,9 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 		return NT_STATUS_OK;
 
 	if (count) {
-		*new_la = TALLOC_ARRAY(mem_ctx, LUID_ATTR, count);
+		*new_la = TALLOC_ARRAY(mem_ctx, struct lsa_LUIDAttribute, count);
 		if ( !*new_la ) {
-			DEBUG(0,("dup_luid_attr: failed to alloc new LUID_ATTR array [%d]\n", count));
+			DEBUG(0,("dup_luid_attr: failed to alloc new struct lsa_LUIDAttribute array [%d]\n", count));
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
@@ -461,7 +461,7 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 	for (i=0; i<count; i++) {
 		(*new_la)[i].luid.high = old_la[i].luid.high;
 		(*new_la)[i].luid.low = old_la[i].luid.low;
-		(*new_la)[i].attr = old_la[i].attr;
+		(*new_la)[i].attribute = old_la[i].attribute;
 	}
 
 	return NT_STATUS_OK;

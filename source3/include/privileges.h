@@ -25,6 +25,8 @@
 #ifndef PRIVILEGES_H
 #define PRIVILEGES_H
 
+#include "../librpc/gen_ndr/lsa.h"
+
 /* privilege bitmask */
 
 #define SE_PRIV_MASKSIZE 4
@@ -79,28 +81,18 @@ extern const SE_PRIV se_take_ownership;
  */
 
 typedef struct {
-	uint32 high;
-	uint32 low;
-} LUID;
-
-typedef struct {
-	LUID luid;
-	uint32 attr;
-} LUID_ATTR;
-
-typedef struct {
 	TALLOC_CTX *mem_ctx;
 	bool ext_ctx;
 	uint32 count;
 	uint32 control;
-	LUID_ATTR *set;
+	struct lsa_LUIDAttribute *set;
 } PRIVILEGE_SET;
 
 typedef struct {
 	SE_PRIV se_priv;
 	const char *name;
 	const char *description;
-	LUID luid;
+	struct lsa_LUID luid;
 } PRIVS;
 
 #endif /* PRIVILEGES_H */

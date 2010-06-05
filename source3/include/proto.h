@@ -694,7 +694,7 @@ NTSTATUS privilege_delete_account(const struct dom_sid *sid);
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set);
 NTSTATUS privilege_set_init_by_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set);
 void privilege_set_free(PRIVILEGE_SET *priv_set);
-NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_la, int count);
+NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, struct lsa_LUIDAttribute **new_la, struct lsa_LUIDAttribute *old_la, int count);
 bool is_privileged_sid( const struct dom_sid *sid );
 bool grant_all_privileges( const struct dom_sid *sid );
 
@@ -713,8 +713,8 @@ const char* get_privilege_dispname( const char *name );
 bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege);
 bool user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege);
 int count_all_privileges( void );
-LUID_ATTR get_privilege_luid( SE_PRIV *mask );
-const char *luid_to_privilege_name(const LUID *set);
+struct lsa_LUIDAttribute get_privilege_luid( SE_PRIV *mask );
+const char *luid_to_privilege_name(const struct lsa_LUID *set);
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask );
 bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset );
 

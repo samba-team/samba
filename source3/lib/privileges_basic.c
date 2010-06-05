@@ -310,7 +310,7 @@ static bool is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check
 }
 
 /*********************************************************************
- Generate the LUID_ATTR structure based on a bitmask
+ Generate the struct lsa_LUIDAttribute structure based on a bitmask
 *********************************************************************/
 
 const char* get_privilege_dispname( const char *name )
@@ -375,14 +375,14 @@ int count_all_privileges( void )
 
 
 /*********************************************************************
- Generate the LUID_ATTR structure based on a bitmask
+ Generate the struct lsa_LUIDAttribute structure based on a bitmask
  The assumption here is that the privilege has already been validated
  so we are guaranteed to find it in the list.
 *********************************************************************/
 
-LUID_ATTR get_privilege_luid( SE_PRIV *mask )
+struct lsa_LUIDAttribute get_privilege_luid( SE_PRIV *mask )
 {
-	LUID_ATTR priv_luid;
+	struct lsa_LUIDAttribute priv_luid;
 	int i;
 
 	ZERO_STRUCT( priv_luid );
@@ -402,7 +402,7 @@ LUID_ATTR get_privilege_luid( SE_PRIV *mask )
  Convert a LUID to a named string
 ****************************************************************************/
 
-const char *luid_to_privilege_name(const LUID *set)
+const char *luid_to_privilege_name(const struct lsa_LUID *set)
 {
 	int i;
 
@@ -423,13 +423,13 @@ const char *luid_to_privilege_name(const LUID *set)
  add a privilege to a privilege array
  ****************************************************************************/
 
-static bool privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
+static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute set)
 {
-	LUID_ATTR *new_set;
+	struct lsa_LUIDAttribute *new_set;
 
 	/* we can allocate memory to add the new privilege */
 
-	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, LUID_ATTR, priv_set->count + 1);
+	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, struct lsa_LUIDAttribute, priv_set->count + 1);
 	if ( !new_set ) {
 		DEBUG(0,("privilege_set_add: failed to allocate memory!\n"));
 		return False;
@@ -437,7 +437,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 
 	new_set[priv_set->count].luid.high = set.luid.high;
 	new_set[priv_set->count].luid.low = set.luid.low;
-	new_set[priv_set->count].attr = set.attr;
+	new_set[priv_set->count].attribute = set.attribute;
 
 	priv_set->count++;
 	priv_set->set = new_set;
@@ -452,9 +452,9 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
-	LUID_ATTR luid;
+	struct lsa_LUIDAttribute luid;
 
-	luid.attr = 0;
+	luid.attribute = 0;
 	luid.luid.high = 0;
 
 	for ( i=0; i<num_privs; i++ ) {
