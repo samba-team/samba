@@ -384,10 +384,10 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t mypnn;
-	int ret;
+	bool ret;
 
 	ret = ctdb_getpnn(ctdb_connection, options.pnn, &mypnn);
-	if (ret != 0) {
+	if (!ret) {
 		DEBUG(DEBUG_ERR, ("Unable to get pnn from node."));
 		return -1;
 	}
