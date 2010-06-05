@@ -72,7 +72,7 @@ static struct oc_context *oc_init_context(struct ldb_module *module,
 
 	ac = talloc_zero(req, struct oc_context);
 	if (ac == NULL) {
-		ldb_set_errstring(ldb, "Out of Memory");
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -731,7 +731,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
