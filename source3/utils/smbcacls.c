@@ -1026,6 +1026,9 @@ static int inherit(struct cli_state *cli, const char *filename,
 			parent = get_secdesc(cli,parentname);
 			for (i=0;i<parent->dacl->num_aces;i++) {
 				struct security_ace *ace=&parent->dacl->aces[i];
+				/* Add inherited flag to all aces */
+				ace->flags=ace->flags|
+				           SEC_ACE_FLAG_INHERITED_ACE;
 				if ((oldattr & aDIR) == aDIR) {
 					if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ==
 					    SEC_ACE_FLAG_CONTAINER_INHERIT) {
@@ -1034,6 +1037,8 @@ static int inherit(struct cli_state *cli, const char *filename,
 				} else {
 					if ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) ==
 					    SEC_ACE_FLAG_OBJECT_INHERIT) {
+						/* clear flags for files */
+						ace->flags=0;
 						add_ace(&old->dacl, ace);
 					}
 				}
