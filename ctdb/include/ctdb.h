@@ -214,6 +214,9 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
  *
  * You MUST NOT block during holding this lock and MUST release it
  * quickly by performing ctdb_release_lock(lock).
+ * Do NOT make any system calls that may block while holding the lock.
+ *
+ * Try to release the lock as quickly as possible.
  */
 struct ctdb_lock;
 

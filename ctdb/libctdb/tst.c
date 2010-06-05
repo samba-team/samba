@@ -109,9 +109,11 @@ static void rrl_cb(struct ctdb_db *ctdb_db,
 	data.dsize = strlen(tmp) + 1;
 	ctdb_writerecord(lock, data);
 
+	/* Release the lock as quickly as possible */
+	ctdb_release_lock(lock);
+
 	printf("Wrote new record : %s\n", tmp);
 
-	ctdb_release_lock(lock);
 }
 
 static bool registered = false;

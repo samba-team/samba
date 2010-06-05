@@ -642,8 +642,24 @@ void ctdb_release_lock(struct ctdb_lock *lock)
 		lock->held = false;
 		remove_lock(lock->ctdb_db->ctdb, lock);
 	}
+}
+
+static void ctdb_free_lock(struct ctdb_lock *lock)
+{
+	if (lock->held) {
+		errno = EEXIST;
+		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
+			"Lock freed before it was released");
+		ctdb_release_lock(lock);
+	}
 	free(lock->hdr);
 	free(lock);
+}
+
+static void ctdb_destroy_lock(struct ctdb_lock *lock)
+{
+	ctdb_release_lock(lock);
+	ctdb_free_lock(lock);
 }
 
 /* We keep the lock if local node is the dmaster. */
@@ -676,7 +692,7 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 static void destroy_lock(struct ctdb_connection *ctdb,
 			 struct ctdb_request *req)
 {
-	ctdb_release_lock(req->extra);
+	ctdb_destroy_lock(req->extra);
 }
 
 static void readrecordlock_retry(struct ctdb_connection *ctdb,
@@ -704,6 +720,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 		/* Now it's their responsibility to free lock & request! */
 		req->extra_destructor = NULL;
 		lock->callback(lock->ctdb_db, lock, data, private);
+		ctdb_free_lock(lock);
 		return;
 	}
 
@@ -743,6 +760,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	/* Fast path. */
 	if (try_readrecordlock(lock, &data)) {
 		callback(ctdb_db, lock, data, cbdata);
+		ctdb_free_lock(lock);
 		return true;
 	}
 
@@ -752,7 +770,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	if (!req) {
 		DEBUG(ctdb_db->ctdb, LOG_ERR,
 		      "ctdb_readrecordlock_async: allocation failed");
-		ctdb_release_lock(lock);
+		ctdb_destroy_lock(lock);
 		return NULL;
 	}
 	req->extra = lock;
