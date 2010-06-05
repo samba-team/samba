@@ -399,12 +399,12 @@ static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-			if (ac->search_res != NULL) {
+		if (ac->search_res != NULL) {
 			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
-						}
+		}
 
 		ac->search_res = talloc_steal(ac, ares);
 		break;
@@ -449,12 +449,12 @@ static int get_search_oc_callback(struct ldb_request *req, struct ldb_reply *are
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-			if (ac->search_oc_res != NULL) {
+		if (ac->search_oc_res != NULL) {
 			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
-						}
+		}
 
 		ac->search_oc_res = talloc_steal(ac, ares);
 		break;
