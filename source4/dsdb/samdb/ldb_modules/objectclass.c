@@ -351,42 +351,6 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr, *rdn_val);
 }
 
-/* Fix all attribute names to be in the correct case, and check they are all valid per the schema */
-static int fix_check_attributes(struct ldb_context *ldb,
-				const struct dsdb_schema *schema,
-				struct ldb_message *msg,
-				enum ldb_request_type op)
-{
-	unsigned int i;
-	for (i=0; i < msg->num_elements; i++) {
-		const struct dsdb_attribute *attribute = dsdb_attribute_by_lDAPDisplayName(schema, msg->elements[i].name);
-		/* Add in a very special case for 'clearTextPassword',
-		 * which is used for internal processing only, and is
-		 * not presented in the schema */
-		if (!attribute) {
-			if (strcasecmp(msg->elements[i].name, "clearTextPassword") != 0) {
-				ldb_asprintf_errstring(ldb, "attribute %s is not a valid attribute in schema", msg->elements[i].name);
-				/* Apparently Windows sends exactly this behaviour */
-				return LDB_ERR_NO_SUCH_ATTRIBUTE;
-			}
-		} else {
-			msg->elements[i].name = attribute->lDAPDisplayName;
-
-			/* We have to deny write operations on constructed attributes */
-			if ((attribute->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED) != 0) {
-				ldb_asprintf_errstring(ldb, "attribute %s is constructed", msg->elements[i].name);
-				if (op == LDB_ADD) {
-					return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
-				} else {
-					return LDB_ERR_CONSTRAINT_VIOLATION;
-				}
-			}
-
-		}
-	}
-
-	return LDB_SUCCESS;
-}
 
 static int objectclass_do_add(struct oc_context *ac);
 
@@ -502,13 +466,6 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	}
 	if (ac->schema != NULL) {
-		ret = fix_check_attributes(ldb, ac->schema, msg,
-					   ac->req->operation);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
 		/* This is now the objectClass list from the database */
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 
@@ -743,12 +700,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = fix_check_attributes(ldb, ac->schema, msg,
-					   req->operation);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
 		ret = ldb_build_mod_req(&down_req, ldb, ac,
 					msg,
 					req->controls,
@@ -779,13 +730,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		if (msg == NULL) {
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		ret = fix_check_attributes(ldb, ac->schema, msg,
-					   req->operation);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
 		}
 
 		ret = objectclass_sort(module, ac->schema, mem_ctx,
@@ -857,12 +801,6 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	if (msg == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = fix_check_attributes(ldb, ac->schema, msg, req->operation);
-	if (ret != LDB_SUCCESS) {
-		ldb_oom(ldb);
-		return ret;
 	}
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
