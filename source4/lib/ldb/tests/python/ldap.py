@@ -90,6 +90,7 @@ class BasicTests(unittest.TestCase):
 
         print "baseDN: %s\n" % self.base_dn
 
+        self.delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
