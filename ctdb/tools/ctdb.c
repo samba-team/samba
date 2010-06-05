@@ -4566,7 +4566,8 @@ int main(int argc, const char *argv[])
 
 			/* initialize a libctdb connection as well */
 			socket_name = ctdb_get_socketname(ctdb);
-			ctdb_connection = ctdb_connect(socket_name);
+			ctdb_connection = ctdb_connect(socket_name,
+						       ctdb_log_file, stderr);
 			if (ctdb_connection == NULL) {
 				fprintf(stderr, "Failed to connect to daemon from libctdb\n");
 				exit(1);
