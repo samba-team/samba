@@ -1315,7 +1315,6 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.3.6.1.4.1.7165.4.3.7", NULL, NULL },
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
-	{ LDB_CONTROL_RECALCULATE_SD_OID,  decode_recalculate_sd_request, encode_recalculate_sd_request},
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},
 	{ LDB_CONTROL_RELAX_OID, decode_relax_request, encode_relax_request },
 	{ NULL, NULL, NULL }
