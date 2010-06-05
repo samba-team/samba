@@ -210,6 +210,14 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	)
 
 
+bld.SAMBA_MODULE('ldb_objectclass_attrs',
+	source='objectclass_attrs.c',
+	subsystem='LIBLDB',
+	init_function='LDB_MODULE(objectclass_attrs)',
+	deps='talloc SAMDB LIBSAMBA-UTIL'
+	)
+
+
 bld.SAMBA_MODULE('ldb_subtree_rename',
 	source='subtree_rename.c',
 	subsystem='LIBLDB',
