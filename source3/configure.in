@@ -1674,7 +1674,9 @@ DSO_EXPORTS=""
 				LDSHFLAGS="-shared"
 			else
 				PICFLAG="+z"
-				LDSHFLAGS="-Wl,-B,symbolic,-b"
+				LDSHFLAGS="-b"
+				# "Uses depth-first symbol resolution"
+				LDSHFLAGS="$LDSHFLAGS -Wl,-B,symbolic,-b"
 				if test "$host_cpu" != "ia64"; then
 					# "don't store literals in read-only memory" (?):
 					PICFLAG="$PICFLAG +ESnolit"
