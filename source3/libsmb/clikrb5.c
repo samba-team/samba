@@ -20,6 +20,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "includes.h"
+#include "smb_krb5.h"
+
 #ifndef KRB5_AUTHDATA_WIN2K_PAC
 #define KRB5_AUTHDATA_WIN2K_PAC 128
 #endif
@@ -27,9 +30,6 @@
 #ifndef KRB5_AUTHDATA_IF_RELEVANT
 #define KRB5_AUTHDATA_IF_RELEVANT 1
 #endif
-
-#include "includes.h"
-#include "smb_krb5.h"
 
 #ifdef HAVE_KRB5
 
