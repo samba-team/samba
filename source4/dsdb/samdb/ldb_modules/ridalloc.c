@@ -194,11 +194,13 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	rid_set_dn = ldb_dn_copy(tmp_ctx, machine_dn);
 	if (rid_set_dn == NULL) {
 		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (! ldb_dn_add_child_fmt(rid_set_dn, "CN=RID Set")) {
 		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -507,6 +509,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		uint64_t new_pool;
 		ret = ridalloc_refresh_own_pool(module, &new_pool);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
 			return ret;
 		}
 		ret = dsdb_module_constrainted_update_integer(module, rid_set_dn, "rIDPreviousAllocationPool",
