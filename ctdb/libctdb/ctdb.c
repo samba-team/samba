@@ -134,6 +134,7 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	ctdb->broken = false;
 	ctdb->log = log_fn;
 	ctdb->log_priv = log_priv;
+	ctdb->locks = NULL;
 
 	memset(&sun, 0, sizeof(sun));
 	sun.sun_family = AF_UNIX;
