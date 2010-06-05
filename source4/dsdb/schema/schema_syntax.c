@@ -2554,16 +2554,3 @@ WERROR dsdb_attribute_ldb_to_drsuapi(struct ldb_context *ldb,
 	return sa->syntax->ldb_to_drsuapi(ldb, schema, sa, in, mem_ctx, out);
 }
 
-WERROR dsdb_attribute_validate_ldb(struct ldb_context *ldb,
-				   const struct dsdb_schema *schema,
-				   const struct ldb_message_element *in)
-{
-	const struct dsdb_attribute *sa;
-
-	sa = dsdb_attribute_by_lDAPDisplayName(schema, in->name);
-	if (!sa) {
-		return WERR_DS_ATTRIBUTE_TYPE_UNDEFINED;
-	}
-
-	return sa->syntax->validate_ldb(ldb, schema, sa, in);
-}

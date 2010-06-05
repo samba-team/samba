@@ -306,10 +306,3 @@ bld.SAMBA_MODULE('ldb_lazy_commit',
 	)
 
 
-bld.SAMBA_MODULE('ldb_validate_update',
-	source='validate_update.c',
-	subsystem='LIBLDB',
-	init_function='LDB_MODULE(validate_update)',
-	deps='talloc LIBEVENTS LIBSECURITY SAMDB'
-	)
-
