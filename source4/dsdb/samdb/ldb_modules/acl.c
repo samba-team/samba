@@ -736,15 +736,25 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			attr = dsdb_attribute_by_lDAPDisplayName(schema,
 								 req->op.mod.message->elements[i].name);
 		}
+
+		/* This basic attribute existence check with the right errorcode
+		 * is needed since this module is the first one which requests
+		 * schema attribute informations.
+		 * The complete attribute checking is done in the
+		 * "objectclass_attrs" module behind this one.
+		 */
+		if (!attr) {
+			ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
+					       req->op.mod.message->elements[i].name,
+					       ldb_dn_get_linearized(req->op.mod.message->dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
+
 		if (strcmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
 			modify_sd = true;
 		} else {
 
-			if (!attr) {
-				DEBUG(10, ("acl_modify: cannot find attribute %s\n",
-					   req->op.mod.message->elements[i].name));
-				goto fail;
-			}
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
 						   &new_node, &new_node)) {
