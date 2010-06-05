@@ -656,11 +656,9 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message_element *objectclass_element;
 	struct ldb_message *msg;
-	struct class_list *sorted, *current;
 	struct ldb_request *down_req;
 	struct oc_context *ac;
-	TALLOC_CTX *mem_ctx;
-	char *value;
+	bool oc_changes = false;
 	int ret;
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectclass_modify\n");
@@ -682,131 +680,29 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* Without schema, there isn't much to do here */
 	if (ac->schema == NULL) {
-		/* Without schema, there isn't much to do here */
 		talloc_free(ac);
 		return ldb_next_request(module, req);
 	}
 
-	/* If no part of this touches the objectClass, then we don't
-	 * need to make any changes.  */
-	objectclass_element = ldb_msg_find_element(req->op.mod.message, "objectClass");
-
-	/* If the only operation is the deletion of the objectClass
-	 * then go on with just fixing the attribute case */
-	if (!objectclass_element) {
-		msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
-		if (msg == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		
-		ret = ldb_build_mod_req(&down_req, ldb, ac,
-					msg,
-					req->controls,
-					ac, oc_op_callback,
-					req);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		/* go on with the call chain */
-		return ldb_next_request(module, down_req);
-	}
-
-	switch (objectclass_element->flags & LDB_FLAG_MOD_MASK) {
-	case LDB_FLAG_MOD_DELETE:
-		if (objectclass_element->num_values == 0) {
-			return LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED;
-		}
-		break;
-
-	case LDB_FLAG_MOD_REPLACE:
-		mem_ctx = talloc_new(ac);
-		if (mem_ctx == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
-		if (msg == NULL) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		ret = objectclass_sort(module, ac->schema, mem_ctx,
-				       objectclass_element, &sorted);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* We must completely replace the existing objectClass entry,
-		 * because we need it sorted */
-		
-		ldb_msg_remove_attr(msg, "objectClass");
-		ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
-		
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* Move from the linked list back into an ldb msg */
-		for (current = sorted; current; current = current->next) {
-			/* copy the value as this string is on the schema
-			 * context and we can't rely on it not changing
-			 * before the operation is over */
-			value = talloc_strdup(msg,
-					current->objectclass->lDAPDisplayName);
-			if (value == NULL) {
-				ldb_oom(ldb);
-				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			ret = ldb_msg_add_string(msg, "objectClass", value);
-			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(ldb,
-					"objectclass: could not re-add sorted "
-					"objectclass to modify msg");
-				talloc_free(mem_ctx);
-				return ret;
-			}
-		}
-		
-		talloc_free(mem_ctx);
-
-		ret = ldb_msg_sanity_check(ldb, msg);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		ret = ldb_build_mod_req(&down_req, ldb, ac,
-					msg,
-					req->controls,
-					ac, oc_op_callback,
-					req);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		/* go on with the call chain */
-		return ldb_next_request(module, down_req);
-	}
-
-	/* This isn't the default branch of the switch, but a 'in any
-	 * other case'.  When a delete isn't for all objectClasses for
-	 * example
-	 */
-
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* For now change everything except the objectclasses */
+
+	objectclass_element = ldb_msg_find_element(msg, "objectClass");
+	if (objectclass_element != NULL) {
+		ldb_msg_remove_attr(msg, "objectClass");
+		oc_changes = true;
 	}
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,
-				req->controls,
-				ac, oc_modify_callback,
+				req->controls, ac,
+				oc_changes ? oc_modify_callback : oc_op_callback,
 				req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -817,8 +713,8 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectClass", NULL };
+	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct oc_context *ac;
 	int ret;
@@ -848,8 +744,11 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	talloc_free(ares);
 
-	ret = ldb_build_search_req(&search_req, ldb, ac,
-				   ac->req->op.mod.message->dn, LDB_SCOPE_BASE,
+	/* this looks up the real existing object for fetching some important
+	 * informations (objectclasses) */
+	ret = ldb_build_search_req(&search_req, ldb,
+				   ac, ac->req->op.mod.message->dn,
+				   LDB_SCOPE_BASE,
 				   "(objectClass=*)",
 				   attrs, NULL, 
 				   ac, get_search_callback,
@@ -864,6 +763,7 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
+
 	return LDB_SUCCESS;
 }
 
@@ -872,66 +772,188 @@ static int objectclass_do_mod(struct oc_context *ac)
 	struct ldb_context *ldb;
 	struct ldb_request *mod_req;
 	char *value;
-	struct ldb_message_element *objectclass_element;
+	struct ldb_message_element *oc_el_entry, *oc_el_change;
+	struct ldb_val *vals;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
+	const struct dsdb_class *objectclass;
+	unsigned int i, j;
+	bool found, replace = false;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
+	/* we should always have a valid entry when we enter here */
 	if (ac->search_res == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	mem_ctx = talloc_new(ac);
-	if (mem_ctx == NULL) {
+	oc_el_entry = ldb_msg_find_element(ac->search_res->message,
+					   "objectClass");
+	if (oc_el_entry == NULL) {
+		/* existing entry without a valid object class? */
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	oc_el_change = ldb_msg_find_element(ac->req->op.mod.message,
+					    "objectClass");
+	if (oc_el_change == NULL) {
+		/* we should have an objectclass change operation */
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* use a new message structure */
 	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
-		ldb_set_errstring(ldb,
-			"objectclass: could not create new modify msg");
-		talloc_free(mem_ctx);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* This is now the objectClass list from the database */
-	objectclass_element = ldb_msg_find_element(ac->search_res->message, 
-						   "objectClass");
-	if (!objectclass_element) {
-		/* Where did it go?  bail now... */
-		talloc_free(mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	/* modify dn */
 	msg->dn = ac->req->op.mod.message->dn;
 
-	ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-			       objectclass_element, &sorted);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	mem_ctx = talloc_new(ac);
+	if (mem_ctx == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* We must completely replace the existing objectClass entry.
-	 * We could do a constrained add/del, but we are meant to be
-	 * in a transaction... */
+	switch (oc_el_change->flags & LDB_FLAG_MOD_MASK) {
+	case LDB_FLAG_MOD_ADD:
+		/* Merge the two message elements */
+		for (i = 0; i < oc_el_change->num_values; i++) {
+			for (j = 0; j < oc_el_entry->num_values; j++) {
+				if (strcasecmp((char *)oc_el_change->values[i].data,
+					       (char *)oc_el_entry->values[j].data) == 0) {
+					/* we cannot add an already existing object class */
+					talloc_free(mem_ctx);
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
+			}
+			/* append the new object class value - code was copied
+			 * from "ldb_msg_add_value" */
+			vals = talloc_realloc(oc_el_entry, oc_el_entry->values,
+					      struct ldb_val,
+					      oc_el_entry->num_values + 1);
+			if (vals == NULL) {
+				ldb_oom(ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			oc_el_entry->values = vals;
+			oc_el_entry->values[oc_el_entry->num_values] =
+				oc_el_change->values[i];
+			++(oc_el_entry->num_values);
+		}
 
-	ret = ldb_msg_add_empty(msg, "objectClass", LDB_FLAG_MOD_REPLACE, NULL);
+		objectclass = get_last_structural_class(ac->schema,
+							oc_el_change);
+		if (objectclass != NULL) {
+			/* we cannot add a new structural object class */
+			talloc_free(mem_ctx);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+
+		/* Now do the sorting */
+		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+				       oc_el_entry, &sorted);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		break;
+
+	case LDB_FLAG_MOD_REPLACE:
+		/* Do the sorting for the change message element */
+		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+				       oc_el_change, &sorted);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		/* this is a replace */
+		replace = true;
+
+		break;
+
+	case LDB_FLAG_MOD_DELETE:
+		/* get the actual top-most structural objectclass */
+		objectclass = get_last_structural_class(ac->schema,
+							oc_el_entry);
+		if (objectclass == NULL) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* Merge the two message elements */
+		for (i = 0; i < oc_el_change->num_values; i++) {
+			found = false;
+			for (j = 0; j < oc_el_entry->num_values; j++) {
+				if (strcasecmp((char *)oc_el_change->values[i].data,
+					       (char *)oc_el_entry->values[j].data) == 0) {
+					found = true;
+					/* delete the object class value -
+					 * code was copied from
+					 * "ldb_msg_remove_element" */
+					if (j != oc_el_entry->num_values - 1) {
+						memmove(&oc_el_entry->values[j],
+							&oc_el_entry->values[j+1],
+							((oc_el_entry->num_values-1) - j)*sizeof(struct ldb_val));
+					}
+					--(oc_el_entry->num_values);
+					break;
+				}
+			}
+			if (!found) {
+				/* we cannot delete a not existing object class */
+				talloc_free(mem_ctx);
+				return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			}
+		}
+
+		/* Make sure that the top-most structural objectclass wasn't
+		 * deleted */
+		found = false;
+		for (i = 0; i < oc_el_entry->num_values; i++) {
+			if (strcasecmp(objectclass->lDAPDisplayName,
+			    (char *)oc_el_entry->values[i].data) == 0) {
+				found = true; break;
+			}
+		}
+		if (!found) {
+			talloc_free(mem_ctx);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+
+
+		/* Now do the sorting */
+		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+				       oc_el_entry, &sorted);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		break;
+	}
+
+	ret = ldb_msg_add_empty(msg, "objectClass",
+				LDB_FLAG_MOD_REPLACE, &oc_el_change);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(ldb, "objectclass: could not clear objectclass in modify msg");
+		ldb_oom(ldb);
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	
+
 	/* Move from the linked list back into an ldb msg */
 	for (current = sorted; current; current = current->next) {
-		value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
+		value = talloc_strdup(msg,
+				      current->objectclass->lDAPDisplayName);
 		if (value == NULL) {
 			ldb_oom(ldb);
+			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		ret = ldb_msg_add_string(msg, "objectClass", value);
@@ -942,9 +964,32 @@ static int objectclass_do_mod(struct oc_context *ac)
 		}
 	}
 
+	talloc_free(mem_ctx);
+
+	if (replace) {
+		/* Well, on replace we are nearly done: we have to test if
+		 * the change and entry message element are identically. We
+		 * can use "ldb_msg_element_compare" since now the specified
+		 * objectclasses match for sure in case. */
+		ret = ldb_msg_element_compare(oc_el_entry, oc_el_change);
+		if (ret == 0) {
+			ret = ldb_msg_element_compare(oc_el_change,
+						      oc_el_entry);
+		}
+		if (ret == 0) {
+			/* they are the same so we are done in this case */
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_SUCCESS);
+		} else {
+			/* they're not exactly the same */
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+	}
+
+	/* in the other cases we have the real change left to do */
+
 	ret = ldb_msg_sanity_check(ldb, msg);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
 		return ret;
 	}
 
@@ -954,12 +999,9 @@ static int objectclass_do_mod(struct oc_context *ac)
 				ac, oc_op_callback,
 				ac->req);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	talloc_free(mem_ctx);
-	/* perform the modify */
 	return ldb_next_request(ac->module, mod_req);
 }
 
