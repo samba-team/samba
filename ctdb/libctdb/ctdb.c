@@ -794,6 +794,13 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 
 int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)
 {
+	if (!lock->held) {
+		errno = EBADF;
+		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
+		      "ctdb_writerecord: Can not write. Lock has been released.");
+		return -1;
+	}
+		
 	if (lock->ctdb_db->persistent) {
 		errno = EINVAL;
 		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
