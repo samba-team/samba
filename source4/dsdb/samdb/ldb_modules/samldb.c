@@ -65,7 +65,8 @@ struct samldb_ctx {
 	/* holds a generic dn */
 	struct ldb_dn *dn;
 
-	/* used in conjunction with "sid" in "samldb_dn_from_sid" */
+	/* used in conjunction with "sid" in "samldb_dn_from_sid" and
+	 * "samldb_find_for_defaultObjectCategory" */
 	struct ldb_dn *res_dn;
 
 	/* all the async steps necessary to complete the operation */
@@ -535,7 +536,7 @@ static int samldb_set_defaultObjectCategory(struct samldb_ctx *ac)
 	ldb_msg_add_empty(msg, "defaultObjectCategory",
 			  LDB_FLAG_MOD_REPLACE, NULL);
 	ldb_msg_add_steal_string(msg, "defaultObjectCategory",
-				 ldb_dn_alloc_linearized(msg, ac->dn));
+				 ldb_dn_alloc_linearized(msg, ac->res_dn));
 
 	ret = ldb_build_mod_req(&req, ldb, ac,
 				msg, NULL,
@@ -574,7 +575,7 @@ static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *re
 						    LDB_CONTROL_RELAX_OID) != NULL) {
 				/* Don't be pricky when the DN doesn't exist */
 				/* if we have the RELAX control specified */
-				ac->dn = req->op.search.base;
+				ac->res_dn = req->op.search.base;
 				return samldb_next_step(ac);
 			} else {
 				ldb_set_errstring(ldb,
@@ -590,7 +591,7 @@ static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *re
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		ac->dn = talloc_steal(ac, ares->message->dn);
+		ac->res_dn = talloc_steal(ac, ares->message->dn);
 
 		ret = LDB_SUCCESS;
 		break;
@@ -604,7 +605,7 @@ static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *re
 	case LDB_REPLY_DONE:
 		talloc_free(ares);
 
-		if (ac->dn != NULL) {
+		if (ac->res_dn != NULL) {
 			/* when found go on */
 			ret = samldb_next_step(ac);
 		} else {
@@ -627,40 +628,16 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 	struct ldb_request *req;
 	static const char *no_attrs[] = { NULL };
         int ret;
-	const struct ldb_val *val;
-	struct ldb_dn *def_obj_cat_dn;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	ac->dn = NULL;
-
-	val = ldb_msg_find_ldb_val(ac->msg, "defaultObjectCategory");
-	if (val != NULL) {
-		/* "defaultObjectCategory" has been set by the caller. Do some
-		 * checks for consistency.
-		 * NOTE: The real constraint check (that 'defaultObjectCategory'
-		 * is the DN of the new objectclass or any parent of it) is
-		 * still incomplete.
-		 * For now we say that 'defaultObjectCategory' is valid if it
-		 * exists and it is of objectclass "classSchema". */
-		def_obj_cat_dn = ldb_dn_from_ldb_val(ac, ldb, val);
-		if (def_obj_cat_dn == NULL) {
-			ldb_set_errstring(ldb,
-				"samldb_find_defaultObjectCategory: Invalid DN "
-				"for 'defaultObjectCategory'!");
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-	} else {
-		/* "defaultObjectCategory" has not been set by the caller. Use
-		 * the entry DN for it. */
-		def_obj_cat_dn = ac->msg->dn;
-	}
+	ac->res_dn = NULL;
 
 	ret = ldb_build_search_req(&req, ldb, ac,
-				   def_obj_cat_dn, LDB_SCOPE_BASE,
-				   "objectClass=classSchema", no_attrs,
-				   NULL,
-				   ac, samldb_find_for_defaultObjectCategory_callback,
+				   ac->dn, LDB_SCOPE_BASE,
+				   "(objectClass=classSchema)", no_attrs,
+				   NULL, ac,
+				   samldb_find_for_defaultObjectCategory_callback,
 				   ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -888,7 +865,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 			"groupType", "-2147483646");
 		if (ret != LDB_SUCCESS) return ret;
 	} else if (strcmp(ac->type, "classSchema") == 0) {
-		const struct ldb_val *rdn_value;
+		const struct ldb_val *rdn_value, *def_obj_cat_val;
 
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 						  "rdnAttId", "cn");
@@ -926,9 +903,42 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 			}
 		}
 
+		def_obj_cat_val = ldb_msg_find_ldb_val(ac->msg,
+						       "defaultObjectCategory");
+		if (def_obj_cat_val != NULL) {
+			/* "defaultObjectCategory" has been set by the caller.
+			 * Do some checks for consistency.
+			 * NOTE: The real constraint check (that
+			 * 'defaultObjectCategory' is the DN of the new
+			 * objectclass or any parent of it) is still incomplete.
+			 * For now we say that 'defaultObjectCategory' is valid
+			 * if it exists and it is of objectclass "classSchema".
+			 */
+			ac->dn = ldb_dn_from_ldb_val(ac, ldb, def_obj_cat_val);
+			if (ac->dn == NULL) {
+				ldb_set_errstring(ldb,
+						  "Invalid DN for 'defaultObjectCategory'!");
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		} else {
+			/* "defaultObjectCategory" has not been set by the
+			 * caller. Use the entry DN for it. */
+			ac->dn = ac->msg->dn;
+
+			ret = samdb_msg_add_string(ldb, ac, ac->msg,
+						   "defaultObjectCategory",
+						   ldb_dn_get_linearized(ac->dn));
+			if (ret != LDB_SUCCESS) {
+				ldb_oom(ldb);
+				return ret;
+			}
+		}
+
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
 
+		/* Now perform the checks for the 'defaultObjectCategory'. The
+		 * lookup DN was already saved in "ac->dn" */
 		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
 		if (ret != LDB_SUCCESS) return ret;
 
