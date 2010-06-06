@@ -654,7 +654,7 @@ RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
 NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o
 
 RPC_NCACN_NP_INTERNAL = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np_internal.o \
-			rpc_server/srv_lsa_hnd.o
+			rpc_server/rpc_handles.o
 
 RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o \
 	       $(RPC_NCACN_NP_INTERNAL)
