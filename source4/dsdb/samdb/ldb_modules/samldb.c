@@ -1355,19 +1355,6 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
-				 "objectclass", "computer") != NULL) {
-
-		/* make sure the computer object also has the 'user'
-		 * objectclass so it will be handled by the next call */
-		ret = samdb_find_or_add_value(ldb, ac->msg,
-						"objectclass", "user");
-		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
-			return ret;
-		}
-	}
-
-	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
 
 		ret = samldb_check_rdn(module, ac->req->op.add.message->dn);
