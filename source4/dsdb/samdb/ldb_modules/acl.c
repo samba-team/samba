@@ -730,7 +730,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	for (i=0; i < req->op.mod.message->num_elements; i++){
 		const struct dsdb_attribute *attr;
 		/* clearTextPassword is not in schema */
-		if (strcmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
+		if (ldb_attr_cmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
 			attr = dsdb_attribute_by_lDAPDisplayName(schema, "unicodePwd");
 		} else {
 			attr = dsdb_attribute_by_lDAPDisplayName(schema,
@@ -751,7 +751,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
-		if (strcmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
+		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
 			modify_sd = true;
 		} else {
 
