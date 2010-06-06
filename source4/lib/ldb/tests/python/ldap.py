@@ -154,8 +154,12 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
 
     def test_invalid_attribute(self):
-        """Test adding invalid attributes (not in schema)"""
-        print "Test adding invalid attributes (not in schema)"""
+        """Test invalid attributes on schema/objectclasses"""
+        print "Test invalid attributes on schema/objectclasses"""
+
+        # attributes not in schema test
+
+        # add operation
 
         try:
             self.ldb.add({
@@ -170,6 +174,8 @@ class BasicTests(unittest.TestCase):
              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
              "objectclass": "group"})
 
+        # modify operation
+
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["thisdoesnotexist"] = MessageElement("x", FLAG_MOD_REPLACE,
@@ -181,6 +187,73 @@ class BasicTests(unittest.TestCase):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        # attributes not in objectclasses and mandatory attributes missing test
+        # Use here a non-SAM entry since it doesn't have special triggers
+        # associated which have an impact on the error results.
+
+        # add operations
+
+        # mandatory attribute missing
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestobject," + self.base_dn,
+                "objectclass": "ipProtocol"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # inadequate but schema-valid attribute specified
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestobject," + self.base_dn,
+                "objectclass": "ipProtocol",
+                "ipProtocolNumber": "1",
+                "uid" : "0"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestobject," + self.base_dn,
+            "objectclass": "ipProtocol",
+            "ipProtocolNumber": "1"})
+
+        # modify operations
+
+        # inadequate but schema-valid attribute add trial
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestobject," + self.base_dn)
+        m["uid"] = MessageElement("0", FLAG_MOD_ADD, "uid")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # mandatory attribute delete trial
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestobject," + self.base_dn)
+        m["ipProtocolNumber"] = MessageElement([], FLAG_MOD_DELETE,
+          "ipProtocolNumber")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # mandatory attribute delete trial
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestobject," + self.base_dn)
+        m["ipProtocolNumber"] = MessageElement([], FLAG_MOD_REPLACE,
+          "ipProtocolNumber")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
 
     def test_single_valued_attributes(self):
         """Test single-valued attributes"""
