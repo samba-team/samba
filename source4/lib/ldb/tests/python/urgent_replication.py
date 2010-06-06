@@ -131,6 +131,7 @@ systemFlags: 33554432""", ["relax:0"]);
                       "dn": "CN=test crossRef,CN=Partitions,CN=Configuration,"+ self.base_dn,
                       "objectClass": "crossRef",
                       "cn": "test crossRef",
+                      "dnsRoot": lp.get("realm").lower(),
                       "instanceType": "4",
                       "nCName": self.base_dn,
                       "showInAdvancedViewOnly": "TRUE",
