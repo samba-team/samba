@@ -534,8 +534,17 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_mtime = get_mtimespec(src);
 	dst->st_ex_ctime = get_ctimespec(src);
 	make_create_timespec(src, dst, fake_dir_create_times);
+#ifdef HAVE_STAT_ST_BLKSIZE
 	dst->st_ex_blksize = src->st_blksize;
+#else
+	dst->st_ex_blksize = STAT_ST_BLOCKSIZE;
+#endif
+
+#ifdef HAVE_STAT_ST_BLOCKS
 	dst->st_ex_blocks = src->st_blocks;
+#else
+	dst->st_ex_blocks = src->st_size / dst->st_ex_blksize + 1;
+#endif
 
 #ifdef HAVE_STAT_ST_FLAGS
 	dst->st_ex_flags = src->st_flags;
