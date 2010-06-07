@@ -252,3 +252,44 @@ NTSTATUS gp_set_acl (struct gp_context *gp_ctx, const char *dn_str, const struct
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
+
+NTSTATUS gp_push_gpo (struct gp_context *gp_ctx, const char *local_path, struct gp_object *gpo)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct gp_ini_context *ini;
+	char *filename;
+
+	mem_ctx = talloc_new(gp_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	/* Get version from ini file */
+	/* FIXME: The local file system may be case sensitive */
+	filename = talloc_asprintf(mem_ctx, "%s/%s", local_path, "GPT.INI");
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(filename, mem_ctx);
+	status = gp_parse_ini(mem_ctx, gp_ctx, local_path, &ini);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to parse GPT.INI.\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Push the GPT to the remote sysvol */
+	status = gp_push_gpt(gp_ctx, local_path, gpo->file_sys_path);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to push GPT to DC's sysvol share.\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	/* Write version to LDAP */
+	status = gp_set_ldap_gpo(gp_ctx, gpo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to set GPO options in DC's LDAP.\n"));
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}

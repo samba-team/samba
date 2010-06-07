@@ -978,3 +978,59 @@ NTSTATUS gp_set_ads_acl (struct gp_context *gp_ctx, const char *dn_str, const st
 	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
+
+/* This function sets flags, version and displayName on a GPO */
+NTSTATUS gp_set_ldap_gpo(struct gp_context *gp_ctx, struct gp_object *gpo)
+{
+	int rv;
+	TALLOC_CTX *mem_ctx;
+	struct ldb_message *msg;
+	char *version_str, *flags_str;
+
+	mem_ctx = talloc_new(gp_ctx);
+
+	msg = ldb_msg_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+
+	msg->dn = ldb_dn_new(mem_ctx, gp_ctx->ldb_ctx, gpo->dn);
+
+	version_str = talloc_asprintf(mem_ctx, "%d", gpo->version);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+
+	flags_str = talloc_asprintf(mem_ctx, "%d", gpo->flags);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg, mem_ctx);
+
+	rv = ldb_msg_add_string(msg, "flags", flags_str);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed for flags: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_msg_add_string(msg, "version", version_str);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed for version: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_msg_add_string(msg, "displayName", gpo->display_name);
+	if (rv != 0) {
+		DEBUG(0, ("LDB message add string failed for displayName: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	msg->elements[2].flags = LDB_FLAG_MOD_REPLACE;
+
+	rv = ldb_modify(gp_ctx->ldb_ctx, msg);
+	if (rv != 0) {
+		DEBUG(0, ("LDB modify failed: %s\n", ldb_strerror(rv)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
