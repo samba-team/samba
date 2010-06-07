@@ -155,9 +155,11 @@ static int samba_dsdb_init(struct ldb_module *module)
 	  Some Known ordering constraints:
 	  - rootdse must be first, as it makes redirects from "" -> cn=rootdse
 	  - extended_dn_in must be before objectclass.c, as it resolves the DN
-	  - objectclass must be before password_hash, because password_hash checks
-	    that the objectclass is of type person (filled in by objectclass
-	    module when expanding the objectclass list)
+	  - objectclass must be before password_hash and samldb since these LDB
+	    modules require the expanded "objectClass" list
+	  - objectclass_attrs must be behind operational in order to see all
+	    attributes (the operational attributes protects and therefore
+	    suppresses per default some important ontes)
 	  - partition must be last
 	  - each partition has its own module list then
 
