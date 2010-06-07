@@ -158,8 +158,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	  - objectclass must be before password_hash and samldb since these LDB
 	    modules require the expanded "objectClass" list
 	  - objectclass_attrs must be behind operational in order to see all
-	    attributes (the operational attributes protects and therefore
-	    suppresses per default some important ontes)
+	    attributes (the operational module protects and therefore
+	    suppresses per default some important ones)
 	  - partition must be last
 	  - each partition has its own module list then
 
