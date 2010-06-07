@@ -562,13 +562,158 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *group_sid,
 				    enum lsa_SidType type,
-				    uint32_t *num_names,
-				    struct dom_sid **sid_mem,
-				    char ***names,
-				    uint32_t **name_types)
+				    uint32_t *pnum_names,
+				    struct dom_sid **psid_mem,
+				    char ***pnames,
+				    uint32_t **pname_types)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol, group_pol;
+	uint32_t samr_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct samr_RidTypeArray *rids = NULL;
+	uint32_t group_rid;
+	uint32_t *rid_mem = NULL;
+
+	uint32_t num_names = 0;
+	uint32_t total_names = 0;
+	struct dom_sid *sid_mem = NULL;
+	char **names = NULL;
+	uint32_t *name_types = NULL;
+
+	struct lsa_Strings tmp_names;
+	struct samr_Ids tmp_types;
+
+	uint32_t j, r;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: lookup groupmem\n"));
+
+	if (pnum_names) {
+		pnum_names = 0;
+	}
+
+	if (!sid_peek_check_rid(&domain->sid, group_sid, &group_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	status = rpccli_samr_OpenGroup(samr_pipe,
+				       tmp_ctx,
+				       &dom_pol,
+				       samr_access,
+				       group_rid,
+				       &group_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	/*
+	 * Step #1: Get a list of user rids that are the members of the group.
+	 */
+	status = rpccli_samr_QueryGroupMember(samr_pipe,
+					      tmp_ctx,
+					      &group_pol,
+					      &rids);
+
+	rpccli_samr_Close(samr_pipe, tmp_ctx, &group_pol);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (rids == NULL || rids->count == 0) {
+		pnum_names = 0;
+		pnames = NULL;
+		pname_types = NULL;
+		psid_mem = NULL;
+
+		status = NT_STATUS_OK;
+		goto error;
+	}
+
+	num_names = rids->count;
+	rid_mem = rids->rids;
+
+	/*
+	 * Step #2: Convert list of rids into list of usernames.
+	 */
+#define MAX_LOOKUP_RIDS 900
+
+	if (num_names > 0) {
+		names = TALLOC_ZERO_ARRAY(tmp_ctx, char *, num_names);
+		name_types = TALLOC_ZERO_ARRAY(tmp_ctx, uint32_t, num_names);
+		sid_mem = TALLOC_ZERO_ARRAY(tmp_ctx, struct dom_sid, num_names);
+		if (names == NULL || name_types == NULL || sid_mem == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	}
+
+	for (j = 0; j < num_names; j++) {
+		sid_compose(&sid_mem[j], &domain->sid, rid_mem[j]);
+	}
+
+	status = rpccli_samr_LookupRids(samr_pipe,
+					tmp_ctx,
+					&dom_pol,
+					num_names,
+					rid_mem,
+					&tmp_names,
+					&tmp_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+			goto error;
+		}
+	}
+
+	/* Copy result into array.  The talloc system will take
+	   care of freeing the temporary arrays later on. */
+	if (tmp_names.count != tmp_types.count) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto error;
+	}
+
+	for (r = 0; r < tmp_names.count; r++) {
+		if (tmp_types.ids[r] == SID_NAME_UNKNOWN) {
+			continue;
+		}
+		names[total_names] = fill_domain_username_talloc(names,
+								 domain->name,
+								 tmp_names.names[r].string,
+								 true);
+		name_types[total_names] = tmp_types.ids[r];
+		total_names++;
+	}
+
+	if (pnum_names) {
+		*pnum_names = total_names;
+	}
+
+	if (pnames) {
+		*pnames = talloc_move(mem_ctx, &names);
+	}
+
+	if (pname_types) {
+		*pname_types = talloc_move(mem_ctx, &name_types);
+	}
+
+	if (psid_mem) {
+		*psid_mem = talloc_move(mem_ctx, &sid_mem);
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /*********************************************************************
