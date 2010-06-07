@@ -46,6 +46,7 @@ struct aio_extra {
 	struct smb_request *smbreq;
 	DATA_BLOB outbuf;
 	struct lock_struct lock;
+	bool write_through;
 	int (*handle_completion)(struct aio_extra *ex, int errcode);
 };
 
@@ -239,7 +240,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
-	bool write_through = BITSETW(smbreq->vwv+7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	int ret;
 
@@ -262,7 +262,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	/* Only do this on non-chained and non-chaining reads not using the
+	/* Only do this on non-chained and non-chaining writes not using the
 	 * write cache. */
         if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return NT_STATUS_RETRY;
@@ -288,6 +288,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	aio_ex->handle_completion = handle_aio_write_complete;
+	aio_ex->write_through = BITSETW(smbreq->vwv+7,0);
 
 	construct_reply_common_req(smbreq, (char *)aio_ex->outbuf.data);
 	srv_set_message((char *)aio_ex->outbuf.data, 6, 0, True);
@@ -331,7 +332,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
-	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
+	if (!aio_ex->write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
 		/* Lie to the client and immediately claim we finished the
 		 * write. */
@@ -465,7 +466,6 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		ERROR_NT(map_nt_error_from_unix(errcode));
 		srv_set_message(outbuf,0,0,true);
         } else {
-		bool write_through = BITSETW(aio_ex->smbreq->vwv+7,0);
 		NTSTATUS status;
 
         	SSVAL(outbuf,smb_vwv2,nwritten);
@@ -477,7 +477,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 
 		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n",
 			 fsp->fnum, (int)numtowrite, (int)nwritten));
-		status = sync_file(fsp->conn,fsp, write_through);
+		status = sync_file(fsp->conn,fsp, aio_ex->write_through);
 		if (!NT_STATUS_IS_OK(status)) {
 			errcode = errno;
 			ERROR_BOTH(map_nt_error_from_unix(errcode),
