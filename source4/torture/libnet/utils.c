@@ -23,10 +23,12 @@
  */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "torture/libnet/proto.h"
+#include "lib/ldb_wrap.h"
 
 /**
  * Opens handle on Domain using SAMR
@@ -99,10 +101,73 @@ bool test_domain_open(struct torture_context *tctx,
 }
 
 
+/**
+ * Find out user's samAccountName for given
+ * user RDN. We need samAccountName value
+ * when deleting users.
+ */
+static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *user_rdn,
+					   TALLOC_CTX *mem_ctx,
+					   const char **_account_name)
+{
+	const char *url;
+	struct ldb_context *ldb;
+	TALLOC_CTX *tmp_ctx;
+	bool test_res = true;
+	struct dcerpc_pipe *p = talloc_get_type_abort(b->private_data, struct dcerpc_pipe);
+	int ldb_ret;
+	struct ldb_result *ldb_res;
+	const char *account_name = NULL;
+	static const char *attrs[] = {
+		"samAccountName",
+		NULL
+	};
+
+	tmp_ctx = talloc_new(tctx);
+	torture_assert(tctx, tmp_ctx != NULL, "Failed to create temporary mem context");
+
+	url = talloc_asprintf(tmp_ctx, "ldap://%s/", p->binding->target_hostname);
+	torture_assert_goto(tctx, url != NULL, test_res, done, "Failed to allocate URL for ldb");
+
+	ldb = ldb_wrap_connect(tmp_ctx,
+	                       tctx->ev, tctx->lp_ctx,
+	                       url, NULL, cmdline_credentials, 0);
+	torture_assert_goto(tctx, ldb != NULL, test_res, done, "Failed to make LDB connection");
+
+	ldb_ret = ldb_search(ldb, tmp_ctx, &ldb_res,
+	                     ldb_get_default_basedn(ldb), LDB_SCOPE_SUBTREE,
+	                     attrs,
+	                     "(&(objectClass=user)(name=%s))", user_rdn);
+	if (LDB_SUCCESS == ldb_ret && 1 == ldb_res->count) {
+		account_name = ldb_msg_find_attr_as_string(ldb_res->msgs[0], "samAccountName", NULL);
+	}
+
+	/* return user_rdn by default */
+	if (!account_name) {
+		account_name = user_rdn;
+	}
+
+	/* duplicate memory in parent context */
+	*_account_name = talloc_strdup(mem_ctx, account_name);
+
+done:
+	talloc_free(tmp_ctx);
+	return test_res;
+}
+
+/**
+ * Removes user by RDN through SAMR interface.
+ *
+ * @param domain_handle [in] Domain handle
+ * @param name
+ * @return
+ */
 bool test_user_cleanup(struct torture_context *tctx,
 		       struct dcerpc_binding_handle *b,
 		       TALLOC_CTX *mem_ctx, struct policy_handle *domain_handle,
-		       const char *name)
+		       const char *user_rdn)
 {
 	struct samr_LookupNames r1;
 	struct samr_OpenUser r2;
@@ -111,8 +176,15 @@ bool test_user_cleanup(struct torture_context *tctx,
 	uint32_t rid;
 	struct policy_handle user_handle;
 	struct samr_Ids rids, types;
+	const char *account_name;
 
-	names[0].string = name;
+	if (!_get_account_name_for_user_rdn(tctx, b, user_rdn, mem_ctx, &account_name)) {
+		torture_result(tctx, TORTURE_FAIL,
+		               __location__": Failed to find samAccountName for %s", user_rdn);
+		return false;
+	}
+
+	names[0].string = account_name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
@@ -120,13 +192,13 @@ bool test_user_cleanup(struct torture_context *tctx,
 	r1.out.rids          = &rids;
 	r1.out.types         = &types;
 
-	torture_comment(tctx, "user account lookup '%s'\n", name);
+	torture_comment(tctx, "user account lookup '%s'\n", account_name);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
-		"LookupNames failed");
+				   dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
+				   "LookupNames failed");
 	torture_assert_ntstatus_ok(tctx, r1.out.result,
-		"LookupNames failed");
+				   "LookupNames failed");
 
 	rid = r1.out.rids->ids[0];
 
@@ -138,10 +210,10 @@ bool test_user_cleanup(struct torture_context *tctx,
 	torture_comment(tctx, "opening user account\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_OpenUser_r(b, mem_ctx, &r2),
-		"OpenUser failed");
+				   dcerpc_samr_OpenUser_r(b, mem_ctx, &r2),
+				   "OpenUser failed");
 	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"OpenUser failed");
+				   "OpenUser failed");
 
 	r3.in.user_handle  = &user_handle;
 	r3.out.user_handle = &user_handle;
@@ -149,10 +221,10 @@ bool test_user_cleanup(struct torture_context *tctx,
 	torture_comment(tctx, "deleting user account\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3),
-		"DeleteUser failed");
+				   dcerpc_samr_DeleteUser_r(b, mem_ctx, &r3),
+				   "DeleteUser failed");
 	torture_assert_ntstatus_ok(tctx, r3.out.result,
-		"DeleteUser failed");
+				   "DeleteUser failed");
 
 	return true;
 }
