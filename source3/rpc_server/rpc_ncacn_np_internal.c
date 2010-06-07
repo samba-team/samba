@@ -68,6 +68,18 @@ static void free_pipe_rpc_context_internal( PIPE_RPC_FNS *list )
 	return;
 }
 
+bool check_open_pipes(void)
+{
+	pipes_struct *p;
+
+	for (p = InternalPipes; p != NULL; p = p->next) {
+		if (num_pipe_handles(p) != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /****************************************************************************
  Close an rpc pipe.
 ****************************************************************************/

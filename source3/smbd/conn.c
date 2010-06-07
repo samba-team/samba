@@ -213,7 +213,6 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 {
 	int deadtime = lp_deadtime()*60;
-	pipes_struct *plist = NULL;
 	connection_struct *conn;
 
 	if (deadtime <= 0)
@@ -243,14 +242,10 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 	 * Check all pipes for any open handles. We cannot
 	 * idle with a handle open.
 	 */
-
-	for (plist = get_first_internal_pipe(); plist;
-	     plist = get_next_internal_pipe(plist)) {
-		if (num_pipe_handles(plist->pipe_handles) != 0) {
-			return False;
-		}
+	if (check_open_pipes()) {
+		return False;
 	}
-	
+
 	return True;
 }
 
