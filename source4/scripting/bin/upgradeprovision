@@ -75,21 +75,32 @@ __docformat__ = "restructuredText"
 # This is most probably because they are populated automatcally when object is
 # created
 # This also apply to imported object from reference provision
-hashAttrNotCopied = {     "dn": 1, "whenCreated": 1, "whenChanged": 1, "objectGUID": 1, "replPropertyMetaData": 1, "uSNChanged": 1,
-                        "uSNCreated": 1, "parentGUID": 1, "objectCategory": 1, "distinguishedName": 1,
-                        "showInAdvancedViewOnly": 1, "instanceType": 1, "cn": 1, "msDS-Behavior-Version":1, "nextRid":1,
-                        "nTMixedDomain": 1, "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1, "ntPwdHistory":1, "unicodePwd":1,
-                        "dBCSPwd":1, "supplementalCredentials":1, "gPCUserExtensionNames":1, "gPCMachineExtensionNames":1,
-                        "maxPwdAge":1, "secret":1, "possibleInferiors":1, "privilege":1, "sAMAccountType":1 }
+hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
+                        "objectGUID": 1, "uSNCreated": 1,
+                        "replPropertyMetaData": 1, "uSNChanged": 1,
+                        "parentGUID": 1, "objectCategory": 1,
+                        "distinguishedName": 1, "nTMixedDomain": 1,
+                        "showInAdvancedViewOnly": 1, "instanceType": 1,
+                        "msDS-Behavior-Version":1, "nextRid":1, "cn": 1,
+                        "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1,
+                        "ntPwdHistory":1, "unicodePwd":1,"dBCSPwd":1,
+                        "supplementalCredentials":1, "gPCUserExtensionNames":1,
+                        "gPCMachineExtensionNames":1,"maxPwdAge":1, "secret":1,
+                        "possibleInferiors":1, "privilege":1,
+                        "sAMAccountType":1 }
 
 # Usually for an object that already exists we do not overwrite attributes as
 # they might have been changed for good reasons. Anyway for a few of them it's
 # mandatory to replace them otherwise the provision will be broken somehow.
-hashOverwrittenAtt = {    "prefixMap": replace, "systemMayContain": replace, "systemOnly":replace, "searchFlags":replace,
-                        "mayContain":replace,  "systemFlags":replace, "description":replace,
-                        "operatingSystemVersion":replace, "adminPropertyPages":replace,
-                        "defaultSecurityDescriptor": replace, "wellKnownObjects":replace, "privilege":never, "groupType":replace,
-                        "rIDAvailablePool": never, "defaultSecurityDescriptor": replace + add}
+hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
+                        "systemOnly":replace, "searchFlags":replace,
+                        "mayContain":replace, "systemFlags":replace+add,
+                        "description":replace, "operatingSystemVersion":replace,
+                        "adminPropertyPages":replace, "groupType":replace,
+                        "wellKnownObjects":replace, "privilege":never,
+                        "defaultSecurityDescriptor": replace,
+                        "rIDAvailablePool": never,
+                        "defaultSecurityDescriptor": replace + add }
 
 
 backlinked = []
@@ -116,13 +127,18 @@ parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option("--setupdir", type="string", metavar="DIR",
-                    help="directory with setup files")
+                  help="directory with setup files")
 parser.add_option("--debugprovision", help="Debug provision", action="store_true")
-parser.add_option("--debugguess", help="Print information on what is different but won't be changed", action="store_true")
-parser.add_option("--debugchange", help="Print information on what is different but won't be changed", action="store_true")
-parser.add_option("--debugchangesd", help="Print information security descriptors differences", action="store_true")
-parser.add_option("--debugall", help="Print all available information (very verbose)", action="store_true")
-parser.add_option("--full", help="Perform full upgrade of the samdb (schema, configuration, new objects, ...", action="store_true")
+parser.add_option("--debugguess", action="store_true",
+                  help="Print information on what is different but won't be changed")
+parser.add_option("--debugchange", action="store_true",
+                  help="Print information on what is different but won't be changed")
+parser.add_option("--debugchangesd", action="store_true",
+                  help="Print information security descriptors differences")
+parser.add_option("--debugall", action="store_true",
+                  help="Print all available information (very verbose)")
+parser.add_option("--full", action="store_true",
+                  help="Perform full upgrade of the samdb (schema, configuration, new objects, ...")
 
 opts = parser.parse_args()[0]
 
