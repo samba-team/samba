@@ -30,20 +30,18 @@
  * Handle database - stored per pipe.
  */
 
-struct policy {
-	struct policy *next, *prev;
-
-	struct policy_handle pol_hnd;
-
+struct dcesrv_handle {
+	struct dcesrv_handle *prev, *next;
+	struct policy_handle wire_handle;
 	uint32_t access_granted;
-
-	void *data_ptr;
+	void *data;
 };
 
 struct handle_list {
-	struct policy *Policy; 	/* List of policies. */
+	struct dcesrv_handle *handles;	/* List of pipe handles. */
 	size_t count;			/* Current number of handles. */
-	size_t pipe_ref_count;	/* Number of pipe handles referring to this list. */
+	size_t pipe_ref_count;		/* Number of pipe handles referring
+					 * to this tree. */
 };
 
 /* This is the max handles across all instances of a pipe name. */
@@ -75,7 +73,7 @@ size_t num_pipe_handles(pipes_struct *p)
  pipes of the same name.
 ****************************************************************************/
 
-bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
+bool init_pipe_handles(pipes_struct *p, const struct ndr_syntax_id *syntax)
 {
 	pipes_struct *plist;
 	struct handle_list *hl;
@@ -105,11 +103,10 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 		/*
 		 * First open, we have to create the handle list
 		 */
-		hl = SMB_MALLOC_P(struct handle_list);
+		hl = talloc_zero(p, struct handle_list);
 		if (hl == NULL) {
 			return false;
 		}
-		ZERO_STRUCTP(hl);
 
 		DEBUG(10,("init_pipe_handle_list: created handle list for "
 			  "pipe %s\n",
@@ -143,15 +140,13 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-static struct policy *create_policy_hnd_internal(pipes_struct *p,
-						 struct policy_handle *hnd,
-						 void *data_ptr)
+static struct dcesrv_handle *create_rpc_handle_internal(pipes_struct *p,
+				struct policy_handle *hnd, void *data_ptr)
 {
+	struct dcesrv_handle *rpc_hnd;
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
 	time_t t = time(NULL);
-
-	struct policy *pol;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n",
@@ -159,77 +154,92 @@ static struct policy *create_policy_hnd_internal(pipes_struct *p,
 		return NULL;
 	}
 
-	pol = TALLOC_ZERO_P(NULL, struct policy);
-	if (!pol) {
+	rpc_hnd = talloc_zero(p->pipe_handles, struct dcesrv_handle);
+	if (!rpc_hnd) {
 		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
 		return NULL;
 	}
 
 	if (data_ptr != NULL) {
-		pol->data_ptr = talloc_move(pol, &data_ptr);
+		rpc_hnd->data = talloc_move(rpc_hnd, &data_ptr);
 	}
 
 	pol_hnd_low++;
-	if (pol_hnd_low == 0)
-		(pol_hnd_high)++;
+	if (pol_hnd_low == 0) {
+		pol_hnd_high++;
+	}
 
-	SIVAL(&pol->pol_hnd.handle_type, 0 , 0);  /* first bit must be null */
-	SIVAL(&pol->pol_hnd.uuid.time_low, 0 , pol_hnd_low ); /* second bit is incrementing */
-	SSVAL(&pol->pol_hnd.uuid.time_mid, 0 , pol_hnd_high); /* second bit is incrementing */
-	SSVAL(&pol->pol_hnd.uuid.time_hi_and_version, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
+	/* first bit must be null */
+	SIVAL(&rpc_hnd->wire_handle.handle_type, 0 , 0);
+
+	/* second bit is incrementing */
+	SIVAL(&rpc_hnd->wire_handle.uuid.time_low, 0 , pol_hnd_low);
+	SSVAL(&rpc_hnd->wire_handle.uuid.time_mid, 0 , pol_hnd_high);
+	SSVAL(&rpc_hnd->wire_handle.uuid.time_hi_and_version, 0, (pol_hnd_high >> 16));
 
 	/* split the current time into two 16 bit values */
 
-	SSVAL(pol->pol_hnd.uuid.clock_seq, 0, (t>>16)); /* something random */
-	SSVAL(pol->pol_hnd.uuid.node, 0, t); /* something random */
+	/* something random */
+	SSVAL(rpc_hnd->wire_handle.uuid.clock_seq, 0, (t >> 16));
+	/* something random */
+	SSVAL(rpc_hnd->wire_handle.uuid.node, 0, t);
+	/* something more random */
+	SIVAL(rpc_hnd->wire_handle.uuid.node, 2, sys_getpid());
 
-	SIVAL(pol->pol_hnd.uuid.node, 2, sys_getpid()); /* something more random */
-
-	DLIST_ADD(p->pipe_handles->Policy, pol);
+	DLIST_ADD(p->pipe_handles->handles, rpc_hnd);
 	p->pipe_handles->count++;
 
-	*hnd = pol->pol_hnd;
-	
-	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
-	dump_data(4, (uint8 *)hnd, sizeof(*hnd));
+	*hnd = rpc_hnd->wire_handle;
 
-	return pol;
+	DEBUG(4, ("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
+	dump_data(4, (uint8_t *)hnd, sizeof(*hnd));
+
+	return rpc_hnd;
 }
 
 bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd,
 		       void *data_ptr)
 {
-	return create_policy_hnd_internal(p, hnd, data_ptr) != NULL;
+	struct dcesrv_handle *rpc_hnd;
+
+	rpc_hnd = create_rpc_handle_internal(p, hnd, data_ptr);
+	if (rpc_hnd == NULL) {
+		return false;
+	}
+	return true;
 }
 
 /****************************************************************************
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct policy *find_policy_by_hnd_internal(pipes_struct *p,
-						  const struct policy_handle *hnd,
-						  void **data_p)
+static struct dcesrv_handle *find_policy_by_hnd_internal(pipes_struct *p,
+				const struct policy_handle *hnd, void **data_p)
 {
-	struct policy *pol;
-	size_t i;
+	struct dcesrv_handle *h;
+	unsigned int count;
 
-	if (data_p)
+	if (data_p) {
 		*data_p = NULL;
+	}
 
-	for (i = 0, pol=p->pipe_handles->Policy;pol;pol=pol->next, i++) {
-		if (memcmp(&pol->pol_hnd, hnd, sizeof(*hnd)) == 0) {
-			DEBUG(4,("Found policy hnd[%d] ", (int)i));
+	count = 0;
+	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
+		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
+			DEBUG(4,("Found policy hnd[%u] ", count));
 			dump_data(4, (uint8 *)hnd, sizeof(*hnd));
-			if (data_p)
-				*data_p = pol->data_ptr;
-			return pol;
+			if (data_p) {
+				*data_p = h->data;
+			}
+			return h;
 		}
+		count++;
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (uint8 *)hnd, sizeof(*hnd));
+	dump_data(4, (uint8_t *)hnd, sizeof(*hnd));
 
-	p->bad_handle_fault_state = True;
+	p->bad_handle_fault_state = true;
 
 	return NULL;
 }
@@ -241,7 +251,13 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p,
 bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
 			void **data_p)
 {
-	return find_policy_by_hnd_internal(p, hnd, data_p) == NULL ? False : True;
+	struct dcesrv_handle *rpc_hnd;
+
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, data_p);
+	if (rpc_hnd == NULL) {
+		return false;
+	}
+	return true;
 }
 
 /****************************************************************************
@@ -250,26 +266,27 @@ bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
 
 bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd)
 {
-	struct policy *pol = find_policy_by_hnd_internal(p, hnd, NULL);
+	struct dcesrv_handle *rpc_hnd;
 
-	if (!pol) {
-		DEBUG(3,("Error closing policy\n"));
-		return False;
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, NULL);
+
+	if (rpc_hnd == NULL) {
+		DEBUG(3, ("Error closing policy (policy not found)\n"));
+		return false;
 	}
 
 	DEBUG(3,("Closed policy\n"));
 
 	p->pipe_handles->count--;
 
-	DLIST_REMOVE(p->pipe_handles->Policy, pol);
+	DLIST_REMOVE(p->pipe_handles->handles, rpc_hnd);
+	TALLOC_FREE(rpc_hnd);
 
-	TALLOC_FREE(pol);
-
-	return True;
+	return true;
 }
 
 /****************************************************************************
- Close a pipe - free the handle list if it was the last pipe reference.
+ Close a pipe - free the handle set if it was the last pipe reference.
 ****************************************************************************/
 
 void close_policy_by_pipe(pipes_struct *p)
@@ -280,13 +297,8 @@ void close_policy_by_pipe(pipes_struct *p)
 		/*
 		 * Last pipe open on this list - free the list.
 		 */
-		while (p->pipe_handles->Policy)
-			close_policy_hnd(p, &p->pipe_handles->Policy->pol_hnd);
+		TALLOC_FREE(p->pipe_handles);
 
-		p->pipe_handles->Policy = NULL;
-		p->pipe_handles->count = 0;
-
-		SAFE_FREE(p->pipe_handles);
 		DEBUG(10,("close_policy_by_pipe: deleted handle list for "
 			  "pipe %s\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
@@ -325,7 +337,7 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 			    uint32_t access_granted, size_t data_size,
 			    const char *type, NTSTATUS *pstatus)
 {
-	struct policy *pol;
+	struct dcesrv_handle *rpc_hnd;
 	void *data;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
@@ -343,13 +355,13 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	}
 	talloc_set_name_const(data, type);
 
-	pol = create_policy_hnd_internal(p, hnd, data);
-	if (pol == NULL) {
+	rpc_hnd = create_rpc_handle_internal(p, hnd, data);
+	if (rpc_hnd == NULL) {
 		TALLOC_FREE(data);
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
-	pol->access_granted = access_granted;
+	rpc_hnd->access_granted = access_granted;
 	*pstatus = NT_STATUS_OK;
 	return data;
 }
@@ -361,11 +373,11 @@ void *_policy_handle_find(struct pipes_struct *p,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus)
 {
-	struct policy *pol;
+	struct dcesrv_handle *rpc_hnd;
 	void *data;
 
-	pol = find_policy_by_hnd_internal(p, hnd, &data);
-	if (pol == NULL) {
+	rpc_hnd = find_policy_by_hnd_internal(p, hnd, &data);
+	if (rpc_hnd == NULL) {
 		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}
@@ -375,16 +387,16 @@ void *_policy_handle_find(struct pipes_struct *p,
 		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}
-	if ((access_required & pol->access_granted) != access_required) {
+	if ((access_required & rpc_hnd->access_granted) != access_required) {
 		if (geteuid() == sec_initial_uid()) {
 			DEBUG(4, ("%s: ACCESS should be DENIED (granted: "
 				  "%#010x; required: %#010x)\n", location,
-				  pol->access_granted, access_required));
+				  rpc_hnd->access_granted, access_required));
 			DEBUGADD(4,("but overwritten by euid == 0\n"));
 			goto okay;
 		}
 		DEBUG(2,("%s: ACCESS DENIED (granted: %#010x; required: "
-			 "%#010x)\n", location, pol->access_granted,
+			 "%#010x)\n", location, rpc_hnd->access_granted,
 			 access_required));
 		*pstatus = NT_STATUS_ACCESS_DENIED;
 		return NULL;
@@ -393,7 +405,7 @@ void *_policy_handle_find(struct pipes_struct *p,
  okay:
 	DEBUG(10, ("found handle of type %s\n", talloc_get_name(data)));
 	if (paccess_granted != NULL) {
-		*paccess_granted = pol->access_granted;
+		*paccess_granted = rpc_hnd->access_granted;
 	}
 	*pstatus = NT_STATUS_OK;
 	return data;

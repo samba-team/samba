@@ -141,7 +141,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!init_pipe_handle_list(p, syntax)) {
+	if (!init_pipe_handles(p, syntax)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		TALLOC_FREE(p);
 		return NULL;
