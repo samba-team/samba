@@ -159,7 +159,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD(InternalPipes, p);
 
-	memcpy(p->client_address, client_address, sizeof(p->client_address));
+	strlcpy(p->client_address, client_address, sizeof(p->client_address));
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
