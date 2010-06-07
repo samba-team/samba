@@ -779,7 +779,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 
 	for (i=0; i<num_sids; i++) {
 		struct dom_sid sid;
-		uint32 rid;
+		uint32_t rid = 0;
 		const char *domain_name = NULL;
 
 		sid_copy(&sid, sids[i]);
