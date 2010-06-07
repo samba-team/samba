@@ -214,23 +214,23 @@ def print_provision_key_parameters(names):
     """Do a a pretty print of provision parameters
 
     :param names: list of key provision parameters """
-    message(GUESS, "rootdn      :"+str(names.rootdn))
-    message(GUESS, "configdn    :"+str(names.configdn))
-    message(GUESS, "schemadn    :"+str(names.schemadn))
-    message(GUESS, "serverdn    :"+str(names.serverdn))
-    message(GUESS, "netbiosname :"+names.netbiosname)
-    message(GUESS, "defaultsite :"+names.sitename)
-    message(GUESS, "dnsdomain   :"+names.dnsdomain)
-    message(GUESS, "hostname    :"+names.hostname)
-    message(GUESS, "domain      :"+names.domain)
-    message(GUESS, "realm       :"+names.realm)
-    message(GUESS, "invocationid:"+names.invocation)
-    message(GUESS, "policyguid  :"+names.policyid)
-    message(GUESS, "policyguiddc:"+str(names.policyid_dc))
-    message(GUESS, "domainsid   :"+str(names.domainsid))
-    message(GUESS, "domainguid  :"+names.domainguid)
-    message(GUESS, "ntdsguid    :"+names.ntdsguid)
-    message(GUESS, "domainlevel :"+str(names.domainlevel))
+    message(GUESS, "rootdn      :" + str(names.rootdn))
+    message(GUESS, "configdn    :" + str(names.configdn))
+    message(GUESS, "schemadn    :" + str(names.schemadn))
+    message(GUESS, "serverdn    :" + str(names.serverdn))
+    message(GUESS, "netbiosname :" + names.netbiosname)
+    message(GUESS, "defaultsite :" + names.sitename)
+    message(GUESS, "dnsdomain   :" + names.dnsdomain)
+    message(GUESS, "hostname    :" + names.hostname)
+    message(GUESS, "domain      :" + names.domain)
+    message(GUESS, "realm       :" + names.realm)
+    message(GUESS, "invocationid:" + names.invocation)
+    message(GUESS, "policyguid  :" + names.policyid)
+    message(GUESS, "policyguiddc:" + str(names.policyid_dc))
+    message(GUESS, "domainsid   :" + str(names.domainsid))
+    message(GUESS, "domainguid  :" + names.domainguid)
+    message(GUESS, "ntdsguid    :" + names.ntdsguid)
+    message(GUESS, "domainlevel :" + str(names.domainlevel))
 
 
 def handle_special_case(att, delta, new, old):
@@ -367,74 +367,89 @@ def update_secrets(newsecrets_ldb, secrets_ldb):
         secrets_ldb.modify(delta)
 
 
-def dump_denied_change(dn,att,flagtxt,current,reference):
+def dump_denied_change(dn, att, flagtxt, current, reference):
     """Print detailed information about why a changed is denied
 
     :param dn: DN of the object which attribute is denied
     :param att: Attribute that was supposed to be upgraded
-    :param flagtxt: Type of the update that should be performed (add, change, remove, ...)
+    :param flagtxt: Type of the update that should be performed
+                    (add, change, remove, ...)
     :param current: Value(s) of the current attribute
     :param reference: Value(s) of the reference attribute"""
 
-    message(CHANGE, "dn= "+str(dn)+" "+att+" with flag "+flagtxt+" is not allowed to be changed/removed, I discard this change ...")
+    message(CHANGE, "dn= " + str(dn)+" " + att+" with flag " + flagtxt
+                +" is not allowed to be changed/removed, I discard this change")
     if att != "objectSid" :
         i = 0
-        for e in range(0,len(current)):
-            message(CHANGE, "old %d : %s"%(i,str(current[e])))
+        for e in range(0, len(current)):
+            message(CHANGE, "old %d : %s" % (i, str(current[e])))
             i+=1
         if reference != None:
             i = 0
-            for e in range(0,len(reference)):
-                message(CHANGE, "new %d : %s"%(i,str(reference[e])))
+            for e in range(0, len(reference)):
+                message(CHANGE, "new %d : %s" % (i, str(reference[e])))
                 i+=1
     else:
-        message(CHANGE, "old : %s"%str(ndr_unpack( security.dom_sid,current[0])))
-        message(CHANGE, "new : %s"%str(ndr_unpack( security.dom_sid,reference[0])))
+        message(CHANGE, "old : %s" % str(ndr_unpack( security.dom_sid, current[0])))
+        message(CHANGE, "new : %s" % str(ndr_unpack( security.dom_sid, reference[0])))
 
 
-def handle_special_add(samdb,dn,names):
-    """Handle special operation (like remove) on some object needed during upgrade
+def handle_special_add(samdb, dn, names):
+    """Handle special operation (like remove) on some object needed during
+       upgrade
 
     This is mostly due to wrong creation of the object in previous provision.
     :param samdb: An Ldb object representing the SAM database
     :param dn: DN of the object to inspect
     :param names: list of key provision parameters"""
+
     dntoremove = None
-    if str(dn).lower() == ("CN=IIS_IUSRS,CN=Builtin,%s" % names.rootdn).lower():
+    if str(dn).lower() == ("CN=IIS_IUSRS, CN=Builtin, %s" % names.rootdn).lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove = "CN=IIS_IUSRS,CN=Users,%s" % names.rootdn
+        dntoremove = "CN=IIS_IUSRS, CN=Users, %s" % names.rootdn
 
-    if str(dn).lower() == ("CN=Certificate Service DCOM Access,CN=Builtin,%s"%names.rootdn).lower():
+    objname = "CN=Certificate Service DCOM Access, CN=Builtin, %s" % names.rootdn
+    if str(dn).lower() == objname.lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove = "CN=Certificate Service DCOM Access,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Certificate Service DCOM Access,"\
+                     "CN=Users, %s" % names.rootdn
 
-    if str(dn).lower() == ("CN=Cryptographic Operators,CN=Builtin,%s"%names.rootdn).lower():
+    objname = "CN=Cryptographic Operators, CN=Builtin, %s" % names.rootdn
+    if str(dn).lower() == objname.lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove = "CN=Cryptographic Operators,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Cryptographic Operators, CN=Users, %s" % names.rootdn
 
-    if str(dn).lower() == ("CN=Event Log Readers,CN=Builtin,%s"%names.rootdn).lower():
+    objname = "CN=Event Log Readers, CN=Builtin, %s" % names.rootdn
+    if str(dn).lower() == objname.lower():
         #This entry was misplaced lets remove it if it exists
-        dntoremove = "CN=Event Log Readers,CN=Users,%s"%names.rootdn
+        dntoremove = "CN=Event Log Readers, CN=Users, %s" % names.rootdn
 
     if dntoremove != None:
-        res = samdb.search(expression="(dn=%s)" % dntoremove, base=str(names.rootdn), scope=SCOPE_SUBTREE, attrs=["dn"], controls=["search_options:1:2"])
+        res = samdb.search(expression="(dn=%s)" % dntoremove,
+                            base=str(names.rootdn),
+                            scope=SCOPE_SUBTREE, attrs=["dn"],
+                            controls=["search_options:1:2"])
         if len(res) > 0:
-            message(CHANGE,"Existing object %s must be replaced by %s, removing old object"%(dntoremove,str(dn)))
+            message(CHANGE, "Existing object %s must be replaced by %s,"\
+                            "removing old object" % (dntoremove, str(dn)))
             samdb.delete(res[0]["dn"])
 
 
 def check_dn_nottobecreated(hash, index, listdn):
-    """Check if one of the DN present in the list has a creation order greater than the current.
+    """Check if one of the DN present in the list has a creation order
+       greater than the current.
 
-    Hash is indexed by dn to be created, with each key is associated the creation order
+    Hash is indexed by dn to be created, with each key
+    is associated the creation order.
+
     First dn to be created has the creation order 0, second has 1, ...
     Index contain the current creation order
 
     :param hash: Hash holding the different DN of the object to be created as key
     :param index: Current creation order
     :param listdn: List of DNs on which the current DN depends on
-    :return: None if the current object do not depend on other object or if all object have been
-    created before."""
+    :return: None if the current object do not depend on other
+              object or if all object have been created before."""
     if listdn == None:
         return None
     for dn in listdn:
@@ -444,23 +459,30 @@ def check_dn_nottobecreated(hash, index, listdn):
     return None
 
 
+
 def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     """Add a new object if the dependencies are satisfied
 
-    The function add the object if the object on which it depends are already created
-    :param ref_samdb: Ldb object representing the SAM db of the reference provision
-    :param samdb: Ldb object representing the SAM db of the upgraded provision
+    The function add the object if the object on which it depends are already
+    created
+
+    :param ref_samdb: Ldb object representing the SAM db of the reference
+                       provision
+    :param samdb: Ldb object representing the SAM db of the upgraded
+                   provision
     :param dn: DN of the object to be added
     :param names: List of key provision parameters
     :param basedn: DN of the partition to be updated
-    :param hash: Hash holding the different DN of the object to be created as key
+    :param hash: Hash holding the different DN of the object to be
+                  created as key
     :param index: Current creation order
     :return: True if the object was created False otherwise"""
-    handle_special_add(samdb,dn,names)
-    reference = ref_samdb.search(expression="dn=%s" % (str(dn)),base=basedn,
-                    scope=SCOPE_SUBTREE,controls=["search_options:1:2"])
+
+    handle_special_add(samdb, dn, names)
+    reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
+                    scope=SCOPE_SUBTREE, controls=["search_options:1:2"])
     empty = Message()
-    delta = samdb.msg_diff(empty,reference[0])
+    delta = samdb.msg_diff(empty, reference[0])
     delta.dn
     for att in hashAttrNotCopied.keys():
         delta.remove(att)
@@ -468,13 +490,16 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
         delta.remove(att)
     depend_on_yettobecreated = None
     for att in dn_syntax_att:
-        depend_on_yet_tobecreated = check_dn_nottobecreated(hash,index,delta.get(str(att)))
+        depend_on_yet_tobecreated = check_dn_nottobecreated(hash, index,
+                                                            delta.get(str(att)))
         if depend_on_yet_tobecreated != None:
-            message(CHANGE, "Object %s depends on %s in attribute %s, delaying the creation"
-                            %(str(dn),depend_on_yet_tobecreated,str(att)))
+            message(CHANGE, "Object %s depends on %s in attribute %s," \
+                            "delaying the creation" % (str(dn), \
+                                      depend_on_yet_tobecreated, str(att)))
             return False
+
     delta.dn = dn
-    message(CHANGE,"Object %s will be added"%dn)
+    message(CHANGE,"Object %s will be added" % dn)
     samdb.add(delta, ["relax:0"])
     return True
 
@@ -491,61 +516,80 @@ def gen_dn_index_hash(listMissing):
 def add_deletedobj_containers(ref_samdb, samdb, names):
     """Add the object containter: CN=Deleted Objects
 
-    This function create the container for each partition that need one and then reference the object into
-    the root of the partition
-    :param ref_samdb: Ldb object representing the SAM db of the reference provision
+    This function create the container for each partition that need one and
+    then reference the object into the root of the partition
+
+    :param ref_samdb: Ldb object representing the SAM db of the reference
+                       provision
     :param samdb: Ldb object representing the SAM db of the upgraded provision
     :param names: List of key provision parameters"""
 
-    partitions = [str(names.rootdn),str(names.configdn)]
-    for part in partitions:
-        ref_delObjCnt = ref_samdb.search(expression="(cn=Deleted Objects)",base=part, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["show_deleted:0"])
-        delObjCnt = samdb.search(expression="(cn=Deleted Objects)",base=part, scope=SCOPE_SUBTREE,attrs=["dn"],controls=["show_deleted:0"])
-        if len(ref_delObjCnt) > len(delObjCnt):
-            reference = ref_samdb.search(expression="cn=Deleted Objects",base=part,
-                                         scope=SCOPE_SUBTREE,controls=["show_deleted:0"])
-            empty = Message()
-            delta = samdb.msg_diff(empty,reference[0])
 
-            delta.dn = Dn(samdb,str(reference[0]["dn"]))
+    wkoPrefix = "B:32:18E2EA80684F11D2B9AA00C04F79F805"
+    partitions = [str(names.rootdn), str(names.configdn)]
+    for part in partitions:
+        ref_delObjCnt = ref_samdb.search(expression="(cn=Deleted Objects)",
+                                            base=part, scope=SCOPE_SUBTREE,
+                                            attrs=["dn"],
+                                            controls=["show_deleted:0"])
+        delObjCnt = samdb.search(expression="(cn=Deleted Objects)",
+                                    base=part, scope=SCOPE_SUBTREE,
+                                    attrs=["dn"],
+                                    controls=["show_deleted:0"])
+        if len(ref_delObjCnt) > len(delObjCnt):
+            reference = ref_samdb.search(expression="cn=Deleted Objects",
+                                            base=part, scope=SCOPE_SUBTREE,
+                                            controls=["show_deleted:0"])
+            empty = Message()
+            delta = samdb.msg_diff(empty, reference[0])
+
+            delta.dn = Dn(samdb, str(reference[0]["dn"]))
             for att in hashAttrNotCopied.keys():
                 delta.remove(att)
             samdb.add(delta)
 
             listwko = []
-            res = samdb.search(expression="(objectClass=*)",base=part,
-                               scope=SCOPE_BASE, attrs=["dn","wellKnownObjects"])
+            res = samdb.search(expression="(objectClass=*)", base=part,
+                               scope=SCOPE_BASE,
+                               attrs=["dn", "wellKnownObjects"])
 
-            targetWKO = "B:32:18E2EA80684F11D2B9AA00C04F79F805:%s" % str(reference[0]["dn"])
+            targetWKO = "%s:%s" % (wkoPrefix, str(reference[0]["dn"]))
             found = 0
 
             if len(res[0]) > 0:
                 wko = res[0]["wellKnownObjects"]
 
                 # The wellKnownObject that we want to add.
-
                 for o in wko:
                     if str(o) == targetWKO:
                         found = 1
                     listwko.append(str(o))
+
             if not found:
                 listwko.append(targetWKO)
 
                 delta = Message()
-                delta.dn = Dn(samdb,str(res[0]["dn"]))
-                delta["wellKnownObjects"] = MessageElement(listwko, FLAG_MOD_REPLACE, "wellKnownObjects" )
+                delta.dn = Dn(samdb, str(res[0]["dn"]))
+                delta["wellKnownObjects"] = MessageElement(listwko,
+                                                FLAG_MOD_REPLACE,
+                                                "wellKnownObjects" )
                 samdb.modify(delta)
 
 def add_missing_entries(ref_samdb, samdb, names, basedn, list):
     """Add the missing object whose DN is the list
 
-    The function add the object if the object on which it depends are already created
-    :param ref_samdb: Ldb object representing the SAM db of the reference provision
-    :param samdb: Ldb object representing the SAM db of the upgraded provision
+    The function add the object if the objects on which it depends are
+    already created.
+
+    :param ref_samdb: Ldb object representing the SAM db of the reference
+                      provision
+    :param samdb: Ldb object representing the SAM db of the upgraded
+                  provision
     :param dn: DN of the object to be added
     :param names: List of key provision parameters
     :param basedn: DN of the partition to be updated
     :param list: List of DN to be added in the upgraded provision"""
+
     listMissing = []
     listDefered = list
 
@@ -555,13 +599,16 @@ def add_missing_entries(ref_samdb, samdb, names, basedn, list):
         listDefered = []
         hashMissing = gen_dn_index_hash(listMissing)
         for dn in listMissing:
-            ret = add_missing_object(ref_samdb,samdb,dn,names,basedn,hashMissing,index)
+            ret = add_missing_object(ref_samdb, samdb, dn, names, basedn,
+                                        hashMissing, index)
             index = index + 1
             if ret == 0:
-                #DN can't be created because it depends on some other DN in the list
+                # DN can't be created because it depends on some
+                # other DN in the list
                 listDefered.append(dn)
     if len(listDefered) != 0:
-        raise ProvisioningError("Unable to insert missing elements: circular references")
+        raise ProvisioningError("Unable to insert missing elements:" \
+                                "circular references")
 
 
 def update_partition(ref_samdb, samdb, basedn, names, use_ref_schema, highestUSN):
