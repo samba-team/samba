@@ -474,8 +474,87 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    struct netr_DomainTrustList *trusts)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *lsa_pipe;
+	struct netr_DomainTrust *array = NULL;
+	struct policy_handle lsa_policy;
+	uint32_t enum_ctx = 0;
+	uint32_t count = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: trusted domains\n"));
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	do {
+		struct lsa_DomainList dom_list;
+		uint32_t start_idx;
+		uint32_t i;
+
+		/*
+		 * We don't run into deadlocks here, cause winbind_off() is
+		 * called in the main function.
+		 */
+		status = rpccli_lsa_EnumTrustDom(lsa_pipe,
+						 tmp_ctx,
+						 &lsa_policy,
+						 &enum_ctx,
+						 &dom_list,
+						 (uint32_t) -1);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				goto error;
+			}
+		}
+
+		start_idx = trusts->count;
+		count += dom_list.count;
+
+		array = talloc_realloc(tmp_ctx,
+				       array,
+				       struct netr_DomainTrust,
+				       count);
+		if (array == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		for (i = 0; i < dom_list.count; i++) {
+			struct netr_DomainTrust *trust = &array[i];
+			struct dom_sid *sid;
+
+			ZERO_STRUCTP(trust);
+
+			trust->netbios_name = talloc_move(array,
+							  &dom_list.domains[i].name.string);
+			trust->dns_name = NULL;
+
+			sid = talloc(array, struct dom_sid);
+			if (sid == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto error;
+			}
+			sid_copy(sid, dom_list.domains[i].sid);
+			trust->sid = sid;
+		}
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (trusts) {
+		trusts->count = count;
+		trusts->array = talloc_move(mem_ctx, &array);
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* Lookup group membership given a rid.   */
