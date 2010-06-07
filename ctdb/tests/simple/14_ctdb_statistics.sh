@@ -33,7 +33,7 @@ set -e
 
 cluster_is_healthy
 
-pattern='^(CTDB version 1|Gathered statistics for [[:digit:]]+ nodes|[[:space:]]+[[:alpha:]_]+[[:space:]]+[[:digit:]]+|[[:space:]]+(node|client|timeouts)|[[:space:]]+([[:alpha:]_]+_latency|max_reclock_[[:alpha:]]+)[[:space:]]+[[:digit:]-]+\.[[:digit:]]+[[:space:]]sec)$'
+pattern='^(CTDB version 1|Current time of statistics[[:space:]]*:.*|Statistics collected since[[:space:]]*:.*|Gathered statistics for [[:digit:]]+ nodes|[[:space:]]+[[:alpha:]_]+[[:space:]]+[[:digit:]]+|[[:space:]]+(node|client|timeouts)|[[:space:]]+([[:alpha:]_]+_latency|max_reclock_[[:alpha:]]+)[[:space:]]+[[:digit:]-]+\.[[:digit:]]+[[:space:]]sec)$'
 
 try_command_on_node -v 1 "$CTDB statistics"
 
