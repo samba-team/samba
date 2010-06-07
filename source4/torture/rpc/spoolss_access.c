@@ -470,7 +470,7 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 		test_EnumPrinters_findone(tctx, spoolss_pipe, &printername),
 		"failed to enumerate printers");
 
-	if (t->user.sd) {
+	if (t->user.sd && printername) {
 		torture_assert(tctx,
 			spoolss_access_setup_sd(tctx, spoolss_pipe,
 						printername,
@@ -573,7 +573,7 @@ static bool torture_rpc_spoolss_access_teardown_common(struct torture_context *t
 	}
 
 	/* restore sd */
-	if (t->user.sd) {
+	if (t->user.sd && t->printername) {
 		struct policy_handle handle;
 		struct spoolss_SetPrinterInfoCtr info_ctr;
 		struct spoolss_SetPrinterInfo3 info3;
