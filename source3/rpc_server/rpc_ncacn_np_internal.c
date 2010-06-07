@@ -40,8 +40,6 @@ static struct pipes_struct *InternalPipes;
  * system _anyway_.  so that's the next step...
  */
 
-static int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
-
 /****************************************************************************
  Internal Pipe iterator functions.
 ****************************************************************************/
@@ -86,7 +84,7 @@ bool check_open_pipes(void)
  Close an rpc pipe.
 ****************************************************************************/
 
-static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
+int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 {
 	if (!p) {
 		DEBUG(0,("Invalid pipe in close_internal_rpc_pipe_hnd\n"));
