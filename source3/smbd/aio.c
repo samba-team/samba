@@ -100,9 +100,11 @@ static int aio_extra_destructor(struct aio_extra *aio_ex)
  of the aio call.
 *****************************************************************************/
 
-static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
+static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
+					files_struct *fsp,
+					size_t buflen)
 {
-	struct aio_extra *aio_ex = TALLOC_ZERO_P(NULL, struct aio_extra);
+	struct aio_extra *aio_ex = TALLOC_ZERO_P(mem_ctx, struct aio_extra);
 
 	if (!aio_ex) {
 		return NULL;
@@ -112,10 +114,12 @@ static struct aio_extra *create_aio_extra(files_struct *fsp, size_t buflen)
 	   the smb return buffer. The buffer used in the acb
 	   is the start of the reply data portion of that buffer. */
 
-	aio_ex->outbuf = data_blob_talloc(aio_ex, NULL, buflen);
-	if (!aio_ex->outbuf.data) {
-		TALLOC_FREE(aio_ex);
-		return NULL;
+	if (buflen) {
+		aio_ex->outbuf = data_blob_talloc(aio_ex, NULL, buflen);
+		if (!aio_ex->outbuf.data) {
+			TALLOC_FREE(aio_ex);
+			return NULL;
+		}
 	}
 	DLIST_ADD(aio_list_head, aio_ex);
 	talloc_set_destructor(aio_ex, aio_extra_destructor);
@@ -175,7 +179,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 	bufsize = smb_size + 12 * 2 + smb_maxcnt;
 
-	if ((aio_ex = create_aio_extra(fsp, bufsize)) == NULL) {
+	if ((aio_ex = create_aio_extra(NULL, fsp, bufsize)) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -283,7 +287,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 
 	bufsize = smb_size + 6*2;
 
-	if (!(aio_ex = create_aio_extra(fsp, bufsize))) {
+	if (!(aio_ex = create_aio_extra(NULL, fsp, bufsize))) {
 		DEBUG(0,("schedule_aio_write_and_X: malloc fail.\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
