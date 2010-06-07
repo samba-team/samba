@@ -160,9 +160,6 @@ bool test_user_cleanup(struct torture_context *tctx,
 
 /**
  * Creates new user using SAMR
- */
-/**
- * Creates new user using SAMR
  *
  * @param name [in] Username for user to create
  * @param rid [out] If NULL, User's RID is not returned
