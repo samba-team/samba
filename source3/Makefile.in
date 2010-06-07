@@ -1180,6 +1180,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_reconnect.o \
 		winbindd/winbindd_ads.o   \
 		winbindd/winbindd_passdb.o \
+		winbindd/winbindd_samr.o \
 		winbindd/winbindd_dual.o  \
 		winbindd/winbindd_dual_ndr.o  \
 		winbindd/winbindd_dual_srv.o  \
@@ -1257,12 +1258,12 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_pam_logoff.o \
 		auth/auth_util.o \
 		auth/token_util.o \
+		auth/user_util.o \
 		auth/check_samsec.o \
 		auth/server_info.o \
 		auth/server_info_sam.o \
 		auth/user_info.o \
 		auth/pampass.o \
-		rpc_server/srv_samr_chgpasswd.o \
 		../nsswitch/libwbclient/wb_reqtrans.o
 
 WINBINDD_OBJ = \
@@ -1272,6 +1273,7 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
+		$(RPC_NCACN_NP_INTERNAL) $(RPC_SAMR_OBJ) $(RPC_LSA_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
 		$(LIBADS_SERVER_OBJ) \
 		$(TDB_VALIDATE_OBJ)

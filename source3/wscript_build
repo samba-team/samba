@@ -565,6 +565,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_reconnect.c
                    winbindd/winbindd_ads.c
                    winbindd/winbindd_passdb.c
+                   winbindd/winbindd_samr.c
                    winbindd/winbindd_dual.c
                    winbindd/winbindd_dual_ndr.c
                    winbindd/winbindd_dual_srv.c
@@ -642,6 +643,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_chng_pswd_auth_crap.c
                    auth/auth_util.c
                    auth/token_util.c
+                   auth/user_util.c
                    auth/check_samsec.c
                    auth/server_info.c
                    auth/server_info_sam.c
@@ -657,6 +659,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
+                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_OBJ}
                   ${TDB_VALIDATE_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
