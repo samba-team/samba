@@ -511,14 +511,13 @@ def add_missing_object(newsam_ldb, sam_ldb, dn, names, basedn, hash, index):
     sam_ldb.add(delta,["relax:0"])
     return True
 
-
 def gen_dn_index_hash(listMissing):
     """Generate a hash associating the DN to its creation order
 
     :param listMissing: List of DN
     :return: Hash with DN as keys and creation order as values"""
     hash = {}
-    for i in range(0,len(listMissing)):
+    for i in range(0, len(listMissing)):
         hash[str(listMissing[i]).lower()] = i
     return hash
 
