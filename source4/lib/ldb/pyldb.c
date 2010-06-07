@@ -2087,9 +2087,11 @@ static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
 	unsigned int i;
 	int ret;
 
-	ret = ldb_dn_compare(msg1->dn, msg2->dn);
-	if (ret != 0) {
-		return ret;
+	if ((msg1->dn != NULL) || (msg2->dn != NULL)) {
+		ret = ldb_dn_compare(msg1->dn, msg2->dn);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	ret = msg1->num_elements - msg2->num_elements;
