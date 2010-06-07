@@ -62,12 +62,12 @@ static bool is_samr_lsa_pipe(const struct ndr_syntax_id *syntax)
 		|| ndr_syntax_id_equal(syntax, &ndr_table_lsarpc.syntax_id));
 }
 
-size_t num_pipe_handles(struct handle_list *list)
+size_t num_pipe_handles(pipes_struct *p)
 {
-	if (list == NULL) {
+	if (p->pipe_handles == NULL) {
 		return 0;
 	}
-	return list->count;
+	return p->pipe_handles->count;
 }
 
 /****************************************************************************

@@ -5152,9 +5152,9 @@ bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
-/* The following definitions come from rpc_server/srv_lsa_hnd.c  */
+/* The following definitions come from rpc_server/rpc_handles.c  */
 
-size_t num_pipe_handles(struct handle_list *list);
+size_t num_pipe_handles(pipes_struct *p);
 bool init_pipe_handle_list(pipes_struct *p,
 			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
