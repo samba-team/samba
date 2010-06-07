@@ -74,7 +74,9 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (s->length == 36) {
+	switch(s->length) {
+	case 36:
+	{
 		TALLOC_CTX *mem_ctx;
 		const char *string;
 
@@ -90,8 +92,10 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 			status = NT_STATUS_OK;
 		}
 		talloc_free(mem_ctx);
-
-	} else if (s->length == 38) {
+		break;
+	}
+	case 38:
+	{
 		TALLOC_CTX *mem_ctx;
 		const char *string;
 
@@ -107,8 +111,10 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 			status = NT_STATUS_OK;
 		}
 		talloc_free(mem_ctx);
-
-	} else if (s->length == 32) {
+		break;
+	}
+	case 32:
+	{
 		size_t rlen = strhex_to_str((char *)blob16.data, blob16.length,
 					    (const char *)s->data, s->length);
 		if (rlen == blob16.length) {
@@ -116,10 +122,13 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 			status = NT_STATUS_OK;
 			s = &blob16;
 		}
+		break;
 	}
-
-	if (s->length == 16) {
+	case 16:
 		return GUID_from_ndr_blob(s, guid);
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
