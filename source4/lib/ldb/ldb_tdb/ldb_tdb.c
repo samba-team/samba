@@ -294,19 +294,11 @@ static int ltdb_add_internal(struct ldb_module *module,
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
-		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 
 		if (el->num_values == 0) {
 			ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)", 
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-			if (el->num_values > 1) {
-				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						       el->name, ldb_dn_get_linearized(msg->dn));
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
 		}
 	}
 
@@ -649,7 +641,6 @@ int ltdb_modify_internal(struct ldb_module *module,
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i], *el2;
 		struct ldb_val *vals;
-		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 		const char *dn;
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
@@ -685,15 +676,6 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				if (el->num_values > 1) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
-				}
-			}
-
 			/* Checks if element already exists */
 			idx = find_element(msg2, el->name);
 			if (idx == -1) {
@@ -706,15 +688,6 @@ int ltdb_modify_internal(struct ldb_module *module,
 					goto done;
 				}
 			} else {
-				/* We cannot add another value on a existing one
-				   if the attribute is single-valued */
-				if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
-				}
-
 				el2 = &(msg2->elements[idx]);
 
 				/* Check that values don't exist yet on multi-
@@ -771,23 +744,6 @@ int ltdb_modify_internal(struct ldb_module *module,
 			break;
 
 		case LDB_FLAG_MOD_REPLACE:
-
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				/* the RELAX control overrides this
-				   check for replace. This is needed as
-				   DRS replication can produce multiple
-				   values here for a single valued
-				   attribute when the values are deleted
-				   links
-				*/
-				if (el->num_values > 1 &&
-				    (!req || !ldb_request_get_control(req, LDB_CONTROL_RELAX_OID))) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
-				}
-			}
 
 			/* TODO: This is O(n^2) - replace with more efficient check */
 			for (j=0; j<el->num_values; j++) {

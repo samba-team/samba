@@ -180,13 +180,25 @@ static int attr_handler2(struct oc_context *ac)
 	}
 
 	/* Check if all specified attributes are valid in the given
-	 * objectclasses. */
+	 * objectclasses and if they meet additional schema restrictions. */
 	msg = ac->search_res->message;
 	for (i = 0; i < msg->num_elements; i++) {
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/* Check if they're single-valued if this is requested */
+		if ((msg->elements[i].num_values > 1) && (attr->isSingleValued)) {
+			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' is single-valued!",
+					       msg->elements[i].name,
+					       ldb_dn_get_linearized(msg->dn));
+			if (ac->req->operation == LDB_ADD) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			} else {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
 		}
 
 		/* We can use "str_list_check" with "strcmp" here since the
