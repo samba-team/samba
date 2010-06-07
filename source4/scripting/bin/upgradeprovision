@@ -37,15 +37,13 @@ import samba
 import samba.getopt as options
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
-from samba import Ldb, version
-from ldb import SCOPE_ONELEVEL, SCOPE_SUBTREE, SCOPE_BASE,\
+from ldb import SCOPE_SUBTREE, SCOPE_BASE,\
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,\
                 MessageElement, Message, Dn
 from samba import param
 from samba.misc import messageEltFlagToString
 from samba.provision import find_setup_dir, get_domain_descriptor,\
                             get_config_descriptor, secretsdb_self_join,\
-                            set_gpo_acl, getpolicypath,create_gpo_struct,\
                             ProvisioningError, getLastProvisionUSN,\
                             get_max_usn, updateProvisionUSN
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
@@ -54,7 +52,11 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.upgradehelpers import dn_sort, get_paths, newprovision,\
                                  find_provision_key_parameters, get_ldbs,\
-                                 usn_in_range, identic_rename, get_diff_sddls
+                                 usn_in_range, identic_rename, get_diff_sddls, \
+                                 update_secrets, CHANGE, ERROR, SIMPLE,\
+                                 CHANGEALL, GUESS, CHANGESD, PROVISION,\
+                                 updateOEMInfo, getOEMInfo, update_gpo,\
+                                 delta_update_basesamdb
 
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
@@ -66,13 +68,6 @@ never=0
 # somehow ...
 
 #Errors are always logged
-ERROR =     -1
-SIMPLE =     0x00
-CHANGE =     0x01
-CHANGESD =     0x02
-GUESS =     0x04
-PROVISION =    0x08
-CHANGEALL =    0xff
 
 __docformat__ = "restructuredText"
 
@@ -307,11 +302,11 @@ def handle_special_case(att, delta, new, old, usn):
             newval = []
             changeDelta=0
             for elem in old[0][att]:
-                hash[str(elem)]=1
+                hash[str(elem).lower()]=1
                 newval.append(str(elem))
 
             for elem in new[0][att]:
-                if not hash.has_key(str(elem)):
+                if not hash.has_key(str(elem).lower()):
                     changeDelta=1
                     newval.append(str(elem))
             if changeDelta == 1:
@@ -374,86 +369,6 @@ def handle_special_case(att, delta, new, old, usn):
 
     return False
 
-def update_secrets(newsecrets_ldb, secrets_ldb):
-    """Update secrets.ldb
-
-    :param newsecrets_ldb: An LDB object that is connected to the secrets.ldb
-                            of the reference provision
-    :param secrets_ldb: An LDB object that is connected to the secrets.ldb
-                            of the updated provision"""
-
-    message(SIMPLE, "update secrets.ldb")
-    reference = newsecrets_ldb.search(expression="dn=@MODULES", base="",
-                                        scope=SCOPE_SUBTREE)
-    current = secrets_ldb.search(expression="dn=@MODULES", base="",
-                                        scope=SCOPE_SUBTREE)
-    delta = secrets_ldb.msg_diff(current[0], reference[0])
-    delta.dn = current[0].dn
-    secrets_ldb.modify(delta)
-
-    reference = newsecrets_ldb.search(expression="objectClass=top", base="",
-                                        scope=SCOPE_SUBTREE, attrs=["dn"])
-    current = secrets_ldb.search(expression="objectClass=top", base="",
-                                        scope=SCOPE_SUBTREE, attrs=["dn"])
-    hash_new = {}
-    hash = {}
-    listMissing = []
-    listPresent = []
-
-    empty = Message()
-    for i in range(0, len(reference)):
-        hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
-
-    # Create a hash for speeding the search of existing object in the
-    # current provision
-    for i in range(0, len(current)):
-        hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
-
-    for k in hash_new.keys():
-        if not hash.has_key(k):
-            listMissing.append(hash_new[k])
-        else:
-            listPresent.append(hash_new[k])
-
-    for entry in listMissing:
-        reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        delta = secrets_ldb.msg_diff(empty,reference[0])
-        for att in hashAttrNotCopied.keys():
-            delta.remove(att)
-        message(CHANGE, "Entry %s is missing from secrets.ldb"%reference[0].dn)
-        for att in delta:
-            message(CHANGE, " Adding attribute %s"%att)
-        delta.dn = reference[0].dn
-        secrets_ldb.add(delta)
-
-    for entry in listPresent:
-        reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        delta = secrets_ldb.msg_diff(current[0],reference[0])
-        for att in hashAttrNotCopied.keys():
-            delta.remove(att)
-        for att in delta:
-            if att == "name":
-                message(CHANGE, "Found attribute name on  %s, must rename the DN "%(current[0].dn))
-                identic_rename(secrets_ldb,reference[0].dn)
-            else:
-                delta.remove(att)
-
-    for entry in listPresent:
-        reference = newsecrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s"%entry,base="", scope=SCOPE_SUBTREE)
-        delta = secrets_ldb.msg_diff(current[0],reference[0])
-        for att in hashAttrNotCopied.keys():
-            delta.remove(att)
-        for att in delta:
-            if att != "dn":
-                message(CHANGE, " Adding/Changing attribute %s to %s"%(att,current[0].dn))
-
-        delta.dn = current[0].dn
-        secrets_ldb.modify(delta)
-
-
 def dump_denied_change(dn, att, flagtxt, current, reference):
     """Print detailed information about why a changed is denied
 
@@ -491,25 +406,46 @@ def handle_special_add(samdb, dn, names):
     :param names: list of key provision parameters"""
 
     dntoremove = None
-    if str(dn).lower() == ("CN=IIS_IUSRS, CN=Builtin, %s" % names.rootdn).lower():
+    objDn = Dn(samdb, "CN=IIS_IUSRS, CN=Builtin, %s" % names.rootdn)
+    if dn == objDn :
         #This entry was misplaced lets remove it if it exists
         dntoremove = "CN=IIS_IUSRS, CN=Users, %s" % names.rootdn
 
-    objname = "CN=Certificate Service DCOM Access, CN=Builtin, %s" % names.rootdn
-    if str(dn).lower() == objname.lower():
+    objDn = Dn(samdb,
+                "CN=Certificate Service DCOM Access, CN=Builtin, %s" % names.rootdn)
+    if dn == objDn:
         #This entry was misplaced lets remove it if it exists
         dntoremove = "CN=Certificate Service DCOM Access,"\
                      "CN=Users, %s" % names.rootdn
+        print dntoremove
 
-    objname = "CN=Cryptographic Operators, CN=Builtin, %s" % names.rootdn
-    if str(dn).lower() == objname.lower():
+    objDn = Dn(samdb, "CN=Cryptographic Operators, CN=Builtin, %s" % names.rootdn)
+    if dn == objDn:
         #This entry was misplaced lets remove it if it exists
         dntoremove = "CN=Cryptographic Operators, CN=Users, %s" % names.rootdn
 
-    objname = "CN=Event Log Readers, CN=Builtin, %s" % names.rootdn
-    if str(dn).lower() == objname.lower():
+    objDn = Dn(samdb, "CN=Event Log Readers, CN=Builtin, %s" % names.rootdn)
+    if dn == objDn:
         #This entry was misplaced lets remove it if it exists
         dntoremove = "CN=Event Log Readers, CN=Users, %s" % names.rootdn
+
+    objDn = Dn(samdb,"CN=System,CN=WellKnown Security Principals,"\
+                     "CN=Configuration,%s" % names.rootdn)
+    if dn == objDn:
+        oldDn = Dn(samdb,"CN=Well-Known-Security-Id-System,"\
+                         "CN=WellKnown Security Principals,"\
+                         "CN=Configuration,%s" % names.rootdn)
+
+        res = samdb.search(expression="(dn=%s)" % oldDn,
+                            base=str(names.rootdn),
+                            scope=SCOPE_SUBTREE, attrs=["dn"],
+                            controls=["search_options:1:2"])
+        if len(res) > 0:
+            message(CHANGE, "Existing object %s must be replaced by %s,"\
+                            "Renaming old object" % (str(oldDn), str(dn)))
+            samdb.rename(oldDn, objDn)
+
+        return 1
 
     if dntoremove != None:
         res = samdb.search(expression="(dn=%s)" % dntoremove,
@@ -520,7 +456,7 @@ def handle_special_add(samdb, dn, names):
             message(CHANGE, "Existing object %s must be replaced by %s,"\
                             "removing old object" % (dntoremove, str(dn)))
             samdb.delete(res[0]["dn"])
-
+    return 0
 
 def check_dn_nottobecreated(hash, index, listdn):
     """Check if one of the DN present in the list has a creation order
@@ -566,7 +502,8 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     :param index: Current creation order
     :return: True if the object was created False otherwise"""
 
-    handle_special_add(samdb, dn, names)
+    if handle_special_add(samdb, dn, names):
+        return
     reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
                     scope=SCOPE_SUBTREE, controls=["search_options:1:2"])
     empty = Message()
@@ -1140,7 +1077,7 @@ def rebuild_sd(samdb, names):
                                 controls=["search_options:1:2"])
             badsd = ndr_unpack(security.descriptor,
                         str(res[0]["nTSecurityDescriptor"]))
-            print "bad stuff %s"%badsd.as_sddl(names.domainsid)
+            print "bad stuff %s" % badsd.as_sddl(names.domainsid)
             return
 
 def removeProvisionUSN(samdb):
@@ -1155,49 +1092,6 @@ def removeProvisionUSN(samdb):
         delta.remove("dn")
         delta.dn = entry[0].dn
         samdb.modify(delta)
-
-def delta_update_basesamdb(refpaths, paths, creds, session, lp):
-    """Update the provision container db: sam.ldb
-    This function is aimed for alpha9 and newer;
-
-    :param refpaths: An object holding the different importants paths for
-                     reference provision object
-    :param paths: An object holding the different importants paths for
-                  upgraded provision object
-    :param creds: Credential used for openning LDB files
-    :param session: Session to use for openning LDB files
-    :param lp: A loadparam object"""
-
-    message(SIMPLE,
-            "Update base samdb by searching difference with reference one")
-    refsam = Ldb(refpaths.samdb, session_info=session, credentials=creds,
-                    lp=lp, options=["modules:"])
-    sam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp,
-                options=["modules:"])
-
-    empty = Message()
-
-    reference = refsam.search(expression="")
-
-    for refentry in reference:
-        entry = sam.search(expression="dn=%s" % refentry["dn"],
-                            scope=SCOPE_SUBTREE)
-        if not len(entry):
-            message(CHANGE, "Adding %s to sam db" % str(delta.dn))
-            delta = sam.msg_diff(empty, refentry)
-            if str(refentry.dn) == "@PROVISION" and\
-                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
-                delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
-            delta.dn = refentry.dn
-            sam.add(delta)
-        else:
-            delta = sam.msg_diff(entry[0], refentry)
-            if str(refentry.dn) == "@PROVISION" and\
-                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
-                delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
-            if len(delta.items()) > 1:
-                delta.dn = refentry.dn
-                sam.modify(delta)
 
 
 def simple_update_basesamdb(newpaths, paths, names):
@@ -1312,50 +1206,6 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         raise ProvisioningError("Unable to find a Secure Channel" \
                                 "of type SEC_CHAN_BDC")
 
-
-def update_gpo(paths, creds, session, names):
-    """Create missing GPO file object if needed
-
-    Set ACL correctly also.
-    """
-    dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid)
-    if not os.path.isdir(dir):
-        create_gpo_struct(dir)
-
-    dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
-    if not os.path.isdir(dir):
-        create_gpo_struct(dir)
-    samdb = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp)
-    set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
-        names.domaindn, samdb, lp)
-
-
-def getOEMInfo(samdb, rootdn):
-    """Return OEM Information on the top level
-    Samba4 use to store version info in this field
-
-    :param samdb: An LDB object connect to sam.ldb
-    :param rootdn: Root DN of the domain
-    :return: The content of the field oEMInformation (if any)"""
-    res = samdb.search(expression="(objectClass=*)", base=str(rootdn),
-                            scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
-    if len(res) > 0:
-        info = res[0]["oEMInformation"]
-        return info
-    else:
-        return ""
-
-def updateOEMInfo(samdb, names):
-    res = samdb.search(expression="(objectClass=*)", base=str(names.rootdn),
-                            scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
-    if len(res) > 0:
-        info = res[0]["oEMInformation"]
-        info = "%s, upgrade to %s" % (info, version)
-        delta = Message()
-        delta.dn = Dn(samdb, str(res[0]["dn"]))
-        delta["oEMInformation"] = MessageElement(info, FLAG_MOD_REPLACE,
-            "oEMInformation" )
-        samdb.modify(delta)
 
 
 def setup_path(file):
@@ -1514,8 +1364,8 @@ if __name__ == '__main__':
 
     # 3) Guess all the needed names (variables in fact) from the current
     # provision.
-    names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, paths,
-                                            smbconf, lp)
+    names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
+                                            paths, smbconf, lp)
     # 4)
     lastProvisionUSNs = getLastProvisionUSN(ldbs.sam)
     if lastProvisionUSNs != None:
@@ -1563,7 +1413,7 @@ if __name__ == '__main__':
     # 9)
     update_privilege(newpaths.private_dir, paths.private_dir)
     # 10)
-    oem = getOEMInfo(ldbs.sam, names.rootdn)
+    oem = getOEMInfo(ldbs.sam, str(names.rootdn))
     # Do some modification on sam.ldb
     ldbs.groupedCommit()
     # 11)
@@ -1572,9 +1422,9 @@ if __name__ == '__main__':
         # Starting from alpha9 we can consider that the structure is quite ok
         # and that we should do only dela
         new_ldbs.groupedCommit()
-        delta_update_basesamdb(newpaths, paths, creds, session, lp)
+        delta_update_basesamdb(newpaths.samdb, paths.samdb, creds, session, lp, message)
         ldbs.startTransactions()
-        minUSN = get_max_usn(ldbs.sam, str(names.rootdn)) + 1
+        minUSN = int(str(get_max_usn(ldbs.sam, str(names.rootdn)))) + 1
         new_ldbs.startTransactions()
     else:
         # 11) B
@@ -1599,7 +1449,7 @@ if __name__ == '__main__':
             shutil.rmtree(provisiondir)
             sys.exit(1)
     # 14)
-    update_secrets(new_ldbs.secrets, ldbs.secrets)
+    update_secrets(new_ldbs.secrets, ldbs.secrets, message)
     # 15)
     update_machine_account_password(ldbs.sam, ldbs.secrets, names)
 
@@ -1639,12 +1489,13 @@ if __name__ == '__main__':
         check_updated_sd(new_ldbs.sam, ldbs.sam, names)
 
     # 20)
-    updateOEMInfo(ldbs.sam, names)
+    updateOEMInfo(ldbs.sam, str(names.rootdn))
     # 21)
     check_for_DNS(newpaths.private_dir, paths.private_dir)
     # 22)
     if lastProvisionUSNs != None:
         updateProvisionUSN(ldbs.sam, minUSN, maxUSN)
+    update_gpo(paths, ldbs.sam, names, lp, message)
     ldbs.groupedCommit()
     new_ldbs.groupedCommit()
     message(SIMPLE, "Upgrade finished !")

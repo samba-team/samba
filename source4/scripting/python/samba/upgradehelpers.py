@@ -26,21 +26,44 @@ import os
 import string
 import re
 import shutil
+import samba
 
+from samba import Ldb, version, ntacls
+from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
-
-from samba import Ldb
-from samba.dcerpc import misc, security
-from samba.dsdb import DS_DOMAIN_FUNCTION_2000
-from samba.provision import (ProvisionNames, provision_paths_from_lp,
-    FILL_FULL, provision, ProvisioningError)
+from samba.provision import ProvisionNames, provision_paths_from_lp,\
+                            getpolicypath, set_gpo_acl, create_gpo_struct,\
+                            FILL_FULL, provision, ProvisioningError,\
+                            setsysvolacl
+from samba.dcerpc import misc, security, xattr
 from samba.ndr import ndr_unpack
 
 # All the ldb related to registry are commented because the path for them is relative
 # in the provisionPath object
 # And so opening them create a file in the current directory which is not what we want
 # I still keep them commented because I plan soon to make more cleaner
+ERROR =     -1
+SIMPLE =     0x00
+CHANGE =     0x01
+CHANGESD =     0x02
+GUESS =     0x04
+PROVISION =    0x08
+CHANGEALL =    0xff
+
+hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
+                        "objectGUID": 1, "uSNCreated": 1,
+                        "replPropertyMetaData": 1, "uSNChanged": 1,
+                        "parentGUID": 1, "objectCategory": 1,
+                        "distinguishedName": 1, "nTMixedDomain": 1,
+                        "showInAdvancedViewOnly": 1, "instanceType": 1,
+                        "msDS-Behavior-Version":1, "nextRid":1, "cn": 1,
+                        "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1,
+                        "ntPwdHistory":1, "unicodePwd":1,"dBCSPwd":1,
+                        "supplementalCredentials":1, "gPCUserExtensionNames":1,
+                        "gPCMachineExtensionNames":1,"maxPwdAge":1, "secret":1,
+                        "possibleInferiors":1, "privilege":1,
+                        "sAMAccountType":1 }
 
 class ProvisionLDB(object):
     def __init__(self):
@@ -165,11 +188,12 @@ def get_paths(param, targetdir=None, smbconf=None):
     return paths
 
 
-def find_provision_key_parameters(samdb, secretsdb, paths, smbconf, lp):
+def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp):
     """Get key provision parameters (realm, domain, ...) from a given provision
 
     :param samdb: An LDB object connected to the sam.ldb file
     :param secretsdb: An LDB object connected to the secrets.ldb file
+    :param idmapdb: An LDB object connected to the idmap.ldb file
     :param paths: A list of path to provision object
     :param smbconf: Path to the smb.conf file
     :param lp: A LoadParm object
@@ -181,8 +205,8 @@ def find_provision_key_parameters(samdb, secretsdb, paths, smbconf, lp):
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
     names.domain = string.upper(lp.get("workgroup"))
     names.realm = lp.get("realm")
-    basedn = "DC=" + names.realm.replace(".", ",DC=")
-    names.dnsdomain = names.realm
+    basedn = "DC=" + names.realm.replace(".",",DC=")
+    names.dnsdomain = names.realm.lower()
     names.realm = string.upper(names.realm)
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
@@ -252,7 +276,12 @@ def find_provision_key_parameters(samdb, secretsdb, paths, smbconf, lp):
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:
         names.policyid_dc = None
-
+    res9 = idmapdb.search(expression="(cn=%s)" % (security.SID_BUILTIN_ADMINISTRATORS),
+                          attrs=["xidNumber"])
+    if len(res9) == 1:
+        names.wheel_gid = res9[0]["xidNumber"]
+    else:
+        raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
     return names
 
 
@@ -433,3 +462,214 @@ def get_diff_sddls(refsddl, cursddl):
             txt = "%s\tCurrent ACL hasn't a %s part\n" % (txt, part)
 
     return txt
+
+
+def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
+    """Update secrets.ldb
+
+    :param newsecrets_ldb: An LDB object that is connected to the secrets.ldb
+                            of the reference provision
+    :param secrets_ldb: An LDB object that is connected to the secrets.ldb
+                            of the updated provision
+    """
+
+    messagefunc(SIMPLE, "update secrets.ldb")
+    reference = newsecrets_ldb.search(expression="dn=@MODULES", base="",
+                                        scope=SCOPE_SUBTREE)
+    current = secrets_ldb.search(expression="dn=@MODULES", base="",
+                                        scope=SCOPE_SUBTREE)
+    assert reference, "Reference modules list can not be empty"
+    if len(current) == 0:
+        # No modules present
+        delta = secrets_ldb.msg_diff(ldb.Message(), reference[0])
+        delta.dn = reference[0].dn
+        secrets_ldb.add(reference[0])
+    else:
+        delta = secrets_ldb.msg_diff(current[0], reference[0])
+        delta.dn = current[0].dn
+        secrets_ldb.modify(delta)
+
+    reference = newsecrets_ldb.search(expression="objectClass=top", base="",
+                                        scope=SCOPE_SUBTREE, attrs=["dn"])
+    current = secrets_ldb.search(expression="objectClass=top", base="",
+                                        scope=SCOPE_SUBTREE, attrs=["dn"])
+    hash_new = {}
+    hash = {}
+    listMissing = []
+    listPresent = []
+
+    empty = ldb.Message()
+    for i in range(0, len(reference)):
+        hash_new[str(reference[i]["dn"]).lower()] = reference[i]["dn"]
+
+    # Create a hash for speeding the search of existing object in the
+    # current provision
+    for i in range(0, len(current)):
+        hash[str(current[i]["dn"]).lower()] = current[i]["dn"]
+
+    for k in hash_new.keys():
+        if not hash.has_key(k):
+            listMissing.append(hash_new[k])
+        else:
+            listPresent.append(hash_new[k])
+
+    for entry in listMissing:
+        reference = newsecrets_ldb.search(expression="dn=%s" % entry,
+                                            base="", scope=SCOPE_SUBTREE)
+        current = secrets_ldb.search(expression="dn=%s" % entry,
+                                            base="", scope=SCOPE_SUBTREE)
+        delta = secrets_ldb.msg_diff(empty, reference[0])
+        for att in hashAttrNotCopied.keys():
+            delta.remove(att)
+        messagefunc(CHANGE, "Entry %s is missing from secrets.ldb" % reference[0].dn)
+        for att in delta:
+            messagefunc(CHANGE, " Adding attribute %s" % att)
+        delta.dn = reference[0].dn
+        secrets_ldb.add(delta)
+
+    for entry in listPresent:
+        reference = newsecrets_ldb.search(expression="dn=%s" % entry,
+                                            base="", scope=SCOPE_SUBTREE)
+        current = secrets_ldb.search(expression="dn=%s" % entry, base="",
+                                            scope=SCOPE_SUBTREE)
+        delta = secrets_ldb.msg_diff(current[0], reference[0])
+        for att in hashAttrNotCopied.keys():
+            delta.remove(att)
+        for att in delta:
+            if att == "name":
+                messagefunc(CHANGE, "Found attribute name on  %s," \
+                                    " must rename the DN" % (current[0].dn))
+                identic_rename(secrets_ldb, reference[0].dn)
+            else:
+                delta.remove(att)
+
+    for entry in listPresent:
+        reference = newsecrets_ldb.search(expression="dn=%s" % entry, base="",
+                                            scope=SCOPE_SUBTREE)
+        current = secrets_ldb.search(expression="dn=%s" % entry, base="",
+                                            scope=SCOPE_SUBTREE)
+        delta = secrets_ldb.msg_diff(current[0], reference[0])
+        for att in hashAttrNotCopied.keys():
+            delta.remove(att)
+        for att in delta:
+            if att != "dn":
+                messagefunc(CHANGE,
+                        "Adding/Changing attribute %s to %s" % (att, current[0].dn))
+
+        delta.dn = current[0].dn
+        secrets_ldb.modify(delta)
+
+def getOEMInfo(samdb, rootdn):
+    """Return OEM Information on the top level
+    Samba4 use to store version info in this field
+
+    :param samdb: An LDB object connect to sam.ldb
+    :param rootdn: Root DN of the domain
+    :return: The content of the field oEMInformation (if any)"""
+    res = samdb.search(expression="(objectClass=*)", base=str(rootdn),
+                            scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
+    if len(res) > 0:
+        info = res[0]["oEMInformation"]
+        return info
+    else:
+        return ""
+
+def updateOEMInfo(samdb, rootdn):
+    """Update the OEMinfo field to add information about upgrade
+       :param samdb: an LDB object connected to the sam DB
+       :param rootdn: The string representation of the root DN of
+                      the provision (ie. DC=...,DC=...)
+    """
+    res = samdb.search(expression="(objectClass=*)", base=rootdn,
+                            scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
+    if len(res) > 0:
+        info = res[0]["oEMInformation"]
+        info = "%s, upgrade to %s" % (info, version)
+        delta = ldb.Message()
+        delta.dn = ldb.Dn(samdb, str(res[0]["dn"]))
+        delta["oEMInformation"] = ldb.MessageElement(info, ldb.FLAG_MOD_REPLACE,
+            "oEMInformation" )
+        samdb.modify(delta)
+
+def update_gpo(paths, samdb, names, lp, message, force=0):
+    """Create missing GPO file object if needed
+
+    Set ACL correctly also.
+    Check ACLs for sysvol/netlogon dirs also
+    """
+    resetacls = 0
+    try:
+        ntacls.checkset_backend(lp, None, None)
+        eadbname = lp.get("posix:eadb")
+        if eadbname is not None and eadbname != "":
+            try:
+                attribute = samba.xattr_tdb.wrap_getxattr(eadbname, paths.sysvol,
+                    xattr.XATTR_NTACL_NAME)
+            except:
+                attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
+                    xattr.XATTR_NTACL_NAME)
+        else:
+            attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
+                xattr.XATTR_NTACL_NAME)
+    except:
+       resetacls = 1
+
+    if force:
+        resetacls = 1
+
+    dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid)
+    if not os.path.isdir(dir):
+        create_gpo_struct(dir)
+
+    dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
+    if not os.path.isdir(dir):
+        create_gpo_struct(dir)
+    # We always reinforce acls on GPO folder because they have to be in sync
+    # with the one in DS
+    set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
+        names.domaindn, samdb, lp)
+
+    if resetacls:
+       setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
+                    names.domainsid, names.dnsdomain, names.domaindn, lp)
+
+def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
+    """Update the provision container db: sam.ldb
+    This function is aimed for alpha9 and newer;
+
+    :param refsam: Path to the samdb in the reference provision
+    :param sam: Path to the samdb in the upgraded provision
+    :param creds: Credential used for openning LDB files
+    :param session: Session to use for openning LDB files
+    :param lp: A loadparam object"""
+
+    message(SIMPLE,
+            "Update base samdb by searching difference with reference one")
+    refsam = Ldb(refsam, session_info=session, credentials=creds,
+                    lp=lp, options=["modules:"])
+    sam = Ldb(sam, session_info=session, credentials=creds, lp=lp,
+                options=["modules:"])
+
+    empty = ldb.Message()
+
+    reference = refsam.search(expression="")
+
+    for refentry in reference:
+        entry = sam.search(expression="dn=%s" % refentry["dn"],
+                            scope=SCOPE_SUBTREE)
+        if not len(entry):
+            delta = sam.msg_diff(empty, refentry)
+            message(CHANGE, "Adding %s to sam db" % str(refentry.dn))
+            if str(refentry.dn) == "@PROVISION" and\
+                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
+                delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
+            delta.dn = refentry.dn
+            sam.add(delta)
+        else:
+            delta = sam.msg_diff(entry[0], refentry)
+            if str(refentry.dn) == "@PROVISION" and\
+                delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
+                delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
+            if len(delta.items()) > 1:
+                delta.dn = refentry.dn
+                sam.modify(delta)

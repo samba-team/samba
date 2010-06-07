@@ -18,89 +18,38 @@
 #
 
 import os
-from samba.credentials import Credentials
-from samba.auth import system_session
-from samba.upgradehelpers import get_paths, usn_in_range, get_ldbs,\
-                                 find_provision_key_parameters, dn_sort,\
-                                 identic_rename, get_diff_sddls
-from samba import param
+from samba.upgradehelpers import  usn_in_range, dn_sort,\
+                                  get_diff_sddls, update_secrets
+
+
+from samba.tests.provision import create_dummy_secretsdb
 from samba.tests import env_loadparm, TestCaseInTempDir
-import ldb
+from samba import Ldb
+from ldb import SCOPE_SUBTREE
+import samba.tests
 
 lp = env_loadparm()
+
+def dummymessage(a=None, b=None):
+    if 0:
+        print "none"
 
 
 class UpgradeProvisionTestCase(TestCaseInTempDir):
     """Some simple tests for individual functions in the provisioning code.
     """
-    def test_get_paths(self):
-        smbConfPath = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
-        targetdir = os.path.join(os.environ["SELFTEST_PREFIX"], "dc")
-        privatePath = os.path.join(targetdir, "private")
-
-        paths = get_paths(param, None, smbConfPath)
-        self.assertEquals(paths.private_dir, privatePath)
-
-        paths2 = get_paths(param, targetdir)
-        self.assertEquals(paths2.private_dir, privatePath)
-
     def test_usn_in_range(self):
+        range = [5, 25, 35, 55]
 
-        range = []
-        range.append(5)
-        range.append(25)
-        range.append(35)
-        range.append(55)
-
-        vals = []
-        vals.append(3)
-        vals.append(26)
-        vals.append(56)
+        vals = [3, 26, 56]
 
         for v in vals:
             self.assertFalse(usn_in_range(v, range))
 
-        vals = []
-        vals.append(5)
-        vals.append(20)
-        vals.append(25)
-        vals.append(35)
-        vals.append(36)
+        vals = [5, 20, 25, 35, 36]
 
         for v in vals:
             self.assertTrue(usn_in_range(v, range))
-
-
-    def test_get_ldbs(self):
-        smbConfPath = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
-        paths = get_paths(param, None, smbConfPath)
-        creds = Credentials()
-        creds.guess(lp)
-        try:
-            get_ldbs(paths, creds, system_session(), lp)
-        except:
-            self.assertTrue(0)
-
-    def test_find_key_param(self):
-        smbConfPath = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
-        paths = get_paths(param, None, smbConfPath)
-        creds = Credentials()
-        creds.guess(lp)
-        rootdn = "dc=samba,dc=example,dc=com"
-        ldbs = get_ldbs(paths, creds, system_session(), lp)
-        find_provision_key_parameters(ldbs.sam, ldbs.secrets, paths,
-                                                     smbConfPath, lp)
-        try:
-            names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, paths,
-                                                     smbConfPath, lp)
-        except:
-            self.assertTrue(0)
-
-        self.assertTrue(names.realm == "SAMBA.EXAMPLE.COM")
-        self.assertTrue(str(names.rootdn).lower() == rootdn.lower())
-        self.assertTrue(names.ntdsguid != "")
-
-
 
     def test_dn_sort(self):
         # higher level comes after lower even if lexicographicaly closer
@@ -111,27 +60,7 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         self.assertEquals(dn_sort("dc=toto,dc=tata",
                                     "cn=foo,dc=toto,dc=tata"), -1)
         self.assertEquals(dn_sort("cn=bar, dc=toto,dc=tata",
-                                    "cn=foo, dc=toto,dc=tata"), -1)
-
-    def test_identic_rename(self):
-        smbConfPath = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
-        paths = get_paths(param, None, smbConfPath)
-        creds = Credentials()
-        creds.guess(lp)
-        rootdn = "DC=samba,DC=example,DC=com"
-        ldbs = get_ldbs(paths, creds, system_session(), lp)
-
-        guestDN = ldb.Dn(ldbs.sam, "CN=Guest,CN=Users,%s" % rootdn)
-        try:
-            identic_rename(ldbs.sam, guestDN)
-            res = ldbs.sam.search(expression="(name=Guest)", base=rootdn,
-                                    scope=ldb.SCOPE_SUBTREE, attrs=["dn"])
-        except:
-            self.assertTrue(0)
-
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["dn"]), "CN=Guest,CN=Users,%s" % rootdn)
-
+                                    "cn=foo, dc=toto,dc=tata"),-1)
     def test_get_diff_sddl(self):
         sddl = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
@@ -148,9 +77,9 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
 
         self.assertEquals(get_diff_sddls(sddl, sddl1) ,"")
         txt = get_diff_sddls(sddl, sddl2)
-        self.assertEquals(txt ,"\tOwner mismatch: SA (in ref) BA (in current)\n")
+        self.assertEquals(txt ,"\tOwner mismatch: SA (in ref) BA(in current)\n")
         txt = get_diff_sddls(sddl, sddl3)
-        self.assertEquals(txt ,"\tGroup mismatch: DU (in ref) BA (in current)\n")
+        self.assertEquals(txt ,"\tGroup mismatch: DU (in ref) BA(in current)\n")
         txt = get_diff_sddls(sddl, sddl4)
         txtmsg = "\tPart dacl is different between reference and current here\
  is the detail:\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
@@ -159,3 +88,41 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         self.assertEquals(txt , txtmsg)
         txt = get_diff_sddls(sddl, sddl5)
         self.assertEquals(txt ,"\tCurrent ACL hasn't a sacl part\n")
+
+
+class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
+    def setUp(self):
+        super(UpdateSecretsTests, self).setUp()
+        self.referencedb = create_dummy_secretsdb(
+            os.path.join(self.tempdir, "ref.ldb"))
+
+    def _getEmptyDb(self):
+        return Ldb(os.path.join(self.tempdir, "secrets.ldb"))
+
+    def _getCurrentFormatDb(self):
+        return create_dummy_secretsdb(
+            os.path.join(self.tempdir, "secrets.ldb"))
+
+    def test_trivial(self):
+        # Test that updating an already up-to-date secretsdb works fine
+        self.secretsdb = self._getCurrentFormatDb()
+        self.assertEquals(None,
+            update_secrets(self.referencedb, self.secretsdb, dummymessage))
+
+    def test_update_modules(self):
+        empty_db = self._getEmptyDb()
+        update_secrets(self.referencedb, empty_db, dummymessage)
+        newmodules = empty_db.search(
+            expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
+        refmodules = self.referencedb.search(
+            expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
+        self.assertEquals(newmodules, refmodules)
+
+    def tearDown(self):
+        for name in ["ref.ldb", "secrets.ldb"]:
+            path = os.path.join(self.tempdir, name)
+            if os.path.exists(path):
+                os.unlink(path)
+        super(UpdateSecretsTests, self).tearDown()
+
+
