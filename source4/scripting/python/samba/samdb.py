@@ -112,23 +112,232 @@ pwdLastSet: 0
 """ % (user_dn)
         self.modify_ldif(mod)
 
+    def newgroup(self, groupname, groupou=None, grouptype=None,
+                 description=None, mailaddress=None, notes=None):
+        """Adds a new group with additional parameters
+
+        :param groupname: Name of the new group
+        :param grouptype: Type of the new group
+        :param description: Description of the new group
+        :param mailaddress: Email address of the new group
+        :param notes: Notes of the new group
+        """
+
+        self.transaction_start()
+        try:
+            group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
+
+            # The new user record. Note the reliance on the SAMLDB module which
+            # fills in the default informations
+	    ldbmessage = {"dn": group_dn,
+                "sAMAccountName": groupname,
+                "objectClass": "group"}
+
+	    if grouptype is not None:
+                ldbmessage["groupType"] = "%d" % ((grouptype)-2**32)
+
+            if description is not None:
+                ldbmessage["description"] = description
+
+            if mailaddress is not None:
+                ldbmessage["mail"] = mailaddress
+
+            if notes is not None:
+                ldbmessage["info"] = notes
+
+            self.add(ldbmessage)
+
+        except:
+            self.transaction_cancel()
+            raise
+        else:
+            self.transaction_commit()
+
+    def deletegroup (self, groupname):
+        """Deletes a group
+
+        :param groupname: Name of the target group
+        """
+
+        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (groupname, "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
+        self.transaction_start()
+        try:
+            targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                               expression=groupfilter, attrs=[])
+            if len(targetgroup) == 0:
+                print('Unable to find group "%s"' % (groupname or expression))
+                raise
+            assert(len(targetgroup) == 1)
+
+            self.delete (targetgroup[0].dn);
+
+        except:
+            self.transaction_cancel()
+            raise
+        else:
+            self.transaction_commit()
+
+    def add_remove_group_members (self, groupname, listofmembers,
+                                  add_members_operation=True):
+        """Adds or removes group members
+
+        :param groupname: Name of the target group
+        :param listofmembers: Comma-separated list of group members
+        :param add_members_operation: Defines if its an add or remove operation
+        """
+
+        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (groupname, "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
+        groupmembers = listofmembers.split(',')
+
+        self.transaction_start()
+        try:
+            targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                               expression=groupfilter, attrs=['member'])
+            if len(targetgroup) == 0:
+                print('Unable to find group "%s"' % (groupname or expression))
+                raise
+            assert(len(targetgroup) == 1)
+
+            modified = False
+
+            addtargettogroup = """
+dn: %s
+changetype: modify
+""" % (str(targetgroup[0].dn))
+
+            for member in groupmembers:
+                targetmember = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                                    expression="(sAMAccountName=%s)" % member, attrs=[])
+
+                if len(targetmember) != 1:
+                   continue
+
+                if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember[0].dn) not in targetgroup[0]['member']):
+                   modified = True
+                   addtargettogroup += """add: member
+member: %s
+""" % (str(targetmember[0].dn))
+
+                elif add_members_operation is False and (targetgroup[0].get('member') is not None and str(targetmember[0].dn) in targetgroup[0]['member']):
+                   modified = True
+                   addtargettogroup += """delete: member
+member: %s
+""" % (str(targetmember[0].dn))
+
+            if modified is True:
+               self.modify_ldif(addtargettogroup)
+
+        except:
+            self.transaction_cancel()
+            raise
+        else:
+            self.transaction_commit()
+
     def newuser(self, username, password,
-                force_password_change_at_next_login_req=False):
-        """Adds a new user
+                force_password_change_at_next_login_req=False,
+		useusernameascn=False, userou=None, surname=None, givenname=None, initials=None,
+		profilepath=None, scriptpath=None, homedrive=None, homedirectory=None,
+		jobtitle=None, department=None, company=None, description=None,
+		mailaddress=None, internetaddress=None, telephonenumber=None,
+		physicaldeliveryoffice=None):
+        """Adds a new user with additional parameters
 
         :param username: Name of the new user
         :param password: Password for the new user
         :param force_password_change_at_next_login_req: Force password change
-        """
+        :param useusernameascn: Use username as cn rather that firstname + initials + lastname
+        :param userou: Object container (without domainDN postfix) for new user
+        :param surname: Surname of the new user
+        :param givenname: First name of the new user
+        :param initials: Initials of the new user
+        :param profilepath: Profile path of the new user
+        :param scriptpath: Logon script path of the new user
+        :param homedrive: Home drive of the new user
+        :param homedirectory: Home directory of the new user
+        :param jobtitle: Job title of the new user
+        :param department: Department of the new user
+        :param company: Company of the new user
+        :param description: of the new user
+        :param mailaddress: Email address of the new user
+        :param internetaddress: Home page of the new user
+        :param telephonenumber: Phone number of the new user
+        :param physicaldeliveryoffice: Office location of the new user
+	"""
+
+        displayname = "";
+        if givenname is not None:
+            displayname += givenname
+
+        if initials is not None:
+            displayname += ' %s.' % initials
+
+        if surname is not None:
+            displayname += ' %s' % surname
+
+	cn = username
+        if useusernameascn is None and displayname is not "":
+            cn = displayname
+
         self.transaction_start()
         try:
-            user_dn = "CN=%s,CN=Users,%s" % (username, self.domain_dn())
+            user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
 
             # The new user record. Note the reliance on the SAMLDB module which
             # fills in the default informations
-            self.add({"dn": user_dn, 
+	    ldbmessage = {"dn": user_dn,
                 "sAMAccountName": username,
-                "objectClass": "user"})
+                "objectClass": "user"}
+
+	    if surname is not None:
+                ldbmessage["sn"] = surname
+
+	    if givenname is not None:
+                ldbmessage["givenName"] = givenname
+
+	    if displayname is not "":
+                ldbmessage["displayName"] = displayname
+                ldbmessage["name"] = displayname
+
+	    if initials is not None:
+                ldbmessage["initials"] = '%s.' % initials
+
+	    if profilepath is not None:
+                ldbmessage["profilePath"] = profilepath
+
+            if scriptpath is not None:
+                ldbmessage["scriptPath"] = scriptpath
+
+            if homedrive is not None:
+                ldbmessage["homeDrive"] = homedrive
+
+            if homedirectory is not None:
+                ldbmessage["homeDirectory"] = homedirectory
+
+            if jobtitle is not None:
+                ldbmessage["title"] = jobtitle
+
+            if department is not None:
+                ldbmessage["department"] = department
+
+            if company is not None:
+                ldbmessage["company"] = company
+
+            if description is not None:
+                ldbmessage["description"] = description
+
+            if mailaddress is not None:
+                ldbmessage["mail"] = mailaddress
+
+            if internetaddress is not None:
+                ldbmessage["wWWHomePage"] = internetaddress
+
+            if telephonenumber is not None:
+                ldbmessage["telephoneNumber"] = telephonenumber
+
+            if physicaldeliveryoffice is not None:
+                ldbmessage["physicalDeliveryOfficeName"] = physicaldeliveryoffice
+
+            self.add(ldbmessage)
 
             # Sets the password for it
             self.setpassword("(dn=" + user_dn + ")", password,
