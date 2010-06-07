@@ -174,11 +174,84 @@ static NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
 /* List all domain groups */
 static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32_t *num_entries,
-				    struct acct_info **info)
+				    uint32_t *pnum_info,
+				    struct acct_info **pinfo)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
+	struct acct_info *info = NULL;
+	TALLOC_CTX *tmp_ctx;
+	uint32_t start = 0;
+	uint32_t num_info = 0;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: query_user_list\n"));
+
+	if (pnum_info) {
+		*pnum_info = 0;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	do {
+		struct samr_SamArray *sam_array = NULL;
+		uint32_t count = 0;
+		uint32_t g;
+
+		/* start is updated by this call. */
+		status = rpccli_samr_EnumDomainGroups(samr_pipe,
+						      tmp_ctx,
+						      &dom_pol,
+						      &start,
+						      &sam_array,
+						      0xFFFF, /* buffer size? */
+						      &count);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				DEBUG(2,("query_user_list: failed to enum domain groups: %s\n",
+					 nt_errstr(status)));
+				goto error;
+			}
+		}
+
+		info = TALLOC_REALLOC_ARRAY(tmp_ctx,
+					    info,
+					    struct acct_info,
+					    num_info + count);
+		if (info == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		for (g = 0; g < count; g++) {
+			fstrcpy(info[num_info + g].acct_name,
+				sam_array->entries[g].name.string);
+
+			info[num_info + g].rid = sam_array->entries[g].idx;
+		}
+
+		num_info += count;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (pnum_info) {
+		*pnum_info = num_info;
+	}
+
+	if (pinfo) {
+		*pinfo = talloc_move(mem_ctx, &info);
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* Query display info for a domain */
