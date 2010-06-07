@@ -2172,7 +2172,7 @@ _PUBLIC_ int nwrap_getgrouplist(const char *user, gid_t group, gid_t *groups, in
 	struct group *grp;
 	gid_t *groups_tmp;
 	int count = 1;
-	const char *name_of_group = NULL;
+	const char *name_of_group = "";
 
 	if (!nwrap_enabled()) {
 		return real_getgrouplist(user, group, groups, ngroups);
