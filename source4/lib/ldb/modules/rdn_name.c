@@ -348,6 +348,12 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	if (ldb_msg_find_element(req->op.mod.message, "distinguishedName")) {
+		ldb_asprintf_errstring(ldb, "Modify of 'distinguishedName' on %s not permitted, must use 'rename' operation instead",
+				       ldb_dn_get_linearized(req->op.mod.message->dn));
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
 	if (ldb_msg_find_element(req->op.mod.message, "name")) {
 		ldb_asprintf_errstring(ldb, "Modify of 'name' on %s not permitted, must use 'rename' operation instead",
 				       ldb_dn_get_linearized(req->op.mod.message->dn));
