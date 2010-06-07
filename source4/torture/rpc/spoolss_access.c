@@ -36,6 +36,7 @@
 #define TORTURE_USER_PRINTOPGROUP	"torture_user_550"
 #define TORTURE_USER_PRINTOPPRIV	"torture_user_priv"
 #define TORTURE_USER_SD			"torture_user_sd"
+#define TORTURE_WORKSTATION		"torture_workstation"
 
 struct torture_user {
 	const char *username;
@@ -414,6 +415,7 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 	struct dcerpc_pipe *p;
 	const char *printername;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct dcerpc_pipe *spoolss_pipe;
 
 	testuser = torture_create_testuser_max_pwlen(tctx, t->user.username,
 						     torture_setting_string(tctx, "workgroup", NULL),
@@ -459,8 +461,6 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 			"failed to setup privs");
 		talloc_free(lsa_pipe);
 	}
-
-	struct dcerpc_pipe *spoolss_pipe;
 
 	torture_assert_ntstatus_ok(tctx,
 		torture_rpc_connection(tctx, &spoolss_pipe, &ndr_table_spoolss),
@@ -701,10 +701,36 @@ static bool test_openprinter_admin(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_openprinter_wrap(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	struct torture_access_context *t;
+	const char *printername;
+	bool ret = true;
+
+	t = talloc_zero(tctx, struct torture_access_context);
+
+	t->user.username = talloc_strdup(tctx, "dummy");
+	t->spoolss_pipe = p;
+
+	torture_assert(tctx,
+		test_EnumPrinters_findone(tctx, p, &printername),
+		"failed to enumerate printers");
+
+	t->printername = printername;
+
+	ret = test_openprinter(tctx, (void *)t);
+
+	talloc_free(t);
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-ACCESS");
 	struct torture_tcase *tcase;
+	struct torture_rpc_tcase *rpc_tcase;
 
 	tcase = torture_suite_add_tcase(suite, "normaluser");
 
@@ -749,6 +775,12 @@ struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter);
 	torture_tcase_add_simple_test(tcase, "openprinter_admin", test_openprinter_admin);
+
+	rpc_tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "workstation",
+									  &ndr_table_spoolss,
+									  TORTURE_WORKSTATION);
+
+	torture_rpc_tcase_add_test(rpc_tcase, "openprinter", test_openprinter_wrap);
 
 	return suite;
 }
