@@ -47,6 +47,8 @@ struct torture_user {
 	uint32_t num_privs;
 	bool privs_present;
 	bool sd;
+	bool admin_rights;
+	bool system_security;
 };
 
 struct torture_access_context {
@@ -58,9 +60,11 @@ struct torture_access_context {
 
 static bool test_openprinter_handle(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
+				    const char *name,
 				    const char *printername,
 				    const char *username,
 				    uint32_t access_mask,
+				    WERROR expected_result,
 				    struct policy_handle *handle)
 {
 	struct spoolss_OpenPrinterEx r;
@@ -83,34 +87,51 @@ static bool test_openprinter_handle(struct torture_context *tctx,
 	r.in.userlevel.level1	= &level1;
 	r.out.handle		= handle;
 
-	torture_comment(tctx, "Testing OpenPrinterEx(%s) with access_mask 0x%08x\n",
-		r.in.printername, r.in.access_mask);
+	torture_comment(tctx, "Testing OpenPrinterEx(%s) with access_mask 0x%08x (%s)\n",
+		r.in.printername, r.in.access_mask, name);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &r),
 		"OpenPrinterEx failed");
-	torture_assert_werr_ok(tctx, r.out.result,
-		talloc_asprintf(tctx, "OpenPrinterEx(%s) as '%s' with access_mask: 0x%08x failed",
-			r.in.printername, username, r.in.access_mask));
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		talloc_asprintf(tctx, "OpenPrinterEx(%s) as '%s' with access_mask: 0x%08x (%s) failed",
+			r.in.printername, username, r.in.access_mask, name));
 
 	return true;
 }
 
+static bool is_valid_policy_hnd(const struct policy_handle *hnd)
+{
+	struct policy_handle tmp;
+	ZERO_STRUCT(tmp);
+	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
+}
+
 static bool test_openprinter_access(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
+				    const char *name,
 				    const char *printername,
 				    const char *username,
-				    uint32_t access_mask)
+				    uint32_t access_mask,
+				    WERROR expected_result)
 {
 	struct policy_handle handle;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	bool ret = true;
 
-	if (test_openprinter_handle(tctx, p, printername, username, access_mask, &handle)) {
-		test_ClosePrinter(tctx, b, &handle);
+	ZERO_STRUCT(handle);
+
+	if (printername == NULL) {
+		torture_comment(tctx, "skipping test %s as there is no printer\n", name);
 		return true;
 	}
 
-	return false;
+	ret = test_openprinter_handle(tctx, p, name, printername, username, access_mask, expected_result, &handle);
+	if (is_valid_policy_hnd(&handle)) {
+		test_ClosePrinter(tctx, b, &handle);
+	}
+
+	return ret;
 }
 
 static bool spoolss_access_setup_membership(struct torture_context *tctx,
@@ -307,7 +328,7 @@ static bool spoolss_access_setup_sd(struct torture_context *tctx,
 	struct security_descriptor *sd;
 
 	torture_assert(tctx,
-		test_openprinter_handle(tctx, p, printername, "", SEC_FLAG_MAXIMUM_ALLOWED, &handle),
+		test_openprinter_handle(tctx, p, "", printername, "", SEC_FLAG_MAXIMUM_ALLOWED, WERR_OK, &handle),
 		"failed to open printer");
 
 	torture_assert(tctx,
@@ -514,6 +535,8 @@ static bool torture_rpc_spoolss_access_admin_setup(struct torture_context *tctx,
 	t->user.builtin_memberships = talloc_zero_array(t, uint32_t, t->user.num_builtin_memberships);
 	t->user.builtin_memberships[0] = BUILTIN_RID_ADMINISTRATORS;
 	t->user.username = talloc_strdup(t, TORTURE_USER_ADMINGROUP);
+	t->user.admin_rights = true;
+	t->user.system_security = true;
 
 	return torture_rpc_spoolss_access_setup_common(tctx, t);
 }
@@ -528,6 +551,7 @@ static bool torture_rpc_spoolss_access_printop_setup(struct torture_context *tct
 	t->user.builtin_memberships = talloc_zero_array(t, uint32_t, t->user.num_builtin_memberships);
 	t->user.builtin_memberships[0] = BUILTIN_RID_PRINT_OPERATORS;
 	t->user.username = talloc_strdup(t, TORTURE_USER_PRINTOPGROUP);
+	t->user.admin_rights = true;
 
 	return torture_rpc_spoolss_access_setup_common(tctx, t);
 }
@@ -542,6 +566,7 @@ static bool torture_rpc_spoolss_access_priv_setup(struct torture_context *tctx, 
 	t->user.num_privs = 1;
 	t->user.privs = talloc_zero_array(t, const char *, t->user.num_privs);
 	t->user.privs[0] = talloc_strdup(t, "SePrintOperatorPrivilege");
+	t->user.admin_rights = true;
 
 	return torture_rpc_spoolss_access_setup_common(tctx, t);
 }
@@ -554,6 +579,7 @@ static bool torture_rpc_spoolss_access_sd_setup(struct torture_context *tctx, vo
 
 	t->user.username = talloc_strdup(t, TORTURE_USER_SD);
 	t->user.sd = true;
+	t->user.admin_rights = true;
 
 	return torture_rpc_spoolss_access_setup_common(tctx, t);
 }
@@ -598,7 +624,7 @@ static bool torture_rpc_spoolss_access_teardown_common(struct torture_context *t
 		secdesc_ctr.sd = t->sd_orig;
 
 		torture_assert(tctx,
-			test_openprinter_handle(tctx, spoolss_pipe, t->printername, "", SEC_FLAG_MAXIMUM_ALLOWED, &handle),
+			test_openprinter_handle(tctx, spoolss_pipe, "", t->printername, "", SEC_FLAG_MAXIMUM_ALLOWED, WERR_OK, &handle),
 			"failed to open printer");
 
 		torture_assert(tctx,
@@ -629,74 +655,162 @@ static bool test_openprinter(struct torture_context *tctx,
 		(struct torture_access_context *)talloc_get_type_abort(private_data, struct torture_access_context);
 	struct dcerpc_pipe *p = t->spoolss_pipe;
 	bool ret = true;
-	const char *printername;
 	const char *username = t->user.username;
+	const char *servername_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	int i;
 
-	printername = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	struct {
+		const char *name;
+		uint32_t access_mask;
+		const char *printername;
+		WERROR expected_result;
+	} checks[] = {
 
-	ret &= test_openprinter_access(tctx, p, printername, username, 0);
-	ret &= test_openprinter_access(tctx, p, printername, username, SEC_FLAG_MAXIMUM_ALLOWED);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_ACCESS_ENUMERATE);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_READ);
+		/* printserver handle tests */
 
-	if (t->printername == NULL) {
-		return ret;
-	}
+		{
+			.name			= "0",
+			.access_mask		= 0,
+			.printername		= servername_slash,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SEC_FLAG_MAXIMUM_ALLOWED",
+			.access_mask		= SEC_FLAG_MAXIMUM_ALLOWED,
+			.printername		= servername_slash,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SERVER_ACCESS_ENUMERATE",
+			.access_mask		= SERVER_ACCESS_ENUMERATE,
+			.printername		= servername_slash,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SERVER_ACCESS_ADMINISTER",
+			.access_mask		= SERVER_ACCESS_ADMINISTER,
+			.printername		= servername_slash,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "SERVER_READ",
+			.access_mask		= SERVER_READ,
+			.printername		= servername_slash,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SERVER_WRITE",
+			.access_mask		= SERVER_WRITE,
+			.printername		= servername_slash,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "SERVER_EXECUTE",
+			.access_mask		= SERVER_EXECUTE,
+			.printername		= servername_slash,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SERVER_ALL_ACCESS",
+			.access_mask		= SERVER_ALL_ACCESS,
+			.printername		= servername_slash,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
 
-	printername = t->printername;
+		/* printer handle tests */
 
-	ret &= test_openprinter_access(tctx, p, printername, username, 0);
-	ret &= test_openprinter_access(tctx, p, printername, username, SEC_FLAG_MAXIMUM_ALLOWED);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_ACCESS_USE);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_READ);
-
-	return ret;
-}
-
-static bool test_openprinter_admin(struct torture_context *tctx,
-				   void *private_data)
-{
-	struct torture_access_context *t =
-		(struct torture_access_context *)talloc_get_type_abort(private_data, struct torture_access_context);
-	struct dcerpc_pipe *p = t->spoolss_pipe;
-	bool ret = true;
-	const char *printername;
-	const char *username = t->user.username;
+		{
+			.name			= "0",
+			.access_mask		= 0,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SEC_FLAG_MAXIMUM_ALLOWED",
+			.access_mask		= SEC_FLAG_MAXIMUM_ALLOWED,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SEC_FLAG_SYSTEM_SECURITY",
+			.access_mask		= SEC_FLAG_SYSTEM_SECURITY,
+			.printername		= t->printername,
+			.expected_result	= t->user.system_security ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "0x010e0000",
+			.access_mask		= 0x010e0000,
+			.printername		= t->printername,
+			.expected_result	= t->user.system_security ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "PRINTER_ACCESS_USE",
+			.access_mask		= PRINTER_ACCESS_USE,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "SEC_STD_READ_CONTROL",
+			.access_mask		= SEC_STD_READ_CONTROL,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "PRINTER_ACCESS_ADMINISTER",
+			.access_mask		= PRINTER_ACCESS_ADMINISTER,
+			.printername		= t->printername,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "SEC_STD_WRITE_DAC",
+			.access_mask		= SEC_STD_WRITE_DAC,
+			.printername		= t->printername,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "SEC_STD_WRITE_OWNER",
+			.access_mask		= SEC_STD_WRITE_OWNER,
+			.printername		= t->printername,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "PRINTER_READ",
+			.access_mask		= PRINTER_READ,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "PRINTER_WRITE",
+			.access_mask		= PRINTER_WRITE,
+			.printername		= t->printername,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		},
+		{
+			.name			= "PRINTER_EXECUTE",
+			.access_mask		= PRINTER_EXECUTE,
+			.printername		= t->printername,
+			.expected_result	= WERR_OK
+		},
+		{
+			.name			= "PRINTER_ALL_ACCESS",
+			.access_mask		= PRINTER_ALL_ACCESS,
+			.printername		= t->printername,
+			.expected_result	= t->user.admin_rights ? WERR_OK : WERR_ACCESS_DENIED
+		}
+	};
 
 	if (t->user.num_privs && !t->user.privs_present) {
 		torture_skip(tctx, "skipping test as not all required privileges are present on the server\n");
 	}
 
-	if (t->user.sd) {
-		goto try_printer;
+	for (i=0; i < ARRAY_SIZE(checks); i++) {
+		ret &= test_openprinter_access(tctx, p,
+					       checks[i].name,
+					       checks[i].printername,
+					       username,
+					       checks[i].access_mask,
+					       checks[i].expected_result);
 	}
-
-	printername = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-
-	ret &= test_openprinter_access(tctx, p, printername, username, 0);
-	ret &= test_openprinter_access(tctx, p, printername, username, SEC_FLAG_MAXIMUM_ALLOWED);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_ACCESS_ENUMERATE);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_ACCESS_ADMINISTER);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_READ);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_WRITE);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_EXECUTE);
-	ret &= test_openprinter_access(tctx, p, printername, username, SERVER_ALL_ACCESS);
-
- try_printer:
-	if (t->printername == NULL) {
-		return ret;
-	}
-
-	printername = t->printername;
-
-	ret &= test_openprinter_access(tctx, p, printername, username, 0);
-	ret &= test_openprinter_access(tctx, p, printername, username, SEC_FLAG_MAXIMUM_ALLOWED);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_ACCESS_USE);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_ACCESS_ADMINISTER);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_READ);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_WRITE);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_EXECUTE);
-	ret &= test_openprinter_access(tctx, p, printername, username, PRINTER_ALL_ACCESS);
 
 	return ret;
 }
@@ -747,7 +861,6 @@ struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 				  torture_rpc_spoolss_access_teardown);
 
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter);
-	torture_tcase_add_simple_test(tcase, "openprinter_admin", test_openprinter_admin);
 
 	tcase = torture_suite_add_tcase(suite, "printopuser");
 
@@ -756,7 +869,6 @@ struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 				  torture_rpc_spoolss_access_teardown);
 
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter);
-	torture_tcase_add_simple_test(tcase, "openprinter_admin", test_openprinter_admin);
 
 	tcase = torture_suite_add_tcase(suite, "printopuserpriv");
 
@@ -765,7 +877,6 @@ struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 				  torture_rpc_spoolss_access_teardown);
 
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter);
-	torture_tcase_add_simple_test(tcase, "openprinter_admin", test_openprinter_admin);
 
 	tcase = torture_suite_add_tcase(suite, "normaluser_sd");
 
@@ -774,7 +885,6 @@ struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 				  torture_rpc_spoolss_access_teardown);
 
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter);
-	torture_tcase_add_simple_test(tcase, "openprinter_admin", test_openprinter_admin);
 
 	rpc_tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "workstation",
 									  &ndr_table_spoolss,
