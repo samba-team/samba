@@ -4555,7 +4555,6 @@ int main(int argc, const char *argv[])
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
 			int j;
-			const char *socket_name;
 
 			if (ctdb_commands[i].without_daemon == true) {
 				close(2);
@@ -4564,21 +4563,23 @@ int main(int argc, const char *argv[])
 			/* initialise ctdb */
 			ctdb = ctdb_cmdline_client(ev);
 
-			/* initialize a libctdb connection as well */
-			socket_name = ctdb_get_socketname(ctdb);
-			ctdb_connection = ctdb_connect(socket_name,
-						       ctdb_log_file, stderr);
-			if (ctdb_connection == NULL) {
-				fprintf(stderr, "Failed to connect to daemon from libctdb\n");
-				exit(1);
-			}				
-			
 			if (ctdb_commands[i].without_daemon == false) {
+				const char *socket_name;
+
 				if (ctdb == NULL) {
 					DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
 					exit(1);
 				}
 
+				/* initialize a libctdb connection as well */
+				socket_name = ctdb_get_socketname(ctdb);
+				ctdb_connection = ctdb_connect(socket_name,
+						       ctdb_log_file, stderr);
+				if (ctdb_connection == NULL) {
+					fprintf(stderr, "Failed to connect to daemon from libctdb\n");
+					exit(1);
+				}				
+			
 				/* verify the node exists */
 				verify_node(ctdb);
 
