@@ -46,6 +46,23 @@
  * programs; these can be found in the section marked "Synchronous API".
  */
 
+/**
+ * ctdb_log_fn_t - logging function for ctdbd
+ * @log_priv: private (typesafe) arg via ctdb_connect
+ * @severity: syslog-style severity
+ * @format: printf-style format string.
+ * @ap: arguments for formatting.
+ *
+ * The severity passed to log() are as per syslog(3).  In particular,
+ * LOG_DEBUG is used for tracing, LOG_WARNING is used for unusual
+ * conditions which don't necessarily return an error through the API,
+ * LOG_ERR is used for errors such as lost communication with ctdbd or
+ * out-of-memory, LOG_ALERT is used for library usage bugs, LOG_CRIT is
+ * used for libctdb internal consistency checks.
+ *
+ * The log() function can be typesafe: the @log_priv arg to
+ * ctdb_donnect and signature of log() should match.
+ */
 typedef void (*ctdb_log_fn_t)(void *log_priv,
 			      int severity, const char *format, va_list ap);
 
@@ -58,12 +75,8 @@ typedef void (*ctdb_log_fn_t)(void *log_priv,
  * Returns a ctdb context if successful or NULL.  Use ctdb_free() to
  * release the returned ctdb_connection when finished.
  *
- * The log() function can be typesafe: the log_priv arg and signature
- * of log() should match.  The priority passed to log() os as per
- * syslog(3).
- *
  * See Also:
- *	ctdb_log_file()
+ *	ctdb_log_fn_t, ctdb_log_file()
  */
 struct ctdb_connection *ctdb_connect(const char *addr,
 				     ctdb_log_fn_t log_fn, void *log_priv);

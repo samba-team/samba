@@ -222,7 +222,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 	/* Library user error if this isn't a reply to a call. */
 	if (req->hdr.hdr->operation != CTDB_REQ_CALL) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ALERT,
 		      "This was not a ctdbd call request: operation %u",
 		      req->hdr.hdr->operation);
 		return NULL;
@@ -230,7 +230,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 
 	if (req->hdr.call->callid != callid) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ALERT,
 		      "This was not a ctdbd %u call request: %u",
 		      callid, req->hdr.call->callid);
 		return NULL;
@@ -259,13 +259,13 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	/* Library user error if this isn't a reply to a call. */
 	if (len < sizeof(*inhdr)) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_CRIT,
+		DEBUG(ctdb, LOG_ALERT,
 		      "Short ctdbd control reply: %zu bytes", len);
 		return NULL;
 	}
 	if (req->hdr.hdr->operation != CTDB_REQ_CONTROL) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ALERT,
 		      "This was not a ctdbd control request: operation %u",
 		      req->hdr.hdr->operation);
 		return NULL;
@@ -274,7 +274,7 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	/* ... or if it was a different control from what we expected. */
 	if (req->hdr.control->opcode != control) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ALERT,
 		      "This was not an opcode %u ctdbd control request: %u",
 		      control, req->hdr.control->opcode);
 		return NULL;
@@ -335,7 +335,7 @@ bool ctdb_service(struct ctdb_connection *ctdb, int revents)
 	}
 
 	if (holding_lock(ctdb)) {
-		DEBUG(ctdb, LOG_WARNING, "Do not block while holding lock!");
+		DEBUG(ctdb, LOG_ALERT, "Do not block while holding lock!");
 	}
 
 	if (revents & POLLOUT) {
@@ -646,7 +646,7 @@ static unsigned long lock_magic(struct ctdb_lock *lock)
 static void free_lock(struct ctdb_lock *lock)
 {
 	if (lock->held_magic) {
-		DEBUG(lock->ctdb_db->ctdb, LOG_CRIT,
+		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
 		      "free_lock invalid lock %p", lock);
 	}
 	free(lock->hdr);
@@ -657,7 +657,7 @@ static void free_lock(struct ctdb_lock *lock)
 void ctdb_release_lock(struct ctdb_lock *lock)
 {
 	if (lock->held_magic != lock_magic(lock)) {
-		DEBUG(lock->ctdb_db->ctdb, LOG_CRIT,
+		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
 		      "ctdb_release_lock invalid lock %p", lock);
 	} else {
 		tdb_chainunlock(lock->ctdb_db->tdb, lock->key);
@@ -745,7 +745,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	TDB_DATA data;
 
 	if (holding_lock(ctdb_db->ctdb)) {
-		DEBUG(ctdb_db->ctdb, LOG_ERR,
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
 		      "ctdb_readrecordlock_async: already holding lock");
 		return false;
 	}
@@ -802,14 +802,14 @@ int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)
 {
 	if (lock->held_magic != lock_magic(lock)) {
 		errno = EBADF;
-		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
+		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
 		      "ctdb_writerecord: Can not write. Lock has been released.");
 		return -1;
 	}
 		
 	if (lock->ctdb_db->persistent) {
 		errno = EINVAL;
-		DEBUG(lock->ctdb_db->ctdb, LOG_ERR,
+		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
 		      "ctdb_writerecord: cannot write to persistent db");
 		return -1;
 	}

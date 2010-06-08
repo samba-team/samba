@@ -54,7 +54,7 @@ bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 		return false;
 	}
 	if (reply->status != 0) {
-		DEBUG(ctdb, LOG_WARNING,
+		DEBUG(ctdb, LOG_ERR,
 		      "ctdb_set_message_handler_recv: status %i",
 		      reply->status);
 		return false;
