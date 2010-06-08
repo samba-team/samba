@@ -398,7 +398,7 @@ RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
 NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
 
 RPC_NCACN_NP_INTERNAL = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_np_internal.c
-                        rpc_server/srv_lsa_hnd.c'''
+                        rpc_server/rpc_handles.c'''
 
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c
                ${RPC_NCACN_NP_INTERNAL}'''
@@ -647,6 +647,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    auth/server_info.c
                    auth/server_info_sam.c
                    auth/user_info.c
+                   auth/user_util.c
 		   rpc_server/srv_samr_chgpasswd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
@@ -672,7 +673,7 @@ SMBD_SRC_MAIN = '''smbd/server.c smbd/server_exit.c'''
 BUILDOPT_SRC = '''smbd/build_options.c'''
 
 SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
-               smbd/utmp.c smbd/session.c smbd/map_username.c
+               smbd/utmp.c smbd/session.c
                smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn.c
                smbd/share_access.c smbd/fileio.c
                smbd/ipc.c smbd/lanman.c smbd/negprot.c
