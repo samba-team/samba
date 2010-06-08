@@ -614,12 +614,11 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 					uint64_t *out_session_id)
 {
 	fstring tmp;
-	NTSTATUS status = auth_ntlmssp_server_info(session, session->auth_ntlmssp_state,
-						   &session->server_info);
-	if (!NT_STATUS_IS_OK(status)) {
+	session->server_info = auth_ntlmssp_server_info(session, session->auth_ntlmssp_state);
+	if (!session->server_info) {
 		auth_ntlmssp_end(&session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
