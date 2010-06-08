@@ -854,8 +854,78 @@ static NTSTATUS common_name_to_sid(struct winbindd_domain *domain,
 				   struct dom_sid *sid,
 				   enum lsa_SidType *type)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *lsa_pipe;
+	struct policy_handle lsa_policy;
+	enum lsa_SidType *types = NULL;
+	struct dom_sid *sids = NULL;
+	char *full_name = NULL;
+	char *mapped_name = NULL;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: name to sid\n"));
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (name == NULL || name[0] == '\0') {
+		full_name = talloc_asprintf(tmp_ctx, "%s", domain_name);
+	} else if (domain_name == NULL || domain_name[0] == '\0') {
+		full_name = talloc_asprintf(tmp_ctx, "%s", name);
+	} else {
+		full_name = talloc_asprintf(tmp_ctx, "%s\\%s", domain_name, name);
+	}
+
+	if (full_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+	}
+
+	status = normalize_name_unmap(tmp_ctx, full_name, &mapped_name);
+	/* Reset the full_name pointer if we mapped anything */
+	if (NT_STATUS_IS_OK(status) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
+		full_name = mapped_name;
+	}
+
+	DEBUG(3,("name_to_sid: %s for domain %s\n",
+		 full_name ? full_name : "", domain_name ));
+
+	/*
+	 * We don't run into deadlocks here, cause winbind_off() is
+	 * called in the main function.
+	 */
+	status = rpccli_lsa_lookup_names(lsa_pipe,
+					 tmp_ctx,
+					 &lsa_policy,
+					 1, /* num_names */
+					 (const char **) &full_name,
+					 NULL, /* domains */
+					 1, /* level */
+					 &sids,
+					 &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("name_to_sid: failed to lookup name: %s\n",
+			nt_errstr(status)));
+		goto error;
+	}
+
+	if (sid) {
+		sid_copy(sid, &sids[0]);
+	}
+	if (type) {
+		*type = types[0];
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* convert a domain SID to a user or group name */
