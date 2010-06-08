@@ -107,10 +107,11 @@ static void rrl_cb(struct ctdb_db *ctdb_db,
 
 	data.dptr  = tmp;
 	data.dsize = strlen(tmp) + 1;
-	ctdb_writerecord(lock, data);
+	if (!ctdb_writerecord(ctdb_db, lock, data))
+		printf("Error writing data!\n");
 
 	/* Release the lock as quickly as possible */
-	ctdb_release_lock(lock);
+	ctdb_release_lock(ctdb_db, lock);
 
 	printf("Wrote new record : %s\n", tmp);
 
@@ -172,7 +173,8 @@ int main(int argc, char *argv[])
 		exit(10);
 	}
 
-	ctdb_db_context = ctdb_attachdb(ctdb_connection, "test_test.tdb", 0, 0);
+	ctdb_db_context = ctdb_attachdb(ctdb_connection, "test_test.tdb",
+					false, 0);
 	if (!ctdb_db_context) {
 		printf("Failed to attach to database\n");
 		exit(10);

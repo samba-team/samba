@@ -77,7 +77,7 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 }
 
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
-			      const char *name, int persistent,
+			      const char *name, bool persistent,
 			      uint32_t tdb_flags)
 {
 	struct ctdb_request *req;

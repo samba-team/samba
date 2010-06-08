@@ -204,7 +204,7 @@ struct ctdb_db;
  */
 struct ctdb_request *
 ctdb_attachdb_send(struct ctdb_connection *ctdb,
-		   const char *name, int persistent, uint32_t tdb_flags,
+		   const char *name, bool persistent, uint32_t tdb_flags,
 		   ctdb_callback_t callback, void *cbdata);
 
 /**
@@ -268,16 +268,19 @@ bool ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 
 /**
  * ctdb_writerecord - write a locked record in a TDB
+ * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
  * @lock: the lock from ctdb_readrecordlock/ctdb_readrecordlock_recv
  * @data: the new data to place in the record.
  */
-int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data);
+bool ctdb_writerecord(struct ctdb_db *ctdb_db,
+		      struct ctdb_lock *lock, TDB_DATA data);
 
 /**
  * ctdb_release_lock - release a record lock on a TDB
+ * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
  * @lock: the lock from ctdb_readrecordlock/ctdb_readrecordlock_async
  */
-void ctdb_release_lock(struct ctdb_lock *lock);
+void ctdb_release_lock(struct ctdb_db *ctdb_db, struct ctdb_lock *lock);
 
 /**
  * ctdb_message_fn_t - messaging callback for ctdb messages
@@ -450,7 +453,7 @@ void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req);
  * Returns NULL on failure.
  */
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
-			      const char *name, int persistent,
+			      const char *name, bool persistent,
 			      uint32_t tdb_flags);
 
 /**

@@ -588,7 +588,7 @@ static void destroy_req_db(struct ctdb_connection *ctdb,
 
 struct ctdb_request *
 ctdb_attachdb_send(struct ctdb_connection *ctdb,
-		   const char *name, int persistent, uint32_t tdb_flags,
+		   const char *name, bool persistent, uint32_t tdb_flags,
 		   ctdb_callback_t callback, void *private_data)
 {
 	struct ctdb_request *req;
@@ -654,11 +654,15 @@ static void free_lock(struct ctdb_lock *lock)
 }
 
 
-void ctdb_release_lock(struct ctdb_lock *lock)
+void ctdb_release_lock(struct ctdb_db *ctdb_db, struct ctdb_lock *lock)
 {
 	if (lock->held_magic != lock_magic(lock)) {
 		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
 		      "ctdb_release_lock invalid lock %p", lock);
+	} else if (lock->ctdb_db != ctdb_db) {
+		errno = EBADF;
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
+		      "ctdb_release_lock: wrong ctdb_db.");
 	} else {
 		tdb_chainunlock(lock->ctdb_db->tdb, lock->key);
 		DEBUG(lock->ctdb_db->ctdb, LOG_DEBUG,
@@ -798,22 +802,29 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	return true;
 }
 
-int ctdb_writerecord(struct ctdb_lock *lock, TDB_DATA data)
+bool ctdb_writerecord(struct ctdb_db *ctdb_db,
+		      struct ctdb_lock *lock, TDB_DATA data)
 {
-	if (lock->held_magic != lock_magic(lock)) {
+	if (lock->ctdb_db != ctdb_db) {
 		errno = EBADF;
-		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
-		      "ctdb_writerecord: Can not write. Lock has been released.");
-		return -1;
-	}
-		
-	if (lock->ctdb_db->persistent) {
-		errno = EINVAL;
-		DEBUG(lock->ctdb_db->ctdb, LOG_ALERT,
-		      "ctdb_writerecord: cannot write to persistent db");
-		return -1;
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
+		      "ctdb_writerecord: Can not write, wrong ctdb_db.");
+		return false;
 	}
 
-	return ctdb_local_store(lock->ctdb_db->tdb, lock->key, lock->hdr,
-				data);
+	if (lock->held_magic != lock_magic(lock)) {
+		errno = EBADF;
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
+		      "ctdb_writerecord: Can not write. Lock has been released.");
+		return false;
+	}
+		
+	if (ctdb_db->persistent) {
+		errno = EINVAL;
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
+		      "ctdb_writerecord: cannot write to persistent db");
+		return false;
+	}
+
+	return ctdb_local_store(ctdb_db->tdb, lock->key, lock->hdr, data) == 0;
 }
