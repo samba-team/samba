@@ -32,113 +32,6 @@
 #define TEST_GROUPNAME  "libnetgrouptest"
 
 
-static bool test_cleanup(struct torture_context *tctx,
-			 struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *domain_handle, const char *groupname)
-{
-	struct samr_LookupNames r1;
-	struct samr_OpenGroup r2;
-	struct samr_DeleteDomainGroup r3;
-	struct lsa_String names[2];
-	uint32_t rid;
-	struct policy_handle group_handle;
-	struct samr_Ids rids, types;
-
-	names[0].string = groupname;
-
-	r1.in.domain_handle  = domain_handle;
-	r1.in.num_names      = 1;
-	r1.in.names          = names;
-	r1.out.rids          = &rids;
-	r1.out.types         = &types;
-
-	torture_comment(tctx, "group account lookup '%s'\n", groupname);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
-		"LookupNames failed");
-	torture_assert_ntstatus_ok(tctx, r1.out.result,
-		"LookupNames failed");
-
-	rid = r1.out.rids->ids[0];
-
-	r2.in.domain_handle  = domain_handle;
-	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r2.in.rid            = rid;
-	r2.out.group_handle  = &group_handle;
-
-	torture_comment(tctx, "opening group account\n");
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2),
-		"OpenGroup failed");
-	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"OpenGroup failed");
-
-	r3.in.group_handle  = &group_handle;
-	r3.out.group_handle = &group_handle;
-
-	torture_comment(tctx, "deleting group account\n");
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3),
-		"DeleteGroup failed");
-	torture_assert_ntstatus_ok(tctx, r3.out.result,
-		"DeleteGroup failed");
-
-	return true;
-}
-
-
-static bool test_creategroup(struct torture_context *tctx,
-			     struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-			     struct policy_handle *handle, const char *name)
-{
-	struct lsa_String groupname;
-	struct samr_CreateDomainGroup r;
-	struct policy_handle group_handle;
-	uint32_t group_rid;
-
-	groupname.string = name;
-
-	r.in.domain_handle  = handle;
-	r.in.name           = &groupname;
-	r.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.group_handle  = &group_handle;
-	r.out.rid           = &group_rid;
-
-	torture_comment(tctx, "creating group account %s\n", name);
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
-		"CreateGroup failed");
-
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(r.out.result));
-
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_GROUP_EXISTS)) {
-			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate group again\n", name);
-			if (!test_cleanup(tctx, b, mem_ctx, handle, TEST_GROUPNAME)) {
-				return false;
-			}
-
-			torture_comment(tctx, "creating group account\n");
-
-			torture_assert_ntstatus_ok(tctx,
-				dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
-				"CreateGroup failed");
-			torture_assert_ntstatus_ok(tctx, r.out.result,
-				"CreateGroup failed");
-
-			return true;
-		}
-		return false;
-	}
-
-	return true;
-}
-
-
 static bool test_lsa_close(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *domain_handle)
@@ -188,7 +81,7 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_creategroup(torture, p->binding_handle, prep_mem_ctx, &h, name)) {
+	if (!test_group_create(torture, p->binding_handle, prep_mem_ctx, &h, name, NULL)) {
 		ret = false;
 		goto done;
 	}
@@ -208,7 +101,7 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
@@ -314,7 +207,7 @@ bool torture_creategroup(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
