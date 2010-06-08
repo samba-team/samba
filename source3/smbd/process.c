@@ -971,6 +971,17 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		errno = sav;
 	}
 
+        if ((conn->smb1.echo_handler.trusted_fd != -1)
+	    && FD_ISSET(smbd_server_fd(), &r_fds)
+	    && FD_ISSET(conn->smb1.echo_handler.trusted_fd, &r_fds)) {
+		/*
+		 * Prefer to read pending requests from the echo handler. To
+		 * quote Jeremy (da70f8ab1): This is a hack of monstrous
+		 * proportions...
+		 */
+		FD_CLR(smbd_server_fd(), &r_fds);
+        }
+
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
 		return NT_STATUS_RETRY;
 	}
