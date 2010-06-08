@@ -551,9 +551,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 			outvec[i+2].iov_base = ((uint8_t *)outvec[i].iov_base) +
 				(OUTVEC_ALLOC_SIZE - 1);
 			outvec[i+2].iov_len = 1;
-		} else if (!dup_smb2_vec(outvec,
-				req->out.vector,
-				i)) {
+		} else if (!dup_smb2_vec(outvec, req->out.vector, i+2)) {
 			break;
 		}
 	}
