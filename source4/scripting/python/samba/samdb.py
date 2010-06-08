@@ -123,30 +123,29 @@ pwdLastSet: 0
         :param notes: Notes of the new group
         """
 
+        group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
+
+        # The new user record. Note the reliance on the SAMLDB module which
+        # fills in the default informations
+	ldbmessage = {"dn": group_dn,
+            "sAMAccountName": groupname,
+            "objectClass": "group"}
+
+	if grouptype is not None:
+            ldbmessage["groupType"] = "%d" % ((grouptype)-2**32)
+
+        if description is not None:
+            ldbmessage["description"] = description
+
+        if mailaddress is not None:
+            ldbmessage["mail"] = mailaddress
+
+        if notes is not None:
+            ldbmessage["info"] = notes
+
         self.transaction_start()
         try:
-            group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
-
-            # The new user record. Note the reliance on the SAMLDB module which
-            # fills in the default informations
-	    ldbmessage = {"dn": group_dn,
-                "sAMAccountName": groupname,
-                "objectClass": "group"}
-
-	    if grouptype is not None:
-                ldbmessage["groupType"] = "%d" % ((grouptype)-2**32)
-
-            if description is not None:
-                ldbmessage["description"] = description
-
-            if mailaddress is not None:
-                ldbmessage["mail"] = mailaddress
-
-            if notes is not None:
-                ldbmessage["info"] = notes
-
             self.add(ldbmessage)
-
         except:
             self.transaction_cancel()
             raise
@@ -207,7 +206,7 @@ changetype: modify
 
             for member in groupmembers:
                 targetmember = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                                    expression="(sAMAccountName=%s)" % member, attrs=[])
+                                    expression="(|(sAMAccountName=%s)(CN=%s))" % (member, member), attrs=[])
 
                 if len(targetmember) != 1:
                    continue
@@ -278,65 +277,65 @@ member: %s
         if useusernameascn is None and displayname is not "":
             cn = displayname
 
+        user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
+
+        # The new user record. Note the reliance on the SAMLDB module which
+        # fills in the default informations
+	ldbmessage = {"dn": user_dn,
+            "sAMAccountName": username,
+            "objectClass": "user"}
+
+	if surname is not None:
+            ldbmessage["sn"] = surname
+
+	if givenname is not None:
+            ldbmessage["givenName"] = givenname
+
+	if displayname is not "":
+            ldbmessage["displayName"] = displayname
+            ldbmessage["name"] = displayname
+
+	if initials is not None:
+            ldbmessage["initials"] = '%s.' % initials
+
+	if profilepath is not None:
+            ldbmessage["profilePath"] = profilepath
+
+        if scriptpath is not None:
+            ldbmessage["scriptPath"] = scriptpath
+
+        if homedrive is not None:
+            ldbmessage["homeDrive"] = homedrive
+
+        if homedirectory is not None:
+            ldbmessage["homeDirectory"] = homedirectory
+
+        if jobtitle is not None:
+            ldbmessage["title"] = jobtitle
+
+        if department is not None:
+            ldbmessage["department"] = department
+
+        if company is not None:
+            ldbmessage["company"] = company
+
+        if description is not None:
+            ldbmessage["description"] = description
+
+        if mailaddress is not None:
+            ldbmessage["mail"] = mailaddress
+
+        if internetaddress is not None:
+            ldbmessage["wWWHomePage"] = internetaddress
+
+        if telephonenumber is not None:
+            ldbmessage["telephoneNumber"] = telephonenumber
+
+        if physicaldeliveryoffice is not None:
+            ldbmessage["physicalDeliveryOfficeName"] = physicaldeliveryoffice
+
         self.transaction_start()
         try:
-            user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
-
-            # The new user record. Note the reliance on the SAMLDB module which
-            # fills in the default informations
-	    ldbmessage = {"dn": user_dn,
-                "sAMAccountName": username,
-                "objectClass": "user"}
-
-	    if surname is not None:
-                ldbmessage["sn"] = surname
-
-	    if givenname is not None:
-                ldbmessage["givenName"] = givenname
-
-	    if displayname is not "":
-                ldbmessage["displayName"] = displayname
-                ldbmessage["name"] = displayname
-
-	    if initials is not None:
-                ldbmessage["initials"] = '%s.' % initials
-
-	    if profilepath is not None:
-                ldbmessage["profilePath"] = profilepath
-
-            if scriptpath is not None:
-                ldbmessage["scriptPath"] = scriptpath
-
-            if homedrive is not None:
-                ldbmessage["homeDrive"] = homedrive
-
-            if homedirectory is not None:
-                ldbmessage["homeDirectory"] = homedirectory
-
-            if jobtitle is not None:
-                ldbmessage["title"] = jobtitle
-
-            if department is not None:
-                ldbmessage["department"] = department
-
-            if company is not None:
-                ldbmessage["company"] = company
-
-            if description is not None:
-                ldbmessage["description"] = description
-
-            if mailaddress is not None:
-                ldbmessage["mail"] = mailaddress
-
-            if internetaddress is not None:
-                ldbmessage["wWWHomePage"] = internetaddress
-
-            if telephonenumber is not None:
-                ldbmessage["telephoneNumber"] = telephonenumber
-
-            if physicaldeliveryoffice is not None:
-                ldbmessage["physicalDeliveryOfficeName"] = physicaldeliveryoffice
-
             self.add(ldbmessage)
 
             # Sets the password for it

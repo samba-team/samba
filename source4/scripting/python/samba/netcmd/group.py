@@ -70,7 +70,7 @@ class cmd_group_add(Command):
             versionopts=None, H=None, groupou=None, group_scope=None,
             group_type=None, description=None, mail_address=None, notes=None):
 
-        if cmp((group_type or "Security"), "Security") == 0:
+        if (group_type or "Security") == "Security":
               gtype = security_group.get(group_scope, GTYPE_SECURITY_GLOBAL_GROUP)
         else:
               gtype = distribution_group.get(group_scope, GTYPE_DISTRIBUTION_GLOBAL_GROUP)
@@ -86,6 +86,7 @@ class cmd_group_add(Command):
         except ldb.LdbError, (num, msg):
             raise CommandError('Failed to create group "%s" : %s' % (
                 groupname, msg))
+
 
 class cmd_group_delete(Command):
     """Delete a group"""
@@ -116,6 +117,7 @@ class cmd_group_delete(Command):
         except ldb.LdbError, (num, msg):
             raise CommandError('Failed to remove group "%s": %s' % (
                 groupname , msg))
+
 
 class cmd_group_add_members(Command):
     """Add (comma-separated list of) group members"""
@@ -148,6 +150,7 @@ class cmd_group_add_members(Command):
             raise CommandError('Failed to add members "%s" to group "%s": %s' % (
                 listofmembers, groupname , msg))
 
+
 class cmd_group_remove_members(Command):
     """Remove (comma-separated list of) group members"""
 
@@ -178,6 +181,7 @@ class cmd_group_remove_members(Command):
         except ldb.LdbError, (num, msg):
             raise CommandError('Failed to remove members "%s" from group "%s": %s' % (
                 listofmembers, groupname , msg))
+
 
 class cmd_group(SuperCommand):
     """Group management"""
