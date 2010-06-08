@@ -7,6 +7,7 @@
 #include <ctdb.h>
 #include <ctdb_protocol.h>
 #include <syslog.h>
+#include <tdb.h>
 
 #ifndef offsetof
 #define offsetof(t,f) ((unsigned int)&((t *)0)->f)
@@ -21,9 +22,6 @@
 #endif /* COLD_ATTRIBUTE */
 
 #define DEBUG(ctdb, lvl, format, args...) do { if (lvl <= ctdb_log_level) { ctdb_do_debug(ctdb, lvl, format , ## args ); }} while(0)
-
-void ctdb_do_debug(struct ctdb_connection *, int, const char *format, ...)
-	PRINTF_ATTRIBUTE(3, 4) COLD_ATTRIBUTE;
 
 struct message_handler_info;
 struct ctdb_reply_call;
@@ -92,4 +90,13 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 			  struct ctdb_request *req,
 			  void *unused);
+
+/* logging.c */
+void ctdb_tdb_log_bridge(struct tdb_context *tdb,
+			 enum tdb_debug_level level,
+			 const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
+
+void ctdb_do_debug(struct ctdb_connection *, int, const char *format, ...)
+	PRINTF_ATTRIBUTE(3, 4) COLD_ATTRIBUTE;
+
 #endif /* _LIBCTDB_PRIVATE_H */

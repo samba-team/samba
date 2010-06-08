@@ -494,6 +494,7 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 	struct ctdb_db *db = req->priv_data;
 	uint32_t tdb_flags = db->tdb_flags;
+	struct tdb_logging_context log;
 
 	/* Never sent the dbpath request?  We've failed. */
 	if (!dbpath_req) {
@@ -515,8 +516,10 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
 	tdb_flags = db->persistent ? TDB_DEFAULT : TDB_NOSYNC;
 	tdb_flags |= TDB_DISALLOW_NESTING;
 
-	/* FIXME: Setup logging to go through our logging. */
-	db->tdb = tdb_open((char *)reply->data, 0, tdb_flags, O_RDWR, 0);
+	log.log_fn = ctdb_tdb_log_bridge;
+	log.log_private = ctdb;
+	db->tdb = tdb_open_ex((char *)reply->data, 0, tdb_flags, O_RDWR, 0,
+			      &log, NULL);
 	if (db->tdb == NULL) {
 		DEBUG(db->ctdb, LOG_ERR,
 		      "ctdb_attachdb_recv: failed to tdb_open %s",
@@ -844,10 +847,7 @@ bool ctdb_writerecord(struct ctdb_db *ctdb_db,
 			DEBUG(ctdb_db->ctdb, LOG_ALERT,
 			      "ctdb_writerecord: record changed under lock?");
 			break;
-		default:
-			/* FIXME: replace with proper tdb logging. */
-			DEBUG(ctdb_db->ctdb, LOG_CRIT,
-			      "ctdb_writerecord: tdb error.");
+		default: /* TDB already logged. */
 			break;
 		}
 		return false;

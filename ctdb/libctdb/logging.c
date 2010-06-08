@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <ctdb.h>
 #include <string.h>
+#include <tdb.h>
 #include "libctdb_private.h"
 
 int ctdb_log_level = LOG_WARNING;
@@ -32,6 +33,57 @@ void ctdb_do_debug(struct ctdb_connection *ctdb,
         va_start(ap, format);
 	ctdb->log(ctdb->log_priv, severity, format, ap);
         va_end(ap);
+}
+
+/* Attach tdb logging to our ctdb logging. */
+void ctdb_tdb_log_bridge(struct tdb_context *tdb,
+			 enum tdb_debug_level level,
+			 const char *format, ...)
+{
+	va_list ap;
+	int sev;
+	struct ctdb_connection *ctdb = tdb_get_logging_private(tdb);
+	char *newformat;
+
+	switch (level) {
+	case TDB_DEBUG_FATAL:
+		sev = LOG_CRIT;
+		break;
+	case TDB_DEBUG_ERROR:
+		sev = LOG_ERR;
+		break;
+	case TDB_DEBUG_WARNING:
+		sev = LOG_WARNING;
+		break;
+	case TDB_DEBUG_TRACE:
+		sev = LOG_DEBUG;
+		break;
+	default:
+		sev = LOG_CRIT;
+	}
+
+	if (sev > ctdb_log_level) {
+		return;
+	}
+
+	newformat = malloc(sizeof("TDB error: ") + strlen(format));
+	if (!newformat) {
+		DEBUG(ctdb, LOG_ERR,
+		      "memory allocation failure reporting tdb error %s",
+		      format);
+		return;
+	}
+
+	/* Prepend TDB error: and remove \n */
+	strcpy(newformat, "TDB error: ");
+	strcat(newformat, format);
+	if (newformat[strlen(newformat)-1] == '\n')
+		newformat[strlen(newformat)-1] = '\0';
+
+	va_start(ap, format);
+	ctdb->log(ctdb->log_priv, sev, newformat, ap);
+	va_end(ap);
+	free(newformat);
 }
 
 /* Convenient log helper. */
