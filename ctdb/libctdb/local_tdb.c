@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 #include <ctdb_protocol.h> // For struct ctdb_ltdb_header
 #include "local_tdb.h"
 
@@ -51,44 +52,50 @@ struct ctdb_ltdb_header *ctdb_local_fetch(struct tdb_context *tdb,
 
 
 /*
-  write a record to a normal database
+  write a record to a normal database: 1 on success, 0 if noop, -1 on fail.
+  errno = EIO => tdb error.
 */
 int ctdb_local_store(struct tdb_context *tdb, TDB_DATA key,
 		     struct ctdb_ltdb_header *header, TDB_DATA data)
 {
 	TDB_DATA rec;
 	int ret;
-	bool seqnum_suppressed = false;
+	TDB_DATA old;
+
+	old = tdb_fetch(tdb, key);
+	if (old.dsize < sizeof(*header)) {
+		errno = EIO;
+		return -1;
+	}
+
+	/* Debugging check: we have lock and should not change hdr. */
+	if (memcmp(old.dptr, header, sizeof(*header)) != 0) {
+		free(old.dptr);
+		errno = EINVAL;
+		return -1;
+	}
+
+	/* Optimize out the nothing-changed case. */
+	if (old.dsize == sizeof(*header) + data.dsize
+	    && memcmp(old.dptr+sizeof(*header), data.dptr, data.dsize) == 0) {
+		free(old.dptr);
+		return 0;
+	}
 
 	rec.dsize = sizeof(*header) + data.dsize;
 	rec.dptr = malloc(rec.dsize);
 	if (!rec.dptr) {
+		free(old.dptr);
+		errno = ENOMEM;
 		return -1;
 	}
 
-	memcpy(rec.dptr, header, sizeof(*header));
-	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
-
-	/* Databases with seqnum updates enabled only get their seqnum
-	   changes when/if we modify the data */
-	if (tdb_get_flags(tdb) & TDB_SEQNUM) {
-		TDB_DATA old;
-		old = tdb_fetch(tdb, key);
-
-		if ( (old.dsize == rec.dsize)
-		&& !memcmp(old.dptr+sizeof(struct ctdb_ltdb_header),
-			  rec.dptr+sizeof(struct ctdb_ltdb_header),
-			  rec.dsize-sizeof(struct ctdb_ltdb_header)) ) {
-			tdb_remove_flags(tdb, TDB_SEQNUM);
-			seqnum_suppressed = true;
-		}
-		free(old.dptr);
-	}
 	ret = tdb_store(tdb, key, rec, TDB_REPLACE);
-	if (seqnum_suppressed) {
-		tdb_add_flags(tdb, TDB_SEQNUM);
-	}
+	free(old.dptr);
 	free(rec.dptr);
-
-	return ret;
+	if (ret != 0) {
+		errno = EIO;
+		return -1;
+	}
+	return 1;
 }

@@ -826,5 +826,30 @@ bool ctdb_writerecord(struct ctdb_db *ctdb_db,
 		return false;
 	}
 
-	return ctdb_local_store(ctdb_db->tdb, lock->key, lock->hdr, data) == 0;
+	switch (ctdb_local_store(ctdb_db->tdb, lock->key, lock->hdr, data)) {
+	case 0:
+		DEBUG(ctdb_db->ctdb, LOG_DEBUG,
+		      "ctdb_writerecord: optimized away noop write.");
+		/* fall thru */
+	case 1:
+		return true;
+
+	default:
+		switch (errno) {
+		case ENOMEM:
+			DEBUG(ctdb_db->ctdb, LOG_CRIT,
+			      "ctdb_writerecord: out of memory.");
+			break;
+		case EINVAL:
+			DEBUG(ctdb_db->ctdb, LOG_ALERT,
+			      "ctdb_writerecord: record changed under lock?");
+			break;
+		default:
+			/* FIXME: replace with proper tdb logging. */
+			DEBUG(ctdb_db->ctdb, LOG_CRIT,
+			      "ctdb_writerecord: tdb error.");
+			break;
+		}
+		return false;
+	}
 }
