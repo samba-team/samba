@@ -520,7 +520,7 @@ static void callback_do_hostname_change(GtkWidget *widget,
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					str);
+					"%s",str);
 
 	gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
 	gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(state->window_main));
