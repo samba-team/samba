@@ -48,6 +48,7 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
 		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to lock database %s\n", ctdb_db->db_name));
 			return -1;
 		}
 	}
@@ -60,6 +61,7 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
 		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to lock database %s\n", ctdb_db->db_name));
 			return -1;
 		}
 	}

@@ -191,7 +191,7 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
 	int ret = tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("tdb_chainunlock failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " tdb_chainunlock failed on database %s\n", ctdb_db->db_name));
 	}
 	return ret;
 }
