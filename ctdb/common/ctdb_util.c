@@ -159,7 +159,13 @@ void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *l
 
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
-	return idr_get_new(ctdb->idr, state, INT_MAX);
+	int id = idr_get_new_above(ctdb->idr, state, ctdb->lastid+1, INT_MAX);
+	if (id < 0) {
+		DEBUG(DEBUG_NOTICE, ("Reqid wrap!\n"));
+		id = idr_get_new(ctdb->idr, state, INT_MAX);
+	}
+	ctdb->lastid = id;
+	return id;
 }
 
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location)
