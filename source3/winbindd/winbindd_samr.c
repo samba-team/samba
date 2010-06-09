@@ -1203,11 +1203,89 @@ error:
 static NTSTATUS common_lookup_usergroups(struct winbindd_domain *domain,
 					 TALLOC_CTX *mem_ctx,
 					 const struct dom_sid *user_sid,
-					 uint32_t *num_groups,
-					 struct dom_sid **user_gids)
+					 uint32_t *pnum_groups,
+					 struct dom_sid **puser_grpsids)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol, usr_pol;
+	uint32_t samr_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct dom_sid *user_grpsids = NULL;
+	uint32_t num_groups = 0, i;
+	uint32_t user_rid;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: lookup usergroups\n"));
+
+	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (pnum_groups) {
+		*pnum_groups = 0;
+	}
+
+	if (puser_grpsids) {
+		*puser_grpsids = NULL;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	/* Get user handle */
+	status = rpccli_samr_OpenUser(samr_pipe,
+				      tmp_ctx,
+				      &dom_pol,
+				      samr_access,
+				      user_rid,
+				      &usr_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Query user rids */
+	status = rpccli_samr_GetGroupsForUser(samr_pipe,
+					      tmp_ctx,
+					      &usr_pol,
+					      &rid_array);
+	num_groups = rid_array->count;
+
+	rpccli_samr_Close(samr_pipe, tmp_ctx, &usr_pol);
+
+	if (!NT_STATUS_IS_OK(status) || num_groups == 0) {
+		return status;
+	}
+
+	user_grpsids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_groups);
+	if (user_grpsids == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	for (i = 0; i < num_groups; i++) {
+		sid_compose(&(user_grpsids[i]), &domain->sid,
+			    rid_array->rids[i].rid);
+	}
+
+	if (pnum_groups) {
+		*pnum_groups = num_groups;
+	}
+
+	if (puser_grpsids) {
+		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 static NTSTATUS common_lookup_useraliases(struct winbindd_domain *domain,
