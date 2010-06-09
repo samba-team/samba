@@ -520,6 +520,13 @@ interface security
 	const string GUID_DRS_REPL_SYNCRONIZE         = "1131f6ab-9c07-11d1-f79f-00c04fc2dcd2";
 	const string GUID_DRS_RO_REPL_SECRET_SYNC     = "1131f6ae-9c07-11d1-f79f-00c04fc2dcd2";
 
+	/***************************************************************/
+	/* validated writes guids */
+	const string GUID_DRS_VALIDATE_SPN            = "f3a64788-5306-11d1-a9c5-0000f80367c1";
+	const string GUID_DRS_SELF_MEMBERSHIP         = "bf9679c0-0de6-11d0-a285-00aa003049e2";
+	const string GUID_DRS_DNS_HOST_NAME           = "72e39547-7b18-11d1-adef-00c04fd8d5cd";
+	const string GUID_DRS_ADD_DNS_HOST_NAME       = "80863791-dbe9-4eb8-837e-7f0ab55d9ac7";
+	const string GUID_DRS_BEHAVIOR_VERSION        = "d31a8757-2447-4545-8081-3bb610cacbf2";
 
 	/* A type to describe the mapping of generic access rights to object
 	   specific access rights. */
