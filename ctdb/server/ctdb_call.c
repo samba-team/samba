@@ -277,7 +277,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (key.dsize != state->call->key.dsize || memcmp(key.dptr, state->call->key.dptr, key.dsize)) {
-		DEBUG(DEBUG_ERR, ("Got bogus DMASTER packet reqid:%u\n from node %u. Key does not match key held in matching idr.", hdr->reqid, hdr->srcnode));
+		DEBUG(DEBUG_ERR, ("Got bogus DMASTER packet reqid:%u from node %u. Key does not match key held in matching idr.\n", hdr->reqid, hdr->srcnode));
 
 		ret = ctdb_ltdb_unlock(ctdb_db, key);
 		if (ret != 0) {
