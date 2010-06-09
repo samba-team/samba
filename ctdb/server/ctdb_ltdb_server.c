@@ -141,7 +141,6 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 	/* now the contended path */
 	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, state);
 	if (h == NULL) {
-		tdb_chainunlock(tdb, key);
 		return -1;
 	}
 
