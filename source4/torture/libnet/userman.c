@@ -459,7 +459,7 @@ bool torture_usermod(struct torture_context *torture)
 	}
 
 cleanup:
-	if (!test_user_cleanup(torture, b, mem_ctx, &h, name)) {
+	if (!test_user_cleanup(torture, b, mem_ctx, &h, TEST_USERNAME)) {
 		ret = false;
 		goto done;
 	}
