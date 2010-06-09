@@ -1163,10 +1163,40 @@ error:
 
 static NTSTATUS common_password_policy(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
-				       struct samr_DomInfo1 *policy)
+				       struct samr_DomInfo1 *passwd_policy)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
+	union samr_DomainInfo *info = NULL;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: password policy\n"));
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	status = rpccli_samr_QueryDomainInfo(samr_pipe,
+					     mem_ctx,
+					     &dom_pol,
+					     1,
+					     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	*passwd_policy = info->info1;
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
