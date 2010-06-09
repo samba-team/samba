@@ -189,11 +189,10 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
-	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
-	struct dsdb_extended_replicated_objects *objs;
+	struct dsdb_extended_replicated_objects *schema_objs_1, *schema_objs_2;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	struct ldb_message *msg;
@@ -250,85 +249,48 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
-	for (cur = first_object; cur; cur = cur->next_object) {
-		bool is_attr = false;
-		bool is_class = false;
-
-		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
-			struct drsuapi_DsReplicaAttribute *a;
-			uint32_t j;
-			const char *oid = NULL;
-
-			a = &cur->object.attribute_ctr.attributes[i];
-			status = dsdb_schema_pfm_oid_from_attid(s->self_made_schema->prefixmap,
-								a->attid, s, &oid);
-			if (!W_ERROR_IS_OK(status)) {
-				return werror_to_ntstatus(status);
-			}
-
-			switch (a->attid) {
-			case DRSUAPI_ATTRIBUTE_objectClass:
-				for (j=0; j < a->value_ctr.num_values; j++) {
-					uint32_t val = 0xFFFFFFFF;
-
-					if (a->value_ctr.values[j].blob
-					    && a->value_ctr.values[j].blob->length == 4) {
-						val = IVAL(a->value_ctr.values[j].blob->data,0);
-					}
-
-					if (val == DRSUAPI_OBJECTCLASS_attributeSchema) {
-						is_attr = true;
-					}
-					if (val == DRSUAPI_OBJECTCLASS_classSchema) {
-						is_class = true;
-					}
-				}
-
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (is_attr) {
-			struct dsdb_attribute *sa;
-
-			sa = talloc_zero(s->self_made_schema, struct dsdb_attribute);
-			NT_STATUS_HAVE_NO_MEMORY(sa);
-
-			status = dsdb_attribute_from_drsuapi(s->ldb, s->self_made_schema, &cur->object, s, sa);
-			if (!W_ERROR_IS_OK(status)) {
-				return werror_to_ntstatus(status);
-			}
-
-			DLIST_ADD_END(s->self_made_schema->attributes, sa, struct dsdb_attribute *);
-		}
-
-		if (is_class) {
-			struct dsdb_class *sc;
-
-			sc = talloc_zero(s->self_made_schema, struct dsdb_class);
-			NT_STATUS_HAVE_NO_MEMORY(sc);
-
-			status = dsdb_class_from_drsuapi(s->ldb, s->self_made_schema, &cur->object, s, sc);
-			if (!W_ERROR_IS_OK(status)) {
-				return werror_to_ntstatus(status);
-			}
-			DLIST_ADD_END(s->self_made_schema->classes, sc, struct dsdb_class *);
-		}
+	/* Now convert the schema elements again, using the schema we just imported */
+	status = dsdb_extended_replicated_objects_convert(s->ldb,
+							  c->partition->nc.dn,
+							  mapping_ctr,
+							  object_count,
+							  first_object,
+							  linked_attributes_count,
+							  linked_attributes,
+							  s_dsa,
+							  uptodateness_vector,
+							  c->gensec_skey,
+							  s, &schema_objs_1);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
+		return werror_to_ntstatus(status);
 	}
 
-	/* attach the schema to the ldb */
+	for (i=0; i < schema_objs_1->num_objects; i++) {
+		status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_made_schema, schema_objs_1->objects[i].msg);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("Failed to convert object %s into a schema element: %s\n",
+				 ldb_dn_get_linearized(schema_objs_1->objects[i].msg->dn),
+				 win_errstr(status)));
+			return werror_to_ntstatus(status);
+		}
+	}
+	/* We don't need the first conversion of the schema any more */
+	talloc_free(schema_objs_1);
+
+	/* attach the schema we just brought over DRS to the ldb */
 	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to attach schema from DRS.\n"));
 		return NT_STATUS_FOOBAR;
 	}
+
 	/* we don't want to access the self made schema anymore */
 	s->schema = s->self_made_schema;
 	s->self_made_schema = NULL;
 
-	/* Now convert the schema elements again, using the schema we just imported */
+	/* Now convert the schema elements again, using the schema we just imported - we do this
+	   'just in case' the schema in our LDIF was wrong, but correct enough to read a valid schema */
 	status = dsdb_extended_replicated_objects_convert(s->ldb, 
 							  c->partition->nc.dn,
 							  mapping_ctr,
@@ -339,32 +301,32 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 							  s_dsa,
 							  uptodateness_vector,
 							  c->gensec_skey,
-							  s, &objs);
+							  s, &schema_objs_2);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
 	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
-		for (i=0; i < objs->num_objects; i++) {
+		for (i=0; i < schema_objs_2->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
 			ldif.changetype = LDB_CHANGETYPE_NONE;
-			ldif.msg = objs->objects[i].msg;
+			ldif.msg = schema_objs_2->objects[i].msg;
 			ldb_ldif_write_file(s->ldb, stdout, &ldif);
-			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, schema_objs_2->objects[i].meta_data);
 		}
 	}
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb, objs, &seq_num);
+	status = dsdb_extended_replicated_objects_commit(s->ldb, schema_objs_2, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
-	msg = ldb_msg_new(objs);
+	msg = ldb_msg_new(schema_objs_2);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
-	msg->dn = objs->partition_dn;
+	msg->dn = schema_objs_2->partition_dn;
 
 	status = dsdb_get_oid_mappings_ldb(s->schema, msg, &prefixMap_val, &schemaInfo_val);
 	if (!W_ERROR_IS_OK(status)) {
@@ -381,12 +343,12 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	ret = ldb_modify(s->ldb, msg);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to add prefixMap and schemaInfo %s\n", ldb_strerror(ret)));
+		DEBUG(0,("Failed to add prefixMap: %s\n", ldb_strerror(ret)));
 		return NT_STATUS_FOOBAR;
 	}
 
 	talloc_free(s_dsa);
-	talloc_free(objs);
+	talloc_free(schema_objs_2);
 
 	/* We must set these up to ensure the replMetaData is written
 	 * correctly, before our NTDS Settings entry is replicated */
