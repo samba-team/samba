@@ -1016,12 +1016,111 @@ static NTSTATUS common_rids_to_names(struct winbindd_domain *domain,
 				     const struct dom_sid *sid,
 				     uint32 *rids,
 				     size_t num_rids,
-				     char **domain_name,
-				     char ***names,
-				     enum lsa_SidType **types)
+				     char **pdomain_name,
+				     char ***pnames,
+				     enum lsa_SidType **ptypes)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *lsa_pipe;
+	struct policy_handle lsa_policy;
+	enum lsa_SidType *types = NULL;
+	char *domain_name = NULL;
+	char **domains = NULL;
+	char **names = NULL;
+	struct dom_sid *sids;
+	size_t i;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: rids to names for domain %s\n", domain->name));
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (num_rids) {
+		sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_rids);
+		if (sids == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	} else {
+		sids = NULL;
+	}
+
+	for (i = 0; i < num_rids; i++) {
+		if (!sid_compose(&sids[i], sid, rids[i])) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto error;
+		}
+	}
+
+	/*
+	 * We don't run into deadlocks here, cause winbind_off() is called in
+	 * the main function.
+	 */
+	status = rpccli_lsa_lookup_sids(lsa_pipe,
+					tmp_ctx,
+					&lsa_policy,
+					num_rids,
+					sids,
+					&domains,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		DEBUG(2,("rids_to_names: failed to lookup sids: %s\n",
+			nt_errstr(status)));
+		goto error;
+	}
+
+	for (i = 0; i < num_rids; i++) {
+		char *mapped_name = NULL;
+		NTSTATUS map_status;
+
+		if (types[i] != SID_NAME_UNKNOWN) {
+			map_status = normalize_name_map(tmp_ctx,
+							domain,
+							names[i],
+							&mapped_name);
+			if (NT_STATUS_IS_OK(map_status) ||
+			    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
+				TALLOC_FREE(names[i]);
+				names[i] = talloc_strdup(names, mapped_name);
+				if (names[i] == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto error;
+				}
+			}
+
+			domain_name = domains[i];
+		}
+	}
+
+	if (pdomain_name) {
+		*pdomain_name = talloc_strdup(mem_ctx, domain_name);
+		if (*pdomain_name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	}
+
+	if (ptypes) {
+		*ptypes = talloc_move(mem_ctx, &types);
+	}
+
+	if (pnames) {
+		*pnames = talloc_move(mem_ctx, &names);
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 static NTSTATUS common_lockout_policy(struct winbindd_domain *domain,
