@@ -1402,11 +1402,73 @@ error:
 static NTSTATUS common_sequence_number(struct winbindd_domain *domain,
 				       uint32_t *seq)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
+	union samr_DomainInfo *info = NULL;
+	bool got_seq_num = false;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: sequence number\n"));
+
+	mem_ctx = talloc_init("common_sequence_number");
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (seq) {
+		*seq = DOM_SEQUENCE_NONE;
+	}
+
+	status = open_internal_samr_conn(mem_ctx, domain, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	/* query domain info */
+	status = rpccli_samr_QueryDomainInfo(samr_pipe,
+					     mem_ctx,
+					     &dom_pol,
+					     8,
+					     &info);
+	if (NT_STATUS_IS_OK(status)) {
+		if (seq) {
+			*seq = info->info8.sequence_num;
+			got_seq_num = true;
+		}
+		goto seq_num;
+	}
+
+	/* retry with info-level 2 in case the dc does not support info-level 8
+	 * (like all older samba2 and samba3 dc's) - Guenther */
+	status = rpccli_samr_QueryDomainInfo(samr_pipe,
+					     mem_ctx,
+					     &dom_pol,
+					     2,
+					     &info);
+	if (NT_STATUS_IS_OK(status)) {
+		if (seq) {
+			*seq = info->general.sequence_num;
+			got_seq_num = true;
+		}
+	}
+
+seq_num:
+	if (got_seq_num) {
+		DEBUG(10,("domain_sequence_number: for domain %s is %u\n",
+			  domain->name, (unsigned)*seq));
+	} else {
+		DEBUG(10,("domain_sequence_number: failed to get sequence "
+			  "number (%u) for domain %s\n",
+			  (unsigned) *seq, domain->name ));
+		status = NT_STATUS_OK;
+	}
+
+error:
+	talloc_destroy(mem_ctx);
+	return status;
 }
 
-#if 0
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods builtin_passdb_methods = {
 	.consistent            = false,
@@ -1446,4 +1508,3 @@ struct winbindd_methods sam_passdb_methods = {
 	.password_policy       = common_password_policy,
 	.trusted_domains       = sam_trusted_domains
 };
-#endif
