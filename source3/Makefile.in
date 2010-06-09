@@ -1179,7 +1179,6 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_rpc.o   \
 		winbindd/winbindd_reconnect.o \
 		winbindd/winbindd_ads.o   \
-		winbindd/winbindd_passdb.o \
 		winbindd/winbindd_samr.o \
 		winbindd/winbindd_dual.o  \
 		winbindd/winbindd_dual_ndr.o  \
