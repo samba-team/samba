@@ -401,7 +401,11 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	dstate = talloc(client, struct daemon_call_state);
 	if (dstate == NULL) {
-		ctdb_ltdb_unlock(ctdb_db, key);
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
+
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate dstate\n"));
 		if (client->ctdb->statistics.pending_calls > 0) {
 			ctdb->statistics.pending_calls--;
@@ -415,7 +419,11 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	call = dstate->call = talloc_zero(dstate, struct ctdb_call);
 	if (call == NULL) {
-		ctdb_ltdb_unlock(ctdb_db, key);
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
+
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
 		if (client->ctdb->statistics.pending_calls > 0) {
 			ctdb->statistics.pending_calls--;
@@ -436,7 +444,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		state = ctdb_daemon_call_send_remote(ctdb_db, call, &header);
 	}
 
-	ctdb_ltdb_unlock(ctdb_db, key);
+	ret = ctdb_ltdb_unlock(ctdb_db, key);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+	}
 
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));

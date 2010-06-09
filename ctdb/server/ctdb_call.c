@@ -245,6 +245,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_ltdb_header header;
+	int ret;
 
 	DEBUG(DEBUG_DEBUG,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
@@ -254,7 +255,11 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
-		ctdb_ltdb_unlock(ctdb_db, key);
+
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
 		return;
 	}
 
@@ -263,20 +268,31 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
 			 ctdb->pnn, hdr->reqid, hdr->srcnode));
-		ctdb_ltdb_unlock(ctdb_db, key);
+
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
 		DEBUG(DEBUG_ERR, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n from node %u", hdr->reqid, hdr->srcnode));
-		ctdb_ltdb_unlock(ctdb_db, key);
+
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
 		return;
 	}
 
 	ctdb_call_local(ctdb_db, state->call, &header, state, &data, ctdb->pnn);
 
-	ctdb_ltdb_unlock(ctdb_db, state->call->key);
+	ret = ctdb_ltdb_unlock(ctdb_db, key);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+	}
 
 	state->state = CTDB_CALL_DONE;
 	if (state->async.fn) {

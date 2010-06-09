@@ -170,7 +170,11 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 	if (ret == 0) {
 		ret = ctdb_ltdb_fetch(ctdb_db, key, header, hdr, data);
 		if (ret != 0) {
-			ctdb_ltdb_unlock(ctdb_db, key);
+			int uret;
+			uret = ctdb_ltdb_unlock(ctdb_db, key);
+			if (uret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", uret));
+			}
 		}
 	}
 	return ret;
