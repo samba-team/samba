@@ -476,23 +476,71 @@ void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 	exit_server_cleanly(reason);
 }
 
-static bool dup_smb2_vec(struct iovec *dstvec,
-			const struct iovec *srcvec,
-			int offset)
+static bool dup_smb2_vec3(TALLOC_CTX *ctx,
+			struct iovec *outvec,
+			const struct iovec *srcvec)
 {
+	/* vec[0] is always boilerplate and must
+	 * be allocated with size OUTVEC_ALLOC_SIZE. */
 
-	if (srcvec[offset].iov_len &&
-			srcvec[offset].iov_base) {
-		dstvec[offset].iov_base = talloc_memdup(dstvec,
-					srcvec[offset].iov_base,
-					srcvec[offset].iov_len);
-		if (!dstvec[offset].iov_base) {
+	outvec[0].iov_base = talloc_memdup(ctx,
+				srcvec[0].iov_base,
+				OUTVEC_ALLOC_SIZE);
+	if (!outvec[0].iov_base) {
+		return false;
+	}
+	outvec[0].iov_len = SMB2_HDR_BODY;
+
+	/*
+	 * If this is a "standard" vec[1] of length 8,
+	 * pointing to srcvec[0].iov_base + SMB2_HDR_BODY,
+	 * then duplicate this. Else use talloc_memdup().
+	 */
+
+	if (srcvec[1].iov_len == 8 &&
+			srcvec[1].iov_base ==
+				((uint8_t *)srcvec[0].iov_base) +
+					SMB2_HDR_BODY) {
+		outvec[1].iov_base = ((uint8_t *)outvec[1].iov_base) +
+					SMB2_HDR_BODY;
+		outvec[1].iov_len = 8;
+	} else {
+		outvec[1].iov_base = talloc_memdup(ctx,
+				srcvec[1].iov_base,
+				srcvec[1].iov_len);
+		if (!outvec[1].iov_base) {
 			return false;
 		}
-		dstvec[offset].iov_len = srcvec[offset].iov_len;
+		outvec[1].iov_len = srcvec[1].iov_len;
+	}
+
+	/*
+	 * If this is a "standard" vec[2] of length 1,
+	 * pointing to srcvec[0].iov_base + (OUTVEC_ALLOC_SIZE - 1)
+	 * then duplicate this. Else use talloc_memdup().
+	 */
+
+	if (srcvec[2].iov_base &&
+			srcvec[2].iov_len) {
+		if (srcvec[2].iov_base ==
+				((uint8_t *)srcvec[0].iov_base) +
+					(OUTVEC_ALLOC_SIZE - 1) &&
+				srcvec[2].iov_len == 1) {
+			/* Common SMB2 error packet case. */
+			outvec[2].iov_base = ((uint8_t *)outvec[0].iov_base) +
+				(OUTVEC_ALLOC_SIZE - 1);
+		} else {
+			outvec[2].iov_base = talloc_memdup(ctx,
+					srcvec[2].iov_base,
+					srcvec[2].iov_len);
+			if (!outvec[2].iov_base) {
+				return false;
+			}
+		}
+		outvec[2].iov_len = srcvec[2].iov_len;
 	} else {
-		dstvec[offset].iov_base = NULL;
-		dstvec[offset].iov_len = 0;
+		outvec[2].iov_base = NULL;
+		outvec[2].iov_len = 0;
 	}
 	return true;
 }
@@ -528,30 +576,9 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	outvec[0].iov_len = 4;
 	memcpy(newreq->out.nbt_hdr, req->out.nbt_hdr, 4);
 
+	/* Setup the vectors identically to the ones in req. */
 	for (i = 1; i < count; i += 3) {
-		/* i + 0 and i + 1 are always
-		 * boilerplate. */
-		outvec[i].iov_base = talloc_memdup(outvec,
-						req->out.vector[i].iov_base,
-						OUTVEC_ALLOC_SIZE);
-		if (!outvec[i].iov_base) {
-			break;
-		}
-		outvec[i].iov_len = SMB2_HDR_BODY;
-
-		outvec[i+1].iov_base = ((uint8_t *)outvec[i].iov_base) +
-						SMB2_HDR_BODY;
-		outvec[i+1].iov_len = 8;
-
-		if (req->out.vector[i+2].iov_base ==
-				((uint8_t *)req->out.vector[i].iov_base) +
-					(OUTVEC_ALLOC_SIZE - 1) &&
-				req->out.vector[i+2].iov_len == 1) {
-			/* Common SMB2 error packet case. */
-			outvec[i+2].iov_base = ((uint8_t *)outvec[i].iov_base) +
-				(OUTVEC_ALLOC_SIZE - 1);
-			outvec[i+2].iov_len = 1;
-		} else if (!dup_smb2_vec(outvec, req->out.vector, i+2)) {
+		if (!dup_smb2_vec3(outvec, &outvec[i], &req->out.vector[i])) {
 			break;
 		}
 	}
@@ -821,43 +848,16 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	if (!outvec) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/* 0 is always boilerplate and must
+	 * be of size 4 for the length field. */
+
 	outvec[0].iov_base = req->out.nbt_hdr;
 	outvec[0].iov_len = 4;
 	SIVAL(req->out.nbt_hdr, 0, 0);
 
-	outvec[1].iov_base = talloc_memdup(outvec,
-				req->out.vector[i].iov_base,
-				OUTVEC_ALLOC_SIZE);
-	if (!outvec[1].iov_base) {
+	if (!dup_smb2_vec3(outvec, &outvec[1], &req->out.vector[i])) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	outvec[1].iov_len = SMB2_HDR_BODY;
-
-	outvec[2].iov_base = ((uint8_t *)outvec[1].iov_base) +
-				SMB2_HDR_BODY;
-	outvec[2].iov_len = 8;
-
-	if (req->out.vector[i+2].iov_base &&
-			req->out.vector[i+2].iov_len) {
-		if (req->out.vector[i+2].iov_base ==
-				((uint8_t *)req->out.vector[i].iov_base) +
-					(OUTVEC_ALLOC_SIZE - 1) &&
-				req->out.vector[i].iov_len == 1) {
-			/* Common SMB2 error packet case. */
-			outvec[3].iov_base = ((uint8_t *)outvec[1].iov_base) +
-				(OUTVEC_ALLOC_SIZE - 1);
-		} else {
-			outvec[3].iov_base = talloc_memdup(outvec,
-					req->out.vector[i+2].iov_base,
-					req->out.vector[i+2].iov_len);
-			if (!outvec[3].iov_base) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		outvec[3].iov_len = req->out.vector[i+2].iov_len;
-	} else {
-		outvec[3].iov_base = NULL;
-		outvec[3].iov_len = 0;
 	}
 
 	TALLOC_FREE(req->out.vector);
