@@ -294,7 +294,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	result = pdb_get_seq_num(&seq_num);
 	if (!result) {
-		*seq = 1;
+		seq_num = 1;
 	}
 
 	*seq = (int) seq_num;
