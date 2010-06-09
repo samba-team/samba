@@ -81,17 +81,25 @@ static WERROR _dsdb_prefixmap_from_ldb_val(const struct ldb_val *pfm_ldb_val,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		talloc_free(temp_ctx);
+		DEBUG(0,("_dsdb_prefixmap_from_ldb_val: Failed to parse prefixmap of length %u: %s\n",
+			 (unsigned int)pfm_ldb_val->length, ndr_map_error2string(ndr_err)));
+		talloc_free(temp_ctx);
 		return ntstatus_to_werror(nt_status);
 	}
 
 	if (pfm_blob.version != PREFIX_MAP_VERSION_DSDB) {
-		DEBUG(0,("_dsdb_prefixmap_from_ldb_val: pfm_blob->version incorrect\n"));
+		DEBUG(0,("_dsdb_prefixmap_from_ldb_val: pfm_blob->version %u incorrect\n", (unsigned int)pfm_blob.version));
 		talloc_free(temp_ctx);
 		return WERR_VERSION_PARSE_ERROR;
 	}
 
 	/* call the drsuapi version */
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(&pfm_blob.ctr.dsdb, false, mem_ctx, _pfm, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " dsdb_schema_pfm_from_drsuapi_pfm failed: %s\n", win_errstr(werr)));
+		talloc_free(temp_ctx);
+		return werr;
+	}
 
 	talloc_free(temp_ctx);
 
@@ -113,12 +121,20 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 
 	/* parse schemaInfo blob to verify it is valid */
 	werr = dsdb_schema_info_from_blob(schemaInfo, mem_ctx, &schi);
-	W_ERROR_NOT_OK_GOTO(werr, DONE);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " dsdb_schema_info_from_blob failed: %s\n", win_errstr(werr)));
+		talloc_free(mem_ctx);
+		return werr;
+	}
 
 	/* fetch prefixMap */
 	werr = _dsdb_prefixmap_from_ldb_val(prefixMap,
 					    mem_ctx, &pfm);
-	W_ERROR_NOT_OK_GOTO(werr, DONE);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " _dsdb_prefixmap_from_ldb_val failed: %s\n", win_errstr(werr)));
+		talloc_free(mem_ctx);
+		return werr;
+	}
 
 	/* decode schema_info */
 	schema_info = hex_encode_talloc(mem_ctx,
@@ -136,11 +152,10 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	talloc_free(discard_const(schema->schema_info));
 	schema->schema_info = talloc_steal(schema, schema_info);
 
-DONE:
 	/* clean up locally allocated mem */
 	talloc_free(mem_ctx);
 
-	return werr;
+	return WERR_OK;
 }
 
 WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
