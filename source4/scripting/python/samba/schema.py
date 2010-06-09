@@ -53,7 +53,7 @@ def get_schema_descriptor(domain_sid):
 class Schema(object):
 
     def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
-                 serverdn=None, files=None, prefixmap=None, am_rodc=False):
+                 serverdn=None, files=None, override_prefixmap=None, additional_prefixmap=None, am_rodc=False):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.
@@ -92,10 +92,13 @@ class Schema(object):
             setup_path("provision_schema_basedn.ldif"),
             {"SCHEMADN": schemadn, "DESCRIPTOR": descr})
 
-        self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+        if override_prefixmap is not None:
+            self.prefixmap_data = override_prefixmap
+        else:
+            self.prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
 
-        if prefixmap is not None:
-            for map in prefixmap:
+        if additional_prefixmap is not None:
+            for map in additional_prefixmap:
                 self.prefixmap_data += "%s\n" % map
 
         self.prefixmap_data = b64encode(self.prefixmap_data)

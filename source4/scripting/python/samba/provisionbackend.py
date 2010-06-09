@@ -604,7 +604,7 @@ class FDSBackend(LDAPBackend):
                 schemadn=self.names.schemadn,
                 serverdn=self.names.serverdn,
                 files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
-                prefixmap=["1000:1.3.6.1.4.1.7165.2.1", "1001:1.3.6.1.4.1.7165.2.2"])
+                additional_prefixmap=["1000:1.3.6.1.4.1.7165.2.1", "1001:1.3.6.1.4.1.7165.2.2"])
 
     def provision(self):
         from samba.provision import ProvisioningError
