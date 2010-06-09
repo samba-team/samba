@@ -1211,6 +1211,8 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(struct ldb_context *ldb,
 					     TALLOC_CTX *mem_ctx,
 					     struct ldb_message_element *out)
 {
+	WERROR werr;
+
 	switch (attr->attributeID_id) {
 	case DRSUAPI_ATTRIBUTE_objectClass:
 	case DRSUAPI_ATTRIBUTE_subClassOf:
@@ -1218,23 +1220,35 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(struct ldb_context *ldb,
 	case DRSUAPI_ATTRIBUTE_systemAuxiliaryClass:
 	case DRSUAPI_ATTRIBUTE_systemPossSuperiors:
 	case DRSUAPI_ATTRIBUTE_possSuperiors:
-		return _dsdb_syntax_OID_obj_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		werr = _dsdb_syntax_OID_obj_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		break;
 	case DRSUAPI_ATTRIBUTE_systemMustContain:
 	case DRSUAPI_ATTRIBUTE_systemMayContain:	
 	case DRSUAPI_ATTRIBUTE_mustContain:
 	case DRSUAPI_ATTRIBUTE_rDNAttId:
 	case DRSUAPI_ATTRIBUTE_transportAddressAttribute:
 	case DRSUAPI_ATTRIBUTE_mayContain:
-		return _dsdb_syntax_OID_attr_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		werr = _dsdb_syntax_OID_attr_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		break;
 	case DRSUAPI_ATTRIBUTE_governsID:
 	case DRSUAPI_ATTRIBUTE_attributeID:
 	case DRSUAPI_ATTRIBUTE_attributeSyntax:
-		return _dsdb_syntax_OID_oid_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		werr = _dsdb_syntax_OID_oid_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+		break;
+	default:
+		DEBUG(0,(__location__ ": Unknown handling for attributeID_id for %s\n",
+			 attr->lDAPDisplayName));
+		return _dsdb_syntax_auto_OID_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
 	}
 
-	DEBUG(0,(__location__ ": Unknown handling for attributeID_id for %s\n",
-		 attr->lDAPDisplayName));
-	return _dsdb_syntax_auto_OID_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+	/* When we are doing the vampire of a schema, we don't want
+	 * the inablity to reference an OID to get in the way.
+	 * Otherwise, we won't get the new schema with which to
+	 * understand this */
+	if (!W_ERROR_IS_OK(werr) && schema->relax_OID_conversions) {
+		return _dsdb_syntax_OID_oid_drsuapi_to_ldb(ldb, schema, attr, in, mem_ctx, out);
+	}
+	return werr;
 }
 
 static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb, 

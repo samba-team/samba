@@ -221,6 +221,9 @@ struct dsdb_schema {
 	bool refresh_in_progress;
 	/* an 'opaque' sequence number that the reload function may also wish to use */
 	uint64_t reload_seq_number;
+
+	/* Should the syntax handlers in this case handle all incoming OIDs automatically, assigning them as an OID if no text name is known? */
+	bool relax_OID_conversions;
 };
 
 enum dsdb_attr_list_query {

@@ -60,6 +60,7 @@ struct libnet_vampire_cb_state {
 	const char *realm;
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *self_made_schema;
+	struct dsdb_schema *provision_schema;
 	const struct dsdb_schema *schema;
 
 	struct ldb_context *ldb;
@@ -139,6 +140,7 @@ NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
 
 	s->ldb = talloc_steal(s, result.samdb);
 	s->lp_ctx = talloc_steal(s, result.lp_ctx);
+	s->provision_schema = dsdb_get_schema(s->ldb, s);
 
 	/* wrap the entire vapire operation in a transaction.  This
 	   isn't just cosmetic - we use this to ensure that linked
@@ -248,6 +250,8 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
+
+	s->provision_schema->relax_OID_conversions = true;
 
 	/* Now convert the schema elements again, using the schema we just imported */
 	status = dsdb_extended_replicated_objects_convert(s->ldb,
