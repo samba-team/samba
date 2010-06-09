@@ -276,6 +276,16 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
+	if (key.dsize != state->call->key.dsize || memcmp(key.dptr, state->call->key.dptr, key.dsize)) {
+		DEBUG(DEBUG_ERR, ("Got bogus DMASTER packet reqid:%u\n from node %u. Key does not match key held in matching idr.", hdr->reqid, hdr->srcnode));
+
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
+		return;
+	}
+
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
 		DEBUG(DEBUG_ERR, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n from node %u", hdr->reqid, hdr->srcnode));
@@ -289,7 +299,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 
 	ctdb_call_local(ctdb_db, state->call, &header, state, &data, ctdb->pnn);
 
-	ret = ctdb_ltdb_unlock(ctdb_db, key);
+	ret = ctdb_ltdb_unlock(ctdb_db, state->call->key);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 	}
