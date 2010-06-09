@@ -168,30 +168,39 @@ WERROR dsdb_get_oid_mappings_drsuapi(const struct dsdb_schema *schema,
 						mem_ctx, _ctr);
 }
 
-WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
-				 TALLOC_CTX *mem_ctx,
-				 struct ldb_val *prefixMap,
-				 struct ldb_val *schemaInfo)
+WERROR dsdb_get_drsuapi_prefixmap_as_blob(const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr,
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_val *prefixMap)
 {
-	WERROR status;
-	enum ndr_err_code ndr_err;
-	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 	struct prefixMapBlob pfm;
-
-	status = dsdb_get_oid_mappings_drsuapi(schema, false, mem_ctx, &ctr);
-	W_ERROR_NOT_OK_RETURN(status);
-
+	enum ndr_err_code ndr_err;
 	pfm.version	= PREFIX_MAP_VERSION_DSDB;
 	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
 	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, &pfm,
 					(ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
-	talloc_free(ctr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		return ntstatus_to_werror(nt_status);
 	}
+	return WERR_OK;
+}
+
+WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
+				 TALLOC_CTX *mem_ctx,
+				 struct ldb_val *prefixMap,
+				 struct ldb_val *schemaInfo)
+{
+	WERROR status;
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+
+	status = dsdb_get_oid_mappings_drsuapi(schema, false, mem_ctx, &ctr);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	status = dsdb_get_drsuapi_prefixmap_as_blob(ctr, mem_ctx, prefixMap);
+	talloc_free(ctr);
+	W_ERROR_NOT_OK_RETURN(status);
 
 	*schemaInfo = strhex_to_data_blob(mem_ctx, schema->schema_info);
 	W_ERROR_HAVE_NO_MEMORY(schemaInfo->data);
