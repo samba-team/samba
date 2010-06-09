@@ -61,6 +61,7 @@ struct libnet_vampire_cb_state {
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *self_made_schema;
 	struct dsdb_schema *provision_schema;
+	DATA_BLOB prefixmap_blob;
 	const struct dsdb_schema *schema;
 
 	struct ldb_context *ldb;
@@ -266,7 +267,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 							  c->gensec_skey,
 							  s, &schema_objs_1);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects when trying to import over DRS (1st pass, to create local schema): %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
@@ -307,7 +308,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 							  c->gensec_skey,
 							  s, &schema_objs_2);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
+		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
@@ -423,6 +424,16 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 	}
 
 	if (!s->schema) {
+		WERROR werr;
+		/* Put the DRS prefixmap aside for the schema we are
+		 * about to load in the provision, and into the one we
+		 * are making with the help of DRS */
+
+		werr = dsdb_get_drsuapi_prefixmap_as_blob(mapping_ctr, s, &s->prefixmap_blob);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werror_to_ntstatus(werr);
+		}
+
 		s->self_made_schema = dsdb_new_schema(s);
 
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
