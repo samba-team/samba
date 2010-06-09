@@ -385,8 +385,8 @@ bool test_group_create(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(r.out.result));
 
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_USER_EXISTS)) {
-			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate account again\n", name);
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_GROUP_EXISTS)) {
+			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate group again\n", name);
 			if (!test_group_cleanup(tctx, b, mem_ctx, handle, name)) {
 				return false;
 			}
