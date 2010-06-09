@@ -390,6 +390,15 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 		return ret;
 	}
 
+	if (talloc_reference(ldb, schema) == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_schema_set_attributes(ldb, schema, write_attributes);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	return LDB_SUCCESS;
 }
 
