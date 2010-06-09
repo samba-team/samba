@@ -49,6 +49,26 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	smbreq->mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	smbreq->chain_fsp = req->compat_chain_fsp;
 	smbreq->smb2req = req;
+	req->smb1req = smbreq;
 
 	return smbreq;
+}
+
+/*********************************************************
+ Called from file_free() to remove any chained fsp pointers.
+*********************************************************/
+
+void remove_smb2_chained_fsp(files_struct *fsp)
+{
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_smb2_request *smb2req;
+
+	for (smb2req = sconn->smb2.requests; smb2req; smb2req = smb2req->next) {
+		if (smb2req->compat_chain_fsp == fsp) {
+			smb2req->compat_chain_fsp = NULL;
+		}
+		if (smb2req->smb1req && smb2req->smb1req->chain_fsp == fsp) {
+			smb2req->smb1req->chain_fsp = NULL;
+		}
+	}
 }

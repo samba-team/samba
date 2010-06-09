@@ -503,6 +503,14 @@ void file_free(struct smb_request *req, files_struct *fsp)
 		req->chain_fsp = NULL;
 	}
 
+	/*
+	 * Clear all possible chained fsp
+	 * pointers in the SMB2 request queue.
+	 */
+	if (req != NULL && req->smb2req) {
+		remove_smb2_chained_fsp(fsp);
+	}
+
 	/* Closing a file can invalidate the positive cache. */
 	if (fsp == fsp_fi_cache.fsp) {
 		ZERO_STRUCT(fsp_fi_cache);

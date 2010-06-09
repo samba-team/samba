@@ -277,6 +277,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req);
 
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req);
+void remove_smb2_chained_fsp(files_struct *fsp);
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
@@ -353,6 +354,8 @@ struct smbd_smb2_request {
 	bool async;
 	bool cancelled;
 
+	/* fake smb1 request. */
+	struct smb_request *smb1req;
 	struct files_struct *compat_chain_fsp;
 
 	NTSTATUS next_status;
