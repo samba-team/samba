@@ -543,7 +543,7 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 #ifdef HAVE_STAT_ST_BLOCKS
 	dst->st_ex_blocks = src->st_blocks;
 #else
-	dst->st_ex_blocks = src->st_size % STAT_ST_BLOCKSIZE + 1;
+	dst->st_ex_blocks = src->st_size / dst->st_ex_blksize + 1;
 #endif
 
 #ifdef HAVE_STAT_ST_FLAGS
