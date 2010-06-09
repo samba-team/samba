@@ -237,7 +237,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	sbuf->st_ex_ino = stream_inode(sbuf, io->xattr_name);
 	sbuf->st_ex_mode &= ~S_IFMT;
         sbuf->st_ex_mode |= S_IFREG;
-        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
+        sbuf->st_ex_blocks = sbuf->st_ex_size / STAT_ST_BLOCKSIZE + 1;
 
 	return 0;
 }
@@ -290,7 +290,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	smb_fname->st.st_ex_mode &= ~S_IFMT;
         smb_fname->st.st_ex_mode |= S_IFREG;
         smb_fname->st.st_ex_blocks =
-	    smb_fname->st.st_ex_size % STAT_ST_BLOCKSIZE + 1;
+	    smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
  fail:
@@ -341,7 +341,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 	smb_fname->st.st_ex_mode &= ~S_IFMT;
         smb_fname->st.st_ex_mode |= S_IFREG;
         smb_fname->st.st_ex_blocks =
-	    smb_fname->st.st_ex_size % STAT_ST_BLOCKSIZE + 1;
+	    smb_fname->st.st_ex_size / STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
 
