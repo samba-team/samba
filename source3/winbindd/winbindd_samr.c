@@ -936,8 +936,79 @@ static NTSTATUS common_sid_to_name(struct winbindd_domain *domain,
 				   char **name,
 				   enum lsa_SidType *type)
 {
-	/* TODO FIXME */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct rpc_pipe_client *lsa_pipe;
+	struct policy_handle lsa_policy;
+	char *mapped_name = NULL;
+	char **domains = NULL;
+	char **names = NULL;
+	enum lsa_SidType *types = NULL;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS map_status;
+	NTSTATUS status;
+
+	DEBUG(3,("samr: sid to name\n"));
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	/*
+	 * We don't run into deadlocks here, cause winbind_off() is called in
+	 * the main function.
+	 */
+	status = rpccli_lsa_lookup_sids(lsa_pipe,
+					tmp_ctx,
+					&lsa_policy,
+					1, /* num_sids */
+					sid,
+					&domains,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("sid_to_name: failed to lookup sids: %s\n",
+			nt_errstr(status)));
+		goto error;
+	}
+
+	if (type) {
+		*type = (enum lsa_SidType) types[0];
+	}
+
+	if (name) {
+		map_status = normalize_name_map(tmp_ctx,
+						domain,
+						*name,
+						&mapped_name);
+		if (NT_STATUS_IS_OK(map_status) ||
+		    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
+			*name = talloc_strdup(mem_ctx, mapped_name);
+			DEBUG(5,("returning mapped name -- %s\n", *name));
+		} else {
+			*name = talloc_strdup(mem_ctx, names[0]);
+		}
+		if (*name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	}
+
+	if (domain_name) {
+		*domain_name = talloc_strdup(mem_ctx, domains[0]);
+		if (*domain_name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+	}
+
+error:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 static NTSTATUS common_rids_to_names(struct winbindd_domain *domain,
