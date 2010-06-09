@@ -380,7 +380,11 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 		ctdb_become_dmaster(ctdb_db, hdr, key, data, c->rsn);
 	} else {
 		ctdb_send_dmaster_reply(ctdb_db, &header, key, data, c->dmaster, hdr->reqid);
-		ctdb_ltdb_unlock(ctdb_db, key);
+
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
 	}
 }
 
@@ -441,7 +445,11 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (header.dmaster != ctdb->pnn) {
 		talloc_free(data.dptr);
 		ctdb_call_send_redirect(ctdb, call->key, c, &header);
-		ctdb_ltdb_unlock(ctdb_db, call->key);
+
+		ret = ctdb_ltdb_unlock(ctdb_db, call->key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+		}
 		return;
 	}
 
@@ -466,14 +474,21 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 				 ctdb->pnn, ctdb_hash(&(call->key)), c->hdr.srcnode));
 			ctdb_call_send_dmaster(ctdb_db, c, &header, &(call->key), &data);
 			talloc_free(data.dptr);
-			ctdb_ltdb_unlock(ctdb_db, call->key);
+
+			ret = ctdb_ltdb_unlock(ctdb_db, call->key);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+			}
 			return;
 		}
 	}
 
 	ctdb_call_local(ctdb_db, call, &header, hdr, &data, c->hdr.srcnode);
 
-	ctdb_ltdb_unlock(ctdb_db, call->key);
+	ret = ctdb_ltdb_unlock(ctdb_db, call->key);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
+	}
 
 	len = offsetof(struct ctdb_reply_call, data) + call->reply_data.dsize;
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CALL, len, 
