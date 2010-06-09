@@ -170,11 +170,66 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 
 struct smbd_smb2_read_state {
 	struct smbd_smb2_request *smb2req;
+	files_struct *fsp;
+	uint32_t in_length;
+	uint64_t in_offset;
+	uint32_t in_minimum;
 	DATA_BLOB out_data;
 	uint32_t out_remaining;
 };
 
 static void smbd_smb2_read_pipe_done(struct tevent_req *subreq);
+
+/*******************************************************************
+ Common read complete processing function for both synchronous and
+ asynchronous reads.
+*******************************************************************/
+
+NTSTATUS smb2_read_complete(struct tevent_req *req, ssize_t nread, int err)
+{
+	struct smbd_smb2_read_state *state = tevent_req_data(req,
+					struct smbd_smb2_read_state);
+	files_struct *fsp = state->fsp;
+
+	if (nread < 0) {
+		NTSTATUS status = map_nt_error_from_unix(err);
+
+		DEBUG( 3,( "smb2_read_complete: file %s nread = %d. "
+			"Error = %s (NTSTATUS %s)\n",
+			fsp_str_dbg(fsp),
+			(int)nread,
+			strerror(err),
+			nt_errstr(status)));
+
+		return status;
+	}
+	if (nread == 0 && state->in_length != 0) {
+		DEBUG(5,("smb2_read_complete: read_file[%s] end of file\n",
+			fsp_str_dbg(fsp)));
+		return NT_STATUS_END_OF_FILE;
+	}
+
+	if (nread < state->in_minimum) {
+		DEBUG(5,("smb2_read_complete: read_file[%s] read less %d than "
+			"minimum requested %u. Returning end of file\n",
+			fsp_str_dbg(fsp),
+			(int)nread,
+			(unsigned int)state->in_minimum));
+		return NT_STATUS_END_OF_FILE;
+	}
+
+	DEBUG(3,("smbd_smb2_read: fnum=[%d/%s] length=%lu offset=%lu read=%lu\n",
+		fsp->fnum,
+		fsp_str_dbg(fsp),
+		(unsigned long)state->in_length,
+		(unsigned long)state->in_offset,
+		(unsigned long)nread));
+
+	state->out_data.length = nread;
+	state->out_remaining = 0;
+
+	return NT_STATUS_OK;
+}
 
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -186,13 +241,15 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      uint32_t in_minimum,
 					      uint32_t in_remaining)
 {
-	struct tevent_req *req;
-	struct smbd_smb2_read_state *state;
-	struct smb_request *smbreq;
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_read_state *state = NULL;
+	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp;
+	files_struct *fsp = NULL;
 	ssize_t nread = -1;
 	struct lock_struct lock;
+	int saved_errno;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_read_state);
@@ -200,6 +257,9 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
+	state->in_length = in_length;
+	state->in_offset = in_offset;
+	state->in_minimum = in_minimum;
 	state->out_data = data_blob_null;
 	state->out_remaining = 0;
 
@@ -234,8 +294,10 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	state->fsp = fsp;
+
 	if (IS_IPC(smbreq->conn)) {
-		struct tevent_req *subreq;
+		struct tevent_req *subreq = NULL;
 
 		if (!fsp_is_np(fsp)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
@@ -277,6 +339,8 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 			  in_offset,
 			  in_length);
 
+	saved_errno = errno;
+
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
 	DEBUG(10,("smbd_smb2_read: file %s handle [0x%016llX] offset=%llu "
@@ -287,38 +351,13 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		(unsigned long long)in_length,
 		(long long)nread));
 
-	if (nread < 0) {
-		DEBUG(5,("smbd_smb2_read: read_file[%s] nread[%lld]\n",
-			 fsp_str_dbg(fsp), (long long)nread));
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return tevent_req_post(req, ev);
+	status = smb2_read_complete(req, nread, saved_errno);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+	} else {
+		/* Success. */
+		tevent_req_done(req);
 	}
-	if (nread == 0 && in_length != 0) {
-		DEBUG(5,("smbd_smb2_read: read_file[%s] end of file\n",
-			 fsp_str_dbg(fsp)));
-		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
-		return tevent_req_post(req, ev);
-	}
-
-	if (nread < in_minimum) {
-		DEBUG(5,("smbd_smb2_read: read_file[%s] read less %d than "
-			"minimum requested %u. Returning end of file\n",
-			 fsp_str_dbg(fsp),
-			(int)nread,
-			(unsigned int)in_minimum));
-		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
-		return tevent_req_post(req, ev);
-	}
-
-	DEBUG(3,("smbd_smb2_read: fnum=[%d/%s] length=%lu offset=%lu read=%lu\n",
-		fsp->fnum, fsp_str_dbg(fsp),
-		(unsigned long)in_length,
-		(unsigned long)in_offset,
-		(unsigned long)nread));
-
-	state->out_data.length = nread;
-	state->out_remaining = 0;
-	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
 
