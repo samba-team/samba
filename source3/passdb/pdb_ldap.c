@@ -4441,12 +4441,6 @@ static bool ldapsam_search_firstpage(struct pdb_search *search)
         }
         state->current_entry = ldap_first_entry(ld, state->entries);
 
-	if (state->current_entry == NULL) {
-		ldap_msgfree(state->entries);
-		state->entries = NULL;
-		return false;
-	}
-
 	return True;
 }
 
@@ -4489,6 +4483,10 @@ static bool ldapsam_search_next_entry(struct pdb_search *search,
 	bool result;
 
  retry:
+	if (state->current_entry == NULL) {
+		return false;
+	}
+
 	if ((state->entries == NULL) && (state->pagedresults_cookie == NULL))
 		return False;
 
