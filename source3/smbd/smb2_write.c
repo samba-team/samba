@@ -171,11 +171,52 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq)
 
 struct smbd_smb2_write_state {
 	struct smbd_smb2_request *smb2req;
+	files_struct *fsp;
+	bool write_through;
 	uint32_t in_length;
+	uint64_t in_offset;
 	uint32_t out_count;
 };
 
 static void smbd_smb2_write_pipe_done(struct tevent_req *subreq);
+
+NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
+{
+	NTSTATUS status;
+	struct smbd_smb2_write_state *state = tevent_req_data(req,
+					struct smbd_smb2_write_state);
+	files_struct *fsp = state->fsp;
+
+	DEBUG(3,("smb2: fnum=[%d/%s] "
+		"length=%lu offset=%lu wrote=%lu\n",
+		fsp->fnum,
+		fsp_str_dbg(fsp),
+		(unsigned long)state->in_length,
+		(unsigned long)state->in_offset,
+		(unsigned long)nwritten));
+
+	if (nwritten == -1) {
+		return map_nt_error_from_unix(err);
+	}
+
+	if ((nwritten == 0) && (state->in_length != 0)) {
+		DEBUG(5,("smb2: write [%s] disk full\n",
+			fsp_str_dbg(fsp)));
+		return NT_STATUS_DISK_FULL;
+	}
+
+	status = sync_file(fsp->conn, fsp, state->write_through);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("smb2: sync_file for %s returned %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status)));
+		return status;
+	}
+
+	state->out_count = nwritten;
+
+	return NT_STATUS_OK;
+}
 
 static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -187,13 +228,12 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       uint32_t in_flags)
 {
 	NTSTATUS status;
-	struct tevent_req *req;
-	struct smbd_smb2_write_state *state;
-	struct smb_request *smbreq;
+	struct tevent_req *req = NULL;
+	struct smbd_smb2_write_state *state = NULL;
+	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp;
+	files_struct *fsp = NULL;
 	ssize_t nwritten;
-	bool write_through = false;
 	struct lock_struct lock;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -202,6 +242,9 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
+	if (in_flags & 0x00000001) {
+		state->write_through = true;
+	}
 	state->in_length = in_data.length;
 	state->out_count = 0;
 
@@ -227,8 +270,10 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	state->fsp = fsp;
+
 	if (IS_IPC(smbreq->conn)) {
-		struct tevent_req *subreq;
+		struct tevent_req *subreq = NULL;
 
 		if (!fsp_is_np(fsp)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
@@ -270,47 +315,24 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 			      in_offset,
 			      in_data.length);
 
-
-        DEBUG(10,("smbd_smb2_write: file %s handle [0x%016llX] offset=%llu "
-		"len=%llu returned %lld\n",
-		fsp_str_dbg(fsp),
-		(unsigned long long)in_file_id_volatile,
-		(unsigned long long)in_offset,
-		(unsigned long long)in_data.length,
-		(long long)nwritten));
-
-	if (((nwritten == 0) && (in_data.length != 0)) || (nwritten < 0)) {
-		DEBUG(5,("smbd_smb2_write: write_file[%s] disk full\n",
-			 fsp_str_dbg(fsp)));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-		tevent_req_nterror(req, NT_STATUS_DISK_FULL);
-		return tevent_req_post(req, ev);
-	}
-
-	DEBUG(3,("smbd_smb2_write: fnum=[%d/%s] length=%lu offset=%lu wrote=%lu\n",
-		fsp->fnum, fsp_str_dbg(fsp),
-		(unsigned long)in_data.length,
-		(unsigned long)in_offset,
-		(unsigned long)nwritten));
-
-	if (in_flags & 0x00000001) {
-		write_through = true;
-	}
-
-	status = sync_file(conn, fsp, write_through);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("smbd_smb2_write: sync_file for %s returned %s\n",
-			fsp_str_dbg(fsp), nt_errstr(status)));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
+	status = smb2_write_complete(req, nwritten, errno);
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
-	state->out_count = nwritten;
+	DEBUG(10,("smb2: write on "
+		"file %s, offset %.0f, requested %u, written = %u\n",
+		fsp_str_dbg(fsp),
+		(double)in_offset,
+		(unsigned int)in_data.length,
+		(unsigned int)nwritten ));
 
-	tevent_req_done(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+	} else {
+		/* Success. */
+		tevent_req_done(req);
+	}
+
 	return tevent_req_post(req, ev);
 }
 
