@@ -57,16 +57,13 @@ bool torture_groupinfo_api(struct torture_context *torture)
 	bool ret = true;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
-	struct libnet_context *ctx;
+	struct libnet_context *ctx = NULL;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
 	struct libnet_GroupInfo req;
 
 	prep_mem_ctx = talloc_init("prepare torture group info");
-
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
 					&p,
@@ -87,6 +84,10 @@ bool torture_groupinfo_api(struct torture_context *torture)
 	}
 
 	mem_ctx = talloc_init("torture group info");
+
+	if (!test_libnet_context_init(torture, true, &ctx)) {
+		return false;
+	}
 
 	ZERO_STRUCT(req);
 
@@ -113,9 +114,8 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		ret = false;
 	}
 
-	talloc_free(ctx);
-
 done:
+	talloc_free(ctx);
 	talloc_free(mem_ctx);
 	return ret;
 }

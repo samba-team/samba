@@ -54,14 +54,15 @@ bool torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
-	struct libnet_context *ctx;
+	struct libnet_context *ctx = NULL;
 	struct libnet_CreateUser req;
 	bool ret = true;
 
 	mem_ctx = talloc_init("test_createuser");
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	if (!test_libnet_context_init(torture, true, &ctx)) {
+		return false;
+	}
 
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup(torture->lp_ctx);
@@ -102,14 +103,11 @@ bool torture_deleteuser(struct torture_context *torture)
 	struct policy_handle h;
 	struct lsa_String domain_name;
 	const char *name = TEST_USERNAME;
-	struct libnet_context *ctx;
+	struct libnet_context *ctx = NULL;
 	struct libnet_DeleteUser req;
 	bool ret = true;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;
 	req.in.domain_name = lp_workgroup(torture->lp_ctx);
@@ -134,6 +132,10 @@ bool torture_deleteuser(struct torture_context *torture)
 	}
 
 	mem_ctx = talloc_init("test_deleteuser");
+
+	if (!test_libnet_context_init(torture, true, &ctx)) {
+		return false;
+	}
 
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -320,7 +322,7 @@ bool torture_modifyuser(struct torture_context *torture)
 	struct policy_handle h;
 	struct lsa_String domain_name;
 	char *name;
-	struct libnet_context *ctx;
+	struct libnet_context *ctx = NULL;
 	struct libnet_ModifyUser req;
 	struct libnet_UserInfo user_req;
 	int fld;
@@ -328,9 +330,6 @@ bool torture_modifyuser(struct torture_context *torture)
 	struct dcerpc_binding_handle *b;
 
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
 					&p,
@@ -356,7 +355,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	torture_comment(torture, "Testing change of all fields - each single one in turn\n");
 
-	if (!_libnet_context_init_pipes(torture, ctx)) {
+	if (!test_libnet_context_init(torture, true, &ctx)) {
 		return false;
 	}
 
@@ -439,7 +438,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 	bool ret = true;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL, *prep_mem_ctx;
-	struct libnet_context *ctx;
+	struct libnet_context *ctx = NULL;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
@@ -447,9 +446,6 @@ bool torture_userinfo_api(struct torture_context *torture)
 	struct dcerpc_binding_handle *b;
 
 	prep_mem_ctx = talloc_init("prepare torture user info");
-
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
 
 	status = torture_rpc_connection(torture,
 					&p,
@@ -471,6 +467,10 @@ bool torture_userinfo_api(struct torture_context *torture)
 	}
 
 	mem_ctx = talloc_init("torture user info");
+
+	if (!test_libnet_context_init(torture, true, &ctx)) {
+		return false;
+	}
 
 	ZERO_STRUCT(req);
 
@@ -498,9 +498,8 @@ bool torture_userinfo_api(struct torture_context *torture)
 		ret = false;
 	}
 
-	talloc_free(ctx);
-
 done:
+	talloc_free(ctx);
 	talloc_free(mem_ctx);
 	return ret;
 }
