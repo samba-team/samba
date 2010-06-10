@@ -1395,6 +1395,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+	struct samldb_ctx *ac;
 	struct ldb_message *msg;
 	struct ldb_message_element *el, *el2;
 	int ret;
@@ -1419,6 +1420,11 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
+	}
+
+	ac = samldb_ctx_init(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* TODO: do not modify original request, create a new one */
@@ -1447,12 +1453,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
 	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		struct samldb_ctx *ac;
-
-		ac = samldb_ctx_init(module, req);
-		if (ac == NULL)
-			return LDB_ERR_OPERATIONS_ERROR;
-
 		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
 			req->op.mod.message);
 
@@ -1511,12 +1511,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(req->op.mod.message, "member");
 	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		struct samldb_ctx *ac;
-
-		ac = samldb_ctx_init(module, req);
-		if (ac == NULL)
-			return LDB_ERR_OPERATIONS_ERROR;
-
 		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
 			req->op.mod.message);
 
