@@ -2394,7 +2394,13 @@ static int client_get_tcp_info(struct sockaddr_storage *server,
  */
 static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	bool ret;
+
+	if (sconn->allow_smb2) {
+		/* Don't do keepalives on an SMB2 connection. */
+		return false;
+	}
 
 	smbd_lock_socket(smbd_server_conn);
 	ret = send_keepalive(smbd_server_fd());
