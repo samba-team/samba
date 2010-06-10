@@ -76,11 +76,15 @@ static void set_incoming_fault(pipes_struct *p)
 
 static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 {
-	size_t len_needed_to_complete_hdr = MIN(data_to_copy, RPC_HEADER_LEN - p->in_data.pdu_received_len);
+	size_t len_needed_to_complete_hdr =
+		MIN(data_to_copy, RPC_HEADER_LEN - p->in_data.pdu_received_len);
 
-	DEBUG(10,("fill_rpc_header: data_to_copy = %u, len_needed_to_complete_hdr = %u, receive_len = %u\n",
-			(unsigned int)data_to_copy, (unsigned int)len_needed_to_complete_hdr,
-			(unsigned int)p->in_data.pdu_received_len ));
+	DEBUG(10, ("fill_rpc_header: data_to_copy = %u, "
+		   "len_needed_to_complete_hdr = %u, "
+		   "receive_len = %u\n",
+		   (unsigned int)data_to_copy,
+		   (unsigned int)len_needed_to_complete_hdr,
+		   (unsigned int)p->in_data.pdu_received_len ));
 
 	if (p->in_data.current_in_pdu == NULL) {
 		p->in_data.current_in_pdu = talloc_array(p, uint8_t,
@@ -91,7 +95,8 @@ static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 		return -1;
 	}
 
-	memcpy((char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len], data, len_needed_to_complete_hdr);
+	memcpy((char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len],
+		data, len_needed_to_complete_hdr);
 	p->in_data.pdu_received_len += len_needed_to_complete_hdr;
 
 	return (ssize_t)len_needed_to_complete_hdr;
@@ -110,7 +115,8 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	prs_struct rpc_in;
 
 	if(p->in_data.pdu_received_len != RPC_HEADER_LEN) {
-		DEBUG(0,("unmarshall_rpc_header: assert on rpc header length failed.\n"));
+		DEBUG(0, ("unmarshall_rpc_header: "
+			  "assert on rpc header length failed.\n"));
 		set_incoming_fault(p);
 		return -1;
 	}
@@ -128,7 +134,8 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	 */
 
 	if(!smb_io_rpc_hdr("", &p->hdr, &rpc_in, 0)) {
-		DEBUG(0,("unmarshall_rpc_header: failed to unmarshall RPC_HDR.\n"));
+		DEBUG(0, ("unmarshall_rpc_header: "
+			  "failed to unmarshall RPC_HDR.\n"));
 		set_incoming_fault(p);
 		prs_mem_free(&rpc_in);
 		return -1;
@@ -139,14 +146,16 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	 */
 
 	if(p->hdr.major != 5 && p->hdr.minor != 0) {
-		DEBUG(0,("unmarshall_rpc_header: invalid major/minor numbers in RPC_HDR.\n"));
+		DEBUG(0, ("unmarshall_rpc_header: "
+			  "invalid major/minor numbers in RPC_HDR.\n"));
 		set_incoming_fault(p);
 		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
 	/*
-	 * If there's not data in the incoming buffer this should be the start of a new RPC.
+	 * If there's not data in the incoming buffer this should be the
+	 * start of a new RPC.
 	 */
 
 	if(prs_offset(&p->in_data.data) == 0) {
@@ -155,13 +164,15 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		 * AS/U doesn't set FIRST flag in a BIND packet it seems.
 		 */
 
-		if ((p->hdr.pkt_type == DCERPC_PKT_REQUEST) && !(p->hdr.flags & DCERPC_PFC_FLAG_FIRST)) {
+		if ((p->hdr.pkt_type == DCERPC_PKT_REQUEST) &&
+		    !(p->hdr.flags & DCERPC_PFC_FLAG_FIRST)) {
 			/*
-			 * Ensure that the FIRST flag is set. If not then we have
-			 * a stream missmatch.
+			 * Ensure that the FIRST flag is set.
+			 * If not then we have a stream missmatch.
 			 */
 
-			DEBUG(0,("unmarshall_rpc_header: FIRST flag not set in first PDU !\n"));
+			DEBUG(0, ("unmarshall_rpc_header: "
+				  "FIRST flag not set in first PDU !\n"));
 			set_incoming_fault(p);
 			prs_mem_free(&rpc_in);
 			return -1;
@@ -175,8 +186,8 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 
 		p->endian = rpc_in.bigendian_data;
 
-		DEBUG(5,("unmarshall_rpc_header: using %sendian RPC\n",
-				p->endian == RPC_LITTLE_ENDIAN ? "little-" : "big-" ));
+		DEBUG(5, ("unmarshall_rpc_header: using %sendian RPC\n",
+			  p->endian == RPC_LITTLE_ENDIAN ? "little-" : "big-" ));
 
 	} else {
 
@@ -186,7 +197,9 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 		 */
 
 		if (p->endian != rpc_in.bigendian_data) {
-			DEBUG(0,("unmarshall_rpc_header: FIRST endianness flag (%d) different in next PDU !\n", (int)p->endian));
+			DEBUG(0, ("unmarshall_rpc_header: FIRST endianness "
+				  "flag (%d) different in next PDU !\n",
+				  (int)p->endian));
 			set_incoming_fault(p);
 			prs_mem_free(&rpc_in);
 			return -1;
@@ -197,15 +210,16 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	 * Ensure that the pdu length is sane.
 	 */
 
-	if((p->hdr.frag_len < RPC_HEADER_LEN) || (p->hdr.frag_len > RPC_MAX_PDU_FRAG_LEN)) {
+	if ((p->hdr.frag_len < RPC_HEADER_LEN) ||
+	    (p->hdr.frag_len > RPC_MAX_PDU_FRAG_LEN)) {
 		DEBUG(0,("unmarshall_rpc_header: assert on frag length failed.\n"));
 		set_incoming_fault(p);
 		prs_mem_free(&rpc_in);
 		return -1;
 	}
 
-	DEBUG(10,("unmarshall_rpc_header: type = %u, flags = %u\n", (unsigned int)p->hdr.pkt_type,
-			(unsigned int)p->hdr.flags ));
+	DEBUG(10, ("unmarshall_rpc_header: type = %u, flags = %u\n",
+		   (unsigned int)p->hdr.pkt_type, (unsigned int)p->hdr.flags));
 
 	p->in_data.pdu_needed_len = (uint32)p->hdr.frag_len - RPC_HEADER_LEN;
 
@@ -230,8 +244,9 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 static void free_pipe_context(pipes_struct *p)
 {
 	if (p->mem_ctx) {
-		DEBUG(3,("free_pipe_context: destroying talloc pool of size "
-			 "%lu\n", (unsigned long)talloc_total_size(p->mem_ctx) ));
+		DEBUG(3, ("free_pipe_context: "
+			  "destroying talloc pool of size %lu\n",
+			  (unsigned long)talloc_total_size(p->mem_ctx)));
 		talloc_free_children(p->mem_ctx);
 	} else {
 		p->mem_ctx = talloc_named(p, 0, "pipe %s %p",
@@ -251,8 +266,11 @@ static void free_pipe_context(pipes_struct *p)
 static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	uint32 ss_padding_len = 0;
-	size_t data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
-				(p->hdr.auth_len ? RPC_HDR_AUTH_LEN : 0) - p->hdr.auth_len;
+	size_t data_len = p->hdr.frag_len
+				- RPC_HEADER_LEN
+				- RPC_HDR_REQ_LEN
+				- (p->hdr.auth_len ? RPC_HDR_AUTH_LEN : 0)
+				- p->hdr.auth_len;
 
 	if(!p->pipe_bound) {
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
@@ -283,9 +301,13 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		case PIPE_AUTH_TYPE_NTLMSSP:
 		{
 			NTSTATUS status;
-			if(!api_pipe_ntlmssp_auth_process(p, rpc_in_p, &ss_padding_len, &status)) {
-				DEBUG(0,("process_request_pdu: failed to do auth processing.\n"));
-				DEBUG(0,("process_request_pdu: error was %s.\n", nt_errstr(status) ));
+			if (!api_pipe_ntlmssp_auth_process(p, rpc_in_p,
+							   &ss_padding_len,
+							   &status)) {
+				DEBUG(0, ("process_request_pdu: "
+					  "failed to do auth processing.\n"));
+				DEBUG(0, ("process_request_pdu: error is %s\n",
+					  nt_errstr(status)));
 				set_incoming_fault(p);
 				return False;
 			}
@@ -293,15 +315,19 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		}
 
 		case PIPE_AUTH_TYPE_SCHANNEL:
-			if (!api_pipe_schannel_process(p, rpc_in_p, &ss_padding_len)) {
-				DEBUG(3,("process_request_pdu: failed to do schannel processing.\n"));
+			if (!api_pipe_schannel_process(p, rpc_in_p,
+							&ss_padding_len)) {
+				DEBUG(3, ("process_request_pdu: "
+					  "failed to do schannel processing.\n"));
 				set_incoming_fault(p);
 				return False;
 			}
 			break;
 
 		default:
-			DEBUG(0,("process_request_pdu: unknown auth type %u set.\n", (unsigned int)p->auth.auth_type ));
+			DEBUG(0, ("process_request_pdu: "
+				  "unknown auth type %u set.\n",
+				  (unsigned int)p->auth.auth_type));
 			set_incoming_fault(p);
 			return False;
 	}
@@ -319,8 +345,10 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	 */
 
 	if(prs_offset(&p->in_data.data) + data_len > MAX_RPC_DATA_SIZE) {
-		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
-				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
+		DEBUG(0, ("process_request_pdu: "
+			  "rpc data buffer too large (%u) + (%u)\n",
+			  (unsigned int)prs_data_size(&p->in_data.data),
+			  (unsigned int)data_len ));
 		set_incoming_fault(p);
 		return False;
 	}
@@ -329,9 +357,12 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Append the data portion into the buffer and return.
 	 */
 
-	if(!prs_append_some_prs_data(&p->in_data.data, rpc_in_p, prs_offset(rpc_in_p), data_len)) {
-		DEBUG(0,("process_request_pdu: Unable to append data size %u to parse buffer of size %u.\n",
-				(unsigned int)data_len, (unsigned int)prs_data_size(&p->in_data.data) ));
+	if (!prs_append_some_prs_data(&p->in_data.data, rpc_in_p,
+				      prs_offset(rpc_in_p), data_len)) {
+		DEBUG(0, ("process_request_pdu: Unable to append data size %u "
+			  "to parse buffer of size %u.\n",
+			  (unsigned int)data_len,
+			  (unsigned int)prs_data_size(&p->in_data.data)));
 		set_incoming_fault(p);
 		return False;
 	}
@@ -348,8 +379,10 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		 * size as the current offset.
 		 */
 
- 		if(!prs_set_buffer_size(&p->in_data.data, prs_offset(&p->in_data.data))) {
-			DEBUG(0,("process_request_pdu: Call to prs_set_buffer_size failed!\n"));
+ 		if (!prs_set_buffer_size(&p->in_data.data,
+					 prs_offset(&p->in_data.data))) {
+			DEBUG(0, ("process_request_pdu: "
+				  "Call to prs_set_buffer_size failed!\n"));
 			set_incoming_fault(p);
 			return False;
 		}
@@ -431,28 +464,34 @@ static void process_complete_pdu(pipes_struct *p)
 			break;
 
 		case DCERPC_PKT_PING: /* CL request - ignore... */
-			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type,
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "Connectionless packet type %u received on "
+				  "pipe %s.\n", (unsigned int)p->hdr.pkt_type,
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
 
 		case DCERPC_PKT_RESPONSE: /* No responses here. */
-			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_RESPONSE received from client on pipe %s.\n",
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "DCERPC_PKT_RESPONSE received from client "
+				  "on pipe %s.\n",
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
 
 		case DCERPC_PKT_FAULT:
-		case DCERPC_PKT_WORKING: /* CL request - reply to a ping when a call in process. */
-		case DCERPC_PKT_NOCALL: /* CL - server reply to a ping call. */
+		case DCERPC_PKT_WORKING:
+			/* CL request - reply to a ping when a call in process. */
+		case DCERPC_PKT_NOCALL:
+			/* CL - server reply to a ping call. */
 		case DCERPC_PKT_REJECT:
 		case DCERPC_PKT_ACK:
 		case DCERPC_PKT_CL_CANCEL:
 		case DCERPC_PKT_FACK:
 		case DCERPC_PKT_CANCEL_ACK:
-			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type,
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "Connectionless packet type %u received on "
+				  "pipe %s.\n", (unsigned int)p->hdr.pkt_type,
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
@@ -468,8 +507,10 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case DCERPC_PKT_BIND_ACK:
 		case DCERPC_PKT_BIND_NAK:
-			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type,
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
+				  "packet type %u received on pipe %s.\n",
+				  (unsigned int)p->hdr.pkt_type,
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
@@ -485,7 +526,9 @@ static void process_complete_pdu(pipes_struct *p)
 			break;
 
 		case DCERPC_PKT_ALTER_RESP:
-			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_ALTER_RESP on pipe %s: Should only be server -> client.\n",
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "DCERPC_PKT_ALTER_RESP on pipe %s: "
+				  "Should only be server -> client.\n",
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
@@ -500,22 +543,28 @@ static void process_complete_pdu(pipes_struct *p)
 			break;
 
 		case DCERPC_PKT_SHUTDOWN:
-			DEBUG(0,("process_complete_pdu: Error. DCERPC_PKT_SHUTDOWN on pipe %s: Should only be server -> client.\n",
+			DEBUG(0, ("process_complete_pdu: Error. "
+				  "DCERPC_PKT_SHUTDOWN on pipe %s: "
+				  "Should only be server -> client.\n",
 				 get_pipe_name_from_syntax(talloc_tos(),
 							   &p->syntax)));
 			break;
 
 		case DCERPC_PKT_CO_CANCEL:
-			/* For now just free all client data and continue processing. */
-			DEBUG(3,("process_complete_pdu: DCERPC_PKT_CO_CANCEL. Abandoning rpc call.\n"));
-			/* As we never do asynchronous RPC serving, we can never cancel a
-			   call (as far as I know). If we ever did we'd have to send a cancel_ack
-			   reply. For now, just free all client data and continue processing. */
+			/* For now just free all client data and continue
+			 * processing. */
+			DEBUG(3,("process_complete_pdu: DCERPC_PKT_CO_CANCEL."
+				 " Abandoning rpc call.\n"));
+			/* As we never do asynchronous RPC serving, we can
+			 * never cancel a call (as far as I know).
+			 * If we ever did we'd have to send a cancel_ack reply.
+			 * For now, just free all client data and continue
+			 * processing. */
 			reply = True;
 			break;
 #if 0
 			/* Enable this if we're doing async rpc. */
-			/* We must check the call-id matches the outstanding callid. */
+			/* We must check the outstanding callid matches. */
 			if(pipe_init_outgoing_data(p)) {
 				/* Send a cancel_ack PDU reply. */
 				/* We should probably check the auth-verifier here. */
@@ -526,17 +575,22 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case DCERPC_PKT_ORPHANED:
 			/* We should probably check the auth-verifier here.
-			   For now just free all client data and continue processing. */
-			DEBUG(3,("process_complete_pdu: DCERPC_PKT_ORPHANED. Abandoning rpc call.\n"));
+			 * For now just free all client data and continue
+			 * processing. */
+			DEBUG(3, ("process_complete_pdu: DCERPC_PKT_ORPHANED."
+				  " Abandoning rpc call.\n"));
 			reply = True;
 			break;
 
 		default:
-			DEBUG(0,("process_complete_pdu: Unknown rpc type = %u received.\n", (unsigned int)p->hdr.pkt_type ));
+			DEBUG(0, ("process_complete_pdu: "
+				  "Unknown rpc type = %u received.\n",
+				  (unsigned int)p->hdr.pkt_type));
 			break;
 	}
 
-	/* Reset to little endian. Probably don't need this but it won't hurt. */
+	/* Reset to little endian.
+	 * Probably don't need this but it won't hurt. */
 	prs_set_endian_data( &p->in_data.data, RPC_LITTLE_ENDIAN);
 
 	if (!reply) {
@@ -564,29 +618,37 @@ static void process_complete_pdu(pipes_struct *p)
 
 static ssize_t process_incoming_data(pipes_struct *p, char *data, size_t n)
 {
-	size_t data_to_copy = MIN(n, RPC_MAX_PDU_FRAG_LEN - p->in_data.pdu_received_len);
+	size_t data_to_copy = MIN(n, RPC_MAX_PDU_FRAG_LEN
+					- p->in_data.pdu_received_len);
 
-	DEBUG(10,("process_incoming_data: Start: pdu_received_len = %u, pdu_needed_len = %u, incoming data = %u\n",
-		(unsigned int)p->in_data.pdu_received_len, (unsigned int)p->in_data.pdu_needed_len,
-		(unsigned int)n ));
+	DEBUG(10, ("process_incoming_data: Start: pdu_received_len = %u, "
+		   "pdu_needed_len = %u, incoming data = %u\n",
+		   (unsigned int)p->in_data.pdu_received_len,
+		   (unsigned int)p->in_data.pdu_needed_len,
+		   (unsigned int)n ));
 
 	if(data_to_copy == 0) {
 		/*
 		 * This is an error - data is being received and there is no
-		 * space in the PDU. Free the received data and go into the fault state.
+		 * space in the PDU. Free the received data and go into the
+		 * fault state.
 		 */
-		DEBUG(0,("process_incoming_data: No space in incoming pdu buffer. Current size = %u \
-incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned int)n ));
+		DEBUG(0, ("process_incoming_data: "
+			  "No space in incoming pdu buffer. "
+			  "Current size = %u incoming data size = %u\n",
+			  (unsigned int)p->in_data.pdu_received_len,
+			  (unsigned int)n));
 		set_incoming_fault(p);
 		return -1;
 	}
 
 	/*
-	 * If we have no data already, wait until we get at least a RPC_HEADER_LEN
-	 * number of bytes before we can do anything.
+	 * If we have no data already, wait until we get at least
+	 * a RPC_HEADER_LEN * number of bytes before we can do anything.
 	 */
 
-	if((p->in_data.pdu_needed_len == 0) && (p->in_data.pdu_received_len < RPC_HEADER_LEN)) {
+	if ((p->in_data.pdu_needed_len == 0) &&
+	    (p->in_data.pdu_received_len < RPC_HEADER_LEN)) {
 		/*
 		 * Always return here. If we have more data then the RPC_HEADER
 		 * will be processed the next time around the loop.
@@ -595,8 +657,8 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 	}
 
 	/*
-	 * At this point we know we have at least an RPC_HEADER_LEN amount of data
-	 * stored in current_in_pdu.
+	 * At this point we know we have at least an RPC_HEADER_LEN amount of
+	 * data * stored in current_in_pdu.
 	 */
 
 	/*
@@ -610,9 +672,11 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 		if (rret == -1 || p->in_data.pdu_needed_len > 0) {
 			return rret;
 		}
-		/* If rret == 0 and pdu_needed_len == 0 here we have a PDU that consists
-		   of an RPC_HEADER only. This is a DCERPC_PKT_SHUTDOWN, DCERPC_PKT_CO_CANCEL or DCERPC_PKT_ORPHANED
-		   pdu type. Deal with this in process_complete_pdu(). */
+		/* If rret == 0 and pdu_needed_len == 0 here we have a PDU
+		 * that consists of an RPC_HEADER only. This is a
+		 * DCERPC_PKT_SHUTDOWN, DCERPC_PKT_CO_CANCEL or
+		 * DCERPC_PKT_ORPHANED pdu type.
+		 * Deal with this in process_complete_pdu(). */
 	}
 
 	/*
@@ -627,7 +691,8 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 	 * pdu_needed_len becomes zero when we have a complete pdu.
 	 */
 
-	memcpy( (char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len], data, data_to_copy);
+	memcpy((char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len],
+		data, data_to_copy);
 	p->in_data.pdu_received_len += data_to_copy;
 	p->in_data.pdu_needed_len -= data_to_copy;
 
@@ -641,8 +706,10 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 		return data_to_copy;
 	}
 
-	DEBUG(10,("process_incoming_data: not a complete PDU yet. pdu_received_len = %u, pdu_needed_len = %u\n",
-		(unsigned int)p->in_data.pdu_received_len, (unsigned int)p->in_data.pdu_needed_len ));
+	DEBUG(10, ("process_incoming_data: not a complete PDU yet. "
+		   "pdu_received_len = %u, pdu_needed_len = %u\n",
+		   (unsigned int)p->in_data.pdu_received_len,
+		   (unsigned int)p->in_data.pdu_needed_len));
 
 	return (ssize_t)data_to_copy;
 }
@@ -658,11 +725,13 @@ static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t
 	while(data_left) {
 		ssize_t data_used;
 
-		DEBUG(10,("write_to_pipe: data_left = %u\n", (unsigned int)data_left ));
+		DEBUG(10, ("write_to_pipe: data_left = %u\n",
+			  (unsigned int)data_left));
 
 		data_used = process_incoming_data(p, data, data_left);
 
-		DEBUG(10,("write_to_pipe: data_used = %d\n", (int)data_used ));
+		DEBUG(10, ("write_to_pipe: data_used = %d\n",
+			   (int)data_used));
 
 		if(data_used < 0) {
 			return -1;
@@ -686,8 +755,8 @@ static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t
  have been prepared into arrays of headers + data stream sections.
 ****************************************************************************/
 
-static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
-				       bool *is_data_outstanding)
+static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
+				       size_t n, bool *is_data_outstanding)
 {
 	uint32 pdu_remaining = 0;
 	ssize_t data_returned = 0;
@@ -906,15 +975,19 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					  data_blob_null /* delegated_creds */);
 	if (subreq == NULL) {
 		unbecome_root();
-		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and user %s\\%s failed\n",
-			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string));
+		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and "
+			  "user %s\\%s failed\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string));
 		goto fail;
 	}
 	ok = tevent_req_poll(subreq, ev);
 	unbecome_root();
 	if (!ok) {
-		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s failed for tstream_npa_connect: %s\n",
-			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string,
+		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s "
+			  "failed for tstream_npa_connect: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string,
 			  strerror(errno)));
 		goto fail;
 
@@ -927,8 +1000,10 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				       &result->allocation_size);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and user %s\\%s failed: %s\n",
-			  socket_np_dir, pipe_name, info3->base.domain.string, info3->base.account_name.string,
+		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and "
+			  "user %s\\%s failed: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string,
 			  strerror(sys_errno)));
 		goto fail;
 	}
