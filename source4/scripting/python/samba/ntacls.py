@@ -30,7 +30,7 @@ class XattrBackendError(Exception):
 def checkset_backend(lp, backend, eadbfile):
     if backend is not None:
         if backend == "native":
-            lp.set("posix:eadb","")
+            lp.set("posix:eadb", "")
         elif backend == "tdb":
             if eadbfile != None:
                 lp.set("posix:eadb", eadbfile)
@@ -56,8 +56,9 @@ def getntacl(lp, file, backend=None, eadbfile=None):
     else:
         attribute = samba.xattr_native.wrap_getxattr(file,
             xattr.XATTR_NTACL_NAME)
-    ntacl = ndr_unpack(xattr.NTACL,attribute)
+    ntacl = ndr_unpack(xattr.NTACL, attribute)
     return ntacl
+
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
     checkset_backend(lp, backend, eadbfile)
@@ -70,17 +71,21 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
     if eadbname is not None and eadbname != "":
         try:
             samba.xattr_tdb.wrap_setxattr(eadbname,
-                file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+                file, xattr.XATTR_NTACL_NAME, ndr_pack(ntacl))
         except:
             # FIXME: Don't catch all exceptions, just those related to opening 
             # xattrdb
-            print "Fail to open %s"%eadbname
-            samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+            print "Fail to open %s" % eadbname
+            samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME, 
+                ndr_pack(ntacl))
     else:
-        samba.xattr_native.wrap_setxattr(file,xattr.XATTR_NTACL_NAME,ndr_pack(ntacl))
+        samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
+                ndr_pack(ntacl))
+
 
 def ldapmask2filemask(ldm):
-    """Takes the access mask of a DS ACE and transform them in a File ACE mask"""
+    """Takes the access mask of a DS ACE and transform them in a File ACE mask.
+    """
     RIGHT_DS_CREATE_CHILD     = 0x00000001
     RIGHT_DS_DELETE_CHILD     = 0x00000002
     RIGHT_DS_LIST_CONTENTS    = 0x00000004
@@ -141,7 +146,7 @@ def dsacl2fsacl(dssddl, domsid):
     for files. It's used for Policy object provision
     """
     sid = security.dom_sid(domsid)
-    ref = security.descriptor.from_sddl(dssddl,sid)
+    ref = security.descriptor.from_sddl(dssddl, sid)
     fdescr = security.descriptor()
     fdescr.owner_sid = ref.owner_sid
     fdescr.group_sid = ref.group_sid

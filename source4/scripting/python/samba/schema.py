@@ -23,12 +23,11 @@
 """Functions for setting up a Samba Schema."""
 
 from base64 import b64encode
-from ms_schema import read_ms_schema
-from samba.dcerpc import security
 from samba import read_and_sub_file, substitute_var, check_all_substituted
-from samba.samdb import SamDB
-from samba import Ldb
+from samba.dcerpc import security
+from samba.ms_schema import read_ms_schema
 from samba.ndr import ndr_pack
+from samba.samdb import SamDB
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
 import os
 

@@ -27,13 +27,14 @@ import string
 import re
 import shutil
 
-from samba import Ldb
-from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
+
+from samba import Ldb
+from samba.dcerpc import misc, security
+from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba.provision import (ProvisionNames, provision_paths_from_lp,
     FILL_FULL, provision, ProvisioningError)
-from samba.dcerpc import misc, security
 from samba.ndr import ndr_unpack
 
 
@@ -106,7 +107,7 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     configdn = str(names.configdn)
     names.schemadn = current[0]["schemaNamingContext"]
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb, current[0]["defaultNamingContext"][0]))):
-        raise ProvisioningError(("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(current[0]["defaultNamingContext"][0]), paths.smbconf, basedn)))
+        raise ProvisioningError("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(current[0]["defaultNamingContext"][0]), paths.smbconf, basedn))
 
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
@@ -120,7 +121,8 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
         base="OU=Domain Controllers,"+basedn, scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
     names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
 
-    server_res = samdb.search(expression="serverReference=%s"%res4[0].dn, attrs=[], base=configdn)
+    server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
+            attrs=[], base=configdn)
     names.serverdn = server_res[0].dn
 
     # invocation id/objectguid
@@ -136,18 +138,21 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
                 "objectSid","msDS-Behavior-Version" ])
     names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack( security.dom_sid,res6[0]["objectSid"][0])
-    if res6[0].get("msDS-Behavior-Version") == None or int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
+    if (res6[0].get("msDS-Behavior-Version") is None or
+        int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000):
         names.domainlevel = DS_DOMAIN_FUNCTION_2000
     else:
         names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
 
     # policy guid
-    res7 = samdb.search(expression="(displayName=Default Domain Policy)",base="CN=Policies,CN=System,"+basedn, \
-                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
+    res7 = samdb.search(expression="(displayName=Default Domain Policy)",
+            base="CN=Policies,CN=System,"+basedn, scope=SCOPE_ONELEVEL,
+            attrs=["cn","displayName"])
     names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
     # dc policy guid
-    res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",base="CN=Policies,CN=System,"+basedn, \
-                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
+    res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",
+            base="CN=Policies,CN=System,"+basedn, scope=SCOPE_ONELEVEL,
+            attrs=["cn","displayName"])
     if len(res8) == 1:
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:

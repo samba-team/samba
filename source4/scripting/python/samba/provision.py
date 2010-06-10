@@ -47,12 +47,17 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
+from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, dsacl2fsacl
 from samba.ndr import ndr_pack,ndr_unpack
+from samba.provisionbackend import (
+    ExistingBackend,
+    FDSBackend,
+    LDBBackend,
+    OpenLDAPBackend,
+    )
 from samba.schema import Schema
 from samba.samdb import SamDB
-from ms_display_specifiers import read_ms_ldif
-from samba.provisionbackend import LDBBackend, ExistingBackend, FDSBackend, OpenLDAPBackend
 
 __docformat__ = "restructuredText"
 

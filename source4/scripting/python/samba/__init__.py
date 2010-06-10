@@ -154,7 +154,11 @@ class Ldb(_Ldb):
                 raise
 
     def erase_except_schema_controlled(self):
-        """Erase this ldb, removing all records, except those that are controlled by Samba4's schema."""
+        """Erase this ldb.
+        
+        :note: Removes all records, except those that are controlled by
+            Samba4's schema.
+        """
 
         basedn = ""
 
@@ -173,8 +177,7 @@ class Ldb(_Ldb):
                     raise
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE,
-                          "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
-                          [], controls=["show_deleted:0"])
+            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", [], controls=["show_deleted:0"])
         assert len(res) == 0
 
         # delete the specials
@@ -297,20 +300,20 @@ class Ldb(_Ldb):
         dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def get_invocation_id(self):
-        "Get the invocation_id id"
+        """Get the invocation_id id"""
         return dsdb.samdb_ntds_invocation_id(self)
 
     def get_ntds_GUID(self):
-        "Get the NTDS objectGUID"
+        """Get the NTDS objectGUID"""
         return dsdb.samdb_ntds_objectGUID(self)
 
     def server_site_name(self):
-        "Get the server site name"
+        """Get the server site name"""
         return dsdb.samdb_server_site_name(self)
 
 
 def substitute_var(text, values):
-    """substitute strings of the form ${NAME} in str, replacing
+    """Substitute strings of the form ${NAME} in str, replacing
     with substitutions from subobj.
 
     :param text: Text in which to subsitute.
@@ -360,13 +363,15 @@ def setup_file(template, fname, subst_vars=None):
     :param fname: Path of the file to create.
     :param subst_vars: Substitution variables.
     """
-    f = fname
-
-    if os.path.exists(f):
-        os.unlink(f)
+    if os.path.exists(fname):
+        os.unlink(fname)
 
     data = read_and_sub_file(template, subst_vars)
-    open(f, 'w').write(data)
+    f = open(fname, 'w')
+    try:
+        f.write(data)
+    finally:
+        f.close()
 
 
 def valid_netbios_name(name):
