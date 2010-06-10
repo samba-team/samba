@@ -133,9 +133,9 @@ typedef struct nss_XbyY_args {
 	/*
 	*  h_errno is defined as function call macro for multithreaded applications
 	*  in HP-UX. *this* h_errno is not used in the HP-UX codepath of our nss
-	*  modules, so let's simply comment it out here:
-	* int h_errno;
+	*  modules, so let's simply rename it:
 	*/
+	int h_errno_unused;
 	nss_status_t status;
 } nss_XbyY_args_t;
 
