@@ -1,20 +1,20 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Largely re-written : 2005
  *  Copyright (C) Jeremy Allison		1998 - 2005
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -47,7 +47,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	/*
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
-	 */	
+	 */
 	if(!prs_init(&o_data->rdata, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
@@ -317,7 +317,7 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	 * spoolsv.exe when the response to a GETPRINTERDRIVER2 RPC
 	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
-	
+
 	if(prs_offset(&p->in_data.data) + data_len > MAX_RPC_DATA_SIZE) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
@@ -413,7 +413,7 @@ static void process_complete_pdu(pipes_struct *p)
 	prs_init_empty( &rpc_in, p->mem_ctx, UNMARSHALL);
 
 	/*
-	 * Ensure we're using the corrent endianness for both the 
+	 * Ensure we're using the corrent endianness for both the
 	 * RPC header flags and the raw data we will be reading from.
 	 */
 
@@ -600,7 +600,7 @@ incoming data size = %u\n", (unsigned int)p->in_data.pdu_received_len, (unsigned
 	 */
 
 	/*
-	 * If pdu_needed_len is zero this is a new pdu. 
+	 * If pdu_needed_len is zero this is a new pdu.
 	 * Unmarshall the header so we know how much more
 	 * data we need, then loop again.
 	 */
@@ -670,7 +670,7 @@ static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t
 
 		data_left -= data_used;
 		data += data_used;
-	}	
+	}
 
 	return n;
 }
@@ -694,7 +694,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 
 	if (!p) {
 		DEBUG(0,("read_from_pipe: pipe not open\n"));
-		return -1;		
+		return -1;
 	}
 
 	DEBUG(6,(" name: %s len: %u\n",
@@ -707,7 +707,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 	 */
 
 	/*
-	 * This condition should result in the connection being closed.  
+	 * This condition should result in the connection being closed.
 	 * Netapp filers seem to set it to 0xffff which results in domain
 	 * authentications failing.  Just ignore it so things work.
 	 */
