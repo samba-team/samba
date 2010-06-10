@@ -288,6 +288,7 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 	/* attach the schema to the ldb */
 	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to attach schema from DRS.\n"));
 		return NT_STATUS_FOOBAR;
 	}
 	/* we don't want to access the self made schema anymore */
