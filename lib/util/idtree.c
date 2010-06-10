@@ -240,7 +240,7 @@ build_up:
 static int sub_remove(struct idr_context *idp, int shift, int id)
 {
 	struct idr_layer *p = idp->top;
-	struct idr_layer **pa[MAX_LEVEL];
+	struct idr_layer **pa[1+MAX_LEVEL];
 	struct idr_layer ***paa = &pa[0];
 	int n;
 
@@ -280,8 +280,10 @@ static void *_idr_find(struct idr_context *idp, int id)
 	 * This tests to see if bits outside the current tree are
 	 * present.  If so, tain't one of ours!
 	 */
-	if ((id & ~(~0 << MAX_ID_SHIFT)) >> (n + IDR_BITS))
-	     return NULL;
+	if (n + IDR_BITS < 31 &&
+	    ((id & ~(~0 << MAX_ID_SHIFT)) >> (n + IDR_BITS))) {
+		return NULL;
+	}
 
 	/* Mask off upper bits we don't use for the search. */
 	id &= MAX_ID_MASK;
