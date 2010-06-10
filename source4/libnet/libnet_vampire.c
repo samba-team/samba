@@ -198,6 +198,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	struct dsdb_extended_replicated_objects *schema_objs_1, *schema_objs_2;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
+	struct ldb_context *schema_ldb;
 	struct ldb_message *msg;
 	struct ldb_val prefixMap_val;
 	struct ldb_message_element *prefixMap_el;
@@ -251,6 +252,20 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
+
+	schema_ldb = provision_get_schema(s, s->lp_ctx, &s->prefixmap_blob);
+	if (!schema_ldb) {
+		DEBUG(0,("Failed to re-load from local provision using remote prefixMap.  Will continue with local prefixMap\n"));
+		s->provision_schema = dsdb_get_schema(s->ldb, s);
+	} else {
+		s->provision_schema = dsdb_get_schema(schema_ldb, s);
+		ret = dsdb_reference_schema(s->ldb, s->provision_schema, false);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		talloc_free(schema_ldb);
+	}
 
 	s->provision_schema->relax_OID_conversions = true;
 
@@ -425,11 +440,19 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 
 	if (!s->schema) {
 		WERROR werr;
+		struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr_without_schema_info;
 		/* Put the DRS prefixmap aside for the schema we are
 		 * about to load in the provision, and into the one we
 		 * are making with the help of DRS */
 
-		werr = dsdb_get_drsuapi_prefixmap_as_blob(mapping_ctr, s, &s->prefixmap_blob);
+		mapping_ctr_without_schema_info = *mapping_ctr;
+
+		/* This strips off the 0xFF schema info from the end,
+		 * because we don't want it in the blob */
+		if (mapping_ctr_without_schema_info.num_mappings > 0) {
+			mapping_ctr_without_schema_info.num_mappings--;
+		}
+		werr = dsdb_get_drsuapi_prefixmap_as_blob(&mapping_ctr_without_schema_info, s, &s->prefixmap_blob);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werror_to_ntstatus(werr);
 		}

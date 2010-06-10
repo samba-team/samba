@@ -339,7 +339,8 @@ failure:
 }
 
 
-struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+					 DATA_BLOB *override_prefixmap)
 {
 	const char *setupdir;
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
@@ -376,6 +377,11 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	setupdir = lp_setupdir(lp_ctx);
 	PyDict_SetItemString(parameters, "setup_dir", 
 			     PyString_FromString(setupdir));
+	if (override_prefixmap) {
+		PyDict_SetItemString(parameters, "override_prefixmap",
+				     PyString_FromStringAndSize((const char *)override_prefixmap->data,
+								override_prefixmap->length));
+	}
 
 	py_result = PyEval_CallObjectWithKeywords(schema_fn, NULL, parameters);
 

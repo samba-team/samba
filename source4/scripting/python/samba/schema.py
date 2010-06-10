@@ -166,7 +166,8 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
 def ldb_with_schema(setup_dir=None,
         schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
         serverdn="cn=server,cn=servers,cn=default-first-site-name,cn=sites,cn=cn=configuration,dc=example,dc=com",
-        domainsid=None):
+        domainsid=None,
+        override_prefixmap=None):
     """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
     
     :param setup_dir: Setup path
@@ -185,4 +186,4 @@ def ldb_with_schema(setup_dir=None,
         domainsid = security.random_sid()
     else:
         domainsid = security.dom_sid(domainsid)
-    return Schema(setup_path, domainsid, schemadn=schemadn, serverdn=serverdn)
+    return Schema(setup_path, domainsid, schemadn=schemadn, serverdn=serverdn, override_prefixmap=override_prefixmap)
