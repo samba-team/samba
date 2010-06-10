@@ -158,7 +158,23 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
+/* deny instancetype modification */
+static int instancetype_mod(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(req->op.mod.message, "instanceType");
+	if (el != NULL) {
+		ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute can never be changed!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	return ldb_next_request(module, req);
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_instancetype_module_ops = {
 	.name          = "instancetype",
 	.add           = instancetype_add,
+	.modify        = instancetype_mod
 };
