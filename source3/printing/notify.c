@@ -232,7 +232,7 @@ static void print_notify_event_send_messages(struct tevent_context *event_ctx,
 	TALLOC_FREE(notify_event);
 
 	change_to_root_user();
-	print_notify_send_messages(smbd_messaging_context(), 0);
+	print_notify_send_messages(server_messaging_context(), 0);
 }
 
 /**********************************************************************
@@ -326,9 +326,9 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
 
-	if ((notify_event == NULL) && (smbd_event_context() != NULL)) {
+	if ((notify_event == NULL) && (server_event_context() != NULL)) {
 		/* Add an event for 1 second's time to send this queue. */
-		notify_event = tevent_add_timer(smbd_event_context(), NULL,
+		notify_event = tevent_add_timer(server_event_context(), NULL,
 					timeval_current_ofs(1,0),
 					print_notify_event_send_messages, NULL);
 	}

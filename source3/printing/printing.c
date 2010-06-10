@@ -1436,8 +1436,8 @@ void start_background_queue(void)
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
-						       smbd_event_context(),
+		if (!NT_STATUS_IS_OK(reinit_after_fork(server_messaging_context(),
+						       server_event_context(),
 						       true))) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
@@ -1455,10 +1455,11 @@ void start_background_queue(void)
 			exit(1);
 		}
 
-		messaging_register(smbd_messaging_context(), NULL,
+		messaging_register(server_messaging_context(), NULL,
 				   MSG_PRINTER_UPDATE, print_queue_receive);
 
-		fde = tevent_add_fd(smbd_event_context(), smbd_event_context(),
+		fde = tevent_add_fd(server_event_context(),
+				    server_event_context(),
 				    pause_pipe[1], TEVENT_FD_READ,
 				    printing_pause_fd_handler,
 				    NULL);
@@ -1468,7 +1469,7 @@ void start_background_queue(void)
 		}
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		ret = tevent_loop_wait(smbd_event_context());
+		ret = tevent_loop_wait(server_event_context());
 		/* should not be reached */
 		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
 			 ret, (ret == 0) ? "out of events" : strerror(errno)));
@@ -1601,7 +1602,7 @@ static void print_queue_update(int snum, bool force)
 
 	/* finally send the message */
 
-	messaging_send_buf(smbd_messaging_context(),
+	messaging_send_buf(server_messaging_context(),
 			   pid_to_procid(background_lpq_updater_pid),
 			   MSG_PRINTER_UPDATE, (uint8 *)buffer, len);
 

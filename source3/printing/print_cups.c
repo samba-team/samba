@@ -434,8 +434,8 @@ static bool cups_pcap_load_async(int *pfd)
 
 	close_all_print_db();
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
-					       smbd_event_context(), true))) {
+	if (!NT_STATUS_IS_OK(reinit_after_fork(server_messaging_context(),
+					       server_event_context(), true))) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
 	}
@@ -576,7 +576,7 @@ bool cups_cache_reload(void)
 		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
 			*p_pipe_fd ));
 
-		cups_async_callback(smbd_event_context(),
+		cups_async_callback(server_event_context(),
 					NULL,
 					EVENT_FD_READ,
 					(void *)p_pipe_fd);
@@ -592,7 +592,7 @@ bool cups_cache_reload(void)
 			*p_pipe_fd ));
 
 		/* Trigger an event when the pipe can be read. */
-		cache_fd_event = event_add_fd(smbd_event_context(),
+		cache_fd_event = event_add_fd(server_event_context(),
 					NULL, *p_pipe_fd,
 					EVENT_FD_READ,
 					cups_async_callback,

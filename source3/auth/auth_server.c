@@ -206,7 +206,7 @@ static struct server_security_state *make_server_security_state(struct cli_state
 		interval.tv_sec = lp_keepalive();
 		interval.tv_usec = 0;
 
-		if (event_add_idle(smbd_event_context(), result, interval,
+		if (event_add_idle(server_event_context(), result, interval,
 				   "server_security_keepalive",
 				   send_server_keepalive,
 				   result) == NULL) {
