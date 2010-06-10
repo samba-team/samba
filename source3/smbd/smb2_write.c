@@ -298,6 +298,34 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/* Try and do an asynchronous write. */
+	status = schedule_aio_smb2_write(conn,
+					smbreq,
+					fsp,
+					in_offset,
+					in_data,
+					state->write_through);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * Doing an async write. Don't
+		 * send a "gone async" message
+		 * as we expect this to be less
+		 * than the client timeout period.
+		 * JRA. FIXME for offline files..
+		 * FIXME - add cancel code..
+		 */
+		smb2req->async = true;
+		return req;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/* Real error in setting up aio. Fail. */
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return tevent_req_post(req, ev);
+	}
+
+	/* Fallback to synchronous. */
 	init_strict_lock_struct(fsp,
 				in_file_id_volatile,
 				in_offset,

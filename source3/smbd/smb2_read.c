@@ -322,6 +322,34 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	status = schedule_smb2_aio_read(fsp->conn,
+				smbreq,
+				fsp,
+				(char *)state->out_data.data,
+				(SMB_OFF_T)in_offset,
+				(size_t)in_length);
+
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * Doing an async read. Don't
+		 * send a "gone async" message
+		 * as we expect this to be less
+		 * than the client timeout period.
+		 * JRA. FIXME for offline files..
+		 * FIXME. Add cancel code..
+		 */
+		smb2req->async = true;
+		return req;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/* Real error in setting up aio. Fail. */
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return tevent_req_post(req, ev);
+	}
+
+	/* Fallback to synchronous. */
+
 	init_strict_lock_struct(fsp,
 				in_file_id_volatile,
 				in_offset,

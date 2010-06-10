@@ -5332,6 +5332,18 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite);
+NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
+				struct smb_request *smbreq,
+				files_struct *fsp,
+				char *inbuf,
+				SMB_OFF_T startpos,
+				size_t smb_maxcnt);
+NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
+				struct smb_request *smbreq,
+				files_struct *fsp,
+				uint64_t in_offset,
+				DATA_BLOB in_data,
+				bool write_through);
 int wait_for_aio_completion(files_struct *fsp);
 void cancel_aio_by_fsp(files_struct *fsp);
 void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex);

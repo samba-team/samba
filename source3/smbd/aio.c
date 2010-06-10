@@ -88,6 +88,8 @@ static void initialize_async_io_handler(void)
 
 static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode);
 static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode);
+static int handle_aio_smb2_read_complete(struct aio_extra *aio_ex, int errcode);
+static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode);
 
 static int aio_extra_destructor(struct aio_extra *aio_ex)
 {
@@ -364,6 +366,214 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 }
 
 /****************************************************************************
+ Set up an aio request from a SMB2 read call.
+*****************************************************************************/
+
+NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
+				struct smb_request *smbreq,
+				files_struct *fsp,
+				char *inbuf,
+				SMB_OFF_T startpos,
+				size_t smb_maxcnt)
+{
+	struct aio_extra *aio_ex;
+	SMB_STRUCT_AIOCB *a;
+	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
+	int ret;
+
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
+
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return NT_STATUS_RETRY;
+	}
+
+	if ((!min_aio_read_size || (smb_maxcnt < min_aio_read_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
+		/* Too small a read for aio request. */
+		DEBUG(10,("smb2: read size (%u) too small "
+			"for minimum aio_read of %u\n",
+			(unsigned int)smb_maxcnt,
+			(unsigned int)min_aio_read_size ));
+		return NT_STATUS_RETRY;
+	}
+
+	/* Only do this on reads not using the write cache. */
+	if (lp_write_cache_size(SNUM(conn)) != 0) {
+		return NT_STATUS_RETRY;
+	}
+
+	if (outstanding_aio_calls >= aio_pending_size) {
+		DEBUG(10,("smb2: Already have %d aio "
+			"activities outstanding.\n",
+			outstanding_aio_calls ));
+		return NT_STATUS_RETRY;
+	}
+
+	if (!(aio_ex = create_aio_extra(smbreq->smb2req, fsp, 0))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	aio_ex->handle_completion = handle_aio_smb2_read_complete;
+
+	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
+		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
+		&aio_ex->lock);
+
+	/* Take the lock until the AIO completes. */
+	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	a = &aio_ex->acb;
+
+	/* Now set up the aio record for the read call. */
+
+	a->aio_fildes = fsp->fh->fd;
+	a->aio_buf = inbuf;
+	a->aio_nbytes = smb_maxcnt;
+	a->aio_offset = startpos;
+	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
+	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+
+	ret = SMB_VFS_AIO_READ(fsp, a);
+	if (ret == -1) {
+		DEBUG(0,("smb2: aio_read failed. "
+			"Error %s\n", strerror(errno) ));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
+
+	outstanding_aio_calls++;
+	/* We don't need talloc_move here as both aio_ex and
+	 * smbreq are children of smbreq->smb2req. */
+	aio_ex->smbreq = smbreq;
+
+	DEBUG(10,("smb2: scheduled aio_read for file %s, "
+		"offset %.0f, len = %u (mid = %u)\n",
+		fsp_str_dbg(fsp), (double)startpos, (unsigned int)smb_maxcnt,
+		(unsigned int)aio_ex->smbreq->mid ));
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Set up an aio request from a SMB2write call.
+*****************************************************************************/
+
+NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
+				struct smb_request *smbreq,
+				files_struct *fsp,
+				uint64_t in_offset,
+				DATA_BLOB in_data,
+				bool write_through)
+{
+	struct aio_extra *aio_ex = NULL;
+	SMB_STRUCT_AIOCB *a = NULL;
+	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
+	int ret;
+
+	/* Ensure aio is initialized. */
+	initialize_async_io_handler();
+
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return NT_STATUS_RETRY;
+	}
+
+	if ((!min_aio_write_size || (in_data.length < min_aio_write_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
+		/* Too small a write for aio request. */
+		DEBUG(10,("smb2: write size (%u) too "
+			"small for minimum aio_write of %u\n",
+			(unsigned int)in_data.length,
+			(unsigned int)min_aio_write_size ));
+		return NT_STATUS_RETRY;
+	}
+
+	/* Only do this on writes not using the write cache. */
+	if (lp_write_cache_size(SNUM(conn)) != 0) {
+		return NT_STATUS_RETRY;
+	}
+
+	if (outstanding_aio_calls >= aio_pending_size) {
+		DEBUG(3,("smb2: Already have %d aio "
+			"activities outstanding.\n",
+			outstanding_aio_calls ));
+		return NT_STATUS_RETRY;
+	}
+
+	if (!(aio_ex = create_aio_extra(smbreq->smb2req, fsp, 0))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	aio_ex->handle_completion = handle_aio_smb2_write_complete;
+	aio_ex->write_through = write_through;
+
+	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
+		in_offset, (uint64_t)in_data.length, WRITE_LOCK,
+		&aio_ex->lock);
+
+	/* Take the lock until the AIO completes. */
+	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	a = &aio_ex->acb;
+
+	/* Now set up the aio record for the write call. */
+
+	a->aio_fildes = fsp->fh->fd;
+	a->aio_buf = in_data.data;
+	a->aio_nbytes = in_data.length;
+	a->aio_offset = in_offset;
+	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
+	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+
+	ret = SMB_VFS_AIO_WRITE(fsp, a);
+	if (ret == -1) {
+		DEBUG(3,("smb2: aio_write failed. "
+			"Error %s\n", strerror(errno) ));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
+
+	outstanding_aio_calls++;
+	/* We don't need talloc_move here as both aio_ex and
+	* smbreq are children of smbreq->smb2req. */
+	aio_ex->smbreq = smbreq;
+
+	/* This should actually be improved to span the write. */
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
+
+	/*
+	 * We don't want to do write behind due to ownership
+	 * issues of the request structs. Maybe add it if I
+	 * figure those out. JRA.
+	 */
+
+	DEBUG(10,("smb2: scheduled aio_write for file "
+		"%s, offset %.0f, len = %u (mid = %u) "
+		"outstanding_aio_calls = %d\n",
+		fsp_str_dbg(fsp),
+		(double)in_offset,
+		(unsigned int)in_data.length,
+		(unsigned int)aio_ex->smbreq->mid,
+		outstanding_aio_calls ));
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Complete the read and return the data or error back to the client.
  Returns errno or zero if all ok.
 *****************************************************************************/
@@ -507,6 +717,77 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		  fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
 		  (unsigned int)numtowrite, (unsigned int)nwritten ));
 
+	return errcode;
+}
+
+/****************************************************************************
+ Complete the read and return the data or error back to the client.
+ Returns errno or zero if all ok.
+*****************************************************************************/
+
+static int handle_aio_smb2_read_complete(struct aio_extra *aio_ex, int errcode)
+{
+	NTSTATUS status;
+	struct tevent_req *subreq = aio_ex->smbreq->smb2req->subreq;
+	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
+
+	/* Common error or success code processing for async or sync
+	   read returns. */
+
+	status = smb2_read_complete(subreq, nread, errcode);
+
+	if (nread > 0) {
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
+	}
+
+	DEBUG(10,("smb2: scheduled aio_read completed "
+		"for file %s, offset %.0f, len = %u "
+		"(errcode = %d, NTSTATUS = %s)\n",
+		fsp_str_dbg(aio_ex->fsp),
+		(double)aio_ex->acb.aio_offset,
+		(unsigned int)nread,
+		errcode,
+		nt_errstr(status) ));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(subreq, status);
+	}
+
+	tevent_req_done(subreq);
+	return errcode;
+}
+
+/****************************************************************************
+ Complete the SMB2 write and return the data or error back to the client.
+ Returns error code or zero if all ok.
+*****************************************************************************/
+
+static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode)
+{
+	files_struct *fsp = aio_ex->fsp;
+	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
+	struct tevent_req *subreq = aio_ex->smbreq->smb2req->subreq;
+	NTSTATUS status;
+
+	status = smb2_write_complete(subreq, nwritten, errcode);
+
+	DEBUG(10,("smb2: scheduled aio_write completed "
+		"for file %s, offset %.0f, requested %u, "
+		"written = %u (errcode = %d, NTSTATUS = %s)\n",
+		fsp_str_dbg(fsp),
+		(double)aio_ex->acb.aio_offset,
+		(unsigned int)numtowrite,
+		(unsigned int)nwritten,
+		errcode,
+		nt_errstr(status) ));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(subreq, status);
+	}
+
+	tevent_req_done(subreq);
 	return errcode;
 }
 
