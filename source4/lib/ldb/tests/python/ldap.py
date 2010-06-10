@@ -648,6 +648,45 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_instanceType(self):
+        """Tests the 'instanceType' attribute"""
+        print "Tests the 'instanceType' attribute"""
+
+        self.ldb.add({
+             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+             "objectclass": "group"})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["instanceType"] = MessageElement("0", FLAG_MOD_REPLACE,
+          "instanceType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["instanceType"] = MessageElement([], FLAG_MOD_REPLACE,
+          "instanceType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["instanceType"] = MessageElement([], FLAG_MOD_DELETE, "instanceType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
         print "Tests the 'distinguishedName' attribute"""
