@@ -1010,6 +1010,26 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	return NT_STATUS_RETRY;
 }
 
+NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
+                                struct smb_request *smbreq,
+                                files_struct *fsp,
+                                char *inbuf,
+                                SMB_OFF_T startpos,
+                                size_t smb_maxcnt)
+{
+	return NT_STATUS_RETRY;
+}
+
+NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
+				struct smb_request *smbreq,
+				files_struct *fsp,
+				uint64_t in_offset,
+				DATA_BLOB in_data,
+				bool write_through)
+{
+	return NT_STATUS_RETRY;
+}
+
 void cancel_aio_by_fsp(files_struct *fsp)
 {
 }
