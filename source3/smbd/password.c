@@ -128,7 +128,7 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 
 void invalidate_all_vuids(struct smbd_server_connection *sconn)
 {
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		return;
 	}
 

@@ -41,7 +41,7 @@ void brl_timeout_fn(struct event_context *event_ctx,
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		SMB_ASSERT(sconn->smb2.locks.brl_timeout == te);
 		TALLOC_FREE(sconn->smb2.locks.brl_timeout);
 	} else {
@@ -578,7 +578,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *blr_cancelled, *next = NULL;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		cancel_pending_lock_requests_by_fid_smb2(fsp,
 					br_lck,
 					close_type);
@@ -713,7 +713,7 @@ void process_blocking_lock_queue(void)
 	struct timeval tv_curr = timeval_current();
 	struct blocking_lock_record *blr, *next = NULL;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		process_blocking_lock_queue_smb2(tv_curr);
 		return;
 	}

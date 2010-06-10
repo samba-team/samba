@@ -7224,7 +7224,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			 *
 			 * Replacement for do_lock_spin(). JRA. */
 
-			if (!smbd_server_conn->allow_smb2 &&
+			if (!smbd_server_conn->using_smb2 &&
 			    br_lck && lp_blocking_locks(SNUM(conn)) &&
 			    lp_lock_spin_time() && !blocking_lock &&
 			    NT_STATUS_EQUAL((status),

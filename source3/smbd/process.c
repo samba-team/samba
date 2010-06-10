@@ -606,7 +606,7 @@ void remove_deferred_open_message_smb(uint64_t mid)
 {
 	struct pending_message_list *pml;
 
-	if (smbd_server_conn->allow_smb2) {
+	if (smbd_server_conn->using_smb2) {
 		remove_deferred_open_message_smb2(mid);
 		return;
 	}
@@ -634,7 +634,7 @@ void schedule_deferred_open_message_smb(uint64_t mid)
 	struct pending_message_list *pml;
 	int i = 0;
 
-	if (smbd_server_conn->allow_smb2) {
+	if (smbd_server_conn->using_smb2) {
 		schedule_deferred_open_message_smb2(mid);
 		return;
 	}
@@ -695,7 +695,7 @@ bool open_was_deferred(uint64_t mid)
 {
 	struct pending_message_list *pml;
 
-	if (smbd_server_conn->allow_smb2) {
+	if (smbd_server_conn->using_smb2) {
 		return open_was_deferred_smb2(mid);
 	}
 
@@ -733,7 +733,7 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 {
 	struct pending_message_list *pml;
 
-	if (smbd_server_conn->allow_smb2) {
+	if (smbd_server_conn->using_smb2) {
 		return get_deferred_open_message_state_smb2(smbreq->smb2req,
 					p_request_time,
 					pp_state);
@@ -1629,7 +1629,9 @@ static void process_smb(struct smbd_server_connection *conn,
 		goto done;
 	}
 
-	if (smbd_server_conn->allow_smb2) {
+	if (smbd_server_conn->using_smb2) {
+		/* At this point we're not really using smb2,
+		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
 			smbd_smb2_first_negprot(smbd_server_conn, inbuf, nread);
 			return;
@@ -1637,7 +1639,7 @@ static void process_smb(struct smbd_server_connection *conn,
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
-			smbd_server_conn->allow_smb2 = false;
+			smbd_server_conn->using_smb2 = false;
 		}
 	}
 
@@ -2397,7 +2399,7 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	bool ret;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		/* Don't do keepalives on an SMB2 connection. */
 		return false;
 	}
@@ -2420,7 +2422,7 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		/* TODO: implement real idle check */
 		if (sconn->smb2.sessions.list) {
 			return true;
@@ -2856,7 +2858,14 @@ void smbd_process(void)
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    lp_security() != SEC_SHARE &&
 	    !lp_async_smb_echo_handler()) {
-		smbd_server_conn->allow_smb2 = true;
+		/*
+		 * We're not making the desion here,
+		 * we're just allowing the client
+		 * to decide between SMB1 and SMB2
+		 * with the first negprot
+		 * packet.
+		 */
+		smbd_server_conn->using_smb2 = true;
 	}
 
 	/* Ensure child is set to blocking mode */

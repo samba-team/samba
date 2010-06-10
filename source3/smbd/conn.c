@@ -94,7 +94,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	int i;
         int find_offset = 1;
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
 		    !(conn->params = TALLOC_P(conn, struct share_params))) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
@@ -177,7 +177,7 @@ return true if any were closed
 ****************************************************************************/
 bool conn_close_all(struct smbd_server_connection *sconn)
 {
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		/* SMB2 */
 		if (sconn->smb2.sessions.list &&
 				sconn->smb2.sessions.list->tcons.list) {
@@ -314,7 +314,7 @@ void conn_free(connection_struct *conn)
 		return;
 	}
 
-	if (conn->sconn->allow_smb2) {
+	if (conn->sconn->using_smb2) {
 		conn_free_internal(conn);
 		return;
 	}

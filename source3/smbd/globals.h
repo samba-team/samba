@@ -453,7 +453,7 @@ struct smbd_server_connection {
 	struct {
 		bool got_session;
 	} nbt;
-	bool allow_smb2;
+	bool using_smb2;
 	struct {
 		struct fd_event *fde;
 

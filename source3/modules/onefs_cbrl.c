@@ -90,7 +90,7 @@ static void onefs_cbrl_enumerate_blq(const char *fn)
 
 	DEBUG(10, ("CBRL BLR records (%s):\n", fn));
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		struct smbd_smb2_request *smb2req;
 		for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
 			blr = get_pending_smb2req_blr(smb2req);
@@ -112,7 +112,7 @@ static struct blocking_lock_record *onefs_cbrl_find_blr(uint64_t id)
 
 	onefs_cbrl_enumerate_blq("onefs_cbrl_find_blr");
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		struct smbd_smb2_request *smb2req;
 		for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
 			blr = get_pending_smb2req_blr(smb2req);

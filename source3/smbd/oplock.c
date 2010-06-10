@@ -403,7 +403,7 @@ void break_level2_to_none_async(files_struct *fsp)
 		  fsp_str_dbg(fsp)));
 
 	/* Now send a break to none message to our client. */
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		send_break_message_smb2(fsp, OPLOCKLEVEL_NONE);
 	} else {
 		send_break_message_smb1(fsp, OPLOCKLEVEL_NONE);
@@ -542,7 +542,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		wait_before_sending_break();
 	}
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		send_break_message_smb2(fsp, break_to_level2 ?
 			OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
 	} else {
@@ -608,7 +608,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if (sconn->allow_smb2) {
+	if (sconn->using_smb2) {
 		send_break_message_smb2(fsp, OPLOCKLEVEL_NONE);
 	} else {
 		send_break_message_smb1(fsp, OPLOCKLEVEL_NONE);
