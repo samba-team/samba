@@ -1672,7 +1672,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		struct security_ace *psa = &dacl->aces[i];
 
 		/*
-		 * Create a cannon_ace entry representing this NT DACL ACE.
+		 * Create a canon_ace entry representing this NT DACL ACE.
 		 */
 
 		if ((current_ace = SMB_MALLOC_P(canon_ace)) == NULL) {
