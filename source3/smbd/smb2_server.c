@@ -701,6 +701,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
+	req->subreq = subreq;
+	subreq = NULL;
+
 	if (req->async) {
 		/* We're already async. */
 		return NT_STATUS_OK;
@@ -712,13 +715,10 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		 * request chain. This is not allowed.
 		 * Cancel the outstanding request.
 		 */
-		tevent_req_cancel(subreq);
+		tevent_req_cancel(req->subreq);
 		return smbd_smb2_request_error(req,
 			NT_STATUS_INSUFFICIENT_RESOURCES);
 	}
-
-	req->subreq = subreq;
-	subreq = NULL;
 
 	if (DEBUGLEVEL >= 10) {
 		dbgtext("smbd_smb2_request_pending_queue: req->current_idx = %u\n",
