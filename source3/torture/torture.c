@@ -7335,6 +7335,48 @@ static bool run_local_dbtrans(int dummy)
 	return true;
 }
 
+/*
+ * Just a dummy test to be run under a debugger. There's no real way
+ * to inspect the tevent_select specific function from outside of
+ * tevent_select.c.
+ */
+
+static bool run_local_tevent_select(int dummy)
+{
+	struct tevent_context *ev;
+	struct tevent_fd *fd1, *fd2;
+	bool result = false;
+
+	ev = tevent_context_init_byname(NULL, "select");
+	if (ev == NULL) {
+		d_fprintf(stderr, "tevent_context_init_byname failed\n");
+		goto fail;
+	}
+
+	fd1 = tevent_add_fd(ev, ev, 2, 0, NULL, NULL);
+	if (fd1 == NULL) {
+		d_fprintf(stderr, "tevent_add_fd failed\n");
+		goto fail;
+	}
+	fd2 = tevent_add_fd(ev, ev, 3, 0, NULL, NULL);
+	if (fd2 == NULL) {
+		d_fprintf(stderr, "tevent_add_fd failed\n");
+		goto fail;
+	}
+	TALLOC_FREE(fd2);
+
+	fd2 = tevent_add_fd(ev, ev, 1, 0, NULL, NULL);
+	if (fd2 == NULL) {
+		d_fprintf(stderr, "tevent_add_fd failed\n");
+		goto fail;
+	}
+
+	result = true;
+fail:
+	TALLOC_FREE(ev);
+	return result;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -7513,6 +7555,7 @@ static struct {
 	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
 	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
+	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
 	{NULL, NULL, 0}};
 
 
