@@ -183,10 +183,10 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "samldb",
 					     "password_hash",
 					     "operational",
-					     "objectclass_attrs",
 					     "kludge_acl",
 					     "schema_load",
 					     "instancetype",
+					     "objectclass_attrs",
 					     NULL };
 
 	const char **link_modules;
