@@ -366,6 +366,7 @@ bool test_group_create(struct torture_context *tctx,
 		       struct policy_handle *handle, const char *name,
 		       uint32_t *rid)
 {
+	uint32_t group_rid;
 	struct lsa_String groupname;
 	struct samr_CreateDomainGroup r;
 	struct policy_handle group_handle;
@@ -376,7 +377,9 @@ bool test_group_create(struct torture_context *tctx,
 	r.in.name           = &groupname;
 	r.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.group_handle  = &group_handle;
-	r.out.rid           = rid;
+	/* use local variable in case caller
+	 * don't care about the group RID */
+	r.out.rid           = rid ? rid : &group_rid;
 
 	torture_comment(tctx, "creating group account %s\n", name);
 
