@@ -1107,7 +1107,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		if (primary_gsid && sid_equal(primary_gsid, &mapped_gsid)) {
 			store_gid_sid_cache(primary_gsid,
 					    sampass->unix_pw->pw_gid);
-			idmap_cache_set_sid2uid(primary_gsid,
+			idmap_cache_set_sid2gid(primary_gsid,
 						sampass->unix_pw->pw_gid);
 		}
 	}
