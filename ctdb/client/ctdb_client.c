@@ -2917,7 +2917,7 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	ctdb->ev  = ev;
 	ctdb->idr = idr_init(ctdb);
 	/* Wrap early to exercise code. */
-	ctdb->lastid = INT_MAX-2;
+	ctdb->lastid = INT_MAX-200;
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
 
 	ret = ctdb_set_socketname(ctdb, CTDB_PATH);
