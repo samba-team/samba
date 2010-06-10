@@ -27,6 +27,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/libnet/proto.h"
 #include "lib/ldb_wrap.h"
 
@@ -427,6 +428,59 @@ bool test_samr_close_handle(struct torture_context *tctx,
 				   "Close SAMR handle failed");
 
 	return true;
+}
+
+/**
+ * Create and initialize libnet_context Context.
+ * Use this function in cases where we need to have SAMR and LSA pipes
+ * of libnet_context to be connected before executing any other
+ * libnet call
+ *
+ * @param rpc_connect [in] Connects SAMR and LSA pipes
+ */
+bool test_libnet_context_init(struct torture_context *tctx,
+			      bool rpc_connect,
+			      struct libnet_context **_net_ctx)
+{
+	NTSTATUS status;
+	bool bret = true;
+	struct libnet_context *net_ctx;
+
+	net_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);
+	torture_assert(tctx, net_ctx != NULL, "Failed to create libnet_context");
+
+	/* Use command line credentials for testing */
+	net_ctx->cred = cmdline_credentials;
+
+	if (rpc_connect) {
+		/* connect SAMR pipe */
+		status = torture_rpc_connection(tctx,
+						&net_ctx->samr.pipe,
+						&ndr_table_samr);
+		torture_assert_ntstatus_ok_goto(tctx, status, bret, done,
+						"Failed to connect SAMR pipe");
+
+		net_ctx->samr.samr_handle = net_ctx->samr.pipe->binding_handle;
+
+		/* connect LSARPC pipe */
+		status = torture_rpc_connection(tctx,
+						&net_ctx->lsa.pipe,
+						&ndr_table_lsarpc);
+		torture_assert_ntstatus_ok_goto(tctx, status, bret, done,
+						"Failed to connect LSA pipe");
+
+		net_ctx->lsa.lsa_handle = net_ctx->lsa.pipe->binding_handle;
+	}
+
+	*_net_ctx = net_ctx;
+
+done:
+	if (!bret) {
+		/* a previous call has failed,
+		 * clean up memory before exit */
+		talloc_free(net_ctx);
+	}
+	return bret;
 }
 
 
