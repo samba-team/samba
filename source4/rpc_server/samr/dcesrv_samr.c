@@ -1948,12 +1948,11 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* In native mode, AD can also nest domain groups. Not sure yet
-	 * whether this is also available via RPC. */
+	/* according to MS-SAMR 3.1.5.8.2 all type of accounts are accepted */
 	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res,
-				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
-				 "(&(objectSid=%s)(objectclass=user))",
-				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
+			 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
+			 "(objectSid=%s)",
+			 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2050,15 +2049,15 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 	d_state = a_state->domain_state;
 
 	membersid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
-	if (membersid == NULL)
+	if (membersid == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	/* In native mode, AD can also nest domain groups. Not sure yet
-	 * whether this is also available via RPC. */
+	/* according to MS-SAMR 3.1.5.8.2 all type of accounts are accepted */
 	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res,
-				 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
-				 "(&(objectSid=%s)(objectclass=user))",
-				 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
+			 d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs,
+			 "(objectSid=%s)",
+			 ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
