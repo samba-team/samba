@@ -6247,6 +6247,12 @@ void set_root_sec_ctx(void);
 bool pop_sec_ctx(void);
 void init_sec_ctx(void);
 
+/* The following definitions come from lib/server_contexts.c  */
+struct tevent_context *server_event_context(void);
+void server_event_context_free(void);
+struct messaging_context *server_messaging_context(void);
+void server_messaging_context_free(void);
+
 /* The following definitions come from smbd/server.c  */
 
 int smbd_server_fd(void);

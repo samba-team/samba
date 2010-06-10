@@ -119,8 +119,8 @@ static void exit_server_common(enum server_exit_reason how,
 	 */
 	sconn = NULL;
 	TALLOC_FREE(smbd_server_conn);
-	TALLOC_FREE(smbd_msg_ctx);
-	TALLOC_FREE(smbd_event_ctx);
+	server_messaging_context_free();
+	server_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);
 
 	if (how != SERVER_EXIT_NORMAL) {

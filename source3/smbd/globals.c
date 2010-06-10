@@ -113,8 +113,6 @@ struct kernel_oplocks *koplocks = NULL;
 
 int am_parent = 1;
 int server_fd = -1;
-struct event_context *smbd_event_ctx = NULL;
-struct messaging_context *smbd_msg_ctx = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;
 struct child_pid *children = 0;
@@ -124,20 +122,7 @@ struct smbd_server_connection *smbd_server_conn = NULL;
 
 struct messaging_context *smbd_messaging_context(void)
 {
-	if (smbd_msg_ctx == NULL) {
-		/*
-		 * Note we MUST use the NULL context here, not the
-		 * autofree context, to avoid side effects in forked
-		 * children exiting.
-		 */
-		smbd_msg_ctx = messaging_init(NULL,
-					      procid_self(),
-					      smbd_event_context());
-	}
-	if (smbd_msg_ctx == NULL) {
-		DEBUG(0, ("Could not init smbd messaging context.\n"));
-	}
-	return smbd_msg_ctx;
+	return server_messaging_context();
 }
 
 struct memcache *smbd_memcache(void)
