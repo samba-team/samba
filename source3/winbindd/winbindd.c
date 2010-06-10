@@ -37,20 +37,6 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
-struct messaging_context *winbind_messaging_context(void)
-{
-	static struct messaging_context *ctx;
-
-	if (ctx == NULL) {
-		ctx = messaging_init(NULL, procid_self(),
-				     winbind_event_context());
-	}
-	if (ctx == NULL) {
-		DEBUG(0, ("Could not init winbind messaging context.\n"));
-	}
-	return ctx;
-}
-
 /* Reload configuration */
 
 static bool reload_services_file(const char *lfile)

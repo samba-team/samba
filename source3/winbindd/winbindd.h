@@ -385,4 +385,7 @@ struct WINBINDD_CCACHE_ENTRY {
 #define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
+#define winbind_event_context server_event_context
+#define winbind_messaging_context server_messaging_context
+
 #endif /* _WINBINDD_H */
