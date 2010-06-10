@@ -412,7 +412,7 @@ struct ctdb_context {
 	unsigned flags;
 	uint32_t capabilities;
 	struct idr_context *idr;
-	uint16_t idr_cnt;
+	int lastid;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
