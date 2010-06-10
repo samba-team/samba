@@ -121,6 +121,7 @@ static void exit_server_common(enum server_exit_reason how,
 	TALLOC_FREE(smbd_server_conn);
 	TALLOC_FREE(smbd_msg_ctx);
 	TALLOC_FREE(smbd_event_ctx);
+	TALLOC_FREE(smbd_memcache_ctx);
 
 	if (how != SERVER_EXIT_NORMAL) {
 		int oldlevel = DEBUGLEVEL;

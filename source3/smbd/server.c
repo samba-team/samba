@@ -50,7 +50,12 @@ int get_client_fd(void)
 struct event_context *smbd_event_context(void)
 {
 	if (!smbd_event_ctx) {
-		smbd_event_ctx = event_context_init(talloc_autofree_context());
+		/*
+		 * Note we MUST use the NULL context here, not the
+		 * autofree context, to avoid side effects in forked
+		 * children exiting.
+		 */
+		smbd_event_ctx = event_context_init(NULL);
 	}
 	if (!smbd_event_ctx) {
 		smb_panic("Could not init smbd event context");

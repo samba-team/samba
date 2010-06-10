@@ -125,7 +125,12 @@ struct smbd_server_connection *smbd_server_conn = NULL;
 struct messaging_context *smbd_messaging_context(void)
 {
 	if (smbd_msg_ctx == NULL) {
-		smbd_msg_ctx = messaging_init(talloc_autofree_context(),
+		/*
+		 * Note we MUST use the NULL context here, not the
+		 * autofree context, to avoid side effects in forked
+		 * children exiting.
+		 */
+		smbd_msg_ctx = messaging_init(NULL,
 					      procid_self(),
 					      smbd_event_context());
 	}
@@ -138,7 +143,12 @@ struct messaging_context *smbd_messaging_context(void)
 struct memcache *smbd_memcache(void)
 {
 	if (!smbd_memcache_ctx) {
-		smbd_memcache_ctx = memcache_init(talloc_autofree_context(),
+		/*
+		 * Note we MUST use the NULL context here, not the
+		 * autofree context, to avoid side effects in forked
+		 * children exiting.
+		 */
+		smbd_memcache_ctx = memcache_init(NULL,
 						  lp_max_stat_cache_size()*1024);
 	}
 	if (!smbd_memcache_ctx) {
