@@ -1028,6 +1028,13 @@ objectClass: container
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": ["user", "person"]})
 
+        # We should be able to reset our actual primary group
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement("513", FLAG_MOD_REPLACE,
+          "primaryGroupID")
+        ldb.modify(m)
+
         # Try to add invalid primary group
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
