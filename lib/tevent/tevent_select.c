@@ -116,7 +116,8 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 				   handler_name, location);
 	if (!fde) return NULL;
 
-	if (fde->fd > select_ev->maxfd) {
+	if ((select_ev->maxfd != EVENT_INVALID_MAXFD)
+	    && (fde->fd > select_ev->maxfd)) {
 		select_ev->maxfd = fde->fd;
 	}
 	talloc_set_destructor(fde, select_event_fd_destructor);
