@@ -549,24 +549,11 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema, 
 				       struct ldb_message *msg) 
 {
-	static struct ldb_parse_tree *attr_tree, *class_tree;
-	if (!attr_tree) {
-		attr_tree = ldb_parse_tree(talloc_autofree_context(), "(objectClass=attributeSchema)");
-		if (!attr_tree) {
-			return WERR_NOMEM;
-		}
-	}
-
-	if (!class_tree) {
-		class_tree = ldb_parse_tree(talloc_autofree_context(), "(objectClass=classSchema)");
-		if (!class_tree) {
-			return WERR_NOMEM;
-		}
-	}
-
-	if (ldb_match_msg(ldb, msg, attr_tree, NULL, LDB_SCOPE_BASE)) {
+	if (samdb_find_attribute(ldb, msg,
+				 "objectclass", "attributeSchema") != NULL) {
 		return dsdb_attribute_from_ldb(ldb, schema, msg);
-	} else if (ldb_match_msg(ldb, msg, class_tree, NULL, LDB_SCOPE_BASE)) {
+	} else if (samdb_find_attribute(ldb, msg,
+				 "objectclass", "classSchema") != NULL) {
 		return dsdb_class_from_ldb(schema, msg);
 	}
 
