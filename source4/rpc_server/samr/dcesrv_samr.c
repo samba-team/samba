@@ -1990,6 +1990,7 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
 	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		return NT_STATUS_MEMBER_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
