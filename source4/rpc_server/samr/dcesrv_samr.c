@@ -2479,9 +2479,9 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				       "distinguishedName", "(objectSid=%s)", 
 				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
-
-	if (memberdn == NULL)
+	if (memberdn == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 
 	mod = ldb_msg_new(mem_ctx);
 	if (mod == NULL) {
@@ -2492,11 +2492,13 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 
 	ret = samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
 								 memberdn);
-	if (ret != LDB_SUCCESS)
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS)
+	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return NT_STATUS_OK;
 }
