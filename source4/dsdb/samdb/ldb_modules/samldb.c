@@ -1176,16 +1176,16 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	el = samdb_find_attribute(ldb, res->msgs[0], "memberOf",
-				  ldb_dn_get_linearized(new_prim_group_dn));
-	if (el == NULL) {
-		/* We need to be already a normal member of the new primary
-		 * group in order to be successful. */
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
 	/* Only update the "member" attributes when we really do have a change */
 	if (ldb_dn_compare(new_prim_group_dn, prev_prim_group_dn) != 0) {
+		/* We need to be already a normal member of the new primary
+		 * group in order to be successful. */
+		el = samdb_find_attribute(ldb, res->msgs[0], "memberOf",
+					  ldb_dn_get_linearized(new_prim_group_dn));
+		if (el == NULL) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
 		/* Remove the "member" attribute on the new primary group */
 		msg = talloc_zero(ac, struct ldb_message);
 		msg->dn = new_prim_group_dn;
