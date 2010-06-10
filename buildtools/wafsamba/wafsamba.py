@@ -327,11 +327,6 @@ def SAMBA_MODULE(bld, modname, source,
                  enabled=True):
     '''define a Samba module.'''
 
-    # we add the init function regardless of whether the module
-    # is enabled or not, as we need to generate a null list if
-    # all disabled
-    bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
-
     if internal_module or BUILTIN_LIBRARY(bld, modname):
         # treat internal modules as subsystems for now
         SAMBA_SUBSYSTEM(bld, modname, source,
@@ -342,6 +337,7 @@ def SAMBA_MODULE(bld, modname, source,
                         cflags=cflags,
                         local_include=local_include,
                         enabled=enabled)
+        bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
         return
 
     if not enabled:
@@ -363,14 +359,19 @@ def SAMBA_MODULE(bld, modname, source,
         deps += ' ' + subsystem
 
     bld.SET_BUILD_GROUP('main')
-    bld(
-        features       = 'cc',
+    t = bld(
+        features       = 'cc cshlib install_lib',
         source         = source,
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         samba_includes = includes,
         local_include  = local_include,
-        samba_deps     = TO_LIST(deps)
+        samba_deps     = TO_LIST(deps),
+        install_path   = None,
+        samba_inst_path= "${MODULESDIR}/%s" % subsystem,
+        samba_realname = None,
+        vnum           = None,
+        samba_install  = True,
         )
 
     if autoproto is not None:
