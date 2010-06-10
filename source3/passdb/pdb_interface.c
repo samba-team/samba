@@ -1480,7 +1480,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 		return False;
 	}
 
-	/* BEING ROOT BLLOCK */
+	/* BEING ROOT BLOCK */
 	become_root();
 	if (pdb_getsampwsid(sam_account, &sid)) {
 		struct passwd *pw;
