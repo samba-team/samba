@@ -2451,11 +2451,18 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS) {
+	ret = ldb_modify(a_state->sam_ctx, mod);
+	switch (ret) {
+	case LDB_SUCCESS:
+		return NT_STATUS_OK;
+	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
+	case LDB_ERR_ENTRY_ALREADY_EXISTS:
+		return NT_STATUS_MEMBER_IN_GROUP;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
+	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	return NT_STATUS_OK;
 }
 
 
@@ -2497,11 +2504,17 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (ldb_modify(a_state->sam_ctx, mod) != LDB_SUCCESS) {
+	ret = ldb_modify(a_state->sam_ctx, mod);
+	switch (ret) {
+	case LDB_SUCCESS:
+		return NT_STATUS_OK;
+	case LDB_ERR_NO_SUCH_ATTRIBUTE:
+		return NT_STATUS_MEMBER_NOT_IN_GROUP;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
+	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	return NT_STATUS_OK;
 }
 
 
