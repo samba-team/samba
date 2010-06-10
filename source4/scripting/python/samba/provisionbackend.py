@@ -95,6 +95,15 @@ class LDBBackend(ProvisionBackend):
         # Wipe the old sam.ldb databases away
         shutil.rmtree(self.paths.samdb + ".d", True)
 
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+    def post_setup(self):
+        pass
+
 
 class ExistingBackend(ProvisionBackend):
 
