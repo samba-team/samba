@@ -2420,10 +2420,6 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 
 	if (ret == 1) {
 		memberdn = msgs[0]->dn;
-	} else 	if (ret > 1) {
-		DEBUG(0,("Found %d records matching sid %s\n", 
-			 ret, dom_sid_string(mem_ctx, r->in.sid)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		status = samdb_create_foreign_security_principal(
 			d_state->sam_ctx, mem_ctx, r->in.sid, &memberdn);
@@ -2431,8 +2427,9 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 			return status;
 		}
 	} else {
-		DEBUG(0, ("samdb_search returned %d: %s\n", ret,
-		      ldb_errstring(d_state->sam_ctx)));
+		DEBUG(0,("Found %d records matching sid %s\n",
+			 ret, dom_sid_string(mem_ctx, r->in.sid)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	if (memberdn == NULL) {
