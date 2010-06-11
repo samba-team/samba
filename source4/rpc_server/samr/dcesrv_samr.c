@@ -1422,7 +1422,7 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	int i, ldb_cnt;
 	uint32_t first, count;
 	struct samr_SamEntry *entries;
-	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	const char * const attrs[] = { "objectSid", "sAMAccountName", NULL };
 	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
@@ -1443,7 +1443,7 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 				      "(objectclass=group))",
 				      GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
 				      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
-	if (ldb_cnt == -1) {
+	if (ldb_cnt < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	if (ldb_cnt == 0) {
@@ -1482,12 +1482,11 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	     first<count && entries[first].idx <= *r->in.resume_handle;
 	     first++) ;
 
-	if (first == count) {
-		return NT_STATUS_OK;
-	}
-
+	/* return the rest, limit by max_size. Note that we
+	   use the w2k3 element size value of 54 */
 	*r->out.num_entries = count - first;
-	*r->out.num_entries = MIN(*r->out.num_entries, 1000);
+	*r->out.num_entries = MIN(*r->out.num_entries,
+				  1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
 	sam = talloc(mem_ctx, struct samr_SamArray);
 	if (!sam) {
@@ -1498,6 +1497,10 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	sam->count = *r->out.num_entries;
 
 	*r->out.sam = sam;
+
+	if (first == count) {
+		return NT_STATUS_OK;
+	}
 
 	if (*r->out.num_entries < count - first) {
 		*r->out.resume_handle =
