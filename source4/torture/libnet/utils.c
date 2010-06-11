@@ -253,7 +253,8 @@ bool test_user_create(struct torture_context *tctx,
 	r.in.account_name  = &username;
 	r.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.user_handle  = &user_handle;
-	r.out.rid 	   = &user_rid;
+	/* return user's RID only if requested */
+	r.out.rid 	   = rid ? rid : &user_rid;
 
 	torture_comment(tctx, "creating user '%s'\n", username.string);
 
@@ -280,21 +281,16 @@ bool test_user_create(struct torture_context *tctx,
 			torture_assert_ntstatus_ok(tctx, r.out.result,
 						   "CreateUser failed");
 
+			/* be nice and close opened handles */
+			test_samr_close_handle(tctx, b, mem_ctx, &user_handle);
+
 			return true;
 		}
 		return false;
 	}
 
-	torture_comment(tctx, "closing user '%s'\n", username.string);
-
-	if (!test_samr_close_handle(tctx, b, mem_ctx, &user_handle)) {
-		return false;
-	}
-
-	/* return user RID only if requested */
-	if (rid) {
-		*rid = user_rid;
-	}
+	/* be nice and close opened handles */
+	test_samr_close_handle(tctx, b, mem_ctx, &user_handle);
 
 	return true;
 }
