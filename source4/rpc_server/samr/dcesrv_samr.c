@@ -2918,7 +2918,10 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 
 	/* pull all the user attributes */
 	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-			      a_state->account_dn ,&res, attrs);
+			      a_state->account_dn, &res, attrs);
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
