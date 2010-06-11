@@ -1180,7 +1180,6 @@ static int lsql_modify(struct lsql_context *ctx)
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
-#warning "We should throw an error if no value is provided!"
 			/* For each value of the specified attribute name... */
 			for (j = 0; j < el->num_values; j++) {
 				struct ldb_val value;
