@@ -1,4 +1,48 @@
                    ==============================
+                   Release Notes for Samba 3.3.13
+		            June 16, 2010
+                   ==============================
+
+
+This is a security release in order to address CVE-2010-2063.
+
+
+o  CVE-2010-2063:
+   In Samba 3.3.x and below, a buffer overrun is possible in chain_reply code.
+
+
+Changes since 3.3.12
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7494: Fix for CVE-2010-2063.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.3 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.3.12
 		            March 8, 2010
                    ==============================
@@ -17,8 +61,8 @@ o  CVE-2010-0728:
    even when permissions should have denied access.
 
 
-Changes since 3.5.0
--------------------
+Changes since 3.3.11
+--------------------
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -45,8 +89,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.3.11
