@@ -2630,7 +2630,7 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc)
 {
-	struct security_ace ace[5];	/* max number of ace entries */
+	struct security_ace ace[7];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	struct security_acl *psa = NULL;
@@ -2677,6 +2677,16 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
 		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* add BUILTIN\Print Operators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
 		SEC_ACE_TYPE_ACCESS_ALLOWED,
 		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
@@ -5317,7 +5327,7 @@ WERROR nt_printing_setsec(const char *sharename, struct sec_desc_buf *secdesc_ct
 
 static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
-	struct security_ace ace[5];	/* max number of ace entries */
+	struct security_ace ace[7];	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	struct security_acl *psa = NULL;
@@ -5365,6 +5375,16 @@ static struct sec_desc_buf *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
 		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* add BUILTIN\Print Operators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
 		SEC_ACE_TYPE_ACCESS_ALLOWED,
 		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
