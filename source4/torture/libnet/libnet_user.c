@@ -289,31 +289,6 @@ static void set_test_changes(struct torture_context *tctx,
 	}
 
 
-static bool _libnet_context_init_pipes(struct torture_context *tctx,
-				       struct libnet_context *libnet_ctx)
-{
-	NTSTATUS status;
-
-	/* connect SAMR pipe */
-	status = torture_rpc_connection(tctx,
-					&libnet_ctx->samr.pipe,
-					&ndr_table_samr);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to open SAMR pipe");
-
-	libnet_ctx->samr.samr_handle = libnet_ctx->samr.pipe->binding_handle;
-
-
-	/* connect LSARPC pipe */
-	status = torture_rpc_connection(tctx,
-					&libnet_ctx->lsa.pipe,
-					&ndr_table_lsarpc);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to open LSA pipe");
-
-	libnet_ctx->lsa.lsa_handle = libnet_ctx->lsa.pipe->binding_handle;
-
-	return true;
-}
-
 bool torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
