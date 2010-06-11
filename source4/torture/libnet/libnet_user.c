@@ -369,7 +369,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 cleanup:
 	if (!test_user_cleanup(torture, ctx->samr.pipe->binding_handle,
-	                  torture, &ctx->samr.handle, TEST_USERNAME)) {
+	                       torture, &ctx->samr.handle, TEST_USERNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
@@ -493,7 +493,7 @@ bool torture_userlist(struct torture_context *torture)
 
 		for (i = 0; i < req.out.count; i++) {
 			torture_comment(torture, "\tuser: %s, sid=%s\n",
-			       req.out.users[i].username, req.out.users[i].sid);
+			                req.out.users[i].username, req.out.users[i].sid);
 		}
 
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));

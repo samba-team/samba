@@ -83,7 +83,8 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle,
+	                        mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;
@@ -133,7 +134,7 @@ bool torture_grouplist(struct torture_context *torture)
 
 		for (i = 0; i < req.out.count; i++) {
 			torture_comment(torture, "\tgroup: %s, sid=%s\n",
-			       req.out.groups[i].groupname, req.out.groups[i].sid);
+			                req.out.groups[i].groupname, req.out.groups[i].sid);
 		}
 
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
@@ -189,7 +190,8 @@ bool torture_creategroup(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
+	if (!test_group_cleanup(torture, ctx->samr.pipe->binding_handle,
+	                        mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
 		torture_comment(torture, "cleanup failed\n");
 		ret = false;
 		goto done;

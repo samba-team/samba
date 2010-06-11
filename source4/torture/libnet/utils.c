@@ -38,11 +38,11 @@
  * @param _dom_sid [out] If NULL, Domain SID won't be returned
  */
 bool test_domain_open(struct torture_context *tctx,
-		     struct dcerpc_binding_handle *b,
-		     struct lsa_String *domname,
-		     TALLOC_CTX *mem_ctx,
-		     struct policy_handle *_domain_handle,
-		     struct dom_sid2 *_dom_sid)
+		      struct dcerpc_binding_handle *b,
+		      struct lsa_String *domname,
+		      TALLOC_CTX *mem_ctx,
+		      struct policy_handle *_domain_handle,
+		      struct dom_sid2 *_dom_sid)
 {
 	struct policy_handle connect_handle;
 	struct policy_handle domain_handle;
@@ -58,10 +58,10 @@ bool test_domain_open(struct torture_context *tctx,
 	r1.out.connect_handle = &connect_handle;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_Connect_r(b, mem_ctx, &r1),
-		"Connect failed");
+				   dcerpc_samr_Connect_r(b, mem_ctx, &r1),
+				   "Connect failed");
 	torture_assert_ntstatus_ok(tctx, r1.out.result,
-		"Connect failed");
+				   "Connect failed");
 
 	r2.in.connect_handle = &connect_handle;
 	r2.in.domain_name = domname;
@@ -165,7 +165,8 @@ done:
  */
 bool test_user_cleanup(struct torture_context *tctx,
 		       struct dcerpc_binding_handle *b,
-		       TALLOC_CTX *mem_ctx, struct policy_handle *domain_handle,
+		       TALLOC_CTX *mem_ctx,
+		       struct policy_handle *domain_handle,
 		       const char *user_rdn)
 {
 	struct samr_LookupNames r1;
@@ -300,7 +301,8 @@ bool test_user_create(struct torture_context *tctx,
  * Deletes a Group using SAMR interface
  */
 bool test_group_cleanup(struct torture_context *tctx,
-			struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
+			struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
 			const char *name)
 {
@@ -323,10 +325,10 @@ bool test_group_cleanup(struct torture_context *tctx,
 	torture_comment(tctx, "group account lookup '%s'\n", name);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
-		"LookupNames failed");
+				   dcerpc_samr_LookupNames_r(b, mem_ctx, &r1),
+				   "LookupNames failed");
 	torture_assert_ntstatus_ok(tctx, r1.out.result,
-		"LookupNames failed");
+				   "LookupNames failed");
 
 	rid = r1.out.rids->ids[0];
 
@@ -338,10 +340,10 @@ bool test_group_cleanup(struct torture_context *tctx,
 	torture_comment(tctx, "opening group account\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2),
-		"OpenGroup failed");
+				   dcerpc_samr_OpenGroup_r(b, mem_ctx, &r2),
+				   "OpenGroup failed");
 	torture_assert_ntstatus_ok(tctx, r2.out.result,
-		"OpenGroup failed");
+				   "OpenGroup failed");
 
 	r3.in.group_handle  = &group_handle;
 	r3.out.group_handle = &group_handle;
@@ -349,10 +351,10 @@ bool test_group_cleanup(struct torture_context *tctx,
 	torture_comment(tctx, "deleting group account\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3),
-		"DeleteGroup failed");
+				   dcerpc_samr_DeleteDomainGroup_r(b, mem_ctx, &r3),
+				   "DeleteGroup failed");
 	torture_assert_ntstatus_ok(tctx, r3.out.result,
-		"DeleteGroup failed");
+				   "DeleteGroup failed");
 
 	return true;
 }
