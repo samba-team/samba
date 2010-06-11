@@ -732,11 +732,6 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 
 	d_state = h->data;
 
-	info = talloc(mem_ctx, union samr_DomainInfo);
-	if (!info) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	switch (r->in.level) {
 	case 1: 
 	{
@@ -843,14 +838,21 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		int ret;
 		ret = gendb_search_dn(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn, &dom_msgs, attrs);
+		if (ret == 0) {
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		}
 		if (ret != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
 
-	*r->out.info = info;
+	/* allocate the info structure */
+	info = talloc_zero(mem_ctx, union samr_DomainInfo);
+	if (info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCTP(info);
+	*r->out.info = info;
 
 	switch (r->in.level) {
 	case 1:
