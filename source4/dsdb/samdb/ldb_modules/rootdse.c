@@ -83,7 +83,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	v = discard_const_p(struct ldb_val, ldb_msg_find_ldb_val(msg, attrname));
 	if (v == NULL) {
 		talloc_free(tmp_ctx);
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	dn_string = talloc_strndup(tmp_ctx, (const char *)v->data, v->length);
@@ -152,7 +152,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 
 	talloc_free(tmp_ctx);
 
-	return 0;
+	return LDB_SUCCESS;
 }	
 			
 
@@ -597,7 +597,8 @@ static int rootdse_init(struct ldb_module *module)
 
 	data = talloc_zero(module, struct private_data);
 	if (data == NULL) {
-		return -1;
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	data->num_controls = 0;
@@ -610,7 +611,7 @@ static int rootdse_init(struct ldb_module *module)
 
 	ret = ldb_next_init(module);
 
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
