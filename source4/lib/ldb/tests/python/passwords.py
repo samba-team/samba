@@ -572,8 +572,41 @@ if not "://" in host:
 
 ldb = SamDB(url=host, session_info=system_session(), credentials=creds, lp=lp)
 
+# Gets back the configuration basedn
+res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+                 attrs=["configurationNamingContext"])
+configuration_dn = res[0]["configurationNamingContext"][0]
+
+# Get the old "dSHeuristics" if it was set
+res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
+                 + configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
+if "dSHeuristics" in res[0]:
+  dsheuristics = res[0]["dSHeuristics"][0]
+else:
+  dsheuristics = None
+
+# Set the "dSHeuristics" to have the tests run against Windows Server
+m = Message()
+m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+  + configuration_dn)
+m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
+  "dSHeuristics")
+ldb.modify(m)
+
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(PasswordTests)).wasSuccessful():
     rc = 1
+
+# Reset the "dSHeuristics" as they were before
+m = Message()
+m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+  + configuration_dn)
+if dsheuristics is not None:
+    m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
+      "dSHeuristics")
+else:
+    m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
+ldb.modify(m)
+
 sys.exit(rc)
