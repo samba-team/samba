@@ -36,7 +36,6 @@
  *
  * @param _domain_handle [out] Ptr to storage to store Domain handle
  * @param _dom_sid [out] If NULL, Domain SID won't be returned
- * @return
  */
 bool test_domain_open(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b,
@@ -162,8 +161,7 @@ done:
  * Removes user by RDN through SAMR interface.
  *
  * @param domain_handle [in] Domain handle
- * @param name
- * @return
+ * @param user_rdn [in] User's RDN in ldap database
  */
 bool test_user_cleanup(struct torture_context *tctx,
 		       struct dcerpc_binding_handle *b,
@@ -302,6 +300,9 @@ bool test_user_create(struct torture_context *tctx,
 }
 
 
+/**
+ * Deletes a Group using SAMR interface
+ */
 bool test_group_cleanup(struct torture_context *tctx,
 			struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 			struct policy_handle *domain_handle,
@@ -361,6 +362,13 @@ bool test_group_cleanup(struct torture_context *tctx,
 }
 
 
+/**
+ * Creates a Group object using SAMR interface
+ *
+ * @param group_name [in] Name of the group to create
+ * @param rid [out] RID of group created. May be NULL in
+ *                  which case RID is not required by caller
+ */
 bool test_group_create(struct torture_context *tctx,
 		       struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *handle, const char *name,
