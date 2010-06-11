@@ -413,14 +413,17 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		info3->base.logon_script.string = talloc_strdup(info3, tmp);
 		RET_NOMEM(info3->base.logon_script.string);
 	}
+	tmp = pdb_get_profile_path(samu);
 	if (tmp) {
 		info3->base.profile_path.string	= talloc_strdup(info3, tmp);
 		RET_NOMEM(info3->base.profile_path.string);
 	}
+	tmp = pdb_get_homedir(samu);
 	if (tmp) {
 		info3->base.home_directory.string = talloc_strdup(info3, tmp);
 		RET_NOMEM(info3->base.home_directory.string);
 	}
+	tmp = pdb_get_dir_drive(samu);
 	if (tmp) {
 		info3->base.home_drive.string = talloc_strdup(info3, tmp);
 		RET_NOMEM(info3->base.home_drive.string);
