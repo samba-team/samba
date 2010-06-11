@@ -1869,7 +1869,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    then
      TESTCMD="`eval echo \"$SHLD $LDSHFLAGS $PICFLAG\"`"
      TESTCMD="$TESTCMD -o \"shlib.$SHLIBEXT\" shlib.o"
-     if AC_TRY_COMMAND([$TESTCMD 1>&AS_MESSAGE_LOG_FD 2>&1])
+     if AC_TRY_COMMAND([eval $TESTCMD 1>&AS_MESSAGE_LOG_FD 2>&1])
      then
        ac_cv_shlib_works=yes
      fi
