@@ -31,25 +31,6 @@
 
 
 
-static bool test_lsa_close(struct torture_context *tctx,
-			   struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-			   struct policy_handle *domain_handle)
-{
-	struct lsa_Close r;
-
-	r.in.handle = domain_handle;
-	r.out.handle = domain_handle;
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_lsa_Close_r(b, mem_ctx, &r),
-		"Close lsa domain failed");
-	torture_assert_ntstatus_ok(tctx, r.out.result,
-		"Close lsa domain failed");
-
-	return true;
-}
-
-
 bool torture_createuser(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -531,7 +512,8 @@ bool torture_userlist(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_lsa_close(torture, ctx->lsa.pipe->binding_handle, mem_ctx, &ctx->lsa.handle)) {
+	if (!test_lsa_close_handle(torture,
+	                           ctx->lsa.pipe->binding_handle, mem_ctx, &ctx->lsa.handle)) {
 		torture_comment(torture, "lsa domain close failed\n");
 		ret = false;
 	}

@@ -434,6 +434,28 @@ bool test_samr_close_handle(struct torture_context *tctx,
 }
 
 /**
+ * Closes LSA handle obtained from Connect, Open Group, etc
+ */
+bool test_lsa_close_handle(struct torture_context *tctx,
+			   struct dcerpc_binding_handle *b,
+			   TALLOC_CTX *mem_ctx,
+			   struct policy_handle *lsa_handle)
+{
+	struct lsa_Close r;
+
+	r.in.handle = lsa_handle;
+	r.out.handle = lsa_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(b, mem_ctx, &r),
+				   "Close LSA handle RPC call failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+				   "Close LSA handle failed");
+
+	return true;
+}
+
+/**
  * Create and initialize libnet_context Context.
  * Use this function in cases where we need to have SAMR and LSA pipes
  * of libnet_context to be connected before executing any other
