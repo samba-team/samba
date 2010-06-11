@@ -691,9 +691,19 @@ class BasicTests(unittest.TestCase):
         """Tests the 'distinguishedName' attribute"""
         print "Tests the 'distinguishedName' attribute"""
 
+        # a wrong "distinguishedName" attribute is obviously tolerated
         self.ldb.add({
-             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-             "objectclass": "group"})
+              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+              "objectclass": "group",
+              "distinguishedName": "cn=ldaptest,cn=users," + self.base_dn})
+
+        # proof if the DN has been set correctly
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["distinguishedName"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("distinguishedName" in res[0])
+        self.assertTrue(Dn(ldb, res[0]["distinguishedName"][0])
+           == Dn(ldb, "cn=ldaptestgroup, cn=users," + self.base_dn))
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
