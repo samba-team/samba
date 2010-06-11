@@ -366,8 +366,10 @@ bool test_group_cleanup(struct torture_context *tctx,
  *                  which case RID is not required by caller
  */
 bool test_group_create(struct torture_context *tctx,
-		       struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
-		       struct policy_handle *handle, const char *name,
+		       struct dcerpc_binding_handle *b,
+		       TALLOC_CTX *mem_ctx,
+		       struct policy_handle *handle,
+		       const char *group_name,
 		       uint32_t *rid)
 {
 	uint32_t group_rid;
@@ -375,7 +377,7 @@ bool test_group_create(struct torture_context *tctx,
 	struct samr_CreateDomainGroup r;
 	struct policy_handle group_handle;
 
-	groupname.string = name;
+	groupname.string = group_name;
 
 	r.in.domain_handle  = handle;
 	r.in.name           = &groupname;
@@ -385,32 +387,41 @@ bool test_group_create(struct torture_context *tctx,
 	 * don't care about the group RID */
 	r.out.rid           = rid ? rid : &group_rid;
 
-	torture_comment(tctx, "creating group account %s\n", name);
+	torture_comment(tctx, "creating group account %s\n", group_name);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
-		"CreateGroup failed");
+				   dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
+				   "CreateGroup failed");
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		torture_comment(tctx, "CreateGroup failed - %s\n", nt_errstr(r.out.result));
 
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_GROUP_EXISTS)) {
-			torture_comment(tctx, "Group (%s) already exists - attempting to delete and recreate group again\n", name);
-			if (!test_group_cleanup(tctx, b, mem_ctx, handle, name)) {
+			torture_comment(tctx,
+			                "Group (%s) already exists - "
+			                "attempting to delete and recreate group again\n",
+			                group_name);
+			if (!test_group_cleanup(tctx, b, mem_ctx, handle, group_name)) {
 				return false;
 			}
 
 			torture_comment(tctx, "creating group account\n");
 
 			torture_assert_ntstatus_ok(tctx,
-				dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
-				"CreateGroup failed");
+						   dcerpc_samr_CreateDomainGroup_r(b, mem_ctx, &r),
+						   "CreateGroup failed");
 			torture_assert_ntstatus_ok(tctx, r.out.result,
-				"CreateGroup failed");
+						   "CreateGroup failed");
+
+			/* be nice and close opened handles */
+			test_samr_close_handle(tctx, b, mem_ctx, &group_handle);
 
 			return true;
 		}
 		return false;
 	}
+
+	/* be nice and close opened handles */
+	test_samr_close_handle(tctx, b, mem_ctx, &group_handle);
 
 	return true;
 }
