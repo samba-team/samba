@@ -2284,7 +2284,10 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 
 	/* pull all the alias attributes */
 	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
-			      a_state->account_dn ,&res, attrs);
+			      a_state->account_dn, &res, attrs);
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
