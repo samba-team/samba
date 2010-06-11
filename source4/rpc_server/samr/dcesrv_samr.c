@@ -1259,10 +1259,9 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	struct ldb_result *res;
-	int ret;
-	unsigned int i;
-	uint32_t num_filtered_entries, first;
+	struct ldb_message **res;
+	int i, ldb_cnt;
+	uint32_t first, count;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName",
 		"userAccountControl", NULL };
@@ -1276,44 +1275,50 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 
 	d_state = h->data;
 	
-	/* don't have to worry about users in the builtin domain, as there are none */
-	ret = ldb_search(d_state->sam_ctx, mem_ctx, &res, d_state->domain_dn, LDB_SCOPE_SUBTREE, attrs, "objectClass=user");
-
-	if (ret != LDB_SUCCESS) {
-		DEBUG(3, ("Failed to search for Domain Users in %s: %s\n", 
-			  ldb_dn_get_linearized(d_state->domain_dn), ldb_errstring(d_state->sam_ctx)));
+	/* search for all domain users in this domain. This could possibly be
+	   cached and resumed on resume_key */
+	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
+				      d_state->domain_dn,
+				      &res, attrs,
+				      d_state->domain_sid,
+				      "(objectClass=user)");
+	if (ldb_cnt < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	/* convert to SamEntry format */
-	entries = talloc_array(mem_ctx, struct samr_SamEntry, res->count);
+	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	num_filtered_entries = 0;
-	for (i=0;i<res->count;i++) {
+
+	count = 0;
+
+	for (i=0;i<ldb_cnt;i++) {
 		/* Check if a mask has been requested */
 		if (r->in.acct_flags
-		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx, res->msgs[i], 
-						 d_state->domain_dn) & r->in.acct_flags) == 0)) {
+		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
+						 res[i], d_state->domain_dn) & r->in.acct_flags) == 0)) {
 			continue;
 		}
-		entries[num_filtered_entries].idx = samdb_result_rid_from_sid(mem_ctx, res->msgs[i], "objectSid", 0);
-		entries[num_filtered_entries].name.string = samdb_result_string(res->msgs[i], "sAMAccountName", "");
-		num_filtered_entries++;
+		entries[count].idx = samdb_result_rid_from_sid(mem_ctx, res[i],
+							       "objectSid", 0);
+		entries[count].name.string = samdb_result_string(res[i],
+								 "sAMAccountName", "");
+		count += 1;
 	}
 
 	/* sort the results by rid */
-	TYPESAFE_QSORT(entries, num_filtered_entries, compare_SamEntry);
+	TYPESAFE_QSORT(entries, count, compare_SamEntry);
 
 	/* find the first entry to return */
 	for (first=0;
-	     first<num_filtered_entries && entries[first].idx <= *r->in.resume_handle;
+	     first<count && entries[first].idx <= *r->in.resume_handle;
 	     first++) ;
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
-	*r->out.num_entries = num_filtered_entries - first;
+	*r->out.num_entries = count - first;
 	*r->out.num_entries = MIN(*r->out.num_entries,
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
@@ -1327,11 +1332,11 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 
 	*r->out.sam = sam;
 
-	if (first == num_filtered_entries) {
+	if (first == count) {
 		return NT_STATUS_OK;
 	}
 
-	if (*r->out.num_entries < num_filtered_entries - first) {
+	if (*r->out.num_entries < count - first) {
 		*r->out.resume_handle = entries[first+*r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
