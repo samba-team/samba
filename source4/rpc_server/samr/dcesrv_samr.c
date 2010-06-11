@@ -1810,8 +1810,7 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
-	struct ldb_message *msg;
-	struct ldb_result *res;
+	struct ldb_message *msg, **res;
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
@@ -1823,22 +1822,16 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 
 	a_state = h->data;
 	
-	ret = ldb_search(a_state->sam_ctx, mem_ctx, &res, a_state->account_dn,
-		LDB_SCOPE_SUBTREE, attrs, "objectClass=*");
-	
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+	/* pull all the group attributes */
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn, &res, attrs);
+	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
-	} else if (ret != LDB_SUCCESS) {
-		DEBUG(2, ("Error reading group info: %s\n", ldb_errstring(a_state->sam_ctx)));
+	}
+	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	if (res->count != 1) {
-		DEBUG(2, ("Error finding group info, got %d entries\n", res->count));
-		
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	msg = res->msgs[0];
+	msg = res[0];
 
 	/* allocate the info structure */
 	info = talloc_zero(mem_ctx, union samr_GroupInfo);
