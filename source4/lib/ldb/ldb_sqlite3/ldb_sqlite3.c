@@ -1059,13 +1059,6 @@ static int lsql_add(struct lsql_context *ctx)
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-			if (el->num_values > 1) {
-				ldb_asprintf_errstring(ldb, "SINGLE-VALUED attribute %s on %s specified more than once",
-						       el->name, ldb_dn_get_linearized(msg->dn));
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-		}
 
 		/* For each value of the specified attribute name... */
 		for (j = 0; j < el->num_values; j++) {
@@ -1139,12 +1132,6 @@ static int lsql_modify(struct lsql_context *ctx)
 		char *mod;
 		unsigned int j;
 
-		if (ldb_attr_cmp(el->name, "distinguishedName") == 0) {
-			ldb_asprintf_errstring(ldb, "it is not permitted to perform a modify on 'distinguishedName' (use rename instead): %s",
-					       ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-
 		/* Get a case-folded copy of the attribute name */
 		attr = ldb_attr_casefold(ctx, el->name);
 		if (attr == NULL) {
@@ -1156,14 +1143,6 @@ static int lsql_modify(struct lsql_context *ctx)
 		switch (flags) {
 
 		case LDB_FLAG_MOD_REPLACE:
-
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				if (el->num_values > 1) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg->dn));
-					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-				}
-			}
 
 			for (j=0; j<el->num_values; j++) {
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
@@ -1199,14 +1178,6 @@ static int lsql_modify(struct lsql_context *ctx)
 				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
 						       el->name, ldb_dn_get_linearized(msg->dn));
 				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				if (el->num_values > 1) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg->dn));
-					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-				}
 			}
 
 #warning "We should throw an error if no value is provided!"
