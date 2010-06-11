@@ -753,11 +753,17 @@ class BasicTests(unittest.TestCase):
              "objectclass": "group",
              "name": "ldaptestgroupx"})
 
+        # proof if the name has been set correctly
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["name"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("name" in res[0])
+        self.assertTrue(res[0]["name"][0] == "ldaptestgroup")
+
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["name"] = MessageElement("cn=ldaptestuser", FLAG_MOD_REPLACE,
           "name")
-
         try:
             ldb.modify(m)
             self.fail()
@@ -768,7 +774,6 @@ class BasicTests(unittest.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["cn"] = MessageElement("ldaptestuser",
           FLAG_MOD_REPLACE, "cn")
-
         try:
             ldb.modify(m)
             self.fail()
