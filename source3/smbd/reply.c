@@ -2935,7 +2935,7 @@ static void send_file_readbraw(connection_struct *conn,
 
 	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
-	    lp_use_sendfile(SNUM(conn), smbd_server_conn->smb1.signing_state) ) {
+	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
