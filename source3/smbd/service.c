@@ -1051,7 +1051,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
 			 conn->client_address );
-		dbgtext( "%s", srv_is_signing_active(smbd_server_conn) ? "signed " : "");
+		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ",
 			 conn->server_info->unix_name );
