@@ -785,7 +785,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	DATA_BLOB chal;
 	char *kerb_mech = NULL;
 	NTSTATUS status;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	status = parse_spnego_mechanisms(blob1, &secblob, &kerb_mech);
 	if (!NT_STATUS_IS_OK(status)) {
