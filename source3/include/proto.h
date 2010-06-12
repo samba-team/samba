@@ -5786,7 +5786,8 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 				void (*reply_fn)(struct smb_request *req,
 					NTSTATUS error_code,
 					uint8_t *buf, size_t len));
-void remove_pending_change_notify_requests_by_mid(uint64_t mid);
+void remove_pending_change_notify_requests_by_mid(
+	struct smbd_server_connection *sconn, uint64_t mid);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 						  NTSTATUS status);
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,

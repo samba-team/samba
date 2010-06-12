@@ -297,10 +297,10 @@ static void change_notify_remove_request(struct smbd_server_connection *sconn,
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_mid(uint64_t mid)
+void remove_pending_change_notify_requests_by_mid(
+	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct notify_mid_map *map;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
 		if (map->mid == mid) {
