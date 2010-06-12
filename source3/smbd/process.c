@@ -46,19 +46,19 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
 	bool ok;
 
-	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
 		return true;
 	}
 
-	smbd_server_conn->smb1.echo_handler.ref_count++;
+	sconn->smb1.echo_handler.ref_count++;
 
-	if (smbd_server_conn->smb1.echo_handler.ref_count > 1) {
+	if (sconn->smb1.echo_handler.ref_count > 1) {
 		return true;
 	}
 
 	DEBUG(10,("pid[%d] wait for socket lock\n", (int)sys_getpid()));
 
-	ok = fcntl_lock(smbd_server_conn->smb1.echo_handler.socket_lock_fd,
+	ok = fcntl_lock(sconn->smb1.echo_handler.socket_lock_fd,
 			SMB_F_SETLKW, 0, 0, F_WRLCK);
 	if (!ok) {
 		return false;
@@ -80,17 +80,17 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 {
 	bool ok;
 
-	if (smbd_server_conn->smb1.echo_handler.socket_lock_fd == -1) {
+	if (sconn->smb1.echo_handler.socket_lock_fd == -1) {
 		return true;
 	}
 
-	smbd_server_conn->smb1.echo_handler.ref_count--;
+	sconn->smb1.echo_handler.ref_count--;
 
-	if (smbd_server_conn->smb1.echo_handler.ref_count > 0) {
+	if (sconn->smb1.echo_handler.ref_count > 0) {
 		return true;
 	}
 
-	ok = fcntl_lock(smbd_server_conn->smb1.echo_handler.socket_lock_fd,
+	ok = fcntl_lock(sconn->smb1.echo_handler.socket_lock_fd,
 			SMB_F_SETLKW, 0, 0, F_UNLCK);
 	if (!ok) {
 		return false;
