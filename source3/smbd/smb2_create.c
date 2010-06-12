@@ -995,11 +995,12 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 	TALLOC_FREE(state->im);
 }
 
-void remove_deferred_open_message_smb2(uint64_t mid)
+void remove_deferred_open_message_smb2(
+	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(smbd_server_conn, mid);
+	smb2req = find_open_smb2req(sconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("remove_deferred_open_message_smb2: "
@@ -1031,12 +1032,13 @@ static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *c
 	}
 }
 
-void schedule_deferred_open_message_smb2(uint64_t mid)
+void schedule_deferred_open_message_smb2(
+	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(smbd_server_conn, mid);
+	smb2req = find_open_smb2req(sconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("schedule_deferred_open_message_smb2: "

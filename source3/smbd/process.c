@@ -610,7 +610,7 @@ void remove_deferred_open_message_smb(uint64_t mid)
 	struct pending_message_list *pml;
 
 	if (smbd_server_conn->using_smb2) {
-		remove_deferred_open_message_smb2(mid);
+		remove_deferred_open_message_smb2(smbd_server_conn, mid);
 		return;
 	}
 
@@ -638,7 +638,7 @@ void schedule_deferred_open_message_smb(uint64_t mid)
 	int i = 0;
 
 	if (smbd_server_conn->using_smb2) {
-		schedule_deferred_open_message_smb2(mid);
+		schedule_deferred_open_message_smb2(smbd_server_conn, mid);
 		return;
 	}
 
