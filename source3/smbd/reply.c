@@ -3774,7 +3774,7 @@ void reply_writebraw(struct smb_request *req)
 	 */
 	SCVAL(req->inbuf,smb_com,SMBwritec);
 
-	if (srv_is_signing_active(smbd_server_conn)) {
+	if (srv_is_signing_active(req->sconn)) {
 		END_PROFILE(SMBwritebraw);
 		exit_server_cleanly("reply_writebraw: SMB signing is active - "
 				"raw reads/writes are disallowed.");
@@ -3787,7 +3787,7 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+	if (req->sconn->smb1.echo_handler.trusted_fde) {
 		DEBUG(2,("SMBwritebraw rejected with NOT_SUPPORTED because of "
 			 "'async smb echo handler = yes'\n"));
 		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
