@@ -859,7 +859,7 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 			unsigned char locktype,
                         NTSTATUS err)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	char msg[MSG_BLOCKING_LOCK_CANCEL_SIZE];
 	struct blocking_lock_record *blr;
 
