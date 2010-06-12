@@ -3168,6 +3168,16 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		SET_UINT64(msg, info17.acct_expiry,     "accountExpires");
 		break;
 
+	case 18:
+		status = samr_set_password_buffers(dce_call,
+						   a_state->sam_ctx,
+						   a_state->account_dn,
+						   a_state->domain_state->domain_dn,
+						   mem_ctx,
+						   r->in.info->info18.lm_pwd_active ? r->in.info->info18.lm_pwd.hash : NULL,
+						   r->in.info->info18.nt_pwd_active ? r->in.info->info18.nt_pwd.hash : NULL);
+		break;
+
 	case 20:
 		SET_PARAMETERS(msg, info20.parameters,      "userParameters");
 		break;
