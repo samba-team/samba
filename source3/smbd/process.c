@@ -263,7 +263,8 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	 * valid writeX call.
 	 */
 
-	if (is_valid_writeX_buffer((uint8_t *)writeX_header)) {
+	if (is_valid_writeX_buffer(smbd_server_conn,
+				   (uint8_t *)writeX_header)) {
 		/*
 		 * If the data offset is beyond what
 		 * we've read, drain the extra bytes.

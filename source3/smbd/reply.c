@@ -4239,13 +4239,13 @@ strict_unlock:
 						(2*14) + /* word count (including bcc) */ \
 						1 /* pad byte */)
 
-bool is_valid_writeX_buffer(const uint8_t *inbuf)
+bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
+			    const uint8_t *inbuf)
 {
 	size_t numtowrite;
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (is_encrypted_packet(inbuf)) {
 		/* Can't do this on encrypted
