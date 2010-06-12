@@ -77,9 +77,8 @@ struct timeval timeval_brl_min(const struct timeval *tv1,
  next processing.
 ****************************************************************************/
 
-static bool recalc_brl_timeout(void)
+static bool recalc_brl_timeout(struct smbd_server_connection *sconn)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr;
 	struct timeval next_timeout;
 	int max_brl_timeout = lp_parm_int(-1, "brl", "recalctime", 5);
@@ -245,7 +244,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->req = talloc_move(blr, &req);
 
 	DLIST_ADD_END(sconn->smb1.locks.blocking_lock_queue, blr, struct blocking_lock_record *);
-	recalc_brl_timeout();
+	recalc_brl_timeout(sconn);
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!sconn->smb1.locks.blocking_lock_unlock_state) {
@@ -805,7 +804,7 @@ void process_blocking_lock_queue(void)
 		}
 	}
 
-	recalc_brl_timeout();
+	recalc_brl_timeout(sconn);
 }
 
 /****************************************************************************
