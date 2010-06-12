@@ -455,7 +455,7 @@ static void received_unlock_msg(struct messaging_context *msg,
 				DATA_BLOB *data)
 {
 	DEBUG(10,("received_unlock_msg (SMB2)\n"));
-	process_blocking_lock_queue_smb2(timeval_current());
+	process_blocking_lock_queue_smb2(smbd_server_conn, timeval_current());
 }
 
 /****************************************************************
@@ -819,9 +819,9 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
  the request queue.
 *****************************************************************/
 
-void process_blocking_lock_queue_smb2(struct timeval tv_curr)
+void process_blocking_lock_queue_smb2(
+	struct smbd_server_connection *sconn, struct timeval tv_curr)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_smb2_request *smb2req, *nextreq;
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {

@@ -714,7 +714,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 	struct blocking_lock_record *blr, *next = NULL;
 
 	if (sconn->using_smb2) {
-		process_blocking_lock_queue_smb2(tv_curr);
+		process_blocking_lock_queue_smb2(sconn, tv_curr);
 		return;
 	}
 
