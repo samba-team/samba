@@ -522,11 +522,11 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 
 	blob = talloc_zero(tmp_ctx, struct prefixMapBlob);
 	if (blob == NULL) {
-		talloc_free(blob);
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	ndr_err = ndr_pull_struct_blob(in, blob, blob,
+	ndr_err = ndr_pull_struct_blob(in, tmp_ctx, blob,
 				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ndr_err = ndr_push_struct_blob(out, mem_ctx,
