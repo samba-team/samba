@@ -1405,7 +1405,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	DATA_BLOB plaintext_password;
 	char *tmp;
 	const char *user;
-	fstring sub_user; /* Sainitised username for substituion */
+	fstring sub_user; /* Sanitised username for substituion */
 	const char *domain;
 	const char *native_os;
 	const char *native_lanman;
