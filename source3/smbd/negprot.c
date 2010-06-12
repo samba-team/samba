@@ -24,10 +24,9 @@
 
 extern fstring remote_proto;
 
-static void get_challenge(uint8 buff[8])
+static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 {
 	NTSTATUS nt_status;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	/* We might be called more than once, multiple negprots are
 	 * permitted */
@@ -92,7 +91,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
 	time_t t = time(NULL);
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
 
@@ -109,7 +108,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv1,secword);
 	/* Create a token value and add it to the outgoing packet. */
 	if (sconn->smb1.negprot.encrypted_passwords) {
-		get_challenge((uint8 *)smb_buf(req->outbuf));
+		get_challenge(sconn, (uint8 *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
@@ -139,7 +138,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
 	time_t t = time(NULL);
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
   
@@ -158,7 +157,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (sconn->smb1.negprot.encrypted_passwords) {
-		get_challenge((uint8 *)smb_buf(req->outbuf));
+		get_challenge(sconn, (uint8 *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
@@ -263,7 +262,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	bool negotiate_spnego = False;
 	time_t t = time(NULL);
 	ssize_t ret;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
 
@@ -332,7 +331,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			capabilities &= ~CAP_RAW_MODE;
 			if (lp_server_signing() == Required)
 				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
-			srv_set_signing_negotiated(smbd_server_conn);
+			srv_set_signing_negotiated(sconn);
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
 			if (lp_server_signing() == Required) {
@@ -363,7 +362,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			uint8 chal[8];
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
-			get_challenge(chal);
+			get_challenge(sconn, chal);
 			ret = message_push_blob(
 				&req->outbuf, data_blob_const(chal, sizeof(chal)));
 			if (ret == -1) {
@@ -528,7 +527,7 @@ void reply_negprot(struct smb_request *req)
 	char **cliprotos;
 	int i;
 	size_t converted_size;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBnegprot);
 
