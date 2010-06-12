@@ -632,9 +632,9 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp,
  Only called from the SMB1 cancel code.
 *****************************************************************************/
 
-void remove_pending_lock_requests_by_mid_smb1(uint64_t mid)
+void remove_pending_lock_requests_by_mid_smb1(
+	struct smbd_server_connection *sconn, uint64_t mid)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct blocking_lock_record *blr, *next = NULL;
 
 	for(blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = next) {
