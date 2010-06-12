@@ -5355,7 +5355,7 @@ void brl_timeout_fn(struct event_context *event_ctx,
 		void *private_data);
 struct timeval timeval_brl_min(const struct timeval *tv1,
 			const struct timeval *tv2);
-void process_blocking_lock_queue(void);
+void process_blocking_lock_queue(struct smbd_server_connection *sconn);
 bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		struct smb_request *req,
 		files_struct *fsp,

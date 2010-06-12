@@ -53,7 +53,7 @@ void brl_timeout_fn(struct event_context *event_ctx,
 	change_to_root_user();	/* TODO: Possibly run all timed events as
 				 * root */
 
-	process_blocking_lock_queue();
+	process_blocking_lock_queue(sconn);
 }
 
 /****************************************************************************
@@ -701,16 +701,15 @@ static void received_unlock_msg(struct messaging_context *msg,
 				DATA_BLOB *data)
 {
 	DEBUG(10,("received_unlock_msg\n"));
-	process_blocking_lock_queue();
+	process_blocking_lock_queue(smbd_server_conn);
 }
 
 /****************************************************************************
  Process the blocking lock queue. Note that this is only called as root.
 *****************************************************************************/
 
-void process_blocking_lock_queue(void)
+void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct timeval tv_curr = timeval_current();
 	struct blocking_lock_record *blr, *next = NULL;
 

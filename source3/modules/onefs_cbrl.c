@@ -184,7 +184,7 @@ static void onefs_cbrl_async_success(uint64_t id)
 	    LEVEL2_CONTEND_WINDOWS_BRL);
 
 	/* Process the queue, to try the next lock or finish up. */
-	process_blocking_lock_queue();
+	process_blocking_lock_queue(smbd_server_conn);
 }
 
 static void onefs_cbrl_async_failure(uint64_t id)
@@ -207,7 +207,7 @@ static void onefs_cbrl_async_failure(uint64_t id)
 
 	/* Process the queue. It will end up trying to retake the same lock,
 	 * see the error in onefs_cbrl_lock_windows() and fail. */
-	process_blocking_lock_queue();
+	process_blocking_lock_queue(smbd_server_conn);
 }
 
 static struct cbrl_event_ops cbrl_ops =
