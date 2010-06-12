@@ -139,14 +139,13 @@ static bool notify_marshall_changes(int num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-void change_notify_reply(connection_struct *conn,
-			 struct smb_request *req,
+void change_notify_reply(struct smb_request *req,
 			 NTSTATUS error_code,
 			 uint32_t max_param,
 			 struct notify_change_buf *notify_buf,
 			 void (*reply_fn)(struct smb_request *req,
-				NTSTATUS error_code,
-				uint8_t *buf, size_t len))
+					  NTSTATUS error_code,
+					  uint8_t *buf, size_t len))
 {
 	prs_struct ps;
 
@@ -313,7 +312,7 @@ void remove_pending_change_notify_requests_by_mid(uint64_t mid)
 		return;
 	}
 
-	change_notify_reply(map->req->fsp->conn, map->req->req,
+	change_notify_reply(map->req->req,
 			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
 	change_notify_remove_request(sconn, map->req);
 }
@@ -333,7 +332,7 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 		return;
 	}
 
-	change_notify_reply(map->req->fsp->conn, map->req->req,
+	change_notify_reply(map->req->req,
 			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
 	change_notify_remove_request(sconn, map->req);
 }
@@ -350,7 +349,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 
 	while (fsp->notify->requests != NULL) {
-		change_notify_reply(fsp->conn, fsp->notify->requests->req,
+		change_notify_reply(fsp->notify->requests->req,
 				    status, 0, NULL,
 				    fsp->notify->requests->reply_fn);
 		change_notify_remove_request(fsp->conn->sconn,
@@ -419,8 +418,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		TALLOC_FREE(fsp->notify->changes);
 		fsp->notify->num_changes = -1;
 		if (fsp->notify->requests != NULL) {
-			change_notify_reply(fsp->conn,
-					    fsp->notify->requests->req,
+			change_notify_reply(fsp->notify->requests->req,
 					    NT_STATUS_OK,
 					    fsp->notify->requests->max_param,
 					    fsp->notify,
@@ -481,8 +479,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 * TODO: do we have to walk the lists of requests pending?
 	 */
 
-	change_notify_reply(fsp->conn,
-			    fsp->notify->requests->req,
+	change_notify_reply(fsp->notify->requests->req,
 			    NT_STATUS_OK,
 			    fsp->notify->requests->max_param,
 			    fsp->notify,

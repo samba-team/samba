@@ -5770,14 +5770,13 @@ void reply_negprot(struct smb_request *req);
 
 /* The following definitions come from smbd/notify.c  */
 
-void change_notify_reply(connection_struct *conn,
-			 struct smb_request *req,
+void change_notify_reply(struct smb_request *req,
 			 NTSTATUS error_code,
 			 uint32_t max_param,
 			 struct notify_change_buf *notify_buf,
 			 void (*reply_fn)(struct smb_request *req,
-				NTSTATUS error_code,
-				uint8_t *buf, size_t len));
+					  NTSTATUS error_code,
+					  uint8_t *buf, size_t len));
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive);
 NTSTATUS change_notify_add_request(struct smb_request *req,

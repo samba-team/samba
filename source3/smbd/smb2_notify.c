@@ -283,7 +283,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 		 * here.
 		 */
 
-		change_notify_reply(fsp->conn, smbreq,
+		change_notify_reply(smbreq,
 				    NT_STATUS_OK,
 				    in_output_buffer_length,
 				    fsp->notify,
