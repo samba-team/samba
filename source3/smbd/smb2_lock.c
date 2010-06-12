@@ -855,7 +855,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct smbd_smb2_request *smb2req, *nextreq;
 
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
