@@ -1411,7 +1411,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	int flags;
 	uint16 session_tag;
 	connection_struct *conn = NULL;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	errno = 0;
 
