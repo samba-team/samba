@@ -1382,8 +1382,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 		       g->cleartext_utf16->length);
 	}
 
-	if (g->cleartext_utf8 &&
-	    lp_lanman_auth(ldb_get_opaque(ldb, "loadparm"))) {
+	if (g->cleartext_utf8) {
 		struct samr_Password *lm_hash;
 
 		lm_hash = talloc(io->ac, struct samr_Password);
@@ -1435,9 +1434,14 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	ret = setup_lm_fields(io);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	if (lp_lanman_auth(ldb_get_opaque(ldb, "loadparm"))) {
+		ret = setup_lm_fields(io);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	} else {
+		io->g.lm_hash = NULL;
+		io->g.lm_history_len = 0;
 	}
 
 	ret = setup_supplemental_field(io);
