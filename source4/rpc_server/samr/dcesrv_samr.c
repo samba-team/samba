@@ -2116,29 +2116,30 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct samr_QueryGroupMember *r)
 {
-	NTSTATUS status;
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
+	struct samr_domain_state *d_state;
 	struct samr_RidTypeArray *array;
 	unsigned int i, num_members;
-	struct dom_sid *members_as_sids;
-	struct dom_sid *dom_sid;
+	struct dom_sid *members;
+	NTSTATUS status;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
 	a_state = h->data;
+	d_state = a_state->domain_state;
 
-	dom_sid = a_state->domain_state->domain_sid;
-	status = dsdb_enum_group_mem(a_state->sam_ctx, mem_ctx, a_state->account_dn, &members_as_sids, &num_members);
-
+	status = dsdb_enum_group_mem(d_state->sam_ctx, mem_ctx,
+				     a_state->account_dn, &members,
+				     &num_members);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	array = talloc_zero(mem_ctx, struct samr_RidTypeArray);
-
-	if (array == NULL)
+	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (num_members == 0) {
 		*r->out.rids = array;
@@ -2146,25 +2147,28 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OK;
 	}
 
+	array->rids = talloc_array(array, uint32_t, num_members);
+	if (array->rids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	array->types = talloc_array(array, uint32_t, num_members);
+	if (array->types == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	array->count = 0;
-	array->rids = talloc_array(array, uint32_t,
-				   num_members);
-	if (array->rids == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	array->types = talloc_array(array, uint32_t,
-				    num_members);
-	if (array->types == NULL)
-		return NT_STATUS_NO_MEMORY;
-
 	for (i=0; i<num_members; i++) {
-		if (!dom_sid_in_domain(dom_sid, &members_as_sids[i])) {
+		if (!dom_sid_in_domain(d_state->domain_sid, &members[i])) {
 			continue;
 		}
-		status = dom_sid_split_rid(NULL, &members_as_sids[i], NULL, &array->rids[array->count]);
+
+		status = dom_sid_split_rid(NULL, &members[i], NULL,
+					   &array->rids[array->count]);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
 		array->types[array->count] = 7; /* RID type of some kind, not sure what the value means. */
 		array->count++;
 	}
@@ -2536,42 +2540,40 @@ static NTSTATUS dcesrv_samr_GetMembersInAlias(struct dcesrv_call_state *dce_call
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	struct lsa_SidPtr *sids;
+	struct lsa_SidPtr *array;
 	unsigned int i, num_members;
 	struct dom_sid *members;
 	NTSTATUS status;
+
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
 	status = dsdb_enum_group_mem(d_state->sam_ctx, mem_ctx,
-				     a_state->account_dn, &members, &num_members);
+				     a_state->account_dn, &members,
+				     &num_members);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	r->out.sids->sids = NULL;
-
 	if (num_members == 0) {
+		r->out.sids->sids = NULL;
+
 		return NT_STATUS_OK;
 	}
 
-	sids = talloc_array(mem_ctx, struct lsa_SidPtr,
-			    num_members);
-
-	if (sids == NULL)
+	array = talloc_array(mem_ctx, struct lsa_SidPtr, num_members);
+	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<num_members; i++) {
-		sids[i].sid = dom_sid_dup(sids, &members[i]);
-		if (sids[i].sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		array[i].sid = &members[i];
 	}
 
 	r->out.sids->num_sids = num_members;
-	r->out.sids->sids = sids;
+	r->out.sids->sids = array;
 
 	return NT_STATUS_OK;
 }
