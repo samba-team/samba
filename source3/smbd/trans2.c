@@ -8319,7 +8319,7 @@ static void call_trans2ioctl(connection_struct *conn,
 void reply_findclose(struct smb_request *req)
 {
 	int dptr_num;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBfindclose);
 
