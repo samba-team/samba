@@ -495,13 +495,12 @@ static bool netbios_session_retarget(const char *name, int name_type)
  Reply to a (netbios-level) special message.
 ****************************************************************************/
 
-void reply_special(char *inbuf)
+void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 {
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	fstring name1,name2;
 	char name_type1, name_type2;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
