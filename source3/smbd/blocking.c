@@ -166,7 +166,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t count,
 		uint64_t blocking_smblctx)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 	struct blocking_lock_record *blr;
 	NTSTATUS status;
 
