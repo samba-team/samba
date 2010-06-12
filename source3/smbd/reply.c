@@ -3661,7 +3661,7 @@ void reply_read_and_X(struct smb_request *req)
 				return;
 			}
 			/* We currently don't do this on signed or sealed data. */
-			if (srv_is_signing_active(smbd_server_conn) ||
+			if (srv_is_signing_active(req->sconn) ||
 			    is_encrypted_packet(req->inbuf)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
@@ -3723,9 +3723,9 @@ void reply_read_and_X(struct smb_request *req)
 		/* NT_STATUS_RETRY - fall back to sync read. */
 	}
 
-	smbd_lock_socket(smbd_server_conn);
+	smbd_lock_socket(req->sconn);
 	send_file_readX(conn, req, fsp,	startpos, smb_maxcnt);
-	smbd_unlock_socket(smbd_server_conn);
+	smbd_unlock_socket(req->sconn);
 
  out:
 	END_PROFILE(SMBreadX);
