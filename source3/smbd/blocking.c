@@ -39,7 +39,8 @@ void brl_timeout_fn(struct event_context *event_ctx,
 			   struct timeval now,
 			   void *private_data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
 
 	if (sconn->using_smb2) {
 		SMB_ASSERT(sconn->smb2.locks.brl_timeout == te);
@@ -138,9 +139,10 @@ static bool recalc_brl_timeout(void)
 		    (int)from_now.tv_sec, (int)from_now.tv_usec));
 	}
 
-	if (!(sconn->smb1.locks.brl_timeout = event_add_timed(smbd_event_context(), NULL,
-					    next_timeout,
-					    brl_timeout_fn, NULL))) {
+	sconn->smb1.locks.brl_timeout = event_add_timed(smbd_event_context(),
+							NULL, next_timeout,
+							brl_timeout_fn, sconn);
+	if (sconn->smb1.locks.brl_timeout == NULL) {
 		return False;
 	}
 
