@@ -31,12 +31,12 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
-static WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
-				     const struct dsdb_schema *schema,
-				     const struct drsuapi_DsReplicaObjectListItemEx *in,
-				     const DATA_BLOB *gensec_skey,
-				     TALLOC_CTX *mem_ctx,
-				     struct dsdb_extended_replicated_object *out)
+WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
+			      const struct dsdb_schema *schema,
+			      const struct drsuapi_DsReplicaObjectListItemEx *in,
+			      const DATA_BLOB *gensec_skey,
+			      TALLOC_CTX *mem_ctx,
+			      struct dsdb_extended_replicated_object *out)
 {
 	NTSTATUS nt_status;
 	WERROR status;
