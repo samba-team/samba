@@ -1112,8 +1112,9 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 
 		group_sid = samdb_result_dom_sid(mem_ctx, res[i],
 						 "objectSid");
-		if (group_sid == NULL)
-			continue;
+		if (group_sid == NULL) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 
 		entries[count].idx =
 			group_sid->sub_auths[group_sid->num_auths-1];
@@ -1467,8 +1468,9 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 		alias_sid = samdb_result_dom_sid(mem_ctx, res[i],
 						 "objectSid");
 
-		if (alias_sid == NULL)
-			continue;
+		if (alias_sid == NULL) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 
 		entries[count].idx =
 			alias_sid->sub_auths[alias_sid->num_auths-1];
