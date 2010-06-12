@@ -54,7 +54,7 @@ void reply_smb2002(struct smb_request *req, uint16_t choice)
 
 	req->outbuf = NULL;
 
-	smbd_smb2_first_negprot(smbd_server_conn, smb2_inbuf, len);
+	smbd_smb2_first_negprot(req->sconn, smb2_inbuf, len);
 	return;
 }
 
