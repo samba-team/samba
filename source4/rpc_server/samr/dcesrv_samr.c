@@ -3418,8 +3418,7 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 
 		group_sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
 		if (group_sid == NULL) {
-			DEBUG(0, ("Couldn't find objectSid attrib\n"));
-			continue;
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
 		array->rids[i + 1].rid =
