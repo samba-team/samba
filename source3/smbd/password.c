@@ -311,11 +311,11 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 			vuser->server_info->unix_name);
 	}
 
-	if (srv_is_signing_negotiated(smbd_server_conn) &&
+	if (srv_is_signing_negotiated(sconn) &&
 	    !vuser->server_info->guest) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
-		srv_set_signing(smbd_server_conn,
+		srv_set_signing(sconn,
 				vuser->server_info->user_session_key,
 				response_blob);
 	}
