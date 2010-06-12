@@ -1446,9 +1446,6 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	if (ldb_cnt < 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	if (ldb_cnt == 0) {
-		return NT_STATUS_OK;
-	}
 
 	/* convert to SamEntry format */
 	entries = talloc_array(mem_ctx, struct samr_SamEntry, ldb_cnt);
