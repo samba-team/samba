@@ -465,6 +465,7 @@ static bool init_smb_request(struct smb_request *req, const uint8 *inbuf,
 	req->buf    = (const uint8_t *)smb_buf(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
+	req->sconn = sconn;
 	req->conn = conn_find(sconn,req->tid);
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
