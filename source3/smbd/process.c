@@ -440,11 +440,12 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
  * Initialize a struct smb_request from an inbuf
  */
 
-static bool init_smb_request(struct smb_request *req, const uint8 *inbuf,
+static bool init_smb_request(struct smb_request *req,
+			     struct smbd_server_connection *sconn,
+			     const uint8 *inbuf,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	size_t req_size = smb_len(inbuf) + 4;
 	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
@@ -1562,8 +1563,8 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted,
-			      seqnum)) {
+	if (!init_smb_request(req, smbd_server_conn, (uint8 *)inbuf,
+			      unread_bytes, encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
 
@@ -2586,7 +2587,8 @@ static bool smbd_echo_reply(int fd,
 		return false;
 	}
 
-	if (!init_smb_request(&req, inbuf, 0, false, seqnum)) {
+	if (!init_smb_request(&req, smbd_server_conn, inbuf, 0, false,
+			      seqnum)) {
 		return false;
 	}
 	req.inbuf = inbuf;
