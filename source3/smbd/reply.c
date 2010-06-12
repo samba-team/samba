@@ -3471,7 +3471,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	if (!req_is_in_chain(req) &&
 	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
-	    lp_use_sendfile(SNUM(conn), smbd_server_conn->smb1.signing_state) ) {
+	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
