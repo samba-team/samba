@@ -1415,7 +1415,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	bool doencrypt = sconn->smb1.negprot.encrypted_passwords;
 
