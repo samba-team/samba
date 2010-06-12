@@ -252,7 +252,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
 	struct PAC_LOGON_INFO *logon_info = NULL;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(ap_rep);
