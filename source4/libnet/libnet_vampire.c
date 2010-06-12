@@ -59,8 +59,18 @@ struct libnet_vampire_cb_state {
 	const char *domain_name;
 	const char *realm;
 	struct cli_credentials *machine_account;
-	struct dsdb_schema *self_made_schema;
+
+	/* Schema loaded from local LDIF files */
 	struct dsdb_schema *provision_schema;
+
+        /* 1st pass, with some OIDs/attribute names/class names not
+	 * converted, because we may not know them yet */
+	struct dsdb_schema *self_made_schema;
+
+	/* 2nd pass, with full ID->OID->name table */
+	struct dsdb_schema *self_corrected_schema;
+
+	/* prefixMap in LDB format, from the remote DRS server */
 	DATA_BLOB prefixmap_blob;
 	const struct dsdb_schema *schema;
 
@@ -192,17 +202,16 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
-	struct dsdb_extended_replicated_objects *schema_objs_1, *schema_objs_2;
+	struct dsdb_extended_replicated_objects *schema_objs;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	struct ldb_context *schema_ldb;
 	struct ldb_message *msg;
-	struct ldb_val prefixMap_val;
 	struct ldb_message_element *prefixMap_el;
-	struct ldb_val schemaInfo_val;
 	uint32_t i;
 	int ret;
 	bool ok;
@@ -269,7 +278,90 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	s->provision_schema->relax_OID_conversions = true;
 
-	/* Now convert the schema elements again, using the schema we just imported */
+	/* Now convert the schema elements, using the schema we loaded locally */
+	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
+		struct dsdb_extended_replicated_object object;
+		TALLOC_CTX *tmp_ctx = talloc_new(s);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+		/* Convert the objects into LDB messages using the
+		 * provision schema, and either the provision or DRS
+		 * prefix map - it should not matter, as these are
+		 * just schema objects, so the critical parts.  At
+		 * most we would mix up the mayContain etc for new
+		 * schema classes */
+		status = dsdb_convert_object_ex(s->ldb, s->provision_schema,
+						cur, c->gensec_skey,
+						tmp_ctx, &object);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n", cur->object.identifier->dn));
+		} else {
+			/* Convert the schema from ldb_message format
+			 * (OIDs as OID strings) into schema, using
+			 * the remote prefixMap */
+			status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_made_schema, object.msg);
+			if (!W_ERROR_IS_OK(status)) {
+				DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
+					 ldb_dn_get_linearized(object.msg->dn),
+					 win_errstr(status)));
+			}
+		}
+		talloc_free(tmp_ctx);
+	}
+
+	/* attach the schema we just brought over DRS to the ldb, so we can use it in dsdb_convert_object_ex below */
+	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to attach 1st pass schema from DRS.\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	/* Now convert the schema elements again, using the schema we loaded over DRS */
+	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
+		struct dsdb_extended_replicated_object object;
+		TALLOC_CTX *tmp_ctx = talloc_new(s);
+		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+		/* Convert the objects into LDB messages using the
+		 * self_made_schema, and the DRS prefix map.  We now
+		 * know the full schema int->OID->name mapping, so we
+		 * can get it right this time */
+		status = dsdb_convert_object_ex(s->ldb, s->self_made_schema,
+						cur, c->gensec_skey,
+						tmp_ctx, &object);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("ERROR: Failed to convert schema object %s into ldb msg\n", cur->object.identifier->dn));
+		} else {
+			/* Convert the schema from ldb_message format
+			 * (OIDs as OID strings) into schema, using
+			 * the remote prefixMap, now that we know
+			 * names for all the schema elements (from the
+			 * first conversion) */
+			status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_corrected_schema, object.msg);
+			if (!W_ERROR_IS_OK(status)) {
+				DEBUG(0,("ERROR: failed to convert object %s into a schema element: %s\n",
+					 ldb_dn_get_linearized(object.msg->dn),
+					 win_errstr(status)));
+			}
+		}
+		talloc_free(tmp_ctx);
+	}
+
+	/* We don't want to use the s->self_made_schema any more */
+	s->self_made_schema = NULL;
+
+	/* attach the schema we just brought over DRS to the ldb */
+	ret = dsdb_set_schema(s->ldb, s->self_corrected_schema);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to attach 2nd pass (corrected) schema from DRS.\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	/* we don't want to access the self made schema anymore */
+	s->schema = s->self_corrected_schema;
+	s->self_corrected_schema = NULL;
+
+	/* Now convert the schema elements again, using the schema we finalised, ready to actually import */
 	status = dsdb_extended_replicated_objects_convert(s->ldb,
 							  c->partition->nc.dn,
 							  mapping_ctr,
@@ -280,95 +372,55 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 							  s_dsa,
 							  uptodateness_vector,
 							  c->gensec_skey,
-							  s, &schema_objs_1);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed to convert objects when trying to import over DRS (1st pass, to create local schema): %s\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
-	}
-
-	for (i=0; i < schema_objs_1->num_objects; i++) {
-		status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_made_schema, schema_objs_1->objects[i].msg);
-		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(0,("Failed to convert object %s into a schema element: %s\n",
-				 ldb_dn_get_linearized(schema_objs_1->objects[i].msg->dn),
-				 win_errstr(status)));
-			return werror_to_ntstatus(status);
-		}
-	}
-	/* We don't need the first conversion of the schema any more */
-	talloc_free(schema_objs_1);
-
-	/* attach the schema we just brought over DRS to the ldb */
-	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to attach schema from DRS.\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
-	/* we don't want to access the self made schema anymore */
-	s->schema = s->self_made_schema;
-	s->self_made_schema = NULL;
-
-	/* Now convert the schema elements again, using the schema we just imported - we do this
-	   'just in case' the schema in our LDIF was wrong, but correct enough to read a valid schema */
-	status = dsdb_extended_replicated_objects_convert(s->ldb, 
-							  c->partition->nc.dn,
-							  mapping_ctr,
-							  object_count,
-							  first_object,
-							  linked_attributes_count,
-							  linked_attributes,
-							  s_dsa,
-							  uptodateness_vector,
-							  c->gensec_skey,
-							  s, &schema_objs_2);
+							  s, &schema_objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
 	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
-		for (i=0; i < schema_objs_2->num_objects; i++) {
+		for (i=0; i < schema_objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
 			ldif.changetype = LDB_CHANGETYPE_NONE;
-			ldif.msg = schema_objs_2->objects[i].msg;
+			ldif.msg = schema_objs->objects[i].msg;
 			ldb_ldif_write_file(s->ldb, stdout, &ldif);
-			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, schema_objs_2->objects[i].meta_data);
+			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, schema_objs->objects[i].meta_data);
 		}
 	}
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb, schema_objs_2, &seq_num);
+	status = dsdb_extended_replicated_objects_commit(s->ldb, schema_objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
 	}
 
-	msg = ldb_msg_new(schema_objs_2);
+	msg = ldb_msg_new(schema_objs);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
-	msg->dn = schema_objs_2->partition_dn;
+	msg->dn = schema_objs->partition_dn;
 
-	status = dsdb_get_oid_mappings_ldb(s->schema, msg, &prefixMap_val, &schemaInfo_val);
-	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,("Failed dsdb_get_oid_mappings_ldb(%s)\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
-	}
-
-	/* we only add prefixMap here, because schemaInfo is a replicated attribute and already applied */
-	ret = ldb_msg_add_value(msg, "prefixMap", &prefixMap_val, &prefixMap_el);
+	/* We must ensure a prefixMap has been written.  Unlike other
+	 * attributes (including schemaInfo), it is not replicated in
+	 * the normal replication stream.  We can use the one from
+	 * s->prefixmap_blob because we operate with one, unchanging
+	 * prefixMap for this entire operation.  */
+	ret = ldb_msg_add_value(msg, "prefixMap", &s->prefixmap_blob, &prefixMap_el);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_FOOBAR;
 	}
-	prefixMap_el->flags = LDB_FLAG_MOD_REPLACE;
+	/* We want to know if a prefixMap was written already, as it
+	 * would mean that the above comment was not true, and we have
+	 * somehow updated the prefixMap during this transaction */
+	prefixMap_el->flags = LDB_FLAG_MOD_ADD;
 
 	ret = ldb_modify(s->ldb, msg);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to add prefixMap: %s\n", ldb_strerror(ret)));
+		DEBUG(0,("Failed to add prefixMap: %s\n", ldb_errstring(s->ldb)));
 		return NT_STATUS_FOOBAR;
 	}
 
 	talloc_free(s_dsa);
-	talloc_free(schema_objs_2);
+	talloc_free(schema_objs);
 
 	/* We must set these up to ensure the replMetaData is written
 	 * correctly, before our NTDS Settings entry is replicated */
@@ -438,7 +490,7 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		c->partition->nc.dn, object_count, linked_attributes_count));
 	}
 
-	if (!s->schema) {
+	if (!s->self_made_schema) {
 		WERROR werr;
 		struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr_without_schema_info;
 		/* Put the DRS prefixmap aside for the schema we are
@@ -457,18 +509,26 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 			return werror_to_ntstatus(werr);
 		}
 
+		/* Set up two manually-constructed schema - the local
+		 * schema from the provision will be used to build
+		 * one, which will then in turn be used to build the
+		 * other. */
 		s->self_made_schema = dsdb_new_schema(s);
-
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
+		s->self_corrected_schema = dsdb_new_schema(s);
+		NT_STATUS_HAVE_NO_MEMORY(s->self_corrected_schema);
 
 		status = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
 
-		s->schema = s->self_made_schema;
+		status = dsdb_load_prefixmap_from_drsuapi(s->self_corrected_schema, mapping_ctr);
+		if (!W_ERROR_IS_OK(status)) {
+			return werror_to_ntstatus(status);
+		}
 	} else {
-		status = dsdb_schema_pfm_contains_drsuapi_pfm(s->schema->prefixmap, mapping_ctr);
+		status = dsdb_schema_pfm_contains_drsuapi_pfm(s->self_made_schema->prefixmap, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
