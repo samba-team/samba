@@ -5372,7 +5372,8 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			enum file_close_type close_type);
 void remove_pending_lock_requests_by_mid_smb1(
 	struct smbd_server_connection *sconn, uint64_t mid);
-bool blocking_lock_was_deferred_smb1(uint64_t mid);
+bool blocking_lock_was_deferred_smb1(
+	struct smbd_server_connection *sconn, uint64_t mid);
 struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 			uint64_t smblctx,
 			uint64_t offset,
