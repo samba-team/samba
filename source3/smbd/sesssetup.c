@@ -631,7 +631,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 {
 	DATA_BLOB response;
 	struct auth_serversupplied_info *server_info = NULL;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		server_info = auth_ntlmssp_server_info(talloc_tos(), (*auth_ntlmssp_state));
