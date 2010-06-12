@@ -72,14 +72,16 @@ static char *smb_realloc_limit(void *ptr, size_t size)
 	return val;
 }
 
-static bool api_Unsupported(connection_struct *conn, uint16 vuid,
+static bool api_Unsupported(struct smbd_server_connection *sconn,
+			    connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt,
 				char **rdata, char **rparam,
 				int *rdata_len, int *rparam_len);
 
-static bool api_TooSmall(connection_struct *conn, uint16 vuid, char *param, char *data,
+static bool api_TooSmall(struct smbd_server_connection *sconn,
+			 connection_struct *conn, uint16 vuid, char *param, char *data,
 			 int mdrcnt, int mprcnt,
 			 char **rdata, char **rparam,
 			 int *rdata_len, int *rparam_len);
@@ -747,7 +749,8 @@ static int get_printerdrivernumber(const struct spoolss_DriverInfo3 *driver)
 	return result;
 }
 
-static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
+static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
+				 connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -949,7 +952,8 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
  View list of all print jobs on all queues.
 ****************************************************************************/
 
-static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
+static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
+			      connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt,
@@ -1408,7 +1412,8 @@ static int srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
  extracted from lists saved by nmbd on the local host.
 ****************************************************************************/
 
-static bool api_RNetServerEnum2(connection_struct *conn, uint16 vuid,
+static bool api_RNetServerEnum2(struct smbd_server_connection *sconn,
+				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt, char **rdata, 
@@ -1577,7 +1582,8 @@ static int srv_name_match(const char *n1, const char *n2)
 	return ret;
 }
 
-static bool api_RNetServerEnum3(connection_struct *conn, uint16 vuid,
+static bool api_RNetServerEnum3(struct smbd_server_connection *sconn,
+				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt, char **rdata,
@@ -1769,7 +1775,8 @@ static bool api_RNetServerEnum3(connection_struct *conn, uint16 vuid,
   command 0x34 - suspected of being a "Lookup Names" stub api
   ****************************************************************************/
 
-static bool api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid,
+static bool api_RNetGroupGetUsers(struct smbd_server_connection *sconn,
+				  connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt, char **rdata, 
@@ -1959,7 +1966,8 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 	return len;
 }
 
-static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
+static bool api_RNetShareGetInfo(struct smbd_server_connection *sconn,
+				 connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2022,7 +2030,8 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
   Share names longer than 12 bytes must be skipped.
  ****************************************************************************/
 
-static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
+static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
+			      connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int                mdrcnt,
@@ -2129,7 +2138,8 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
   Add a share
   ****************************************************************************/
 
-static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
+static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
+			     connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2284,7 +2294,8 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
   view list of groups available
   ****************************************************************************/
 
-static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
+static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
+			      connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2441,7 +2452,8 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
  Get groups that a user is a member of.
 ******************************************************************/
 
-static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
+static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
+				 connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2600,7 +2612,8 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
  Get all users.
 ******************************************************************/
 
-static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
+static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
+			     connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2758,7 +2771,8 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
  Get the time of day info.
 ****************************************************************************/
 
-static bool api_NetRemoteTOD(connection_struct *conn,uint16 vuid,
+static bool api_NetRemoteTOD(struct smbd_server_connection *sconn,
+			     connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -2816,7 +2830,8 @@ static bool api_NetRemoteTOD(connection_struct *conn,uint16 vuid,
  Set the user password.
 *****************************************************************************/
 
-static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
+static bool api_SetUserPassword(struct smbd_server_connection *sconn,
+				connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3033,7 +3048,8 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
   Set the user password (SamOEM version - gets plaintext).
 ****************************************************************************/
 
-static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
+static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
+				     connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3152,7 +3168,8 @@ static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
   Form: <W> <> 
   ****************************************************************************/
 
-static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
+static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
+				connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3277,7 +3294,8 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
   Purge a print queue - or pause or resume it.
   ****************************************************************************/
 
-static bool api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid,
+static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
+				connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3431,7 +3449,8 @@ static int check_printjob_info(struct pack_desc* desc,
 	return True;
 }
 
-static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
+static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
+			     connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3583,7 +3602,8 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
  Get info about the server.
 ****************************************************************************/
 
-static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
+static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
+				  connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -3749,7 +3769,8 @@ static bool api_RNetServerGetInfo(connection_struct *conn,uint16 vuid,
  Get info about the server.
 ****************************************************************************/
 
-static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
+static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
+				connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4010,7 +4031,8 @@ There is no auxiliary data in the response.
 #define usri11_code_page      84
 #define usri11_end            86
 
-static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
+static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
+				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4371,14 +4393,14 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	return(True);
 }
 
-static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
+static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
+				connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
@@ -4480,7 +4502,8 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
  api_WAccessGetUserPerms
 ****************************************************************************/
 
-static bool api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid,
+static bool api_WAccessGetUserPerms(struct smbd_server_connection *sconn,
+				    connection_struct *conn,uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4525,7 +4548,8 @@ static bool api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid,
   api_WPrintJobEnumerate
   ****************************************************************************/
 
-static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
+static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
+				 connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4655,7 +4679,8 @@ static bool api_WPrintJobGetInfo(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
+static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
+				   connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4853,7 +4878,8 @@ static void fill_printdest_info(struct spoolss_PrinterInfo2 *info2, int uLevel,
 	}
 }
 
-static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
+static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
+				  connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -4983,7 +5009,8 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
+static bool api_WPrintDestEnum(struct smbd_server_connection *sconn,
+			       connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -5088,7 +5115,8 @@ static bool api_WPrintDestEnum(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool api_WPrintDriverEnum(connection_struct *conn, uint16 vuid,
+static bool api_WPrintDriverEnum(struct smbd_server_connection *sconn,
+				 connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -5151,7 +5179,8 @@ static bool api_WPrintDriverEnum(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool api_WPrintQProcEnum(connection_struct *conn, uint16 vuid,
+static bool api_WPrintQProcEnum(struct smbd_server_connection *sconn,
+				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -5214,7 +5243,8 @@ static bool api_WPrintQProcEnum(connection_struct *conn, uint16 vuid,
 	return True;
 }
 
-static bool api_WPrintPortEnum(connection_struct *conn, uint16 vuid,
+static bool api_WPrintPortEnum(struct smbd_server_connection *sconn,
+			       connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -5283,7 +5313,8 @@ static bool api_WPrintPortEnum(connection_struct *conn, uint16 vuid,
  List open sessions
  ****************************************************************************/
 
-static bool api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
+static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
+				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt,int mprcnt,
@@ -5368,7 +5399,8 @@ static bool api_RNetSessionEnum(connection_struct *conn, uint16 vuid,
  The buffer was too small.
  ****************************************************************************/
 
-static bool api_TooSmall(connection_struct *conn,uint16 vuid, char *param, char *data,
+static bool api_TooSmall(struct smbd_server_connection *sconn,
+			 connection_struct *conn,uint16 vuid, char *param, char *data,
 			 int mdrcnt, int mprcnt,
 			 char **rdata, char **rparam,
 			 int *rdata_len, int *rparam_len)
@@ -5392,7 +5424,8 @@ static bool api_TooSmall(connection_struct *conn,uint16 vuid, char *param, char 
  The request is not supported.
  ****************************************************************************/
 
-static bool api_Unsupported(connection_struct *conn, uint16 vuid,
+static bool api_Unsupported(struct smbd_server_connection *sconn,
+			    connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
 				int mdrcnt, int mprcnt,
@@ -5418,7 +5451,8 @@ static bool api_Unsupported(connection_struct *conn, uint16 vuid,
 static const struct {
 	const char *name;
 	int id;
-	bool (*fn)(connection_struct *, uint16,
+	bool (*fn)(struct smbd_server_connection *sconn,
+		   connection_struct *, uint16,
 			char *, int,
 			char *, int,
 			int,int,char **,char **,int *,int *);
@@ -5476,7 +5510,6 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	       int tdscnt, int tpscnt,
 	       int mdrcnt, int mprcnt)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	int api_command;
 	char *rdata = NULL;
 	char *rparam = NULL;
@@ -5525,7 +5558,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	/* Check whether this api call can be done anonymously */
 
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-		user_struct *user = get_valid_user_struct(sconn, vuid);
+		user_struct *user = get_valid_user_struct(req->sconn, vuid);
 
 		if (!user || user->server_info->guest) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
@@ -5551,7 +5584,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 		return;
 	}
 
-	reply = api_commands[i].fn(conn,
+	reply = api_commands[i].fn(req->sconn, conn,
 				vuid,
 				params,tpscnt,	/* params + length */
 				data,tdscnt,	/* data + length */
@@ -5560,13 +5593,16 @@ void api_reply(connection_struct *conn, uint16 vuid,
 
 
 	if (rdata_len > mdrcnt || rparam_len > mprcnt) {
-		reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
+		reply = api_TooSmall(req->sconn,conn,vuid,params,data,
+				     mdrcnt,mprcnt,
 					&rdata,&rparam,&rdata_len,&rparam_len);
 	}
 
 	/* if we get False back then it's actually unsupported */
 	if (!reply) {
-		reply = api_Unsupported(conn,vuid,params,tpscnt,data,tdscnt,mdrcnt,mprcnt,
+		reply = api_Unsupported(req->sconn,conn,vuid,params,tpscnt,
+					data,
+					tdscnt,mdrcnt,mprcnt,
 			&rdata,&rparam,&rdata_len,&rparam_len);
 	}
 
