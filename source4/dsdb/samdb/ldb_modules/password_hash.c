@@ -215,7 +215,7 @@ static int setup_lm_fields(struct setup_password_fields_io *io)
 		return LDB_SUCCESS;
 	}
 
-	/* We might not have an old NT password */
+	/* We might not have an old LM password */
 	io->g.lm_history = talloc_array(io->ac,
 					struct samr_Password,
 					io->ac->status->domain_data.pwdHistoryLength);
