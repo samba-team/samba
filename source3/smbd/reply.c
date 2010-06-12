@@ -3033,6 +3033,7 @@ normal_readbraw:
 void reply_readbraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smbd_server_connection *sconn = req->sconn;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -3042,7 +3043,7 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active(smbd_server_conn) ||
+	if (srv_is_signing_active(sconn) ||
 	    is_encrypted_packet(req->inbuf)) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
@@ -3054,7 +3055,7 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+	if (sconn->smb1.echo_handler.trusted_fde) {
 		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of "
 			 "'async smb echo handler = yes'\n"));
 		reply_readbraw_error();
