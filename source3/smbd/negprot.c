@@ -177,7 +177,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-DATA_BLOB negprot_spnego(void)
+DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
@@ -191,7 +191,6 @@ DATA_BLOB negprot_spnego(void)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	sconn->smb1.negprot.spnego = true;
 
@@ -383,7 +382,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		DATA_BLOB spnego_blob = negprot_spnego();
+		DATA_BLOB spnego_blob = negprot_spnego(req->sconn);
 
 		if (spnego_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);

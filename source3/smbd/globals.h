@@ -136,7 +136,7 @@ struct smbd_smb2_request;
 struct smbd_smb2_session;
 struct smbd_smb2_tcon;
 
-DATA_BLOB negprot_spnego(void);
+DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn);
 
 void smbd_lock_socket(struct smbd_server_connection *sconn);
 void smbd_unlock_socket(struct smbd_server_connection *sconn);
