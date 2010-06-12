@@ -4684,34 +4684,29 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			ret = false;
 		}
 
-		if (torture_setting_bool(tctx, "samba4", false)) {
-			torture_comment(tctx, "skipping Set Password level 18 and 21 against Samba4\n");
-		} else {
+		if (!test_SetUserPass_18(p, tctx, user_handle, &password)) {
+			ret = false;
+		}
 
-			if (!test_SetUserPass_18(p, tctx, user_handle, &password)) {
+		if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
+			ret = false;
+		}
+
+		for (i = 0; password_fields[i]; i++) {
+
+			if (password_fields[i] == SAMR_FIELD_LM_PASSWORD_PRESENT) {
+				/* we need to skip as that would break
+				 * the ChangePasswordUser3 verify */
+				continue;
+			}
+
+			if (!test_SetUserPass_21(p, tctx, user_handle, password_fields[i], &password)) {
 				ret = false;
 			}
 
+			/* check it was set right */
 			if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
 				ret = false;
-			}
-
-			for (i = 0; password_fields[i]; i++) {
-
-				if (password_fields[i] == SAMR_FIELD_LM_PASSWORD_PRESENT) {
-					/* we need to skip as that would break
-					 * the ChangePasswordUser3 verify */
-					continue;
-				}
-
-				if (!test_SetUserPass_21(p, tctx, user_handle, password_fields[i], &password)) {
-					ret = false;
-				}
-
-				/* check it was set right */
-				if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
-					ret = false;
-				}
 			}
 		}
 
