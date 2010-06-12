@@ -699,7 +699,7 @@ bool open_was_deferred(uint64_t mid)
 	struct pending_message_list *pml;
 
 	if (smbd_server_conn->using_smb2) {
-		return open_was_deferred_smb2(mid);
+		return open_was_deferred_smb2(smbd_server_conn, mid);
 	}
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {

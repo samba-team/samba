@@ -934,12 +934,12 @@ static struct smbd_smb2_request *find_open_smb2req(
 	return NULL;
 }
 
-bool open_was_deferred_smb2(uint64_t mid)
+bool open_was_deferred_smb2(struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
 	struct smbd_smb2_request *smb2req;
 
-	smb2req = find_open_smb2req(smbd_server_conn, mid);
+	smb2req = find_open_smb2req(sconn, mid);
 
 	if (!smb2req) {
 		DEBUG(10,("open_was_deferred_smb2: mid %llu smb2req == NULL\n",
