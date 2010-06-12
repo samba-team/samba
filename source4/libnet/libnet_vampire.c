@@ -137,8 +137,8 @@ NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
 		return status;
 	}
 
-	s->ldb = result.samdb;
-	s->lp_ctx = result.lp_ctx;
+	s->ldb = talloc_steal(s, result.samdb);
+	s->lp_ctx = talloc_steal(s, result.lp_ctx);
 
 	/* wrap the entire vapire operation in a transaction.  This
 	   isn't just cosmetic - we use this to ensure that linked
