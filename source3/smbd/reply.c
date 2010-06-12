@@ -2897,17 +2897,17 @@ static void sendfile_short_send(files_struct *fsp,
  Return a readbraw error (4 bytes of zero).
 ****************************************************************************/
 
-static void reply_readbraw_error(void)
+static void reply_readbraw_error(struct smbd_server_connection *sconn)
 {
 	char header[4];
 
 	SIVAL(header,0,0);
 
-	smbd_lock_socket(smbd_server_conn);
+	smbd_lock_socket(sconn);
 	if (write_data(smbd_server_fd(),header,4) != 4) {
 		fail_readraw();
 	}
-	smbd_unlock_socket(smbd_server_conn);
+	smbd_unlock_socket(sconn);
 }
 
 /****************************************************************************
@@ -2921,6 +2921,7 @@ static void send_file_readbraw(connection_struct *conn,
 			       size_t nread,
 			       ssize_t mincount)
 {
+	struct smbd_server_connection *sconn = req->sconn;
 	char *outbuf = NULL;
 	ssize_t ret=0;
 
@@ -3003,7 +3004,7 @@ normal_readbraw:
 	if (!outbuf) {
 		DEBUG(0,("send_file_readbraw: TALLOC_ARRAY failed for size %u.\n",
 			(unsigned)(nread+4)));
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		return;
 	}
 
@@ -3049,7 +3050,7 @@ void reply_readbraw(struct smb_request *req)
 	}
 
 	if (req->wct < 8) {
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		END_PROFILE(SMBreadbraw);
 		return;
 	}
@@ -3057,7 +3058,7 @@ void reply_readbraw(struct smb_request *req)
 	if (sconn->smb1.echo_handler.trusted_fde) {
 		DEBUG(2,("SMBreadbraw rejected with NOT_SUPPORTED because of "
 			 "'async smb echo handler = yes'\n"));
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		END_PROFILE(SMBreadbraw);
 		return;
 	}
@@ -3085,7 +3086,7 @@ void reply_readbraw(struct smb_request *req)
 		DEBUG(3,("reply_readbraw: fnum %d not valid "
 			"- cache prime?\n",
 			(int)SVAL(req->vwv+0, 0)));
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		END_PROFILE(SMBreadbraw);
 		return;
 	}
@@ -3096,7 +3097,7 @@ void reply_readbraw(struct smb_request *req)
 				(fsp->access_mask & FILE_EXECUTE)))) {
 		DEBUG(3,("reply_readbraw: fnum %d not readable.\n",
 				(int)SVAL(req->vwv+0, 0)));
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		END_PROFILE(SMBreadbraw);
 		return;
 	}
@@ -3134,7 +3135,7 @@ void reply_readbraw(struct smb_request *req)
 			DEBUG(0,("reply_readbraw: negative 64 bit "
 				"readraw offset (%.0f) !\n",
 				(double)startpos ));
-			reply_readbraw_error();
+			reply_readbraw_error(sconn);
 			END_PROFILE(SMBreadbraw);
 			return;
 		}
@@ -3151,7 +3152,7 @@ void reply_readbraw(struct smb_request *req)
 	    &lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		reply_readbraw_error();
+		reply_readbraw_error(sconn);
 		END_PROFILE(SMBreadbraw);
 		return;
 	}
