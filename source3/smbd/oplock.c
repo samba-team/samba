@@ -377,7 +377,7 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 
 void break_level2_to_none_async(files_struct *fsp)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
 	if (fsp->oplock_type == NO_OPLOCK) {
 		/* We already got a "break to none" message and we've handled
