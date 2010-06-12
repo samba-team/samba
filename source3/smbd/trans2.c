@@ -3631,7 +3631,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return;
 				}
 
-				if (smbd_server_conn->smb1.echo_handler.trusted_fde) {
+				if (req->sconn->smb1.echo_handler.trusted_fde) {
 					DEBUG( 2,("call_trans2setfsinfo: "
 						"request transport encryption disabled"
 						"with 'fork echo handler = yes'\n"));
