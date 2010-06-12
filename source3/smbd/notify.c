@@ -235,7 +235,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	DEBUG(10, ("change_notify_add_request: Adding request for %s: "
 		   "max_param = %d\n", fsp_str_dbg(fsp), (int)max_param));
