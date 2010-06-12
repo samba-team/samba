@@ -5369,7 +5369,7 @@ void reply_rmdir(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	files_struct *fsp = NULL;
 	int info = 0;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBrmdir);
 
