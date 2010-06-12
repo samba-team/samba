@@ -586,7 +586,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				uint64_t count,
 				uint64_t blocking_smblctx)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = smb1req->sconn;
 	struct smbd_smb2_request *smb2req = smb1req->smb2req;
 	struct tevent_req *req = NULL;
 	struct smbd_smb2_lock_state *state = NULL;
