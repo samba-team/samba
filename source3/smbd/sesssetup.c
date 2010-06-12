@@ -862,7 +862,7 @@ static void reply_spnego_auth(struct smb_request *req,
 	DATA_BLOB auth_reply = data_blob_null;
 	DATA_BLOB secblob = data_blob_null;
 	NTSTATUS status = NT_STATUS_LOGON_FAILURE;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
