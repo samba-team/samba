@@ -3251,8 +3251,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_QUERY_CIFS_UNIX_INFO:
 		{
 			bool large_write = lp_min_receive_file_size() &&
-					!srv_is_signing_active(smbd_server_conn);
-			bool large_read = !srv_is_signing_active(smbd_server_conn);
+					!srv_is_signing_active(conn->sconn);
+			bool large_read = !srv_is_signing_active(conn->sconn);
 			int encrypt_caps = 0;
 
 			if (!lp_unix_extensions()) {
