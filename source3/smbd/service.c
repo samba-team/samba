@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    service (connection) opening and closing
    Copyright (C) Andrew Tridgell 1992-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -183,7 +183,7 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 	conn->lastused_count++;
 
 	snum = SNUM(conn);
-  
+
 	if (do_chdir &&
 	    vfs_ChDir(conn,conn->connectpath) != 0 &&
 	    vfs_ChDir(conn,conn->origpath) != 0) {
@@ -198,7 +198,7 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 
 	last_conn = conn;
 	last_flags = flags;
-	
+
 	/* Obey the client case sensitivity requests - only for clients that support it. */
 	switch (lp_casesensitive(snum)) {
 		case Auto:
@@ -292,7 +292,7 @@ int add_home_service(const char *service, const char *username, const char *home
 	if (!lp_add_home(service, iHomeService, username, homedir)) {
 		return -1;
 	}
-	
+
 	return lp_servicenumber(service);
 
 }
@@ -425,7 +425,6 @@ int find_service(fstring service)
 
 static NTSTATUS share_sanity_checks(int snum, fstring dev) 
 {
-	
 	if (!lp_snum_ok(snum) || 
 	    !check_access(smbd_server_fd(), 
 			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
@@ -1181,7 +1180,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 					    vuser, no_pw, 
 					    dev, status);
 	}
-	
+
 	fstrcpy(service, service_in);
 
 	strlower_m(service);
