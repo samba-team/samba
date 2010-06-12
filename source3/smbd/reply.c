@@ -1634,7 +1634,7 @@ void reply_fclose(struct smb_request *req)
 	NTSTATUS err;
 	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBfclose);
 
