@@ -54,9 +54,10 @@ List of tasks vampire.py must perform:
 - Write out the secrets database, using the code from libnet_Join
 
 */
-struct vampire_state {
+struct libnet_vampire_cb_state {
 	const char *netbios_name;
-	struct libnet_JoinDomain *join;
+	const char *domain_name;
+	const char *realm;
 	struct cli_credentials *machine_account;
 	struct dsdb_schema *self_made_schema;
 	const struct dsdb_schema *schema;
@@ -77,10 +78,42 @@ struct vampire_state {
 	char *last_partition;
 };
 
-static NTSTATUS vampire_prepare_db(void *private_data,
-					      const struct libnet_BecomeDC_PrepareDB *p)
+/* Caller is expected to keep supplied pointers around for the lifetime of the structure */
+void *libnet_vampire_cb_state_init(TALLOC_CTX *mem_ctx,
+				   struct loadparm_context *lp_ctx, struct tevent_context *event_ctx,
+				   const char *netbios_name, const char *domain_name, const char *realm,
+				   const char *targetdir)
 {
-	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	struct libnet_vampire_cb_state *s = talloc_zero(mem_ctx, struct libnet_vampire_cb_state);
+	if (!s) {
+		return NULL;
+	}
+
+	s->lp_ctx = lp_ctx;
+	s->event_ctx = event_ctx;
+	s->netbios_name = netbios_name;
+	s->domain_name = domain_name;
+	s->realm = realm;
+	s->targetdir = targetdir;
+	return s;
+}
+
+struct ldb_context *libnet_vampire_cb_ldb(struct libnet_vampire_cb_state *state)
+{
+	state = talloc_get_type_abort(state, struct libnet_vampire_cb_state);
+	return state->ldb;
+}
+
+struct loadparm_context *libnet_vampire_cb_lp_ctx(struct libnet_vampire_cb_state *state)
+{
+	state = talloc_get_type_abort(state, struct libnet_vampire_cb_state);
+	return state->lp_ctx;
+}
+
+NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
+				      const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 	struct provision_settings settings;
 	struct provision_result result;
 	NTSTATUS status;
@@ -92,8 +125,8 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 	settings.config_dn_str = p->forest->config_dn_str;
 	settings.schema_dn_str = p->forest->schema_dn_str;
 	settings.netbios_name = p->dest_dsa->netbios_name;
-	settings.realm = s->join->out.realm;
-	settings.domain = s->join->out.domain_name;
+	settings.realm = s->realm;
+	settings.domain = s->domain_name;
 	settings.server_dn_str = p->dest_dsa->server_dn_str;
 	settings.machine_password = generate_random_password(s, 16, 255);
 	settings.targetdir = s->targetdir;
@@ -125,10 +158,10 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 
 }
 
-static NTSTATUS vampire_check_options(void *private_data,
-					     const struct libnet_BecomeDC_CheckOptions *o)
+NTSTATUS libnet_vampire_cb_check_options(void *private_data,
+					 const struct libnet_BecomeDC_CheckOptions *o)
 {
-	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 
 	DEBUG(0,("Become DC [%s] of Domain[%s]/[%s]\n",
 		s->netbios_name,
@@ -149,8 +182,8 @@ static NTSTATUS vampire_check_options(void *private_data,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS vampire_apply_schema(struct vampire_state *s,
-				  const struct libnet_BecomeDC_StoreChunk *c)
+static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
+					       const struct libnet_BecomeDC_StoreChunk *c)
 {
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
@@ -377,10 +410,10 @@ static NTSTATUS vampire_apply_schema(struct vampire_state *s,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS vampire_schema_chunk(void *private_data,
-					    const struct libnet_BecomeDC_StoreChunk *c)
+NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
+					const struct libnet_BecomeDC_StoreChunk *c)
 {
-	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t nc_object_count;
@@ -453,16 +486,16 @@ static NTSTATUS vampire_schema_chunk(void *private_data,
 	s->schema_part.last_object = cur;
 
 	if (!c->partition->more_data) {
-		return vampire_apply_schema(s, c);
+		return libnet_vampire_cb_apply_schema(s, c);
 	}
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS vampire_store_chunk(void *private_data,
-					   const struct libnet_BecomeDC_StoreChunk *c)
+NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
+			     const struct libnet_BecomeDC_StoreChunk *c)
 {
-	struct vampire_state *s = talloc_get_type(private_data, struct vampire_state);
+	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t nc_object_count;
@@ -614,7 +647,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	struct libnet_JoinDomain *join;
 	struct provision_store_self_join_settings *set_secrets;
 	struct libnet_BecomeDC b;
-	struct vampire_state *s;
+	struct libnet_vampire_cb_state *s;
 	struct ldb_message *msg;
 	const char *error_string;
 	int ldb_ret;
@@ -626,15 +659,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	
 	r->out.error_string = NULL;
 
-	s = talloc_zero(mem_ctx, struct vampire_state);
-	if (!s) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	s->lp_ctx = ctx->lp_ctx;
-	s->event_ctx = ctx->event_ctx;
-
-	join = talloc_zero(s, struct libnet_JoinDomain);
+	join = talloc_zero(mem_ctx, struct libnet_JoinDomain);
 	if (!join) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -644,16 +669,16 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	} else {
 		netbios_name = talloc_reference(join, lp_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
+			talloc_free(join);
 			r->out.error_string = NULL;
-			talloc_free(s);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	account_name = talloc_asprintf(join, "%s$", netbios_name);
 	if (!account_name) {
+		talloc_free(join);
 		r->out.error_string = NULL;
-		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -671,13 +696,17 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	status = libnet_JoinDomain(ctx, join, join);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, join->out.error_string);
-		talloc_free(s);
+		talloc_free(join);
 		return status;
 	}
 	
-	s->join = join;
-
-	s->targetdir = r->in.targetdir;
+	s = libnet_vampire_cb_state_init(mem_ctx, ctx->lp_ctx, ctx->event_ctx,
+					 netbios_name, join->out.domain_name, join->out.realm,
+					 r->in.targetdir);
+	if (!s) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(s, join);
 
 	ZERO_STRUCT(b);
 
@@ -701,11 +730,11 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	b.in.dest_dsa_netbios_name	= netbios_name;
 
 	b.in.callbacks.private_data	= s;
-	b.in.callbacks.check_options	= vampire_check_options;
-	b.in.callbacks.prepare_db       = vampire_prepare_db;
-	b.in.callbacks.schema_chunk	= vampire_schema_chunk;
-	b.in.callbacks.config_chunk	= vampire_store_chunk;
-	b.in.callbacks.domain_chunk	= vampire_store_chunk;
+	b.in.callbacks.check_options	= libnet_vampire_cb_check_options;
+	b.in.callbacks.prepare_db       = libnet_vampire_cb_prepare_db;
+	b.in.callbacks.schema_chunk	= libnet_vampire_cb_schema_chunk;
+	b.in.callbacks.config_chunk	= libnet_vampire_cb_store_chunk;
+	b.in.callbacks.domain_chunk	= libnet_vampire_cb_store_chunk;
 
 	b.in.rodc_join = lp_parm_bool(s->lp_ctx, NULL, "repl", "RODC", false);
 

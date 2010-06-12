@@ -36,5 +36,7 @@ struct libnet_Vampire {
 	} out;
 };
 
+/* Private context for the default callbacks */
+struct libnet_vampire_cb_state;
 
 #endif /* __LIBNET_VAMPIRE_H__ */
