@@ -237,8 +237,7 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				uint32_t access_mask,
 				uint32_t *access_granted);
 
-void smbd_notify_cancel_by_smbreq(struct smbd_server_connection *sconn,
-				  const struct smb_request *smbreq);
+void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,

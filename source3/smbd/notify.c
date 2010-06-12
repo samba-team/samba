@@ -318,9 +318,9 @@ void remove_pending_change_notify_requests_by_mid(uint64_t mid)
 	change_notify_remove_request(map->req);
 }
 
-void smbd_notify_cancel_by_smbreq(struct smbd_server_connection *sconn,
-				  const struct smb_request *smbreq)
+void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 {
+	struct smbd_server_connection *sconn = smbreq->sconn;
 	struct notify_mid_map *map;
 
 	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
