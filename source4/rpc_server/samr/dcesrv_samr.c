@@ -1525,6 +1525,8 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
+	const char *filter;
+	const char * const attrs[] = { "objectSid", NULL };
 	struct ldb_message **res;
 	uint32_t i;
 	int count = 0;
@@ -1533,43 +1535,43 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 
 	d_state = h->data;
 
-	if (r->in.sids->num_sids > 0) {
-		const char *filter;
-		const char * const attrs[2] = { "objectSid", NULL };
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(|(grouptype=%d)(grouptype=%d))"
+				 "(objectclass=group)(|",
+				 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-		filter = talloc_asprintf(mem_ctx,
-					 "(&(|(grouptype=%d)(grouptype=%d))"
-					 "(objectclass=group)(|",
-					 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
-					 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
-		if (filter == NULL)
-			return NT_STATUS_NO_MEMORY;
+	for (i=0; i<r->in.sids->num_sids; i++) {
+		const char *memberdn;
 
-		for (i=0; i<r->in.sids->num_sids; i++) {
-			const char *memberdn;
-
-			memberdn = 
-				samdb_search_string(d_state->sam_ctx,
-						    mem_ctx, NULL,
-						    "distinguishedName",
-						    "(objectSid=%s)",
-						    ldap_encode_ndr_dom_sid(mem_ctx, 
-									    r->in.sids->sids[i].sid));
-
-			if (memberdn == NULL)
-				continue;
-
-			filter = talloc_asprintf(mem_ctx, "%s(member=%s)",
-						 filter, memberdn);
-			if (filter == NULL)
-				return NT_STATUS_NO_MEMORY;
+		memberdn = samdb_search_string(d_state->sam_ctx,
+					       mem_ctx, d_state->domain_dn,
+					       "distinguishedName",
+					       "(objectSid=%s)",
+					       ldap_encode_ndr_dom_sid(mem_ctx, 								       r->in.sids->sids[i].sid));
+		if (memberdn == NULL) {
+			continue;
 		}
 
+		filter = talloc_asprintf(mem_ctx, "%s(member=%s)", filter,
+					 memberdn);
+		if (filter == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	/* Find out if we had at least one valid member SID passed - otherwise
+	 * just skip the search. */
+	if (strstr(filter, "member") != NULL) {
 		count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 					    d_state->domain_dn, &res, attrs,
 					    d_state->domain_sid, "%s))", filter);
-		if (count < 0)
+		if (count < 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 	}
 
 	r->out.rids->count = 0;
@@ -1581,10 +1583,8 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 		struct dom_sid *alias_sid;
 
 		alias_sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
-
 		if (alias_sid == NULL) {
-			DEBUG(0, ("Could not find objectSid\n"));
-			continue;
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
 		r->out.rids->ids[r->out.rids->count] =
