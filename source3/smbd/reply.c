@@ -607,7 +607,7 @@ void reply_tcon(struct smb_request *req)
 	const char *p;
 	DATA_BLOB password_blob;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBtcon);
 
