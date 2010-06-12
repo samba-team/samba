@@ -265,11 +265,11 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 	return NT_STATUS_OK;
 }
 
-static void change_notify_remove_request(struct notify_change_request *remove_req)
+static void change_notify_remove_request(struct smbd_server_connection *sconn,
+					 struct notify_change_request *remove_req)
 {
 	files_struct *fsp;
 	struct notify_change_request *req;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	/*
 	 * Paranoia checks, the fsp referenced must must have the request in
@@ -315,7 +315,7 @@ void remove_pending_change_notify_requests_by_mid(uint64_t mid)
 
 	change_notify_reply(map->req->fsp->conn, map->req->req,
 			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
-	change_notify_remove_request(map->req);
+	change_notify_remove_request(sconn, map->req);
 }
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
@@ -335,7 +335,7 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 
 	change_notify_reply(map->req->fsp->conn, map->req->req,
 			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
-	change_notify_remove_request(map->req);
+	change_notify_remove_request(sconn, map->req);
 }
 
 /****************************************************************************
@@ -353,7 +353,8 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 		change_notify_reply(fsp->conn, fsp->notify->requests->req,
 				    status, 0, NULL,
 				    fsp->notify->requests->reply_fn);
-		change_notify_remove_request(fsp->notify->requests);
+		change_notify_remove_request(fsp->conn->sconn,
+					     fsp->notify->requests);
 	}
 }
 
@@ -424,7 +425,8 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 					    fsp->notify->requests->max_param,
 					    fsp->notify,
 					    fsp->notify->requests->reply_fn);
-			change_notify_remove_request(fsp->notify->requests);
+			change_notify_remove_request(fsp->conn->sconn,
+						     fsp->notify->requests);
 		}
 		return;
 	}
@@ -486,7 +488,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 			    fsp->notify,
 			    fsp->notify->requests->reply_fn);
 
-	change_notify_remove_request(fsp->notify->requests);
+	change_notify_remove_request(fsp->conn->sconn, fsp->notify->requests);
 }
 
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
