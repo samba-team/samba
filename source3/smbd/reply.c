@@ -3317,7 +3317,7 @@ void reply_read(struct smb_request *req)
 	int outsize = 0;
 	files_struct *fsp;
 	struct lock_struct lock;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBread);
 
