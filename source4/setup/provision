@@ -225,8 +225,8 @@ elif opts.use_xattrs == "auto":
 	except:
 		# XXX: Should catch a specific exception here
 		if lp.get("posix:eadb") is None:
-			logger.info("Notice: you are not root or your system do not support xattr, tdb backend for attributes has been selected")
-			logger.info(" if you intend to use this provision in production you'd better rerun the script as root on a system supporting xattr")
+			logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+					    "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
 	file.close()
 
 
