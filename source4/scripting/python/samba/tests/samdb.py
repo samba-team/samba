@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from samba.auth import system_session
+import logging
 import os
 from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir
 from samba.tests import TestCaseInTempDir
@@ -78,7 +79,7 @@ class SamDBTestCase(TestCaseInTempDir):
 
         self.samdb = setup_samdb(path, self.setup_path, session_info, provision_backend, 
                                  self.lp, names, 
-                                 lambda x: None, domainsid, 
+                                 logging.getLogger("samdb"), domainsid, 
                                  domainguid, 
                                  policyguid, False, "secret", 
                                  "secret", "secret", invocationid, 

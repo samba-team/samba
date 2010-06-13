@@ -106,7 +106,7 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     names.configdn = current[0]["configurationNamingContext"]
     configdn = str(names.configdn)
     names.schemadn = current[0]["schemaNamingContext"]
-    if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb, current[0]["defaultNamingContext"][0]))):
+    if ldb.Dn(samdb, basedn) != ldb.Dn(samdb, current[0]["defaultNamingContext"][0]):
         raise ProvisioningError("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(current[0]["defaultNamingContext"][0]), paths.smbconf, basedn))
 
     names.domaindn=current[0]["defaultNamingContext"]
@@ -161,7 +161,7 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     return names
 
 
-def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
+def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
     """Create a new provision.
 
     This provision will be the reference for knowing what has changed in the
@@ -179,8 +179,8 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
         shutil.rmtree(provdir)
     os.chdir(os.path.join(setup_dir,".."))
     os.mkdir(provdir)
-    messagefunc("Provision stored in %s"%provdir)
-    provision(setup_dir, messagefunc, session, creds, smbconf=smbconf,
+    logger.info("Provision stored in %s", provdir)
+    provision(setup_dir, logger, session, creds, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
             domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,
@@ -196,7 +196,7 @@ def newprovision(names,setup_dir,creds,session,smbconf,provdir,messagefunc):
             ldap_dryrun_mode=None, useeadb=True)
 
 
-def dn_sort(x,y):
+def dn_sort(x, y):
     """Sorts two DNs in the lexicographical order it and put higher level DN
     before.
 
@@ -213,13 +213,13 @@ def dn_sort(x,y):
     len1 = len(tab1)-1
     len2 = len(tab2)-1
     # Note: python range go up to upper limit but do not include it
-    for i in range(0,minimum):
-        ret = cmp(tab1[len1-i],tab2[len2-i])
+    for i in range(0, minimum):
+        ret = cmp(tab1[len1-i], tab2[len2-i])
         if ret != 0:
             return ret
         else:
             if i == minimum-1:
-                assert len1!=len2,"PB PB PB"+" ".join(tab1)+" / "+" ".join(tab2)
+                assert len1 != len2, "PB PB PB"+" ".join(tab1)+" / "+" ".join(tab2)
                 if len1 > len2:
                     return 1
                 else:

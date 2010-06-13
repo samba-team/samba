@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
 import optparse
 import sys
 import tempfile
@@ -121,10 +122,12 @@ parser.add_option("--ldap-dryrun-mode", help="Configure LDAP backend, but do not
 
 opts = parser.parse_args()[0]
 
-def message(text):
-	"""print a message if quiet is not set."""
-	if not opts.quiet:
-		print text
+logger = logging.getLogger("provision")
+logger.addHandler(logging.StreamHandler(sys.stdout))
+if opts.quiet:
+	logger.setLevel(logging.WARNING)
+else:
+	logger.setLevel(logging.INFO)
 
 if len(sys.argv) == 1:
 	opts.interactive = True
@@ -175,7 +178,7 @@ else:
 		sys.exit(1)
 
 if not opts.adminpass:
-	message("Administrator password will be set randomly!")
+	logger.info("Administrator password will be set randomly!")
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
@@ -222,14 +225,14 @@ elif opts.use_xattrs == "auto":
 	except:
 		# XXX: Should catch a specific exception here
 		if lp.get("posix:eadb") is None:
-			message("Notice: you are not root or your system do not support xattr, tdb backend for attributes has been selected")
-			message(" if you intend to use this provision in production you'd better rerun the script as root on a system supporting xattr")
+			logger.info("Notice: you are not root or your system do not support xattr, tdb backend for attributes has been selected")
+			logger.info(" if you intend to use this provision in production you'd better rerun the script as root on a system supporting xattr")
 	file.close()
 
 
 session = system_session()
 try:
-	provision(setup_dir, message,
+	provision(setup_dir, logger,
 		  session, creds, smbconf=smbconf, targetdir=opts.targetdir,
 		  samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
 		  domainguid=opts.domain_guid, domainsid=opts.domain_sid,

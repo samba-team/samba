@@ -507,9 +507,8 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
 
 
-def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
-                           provision_backend, names, schema,
-                           serverrole, 
+def setup_samdb_partitions(samdb_path, setup_path, logger, lp, session_info, 
+                           provision_backend, names, schema, serverrole, 
                            erase=False):
     """Setup the partitions for the SAM database. 
     
@@ -541,7 +540,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
     samdb.transaction_start()
     try:
-        message("Setting up sam.ldb partitions and settings")
+        logger.info("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
                 "SCHEMADN": ldb.Dn(schema.ldb, names.schemadn).get_casefold(), 
                 "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
@@ -555,7 +554,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                 "SERVER_ROLE": serverrole
                 })
 
-        message("Setting up sam.ldb rootDSE")
+        logger.info("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, setup_path, names)
     except:
         samdb.transaction_cancel()
@@ -841,13 +840,10 @@ def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     create_gpo_struct(policy_path)
 
 
-def setup_samdb(path, setup_path, session_info, provision_backend, lp, 
-                names, message, 
-                domainsid, domainguid, policyguid, policyguid_dc,
-                fill, adminpass, krbtgtpass, 
-                machinepass, invocationid, dnspass, ntdsguid,
-                serverrole, am_rodc, dom_for_fun_level=None,
-                schema=None):
+def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
+        logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
+        adminpass, krbtgtpass, machinepass, invocationid, dnspass, ntdsguid,
+        serverrole, am_rodc, dom_for_fun_level=None, schema=None):
     """Setup a complete SAM Database.
     
     :note: This will wipe the main SAM database file!
@@ -860,8 +856,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     if dom_for_fun_level is None:
         dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
     if dom_for_fun_level < DS_DOMAIN_FUNCTION_2003:
-        message("You want to run SAMBA 4 on a domain and forest function level"
-                " lower than Windows 2003 (Native). This is not recommended")
+        logger.warning("Running SAMBA 4 on a domain and forest function level"
+                " lower than Windows 2003 (Native) is not recommended.")
 
     if dom_for_fun_level > domainControllerFunctionality:
         raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008). This won't work!")
@@ -870,7 +866,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     forestFunctionality = dom_for_fun_level
 
     # Also wipes the database
-    setup_samdb_partitions(path, setup_path, message=message, lp=lp,
+    setup_samdb_partitions(path, setup_path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
         names=names, serverrole=serverrole, schema=schema)
 
@@ -883,7 +879,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                   credentials=provision_backend.credentials, lp=lp, global_schema=False,
                   am_rodc=am_rodc)
 
-    message("Pre-loading the Samba 4 and AD schema")
+    logger.info("Pre-loading the Samba 4 and AD schema")
 
     # Load the schema from the one we computed earlier
     samdb.set_schema_from_ldb(schema.ldb)
@@ -910,7 +906,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         samdb.set_invocation_id(invocationid)
         samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
 
-        message("Adding DomainDN: %s" % names.domaindn)
+        logger.info("Adding DomainDN: %s" % names.domaindn)
 
 #impersonate domain admin
         admin_session_info = admin_session(lp, str(domainsid))
@@ -942,7 +938,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             "SAMBA_VERSION_STRING": version
             })
 
-        message("Adding configuration container")
+        logger.info("Adding configuration container")
         descr = b64encode(get_config_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": names.configdn, 
@@ -950,7 +946,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             })
 
         # The LDIF here was created when the Schema object was constructed
-        message("Setting up sam.ldb schema")
+        logger.info("Setting up sam.ldb schema")
         samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
         samdb.modify_ldif(schema.schema_dn_modify)
         samdb.write_prefixes_from_schema()
@@ -958,7 +954,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
-        message("Reopening sam.ldb with new schema")
+        logger.info("Reopening sam.ldb with new schema")
     except:
         samdb.transaction_cancel()
         raise
@@ -973,7 +969,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
     try:
         samdb.invocation_id = invocationid
 
-        message("Setting up sam.ldb configuration data")
+        logger.info("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
             "CONFIGDN": names.configdn,
             "NETBIOSNAME": names.netbiosname,
@@ -987,25 +983,25 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
             "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
             })
 
-        message("Setting up display specifiers")
+        logger.info("Setting up display specifiers")
         display_specifiers_ldif = read_ms_ldif(setup_path('display-specifiers/DisplaySpecifiers-Win2k8R2.txt'))
         display_specifiers_ldif = substitute_var(display_specifiers_ldif, {"CONFIGDN": names.configdn})
         check_all_substituted(display_specifiers_ldif)
         samdb.add_ldif(display_specifiers_ldif)
 
-        message("Adding users container")
+        logger.info("Adding users container")
         setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
                 "DOMAINDN": names.domaindn})
-        message("Modifying users container")
+        logger.info("Modifying users container")
         setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
                 "DOMAINDN": names.domaindn})
-        message("Adding computers container")
+        logger.info("Adding computers container")
         setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
                 "DOMAINDN": names.domaindn})
-        message("Modifying computers container")
+        logger.info("Modifying computers container")
         setup_modify_ldif(samdb, setup_path("provision_computers_modify.ldif"), {
                 "DOMAINDN": names.domaindn})
-        message("Setting up sam.ldb data")
+        logger.info("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
             "CREATTIME": str(int(time.time() * 1e7)), # seconds -> ticks
             "DOMAINDN": names.domaindn,
@@ -1023,7 +1019,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn})
         if fill == FILL_FULL:
-            message("Setting up sam.ldb users and groups")
+            logger.info("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "DOMAINSID": str(domainsid),
@@ -1032,7 +1028,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp,
                 "KRBTGTPASS_B64": b64encode(krbtgtpass),
                 })
 
-            message("Setting up self join")
+            logger.info("Setting up self join")
             setup_self_join(samdb, names=names, invocationid=invocationid,
                             dnspass=dnspass,
                             machinepass=machinepass,
@@ -1106,7 +1102,7 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp)
 
 
-def provision(setup_dir, message, session_info, 
+def provision(setup_dir, logger, session_info, 
               credentials, smbconf=None, targetdir=None, samdb_fill=FILL_FULL,
               realm=None, 
               rootdn=None, domaindn=None, schemadn=None, configdn=None, 
@@ -1212,12 +1208,12 @@ def provision(setup_dir, message, session_info,
     if hostip is None:
         hostips = samba.interface_ips(lp, False)
         if len(hostips) == 0:
-            message("No external IPv4 address has been found: I use the loopback.")
+            logger.warning("No external IPv4 address has been found. Using loopback.")
             hostip = '127.0.0.1'
         else:
             hostip = hostips[0]
             if len(hostips) > 1:
-                message("More than one IPv4 address found: I use " + hostip + ".")
+                logger.warning("More than one IPv4 address found. Using %s.", hostip)
 
     if hostip6 is None:
         try:
@@ -1251,20 +1247,20 @@ def provision(setup_dir, message, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message)
+                                         message=logger.info)
     elif backend_type == "existing":
         provision_backend = ExistingBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message,
+                                         message=logger.info,
                                          ldapi_url=ldapi_url)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message,
+                                         message=logger.info,
                                          domainsid=domainsid,
                                          schema=schema,
                                          hostname=hostname,
@@ -1279,7 +1275,7 @@ def provision(setup_dir, message, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=message,
+                                         message=logger.info,
                                          domainsid=domainsid,
                                          schema=schema,
                                          hostname=hostname,
@@ -1297,32 +1293,32 @@ def provision(setup_dir, message, session_info,
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
-        message("Setting up share.ldb")
+        logger.info("Setting up share.ldb")
         share_ldb = Ldb(paths.shareconf, session_info=session_info, 
                         lp=lp)
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
      
-    message("Setting up secrets.ldb")
+    logger.info("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
         session_info=session_info,
         backend_credentials=provision_backend.secrets_credentials, lp=lp)
 
-    message("Setting up the registry")
+    logger.info("Setting up the registry")
     setup_registry(paths.hklm, setup_path, session_info, 
                    lp=lp)
 
-    message("Setting up the privileges database")
+    logger.info("Setting up the privileges database")
     setup_privileges(paths.privilege, setup_path, session_info, lp=lp)
 
-    message("Setting up idmap db")
+    logger.info("Setting up idmap db")
     idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
                           lp=lp)
 
-    message("Setting up SAM db")
+    logger.info("Setting up SAM db")
     samdb = setup_samdb(paths.samdb, setup_path, session_info, 
                         provision_backend, lp, names,
-                        message, 
+                        logger=logger, 
                         domainsid=domainsid, 
                         schema=schema, domainguid=domainguid,
                         policyguid=policyguid, policyguid_dc=policyguid_dc,
@@ -1335,15 +1331,15 @@ def provision(setup_dir, message, session_info,
 
     if serverrole == "domain controller":
         if paths.netlogon is None:
-            message("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
-            message("Please either remove %s or see the template at %s" % 
+            logger.info("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
+            logger.info("Please either remove %s or see the template at %s" % 
                     (paths.smbconf, setup_path("provision.smb.conf.dc")))
             assert paths.netlogon is not None
 
         if paths.sysvol is None:
-            message("Existing smb.conf does not have a [sysvol] share, but you"
+            logger.info("Existing smb.conf does not have a [sysvol] share, but you"
                     " are configuring a DC.")
-            message("Please either remove %s or see the template at %s" % 
+            logger.info("Please either remove %s or see the template at %s" % 
                     (paths.smbconf, setup_path("provision.smb.conf.dc")))
             assert paths.sysvol is not None
 
@@ -1361,7 +1357,7 @@ def provision(setup_dir, message, session_info,
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, wheel_gid, 
                          domainsid, names.dnsdomain, names.domaindn, lp)
 
-        message("Setting up sam.ldb rootDSE marking as synchronized")
+        logger.info("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
@@ -1384,7 +1380,7 @@ def provision(setup_dir, message, session_info,
 
             # Only make a zone file on the first DC, it should be replicated
             # with DNS replication
-            create_zone_file(lp, message, paths, targetdir, setup_path,
+            create_zone_file(lp, logger.info, paths, targetdir, setup_path,
                 dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
                 hostname=names.hostname, realm=names.realm, 
                 domainguid=domainguid, ntdsguid=names.ntdsguid)
@@ -1395,18 +1391,18 @@ def provision(setup_dir, message, session_info,
             create_named_txt(paths.namedtxt, setup_path, realm=names.realm,
                               dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
                               keytab_name=paths.dns_keytab)
-            message("See %s for an example configuration include file for BIND" % paths.namedconf)
-            message("and %s for further documentation required for secure DNS "
-                    "updates" % paths.namedtxt)
+            logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+            logger.info("and %s for further documentation required for secure DNS "
+                    "updates", paths.namedtxt)
 
             create_krb5_conf(paths.krb5conf, setup_path,
                              dnsdomain=names.dnsdomain, hostname=names.hostname,
                              realm=names.realm)
-            message("A Kerberos configuration suitable for Samba 4 has been "
-                    "generated at %s" % paths.krb5conf)
+            logger.info("A Kerberos configuration suitable for Samba 4 has been "
+                    "generated at %s", paths.krb5conf)
 
     if serverrole == "domain controller":
-        create_dns_update_list(lp, message, paths, setup_path)
+        create_dns_update_list(lp, logger.info, paths, setup_path)
 
     provision_backend.post_setup()
     provision_backend.shutdown()
@@ -1424,33 +1420,35 @@ def provision(setup_dir, message, session_info,
             os.chmod(dns_keytab_path, 0640)
             os.chown(dns_keytab_path, -1, paths.bind_gid)
         except OSError:
-            message("Failed to chown %s to bind gid %u" % (dns_keytab_path,
-                paths.bind_gid))
+            logger.info("Failed to chown %s to bind gid %u", dns_keytab_path,
+                paths.bind_gid)
 
 
-    message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
+    logger.info("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php",
+            paths.phpldapadminconfig)
 
-    message("Once the above files are installed, your Samba4 server will be ready to use")
-    message("Server Role:           %s" % serverrole)
-    message("Hostname:              %s" % names.hostname)
-    message("NetBIOS Domain:        %s" % names.domain)
-    message("DNS Domain:            %s" % names.dnsdomain)
-    message("DOMAIN SID:            %s" % str(domainsid))
+    logger.info("Once the above files are installed, your Samba4 server will be ready to use")
+    logger.info("Server Role:           %s" % serverrole)
+    logger.info("Hostname:              %s" % names.hostname)
+    logger.info("NetBIOS Domain:        %s" % names.domain)
+    logger.info("DNS Domain:            %s" % names.dnsdomain)
+    logger.info("DOMAIN SID:            %s" % str(domainsid))
     if samdb_fill == FILL_FULL:
-        message("Admin password:        %s" % adminpass)
+        logger.info("Admin password:        %s" % adminpass)
     if provision_backend.type is not "ldb":
         if provision_backend.credentials.get_bind_dn() is not None:
-            message("LDAP Backend Admin DN: %s" % provision_backend.credentials.get_bind_dn())
+            logger.info("LDAP Backend Admin DN: %s" % provision_backend.credentials.get_bind_dn())
         else:
-            message("LDAP Admin User:       %s" % provision_backend.credentials.get_username())
+            logger.info("LDAP Admin User:       %s" % provision_backend.credentials.get_username())
 
-        message("LDAP Admin Password:   %s" % provision_backend.credentials.get_password())
+        logger.info("LDAP Admin Password:   %s" % provision_backend.credentials.get_password())
 
         if provision_backend.slapd_command_escaped is not None:
             # now display slapd_command_file.txt to show how slapd must be started next time
-            message("Use later the following commandline to start slapd, then Samba:")
-            message(provision_backend.slapd_command_escaped)
-            message("This slapd-Commandline is also stored under: " + provision_backend.ldapdir + "/ldap_backend_startup.sh")
+            logger.info("Use later the following commandline to start slapd, then Samba:")
+            logger.info(provision_backend.slapd_command_escaped)
+            logger.info("This slapd-Commandline is also stored under: %s/ldap_backend_startup.sh", 
+                    provision_backend.ldapdir)
 
 
     result = ProvisionResult()

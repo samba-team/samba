@@ -367,7 +367,7 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_provision(samba3, setup_dir, message, credentials, session_info,
+def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
                       smbconf, targetdir):
     oldconf = samba3.get_conf()
 
@@ -387,27 +387,30 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info,
     
     if domainname is None:
         domainname = secrets_db.domains()[0]
-        message("No domain specified in smb.conf file, assuming '%s'" % domainname)
+        logger.warning("No domain specified in smb.conf file, assuming '%s'",
+                domainname)
     
     if realm is None:
         if oldconf.get("domain logons") == "True":
-            message("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
+            logger.warning("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
             return
         else:
             realm = domainname.upper()
-            message("No realm specified in smb.conf file, assuming '%s'" % realm)
+            logger.warning("No realm specified in smb.conf file, assuming '%s'",
+                    realm)
 
     domainguid = secrets_db.get_domain_guid(domainname)
     domainsid = secrets_db.get_sid(domainname)
     if domainsid is None:
-        message("Can't find domain secrets for '%s'; using random SID" % domainname)
+        logger.warning("Can't find domain secrets for '%s'; using random SID",
+            domainname)
     
     if netbiosname is not None:
         machinepass = secrets_db.get_machine_password(netbiosname)
     else:
         machinepass = None
 
-    result = provision(setup_dir=setup_dir, message=message, 
+    result = provision(setup_dir=setup_dir, logger=logger,
                        session_info=session_info, credentials=credentials,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainguid=domainguid, domainsid=domainsid,
@@ -433,7 +436,7 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info,
         #FIXME: import_sam_account(result.samdb, user, domaindn, domainsid)
 
     if hasattr(passdb, 'ldap_url'):
-        message("Enabling Samba3 LDAP mappings for SAM database")
+        logger.info("Enabling Samba3 LDAP mappings for SAM database")
 
         enable_samba3sam(result.samdb, passdb.ldap_url)
 
