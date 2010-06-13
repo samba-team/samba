@@ -407,7 +407,7 @@ void notify_printer_status_byname(const char *sharename, uint32 status)
 
 void notify_printer_status(int snum, uint32 status)
 {
-	const char *sharename = SERVICE(snum); 
+	const char *sharename = lp_servicename(snum);
 
 	if (sharename)
 		notify_printer_status_byname(sharename, status);
@@ -472,7 +472,7 @@ void notify_job_submitted(const char *sharename, uint32 jobid,
 
 void notify_printer_driver(int snum, const char *driver_name)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_DRIVER_NAME,
@@ -481,7 +481,7 @@ void notify_printer_driver(int snum, const char *driver_name)
 
 void notify_printer_comment(int snum, const char *comment)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_COMMENT,
@@ -490,7 +490,7 @@ void notify_printer_comment(int snum, const char *comment)
 
 void notify_printer_sharename(int snum, const char *share_name)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_SHARE_NAME,
@@ -499,7 +499,7 @@ void notify_printer_sharename(int snum, const char *share_name)
 
 void notify_printer_printername(int snum, const char *printername)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PRINTER_NAME,
@@ -508,7 +508,7 @@ void notify_printer_printername(int snum, const char *printername)
 
 void notify_printer_port(int snum, const char *port_name)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PORT_NAME,
@@ -517,7 +517,7 @@ void notify_printer_port(int snum, const char *port_name)
 
 void notify_printer_location(int snum, const char *location)
 {
-	const char *sharename = SERVICE(snum);
+	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_LOCATION,
