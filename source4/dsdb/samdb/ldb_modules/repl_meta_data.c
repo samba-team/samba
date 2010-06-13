@@ -50,8 +50,6 @@
 #include "libcli/security/security.h"
 #include "lib/util/tsort.h"
 
-#define W2K3_LINKED_ATTRIBUTES 1
-
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
@@ -734,6 +732,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	char *time_str;
 	int ret;
 	unsigned int i;
+	unsigned int functional_level;
 	uint32_t ni=0;
 	bool allow_add_guid = false;
 	bool remove_current_guid = false;
@@ -752,6 +751,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
+
+	functional_level = dsdb_functional_level(ldb);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_add\n");
 
@@ -875,8 +876,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			continue;
 		}
 
-#if W2K3_LINKED_ATTRIBUTES
-		if (sa->linkID != 0 && dsdb_functional_level(ldb) > DS_DOMAIN_FUNCTION_2000) {
+		if (sa->linkID != 0 && functional_level > DS_DOMAIN_FUNCTION_2000) {
 			ret = replmd_add_fix_la(module, e, ac->seq_num, our_invocation_id, t, &guid, sa);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
@@ -886,7 +886,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			   replPropertyMetaData in FL above w2k */
 			continue;
 		}
-#endif
 
 		m->attid			= sa->attributeID_id;
 		m->version			= 1;
@@ -974,6 +973,14 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	if (functional_level == DS_DOMAIN_FUNCTION_2000) {
+		ret = ldb_request_add_control(down_req, DSDB_CONTROL_APPLY_LINKS, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+	}
+
 	/* mark the control done */
 	if (control) {
 		control->critical = 0;
@@ -1021,7 +1028,6 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		if (a->attributeID_id == omd->ctr.ctr1.array[i].attid) break;
 	}
 
-#if W2K3_LINKED_ATTRIBUTES
 	if (a->linkID != 0 && dsdb_functional_level(ldb) > DS_DOMAIN_FUNCTION_2000) {
 		/* linked attributes are not stored in
 		   replPropertyMetaData in FL above w2k, but we do
@@ -1032,7 +1038,6 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		}
 		return LDB_SUCCESS;
 	}
-#endif
 
 	if (i == omd->ctr.ctr1.count) {
 		/* we need to add a new one */
@@ -1959,10 +1964,6 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-#if !W2K3_LINKED_ATTRIBUTES
-	return LDB_SUCCESS;
-#endif
-
 	if (dsdb_functional_level(ldb) == DS_DOMAIN_FUNCTION_2000) {
 		/* don't do anything special for linked attributes */
 		return LDB_SUCCESS;
@@ -2057,6 +2058,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	bool is_urgent = false;
 	struct loadparm_context *lp_ctx;
 	char *referral;
+	unsigned int functional_level;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -2064,6 +2066,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
+	functional_level = dsdb_functional_level(ldb);
+
 	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				 struct loadparm_context);
 
@@ -2123,6 +2127,18 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(ac);
 		return ret;
 	}
+
+	/* If we are in functional level 2000, then
+	 * replmd_modify_handle_linked_attribs will have done
+	 * nothing */
+	if (functional_level == DS_DOMAIN_FUNCTION_2000) {
+		ret = ldb_request_add_control(down_req, DSDB_CONTROL_APPLY_LINKS, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+	}
+
 	talloc_steal(down_req, msg);
 
 	/* we only change whenChanged and uSNChanged if the seq_num
@@ -3551,7 +3567,16 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 	}
 
+	/* This allows layers further down to know if a change came in over replication */
 	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* If this change contained linked attributes in the body
+	 * (rather than in the links section) we need to update
+	 * backlinks in linked_attributes */
+	ret = ldb_request_add_control(req, DSDB_CONTROL_APPLY_LINKS, false, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
