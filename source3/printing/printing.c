@@ -1504,7 +1504,7 @@ static void print_queue_update(int snum, bool force)
 	lpqcommand = talloc_string_sub2(ctx,
 			lp_lpqcommand(snum),
 			"%p",
-			PRINTERNAME(snum),
+			lp_printername(snum),
 			false, false, false);
 	if (!lpqcommand) {
 		return;
@@ -1524,7 +1524,7 @@ static void print_queue_update(int snum, bool force)
 	lprmcommand = talloc_string_sub2(ctx,
 			lp_lprmcommand(snum),
 			"%p",
-			PRINTERNAME(snum),
+			lp_printername(snum),
 			false, false, false);
 	if (!lprmcommand) {
 		return;
@@ -1990,7 +1990,7 @@ static bool print_job_delete1(int snum, uint32 jobid)
 	if (pjob->spooled && pjob->sysjob != -1)
 	{
 		result = (*(current_printif->job_delete))(
-			PRINTERNAME(snum),
+			lp_printername(snum),
 			lp_lprmcommand(snum),
 			pjob);
 
@@ -2060,7 +2060,7 @@ bool print_job_delete(struct auth_serversupplied_info *server_info, int snum,
 			      "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
 			      uidtoname(server_info->utok.uid),
-			      PRINTERNAME(snum) );
+			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
 		return False;
@@ -2135,7 +2135,7 @@ bool print_job_pause(struct auth_serversupplied_info *server_info, int snum,
 			"Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
 			      uidtoname(server_info->utok.uid),
-			      PRINTERNAME(snum) );
+			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
 		*errcode = WERR_ACCESS_DENIED;
@@ -2198,7 +2198,7 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 			 "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
 			      uidtoname(server_info->utok.uid),
-			      PRINTERNAME(snum) );
+			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 		return False;
 	}

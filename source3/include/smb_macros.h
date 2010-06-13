@@ -68,7 +68,6 @@
 
 
 /* access various service details */
-#define PRINTERNAME(snum)  (lp_printername(snum))
 #define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))

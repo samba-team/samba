@@ -5607,7 +5607,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
 	/* Get printer name */
 
-	pname = PRINTERNAME(snum);
+	pname = lp_printername(snum);
 
 	if (!pname || !*pname) {
 		errno = EACCES;

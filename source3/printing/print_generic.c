@@ -117,7 +117,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, PRINTERNAME(snum), True,
+	return print_run_command(snum, lp_printername(snum), True,
 				 lp_lppausecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -132,7 +132,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, PRINTERNAME(snum), True,
+	return print_run_command(snum, lp_printername(snum), True,
 				 lp_lpresumecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -194,7 +194,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 	slprintf(job_size, sizeof(job_size)-1, "%lu", (unsigned long)pjob->size);
 
 	/* send it to the system spooler */
-	ret = print_run_command(snum, PRINTERNAME(snum), True,
+	ret = print_run_command(snum, lp_printername(snum), True,
 			lp_printcommand(snum), NULL,
 			"%s", p,
 			"%J", jobname,
@@ -274,7 +274,8 @@ static int generic_queue_get(const char *printer_name,
 ****************************************************************************/
 static int generic_queue_pause(int snum)
 {
-	return print_run_command(snum, PRINTERNAME(snum), True, lp_queuepausecommand(snum), NULL, NULL);
+	return print_run_command(snum, lp_printername(snum), True,
+				 lp_queuepausecommand(snum), NULL, NULL);
 }
 
 /****************************************************************************
@@ -282,7 +283,8 @@ static int generic_queue_pause(int snum)
 ****************************************************************************/
 static int generic_queue_resume(int snum)
 {
-	return print_run_command(snum, PRINTERNAME(snum), True, lp_queueresumecommand(snum), NULL, NULL);
+	return print_run_command(snum, lp_printername(snum), True,
+				 lp_queueresumecommand(snum), NULL, NULL);
 }
 
 /****************************************************************************

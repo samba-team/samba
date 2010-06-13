@@ -962,7 +962,8 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
-	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+	if (!push_utf8_talloc(frame, &printername, lp_printername(snum),
+			      &size)) {
 		goto out;
 	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
@@ -1033,7 +1034,8 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	}
 	if ((response = cupsDoFileRequest(http, request, uri, pjob->filename)) != NULL) {
 		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
-			DEBUG(0,("Unable to print file to %s - %s\n", PRINTERNAME(snum),
+			DEBUG(0,("Unable to print file to %s - %s\n",
+				 lp_printername(snum),
 			         ippErrorString(cupsLastError())));
 		} else {
 			ret = 0;
@@ -1046,7 +1048,8 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 			}
 		}
 	} else {
-		DEBUG(0,("Unable to print file to `%s' - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to print file to `%s' - %s\n",
+			 lp_printername(snum),
 			 ippErrorString(cupsLastError())));
 	}
 
@@ -1471,7 +1474,8 @@ static int cups_queue_pause(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
-	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+	if (!push_utf8_talloc(frame, &printername, lp_printername(snum),
+			      &size)) {
 		goto out;
 	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
@@ -1491,13 +1495,15 @@ static int cups_queue_pause(int snum)
 
 	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL) {
 		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
-			DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
+			DEBUG(0,("Unable to pause printer %s - %s\n",
+				 lp_printername(snum),
 				ippErrorString(cupsLastError())));
 		} else {
 			ret = 0;
 		}
 	} else {
-		DEBUG(0,("Unable to pause printer %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to pause printer %s - %s\n",
+			 lp_printername(snum),
 			ippErrorString(cupsLastError())));
 	}
 
@@ -1572,7 +1578,8 @@ static int cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
         	     "attributes-natural-language", NULL, language->language);
 
-	if (!push_utf8_talloc(frame, &printername, PRINTERNAME(snum), &size)) {
+	if (!push_utf8_talloc(frame, &printername, lp_printername(snum),
+			      &size)) {
 		goto out;
 	}
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
@@ -1592,13 +1599,15 @@ static int cups_queue_resume(int snum)
 
 	if ((response = cupsDoRequest(http, request, "/admin/")) != NULL) {
 		if (response->request.status.status_code >= IPP_OK_CONFLICT) {
-			DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
+			DEBUG(0,("Unable to resume printer %s - %s\n",
+				 lp_printername(snum),
 				ippErrorString(cupsLastError())));
 		} else {
 			ret = 0;
 		}
 	} else {
-		DEBUG(0,("Unable to resume printer %s - %s\n", PRINTERNAME(snum),
+		DEBUG(0,("Unable to resume printer %s - %s\n",
+			 lp_printername(snum),
 			ippErrorString(cupsLastError())));
 	}
 

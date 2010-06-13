@@ -5363,7 +5363,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 		the_acl = old_secdesc_ctr->sd->dacl;
 		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n",
-			   PRINTERNAME(snum), the_acl->num_aces));
+			   lp_printername(snum), the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
@@ -5375,7 +5375,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 		if (the_acl) {
 			DEBUG(10, ("secdesc_ctr for %s has %d aces:\n",
-				   PRINTERNAME(snum), the_acl->num_aces));
+				   lp_printername(snum), the_acl->num_aces));
 
 			for (i = 0; i < the_acl->num_aces; i++) {
 				DEBUG(10, ("%s 0x%08x\n", sid_string_dbg(
