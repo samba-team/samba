@@ -22,9 +22,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import shutil
+import logging
 import optparse
 import os
+import shutil
 import sys
 import tempfile
 # Allow to run from s4 source directory (without installing samba)
@@ -120,22 +121,22 @@ parser.add_option("--full", help="Perform full upgrade of the samdb (schema, con
 
 opts = parser.parse_args()[0]
 
+handler = logging.StreamHandler(sys.stdout)
+upgrade_logger = logging.getLogger("upgradeprovision")
+upgrade_logger.addHandler(handler)
+
+provision_logger = logging.getLogger("provision")
+provision_logger.addHandler(handler)
+
 whatToLog = define_what_to_log(opts)
 
-def messageprovision(text):
-    """Print a message if quiet is not set
-
-    :param text: Message to print """
-    if opts.debugprovision or opts.debugall:
-        print text
-
-def message(what,text):
+def message(what, text):
     """Print a message if this message type has been selected to be printed
 
     :param what: Category of the message
     :param text: Message to print """
     if (whatToLog & what) or what <= 0:
-        print text
+        upgrade_logger.info("%s", text)
 
 if len(sys.argv) == 1:
     opts.interactive = True
@@ -199,10 +200,10 @@ def sanitychecks(credentials,session_info,names,paths):
     sam_ldb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp,options=["modules:samba_dsdb"])
 
     sam_ldb.set_session_info(session)
-    res = sam_ldb.search(expression="objectClass=ntdsdsa",base=str(names.configdn),
-                         scope=SCOPE_SUBTREE,attrs=["dn"],controls=["search_options:1:2"])
+    res = sam_ldb.search(expression="objectClass=ntdsdsa", base=str(names.configdn),
+                         scope=SCOPE_SUBTREE, attrs=["dn"], controls=["search_options:1:2"])
     if len(res) == 0:
-        print "No DC found, your provision is most probalby hardly broken !"
+        print "No DC found, your provision is most probably hardly broken !"
         return False
     elif len(res) != 1:
         print "Found %d domain controllers, for the moment upgradeprovision is not able to handle upgrade on \
@@ -945,7 +946,7 @@ if __name__ == '__main__':
     # With all this information let's create a fresh new provision used as reference
     message(SIMPLE, "Creating a reference provision")
     provisiondir = tempfile.mkdtemp(dir=paths.private_dir, prefix="referenceprovision")
-    newprovision(names, setup_dir, creds, session, smbconf, provisiondir, messageprovision)
+    newprovision(names, setup_dir, creds, session, smbconf, provisiondir, provision_logger)
     # Get file paths of this new provision
     newpaths = get_paths(param, targetdir=provisiondir)
     populate_backlink(newpaths, creds, session,names.schemadn)

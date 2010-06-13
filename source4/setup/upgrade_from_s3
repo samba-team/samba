@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import optparse
 import os, sys
 
@@ -45,16 +46,19 @@ parser.add_option("--targetdir", type="string", metavar="DIR",
 
 opts, args = parser.parse_args()
 
-def message(text):
-    """Print a message if quiet is not set."""
-    if not opts.quiet:
-        print text
+
+logger = logging.getLogger("upgrade")
+logger.addHandler(logging.StreamHandler(sys.stdout))
+if opts.quiet:
+	logger.setLevel(logging.WARNING)
+else:
+	logger.setLevel(logging.INFO)
 
 if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-message("Reading Samba3 databases and smb.conf")
+logger.info("Reading Samba3 databases and smb.conf")
 
 libdir = args[0]
 if not os.path.isdir(libdir):
@@ -68,7 +72,7 @@ else:
 
 samba3 = Samba3(libdir, smbconf)
 
-message("Provisioning")
+logger.info("Provisioning")
 
 setup_dir = opts.setupdir
 if setup_dir is None:
@@ -78,6 +82,6 @@ lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
 creds = credopts.get_credentials(lp)
 
-upgrade_provision(samba3, setup_dir, message, credentials=creds,
+upgrade_provision(samba3, setup_dir, logger, credentials=creds,
                   session_info=system_session(), smbconf=smbconf,
                   targetdir=opts.targetdir)

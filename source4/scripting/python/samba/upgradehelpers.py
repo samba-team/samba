@@ -54,11 +54,11 @@ def get_paths(param, targetdir=None, smbconf=None):
         smbconf = param.default_path()
 
     if not os.path.exists(smbconf):
-        raise ProvisioningError("Unable to find smb.conf ...")
+        raise ProvisioningError("Unable to find smb.conf")
 
     lp = param.LoadParm()
     lp.load(smbconf)
-    paths = provision_paths_from_lp(lp,lp.get("realm"))
+    paths = provision_paths_from_lp(lp, lp.get("realm"))
     return paths
 
 
@@ -71,7 +71,8 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     :param session_info: Session object
     :param paths: A list of path to provision object
     :param smbconf: Path to the smb.conf file
-    :return: A list of key provision parameters"""
+    :return: A list of key provision parameters
+    """
 
     lp = param.LoadParm()
     lp.load(paths.smbconf)
@@ -80,14 +81,15 @@ def find_provision_key_parameters(param, credentials, session_info, paths,
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
     names.domain = string.upper(lp.get("workgroup"))
     names.realm = lp.get("realm")
-    basedn = "DC=" + names.realm.replace(".",",DC=")
+    basedn = "DC=" + names.realm.replace(".", ",DC=")
     names.dnsdomain = names.realm
     names.realm = string.upper(names.realm)
     # netbiosname
     secrets_ldb = Ldb(paths.secrets, session_info=session_info,
         credentials=credentials,lp=lp, options=["modules:samba_secrets"])
     # Get the netbiosname first (could be obtained from smb.conf in theory)
-    res = secrets_ldb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
+    res = secrets_ldb.search(expression="(flatname=%s)" % names.domain,
+            base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
     names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
     names.smbconf = smbconf
