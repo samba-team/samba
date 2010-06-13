@@ -67,7 +67,21 @@ struct share_ops {
 
 struct loadparm_context;
 
-#include "param/share_proto.h"
+const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval);
+int share_int_option(struct share_config *scfg, const char *opt_name, int defval);
+bool share_bool_option(struct share_config *scfg, const char *opt_name, bool defval);
+const char **share_string_list_option(TALLOC_CTX *mem_ctx, struct share_config *scfg, const char *opt_name);
+NTSTATUS share_list_all(TALLOC_CTX *mem_ctx, struct share_context *sctx, int *count, const char ***names);
+NTSTATUS share_get_config(TALLOC_CTX *mem_ctx, struct share_context *sctx, const char *name, struct share_config **scfg);
+NTSTATUS share_create(struct share_context *sctx, const char *name, struct share_info *info, int count);
+NTSTATUS share_set(struct share_context *sctx, const char *name, struct share_info *info, int count);
+NTSTATUS share_remove(struct share_context *sctx, const char *name);
+NTSTATUS share_register(const struct share_ops *ops);
+NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name,
+				   struct tevent_context *event_ctx, 
+				   struct loadparm_context *lp_ctx,
+				   struct share_context **ctx);
+NTSTATUS share_init(void);
 
 /* list of shares options */
 

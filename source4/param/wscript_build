@@ -18,7 +18,6 @@ bld.SAMBA_PYTHON('PROVISION',
 
 bld.SAMBA_SUBSYSTEM('share',
 	source='share.c',
-	autoproto='share_proto.h',
 	public_headers='share.h',
 	deps='LIBSAMBA-UTIL'
 	)
