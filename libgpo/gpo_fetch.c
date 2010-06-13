@@ -25,7 +25,7 @@
 #if _SAMBA_BUILD_ == 4
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
-#include "../lib/tevent/tevent.h"
+#include <tevent.h>
 #include "libcli/libcli.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli_proto.h"

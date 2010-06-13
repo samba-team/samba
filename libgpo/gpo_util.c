@@ -24,7 +24,7 @@
 #if _SAMBA_BUILD_ == 4
 #include "system/filesys.h"
 #include "auth/auth.h"
-#include "../lib/talloc/talloc.h"
+#include <talloc.h>
 #include "source4/libgpo/ads_convenience.h"
 #endif
 #undef strdup
