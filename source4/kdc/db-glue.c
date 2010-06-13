@@ -191,11 +191,45 @@ static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 	talloc_free(entry_ex->ctx);
 }
 
+/* Determine, by translation between the encryption types allowed in
+ * the msDS-SupportedEncTypes and their Kerberos defined values, if a
+ * given encryption type is permitted for this target principal at
+ * this time. */
+static bool allowed_enc_type(enum samba_kdc_ent_type ent_type,
+			     uint32_t supported_enc_types_bitmap, uint32_t enc_type_enum)
+{
+	switch (ent_type) {
+	case SAMBA_KDC_ENT_TYPE_KRBTGT:
+	case SAMBA_KDC_ENT_TYPE_TRUST:
+		/* Disallow krbtgt and trust tickets to be DES encrypted, it's just too dangerous */
+		supported_enc_types_bitmap &= (~ENC_CRC32|ENC_RSA_MD5);
+	case SAMBA_KDC_ENT_TYPE_SERVER:
+		switch (enc_type_enum) {
+		case ENCTYPE_DES_CBC_CRC:
+			return supported_enc_types_bitmap & ENC_CRC32;
+		case ENCTYPE_DES_CBC_MD5:
+			return supported_enc_types_bitmap & ENC_RSA_MD5;
+		case ENCTYPE_ARCFOUR_HMAC_MD5:
+			return supported_enc_types_bitmap & ENC_RC4_HMAC_MD5;
+		case ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+			return supported_enc_types_bitmap & ENC_HMAC_SHA1_96_AES128;
+		case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
+			return supported_enc_types_bitmap & ENC_HMAC_SHA1_96_AES256;
+		default:
+			return false;
+		}
+	default:
+		return true;
+		/* Return all enc types to everyone else */
+	}
+}
+
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
-					      TALLOC_CTX *mem_ctx,
-					      struct ldb_message *msg,
-					      unsigned int userAccountControl,
-					      hdb_entry_ex *entry_ex)
+						    TALLOC_CTX *mem_ctx,
+						    struct ldb_message *msg,
+						    unsigned int userAccountControl,
+						    enum samba_kdc_ent_type ent_type,
+						    hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
@@ -209,6 +243,16 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
 	uint16_t i;
 	uint16_t allocated_keys = 0;
+
+	/* Supported Enc Types for TGS-REQ to this target */
+	uint32_t supported_enc_types = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncTypes",
+								 ENC_CRC32|ENC_RSA_MD5|ENC_RC4_HMAC_MD5);
+
+	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
+	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+		/* However, don't allow use of DES, if we were told not to by msDS-SupportedEncTypes */
+		supported_enc_types &= ENC_CRC32|ENC_RSA_MD5;
+	}
 
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
@@ -323,7 +367,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		goto out;
 	}
 
-	if (hash && !(userAccountControl & UF_USE_DES_KEY_ONLY)) {
+	if (hash && supported_enc_types & ENC_RC4_HMAC_MD5) {
 		Key key;
 
 		key.mkvno = 0;
@@ -343,23 +387,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	if (pkb4) {
 		for (i=0; i < pkb4->num_keys; i++) {
-			bool use = true;
 			Key key;
 
 			if (!pkb4->keys[i].value) continue;
 
-			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-				switch (pkb4->keys[i].keytype) {
-				case ENCTYPE_DES_CBC_CRC:
-				case ENCTYPE_DES_CBC_MD5:
-					break;
-				default:
-					use = false;
-					break;
-				}
+			if (!allowed_enc_type(ent_type, supported_enc_types, pkb4->keys[i].keytype)) {
+				continue;
 			}
-
-			if (!use) continue;
 
 			key.mkvno = 0;
 			key.salt = NULL;
@@ -412,23 +446,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	} else if (pkb3) {
 		for (i=0; i < pkb3->num_keys; i++) {
-			bool use = true;
 			Key key;
 
 			if (!pkb3->keys[i].value) continue;
 
-			if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-				switch (pkb3->keys[i].keytype) {
-				case ENCTYPE_DES_CBC_CRC:
-				case ENCTYPE_DES_CBC_MD5:
-					break;
-				default:
-					use = false;
-					break;
-				}
+			if (!allowed_enc_type(ent_type, supported_enc_types, pkb3->keys[i].keytype)) {
+				continue;
 			}
-
-			if (!use) continue;
 
 			key.mkvno = 0;
 			key.salt = NULL;
@@ -701,7 +725,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, p, msg, userAccountControl,
-									   entry_ex);
+					   ent_type, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
