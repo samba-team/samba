@@ -514,4 +514,5 @@ plantestsuite "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/
 plantestsuite "blackbox.provision-backend.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision-backend.sh "$PREFIX/provision"
 plantestsuite "blackbox.upgradeprovision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_upgradeprovision.sh "$PREFIX/provision"
 plantestsuite "blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_setpassword.sh "$PREFIX/provision"
-plantestsuite "blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision" 
+plantestsuite "blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
+plantestsuite "blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
