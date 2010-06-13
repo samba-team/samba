@@ -637,12 +637,18 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
         create_gpo_struct(dir)
     # We always reinforce acls on GPO folder because they have to be in sync
     # with the one in DS
-    set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
-        names.domaindn, samdb, lp)
+    try:
+        set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
+            names.domaindn, samdb, lp)
+    except TypeError, e:
+        message(ERROR, "Unable to set ACLs on policies related objects, if not using posix:eadb, you must be root to do it")
 
     if resetacls:
-       setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
-                    names.domainsid, names.dnsdomain, names.domaindn, lp)
+       try:
+            setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
+                        names.domainsid, names.dnsdomain, names.domaindn, lp)
+       except TypeError, e:
+            message(ERROR, "Unable to set ACLs on sysvol share, if not using posix:eadb, you must be root to do it")
 
 def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
     """Update the provision container db: sam.ldb
