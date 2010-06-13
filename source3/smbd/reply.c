@@ -386,22 +386,6 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 	return true;
 }
 
-/****************************************************************************
- Check if we have a correct fsp. Replacement for the FSP_BELONGS_CONN macro
-****************************************************************************/
-
-bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
-		      files_struct *fsp)
-{
-	if ((fsp) && (conn) && ((conn)==(fsp)->conn)
-	    && (req->vuid == (fsp)->vuid)) {
-		return True;
-	}
-
-	reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-	return False;
-}
-
 static bool netbios_session_retarget(const char *name, int name_type)
 {
 	char *trim_name;
