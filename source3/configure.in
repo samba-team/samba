@@ -5497,7 +5497,9 @@ AC_ARG_WITH(aio-support,
 	case "$host_os" in
 	*)
 		AIO_LIBS=$LIBS
+		no_rt_LIBS=$LIBS
 		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$LIBS -lrt"])
+		LIBS=$no_rt_LIBS
 		AC_CHECK_LIB(aio,aio_read,[AIO_LIBS="$LIBS -laio"])
 		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
 		aio_LIBS=$LIBS
