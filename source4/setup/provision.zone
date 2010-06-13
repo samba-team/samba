@@ -14,7 +14,8 @@ ${HOSTIP_BASE_LINE}
 ;
 ${HOSTIP6_HOST_LINE}
 ${HOSTIP_HOST_LINE}
-gc._msdcs		IN CNAME	${HOSTNAME}
+${GC_MSDCS_IP_LINE}
+${GC_MSDCS_IP6_LINE}
 ${NTDSGUID}._msdcs	IN CNAME	${HOSTNAME}
 ;
 ; global catalog servers

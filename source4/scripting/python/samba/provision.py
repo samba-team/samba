@@ -1516,16 +1516,20 @@ def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
     if hostip6 is not None:
         hostip6_base_line = "            IN AAAA    " + hostip6
         hostip6_host_line = hostname + "        IN AAAA    " + hostip6
+        gc_msdcs_ip6_line = "gc._msdcs               IN AAAA    " + hostip6
     else:
         hostip6_base_line = ""
         hostip6_host_line = ""
+        gc_msdcs_ip6_line = ""
 
     if hostip is not None:
         hostip_base_line = "            IN A    " + hostip
         hostip_host_line = hostname + "        IN A    " + hostip
+        gc_msdcs_ip_line = "gc._msdcs               IN A    " + hostip
     else:
         hostip_base_line = ""
         hostip_host_line = ""
+        gc_msdcs_ip_line = ""
 
     dns_dir = os.path.dirname(paths.dns)
 
@@ -1553,6 +1557,8 @@ def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
             "NTDSGUID": ntdsguid,
             "HOSTIP6_BASE_LINE": hostip6_base_line,
             "HOSTIP6_HOST_LINE": hostip6_host_line,
+            "GC_MSDCS_IP_LINE": gc_msdcs_ip_line,
+            "GC_MSDCS_IP6_LINE": gc_msdcs_ip6_line,
         })
 
     # note that we use no variable substitution on this file
