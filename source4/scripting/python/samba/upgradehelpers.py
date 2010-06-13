@@ -173,7 +173,7 @@ def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
     :param session: Session object
     :param smbconf: Path to the smb.conf file
     :param provdir: Directory where the provision will be stored
-    :param messagefunc: A function for displaying the message of the provision
+    :param logger: A `Logger`
     """
     if os.path.isdir(provdir):
         shutil.rmtree(provdir)
