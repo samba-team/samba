@@ -55,14 +55,14 @@ class SlapdAlreadyRunning(Exception):
 class ProvisionBackend(object):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, message=None):
+            credentials=None, names=None, logger=None):
         """Provision a backend for samba4"""
         self.paths = paths
         self.setup_path = setup_path
         self.lp = lp
         self.credentials = credentials
         self.names = names
-        self.message = message
+        self.logger = logger
 
         self.type = backend_type
         
@@ -108,11 +108,11 @@ class LDBBackend(ProvisionBackend):
 class ExistingBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, message=None, ldapi_uri=None):
+            credentials=None, names=None, logger=None, ldapi_uri=None):
 
         super(ExistingBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
-                credentials=credentials, names=names, message=message)
+                credentials=credentials, names=names, logger=logger)
 
         self.ldapi_uri = ldapi_uri
 
@@ -134,13 +134,13 @@ class ExistingBackend(ProvisionBackend):
 class LDAPBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, message=None, domainsid=None,
+            credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
-                credentials=credentials, names=names, message=message)
+                credentials=credentials, names=names, logger=logger)
 
         self.domainsid = domainsid
         self.schema = schema
@@ -179,7 +179,7 @@ class LDAPBackend(ProvisionBackend):
             else:
                 p = f.read()
                 f.close()
-                self.message("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
+                self.logger.info("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
             raise SlapdAlreadyRunning(self.ldapi_uri)
         except LdbError:
             # XXX: We should never be catching all Ldb errors
@@ -190,9 +190,7 @@ class LDAPBackend(ProvisionBackend):
         if self.slapd_path is None:
             raise ProvisioningError("Warning: LDAP-Backend must be setup with path to slapd, e.g. --slapd-path=\"/usr/local/libexec/slapd\"!")
         if not os.path.exists(self.slapd_path):
-            self.message (self.slapd_path)
-            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
-
+            self.logger.warning("Path (%s) to slapd does not exist!", self.slapd_path)
 
         if not os.path.isdir(self.ldapdir):
             os.makedirs(self.ldapdir, 0700)
@@ -255,10 +253,10 @@ class LDAPBackend(ProvisionBackend):
                 count = count + 1
 
                 if count > 15:
-                    self.message("Could not connect to slapd started with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
+                    self.logger.error("Could not connect to slapd started with: %s" %  "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
                     raise ProvisioningError("slapd never accepted a connection within 15 seconds of starting")
 
-        self.message("Could not start slapd with: %s" % "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
+        self.logger.error("Could not start slapd with: %s" % "\'" + "\' \'".join(self.slapd_provision_command) + "\'")
         raise ProvisioningError("slapd died before we could make a connection to it")
 
     def shutdown(self):
@@ -279,13 +277,13 @@ class LDAPBackend(ProvisionBackend):
 class OpenLDAPBackend(LDAPBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, message=None, domainsid=None,
+            credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False,
             ol_mmr_urls=None, nosync=False):
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
-                credentials=credentials, names=names, message=message,
+                credentials=credentials, names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
@@ -367,7 +365,7 @@ class OpenLDAPBackend(LDAPBackend):
         
             url_list=filter(None,self.ol_mmr_urls.split(','))
             for url in url_list:
-                self.message("Using LDAP-URL: "+url)
+                self.logger.info("Using LDAP-URL: "+url)
             if (len(url_list) == 1):
                 raise ProvisioningError("At least 2 LDAP-URLs needed for MMR!")
 
@@ -557,14 +555,14 @@ class OpenLDAPBackend(LDAPBackend):
 class FDSBackend(LDAPBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, message=None, domainsid=None,
+            credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
             setup_ds_path=None):
 
         super(FDSBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
-                credentials=credentials, names=names, message=message,
+                credentials=credentials, names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
@@ -720,10 +718,9 @@ class FDSBackend(LDAPBackend):
 
         # Try to print helpful messages when the user has not specified the path to the setup-ds tool
         if self.setup_ds_path is None:
-            raise ProvisioningError("Warning: Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
+            raise ProvisioningError("Fedora DS LDAP-Backend must be setup with path to setup-ds, e.g. --setup-ds-path=\"/usr/sbin/setup-ds.pl\"!")
         if not os.path.exists(self.setup_ds_path):
-            self.message (self.setup_ds_path)
-            raise ProvisioningError("Warning: Given Path to slapd does not exist!")
+            self.logger.warning("Path (%s) to slapd does not exist!", self.setup_ds_path)
 
         # Run the Fedora DS setup utility
         retcode = subprocess.call([self.setup_ds_path, "--silent", "--file", self.fedoradsinf], close_fds=True, shell=False)

@@ -29,11 +29,10 @@ from base64 import b64encode
 import os
 import pwd
 import grp
+import logging
 import time
 import uuid
 import socket
-import param
-import registry
 import urllib
 import shutil
 
@@ -56,6 +55,8 @@ from samba.provisionbackend import (
     LDBBackend,
     OpenLDAPBackend,
     )
+import samba.param
+import samba.registry
 from samba.schema import Schema
 from samba.samdb import SamDB
 
@@ -443,7 +444,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     assert realm is not None
     realm = realm.upper()
 
-    default_lp = param.LoadParm()
+    default_lp = samba.param.LoadParm()
     #Load non-existant file
     if os.path.exists(smbconf):
         default_lp.load(smbconf)
@@ -714,10 +715,10 @@ def setup_registry(path, setup_path, session_info, lp):
     :param credentials: Credentials
     :param lp: Loadparm context
     """
-    reg = registry.Registry()
-    hive = registry.open_ldb(path, session_info=session_info, 
+    reg = samba.registry.Registry()
+    hive = samba.registry.open_ldb(path, session_info=session_info, 
                          lp_ctx=lp)
-    reg.mount_hive(hive, registry.HKEY_LOCAL_MACHINE)
+    reg.mount_hive(hive, samba.registry.HKEY_LOCAL_MACHINE)
     provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
@@ -1175,7 +1176,7 @@ def provision(setup_dir, logger, session_info,
     if targetdir is not None:
         smbconf = os.path.join(targetdir, "etc", "smb.conf")
     elif smbconf is None:
-        smbconf = param.default_path()
+        smbconf = samba.param.default_path()
     if not os.path.exists(os.path.dirname(smbconf)):
         os.makedirs(os.path.dirname(smbconf))
 
@@ -1193,7 +1194,7 @@ def provision(setup_dir, logger, session_info,
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
                      targetdir, sid_generator, useeadb)
 
-    lp = param.LoadParm()
+    lp = samba.param.LoadParm()
     lp.load(smbconf)
 
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
@@ -1247,20 +1248,20 @@ def provision(setup_dir, logger, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=logger.info)
+                                         logger=logger)
     elif backend_type == "existing":
         provision_backend = ExistingBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=logger.info,
+                                         logger=logger,
                                          ldapi_url=ldapi_url)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=logger.info,
+                                         logger=logger,
                                          domainsid=domainsid,
                                          schema=schema,
                                          hostname=hostname,
@@ -1275,7 +1276,7 @@ def provision(setup_dir, logger, session_info,
                                          paths=paths, setup_path=setup_path,
                                          lp=lp, credentials=credentials, 
                                          names=names,
-                                         message=logger.info,
+                                         logger=logger,
                                          domainsid=domainsid,
                                          schema=schema,
                                          hostname=hostname,
@@ -1380,7 +1381,7 @@ def provision(setup_dir, logger, session_info,
 
             # Only make a zone file on the first DC, it should be replicated
             # with DNS replication
-            create_zone_file(lp, logger.info, paths, targetdir, setup_path,
+            create_zone_file(lp, logger, paths, targetdir, setup_path,
                 dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
                 hostname=names.hostname, realm=names.realm, 
                 domainguid=domainguid, ntdsguid=names.ntdsguid)
@@ -1402,7 +1403,7 @@ def provision(setup_dir, logger, session_info,
                     "generated at %s", paths.krb5conf)
 
     if serverrole == "domain controller":
-        create_dns_update_list(lp, logger.info, paths, setup_path)
+        create_dns_update_list(lp, logger, paths, setup_path)
 
     provision_backend.post_setup()
     provision_backend.shutdown()
@@ -1472,13 +1473,10 @@ def provision_become_dc(setup_dir=None,
                         ldap_backend=None, ldap_backend_type=None,
                         sitename=None, debuglevel=1):
 
-    def message(text):
-        """print a message if quiet is not set."""
-        print text
-
+    logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
 
-    return provision(setup_dir, message, system_session(), None,
+    return provision(setup_dir, logger, system_session(), None,
               smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
               realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
               configdn=configdn, serverdn=serverdn, domain=domain,
@@ -1497,7 +1495,7 @@ def create_phpldapadmin_config(path, setup_path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
+def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
@@ -1572,18 +1570,19 @@ def create_zone_file(lp, message, paths, targetdir, setup_path, dnsdomain,
             os.chmod(dns_dir, 0775)
             os.chmod(paths.dns, 0664)
         except OSError:
-            message("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
+            logger.error("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
 
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
-def create_dns_update_list(lp, message, paths, setup_path):
+def create_dns_update_list(lp, logger, paths, setup_path):
     """Write out a dns_update_list file"""
     # note that we use no variable substitution on this file
     # the substitution is done at runtime by samba_dnsupdate
     setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
     setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
+
 
 def create_named_conf(paths, setup_path, realm, dnsdomain,
                       private_dir):
