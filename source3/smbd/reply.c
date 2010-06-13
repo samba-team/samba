@@ -322,11 +322,11 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 		    files_struct *fsp)
 {
-	if (!(fsp) || !(conn)) {
+	if ((fsp == NULL) || (conn == NULL)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
-	if (((conn) != (fsp)->conn) || req->vuid != (fsp)->vuid) {
+	if ((conn != fsp->conn) || (req->vuid != fsp->vuid)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return False;
 	}
@@ -343,15 +343,15 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 	if (!check_fsp_open(conn, req, fsp)) {
 		return False;
 	}
-	if ((fsp)->is_directory) {
+	if (fsp->is_directory) {
 		reply_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
 		return False;
 	}
-	if ((fsp)->fh->fd == -1) {
+	if (fsp->fh->fd == -1) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return False;
 	}
-	(fsp)->num_smb_operations++;
+	fsp->num_smb_operations++;
 	return True;
 }
 
