@@ -97,7 +97,7 @@ def install_library(self):
         install_name = 'lib%s.so.%s' % (self.target, self.vnum)
         install_link = 'lib%s.so.%s' % (self.target, vnum_base)
         inst_name    = 'lib%s.so' % t.target
-        if self.target == self.name:
+        if not self.is_bundled:
             # only generate the dev link for non-bundled libs
             dev_link     = 'lib%s.so' % self.target
     else:

@@ -201,7 +201,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_realname  = realname,
         samba_install   = install,
         abi_file        = abi_file,
-        abi_match       = abi_match
+        abi_match       = abi_match,
+        is_bundled      = is_bundled
         )
 
     if realname and not link_name:
