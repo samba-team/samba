@@ -32,7 +32,7 @@ def checkset_backend(lp, backend, eadbfile):
         if backend == "native":
             lp.set("posix:eadb", "")
         elif backend == "tdb":
-            if eadbfile != None:
+            if eadbfile is not None:
                 lp.set("posix:eadb", eadbfile)
             else:
                 os.path.abspath(os.path.join(lp.get("private dir"), "eadb.tdb"))

@@ -20,9 +20,8 @@
 import os
 from samba.provision import setup_secretsdb, findnss
 import samba.tests
+from samba.tests import env_loadparm
 import unittest
-
-lp = samba.tests.cmdline_loadparm
 
 setup_dir = "setup"
 def setup_path(file):
@@ -34,7 +33,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     """
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
-        ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
+        ldb = setup_secretsdb(path, setup_path, None, None, lp=env_loadparm())
         try:
             self.assertEquals("LSA Secrets",
                  ldb.searchone(basedn="CN=LSA Secrets", attribute="CN"))

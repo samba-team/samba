@@ -198,7 +198,7 @@ systemOnly: FALSE
 
 ########################################################################################
 if not "DC_SERVER" in os.environ.keys():
-    raise AssertionError, "Please supply TARGET_DC in environment"
+    raise AssertionError("Please supply TARGET_DC in environment")
 ldb_url = os.environ["DC_SERVER"]
 
 ldb_options = []
@@ -211,7 +211,7 @@ if not "://" in ldb_url:
         ldb_options = ["modules:paged_searches"]
 
 ldb = Ldb(url=ldb_url,
-          lp=samba.tests.cmdline_loadparm,
+          lp=samba.tests.env_loadparm(),
           session_info=system_session(),
           credentials=samba.tests.cmdline_credentials,
           options=ldb_options)

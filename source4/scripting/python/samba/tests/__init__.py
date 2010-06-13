@@ -22,6 +22,7 @@
 import os
 import ldb
 import samba
+from samba import param
 import tempfile
 import unittest
 
@@ -90,14 +91,20 @@ class LdbExtensionTests(TestCaseInTempDir):
             os.unlink(path)
 
 
-cmdline_loadparm = None
+def env_loadparm():
+    lp = param.LoadParm()
+    try:
+        lp.load(os.environ["SMB_CONF_PATH"])
+    except KeyError:
+        raise Exception("SMB_CONF_PATH not set")
+    return lp
+
 cmdline_credentials = None
 
 class RpcInterfaceTestCase(unittest.TestCase):
 
     def get_loadparm(self):
-        assert cmdline_loadparm is not None
-        return cmdline_loadparm
+        return env_loadparm()
 
     def get_credentials(self):
         return cmdline_credentials

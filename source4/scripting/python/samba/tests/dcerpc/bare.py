@@ -20,7 +20,7 @@
 
 from samba.dcerpc import ClientConnection
 from unittest import TestCase
-from samba.tests import cmdline_loadparm
+from samba.tests import env_loadparm
 
 
 class BareTestCase(TestCase):
@@ -28,22 +28,22 @@ class BareTestCase(TestCase):
     def test_bare(self):
         # Connect to the echo pipe
         x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
-                ("60a15ec5-4de8-11d7-a637-005056a20182", 1), lp_ctx=cmdline_loadparm)
+                ("60a15ec5-4de8-11d7-a637-005056a20182", 1), lp_ctx=env_loadparm())
         self.assertEquals("\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_alter_context(self):
         x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
-                ("12345778-1234-abcd-ef00-0123456789ac", 1), lp_ctx=cmdline_loadparm)
+                ("12345778-1234-abcd-ef00-0123456789ac", 1), lp_ctx=env_loadparm())
         y = ClientConnection("ncalrpc:localhost", 
                 ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
-                basis_connection=x, lp_ctx=cmdline_loadparm)
+                basis_connection=x, lp_ctx=env_loadparm())
         x.alter_context(("60a15ec5-4de8-11d7-a637-005056a20182", 1))
         # FIXME: self.assertEquals("\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_two_connections(self):
         x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
-                ("60a15ec5-4de8-11d7-a637-005056a20182", 1), lp_ctx=cmdline_loadparm)
+                ("60a15ec5-4de8-11d7-a637-005056a20182", 1), lp_ctx=env_loadparm())
         y = ClientConnection("ncalrpc:localhost", 
                 ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
-                basis_connection=x, lp_ctx=cmdline_loadparm)
+                basis_connection=x, lp_ctx=env_loadparm())
         self.assertEquals("\x01\x00\x00\x00", y.request(0, chr(0) * 4))

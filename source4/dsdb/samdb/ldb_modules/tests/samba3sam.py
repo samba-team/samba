@@ -24,13 +24,12 @@
 
 import os
 import ldb
-from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
+from ldb import SCOPE_DEFAULT, SCOPE_BASE
 from samba import Ldb, substitute_var
-from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
+from samba.tests import TestCaseInTempDir, env_loadparm
 import samba.dcerpc.security
 import samba.ndr
 from samba.auth import system_session
-from samba import param
 
 datadir = os.path.join(os.path.dirname(__file__), 
                        "../../../../../testdata/samba3")
@@ -60,9 +59,10 @@ class MapBaseTestCase(TestCaseInTempDir):
             "modules": "*:"})
 
     def setUp(self):
-        cmdline_loadparm.set("sid generator", "backend")
-        cmdline_loadparm.set("workgroup", "TESTS")
-        cmdline_loadparm.set("netbios name", "TESTS")
+        self.lp = env_loadparm()
+        self.lp.set("sid generator", "backend")
+        self.lp.set("workgroup", "TESTS")
+        self.lp.set("netbios name", "TESTS")
         super(MapBaseTestCase, self).setUp()
 
         def make_dn(basedn, rdn):
@@ -79,8 +79,9 @@ class MapBaseTestCase(TestCaseInTempDir):
         class Target:
             """Simple helper class that contains data for a specific SAM 
             connection."""
-            def __init__(self, basedn, dn):
-                self.db = Ldb(lp=cmdline_loadparm, session_info=system_session())
+
+            def __init__(self, basedn, dn, lp):
+                self.db = Ldb(lp=lp, session_info=system_session())
                 self.basedn = basedn
                 self.basedn_casefold = ldb.Dn(self.db, basedn).get_casefold()
                 self.substvars = {"BASEDN": self.basedn}
@@ -106,8 +107,8 @@ class MapBaseTestCase(TestCaseInTempDir):
             def modify_ldif(self, ldif):
                 self.db.modify_ldif(self.subst(ldif))
 
-        self.samba4 = Target("dc=vernstok,dc=nl", make_s4dn)
-        self.samba3 = Target("cn=Samba3Sam", make_dn)
+        self.samba4 = Target("dc=vernstok,dc=nl", make_s4dn, self.lp)
+        self.samba3 = Target("cn=Samba3Sam", make_dn, self.lp)
 
         self.samba3.connect()
         self.samba4.connect()
@@ -129,13 +130,13 @@ class Samba3SamTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
-        ldb = Ldb(self.ldburl, lp=cmdline_loadparm, session_info=system_session())
+        ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
         self.samba3.setup_data("samba3.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm, session_info=system_session())
+        self.ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
 
     def test_search_non_mapped(self):
         """Looking up by non-mapped attribute"""
@@ -296,12 +297,12 @@ class MapTestCase(MapBaseTestCase):
 
     def setUp(self):
         super(MapTestCase, self).setUp()
-        ldb = Ldb(self.ldburl, lp=cmdline_loadparm, session_info=system_session())
+        ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
-        self.ldb = Ldb(self.ldburl, lp=cmdline_loadparm, session_info=system_session())
+        self.ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
 
     def test_map_search(self):
         """Running search tests on mapped data."""

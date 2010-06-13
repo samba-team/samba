@@ -25,14 +25,14 @@ the functionality, that's already done in other tests.
 
 import unittest
 from samba import gensec
-from samba.tests import cmdline_loadparm
+from samba.tests import env_loadparm
 
 class CredentialsTests(unittest.TestCase):
 
     def setUp(self):
         settings = {}
         settings["target_hostname"] = "localhost"
-        settings["lp_ctx"] = cmdline_loadparm
+        settings["lp_ctx"] = env_loadparm()
         self.gensec = gensec.Security.start_client(settings)
 
     def test_info(self):
