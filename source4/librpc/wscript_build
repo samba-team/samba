@@ -31,7 +31,7 @@ bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
 	source='../../librpc/gen_ndr/ndr_security.c ../../librpc/ndr/ndr_sec_helper.c gen_ndr/ndr_server_id.c',
 	public_deps='LIBNDR LIBSECURITY',
-	public_headers='../libcli/security/security.h gen_ndr/server_id.h',
+	public_headers='../../librpc/gen_ndr/security.h gen_ndr/server_id.h',
         header_path='gen_ndr'
 	)
 
@@ -342,7 +342,7 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	pc_files='../../librpc/ndr_standard.pc',
 	deps='NDR_SECURITY',
 	public_deps='LIBNDR',
-	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../rpc_server/lsa/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
+	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../../librpc/gen_ndr/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
         header_path='gen_ndr'
 	)
 
