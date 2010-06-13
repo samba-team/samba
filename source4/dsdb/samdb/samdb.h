@@ -61,7 +61,7 @@ struct dsdb_control_current_partition {
  * much like LDB_CONTROL_EXTENDED_DN_OID when the DB stores an
  * extended DN, and otherwise returns normal DNs */
 
-#define DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID "1.3.6.1.4.1.7165.4.3.6"
+#define DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID "1.3.6.1.4.1.7165.4.3.8"
 
 struct dsdb_control_password_change_status {
 	struct {
@@ -78,9 +78,9 @@ struct dsdb_control_password_change_status {
 	enum samPwdChangeReason reject_reason;
 };
 
-#define DSDB_CONTROL_PASSWORD_HASH_VALUES_OID "1.3.6.1.4.1.7165.4.3.7"
+#define DSDB_CONTROL_PASSWORD_HASH_VALUES_OID "1.3.6.1.4.1.7165.4.3.9"
 
-#define DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID "1.3.6.1.4.1.7165.4.3.8"
+#define DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID "1.3.6.1.4.1.7165.4.3.10"
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
