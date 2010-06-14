@@ -64,8 +64,8 @@
 */
 
 #include "includes.h"
-#include "ldb_includes.h"
-#include "ldb_module.h"
+#include <ldb.h>
+#include <ldb_module.h>
 
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"

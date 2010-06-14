@@ -30,7 +30,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
-#include "dlinklist.h"
+#include "util/dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/ldb_modules/util.h"
