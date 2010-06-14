@@ -47,7 +47,7 @@ bld.SAMBA_MODULE('process_model_thread',
 	source='process_thread.c',
 	subsystem='process_model',
 	init_function='process_model_thread_init',
-        enabled=False,
+	enabled=False,
 	deps='pthread'
 	)
 

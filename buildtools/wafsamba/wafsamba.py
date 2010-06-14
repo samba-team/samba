@@ -5,6 +5,7 @@ import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs, 
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
+TaskGen.task_gen.apply_verif = Utils.nada
 
 # bring in the other samba modules
 from samba_optimisation import *
@@ -327,16 +328,23 @@ def SAMBA_MODULE(bld, modname, source,
                  enabled=True):
     '''define a Samba module.'''
 
+    source = bld.EXPAND_VARIABLES(source, vars=vars)
+
+    obj_target = modname + '.objlist'
+
+    bld.SAMBA_SUBSYSTEM(obj_target, source,
+                    deps=deps,
+                    includes=includes,
+                    autoproto=autoproto,
+                    autoproto_extra_source=autoproto_extra_source,
+                    cflags=cflags,
+                    local_include=local_include,
+                    enabled=enabled)
+
     if internal_module or BUILTIN_LIBRARY(bld, modname):
         # treat internal modules as subsystems for now
-        SAMBA_SUBSYSTEM(bld, modname, source,
-                        deps=deps,
-                        includes=includes,
-                        autoproto=autoproto,
-                        autoproto_extra_source=autoproto_extra_source,
-                        cflags=cflags,
-                        local_include=local_include,
-                        enabled=enabled)
+        bld.SAMBA_SUBSYSTEM(modname, deps=obj_target, source=[],
+                            enabled=enabled)
         bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
         return
 
@@ -344,38 +352,30 @@ def SAMBA_MODULE(bld, modname, source,
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
         return
 
-    source = bld.EXPAND_VARIABLES(source, vars=vars)
-    source = unique_list(TO_LIST(source))
-
-    # remember empty modules, so we can strip the dependencies
-    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
-        SET_TARGET_TYPE(bld, modname, 'EMPTY')
-        return
-
     if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
         return
 
+    deps = TO_LIST(deps)
+    deps.append(obj_target)
     if subsystem is not None:
-        deps += ' ' + subsystem
+        deps.append(subsystem)
 
     bld.SET_BUILD_GROUP('main')
     t = bld(
         features       = 'cc cshlib install_lib',
-        source         = source,
+        source         = [],
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         samba_includes = includes,
         local_include  = local_include,
-        samba_deps     = TO_LIST(deps),
+        samba_deps     = deps,
         install_path   = None,
         samba_inst_path= "${MODULESDIR}/%s" % subsystem,
         samba_realname = None,
         vnum           = None,
         samba_install  = True,
+        is_bundled     = False,
         )
-
-    if autoproto is not None:
-        bld.SAMBA_AUTOPROTO(autoproto, source + TO_LIST(autoproto_extra_source))
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
