@@ -42,5 +42,6 @@ replace someThing
 someThing: someThingElseBetter
 EOF
 
+$VALGRIND ldbsearch --controls "bypassoperational:0" >/dev/null 2>&1 || exit 1
 
 set
