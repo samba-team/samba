@@ -61,7 +61,7 @@ NTSTATUS smb_register_perfcounter(int interface_version, const char *name,
 {
 	struct smb_perfcount_module *entry = modules;
 
-	if ((interface_version != SMB_PERFCOUNTER_INTERFACE_VERSION)) {
+	if (interface_version != SMB_PERFCOUNTER_INTERFACE_VERSION) {
 		DEBUG(0, ("Failed to register perfcount module.\n"
 		          "The module was compiled against "
 			  "SMB_PERFCOUNTER_INTERFACE_VERSION %d,\n"
