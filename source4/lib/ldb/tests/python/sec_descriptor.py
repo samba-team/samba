@@ -20,6 +20,9 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba import Ldb
+from samba import gensec
+from samba.samdb import SamDB
+from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.dsdb import DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc.security import (
@@ -45,6 +48,7 @@ host = args[0]
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
+creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 #
 # Tests start here
@@ -210,33 +214,34 @@ showInAdvancedViewOnly: TRUE
         desc = res[0]["nTSecurityDescriptor"][0]
         return ndr_unpack(security.descriptor, desc)
 
-    def enable_account(self,  user_dn):
-        """Enable an account.
-        :param user_dn: Dn of the account to enable.
-        """
-        res = self.ldb_admin.search(user_dn, SCOPE_BASE, None, ["userAccountControl"])
-        assert len(res) == 1
-        userAccountControl = res[0]["userAccountControl"][0]
-        userAccountControl = int(userAccountControl)
-        if (userAccountControl & 0x2):
-            userAccountControl = userAccountControl & ~0x2 # remove disabled bit
-        if (userAccountControl & 0x20):
-            userAccountControl = userAccountControl & ~0x20 # remove 'no password required' bit
-        mod = """
+    def create_active_user(self, _ldb, user_dn):
+        ldif = """
 dn: """ + user_dn + """
+sAMAccountName: """ + user_dn.split(",")[0][3:] + """
+objectClass: user
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+url: www.example.com
+"""
+        _ldb.add_ldif(ldif)
+
+    def add_user_to_group(self, _ldb, username, groupname):
+        ldif = """
+dn: """ +  self.get_users_domain_dn(groupname) + """
 changetype: modify
-replace: userAccountControl
-userAccountControl: %s""" % userAccountControl
-        if self.WIN2003:
-            mod = re.sub("userAccountControl: \d.*", "userAccountControl: 544", mod)
-        self.ldb_admin.modify_ldif(mod)
+add: member
+member: """ + self.get_users_domain_dn(username)
+        _ldb.modify_ldif(ldif)
 
     def get_ldb_connection(self, target_username, target_password):
-        username_save = creds.get_username(); password_save = creds.get_password()
-        creds.set_username(target_username)
-        creds.set_password(target_password)
-        ldb_target = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
-        creds.set_username(username_save); creds.set_password(password_save)
+        creds_tmp = Credentials()
+        creds_tmp.set_username(target_username)
+        creds_tmp.set_password(target_password)
+        creds_tmp.set_domain(creds.get_domain())
+        creds_tmp.set_realm(creds.get_realm())
+        creds_tmp.set_workstation(creds.get_workstation())
+        creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
+                                      | gensec.FEATURE_SEAL)
+        ldb_target = SamDB(url=host, credentials=creds_tmp, lp=lp)
         return ldb_target
 
     def get_object_sid(self, object_dn):
@@ -260,6 +265,11 @@ userAccountControl: %s""" % userAccountControl
         desc = self.read_desc(object_dn, controls)
         return desc.as_sddl(self.domain_sid)
 
+    def create_enable_user(self, username):
+        user_dn = self.get_users_domain_dn(username)
+        self.create_active_user(self.ldb_admin, user_dn)
+        self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
+
     def setUp(self):
         self.ldb_admin = ldb
         self.base_dn = self.find_basedn(self.ldb_admin)
@@ -267,12 +277,6 @@ userAccountControl: %s""" % userAccountControl
         self.schema_dn = self.find_schemadn(self.ldb_admin)
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
         print "baseDN: %s" % self.base_dn
-        self.SAMBA = False; self.WIN2003 = False
-        res = self.ldb_admin.search(base="", expression="", scope=SCOPE_BASE, attrs=["vendorName"])
-        if "vendorName" in res[0].keys() and "Samba Team" in res[0]["vendorName"][0]:
-            self.SAMBA = True
-        else:
-            self.WIN2003 = True
 
     ################################################################################################
 
@@ -283,15 +287,14 @@ userAccountControl: %s""" % userAccountControl
 class OwnerGroupDescriptorTests(DescriptorTests):
 
     def deleteAll(self):
-        if self.SAMBA:
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
-            self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
         # DOMAIN
         self.delete_force(self.ldb_admin, self.get_users_domain_dn("test_domain_group1"))
         self.delete_force(self.ldb_admin, "CN=test_domain_user1,OU=test_domain_ou1," + self.base_dn)
@@ -306,107 +309,36 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     def setUp(self):
         DescriptorTests.setUp(self)
         self.deleteAll()
-        if self.SAMBA:
             ### Create users
             # User 1
-            user_dn = self.get_users_domain_dn("testuser1")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser1")
+        self.add_user_to_group(self.ldb_admin, "testuser1", "Enterprise Admins")
             # User 2
-            user_dn = self.get_users_domain_dn("testuser2")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser2")
+        self.add_user_to_group(self.ldb_admin, "testuser2", "Domain Admins")
             # User 3
-            user_dn = self.get_users_domain_dn("testuser3")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser3")
+        self.add_user_to_group(self.ldb_admin, "testuser3", "Schema Admins")
             # User 4
-            user_dn = self.get_users_domain_dn("testuser4")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
+        self.create_enable_user("testuser4")
             # User 5
-            user_dn = self.get_users_domain_dn("testuser5")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn + """
-
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser5")
+        self.add_user_to_group(self.ldb_admin, "testuser5", "Enterprise Admins")
+        self.add_user_to_group(self.ldb_admin, "testuser5", "Domain Admins")
             # User 6
-            user_dn = self.get_users_domain_dn("testuser6")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn + """
-
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn + """
-
-dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser6")
+        self.add_user_to_group(self.ldb_admin, "testuser6", "Enterprise Admins")
+        self.add_user_to_group(self.ldb_admin, "testuser6", "Domain Admins")
+        self.add_user_to_group(self.ldb_admin, "testuser6", "Schema Admins")
             # User 7
-            user_dn = self.get_users_domain_dn("testuser7")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn + """
-
-dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser7")
+        self.add_user_to_group(self.ldb_admin, "testuser7", "Domain Admins")
+        self.add_user_to_group(self.ldb_admin, "testuser7", "Schema Admins")
             # User 8
-            user_dn = self.get_users_domain_dn("testuser8")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Enterprise Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn + """
+        self.create_enable_user("testuser8")
+        self.add_user_to_group(self.ldb_admin, "testuser8", "Enterprise Admins")
+        self.add_user_to_group(self.ldb_admin, "testuser8", "Schema Admins")
 
-dn: CN=Schema Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
         self.results = {
             # msDS-Behavior-Version < DS_DOMAIN_FUNCTION_2008
             "ds_behavior_win2003" : {
@@ -1738,7 +1670,6 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
         desc_sddl = self.get_desc_sddl(group_dn)
-        print desc_sddl
         self.assertTrue("(D;CIIO;WP;;;CO)" in desc_sddl)
         self.assertFalse("(D;;WP;;;DA)" in desc_sddl)
         self.assertFalse("(D;CIIO;WP;;;CO)(D;CIIO;WP;;;CO)" in desc_sddl)
@@ -1755,7 +1686,6 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
         desc_sddl = self.get_desc_sddl(group_dn)
-        print desc_sddl
         self.assertFalse("(D;IO;WP;;;DA)" in desc_sddl)
 
     ########################################################################################
@@ -1922,31 +1852,19 @@ class SdFlagsDescriptorTests(DescriptorTests):
 class RightsAttributesTests(DescriptorTests):
 
     def deleteAll(self):
-        if self.SAMBA:
-           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
-           self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
-
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
+        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
         self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
 
     def setUp(self):
         DescriptorTests.setUp(self)
         self.deleteAll()
-        if self.SAMBA:
             ### Create users
             # User 1
-            user_dn = self.get_users_domain_dn("testuser_attr")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
+        self.create_enable_user("testuser_attr")
         # User 2, Domain Admins
-            user_dn = self.get_users_domain_dn("testuser_attr2")
-            self.create_domain_user(self.ldb_admin, user_dn)
-            self.enable_account(user_dn)
-            ldif = """
-dn: CN=Domain Admins,CN=Users,""" + self.base_dn + """
-changetype: modify
-add: member
-member: """ + user_dn
-            self.ldb_admin.modify_ldif(ldif)
+        self.create_enable_user("testuser_attr2")
+        self.add_user_to_group(self.ldb_admin, "testuser_attr2", "Domain Admins")
 
     def tearDown(self):
         self.deleteAll()
@@ -2024,9 +1942,6 @@ member: """ + user_dn
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
-        #res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
-        #                 attrs=["allowedAttributes"])
-        #print res
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedAttributesEffective"])
         #there should be no allowed attributes
@@ -2041,7 +1956,6 @@ member: """ + user_dn
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedAttributesEffective"])
         # value should only contain user and managedBy
-        print res
         self.assertEquals(len(res), 1)
         self.assertEquals(len(res[0]["allowedAttributesEffective"]), 2)
         self.assertTrue("displayName" in res[0]["allowedAttributesEffective"])
@@ -2053,7 +1967,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=["modules:paged_searches"])
+ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=["modules:paged_searches"])
 
 runner = SubunitTestRunner()
 rc = 0
