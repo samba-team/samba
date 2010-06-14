@@ -16,13 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from samba.auth import system_session
 import logging
 import os
-from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir
+import uuid
+
+from samba.auth import system_session
+from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir, provision_paths_from_lp
+from samba.provisionbackend import ProvisionBackend
 from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
-import uuid
+from samba.schema import Schema
 from samba import param
 
 
@@ -53,6 +56,7 @@ class SamDBTestCase(TestCaseInTempDir):
         domain="EXAMPLE"
         dnsdomain="example.com" 
         serverrole="domain controller"
+        policyguid_dc = str(uuid.uuid4()).upper()
 
         smbconf = os.path.join(self.tempdir, "smb.conf")
         make_smbconf(smbconf, self.setup_path, hostname, domain, dnsdomain, 
@@ -69,21 +73,21 @@ class SamDBTestCase(TestCaseInTempDir):
 
         paths = provision_paths_from_lp(self.lp, names.dnsdomain)
 
-        provision_backend = ProvisionBackend("ldb", backend_type,
-                                             paths=paths, setup_path=self.setup_path,
-                                             lp=self.lp, credentials=None, 
-                                             names=names,
-                                             message=message, hostname=hostname,
-                                             root=root, schema=schema,
-                                             domainsid=domainsid)
+        logger = logging.getLogger("provision")
 
-        self.samdb = setup_samdb(path, self.setup_path, session_info, provision_backend, 
-                                 self.lp, names, 
-                                 logging.getLogger("samdb"), domainsid, 
-                                 domainguid, 
-                                 policyguid, False, "secret", 
-                                 "secret", "secret", invocationid, 
-                                 "secret", "domain controller")
+        provision_backend = ProvisionBackend("ldb", paths=paths,
+                setup_path=self.setup_path, lp=self.lp, credentials=None,
+                names=names, logger=logger)
+
+        schema = Schema(self.setup_path, domainsid, invocationid=invocationid,
+                schemadn=names.schemadn, serverdn=names.serverdn,
+                am_rodc=False)
+
+        self.samdb = setup_samdb(path, self.setup_path, session_info,
+                provision_backend, self.lp, names, logger,
+                domainsid, domainguid, policyguid, policyguid_dc, False,
+                "secret", "secret", "secret", invocationid, "secret",
+                None, "domain controller", schema=schema)
 
     def tearDown(self):
         for f in ['schema.ldb', 'configuration.ldb',

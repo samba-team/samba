@@ -416,7 +416,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
-                 targetdir, sid_generator,eadb):
+                 targetdir, sid_generator="internal", eadb=False):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -844,7 +844,7 @@ def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
         adminpass, krbtgtpass, machinepass, invocationid, dnspass, ntdsguid,
-        serverrole, am_rodc, dom_for_fun_level=None, schema=None):
+        serverrole, am_rodc=False, dom_for_fun_level=None, schema=None):
     """Setup a complete SAM Database.
     
     :note: This will wipe the main SAM database file!
@@ -1120,7 +1120,7 @@ def provision(setup_dir, logger, session_info,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
-              ldap_dryrun_mode=False,useeadb=False, am_rodc=False):
+              ldap_dryrun_mode=False, useeadb=False, am_rodc=False):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
