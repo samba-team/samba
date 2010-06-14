@@ -274,6 +274,8 @@ NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r)
 
 	r->out.groups->num_principals = num_groups;
 	r->out.groups->principals = result;
+
+	TALLOC_FREE(groups);
 	return NT_STATUS_OK;
 }
 
