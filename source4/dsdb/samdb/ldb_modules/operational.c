@@ -478,6 +478,18 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 
 }
 
+struct op_controls_flags {
+	bool sd;
+	bool bypassoperational;
+};
+
+static bool check_keep_control_for_attribute(struct op_controls_flags* controls_flags, const char* attr) {
+	if (ldb_attr_cmp(attr, "msDS-KeyVersionNumber") == 0 && controls_flags->bypassoperational) {
+		return true;
+	}
+	return false;
+}
+
 /*
   a list of attribute names that should be substituted in the parse
   tree before the search is done
@@ -517,7 +529,8 @@ static const struct {
 enum op_remove {
 	OPERATIONAL_REMOVE_ALWAYS, /* remove always */
 	OPERATIONAL_REMOVE_UNASKED,/* remove if not requested */
-	OPERATIONAL_SD_FLAGS	   /* show if SD_FLAGS_OID set, or asked for */
+	OPERATIONAL_SD_FLAGS,	   /* show if SD_FLAGS_OID set, or asked for */
+	OPERATIONAL_REMOVE_UNLESS_CONTROL	 /* remove always unless an adhoc control has been specified */
 };
 
 /*
@@ -531,7 +544,7 @@ static const struct {
 	enum op_remove op;
 } operational_remove[] = {
 	{ "nTSecurityDescriptor",    OPERATIONAL_SD_FLAGS },
-	{ "msDS-KeyVersionNumber",   OPERATIONAL_REMOVE_ALWAYS  },
+	{ "msDS-KeyVersionNumber",   OPERATIONAL_REMOVE_UNLESS_CONTROL  },
 	{ "parentGUID",              OPERATIONAL_REMOVE_ALWAYS  },
 	{ "replPropertyMetaData",    OPERATIONAL_REMOVE_UNASKED },
 	{ "unicodePwd",              OPERATIONAL_REMOVE_UNASKED },
@@ -553,7 +566,7 @@ static int operational_search_post_process(struct ldb_module *module,
 					   enum ldb_scope scope,
 					   const char * const *attrs_from_user,
 					   const char * const *attrs_searched_for,
-					   bool sd_flags_set)
+					   struct op_controls_flags* controls_flags)
 {
 	struct ldb_context *ldb;
 	unsigned int i, a = 0;
@@ -574,8 +587,15 @@ static int operational_search_post_process(struct ldb_module *module,
 		case OPERATIONAL_REMOVE_ALWAYS:
 			ldb_msg_remove_attr(msg, operational_remove[i].attr);
 			break;
+		case OPERATIONAL_REMOVE_UNLESS_CONTROL:
+			if (!check_keep_control_for_attribute(controls_flags, operational_remove[i].attr)) {
+				ldb_msg_remove_attr(msg, operational_remove[i].attr);
+				break;
+			} else {
+				continue;
+			}
 		case OPERATIONAL_SD_FLAGS:
-			if (sd_flags_set ||
+			if (controls_flags->sd ||
 			    ldb_attr_in_list(attrs_from_user, operational_remove[i].attr)) {
 				continue;
 			}
@@ -585,6 +605,9 @@ static int operational_search_post_process(struct ldb_module *module,
 	}
 
 	for (a=0;attrs_from_user && attrs_from_user[a];a++) {
+		if (check_keep_control_for_attribute(controls_flags, attrs_from_user[a])) {
+			continue;
+		}
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
 			if (ldb_attr_cmp(attrs_from_user[a], search_sub[i].attr) != 0) {
 				continue;
@@ -633,7 +656,6 @@ failed:
 	return -1;
 }
 
-
 /*
   hook search operations
 */
@@ -643,7 +665,7 @@ struct operational_context {
 	struct ldb_request *req;
 	enum ldb_scope scope;
 	const char * const *attrs;
-	bool sd_flags_set;
+	struct op_controls_flags* controls_flags;
 };
 
 static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -671,7 +693,7 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 						      ac->scope,
 						      ac->attrs,
 						      req->op.search.attrs,
-						      ac->sd_flags_set);
+						      ac->controls_flags);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -728,10 +750,20 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 					    parse_tree_sub[i].replace);
 	}
 
+	ac->controls_flags = talloc(ac, struct op_controls_flags);
+	/* remember if the SD_FLAGS_OID was set */
+	ac->controls_flags->sd = (ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID) != NULL);
+	/* remember if the LDB_CONTROL_BYPASSOPERATIONAL_OID */
+	ac->controls_flags->bypassoperational = (ldb_request_get_control(req,
+							LDB_CONTROL_BYPASSOPERATIONAL_OID) != NULL);
+
 	/* in the list of attributes we are looking for, rename any
 	   attributes to the alias for any hidden attributes that can
 	   be fetched directly using non-hidden names */
 	for (a=0;ac->attrs && ac->attrs[a];a++) {
+		if (check_keep_control_for_attribute(ac->controls_flags, ac->attrs[a])) {
+			continue;
+		}
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
 			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 &&
 			    search_sub[i].replace) {
@@ -762,9 +794,6 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 			}
 		}
 	}
-
-	/* remember if the SD_FLAGS_OID was set */
-	ac->sd_flags_set = (ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID) != NULL);
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					req->op.search.base,
