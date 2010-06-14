@@ -1324,7 +1324,7 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 			DEBUG(0, ("Out of memory!\n"));
 			goto reply;
 		}
-		talloc_move(state->info3, &pipe_request);
+		talloc_steal(state->info3, pipe_request);
 
 		/* we need to force byte mode in this level */
 		state->file_type = FILE_TYPE_BYTE_MODE_PIPE;
@@ -1531,9 +1531,9 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	*server_name = talloc_move(mem_ctx, &state->server_name);
 	*info3 = talloc_move(mem_ctx, &state->info3);
 	*session_key = state->session_key;
-	talloc_move(mem_ctx, &state->session_key.data);
+	talloc_steal(mem_ctx, state->session_key.data);
 	*delegated_creds = state->delegated_creds;
-	talloc_move(mem_ctx, &state->delegated_creds.data);
+	talloc_steal(mem_ctx, state->delegated_creds.data);
 
 	tevent_req_received(req);
 	return 0;
