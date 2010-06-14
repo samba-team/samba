@@ -55,10 +55,11 @@ def expand_subsystem_deps(bld):
             continue
 
         t = bld.name_to_obj(s, bld.env)
-        bld.ASSERT(t is not None, "Subsystem target %s not found" % s)
         for d in subsystems[s]:
             type = targets[d['TARGET']]
             if type != 'DISABLED' and type != 'EMPTY':
+                bld.ASSERT(t is not None,
+                    "Subsystem target %s for %s (%s) not found" % (s, d['TARGET'], type))
                 t.samba_deps_extended.append(d['TARGET'])
                 t2 = bld.name_to_obj(d['TARGET'], bld.env)
                 t2.samba_includes_extended.extend(t.samba_includes_extended)
