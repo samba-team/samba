@@ -56,7 +56,7 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
                                  updateOEMInfo, getOEMInfo, update_gpo,
-                                 delta_update_basesamdb)
+                                 delta_update_basesamdb, update_policyids)
 
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
@@ -1432,8 +1432,8 @@ if __name__ == '__main__':
         # 11) B
         simple_update_basesamdb(newpaths, paths, names)
         ldbs = get_ldbs(paths, creds, session, lp)
-        ldbs.startTransactions()
         removeProvisionUSN(ldbs.sam)
+        ldbs.startTransactions()
 
     # 12)
     schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn),
@@ -1497,10 +1497,20 @@ if __name__ == '__main__':
     # 22)
     if lastProvisionUSNs != None:
         updateProvisionUSN(ldbs.sam, minUSN, maxUSN)
+    if opts.full and (names.policyid == None or names.policyid_dc == None):
+        update_policyids(names, ldbs.sam)
     if opts.full or opts.resetfileacl:
-        update_gpo(paths, ldbs.sam, names, lp, message, 1)
+        try:
+            update_gpo(paths, ldbs.sam, names, lp, message, 1)
+        except ProvisioningError, e:
+            message(ERROR, "The policy for domain controller is missing," \
+                           " you should restart upgradeprovision with --full")
     else:
-        update_gpo(paths, ldbs.sam, names, lp, message, 0)
+        try:
+            update_gpo(paths, ldbs.sam, names, lp, message, 0)
+        except ProvisioningError, e:
+            message(ERROR, "The policy for domain controller is missing," \
+                           " you should restart upgradeprovision with --full")
     ldbs.groupedCommit()
     new_ldbs.groupedCommit()
     message(SIMPLE, "Upgrade finished !")

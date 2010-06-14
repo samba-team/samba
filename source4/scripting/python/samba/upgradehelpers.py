@@ -187,6 +187,26 @@ def get_paths(param, targetdir=None, smbconf=None):
     paths = provision_paths_from_lp(lp, lp.get("realm"))
     return paths
 
+def update_policyids(names, samdb):
+    """Update policy ids that could have changed after sam update
+
+    :param names: List of key provision parameters
+    :param samdb: An Ldb object conntected with the sam DB
+    """
+    # policy guid
+    res = samdb.search(expression="(displayName=Default Domain Policy)",
+                        base="CN=Policies,CN=System," + str(names.rootdn),
+                        scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
+    names.policyid = str(res[0]["cn"]).replace("{","").replace("}","")
+    # dc policy guid
+    res2 = samdb.search(expression="(displayName=Default Domain Controllers" \
+                                   " Policy)",
+                            base="CN=Policies,CN=System," + str(names.rootdn),
+                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
+    if len(res2) == 1:
+        names.policyid_dc = str(res2[0]["cn"]).replace("{","").replace("}","")
+    else:
+        names.policyid_dc = None
 
 def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp):
     """Get key provision parameters (realm, domain, ...) from a given provision
@@ -562,6 +582,8 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         for att in hashAttrNotCopied.keys():
             delta.remove(att)
         for att in delta:
+            if att == "msDS-KeyVersionNumber":
+                delta.remove(att)
             if att != "dn":
                 messagefunc(CHANGE,
                             "Adding/Changing attribute %s to %s" % \
@@ -632,6 +654,8 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
 
+    if names.policyid_dc == None:
+        raise ProvisioningError("Policy ID for Domain controller is missing")
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
