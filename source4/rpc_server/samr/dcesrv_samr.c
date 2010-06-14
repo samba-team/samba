@@ -1549,7 +1549,8 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 		memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 					       "distinguishedName",
 					       "(objectSid=%s)",
-					       ldap_encode_ndr_dom_sid(mem_ctx, 								       r->in.sids->sids[i].sid));
+					       ldap_encode_ndr_dom_sid(mem_ctx,
+								       r->in.sids->sids[i].sid));
 		if (memberdn == NULL) {
 			continue;
 		}
