@@ -3074,7 +3074,7 @@ uint32_t dsdb_dn_rmd_flags(struct ldb_dn *dn)
   return RMD_FLAGS directly from a ldb_val for a DN
   returns 0 if RMD_FLAGS is not found
  */
-uint32_t dsdb_dn_val_rmd_flags(struct ldb_val *val)
+uint32_t dsdb_dn_val_rmd_flags(const struct ldb_val *val)
 {
 	const char *p;
 	uint32_t flags;
@@ -3098,7 +3098,7 @@ uint32_t dsdb_dn_val_rmd_flags(struct ldb_val *val)
 /*
   return true if a ldb_val containing a DN in storage form is deleted
  */
-bool dsdb_dn_is_deleted_val(struct ldb_val *val)
+bool dsdb_dn_is_deleted_val(const struct ldb_val *val)
 {
 	return (dsdb_dn_val_rmd_flags(val) & DSDB_RMD_FLAG_DELETED) != 0;
 }
