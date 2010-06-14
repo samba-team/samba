@@ -876,6 +876,8 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	reqhdr = (uint8_t *)req->out.vector[1].iov_base;
 	SIVAL(reqhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 	SBVAL(reqhdr, SMB2_HDR_PID, async_id);
+	/* Only return credits on the interim response. */
+	SSVAL(reqhdr, SMB2_HDR_CREDIT, 0);
 
 	{
 		const uint8_t *inhdr =
