@@ -907,7 +907,6 @@ static int la_find_dn_target(struct ldb_module *module, struct la_context *ac,
 static int la_do_op_request(struct ldb_module *module, struct la_context *ac, struct la_op_store *op)
 {
 	struct ldb_message_element *ret_el;
-	struct ldb_request *mod_req;
 	struct ldb_message *new_msg;
 	struct ldb_context *ldb;
 	int ret;
@@ -955,33 +954,14 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 		  ret_el->values[0].data, ac->ops->op == LA_OP_ADD ? "added" : "deleted");
 #endif	
 
-	ret = ldb_build_mod_req(&mod_req, ldb, op,
-				new_msg,
-				NULL,
-				NULL, 
-				ldb_op_default_callback,
-				NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	talloc_steal(mod_req, new_msg);
-
 	if (DEBUGLVL(4)) {
 		DEBUG(4,("Applying linked attribute change:\n%s\n",
 			 ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg)));
 	}
 
-	/* Run the new request */
-	ret = ldb_next_request(module, mod_req);
-
-	/* we need to wait for this to finish, as we are being called
-	   from the synchronous end_transaction hook of this module */
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
-	}
-
+	ret = dsdb_module_modify(module, new_msg, 0);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s' %s\n",
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
 			  ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg));
 	}
