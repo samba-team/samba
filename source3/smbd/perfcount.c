@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-struct smb_perfcount_handlers *g_smb_perfcount_handlers = NULL;
+static struct smb_perfcount_handlers *g_smb_perfcount_handlers = NULL;
 
 struct smb_perfcount_module {
 	char *name;
