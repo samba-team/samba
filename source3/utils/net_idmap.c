@@ -32,25 +32,23 @@
 /***********************************************************
  Helper function for net_idmap_dump. Dump one entry.
  **********************************************************/
-static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
-				    TDB_DATA key,
-				    TDB_DATA data,
+static int net_idmap_dump_one_entry(struct db_record *rec,
 				    void *unused)
 {
-	if (strcmp((char *)key.dptr, "USER HWM") == 0) {
-		printf(_("USER HWM %d\n"), IVAL(data.dptr,0));
+	if (strcmp((char *)rec->key.dptr, "USER HWM") == 0) {
+		printf(_("USER HWM %d\n"), IVAL(rec->value.dptr,0));
 		return 0;
 	}
 
-	if (strcmp((char *)key.dptr, "GROUP HWM") == 0) {
-		printf(_("GROUP HWM %d\n"), IVAL(data.dptr,0));
+	if (strcmp((char *)rec->key.dptr, "GROUP HWM") == 0) {
+		printf(_("GROUP HWM %d\n"), IVAL(rec->value.dptr,0));
 		return 0;
 	}
 
-	if (strncmp((char *)key.dptr, "S-", 2) != 0)
+	if (strncmp((char *)rec->key.dptr, "S-", 2) != 0)
 		return 0;
 
-	printf("%s %s\n", data.dptr, key.dptr);
+	printf("%s %s\n", rec->value.dptr, rec->key.dptr);
 	return 0;
 }
 
@@ -59,7 +57,8 @@ static int net_idmap_dump_one_entry(TDB_CONTEXT *tdb,
  **********************************************************/
 static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 {
-	TDB_CONTEXT *idmap_tdb;
+	struct db_context *db;
+	TALLOC_CTX *mem_ctx;
 
 	if ( argc != 1  || c->display_usage) {
 		d_printf("%s\n%s",
@@ -70,16 +69,19 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 		return c->display_usage?0:-1;
 	}
 
-	idmap_tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
+	mem_ctx = talloc_stackframe();
 
-	if (idmap_tdb == NULL) {
-		d_fprintf(stderr, _("Could not open idmap: %s\n"), argv[0]);
+	db = db_open(mem_ctx, argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
+	if (db == NULL) {
+		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
+			  argv[0], strerror(errno));
+		talloc_free(mem_ctx);
 		return -1;
 	}
 
-	tdb_traverse(idmap_tdb, net_idmap_dump_one_entry, NULL);
+	db->traverse_read(db, net_idmap_dump_one_entry, NULL);
 
-	tdb_close(idmap_tdb);
+	talloc_free(mem_ctx);
 
 	return 0;
 }
