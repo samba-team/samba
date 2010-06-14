@@ -70,77 +70,24 @@ def build(bld):
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_dn.c ldb_match.c
+                            ldb_debug.c ldb_dn.c ldb_match.c common/ldb_modules.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
-    bld.SAMBA_SUBSYSTEM('LIBLDB',
-                        includes='include',
-                        deps='tevent',
-                        source='common/ldb_modules.c')
-
-    bld.SAMBA_MODULE('ldb_asq',
-                     'modules/asq.c',
-                     init_function='LDB_MODULE(asq)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_server_sort',
-                     'modules/sort.c',
-                     init_function='LDB_MODULE(server_sort)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_paged_results',
-                     'modules/paged_results.c',
-                     init_function='LDB_MODULE(paged_results)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_paged_searches',
-                     'modules/paged_searches.c',
-                     init_function='LDB_MODULE(paged_searches)',
-                     enabled = s4_build,
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_rdn_name',
-                     'modules/rdn_name.c',
-                     init_function='LDB_MODULE(rdn_name)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_sample',
-                     'tests/sample_module.c',
-                     init_function='LDB_MODULE(sample)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_skel',
-                     'modules/skel.c',
-                     init_function='LDB_MODULE(skel)',
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_sqlite3',
-                     'sqlite3/ldb_sqlite3.c',
-                     init_function='LDB_BACKEND(sqlite3)',
-                     enabled=False,
-                     subsystem='LIBLDB')
-
-    bld.SAMBA_MODULE('ldb_tdb',
-                     bld.SUBDIR('ldb_tdb',
-                                '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
-                                ldb_cache.c ldb_tdb_wrap.c'''),
-                     init_function='LDB_BACKEND(tdb)',
-                     deps='tdb',
-                     subsystem='LIBLDB')
-
-    # this is only in the s4 build
-    bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
-                     init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
-                     deps='talloc LIBCLI_LDAP CREDENTIALS',
-                     enabled=s4_build,
-                     subsystem='LIBLDB')
-
-    # this is not included in the s4 build
-    bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
-                     init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
-                     deps='talloc lber ldap',
-                     enabled=bld.env.ENABLE_LDAP_BACKEND,
-                     subsystem='LIBLDB')
+    if s4_build:
+        # this is only in the s4 build
+        bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
+                         init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
+                         deps='talloc LIBCLI_LDAP CREDENTIALS',
+                         internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+                         includes='include',
+                         subsystem='ldb')
+    else:
+        # this is not included in the s4 build
+        bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
+                         init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
+                         deps='talloc lber ldap',
+                         enabled=bld.env.ENABLE_LDAP_BACKEND,
+                         subsystem='ldb')
 
     # we're not currently linking against the ldap libs, but ldb.pc.in
     # has @LDAP_LIBS@
@@ -162,7 +109,7 @@ def build(bld):
         modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
         bld.SAMBA_LIBRARY('ldb',
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
-                          deps='tevent LIBLDB',
+                          deps='tevent ldb',
                           includes='include',
                           public_headers='include/ldb.h include/ldb_errors.h '\
                               'include/ldb_module.h include/ldb_handlers.h',
@@ -177,10 +124,61 @@ def build(bld):
                          deps='ldb pyldb_util',
                          realname='ldb.so')
 
-    extra_cmdline_deps = ''
+        bld.SAMBA_MODULE('ldb_paged_results',
+                         'modules/paged_results.c',
+                         init_function='LDB_MODULE(paged_results)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_asq',
+                         'modules/asq.c',
+                         init_function='LDB_MODULE(asq)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_server_sort',
+                         'modules/sort.c',
+                         init_function='LDB_MODULE(server_sort)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_paged_searches',
+                         'modules/paged_searches.c',
+                         init_function='LDB_MODULE(paged_searches)',
+                         enabled = s4_build,
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_rdn_name',
+                         'modules/rdn_name.c',
+                         init_function='LDB_MODULE(rdn_name)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_sample',
+                         'tests/sample_module.c',
+                         init_function='LDB_MODULE(sample)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_skel',
+                         'modules/skel.c',
+                         init_function='LDB_MODULE(skel)',
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_sqlite3',
+                         'sqlite3/ldb_sqlite3.c',
+                         init_function='LDB_BACKEND(sqlite3)',
+                         enabled=False,
+                         subsystem='ldb')
+
+        bld.SAMBA_MODULE('ldb_tdb',
+                         bld.SUBDIR('ldb_tdb',
+                                    '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
+                                    ldb_cache.c ldb_tdb_wrap.c'''),
+                         init_function='LDB_BACKEND(tdb)',
+                         deps='tdb',
+                         subsystem='ldb')
+
     if s4_build:
-        extra_cmdline_deps += ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \
+        extra_cmdline_deps = ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \
                 'LIBCMDLINE_CREDENTIALS gensec'
+    else:
+        extra_cmdline_deps = ''
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
