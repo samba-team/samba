@@ -357,21 +357,29 @@ def SAMBA_MODULE(bld, modname, source,
 
     deps = TO_LIST(deps)
     deps.append(obj_target)
+    realname = modname 
     if subsystem is not None:
         deps.append(subsystem)
+        while realname.startswith("lib"+subsystem+"_"):
+            realname = realname[len("lib"+subsystem+"_"):]
+        while realname.startswith(subsystem+"_"):
+            realname = realname[len(subsystem+"_"):]
+        while realname.startswith("lib"):
+            realname = realname[len("lib"):]
 
     bld.SET_BUILD_GROUP('main')
     t = bld(
         features       = 'cc cshlib install_lib',
         source         = [],
-        target         = modname,
+        target         = realname,
+        name           = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         samba_includes = includes,
         local_include  = local_include,
         samba_deps     = deps,
         install_path   = None,
         samba_inst_path= "${MODULESDIR}/%s" % subsystem,
-        samba_realname = None,
+        samba_realname = realname+ ".${SHLIBEXT}",
         vnum           = None,
         samba_install  = True,
         is_bundled     = False,
