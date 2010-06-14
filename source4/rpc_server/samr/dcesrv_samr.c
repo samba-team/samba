@@ -1440,10 +1440,9 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 
 	d_state = h->data;
 
-	/* search for all domain groups in this domain. This could possibly be
+	/* search for all domain aliases in this domain. This could possibly be
 	   cached and resumed based on resume_key */
-	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
-				      d_state->domain_dn,
+	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx, NULL,
 				      &res, attrs, 
 				      d_state->domain_sid,
 				      "(&(|(grouptype=%d)(grouptype=%d)))"
@@ -1547,8 +1546,7 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 	for (i=0; i<r->in.sids->num_sids; i++) {
 		const char *memberdn;
 
-		memberdn = samdb_search_string(d_state->sam_ctx,
-					       mem_ctx, d_state->domain_dn,
+		memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 					       "distinguishedName",
 					       "(objectSid=%s)",
 					       ldap_encode_ndr_dom_sid(mem_ctx, 								       r->in.sids->sids[i].sid));
@@ -1566,9 +1564,9 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 	/* Find out if we had at least one valid member SID passed - otherwise
 	 * just skip the search. */
 	if (strstr(filter, "member") != NULL) {
-		count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
-					    d_state->domain_dn, &res, attrs,
-					    d_state->domain_sid, "%s))", filter);
+		count = samdb_search_domain(d_state->sam_ctx, mem_ctx, NULL,
+					    &res, attrs, d_state->domain_sid,
+					    "%s))", filter);
 		if (count < 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -2217,8 +2215,7 @@ static NTSTATUS dcesrv_samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_NO_MEMORY;
 
 	/* search for the group record */
-	ret = gendb_search(d_state->sam_ctx,
-			   mem_ctx, d_state->domain_dn, &msgs, attrs,
+	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(|(grouptype=%d)(grouptype=%d)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
