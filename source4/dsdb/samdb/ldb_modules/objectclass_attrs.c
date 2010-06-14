@@ -105,6 +105,15 @@ static int attr_handler(struct oc_context *ac)
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
+		if ((attr->linkID & 1) == 1) {
+			/* Odd is for the target.  Illegal to modify */
+			ldb_asprintf_errstring(ldb, 
+					       "objectclass_attrs: attribute '%s' on entry '%s' must not be modified directly, it is a linked attribute", 
+					       msg->elements[i].name,
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		
 		werr = attr->syntax->validate_ldb(ldb, ac->schema, attr,
 						  &msg->elements[i]);
 		if (!W_ERROR_IS_OK(werr)) {
