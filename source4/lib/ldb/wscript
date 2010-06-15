@@ -70,7 +70,7 @@ def build(bld):
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_dn.c ldb_match.c common/ldb_modules.c
+                            ldb_debug.c ldb_dn.c ldb_match.c ldb_modules.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
     if s4_build:
@@ -126,42 +126,50 @@ def build(bld):
 
         bld.SAMBA_MODULE('ldb_paged_results',
                          'modules/paged_results.c',
+                         includes='include',
                          init_function='LDB_MODULE(paged_results)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_asq',
                          'modules/asq.c',
+                         includes='include',
                          init_function='LDB_MODULE(asq)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_server_sort',
                          'modules/sort.c',
+                         includes='include',
                          init_function='LDB_MODULE(server_sort)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_paged_searches',
                          'modules/paged_searches.c',
+                         includes='include',
                          init_function='LDB_MODULE(paged_searches)',
                          enabled = s4_build,
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_rdn_name',
                          'modules/rdn_name.c',
+                         includes='include',
                          init_function='LDB_MODULE(rdn_name)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_sample',
                          'tests/sample_module.c',
+                         includes='include',
                          init_function='LDB_MODULE(sample)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_skel',
                          'modules/skel.c',
+                         includes='include',
                          init_function='LDB_MODULE(skel)',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_sqlite3',
                          'sqlite3/ldb_sqlite3.c',
+                         includes='include',
                          init_function='LDB_BACKEND(sqlite3)',
                          enabled=False,
                          subsystem='ldb')
@@ -171,6 +179,7 @@ def build(bld):
                                     '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
                                     ldb_cache.c ldb_tdb_wrap.c'''),
                          init_function='LDB_BACKEND(tdb)',
+                         includes='include',
                          deps='tdb',
                          subsystem='ldb')
 

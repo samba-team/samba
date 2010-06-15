@@ -866,6 +866,10 @@ int ldb_mod_register_control(struct ldb_module *module, const char *oid)
 	return ret;
 }
 
+#ifdef STATIC_ldb_MODULES
+#define STATIC_LIBLDB_MODULES STATIC_ldb_MODULES
+#endif
+
 #ifndef STATIC_LIBLDB_MODULES
 
 #ifdef HAVE_LDB_LDAP
