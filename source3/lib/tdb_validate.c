@@ -355,6 +355,10 @@ static int rename_file_with_suffix(TALLOC_CTX *ctx, const char *path,
 	char *dst_path;
 
 	dst_path = talloc_asprintf(ctx, "%s%s", path, suffix);
+	if (dst_path == NULL) {
+		DEBUG(3, ("error out of memory\n"));
+		return ret;
+	}
 
 	ret = (rename(path, dst_path) != 0);
 
