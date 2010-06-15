@@ -157,6 +157,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
           lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
           lib/sessionid_tdb.c
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
+          lib/server_contexts.c
           lib/ldap_escape.c ${CHARSET_STATIC}
           lib/secdesc.c lib/util_seaccess.c ../libcli/security/secace.c
           ../libcli/security/sddl.c
@@ -641,7 +642,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_pam_chauthtok.c
                    winbindd/winbindd_pam_auth_crap.c
                    winbindd/winbindd_pam_chng_pswd_auth_crap.c
-                   winbindd/winbindd_event.c
                    auth/token_util.c
                    auth/check_samsec.c
                    auth/server_info.c
