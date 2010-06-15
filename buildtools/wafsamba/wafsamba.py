@@ -330,9 +330,12 @@ def SAMBA_MODULE(bld, modname, source,
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
-    obj_target = modname + '.objlist'
+    if internal_module or BUILTIN_LIBRARY(bld, modname):
+        # treat internal modules as subsystems for now
+        if subsystem is not None:
+            deps += ' ' + subsystem
 
-    bld.SAMBA_SUBSYSTEM(obj_target, source,
+        bld.SAMBA_SUBSYSTEM(modname, source,
                     deps=deps,
                     includes=includes,
                     autoproto=autoproto,
@@ -341,10 +344,6 @@ def SAMBA_MODULE(bld, modname, source,
                     local_include=local_include,
                     enabled=enabled)
 
-    if internal_module or BUILTIN_LIBRARY(bld, modname):
-        # treat internal modules as subsystems for now
-        bld.SAMBA_SUBSYSTEM(modname, deps=obj_target, source=[],
-                            enabled=enabled)
         bld.ADD_INIT_FUNCTION(subsystem, modname, init_function)
         return
 
@@ -354,6 +353,17 @@ def SAMBA_MODULE(bld, modname, source,
 
     if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
         return
+
+    obj_target = modname + '.objlist'
+
+    obj_target = bld.SAMBA_SUBSYSTEM(obj_target, source,
+                    deps=deps,
+                    includes=includes,
+                    autoproto=autoproto,
+                    autoproto_extra_source=autoproto_extra_source,
+                    cflags=cflags,
+                    local_include=local_include,
+                    enabled=enabled)
 
     deps = TO_LIST(deps)
     deps.append(obj_target)
