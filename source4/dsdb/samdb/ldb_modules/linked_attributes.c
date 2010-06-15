@@ -229,8 +229,15 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
 		}
 		/* We have a valid attribute, now find out if it is a forward link */
-		if ((schema_attr->linkID == 0) || ((schema_attr->linkID & 1) == 1)) {
+		if ((schema_attr->linkID == 0)) {
 			continue;
+		}
+
+		if ((schema_attr->linkID & 1) == 1) {
+			unsigned int functional_level;
+			
+			functional_level = dsdb_functional_level(ldb);
+			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
 		}
 		
 		/* Even link IDs are for the originating attribute */
@@ -456,10 +463,16 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		}
 		/* We have a valid attribute, now find out if it is a forward link
 		   (Even link IDs are for the originating attribute) */
-		if ((schema_attr->linkID == 0) || ((schema_attr->linkID & 1) == 1)) {
+		if (schema_attr->linkID == 0) {
 			continue;
 		}
 
+		if ((schema_attr->linkID & 1) == 1) {
+			unsigned int functional_level;
+			
+			functional_level = dsdb_functional_level(ldb);
+			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
+		}
 		/* Now find the target attribute */
 		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
 		if (!target_attr) {
