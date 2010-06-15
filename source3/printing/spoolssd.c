@@ -23,6 +23,20 @@
 
 #define SPOOLSS_PIPE_NAME "spoolss"
 
+
+static void spoolss_reopen_logs(void)
+{
+	char *lfile = NULL;
+	int ret;
+
+	ret = asprintf(&lfile, "%s.spoolssd", lp_logfile());
+	if (ret > 0) {
+		lp_set_logfile(lfile);
+		SAFE_FREE(lfile);
+	}
+	reopen_logs();
+}
+
 void start_spoolssd(void)
 {
 	pid_t pid;
@@ -45,6 +59,8 @@ void start_spoolssd(void)
 	}
 
 	/* child */
+	close_low_fds(false);
+
 	status = reinit_after_fork(server_messaging_context(),
 				   server_event_context(),
 				   procid_self(), true);
@@ -52,6 +68,8 @@ void start_spoolssd(void)
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
+
+	spoolss_reopen_logs();
 
 	smbd_setup_sig_term_handler();
 	smbd_setup_sig_hup_handler();
