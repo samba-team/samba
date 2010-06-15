@@ -29,7 +29,8 @@ from samba.upgradehelpers import (get_paths, get_ldbs,
                                  find_provision_key_parameters, identic_rename,
                                  updateOEMInfo, getOEMInfo, update_gpo,
                                  delta_update_basesamdb,
-                                 search_constructed_attrs_stored)
+                                 search_constructed_attrs_stored,
+                                 increment_calculated_keyversion_number)
 from samba.tests import env_loadparm, TestCaseInTempDir
 from samba.tests.provision import create_dummy_secretsdb
 import ldb
@@ -90,6 +91,29 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                                                   self.names.rootdn,
                                                   ["msds-KeyVersionNumber"])
         self.assertFalse(hashAtt.has_key("msds-KeyVersionNumber"))
+
+    def test_increment_calculated_keyversion_number(self):
+        dn = "CN=Administrator,CN=Users,%s" % self.names.rootdn
+        # We conctruct a simple hash for the user administrator
+        hash = {}
+        # And we want the version to be 140
+        hash[dn.lower()] = 140
+
+        increment_calculated_keyversion_number(self.ldbs.sam,
+                                               self.names.rootdn,
+                                               hash)
+        self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
+                            "unicodePwd"),
+                            140)
+        # This function should not decrement the version
+        hash[dn.lower()] = 130
+
+        increment_calculated_keyversion_number(self.ldbs.sam,
+                                               self.names.rootdn,
+                                               hash)
+        self.assertEqual(self.ldbs.sam.get_attribute_replmetadata_version(dn,
+                            "unicodePwd"),
+                            140)
 
     def test_identic_rename(self):
         rootdn = "DC=samba,DC=example,DC=com"
