@@ -752,7 +752,9 @@ PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
 
 PRINTBASE_SRC = '''printing/notify.c printing/printing_db.c'''
 PRINTBACKEND_SRC = '''printing/printing.c printing/nt_printing.c
-                   printing/nt_printing_tdb.c ${PRINTBASE_SRC}'''
+                   printing/nt_printing_tdb.c printing/nt_printing_migrate.c
+                   librpc/gen_ndr/ndr_ntprinting.c ../librpc/ndr/ndr_ntprinting.c
+                   ${PRINTBASE_SRC}'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 

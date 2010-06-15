@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "printing/pcap.h"
 #include "printing/nt_printing_tdb.h"
+#include "printing/nt_printing_migrate.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
@@ -92,6 +93,10 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 	WERROR win_rc;
 
 	if (!nt_printing_tdb_upgrade()) {
+		return false;
+	}
+
+	if (!nt_printing_tdb_migrate()) {
 		return false;
 	}
 
