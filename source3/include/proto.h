@@ -5077,7 +5077,6 @@ char *prs_alloc_mem_(prs_struct *ps, size_t size, unsigned int count);
 char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count);
 TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic);
-char *prs_take_memory(prs_struct *ps, uint32 *psize);
 bool prs_set_buffer_size(prs_struct *ps, uint32 newsize);
 bool prs_grow(prs_struct *ps, uint32 extra_space);
 bool prs_force_grow(prs_struct *ps, uint32 extra_space);

@@ -194,20 +194,6 @@ void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic)
 }
 
 /*******************************************************************
- Take some memory back from a prs_struct.
- ********************************************************************/
-
-char *prs_take_memory(prs_struct *ps, uint32 *psize)
-{
-	char *ret = ps->data_p;
-	if(psize)
-		*psize = ps->buffer_size;
-	ps->is_dynamic = False;
-	prs_mem_free(ps);
-	return ret;
-}
-
-/*******************************************************************
  Set a prs_struct to exactly a given size. Will grow or tuncate if neccessary.
  ********************************************************************/
 
