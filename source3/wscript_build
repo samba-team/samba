@@ -751,7 +751,8 @@ PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_iprint.c'''
 
 PRINTBASE_SRC = '''printing/notify.c printing/printing_db.c'''
-PRINTBACKEND_SRC = 'printing/printing.c printing/nt_printing.c ${PRINTBASE_SRC}'
+PRINTBACKEND_SRC = '''printing/printing.c printing/nt_printing.c
+                   printing/nt_printing_tdb.c ${PRINTBASE_SRC}'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
