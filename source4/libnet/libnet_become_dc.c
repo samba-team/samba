@@ -744,13 +744,6 @@ static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
 		DS_DC_FUNCTION_2008);
 }
 
-static int32_t get_min_function_level(struct loadparm_context *lp_ctx)
-{
-	/* per default it is (Windows) 2003 Native compatible */
-	return lp_parm_int(lp_ctx, NULL, "ads", "min function level",
-		DS_DOMAIN_FUNCTION_2003);
-}
-
 static void becomeDC_recv_cldap(struct tevent_req *req);
 
 static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
@@ -919,14 +912,6 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	}
 
 	s->forest.crossref_behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
-	if (s->forest.crossref_behavior_version <
-			 get_min_function_level(s->libnet->lp_ctx)) {
-		talloc_free(r);
-		DEBUG(0,("The servers function level %u is below 'ads:min function level' of %u\n", 
-			 s->forest.crossref_behavior_version, 
-			 get_min_function_level(s->libnet->lp_ctx)));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
 	if (s->forest.crossref_behavior_version >
 			get_dc_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
@@ -964,14 +949,6 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	}
 
 	s->domain.behavior_version = ldb_msg_find_attr_as_uint(r->msgs[0], "msDs-Behavior-Version", 0);
-	if (s->domain.behavior_version <
-			get_min_function_level(s->libnet->lp_ctx)) {
-		talloc_free(r);
-		DEBUG(0,("The servers function level %u is below 'ads:min function level' of %u\n", 
-			 s->forest.crossref_behavior_version, 
-			 get_min_function_level(s->libnet->lp_ctx)));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
 	if (s->domain.behavior_version >
 			get_dc_function_level(s->libnet->lp_ctx)) {
 		talloc_free(r);
