@@ -32,10 +32,10 @@ from samba import Ldb, version, ntacls
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
-from samba.provision import ProvisionNames, provision_paths_from_lp,\
-                            getpolicypath, set_gpo_acl, create_gpo_struct,\
-                            FILL_FULL, provision, ProvisioningError,\
-                            setsysvolacl
+from samba.provision import (ProvisionNames, provision_paths_from_lp,
+                            getpolicypath, set_gpo_acl, create_gpo_struct,
+                            FILL_FULL, provision, ProvisioningError,
+                            setsysvolacl)
 from samba.dcerpc import misc, security, xattr
 from samba.ndr import ndr_unpack
 
@@ -210,7 +210,9 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     names.realm = string.upper(names.realm)
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
-    res = secretsdb.search(expression="(flatname=%s)"%names.domain,base="CN=Primary Domains", scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
+    res = secretsdb.search(expression="(flatname=%s)" % \
+                            names.domain,base="CN=Primary Domains",
+                            scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
     names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
 
     names.smbconf = smbconf
@@ -225,23 +227,28 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     names.configdn = current[0]["configurationNamingContext"]
     configdn = str(names.configdn)
     names.schemadn = current[0]["schemaNamingContext"]
-    if ldb.Dn(samdb, basedn) != ldb.Dn(samdb, current[0]["defaultNamingContext"][0]):
-        raise ProvisioningError("basedn in %s (%s) and from %s (%s) is not the same ..." % (paths.samdb, str(current[0]["defaultNamingContext"][0]), paths.smbconf, basedn))
+    if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
+                                       current[0]["defaultNamingContext"][0]))):
+        raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
+                                 "is not the same ..." % (paths.samdb,
+                                    str(current[0]["defaultNamingContext"][0]),
+                                    paths.smbconf, basedn)))
 
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
     # default site name
     res3 = samdb.search(expression="(objectClass=*)", 
-        base="CN=Sites,"+configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
+        base="CN=Sites," + configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
     res4 = samdb.search(expression="(CN=%s)" % names.netbiosname,
-        base="OU=Domain Controllers,"+basedn, scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
-    names.hostname = str(res4[0]["dNSHostName"]).replace("."+names.dnsdomain,"")
+                            base="OU=Domain Controllers,%s" % basedn,
+                            scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
+    names.hostname = str(res4[0]["dNSHostName"]).replace("." + names.dnsdomain,"")
 
     server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
-            attrs=[], base=configdn)
+                                attrs=[], base=configdn)
     names.serverdn = server_res[0].dn
 
     # invocation id/objectguid
@@ -252,32 +259,34 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     names.ntdsguid = str(ndr_unpack(misc.GUID, res5[0]["objectGUID"][0]))
 
     # domain guid/sid
-    res6 = samdb.search(expression="(objectClass=*)",base=basedn,
+    res6 = samdb.search(expression="(objectClass=*)", base=basedn,
             scope=SCOPE_BASE, attrs=["objectGUID",
                 "objectSid","msDS-Behavior-Version" ])
-    names.domainguid = str(ndr_unpack( misc.GUID,res6[0]["objectGUID"][0]))
-    names.domainsid = ndr_unpack( security.dom_sid,res6[0]["objectSid"][0])
-    if (res6[0].get("msDS-Behavior-Version") is None or
-        int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000):
+    names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
+    names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
+    if res6[0].get("msDS-Behavior-Version") == None or \
+        int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
         names.domainlevel = DS_DOMAIN_FUNCTION_2000
     else:
         names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
 
     # policy guid
     res7 = samdb.search(expression="(displayName=Default Domain Policy)",
-            base="CN=Policies,CN=System,"+basedn, scope=SCOPE_ONELEVEL,
-            attrs=["cn","displayName"])
+                        base="CN=Policies,CN=System," + basedn,
+                        scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
     names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
     # dc policy guid
-    res8 = samdb.search(expression="(displayName=Default Domain Controllers Policy)",
-            base="CN=Policies,CN=System,"+basedn, scope=SCOPE_ONELEVEL,
-            attrs=["cn","displayName"])
+    res8 = samdb.search(expression="(displayName=Default Domain Controllers" \
+                                   " Policy)",
+                            base="CN=Policies,CN=System," + basedn,
+                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
     if len(res8) == 1:
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:
         names.policyid_dc = None
-    res9 = idmapdb.search(expression="(cn=%s)" % (security.SID_BUILTIN_ADMINISTRATORS),
-                          attrs=["xidNumber"])
+    res9 = idmapdb.search(expression="(cn=%s)" % \
+                            (security.SID_BUILTIN_ADMINISTRATORS),
+                            attrs=["xidNumber"])
     if len(res9) == 1:
         names.wheel_gid = res9[0]["xidNumber"]
     else:
@@ -343,7 +352,7 @@ def dn_sort(x, y):
             return ret
         else:
             if i == minimum-1:
-                assert len1 != len2, "PB PB PB"+" ".join(tab1)+" / "+" ".join(tab2)
+                assert len1!=len2,"PB PB PB" + " ".join(tab1)+" / " + " ".join(tab2)
                 if len1 > len2:
                     return 1
                 else:
@@ -521,7 +530,8 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         delta = secrets_ldb.msg_diff(empty, reference[0])
         for att in hashAttrNotCopied.keys():
             delta.remove(att)
-        messagefunc(CHANGE, "Entry %s is missing from secrets.ldb" % reference[0].dn)
+        messagefunc(CHANGE, "Entry %s is missing from secrets.ldb" % \
+                    reference[0].dn)
         for att in delta:
             messagefunc(CHANGE, " Adding attribute %s" % att)
         delta.dn = reference[0].dn
@@ -554,7 +564,8 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         for att in delta:
             if att != "dn":
                 messagefunc(CHANGE,
-                        "Adding/Changing attribute %s to %s" % (att, current[0].dn))
+                            "Adding/Changing attribute %s to %s" % \
+                            (att, current[0].dn))
 
         delta.dn = current[0].dn
         secrets_ldb.modify(delta)
@@ -588,7 +599,7 @@ def updateOEMInfo(samdb, rootdn):
         delta = ldb.Message()
         delta.dn = ldb.Dn(samdb, str(res[0]["dn"]))
         delta["oEMInformation"] = ldb.MessageElement(info, ldb.FLAG_MOD_REPLACE,
-            "oEMInformation" )
+                                                        "oEMInformation" )
         samdb.modify(delta)
 
 def update_gpo(paths, samdb, names, lp, message, force=0):
@@ -603,14 +614,14 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
         eadbname = lp.get("posix:eadb")
         if eadbname is not None and eadbname != "":
             try:
-                attribute = samba.xattr_tdb.wrap_getxattr(eadbname, paths.sysvol,
-                    xattr.XATTR_NTACL_NAME)
+                attribute = samba.xattr_tdb.wrap_getxattr(eadbname,
+                                paths.sysvol, xattr.XATTR_NTACL_NAME)
             except:
                 attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
-                    xattr.XATTR_NTACL_NAME)
+                                xattr.XATTR_NTACL_NAME)
         else:
             attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
-                xattr.XATTR_NTACL_NAME)
+                                xattr.XATTR_NTACL_NAME)
     except:
        resetacls = 1
 
