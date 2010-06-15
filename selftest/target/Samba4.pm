@@ -443,9 +443,11 @@ EOF
 #
 # provision_raw_prepare() is also used by Samba34.pm!
 #
-sub provision_raw_prepare($$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, 
+	    $domain, $realm, $functional_level,
+	    $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
 
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
@@ -470,10 +472,12 @@ sub provision_raw_prepare($$$$$$$)
 
 	$ctx->{server_loglevel} = 1;
 	$ctx->{username} = "Administrator";
-	$ctx->{domain} = "SAMBADOMAIN";
-	$ctx->{realm} = "SAMBA.EXAMPLE.COM";
-	$ctx->{dnsname} = lc($ctx->{realm});
+	$ctx->{domain} = $domain;
+	$ctx->{realm} = uc($realm);
+	$ctx->{dnsname} = lc($realm);
 	$ctx->{sid_generator} = "internal";
+
+	$ctx->{functional_level} = $functional_level;
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
 	chomp $unix_name;
@@ -532,6 +536,7 @@ sub provision_raw_prepare($$$$$$$)
 	push (@provision_options, "--machinepass=machine$ctx->{password}");
 	push (@provision_options, "--root=$ctx->{unix_name}");
 	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
+	push (@provision_options, "--function-level=\"$ctx->{functional_level}\"");
 
 	@{$ctx->{provision_options}} = @provision_options;
 
@@ -716,12 +721,15 @@ sub provision_raw_step2($$$)
 	return $ret;
 }
 
-sub provision($$$$$$$)
+sub provision($$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, 
+	    $domain, $realm, $functional_level, 
+	    $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $netbiosname, $netbiosalias,
+					       $domain, $realm, $functional_level,
 					       $swiface, $password, $kdc_ipv4);
 
 	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
@@ -832,6 +840,9 @@ sub provision_member($$$)
 				   "member server",
 				   "localmember3",
 				   "localmember",
+				   "SAMBADOMAIN", 
+				   "samba.example.com", 
+				   "2008",
 				   3,
 				   "locMEMpass0",
 				   $dcvars->{SERVER_IP},
@@ -879,6 +890,9 @@ sub provision_rpc_proxy($$$)
 				   "member server",
 				   "localrpcproxy4",
 				   "localrpcproxy",
+				   "SAMBADOMAIN", 
+				   "samba.example.com", 
+				   "2008",
 				   4,
 				   "locRPCproxypass0",
 				   $dcvars->{SERVER_IP},
@@ -912,7 +926,11 @@ sub provision_vampire_dc($$$)
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
-					       "localvampiredc", "localvampiredc5", 5, $dcvars->{PASSWORD},
+					       "localvampiredc", "localvampiredc5", 				   
+					       "SAMBADOMAIN", 
+					       "samba.example.com", 
+					       "2008",
+					       5, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 
 	$ctx->{smb_conf_extra_options} = "
@@ -966,6 +984,9 @@ sub provision_dc($$)
 				   "domain controller",
 				   "localdc1",
 				   "localdc",
+				   "SAMBADOMAIN", 
+				   "samba.example.com", 
+				   "2008",
 				   1,
 				   "locDCpass0",
 				   "127.0.0.1", "");
@@ -979,6 +1000,28 @@ sub provision_dc($$)
 	$ret->{DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+
+	return $ret;
+}
+
+sub provision_fl2000dc($$)
+{
+	my ($self, $prefix) = @_;
+
+	print "PROVISIONING DC...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "localfl2000dc1",
+				   "localfl2000dc",
+				   "SAMBADOMAIN", 
+				   "samba.example.com", 
+				   "2000",
+				   7,
+				   "locDCpass0",
+				   "127.0.0.7", "");
+
+	$self->add_wins_config("$prefix/private") or 
+		die("Unable to add wins configuration");
 
 	return $ret;
 }
@@ -1058,6 +1101,8 @@ sub setup_env($$$)
 
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "fl2000dc") {
+		return $self->setup_fl2000dc("$path/fl2000dc");
 	} elsif ($envname eq "rpc_proxy") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1087,6 +1132,16 @@ sub setup_env($$$)
 			$ret->{RPC_PROXY_NETBIOSALIAS} = $rpc_proxy_ret->{NETBIOSALIAS};
 			$ret->{RPC_PROXY_USERNAME} = $rpc_proxy_ret->{USERNAME};
 			$ret->{RPC_PROXY_PASSWORD} = $rpc_proxy_ret->{PASSWORD};
+		}
+		if (not defined($self->{vars}->{fl2000dc})) {
+			my $fl2000dc_ret = $self->setup_fl2000dc("$path/fl2000dc", $self->{vars}->{dc});
+			
+			$ret->{FL2000DC_SERVER} = $fl2000dc_ret->{SERVER};
+			$ret->{FL2000DC_SERVER_IP} = $fl2000dc_ret->{SERVER_IP};
+			$ret->{FL2000DC_NETBIOSNAME} = $fl2000dc_ret->{NETBIOSNAME};
+			$ret->{FL2000DC_NETBIOSALIAS} = $fl2000dc_ret->{NETBIOSALIAS};
+			$ret->{FL2000DC_USERNAME} = $fl2000dc_ret->{USERNAME};
+			$ret->{FL2000DC_PASSWORD} = $fl2000dc_ret->{PASSWORD};
 		}
 		return $ret;
 	} else {
@@ -1136,6 +1191,22 @@ sub setup_dc($$)
 	$self->wait_for_start($env);
 
 	$self->{vars}->{dc} = $env;
+
+	return $env;
+}
+
+sub setup_fl2000dc($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_fl2000dc($path);
+
+	$self->check_or_start($env, 
+		($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{fl2000dc} = $env;
 
 	return $env;
 }

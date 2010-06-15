@@ -239,6 +239,8 @@ for t in $net; do
     plansmbtorturetestsuite "$t" dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 done
 
+plansmbtorturetestsuite NET-API-BECOME-DC fl2000dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
+
 # Tests for session keys
 # FIXME: Integrate these into a single smbtorture test
 
