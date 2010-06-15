@@ -472,8 +472,7 @@ sub provision_raw_prepare($$$$$$$)
 	$ctx->{username} = "Administrator";
 	$ctx->{domain} = "SAMBADOMAIN";
 	$ctx->{realm} = "SAMBA.EXAMPLE.COM";
-	$ctx->{dnsname} = "samba.example.com";
-	$ctx->{basedn} = "dc=samba,dc=example,dc=com";
+	$ctx->{dnsname} = lc($ctx->{realm});
 	$ctx->{sid_generator} = "internal";
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
@@ -500,9 +499,6 @@ sub provision_raw_prepare($$$$$$$)
 
 	$ctx->{ipv4} = "127.0.0.$swiface";
 	$ctx->{interfaces} = "$ctx->{ipv4}/8";
-
-	$ctx->{localbasedn} = $ctx->{basedn};
-	$ctx->{localbasedn} = "CN=$netbiosname" if $server_role eq "member server";
 
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
