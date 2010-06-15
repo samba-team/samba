@@ -19,6 +19,9 @@
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "include/printing.h"
+#include "printing/nt_printing_migrate.h"
+#include "librpc/gen_ndr/srv_winreg.h"
+#include "librpc/gen_ndr/srv_spoolss.h"
 #include "rpc_server/rpc_server.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
@@ -100,8 +103,14 @@ static void spoolss_setup_sig_hup_handler(void)
 	}
 }
 
+static bool spoolss_init_cb(void *ptr)
+{
+	return nt_printing_tdb_migrate(server_messaging_context());
+}
+
 void start_spoolssd(void)
 {
+	struct rpc_srv_callbacks spoolss_cb;
 	pid_t pid;
 	NTSTATUS status;
 	int ret;
@@ -152,9 +161,33 @@ void start_spoolssd(void)
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 
+	/*
+	 * Initialize spoolss with an init function to convert printers first.
+	 * static_init_rpc will try to initialize the spoolss server too but you
+	 * can't register it twice.
+	 */
+	spoolss_cb.init = spoolss_init_cb;
+	spoolss_cb.shutdown = NULL;
+
+	status = rpc_winreg_init(NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to register winreg rpc inteface! (%s)\n",
+			  nt_errstr(status)));
+		exit(1);
+	}
+
+	status = rpc_spoolss_init(&spoolss_cb);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to register spoolss rpc inteface! (%s)\n",
+			  nt_errstr(status)));
+		exit(1);
+	}
+
 	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, server_event_context())) {
 		exit(1);
 	}
+
+	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
 
 	/* loop forever */
 	ret = tevent_loop_wait(server_event_context());
