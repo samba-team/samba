@@ -104,7 +104,7 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		  choices=["domain controller", "dc", "member server", "member", "standalone"],
 		help="The server role (domain controller | dc | member server | member | standalone). Default is standalone.")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
-		  choices=["2003", "2008", "2008_R2"],
+		  choices=["2000", "2003", "2008", "2008_R2"],
 		help="The domain and forest function level (2003 | 2008 | 2008_R2). Default is (Windows) 2003 (Native).")
 parser.add_option("--partitions-only", 
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
@@ -192,6 +192,8 @@ else:
 
 if opts.function_level is None:
 	dom_for_fun_level = None
+elif opts.function_level == "2000":
+	dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
 elif opts.function_level == "2003":
 	dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
 elif opts.function_level == "2008":
