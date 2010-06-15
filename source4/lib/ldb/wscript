@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '0.9.11'
+VERSION = '0.9.12'
 
 blddir = 'bin'
 
@@ -97,10 +97,7 @@ def build(bld):
         bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
-    if s4_build:
-        abi_file='ABI/ldb-samba4-%s.sigs' % VERSION
-    else:
-        abi_file='ABI/ldb-%s.sigs' % VERSION
+    abi_file = 'ABI/ldb-%s.sigs' % VERSION
 
     bld.SAMBA_PYTHON('pyldb_util', deps='ldb',
             source='pyldb_util.c')
