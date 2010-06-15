@@ -88,13 +88,13 @@ def configure(conf):
     conf.RECURSE('../lib/socket_wrapper')
     conf.RECURSE('../lib/zlib')
 
-    conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h')
+    conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknod64')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
     conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
-    conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent')
+    conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
     conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64')
@@ -226,7 +226,7 @@ _acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
 attropen attr_remove attr_removef attr_set attr_setf backtrace_symbols
 bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
 __closedir closedir64 creat64 crypt16 delproplist devnm dgettext dirfd
-DNSServiceRegister _dup __dup _dup2 __dup2 endmntent endnetgrent execl
+DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
 extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file
 extattr_get_link extattr_list_fd extattr_list_file extattr_list_link
 extattr_set_fd extattr_set_file extattr_set_link _facl __facl _fchdir
@@ -236,7 +236,7 @@ _fork __fork fremoveea fremovexattr fseek64 fseeko64 fsetea
 fsetproplist fsetxattr _fstat __fstat fstat64 _fstat64 __fstat64 fsync
 ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
-getgrent getgrnam getgrouplist getmntent getnetgrent getpagesize
+getgrent getgrnam getgrouplist getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
 inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
@@ -250,7 +250,7 @@ pwrite _pwrite __pwrite pwrite64 _pwrite64
 __pwrite64 rdchk _read __read _readdir __readdir readdir64 _readdir64
 __readdir64 removeea removexattr rewinddir64 _seekdir __seekdir
 seekdir64 select setea setenv setgidx setgroups setlocale setluid
-setmntent setnetgrent setpgid setpriv setproplist setsid setuidx
+setmntent setpgid setpriv setproplist setsid setuidx
 setxattr shmget shm_open sigaction sigblock sigprocmask sigset
 sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctlbyname
@@ -359,6 +359,17 @@ utimensat vsyslog _write __write __xstat
     conf.CHECK_STRUCTURE_MEMBER('struct dirent', 'd_off',
                                 headers='unistd.h sys/types.h dirent.h',
                                 define='HAVE_DIRENT_D_OFF')
+
+    conf.CHECK_FUNCS('setnetgrent getnetgrent endnetgrent')
+    conf.CHECK_C_PROTOTYPE('setnetgrent',
+                           'extern int setnetgrent(const char* netgroup)',
+                           define='HAVE_SETNETGRENT_PROTOTYPE', headers='netdb.h')
+    conf.CHECK_C_PROTOTYPE('getnetgrent',
+                           'extern int getnetgrent(char **host, char **user, char **domain)',
+                           define='HAVE_GETNETGRENT_PROTOTYPE', headers='netdb.h')
+    conf.CHECK_C_PROTOTYPE('endnetgrent',
+                           'extern void endnetgrent(void)',
+                           define='HAVE_ENDNETGRENT_PROTOTYPE', headers='netdb.h')
 
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
