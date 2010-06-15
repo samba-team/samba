@@ -26,7 +26,7 @@ from samba.provision import getpolicypath
 from samba.upgradehelpers import (get_paths, get_ldbs,
                                  find_provision_key_parameters, identic_rename,
                                  updateOEMInfo, getOEMInfo, update_gpo,
-                                 delta_update_basesamdb)
+                                 delta_update_basesamdb,search_constructed_attrs_stored)
 
 from samba.tests.provision import create_dummy_secretsdb
 from samba import param
@@ -82,6 +82,12 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.referencedb = create_dummy_secretsdb(
             os.path.join(self.tempdir, "ref.ldb"))
 
+
+    def test_search_constructed_attrs_stored(self):
+        hashAtt = search_constructed_attrs_stored(self.ldbs.sam,
+                                                  self.names.rootdn,
+                                                  ["msds-KeyVersionNumber"])
+        self.assertFalse(hashAtt.has_key("msds-KeyVersionNumber"))
     def test_identic_rename(self):
         rootdn = "DC=samba,DC=example,DC=com"
 

@@ -18,9 +18,9 @@
 #
 
 import os
-from samba.upgradehelpers import  usn_in_range, dn_sort,\
-                                  get_diff_sddls, update_secrets
-
+from samba.upgradehelpers import  (usn_in_range, dn_sort,
+                                  get_diff_sddls, update_secrets,
+                                  construct_existor_expr)
 
 from samba.tests.provision import create_dummy_secretsdb
 from samba.tests import env_loadparm, TestCaseInTempDir
@@ -89,6 +89,15 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         txt = get_diff_sddls(sddl, sddl5)
         self.assertEquals(txt ,"\tCurrent ACL hasn't a sacl part\n")
 
+    def test_construct_existor_expr(self):
+        res = construct_existor_expr([])
+        self.assertEquals(res, "")
+
+        res = construct_existor_expr(["foo"])
+        self.assertEquals(res, "(|(foo=*))")
+
+        res = construct_existor_expr(["foo", "bar"])
+        self.assertEquals(res, "(|(foo=*)(bar=*))")
 
 class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
