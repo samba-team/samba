@@ -133,4 +133,15 @@ bool torture_register_suite(struct torture_suite *suite);
  * rather than NT_STATUS_ACCESS_DENIED when trying to open one of these files.
  */
 
+/* torture:raw_search_search
+ *
+ * Server supports RAW_SEARCH_SEARCH level.
+ */
+
+/* torture:search_ea_size
+ *
+ * Server supports RAW_SEARCH_DATA_EA_SIZE - This flag disables
+ * the appropriate test.
+ */
+
 #endif /* __SMBTORTURE_H__ */

@@ -284,7 +284,8 @@ static bool test_one_file(struct torture_context *tctx,
 							 &levels[i].data);
 
 		/* see if this server claims to support this level */
-		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
+		if (((cap & levels[i].capability_mask) != levels[i].capability_mask)
+		    || NT_STATUS_EQUAL(levels[i].status, NT_STATUS_NOT_SUPPORTED)) {
 			printf("search level %s(%d) not supported by server\n",
 			       levels[i].name, (int)levels[i].level);
 			continue;
@@ -764,7 +765,12 @@ static bool test_many_files(struct torture_context *tctx,
 					 search_types[t].data_level,
 					 search_types[t].cont_type,
 					 &result);
-	
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			torture_warning(tctx, "search level %s not supported "
+					"by server",
+					search_types[t].name);
+			continue;
+		}
 		torture_assert_ntstatus_ok(tctx, status, "search failed");
 		CHECK_VALUE(result.count, num_files);
 
@@ -1026,6 +1032,11 @@ static bool test_many_dirs(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_search_data *file, *file2, *file3;
 
+	if (!torture_setting_bool(tctx, "raw_search_search", true)) {
+		torture_comment(tctx, "Skipping these tests as the server "
+			"doesn't support old style search calls\n");
+		return true;
+	}
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -1194,6 +1205,13 @@ static bool test_os2_delete(struct torture_context *tctx,
 	union smb_search_first io;
 	union smb_search_next io2;
 	struct multiple_result result;
+
+	if (!torture_setting_bool(tctx, "search_ea_size", true)){
+		torture_comment(tctx,
+				"Server does not support RAW_SEARCH_EA_SIZE "
+				"level. Skipping this test\n");
+		return true;
+	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;

@@ -533,6 +533,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:writeclose_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
 		lp_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:raw_search_search", "false");
+		lp_set_cmdline(cmdline_lp_ctx, "torture:search_ea_size", "false");
 	}
 
 	if (max_runtime) {
