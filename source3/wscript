@@ -49,6 +49,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('utmp')
     opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
+    opt.SAMBA3_ADD_OPTION('iconv')
 
 
 def configure(conf):
@@ -577,6 +578,13 @@ return 0;
     else:
         conf.SET_TARGET_TYPE('avahi-common', 'EMPTY')
         conf.SET_TARGET_TYPE('avahi-client', 'EMPTY')
+
+    if Options.options.with_iconv:
+        conf.env.with_iconv = True
+        if not conf.CHECK_FUNCS_IN('iconv_open', 'iconv', headers='iconv.h'):
+            conf.env.with_iconv = False
+        if conf.env.with_iconv:
+            conf.DEFINE('HAVE_ICONV', 1)
 
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
