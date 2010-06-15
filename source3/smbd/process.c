@@ -35,6 +35,7 @@
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "printing/nt_printing_migrate.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -2856,6 +2857,11 @@ fail:
 	return false;
 }
 
+static bool spoolss_init_cb(void)
+{
+	return nt_printing_tdb_migrate();
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -2870,6 +2876,7 @@ void smbd_process(void)
 	struct tsocket_address *remote_address = NULL;
 	const char *remaddr = NULL;
 	int ret;
+	struct rpc_srv_callbacks spoolss_cb;
 
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    lp_security() != SEC_SHARE &&
@@ -2968,8 +2975,6 @@ void smbd_process(void)
 	DEBUG(10, ("Connection allowed from %s to %s\n",
 		   tsocket_address_string(remote_address, talloc_tos()),
 		   tsocket_address_string(local_address, talloc_tos())));
-
-	static_init_rpc;
 
 	init_modules();
 
@@ -3107,6 +3112,25 @@ void smbd_process(void)
 	if (!smbd_server_conn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
+
+	/*
+	 * Initialize spoolss with an init function to convert printers first.
+	 * static_init_rpc will try to initialize the spoolss server too but you
+	 * can't register it twice.
+	 */
+	spoolss_cb.init = spoolss_init_cb;
+	spoolss_cb.shutdown = NULL;
+
+
+	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
+		exit(1);
+	}
+
+	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
+		exit(1);
+	}
+
+	static_init_rpc;
 
 	TALLOC_FREE(frame);
 

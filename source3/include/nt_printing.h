@@ -229,12 +229,6 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 				      const char *devicename,
 				      struct spoolss_DeviceMode **devmode);
 
-int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen);
-
-int unpack_devicemode(TALLOC_CTX *mem_ctx,
-		      const uint8 *buf, int buflen,
-		      struct spoolss_DeviceMode **devmode);
-
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc);
 

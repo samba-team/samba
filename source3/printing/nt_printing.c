@@ -82,10 +82,6 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	if (!nt_printing_tdb_migrate()) {
-		return false;
-	}
-
 	/*
 	 * register callback to handle updating printers as new
 	 * drivers are installed
@@ -1142,87 +1138,6 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 	return (*perr);
-}
-
-/****************************************************************************
-****************************************************************************/
-int pack_devicemode(struct spoolss_DeviceMode *devmode, uint8 *buf, int buflen)
-{
-	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
-	int len = 0;
-
-	if (devmode) {
-		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(),
-					       devmode,
-					       (ndr_push_flags_fn_t)
-					       ndr_push_spoolss_DeviceMode);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(10, ("pack_devicemode: "
-				   "error encoding spoolss_DeviceMode\n"));
-			goto done;
-		}
-	} else {
-		ZERO_STRUCT(blob);
-	}
-
-	len = tdb_pack(buf, buflen, "B", blob.length, blob.data);
-
-	if (devmode) {
-		DEBUG(8, ("Packed devicemode [%s]\n", devmode->formname));
-	}
-
-done:
-	return len;
-}
-
-/****************************************************************************
-****************************************************************************/
-int unpack_devicemode(TALLOC_CTX *mem_ctx,
-		      const uint8 *buf, int buflen,
-		      struct spoolss_DeviceMode **devmode)
-{
-	struct spoolss_DeviceMode *dm;
-	enum ndr_err_code ndr_err;
-	char *data = NULL;
-	int data_len = 0;
-	DATA_BLOB blob;
-	int len = 0;
-
-	*devmode = NULL;
-
-	len = tdb_unpack(buf, buflen, "B", &data_len, &data);
-	if (!data) {
-		return len;
-	}
-
-	dm = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
-	if (!dm) {
-		goto done;
-	}
-
-	blob = data_blob_const(data, data_len);
-
-	ndr_err = ndr_pull_struct_blob(&blob, dm, dm,
-			(ndr_pull_flags_fn_t)ndr_pull_spoolss_DeviceMode);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(10, ("unpack_devicemode: "
-			   "error parsing spoolss_DeviceMode\n"));
-		goto done;
-	}
-
-	DEBUG(8, ("Unpacked devicemode [%s](%s)\n",
-		  dm->devicename, dm->formname));
-	if (dm->driverextra_data.data) {
-		DEBUG(8, ("with a private section of %d bytes\n",
-			  dm->__driverextra_length));
-	}
-
-	*devmode = dm;
-
-done:
-	SAFE_FREE(data);
-	return len;
 }
 
 /****************************************************************************

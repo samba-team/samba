@@ -85,7 +85,7 @@ const struct standard_mapping printer_std_mapping = {
 
 /* Map generic permissions to print server object specific permissions */
 
-const struct generic_mapping printserver_std_mapping = {
+const struct standard_mapping printserver_std_mapping = {
 	SERVER_READ,
 	SERVER_WRITE,
 	SERVER_EXECUTE,
@@ -3213,7 +3213,7 @@ static WERROR printserver_notify_info(pipes_struct *p,
 				continue; /* skip */
 			}
 
-			/* FIXME: should we use a SYSTEM server_info here? */
+			/* Maybe we should use the SYSTEM server_info here... */
 			result = winreg_get_printer(mem_ctx, p->server_info,
 						    Printer->servername,
 						    lp_servicename(snum),
@@ -3296,7 +3296,7 @@ static WERROR printer_notify_info(pipes_struct *p, struct policy_handle *hnd,
 
 	get_printer_snum(p, hnd, &snum, NULL);
 
-	/* FIXME: should we use a SYSTEM server_info here ? */
+	/* Maybe we should use the SYSTEM server_info here... */
 	result = winreg_get_printer(mem_ctx, p->server_info,
 				    Printer->servername,
 				    lp_servicename(snum), &pinfo2);
@@ -5392,7 +5392,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		struct security_acl *the_acl;
 		int i;
 
-		the_acl = secdesc_ctr->sd->dacl;
+		the_acl = old_secdesc->dacl;
 		DEBUG(10, ("old_secdesc_ctr for %s has %d aces:\n",
 			   printer, the_acl->num_aces));
 
