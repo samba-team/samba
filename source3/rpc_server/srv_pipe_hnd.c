@@ -124,7 +124,7 @@ static void free_pipe_context(struct pipes_struct *p)
  Accepts incoming data on an rpc pipe. Processes the data in pdu sized units.
 ****************************************************************************/
 
-static ssize_t process_incoming_data(struct pipes_struct *p, char *data, size_t n)
+ssize_t process_incoming_data(struct pipes_struct *p, char *data, size_t n)
 {
 	size_t data_to_copy = MIN(n, RPC_MAX_PDU_FRAG_LEN
 					- p->in_data.pdu.length);
