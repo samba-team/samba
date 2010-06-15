@@ -22,7 +22,7 @@
  * for ntlmv2.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "../lib/crypto/hmacmd5.h"
 
 /***********************************************************************

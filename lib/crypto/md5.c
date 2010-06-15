@@ -18,7 +18,7 @@
 /* This code slightly modified to fit into Samba by 
    abartlet@samba.org Jun 2001 */
 
-#include "includes.h"
+#include "replace.h"
 
 #include "md5.h"
 

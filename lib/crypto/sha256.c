@@ -38,7 +38,7 @@
  * SUCH DAMAGE.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "sha256.h"
 
 #define Ch(x,y,z) (((x) & (y)) ^ ((~(x)) & (z)))

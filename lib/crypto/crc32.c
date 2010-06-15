@@ -40,7 +40,7 @@
  * CRC32 code derived from work by Gary S. Brown.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "../lib/crypto/crc32.h"
 
 static const uint32_t crc32_tab[] = {

@@ -1,6 +1,8 @@
 #ifndef ARCFOUR_HEADER_H
 #define ARCFOUR_HEADER_H
 
+#include "../lib/util/data_blob.h"
+
 struct arcfour_state {
 	uint8_t sbox[256];
 	uint8_t index_i;
