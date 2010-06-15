@@ -356,7 +356,7 @@ def SAMBA_MODULE(bld, modname, source,
 
     obj_target = modname + '.objlist'
 
-    obj_target = bld.SAMBA_SUBSYSTEM(obj_target, source,
+    bld.SAMBA_SUBSYSTEM(obj_target, source,
                     deps=deps,
                     includes=includes,
                     autoproto=autoproto,

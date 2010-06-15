@@ -42,7 +42,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
-#include "dlinklist.h"
+#include "util/dlinklist.h"
 
 #include "libcli/ldap/libcli_ldap.h"
 #include "libcli/ldap/ldap_client.h"
