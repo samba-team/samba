@@ -1039,9 +1039,13 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 	/* walk the list backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
 	 * start of the list */
-	for (ac = la_private->la_list; ac && ac->next; ac=ac->next) ;
 
-	for (; ac; ac=ac->prev) {
+	/* Start at the end of the list - so we can start
+	 * there, but ensure we don't create a loop by NULLing
+	 * it out in the first element */
+	ac = DLIST_TAIL(la_private->la_list);
+
+	for (; ac; ac=DLIST_PREV(ac)) {
 		int ret;
 		ac->req = NULL;
 		ret = la_do_mod_request(module, ac);
