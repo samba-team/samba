@@ -684,3 +684,54 @@ def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
             if len(delta.items()) > 1:
                 delta.dn = refentry.dn
                 sam.modify(delta)
+
+
+def construct_existor_expr(attrs):
+    """Construct a exists or LDAP search expression.
+    ie (|(foo=*)(bar=*)
+
+    :param attrs: List of attribute on which we want to create the search
+                  expression.
+    :return: A string representing the expression, if attrs is empty an
+             empty string is returned"""
+    expr = ""
+    if len(attrs) > 0:
+        expr = "(|"
+        for att in attrs:
+            expr = "%s(%s=*)"%(expr,att)
+        expr = "%s)"%expr
+    return expr
+
+def search_constructed_attrs_stored(samdb, rootdn, attrs):
+    """Search a given sam DB for calculated attributes that are
+    still stored in the db.
+
+    :param samdb: An LDB object pointing to the sam
+    :param rootdn: The base DN where the search should start
+    :param attrs: A list of attributes to be searched
+    :return: A hash with attributes as key and an array of
+             array. Each array contains the dn and the associated
+             values for this attribute as they are stored in the
+             sam."""
+
+    hashAtt = {}
+    expr = construct_existor_expr(attrs)
+    if expr == "":
+        return hashAtt
+    entry = samdb.search(expression=expr, base=ldb.Dn(samdb,str(rootdn)),
+                         scope=SCOPE_SUBTREE, attrs=attrs,
+                         controls=["search_options:1:2","bypassoperational:0"])
+    if len(entry) == 0:
+        # Nothing anymore
+        return hashAtt
+
+    for ent in entry:
+        for att in attrs:
+            if ent.get(att):
+                if hashAtt.has_key(att):
+                    hashAtt[att][str(ent.dn).lower()] = str(ent[att])
+                else:
+                    hashAtt[att] = {}
+                    hashAtt[att][str(ent.dn).lower()] = str(ent[att])
+
+    return hashAtt
