@@ -51,42 +51,6 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
 /* handle to the permanent tdb */
 static struct db_context *idmap_tdb2;
 
-static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom);
-
-/*
-  open the permanent tdb
- */
-static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
-{
-	char *db_path;
-
-	if (idmap_tdb2) {
-		/* its already open */
-		return NT_STATUS_OK;
-	}
-
-	db_path = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
-	if (db_path == NULL) {
-		/* fall back to the private directory, which, despite
-		   its name, is usually on shared storage */
-		db_path = talloc_asprintf(NULL, "%s/idmap2.tdb", lp_private_dir());
-	}
-	NT_STATUS_HAVE_NO_MEMORY(db_path);
-
-	/* Open idmap repository */
-	idmap_tdb2 = db_open(NULL, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
-	TALLOC_FREE(db_path);
-
-	if (idmap_tdb2 == NULL) {
-		DEBUG(0, ("Unable to open idmap_tdb2 database '%s'\n",
-			  db_path));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* load the ranges and high/low water marks */
-	return idmap_tdb2_alloc_load(dom);
-}
-
 
 /*
   load the idmap allocation ranges and high/low water marks
@@ -120,6 +84,41 @@ static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom)
 	}
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  open the permanent tdb
+ */
+static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
+{
+	char *db_path;
+
+	if (idmap_tdb2) {
+		/* its already open */
+		return NT_STATUS_OK;
+	}
+
+	db_path = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
+	if (db_path == NULL) {
+		/* fall back to the private directory, which, despite
+		   its name, is usually on shared storage */
+		db_path = talloc_asprintf(NULL, "%s/idmap2.tdb", lp_private_dir());
+	}
+	NT_STATUS_HAVE_NO_MEMORY(db_path);
+
+	/* Open idmap repository */
+	idmap_tdb2 = db_open(NULL, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
+	TALLOC_FREE(db_path);
+
+	if (idmap_tdb2 == NULL) {
+		DEBUG(0, ("Unable to open idmap_tdb2 database '%s'\n",
+			  db_path));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* load the ranges and high/low water marks */
+	return idmap_tdb2_alloc_load(dom);
 }
 
 
