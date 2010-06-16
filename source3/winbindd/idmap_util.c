@@ -287,3 +287,22 @@ backend:
 	}
 	return NT_STATUS_OK;
 }
+
+/**
+ * check whether a given unix id is inside the filter range of an idmap domain
+ */
+bool idmap_unix_id_is_in_range(uint32_t id, struct idmap_domain *dom)
+{
+	if (id == 0) {
+		/* 0 is not an allowed unix id for id mapping */
+		return false;
+	}
+
+	if ((dom->low_id && (id < dom->low_id)) ||
+	    (dom->high_id && (id > dom->high_id)))
+	{
+		return false;
+	}
+
+	return true;
+}

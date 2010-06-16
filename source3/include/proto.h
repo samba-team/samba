@@ -6051,6 +6051,7 @@ NTSTATUS idmap_uid_to_sid(const char *domname, struct dom_sid *sid, uid_t uid);
 NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid);
 NTSTATUS idmap_sid_to_uid(const char *dom_name, struct dom_sid *sid, uid_t *uid);
 NTSTATUS idmap_sid_to_gid(const char *domname, struct dom_sid *sid, gid_t *gid);
+bool idmap_unix_id_is_in_range(uint32_t id, struct idmap_domain *dom);
 
 /* The following definitions come from winbindd/nss_info.c  */
 
