@@ -844,7 +844,7 @@ sub provision_member($$$)
 				   "samba.example.com", 
 				   "2008",
 				   3,
-				   "locMEMpass0",
+				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   "");
 
@@ -894,7 +894,7 @@ sub provision_rpc_proxy($$$)
 				   "samba.example.com", 
 				   "2008",
 				   4,
-				   "locRPCproxypass0",
+				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
 				   $extra_smbconf_options);
 
@@ -989,7 +989,7 @@ sub provision_dc($$)
 				   "samba.example.com", 
 				   "2008",
 				   1,
-				   "locDCpass0",
+				   "locDCpass1",
 				   "127.0.0.1", "");
 
 	$self->add_wins_config("$prefix/private") or 
