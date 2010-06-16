@@ -637,16 +637,19 @@ done:
 /*
  Single sid to id lookup function. 
 */
-static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_map *map)
+static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
+	struct idmap_tdb2_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	ret = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(ret);
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	keystr = sid_string_talloc(tmp_ctx, map->sid);
 	if (keystr == NULL) {
@@ -791,7 +794,6 @@ static NTSTATUS idmap_tdb2_sids_to_unixids_action(struct db_context *db,
 {
 	struct idmap_tdb2_sids_to_unixids_context *state;
 	int i;
-	struct idmap_tdb2_context *ctx;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	state = (struct idmap_tdb2_sids_to_unixids_context *)private_data;
@@ -801,10 +803,6 @@ static NTSTATUS idmap_tdb2_sids_to_unixids_action(struct db_context *db,
 		   state->dom->name,
 		   state->allocate_unmapped ? "yes" : "no"));
 
-	ctx = talloc_get_type(state->dom->private_data,
-			      struct idmap_tdb2_context);
-
-
 	for (i = 0; state->ids[i]; i++) {
 		if ((state->ids[i]->status == ID_UNKNOWN) ||
 		    /* retry if we could not map in previous run: */
@@ -812,7 +810,7 @@ static NTSTATUS idmap_tdb2_sids_to_unixids_action(struct db_context *db,
 		{
 			NTSTATUS ret2;
 
-			ret2 = idmap_tdb2_sid_to_id(ctx, state->ids[i]);
+			ret2 = idmap_tdb2_sid_to_id(state->dom, state->ids[i]);
 			if (!NT_STATUS_IS_OK(ret2)) {
 
 				/* if it is just a failed mapping, continue */
