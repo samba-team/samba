@@ -33,6 +33,8 @@
 struct idmap_domain {
 	const char *name;
 	struct idmap_methods *methods;
+	uint32_t low_id;
+	uint32_t high_id;
 	void *private_data;
 };
 
