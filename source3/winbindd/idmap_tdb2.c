@@ -329,9 +329,6 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 	struct idmap_tdb2_context *ctx;
 	NTSTATUS status;
 
-	status = idmap_tdb2_open_db();
-	NT_STATUS_NOT_OK_RETURN(status);
-
 	ctx = talloc(dom, struct idmap_tdb2_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
@@ -391,6 +388,11 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 	if (ctx->filter_low_id > ctx->filter_high_id) {
 		ctx->filter_low_id = 0;
 		ctx->filter_high_id = 0;
+	}
+
+	ret = idmap_tdb2_open_db();
+	if (!NT_STATUS_IS_OK(ret)) {
+		goto failed;
 	}
 
 	dom->private_data = ctx;
