@@ -1676,12 +1676,13 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
+WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
+			      struct pipes_struct *rpc_pipe,
 			      struct spoolss_AddDriverInfoCtr *r)
 {
 	switch (r->level) {
 	case 3:
-		return clean_up_driver_struct_level(r, rpc_pipe,
+		return clean_up_driver_struct_level(mem_ctx, rpc_pipe,
 						    r->info.info3->architecture,
 						    &r->info.info3->driver_path,
 						    &r->info.info3->data_file,
@@ -1690,7 +1691,7 @@ WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
 						    r->info.info3->dependent_files,
 						    &r->info.info3->version);
 	case 6:
-		return clean_up_driver_struct_level(r, rpc_pipe,
+		return clean_up_driver_struct_level(mem_ctx, rpc_pipe,
 						    r->info.info6->architecture,
 						    &r->info.info6->driver_path,
 						    &r->info.info6->data_file,

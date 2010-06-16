@@ -4750,7 +4750,8 @@ bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WER
 void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count);
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
-WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
+WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
+			      struct pipes_struct *rpc_pipe,
 			      struct spoolss_AddDriverInfoCtr *r);
 WERROR move_driver_to_download_area(struct pipes_struct *p,
 				    struct spoolss_AddDriverInfoCtr *r,

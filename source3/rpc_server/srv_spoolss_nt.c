@@ -7377,7 +7377,7 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(p, r->in.info_ctr);
+	err = clean_up_driver_struct(p->mem_ctx, p, r->in.info_ctr);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
