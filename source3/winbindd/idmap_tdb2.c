@@ -848,12 +848,6 @@ done:
 static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
-	char *sidstr;
-	TDB_DATA data;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	struct idmap_tdb2_context *ctx;
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	if (map == NULL) {
 		ret = NT_STATUS_INVALID_PARAMETER;
@@ -870,21 +864,6 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *
 		goto done;
 	}
 
-	/* check wheter the SID is already mapped in the db */
-	sidstr = sid_string_talloc(mem_ctx, map->sid);
-	if (sidstr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	data = dbwrap_fetch_bystring(ctx->db, mem_ctx, sidstr);
-	if (data.dptr) {
-		ret = NT_STATUS_OBJECT_NAME_COLLISION;
-		goto done;
-	}
-
-	/* unmapped - get a new id */
 	ret = idmap_tdb2_get_new_id(dom, &map->xid);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("Could not allocate id: %s\n", nt_errstr(ret)));
@@ -906,7 +885,6 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *
 	}
 
 done:
-	talloc_free(mem_ctx);
 	return ret;
 }
 
