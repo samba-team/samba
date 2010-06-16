@@ -34,7 +34,7 @@
 #include "libcli/security/security.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/util/util_ldb.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 #include "lib/replace/system/network.h"
 #include "dsdb/samdb/samdb.h"
 

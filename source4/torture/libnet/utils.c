@@ -29,7 +29,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/libnet/proto.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 
 /**
  * Opens handle on Domain using SAMR

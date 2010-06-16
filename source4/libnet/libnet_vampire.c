@@ -34,7 +34,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"

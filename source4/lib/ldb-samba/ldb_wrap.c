@@ -123,7 +123,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 
   TODO:  We need an error_string parameter
  */
-struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
+ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const char *url,
@@ -267,7 +267,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
   when we fork() we need to make sure that any open ldb contexts have
   any open transactions cancelled
  */
-void ldb_wrap_fork_hook(void)
+ void ldb_wrap_fork_hook(void)
 {
 	struct ldb_wrap *w;
 

@@ -27,7 +27,7 @@
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 
 #ifdef HAVE_SETPROCTITLE
 #ifdef HAVE_SETPROCTITLE_H

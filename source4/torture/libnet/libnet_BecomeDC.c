@@ -28,7 +28,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "system/time.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "param/provision.h"

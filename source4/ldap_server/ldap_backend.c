@@ -27,7 +27,7 @@
 #include "smbd/service_stream.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 
 #define VALID_DN_SYNTAX(dn) do {\
 	if (!(dn)) {\

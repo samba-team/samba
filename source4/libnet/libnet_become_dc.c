@@ -23,7 +23,7 @@
 #include "libcli/cldap/cldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "../libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"

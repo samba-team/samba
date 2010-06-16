@@ -35,7 +35,7 @@ bld.SAMBA_MODULE('share_ldb',
 	source='share_ldb.c',
 	subsystem='share',
 	init_function='share_ldb_init',
-	deps='ldb LDB_WRAP'
+	deps='LDBSAMBA'
 	)
 
 

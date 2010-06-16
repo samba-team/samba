@@ -24,7 +24,7 @@
 #include "torture/smbtorture.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
-#include "lib/ldb_wrap.h"
+#include "ldb_wrap.h"
 #include "lib/ldb/include/ldb_module.h"
 #include "torture/rpc/drsuapi.h"
 #include "librpc/ndr/libndr.h"

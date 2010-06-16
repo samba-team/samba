@@ -6,7 +6,7 @@ bld.SAMBA_SUBSYSTEM('SAMDB',
 	source='samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',
 	autoproto='samdb/samdb_proto.h',
 	public_deps='HEIMDAL_KRB5',
-	deps='LIBNDR NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER auth_system_session LIBCLI_AUTH LIBNDR SAMDB_SCHEMA LDB_WRAP SAMDB_COMMON LIBCLI_DRSUAPI LIBCLI_LDAP_NDR LIBSAMBA-UTIL'
+	deps='LIBNDR NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER auth_system_session LIBCLI_AUTH LIBNDR SAMDB_SCHEMA LDBSAMBA SAMDB_COMMON LIBCLI_DRSUAPI LIBCLI_LDAP_NDR LIBSAMBA-UTIL'
 	)
 
 

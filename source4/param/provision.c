@@ -21,7 +21,6 @@
 #include <Python.h>
 #include "includes.h"
 #include "auth/auth.h"
-#include "lib/ldb_wrap.h"
 #include "ldb/include/ldb.h"
 #include "ldb_errors.h"
 #include "libcli/raw/libcliraw.h"

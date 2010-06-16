@@ -13,14 +13,6 @@ bld.SAMBA_SUBSYSTEM('GENCACHE',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('LDB_WRAP',
-	source='ldb_wrap.c',
-	public_deps='ldb',
-	public_headers='ldb_wrap.h',
-	deps='LDBSAMBA UTIL_LDB'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('TDB_WRAP',
 	source='tdb_wrap.c',
 	public_deps='tdb talloc',
