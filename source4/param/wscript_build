@@ -12,7 +12,7 @@ bld.SAMBA_LIBRARY('LIBSAMBA-HOSTCONFIG',
 
 bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
-	deps='LIBPYTHON pyparam_util ldb',
+	deps='LIBPYTHON pyparam_util ldb PYTALLOC',
 	needs_python=True,
 	)
 
