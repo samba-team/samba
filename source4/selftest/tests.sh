@@ -155,9 +155,9 @@ LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if [ -f $samba4bindir/ldbtest ]; then
-	plantestsuite "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
+	plantestsuite "ldbbase" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 else
-	skiptestsuite "ldb" "Using system LDB, ldbtest not available"
+	skiptestsuite "ldbbase" "Using system LDB, ldbtest not available"
 fi
 
 # Tests for RPC
