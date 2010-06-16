@@ -383,6 +383,11 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 			ctx->filter_high_id = 0;
 		}
 
+		ctx->script = lp_parm_const_string(-1, config_option, "script", NULL);
+		if (ctx->script) {
+			DEBUG(1, ("using idmap script '%s'\n", ctx->script));
+		}
+
 		talloc_free(config_option);
 	}
 
