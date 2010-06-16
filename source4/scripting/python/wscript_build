@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-bld.SAMBA_PYTHON('LIBPYTHON',
+bld.SAMBA_SUBSYSTEM('LIBPYTHON',
                  source='modules.c',
                  public_deps='EXT_LIB_PYTHON',
                  init_function_sentinal='{NULL,NULL}',
+				 needs_python=True,
 	)
 
 
