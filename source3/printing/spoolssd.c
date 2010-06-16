@@ -37,6 +37,18 @@ static void spoolss_reopen_logs(void)
 	reopen_logs();
 }
 
+static void smb_conf_updated(struct messaging_context *msg,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id server_id,
+			     DATA_BLOB *data)
+{
+	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
+	change_to_root_user();
+	reload_printers(msg);
+	spoolss_reopen_logs();
+}
+
 void start_spoolssd(void)
 {
 	pid_t pid;
@@ -86,6 +98,8 @@ void start_spoolssd(void)
 
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_PRINTER_UPDATE, print_queue_receive);
+	messaging_register(server_messaging_context(), NULL,
+			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 
 	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, server_event_context())) {
 		exit(1);
