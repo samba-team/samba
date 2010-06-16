@@ -819,6 +819,11 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
+	if (QueueName == NULL || (strlen(QueueName) < 1)) {
+		desc.errcode = W_ERROR_V(WERR_INVALID_PARAM);
+		goto out;
+	}
+
 	status = rpc_connect_spoolss_pipe(conn, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_DosPrintQGetInfo: could not connect to spoolss: %s\n",
