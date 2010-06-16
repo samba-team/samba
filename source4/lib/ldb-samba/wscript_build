@@ -10,6 +10,6 @@ bld.SAMBA_LIBRARY('LDBSAMBA',
 	)
 
 
-bld.SAMBA_PYTHON('pyldbsamba', 'pyldb.c',
+bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
 				 deps='LDBSAMBA pyparam_util',
 				 realname='samba/_ldb.so')
