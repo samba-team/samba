@@ -99,7 +99,7 @@ static NTSTATUS idmap_tdb2_load_ranges(void)
 /*
   open the permanent tdb
  */
-static NTSTATUS idmap_tdb2_open_db(void)
+static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 {
 	char *db_path;
 
@@ -241,7 +241,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
 	NTSTATUS status;
 	struct idmap_tdb2_allocate_id_context state;
 
-	status = idmap_tdb2_open_db();
+	status = idmap_tdb2_open_db(dom);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Get current high water mark */
@@ -349,12 +349,12 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 		talloc_free(config_option);
 	}
 
-	ret = idmap_tdb2_open_db();
+	dom->private_data = ctx;
+
+	ret = idmap_tdb2_open_db(dom);
 	if (!NT_STATUS_IS_OK(ret)) {
 		goto failed;
 	}
-
-	dom->private_data = ctx;
 
 	return NT_STATUS_OK;
 
@@ -494,12 +494,12 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 	struct idmap_tdb2_context *ctx;
 
 
-	status = idmap_tdb2_open_db();
-	NT_STATUS_NOT_OK_RETURN(status);
-
 	if (!dom || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	status = idmap_tdb2_open_db(dom);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
@@ -598,7 +598,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *ma
 	struct idmap_tdb2_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	ret = idmap_tdb2_open_db();
+	ret = idmap_tdb2_open_db(dom);
 	NT_STATUS_NOT_OK_RETURN(ret);
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
