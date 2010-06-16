@@ -37,8 +37,6 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 struct idmap_tdb2_context {
-	uint32_t filter_low_id;
-	uint32_t filter_high_id;
 	const char *script; /* script to provide idmaps */
 };
 
