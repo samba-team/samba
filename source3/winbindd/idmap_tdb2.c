@@ -57,7 +57,7 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
 /* handle to the permanent tdb */
 static struct db_context *idmap_tdb2;
 
-static NTSTATUS idmap_tdb2_alloc_load(void);
+static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom);
 
 static NTSTATUS idmap_tdb2_load_ranges(void)
 {
@@ -127,14 +127,14 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 	}
 
 	/* load the ranges and high/low water marks */
-	return idmap_tdb2_alloc_load();
+	return idmap_tdb2_alloc_load(dom);
 }
 
 
 /*
   load the idmap allocation ranges and high/low water marks
 */
-static NTSTATUS idmap_tdb2_alloc_load(void)
+static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom)
 {
 	NTSTATUS status;
 	uint32 low_id;
@@ -149,10 +149,10 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 	/* Create high water marks for group and user id */
 
 	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_USER);
-	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_uid)) {
+	if ((low_id == -1) || (low_id < dom->low_id)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_USER,
-					     idmap_tdb2_state.low_uid))) {
+					     dom->low_id))) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
@@ -160,10 +160,10 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 	}
 
 	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_GROUP);
-	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_gid)) {
+	if ((low_id == -1) || (low_id < dom->low_id)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_GROUP,
-					     idmap_tdb2_state.low_gid))) {
+					     dom->low_id))) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
