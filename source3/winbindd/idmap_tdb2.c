@@ -37,6 +37,7 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 struct idmap_tdb2_context {
+	struct db_context *db;
 	const char *script; /* script to provide idmaps */
 };
 
@@ -48,9 +49,6 @@ struct idmap_tdb2_context {
 static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
 				       struct id_map *map);
 
-/* handle to the permanent tdb */
-static struct db_context *idmap_tdb2;
-
 
 /*
  * check and initialize high/low water marks in the db
@@ -58,13 +56,16 @@ static struct db_context *idmap_tdb2;
 static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 {
 	uint32 low_id;
+	struct idmap_tdb2_context *ctx;
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* Create high water marks for group and user id */
 
-	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_USER);
+	low_id = dbwrap_fetch_int32(ctx->db, HWM_USER);
 	if ((low_id == -1) || (low_id < dom->low_id)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
-					     idmap_tdb2, HWM_USER,
+					     ctx->db, HWM_USER,
 					     dom->low_id))) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
@@ -72,10 +73,10 @@ static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 		}
 	}
 
-	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_GROUP);
+	low_id = dbwrap_fetch_int32(ctx->db, HWM_GROUP);
 	if ((low_id == -1) || (low_id < dom->low_id)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
-					     idmap_tdb2, HWM_GROUP,
+					     ctx->db, HWM_GROUP,
 					     dom->low_id))) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
@@ -93,8 +94,11 @@ static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 {
 	char *db_path;
+	struct idmap_tdb2_context *ctx;
 
-	if (idmap_tdb2) {
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
+
+	if (ctx->db) {
 		/* its already open */
 		return NT_STATUS_OK;
 	}
@@ -108,10 +112,10 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 	NT_STATUS_HAVE_NO_MEMORY(db_path);
 
 	/* Open idmap repository */
-	idmap_tdb2 = db_open(NULL, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
+	ctx->db = db_open(NULL, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
 	TALLOC_FREE(db_path);
 
-	if (idmap_tdb2 == NULL) {
+	if (ctx->db == NULL) {
 		DEBUG(0, ("Unable to open idmap_tdb2 database '%s'\n",
 			  db_path));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -187,9 +191,12 @@ static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
 	uint32_t hwm = 0;
 	NTSTATUS status;
 	struct idmap_tdb2_allocate_id_context state;
+	struct idmap_tdb2_context *ctx;
 
 	status = idmap_tdb2_open_db(dom);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -216,7 +223,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
 	state.hwmtype = hwmtype;
 	state.hwmkey = hwmkey;
 
-	status = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_allocate_id_action,
+	status = dbwrap_trans_do(ctx->db, idmap_tdb2_allocate_id_action,
 				 &state);
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -484,7 +491,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if the mapping exists */
-	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
+	data = dbwrap_fetch_bystring(ctx->db, keystr, keystr);
 
 	if (!data.dptr) {
 		char *sidstr;
@@ -512,7 +519,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 		store_state.ksidstr = sidstr;
 		store_state.kidstr = keystr;
 
-		ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+		ret = dbwrap_trans_do(ctx->db, idmap_tdb2_set_mapping_action,
 				      &store_state);
 		goto done;
 	}
@@ -560,7 +567,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *ma
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(idmap_tdb2, tmp_ctx, keystr);
+	data = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr);
 	if (!data.dptr) {
 		char *idstr;
 		struct idmap_tdb2_set_mapping_context store_state;
@@ -598,7 +605,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *ma
 		store_state.ksidstr = keystr;
 		store_state.kidstr = idstr;
 
-		ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+		ret = dbwrap_trans_do(ctx->db, idmap_tdb2_set_mapping_action,
 				      &store_state);
 		goto done;
 	}
@@ -743,6 +750,9 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	NTSTATUS ret;
 	int i;
 	struct idmap_tdb2_sids_to_unixids_context state;
+	struct idmap_tdb2_context *ctx;
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
@@ -753,11 +763,11 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	state.ids = ids;
 	state.allocate_unmapped = false;
 
-	ret = idmap_tdb2_sids_to_unixids_action(idmap_tdb2, &state);
+	ret = idmap_tdb2_sids_to_unixids_action(ctx->db, &state);
 
 	if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED) && !dom->read_only) {
 		state.allocate_unmapped = true;
-		ret = dbwrap_trans_do(idmap_tdb2,
+		ret = dbwrap_trans_do(ctx->db,
 				      idmap_tdb2_sids_to_unixids_action,
 				      &state);
 	}
@@ -818,7 +828,7 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 	state.ksidstr = ksidstr;
 	state.kidstr = kidstr;
 
-	ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+	ret = dbwrap_trans_do(ctx->db, idmap_tdb2_set_mapping_action,
 			      &state);
 
 done:
@@ -841,6 +851,9 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *
 	char *sidstr;
 	TDB_DATA data;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct idmap_tdb2_context *ctx;
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	if (map == NULL) {
 		ret = NT_STATUS_INVALID_PARAMETER;
@@ -865,7 +878,7 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *
 		goto done;
 	}
 
-	data = dbwrap_fetch_bystring(idmap_tdb2, mem_ctx, sidstr);
+	data = dbwrap_fetch_bystring(ctx->db, mem_ctx, sidstr);
 	if (data.dptr) {
 		ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto done;
