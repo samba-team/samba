@@ -39,6 +39,7 @@
 struct idmap_tdb2_context {
 	uint32_t filter_low_id;
 	uint32_t filter_high_id;
+	const char *script; /* script to provide idmaps */
 };
 
 /* High water mark keys */
@@ -49,7 +50,6 @@ static struct idmap_tdb2_state {
 	/* User and group id pool */
 	uid_t low_uid, high_uid;               /* Range of uids to allocate */
 	gid_t low_gid, high_gid;               /* Range of gids to allocate */
-	const char *idmap_script;
 } idmap_tdb2_state;
 
 
@@ -140,15 +140,6 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 {
 	NTSTATUS status;
 	uint32 low_id;
-
-	/* see if a idmap script is configured */
-	idmap_tdb2_state.idmap_script = lp_parm_const_string(-1, "idmap",
-							     "script", NULL);
-
-	if (idmap_tdb2_state.idmap_script) {
-		DEBUG(1, ("using idmap script '%s'\n",
-			  idmap_tdb2_state.idmap_script));
-	}
 
 	/* load ranges */
 
@@ -369,6 +360,11 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 		} else {
 			DEBUG(3, ("Warning: 'idmap gid' not set!\n"));
 		}
+
+		ctx->script = lp_parm_const_string(-1, "idmap", "script", NULL);
+		if (ctx->script) {
+			DEBUG(1, ("using idmap script '%s'\n", ctx->script));
+		}
 	} else {
 		char *config_option = NULL;
 		const char *range;
@@ -483,7 +479,7 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 	char line[64];
 	unsigned long v;
 
-	cmd = talloc_asprintf(ctx, "%s ", idmap_tdb2_state.idmap_script);
+	cmd = talloc_asprintf(ctx, "%s ", ctx->script);
 	NT_STATUS_HAVE_NO_MEMORY(cmd);	
 
 	va_start(ap, fmt);
@@ -514,12 +510,12 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 	} else if (strncmp(line, "SID:S-", 6) == 0) {
 		if (!string_to_sid(map->sid, &line[4])) {
 			DEBUG(0,("Bad SID in '%s' from idmap script %s\n",
-				 line, idmap_tdb2_state.idmap_script));
+				 line, ctx->script));
 			return NT_STATUS_NONE_MAPPED;			
 		}
 	} else {
 		DEBUG(0,("Bad reply '%s' from idmap script %s\n",
-			 line, idmap_tdb2_state.idmap_script));
+			 line, ctx->script));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -587,7 +583,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 		struct idmap_tdb2_set_mapping_context store_state;
 
 		DEBUG(10,("Record %s not found\n", keystr));
-		if (idmap_tdb2_state.idmap_script == NULL) {
+		if (ctx->script == NULL) {
 			ret = NT_STATUS_NONE_MAPPED;
 			goto done;
 		}
@@ -660,7 +656,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 
 		DEBUG(10,(__location__ " Record %s not found\n", keystr));
 
-		if (idmap_tdb2_state.idmap_script == NULL) {
+		if (ctx->script == NULL) {
 			ret = NT_STATUS_NONE_MAPPED;
 			goto done;
 		}
