@@ -1012,14 +1012,14 @@ sub provision_fl2000dc($$)
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "localfl2000dc1",
+				   "localfl2000dc5",
 				   "localfl2000dc",
 				   "SAMBA2000", 
 				   "samba2000.example.com", 
 				   "2000",
-				   7,
-				   "locDCpass0",
-				   "127.0.0.7", "");
+				   5,
+				   "locDCpass5",
+				   "127.0.0.5", "");
 
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
