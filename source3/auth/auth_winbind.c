@@ -43,7 +43,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
+	DEBUG(10, ("Check auth for: [%s]", user_info->mapped.account_name));
 
 	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
@@ -73,17 +73,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	       sizeof(params.password.response.challenge));
 
 	params.password.response.nt_length	= user_info->nt_resp.length;
-	if (params.password.response.nt_length) {
-		params.password.response.nt_data	= user_info->nt_resp.data;
-	} else {
-		params.password.response.nt_data	= NULL;
-	}
+	params.password.response.nt_data	= user_info->nt_resp.data;
 	params.password.response.lm_length	= user_info->lm_resp.length;
-	if (params.password.response.lm_length) {
-		params.password.response.lm_data	= user_info->lm_resp.data;
-	} else {
-		params.password.response.lm_data	= NULL;
-	}
+	params.password.response.lm_data	= user_info->lm_resp.data;
 
 	/* we are contacting the privileged pipe */
 	become_root();
