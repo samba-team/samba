@@ -272,7 +272,6 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 {
 	NTSTATUS ret;
 	struct idmap_tdb2_context *ctx;
-	NTSTATUS status;
 
 	ctx = talloc_zero(dom, struct idmap_tdb2_context);
 	if ( ! ctx) {
