@@ -242,17 +242,21 @@ done:
 	return ret;
 }
 
-static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
+static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
+				       struct unixid *xid)
 {
 	const char *hwmkey;
 	const char *hwmtype;
 	uint32_t high_hwm;
 	uint32_t hwm = 0;
 	NTSTATUS status;
+	struct idmap_tdb2_context *ctx;
 	struct idmap_tdb2_allocate_id_context state;
 
 	status = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -260,19 +264,19 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	case ID_TYPE_UID:
 		hwmkey = HWM_USER;
 		hwmtype = "UID";
-		high_hwm = idmap_tdb2_state.high_uid;
 		break;
 
 	case ID_TYPE_GID:
 		hwmkey = HWM_GROUP;
 		hwmtype = "GID";
-		high_hwm = idmap_tdb2_state.high_gid;
 		break;
 
 	default:
 		DEBUG(2, ("Invalid ID type (0x%x)\n", xid->type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	high_hwm = ctx->filter_high_id;
 
 	state.hwm = hwm;
 	state.high_hwm = high_hwm;
@@ -311,7 +315,7 @@ static NTSTATUS idmap_tdb2_get_new_id(struct idmap_domain *dom,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	ret = idmap_tdb2_allocate_id(id);
+	ret = idmap_tdb2_allocate_id(dom, id);
 
 	return ret;
 }
