@@ -584,24 +584,6 @@ void prs_switch_type(prs_struct *ps, bool io)
 }
 
 /*******************************************************************
- Force a prs_struct to be dynamic even when it's size is 0.
- ********************************************************************/
-
-void prs_force_dynamic(prs_struct *ps)
-{
-	ps->is_dynamic=True;
-}
-
-/*******************************************************************
- Associate a session key with a parse struct.
- ********************************************************************/
-
-void prs_set_session_key(prs_struct *ps, const char sess_key[16])
-{
-	ps->sess_key = sess_key;
-}
-
-/*******************************************************************
  Stream a uint8.
  ********************************************************************/
 

@@ -44,7 +44,6 @@ typedef struct _prs_struct {
 	uint32 grow_size; /* size requested via prs_grow() calls */
 	char *data_p; /* The buffer itself. */
 	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
-	const char *sess_key; /* If we have to do encrypt/decrypt on the fly. */
 } prs_struct;
 
 /*

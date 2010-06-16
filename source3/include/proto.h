@@ -5100,8 +5100,6 @@ bool prs_align_custom(prs_struct *ps, uint8 boundary);
 bool prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, bool io);
-void prs_force_dynamic(prs_struct *ps);
-void prs_set_session_key(prs_struct *ps, const char sess_key[16]);
 bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
