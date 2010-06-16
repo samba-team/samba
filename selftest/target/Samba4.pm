@@ -199,10 +199,10 @@ sub add_wins_config($$)
 	my ($self, $privatedir) = @_;
 
 	return $self->write_ldb_file("$privatedir/wins_config.ldb", "
-dn: name=TORTURE_6,CN=PARTNERS
+dn: name=TORTURE_11,CN=PARTNERS
 objectClass: wreplPartner
-name: TORTURE_6
-address: 127.0.0.6
+name: TORTURE_11
+address: 127.0.0.11
 pullInterval: 0
 pushChangeCount: 0
 type: 0x3

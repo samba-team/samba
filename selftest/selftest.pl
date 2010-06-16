@@ -540,12 +540,12 @@ foreach (@opt_include) {
 	push (@includes, read_test_regexes($_));
 }
 
-my $interfaces = join(',', ("127.0.0.6/8", 
-			    "127.0.0.7/8",
-			    "127.0.0.8/8",
-			    "127.0.0.9/8",
-			    "127.0.0.10/8",
-			    "127.0.0.11/8"));
+my $interfaces = join(',', ("127.0.0.11/8",
+			    "127.0.0.12/8",
+			    "127.0.0.13/8",
+			    "127.0.0.14/8",
+			    "127.0.0.15/8",
+			    "127.0.0.16/8"));
 
 my $conffile = "$prefix_abs/client/client.conf";
 $ENV{SMB_CONF_PATH} = $conffile;
@@ -845,7 +845,7 @@ sub setup_env($)
 		SocketWrapper::set_default_iface($testenv_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 		$ENV{SMB_CONF_PATH} = $testenv_vars->{SERVERCONFFILE};
 	} elsif ($option eq "client") {
-		SocketWrapper::set_default_iface(6);
+		SocketWrapper::set_default_iface(11);
 		write_clientconf($conffile, $testenv_vars);
 		$ENV{SMB_CONF_PATH} = $conffile;
 	} else {
