@@ -234,6 +234,9 @@ sub ParseDispatchFunction($)
 	pidl "\treturn NT_STATUS_INVALID_PARAMETER;";
 	pidl "}";
 	pidl "";
+	pidl "/* set opnum in fake rpc header */";
+	pidl "cli->pipes_struct->hdr_req.opnum = opnum;";
+	pidl "";
 	pidl "switch (opnum)";
 	pidl "{";
 	indent;
