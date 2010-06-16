@@ -926,11 +926,12 @@ sub provision_vampire_dc($$$)
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
-					       "localvampiredc", "localvampiredc5", 				   
+					       "localvampiredc2",
+					       "localvampiredc",
 					       "SAMBADOMAIN", 
 					       "samba.example.com", 
 					       "2008",
-					       5, $dcvars->{PASSWORD},
+					       2, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 
 	$ctx->{smb_conf_extra_options} = "
