@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('WINSDB',
 	source='wins/winsdb.c wins/wins_hook.c',
 	autoproto='wins/winsdb_proto.h',
-	public_deps='ldb'
+	public_deps='ldb LDBSAMBA'
 	)
 
 

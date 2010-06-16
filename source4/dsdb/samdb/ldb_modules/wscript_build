@@ -111,7 +111,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY'
+	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY LDBSAMBA'
 	)
 
 

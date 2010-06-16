@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('net_drs',
 	source='drs/net_drs.c drs/net_drs_bind.c drs/net_drs_kcc.c drs/net_drs_replicate.c drs/net_drs_showrepl.c',
 	autoproto='drs/net_drs_proto.h',
 	subsystem='net',
-	deps='LIBCLI_DRSUAPI ldb',
+	deps='LIBCLI_DRSUAPI ldb LDBSAMBA',
 	internal_module=True
 	)
 
