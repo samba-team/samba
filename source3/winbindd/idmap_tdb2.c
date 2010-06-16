@@ -36,6 +36,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
+struct idmap_tdb2_context {
+	uint32_t filter_low_id;
+	uint32_t filter_high_id;
+};
+
 /* High water mark keys */
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
@@ -314,10 +319,6 @@ static NTSTATUS idmap_tdb2_get_new_id(struct idmap_domain *dom,
 /*
   IDMAP MAPPING TDB BACKEND
 */
-struct idmap_tdb2_context {
-	uint32_t filter_low_id;
-	uint32_t filter_high_id;
-};
 
 /*
   Initialise idmap database. 
