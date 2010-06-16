@@ -93,8 +93,8 @@ static struct la_context *linked_attributes_init(struct ldb_module *module,
  */
 static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID *guid)
 {
-	int ret;
 	NTSTATUS status;
+	int ret;
 
 	status = dsdb_get_extended_dn_guid(dn, guid, "GUID");
 	if (NT_STATUS_IS_OK(status)) {
@@ -191,8 +191,8 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	struct la_context *ac;
 	const char *attr_name;
 	struct ldb_control *ctrl;
+	unsigned int i, j;
 	int ret;
-	int i, j;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -289,7 +289,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	struct replace_context *rc;
 	struct la_context *ac;
 	const char *attr_name;
-	int i, j;
+	unsigned int i, j;
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct la_context);
@@ -412,12 +412,11 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	/* Apply the modify to the linked entry */
 
 	struct ldb_context *ldb;
-	int i, j;
+	unsigned int i, j;
 	struct la_context *ac;
 	struct ldb_request *search_req;
 	const char **attrs;
 	struct ldb_control *ctrl;
-
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -596,11 +595,12 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct ldb_message_element *el, struct dsdb_schema *schema,
 				       const struct dsdb_attribute *schema_attr)
 {
-	unsigned int i;
+	unsigned int i, j;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *target;
 	const char *attrs[2];
+	int ret;
 
 	target = dsdb_attribute_by_linkID(schema, schema_attr->linkID ^ 1);
 	if (target == NULL) {
@@ -613,8 +613,6 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 
 	for (i=0; i<el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn;
-		unsigned int j;
-		int ret;
 		struct ldb_result *res;
 		struct ldb_message *msg;
 		struct ldb_message_element *el2;
@@ -709,9 +707,9 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	struct ldb_result *res;
 	struct ldb_message *msg;
 	unsigned int i;
-	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
+	int ret;
 	/*
 	   - load the current msg
 	   - find any linked attributes
@@ -775,9 +773,9 @@ static int la_queue_mod_request(struct la_context *ac)
 /* Having done the original operation, then try to fix up all the linked attributes for modify and delete */
 static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	int ret;
 	struct la_context *ac;
 	struct ldb_context *ldb;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct la_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -821,9 +819,9 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
  */
 static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	int ret;
 	struct la_context *ac;
 	struct ldb_context *ldb;
+	int ret;
 
 	ac = talloc_get_type(req->context, struct la_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -884,8 +882,8 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 static int la_down_req(struct la_context *ac)
 {
 	struct ldb_request *down_req;
-	int ret;
 	struct ldb_context *ldb;
+	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
