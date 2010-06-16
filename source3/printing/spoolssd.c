@@ -49,6 +49,57 @@ static void smb_conf_updated(struct messaging_context *msg,
 	spoolss_reopen_logs();
 }
 
+static void spoolss_sig_term_handler(struct tevent_context *ev,
+				     struct tevent_signal *se,
+				     int signum,
+				     int count,
+				     void *siginfo,
+				     void *private_data)
+{
+	exit_server_cleanly("termination signal");
+}
+
+static void spoolss_setup_sig_term_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(server_event_context(),
+			       server_event_context(),
+			       SIGTERM, 0,
+			       spoolss_sig_term_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGTERM handler");
+	}
+}
+
+static void spoolss_sig_hup_handler(struct tevent_context *ev,
+				    struct tevent_signal *se,
+				    int signum,
+				    int count,
+				    void *siginfo,
+				    void *private_data)
+{
+	change_to_root_user();
+	DEBUG(1,("Reloading printers after SIGHUP\n"));
+	reload_printers(server_messaging_context());
+	spoolss_reopen_logs();
+}
+
+static void spoolss_setup_sig_hup_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(server_event_context(),
+			       server_event_context(),
+			       SIGHUP, 0,
+			       spoolss_sig_hup_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGHUP handler");
+	}
+}
+
 void start_spoolssd(void)
 {
 	pid_t pid;
@@ -83,8 +134,8 @@ void start_spoolssd(void)
 
 	spoolss_reopen_logs();
 
-	smbd_setup_sig_term_handler();
-	smbd_setup_sig_hup_handler();
+	spoolss_setup_sig_term_handler();
+	spoolss_setup_sig_hup_handler();
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL|FLAG_MSG_SMBD
