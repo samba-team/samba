@@ -53,9 +53,9 @@ static struct db_context *idmap_tdb2;
 
 
 /*
-  load the idmap allocation ranges and high/low water marks
-*/
-static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom)
+ * check and initialize high/low water marks in the db
+ */
+static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 {
 	uint32 low_id;
 
@@ -117,8 +117,7 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* load the ranges and high/low water marks */
-	return idmap_tdb2_alloc_load(dom);
+	return idmap_tdb2_init_hwm(dom);
 }
 
 
