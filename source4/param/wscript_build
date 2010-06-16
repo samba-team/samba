@@ -10,9 +10,10 @@ bld.SAMBA_LIBRARY('LIBSAMBA-HOSTCONFIG',
 	)
 
 
-bld.SAMBA_PYTHON('PROVISION',
+bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
-	deps='LIBPYTHON pyparam_util ldb'
+	deps='LIBPYTHON pyparam_util ldb',
+	needs_python=True,
 	)
 
 
@@ -52,8 +53,9 @@ bld.SAMBA_PYTHON('param',
 	)
 
 
-bld.SAMBA_PYTHON('pyparam_util',
+bld.SAMBA_SUBSYSTEM('pyparam_util',
 	source='pyparam_util.c',
-	deps='LIBPYTHON'
+	deps='LIBPYTHON',
+	needs_python=True
 	)
 

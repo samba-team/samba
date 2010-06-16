@@ -8,9 +8,10 @@ bld.SAMBA_PYTHON('LIBPYTHON',
 	)
 
 
-bld.SAMBA_PYTHON('PYTALLOC',
+bld.SAMBA_SUBSYSTEM('PYTALLOC',
                  source='../../../lib/talloc/pytalloc.c',
-                 public_deps='EXT_LIB_PYTHON talloc'
+                 public_deps='EXT_LIB_PYTHON talloc',
+				 needs_python=True,
                  )
 
 
