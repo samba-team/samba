@@ -3278,4 +3278,8 @@ bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
 	cd ../source4 && ../buildtools/bin/waf build --targets=smbtorture
 	cp ../source4/bin/smbtorture bin/smbtorture4
 
+bin/ndrdump4: $(BINARY_PREREQS) samba4-configure
+	cd ../source4 && ../buildtools/bin/waf build --targets=ndrdump
+	cp ../source4/bin/ndrdump bin/ndrdump4
+
 .PHONY: bin/smbtorture4
