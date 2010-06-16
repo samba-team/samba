@@ -313,4 +313,8 @@ interface ntlmssp
 		[in] NTLMv2_CLIENT_CHALLENGE challenge
 		);
 
+	void decode_NTLMv2_RESPONSE(
+		[in] NTLMv2_RESPONSE response
+		);
+
 }
