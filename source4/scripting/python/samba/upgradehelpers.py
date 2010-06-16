@@ -81,39 +81,68 @@ class ProvisionLDB(object):
         self.secrets.transaction_start()
         self.idmap.transaction_start()
         self.privilege.transaction_start()
+# TO BE DONE
 #        self.hkcr.transaction_start()
 #        self.hkcu.transaction_start()
 #        self.hku.transaction_start()
 #        self.hklm.transaction_start()
 
     def groupedRollback(self):
-        self.sam.transaction_cancel()
-        self.secrets.transaction_cancel()
-        self.idmap.transaction_cancel()
-        self.privilege.transaction_cancel()
+        ok = True
+        try:
+            self.sam.transaction_cancel()
+        except:
+            ok = False
+
+        try:
+            self.secrets.transaction_cancel()
+        except:
+            ok = False
+
+        try:
+            self.idmap.transaction_cancel()
+        except:
+            ok = False
+
+        try:
+            self.privilege.transaction_cancel()
+        except:
+            ok = False
+
+        return ok
+# TO BE DONE
 #        self.hkcr.transaction_cancel()
 #        self.hkcu.transaction_cancel()
 #        self.hku.transaction_cancel()
 #        self.hklm.transaction_cancel()
 
     def groupedCommit(self):
-        self.sam.transaction_prepare_commit()
-        self.secrets.transaction_prepare_commit()
-        self.idmap.transaction_prepare_commit()
-        self.privilege.transaction_prepare_commit()
+        try:
+            self.sam.transaction_prepare_commit()
+            self.secrets.transaction_prepare_commit()
+            self.idmap.transaction_prepare_commit()
+            self.privilege.transaction_prepare_commit()
+        except:
+            return self.groupedRollback()
+# TO BE DONE
 #        self.hkcr.transaction_prepare_commit()
 #        self.hkcu.transaction_prepare_commit()
 #        self.hku.transaction_prepare_commit()
 #        self.hklm.transaction_prepare_commit()
-
-        self.sam.transaction_commit()
-        self.secrets.transaction_commit()
-        self.idmap.transaction_commit()
-        self.privilege.transaction_commit()
+        try:
+            self.sam.transaction_commit()
+            self.secrets.transaction_commit()
+            self.idmap.transaction_commit()
+            self.privilege.transaction_commit()
+        except:
+            return self.groupedRollback()
+        
+# TO BE DONE
 #        self.hkcr.transaction_commit()
 #        self.hkcu.transaction_commit()
 #        self.hku.transaction_commit()
 #        self.hklm.transaction_commit()
+        return True
 
 def get_ldbs(paths, creds, session, lp):
     """Return LDB object mapped on most important databases
