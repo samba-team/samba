@@ -719,10 +719,12 @@ NTSTATUS smbcli_rap_netprintqgetinfo(struct smbcli_tree *tree,
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
 	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	call->ndr_pull_data->relative_rap_convert = r->out.convert;
+	if (r->out.status == 0) {
+		call->ndr_pull_data->relative_rap_convert = r->out.convert;
 
-	NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
-	NDR_GOTO(ndr_pull_rap_printq_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
+		NDR_GOTO(ndr_pull_set_switch_value(call->ndr_pull_data, &r->out.info, r->in.level));
+		NDR_GOTO(ndr_pull_rap_printq_info(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.info));
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(rap_NetPrintQGetInfo, r);
