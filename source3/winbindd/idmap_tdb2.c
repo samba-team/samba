@@ -532,19 +532,23 @@ static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map 
 /*
   Single id to sid lookup function. 
 */
-static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_map *map)
+static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
 	NTSTATUS status;
+	struct idmap_tdb2_context *ctx;
+
 
 	status = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (!ctx || !map) {
+	if (!dom || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* apply filters before checking */
 	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
@@ -738,7 +742,6 @@ done:
 */
 static NTSTATUS idmap_tdb2_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_tdb2_context *ctx;
 	NTSTATUS ret;
 	int i;
 
@@ -747,10 +750,8 @@ static NTSTATUS idmap_tdb2_unixids_to_sids(struct idmap_domain *dom, struct id_m
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
-
 	for (i = 0; ids[i]; i++) {
-		ret = idmap_tdb2_id_to_sid(ctx, ids[i]);
+		ret = idmap_tdb2_id_to_sid(dom, ids[i]);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			/* if it is just a failed mapping continue */
