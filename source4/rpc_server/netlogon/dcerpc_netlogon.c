@@ -1659,7 +1659,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 	struct ldb_context *sam_ctx;
 	struct netr_DsRAddressToSitenamesExWCtr *ctr;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	uint16_t sin_family;
+	sa_family_t sin_family;
 	struct sockaddr_in *addr;
 #ifdef HAVE_IPV6
 	struct sockaddr_in6 *addr6;
@@ -1692,10 +1692,11 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 		ctr->sitename[i].string = NULL;
 		ctr->subnetname[i].string = NULL;
 
-		if (r->in.addresses[i].size < sizeof(sin_family)) {
+		if (r->in.addresses[i].size < sizeof(sa_family_t)) {
 			continue;
 		}
-		sin_family = SVAL(r->in.addresses[i].buffer, 0);
+		/* the first two byte of the buffer are the "sin_family" */
+		sin_family = (sa_family_t) *r->in.addresses[i].buffer;
 
 		switch (sin_family) {
 		case AF_INET:
