@@ -969,6 +969,95 @@ objectClass: container
 
         self.assertEquals(res1[0]["groupType"][0], "-2147483643")
 
+    def test_linked_attributes(self):
+        """This tests the linked attribute behaviour"""
+        print "Testing linked attribute behaviour\n"
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        # This should not work since "memberOf" is linked to "member"
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": ["user", "person"],
+                "memberOf": "cn=ldaptestgroup,cn=users," + self.base_dn})
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
+          FLAG_MOD_ADD, "memberOf")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+          FLAG_MOD_ADD, "member")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
+          FLAG_MOD_REPLACE, "memberOf")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["memberOf"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn,
+          FLAG_MOD_DELETE, "memberOf")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+          FLAG_MOD_DELETE, "member")
+        ldb.modify(m)
+
+        # This should yield no results since the member attribute for
+        # "ldaptestuser" should have been deleted
+        res1 = ldb.search("cn=ldaptestgroup, cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          expression="(member=cn=ldaptestuser,cn=users," + self.base_dn + ")",
+                          attrs=[])
+        self.assertTrue(len(res1) == 0)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "member": "cn=ldaptestuser,cn=users," + self.base_dn})
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # Make sure that the "member" attribute for "ldaptestuser" has been
+        # removed
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["member"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("member" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
     def test_groups(self):
         """This tests the group behaviour (setting, changing) of a user account"""
         print "Testing group behaviour\n"
@@ -2072,7 +2161,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
 
         self.assertTrue(("<GUID=" + ldb.schema_format_value("objectGUID", ldaptestuser2_guid) + ">;<SID=" + ldb.schema_format_value("objectSid", ldaptestuser2_sid) + ">;CN=ldaptestuser2,CN=Users," + self.base_dn).upper() in memberUP)
 
-        print "Testing Linked attribute behaviours"
+        print "Quicktest for linked attributes"
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify

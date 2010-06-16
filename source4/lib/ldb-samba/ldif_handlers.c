@@ -878,6 +878,78 @@ static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
+/*
+  compare two dns
+*/
+static int samba_ldb_dn_link_comparison(struct ldb_context *ldb, void *mem_ctx,
+					const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
+	int ret;
+
+	if (dsdb_dn_is_deleted_val(v1)) {
+		/* If the DN is deleted, then we can't search for it */
+		return -1;
+	}
+
+	if (dsdb_dn_is_deleted_val(v2)) {
+		/* If the DN is deleted, then we can't search for it */
+		return -1;
+	}
+
+	dn1 = ldb_dn_from_ldb_val(mem_ctx, ldb, v1);
+	if ( ! ldb_dn_validate(dn1)) return -1;
+
+	dn2 = ldb_dn_from_ldb_val(mem_ctx, ldb, v2);
+	if ( ! ldb_dn_validate(dn2)) {
+		talloc_free(dn1);
+		return -1;
+	}
+
+	ret = ldb_dn_compare(dn1, dn2);
+
+	talloc_free(dn1);
+	talloc_free(dn2);
+	return ret;
+}
+
+static int samba_ldb_dn_link_canonicalise(struct ldb_context *ldb, void *mem_ctx,
+					  const struct ldb_val *in, struct ldb_val *out)
+{
+	struct ldb_dn *dn;
+	int ret = -1;
+
+	out->length = 0;
+	out->data = NULL;
+
+	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, in);
+	if ( ! ldb_dn_validate(dn)) {
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	/* By including the RMD_FLAGS of a deleted DN, we ensure it
+	 * does not casually match a not deleted DN */
+	if (dsdb_dn_is_deleted_val(in)) {
+		out->data = talloc_asprintf(mem_ctx, "<RMD_FLAGS=%u>%s",
+					    dsdb_dn_val_rmd_flags(in),
+					    ldb_dn_get_casefold(dn));
+	} else {
+		out->data = (uint8_t *)ldb_dn_alloc_casefold(mem_ctx, dn);
+	}
+
+	if (out->data == NULL) {
+		goto done;
+	}
+	out->length = strlen((char *)out->data);
+
+	ret = 0;
+
+done:
+	talloc_free(dn);
+
+	return ret;
+}
+
 
 /*
   write a 64 bit 2-part range
@@ -1009,6 +1081,12 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = dsdb_dn_string_canonicalise,
 		.comparison_fn	  = dsdb_dn_string_comparison
+	},{
+		.name		  = LDB_SYNTAX_DN,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldb_handler_copy,
+		.canonicalise_fn  = samba_ldb_dn_link_canonicalise,
+		.comparison_fn	  = samba_ldb_dn_link_comparison,
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_RANGE64,
 		.ldif_read_fn	  = ldif_read_range64,
