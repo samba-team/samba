@@ -498,6 +498,30 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	return status;
 }
 
+/**
+ * Allocate a new unix-ID.
+ * For now this is for the default idmap domain only.
+ * Should be extended later on.
+ */
+static NTSTATUS idmap_tdb_get_new_id(struct idmap_domain *dom,
+				     struct unixid *id)
+{
+	NTSTATUS ret;
+
+	if (!strequal(dom->name, "*")) {
+		DEBUG(3, ("idmap_tdb_get_new_id: "
+			  "Refusing allocation of a new unixid for domain'%s'. "
+			  "Currently only supported for the default "
+			  "domain \"*\".\n",
+			   dom->name));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ret = idmap_tdb_allocate_id(id);
+
+	return ret;
+}
+
 /**********************************
  Close the alloc tdb 
 **********************************/
