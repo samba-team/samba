@@ -356,6 +356,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 			  const char *test_machine_name)
 {
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	struct netr_LogonSamLogon r;
 
@@ -555,7 +556,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	r.in.validation_level = 3;
 
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogon_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 
 	torture_assert(tctx, netlogon_creds_client_check(creds,
