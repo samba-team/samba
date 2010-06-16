@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -131,7 +131,7 @@ static int la_store_op(struct la_context *ac,
 
 	op_dn = ldb_dn_from_ldb_val(ac, ldb, dn);
 	if (!op_dn) {
-		ldb_asprintf_errstring(ldb, 
+		ldb_asprintf_errstring(ldb,
 				       "could not parse attribute as a DN");
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
@@ -224,9 +224,9 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
-			ldb_asprintf_errstring(ldb, 
+			ldb_asprintf_errstring(ldb,
 					       "attribute %s is not a valid attribute in schema", el->name);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		/* We have a valid attribute, now find out if it is a forward link */
 		if ((schema_attr->linkID == 0)) {
@@ -235,11 +235,11 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 
 		if ((schema_attr->linkID & 1) == 1) {
 			unsigned int functional_level;
-			
+
 			functional_level = dsdb_functional_level(ldb);
 			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
 		}
-		
+
 		/* Even link IDs are for the originating attribute */
 		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
 		if (!target_attr) {
@@ -310,8 +310,8 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	case LDB_REPLY_ENTRY:
 
 		if (ldb_dn_compare(ares->message->dn, ac->req->op.mod.message->dn) != 0) {
-			ldb_asprintf_errstring(ldb, 
-					       "linked_attributes: %s is not the DN we were looking for", 
+			ldb_asprintf_errstring(ldb,
+					       "linked_attributes: %s is not the DN we were looking for",
 					       ldb_dn_get_linearized(ares->message->dn));
 			/* Guh?  We only asked for this DN */
 			talloc_free(ares);
@@ -456,9 +456,9 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
-			ldb_asprintf_errstring(ldb, 
+			ldb_asprintf_errstring(ldb,
 					       "attribute %s is not a valid attribute in schema", el->name);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		/* We have a valid attribute, now find out if it is a forward link
 		   (Even link IDs are for the originating attribute) */
@@ -468,7 +468,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 		if ((schema_attr->linkID & 1) == 1) {
 			unsigned int functional_level;
-			
+
 			functional_level = dsdb_functional_level(ldb);
 			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
 		}
@@ -486,7 +486,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		}
 
 		attr_name = target_attr->lDAPDisplayName;
-	
+
 		switch (el->flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_REPLACE:
 			/* treat as just a normal add the delete part is handled by the callback */
@@ -545,11 +545,11 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			ac->rc->num_elements++;
 		}
 	}
-	
+
 	if (ac->ops || ac->rc->el) {
 		/* both replace and delete without values are handled in the callback
 		 * after the search on the entry to be modified is performed */
-		
+
 		attrs = talloc_array(ac->rc, const char *, ac->rc->num_elements + 1);
 		if (!attrs) {
 			ldb_oom(ldb);
@@ -559,7 +559,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			attrs[i] = ac->rc->el[i].name;
 		}
 		attrs[i] = NULL;
-		
+
 		/* The callback does all the hard work here */
 		ret = ldb_build_search_req(&search_req, ldb, ac,
 					   req->op.mod.message->dn,
@@ -577,7 +577,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		}
 		if (ret == LDB_SUCCESS) {
 			talloc_steal(search_req, attrs);
-			
+
 			ret = ldb_next_request(module, search_req);
 		}
 
@@ -643,7 +643,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			/* Forward link without backlink remaining - nothing to do here */
 			continue;
 		} else if (msg->num_elements != 1) {
-			ldb_asprintf_errstring(ldb, "Bad msg elements - got %u elements, expected one element to be returned in linked_attributes_fix_links for %s", 
+			ldb_asprintf_errstring(ldb, "Bad msg elements - got %u elements, expected one element to be returned in linked_attributes_fix_links for %s",
 					       msg->num_elements, ldb_dn_get_linearized(msg->dn));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -755,7 +755,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
    structure */
 static int la_queue_mod_request(struct la_context *ac)
 {
-	struct la_private *la_private = 
+	struct la_private *la_private =
 		talloc_get_type(ldb_module_get_private(ac->module), struct la_private);
 
 	if (la_private == NULL) {
@@ -796,13 +796,13 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
-	
+
 	ac->op_controls = talloc_steal(ac, ares->controls);
 	ac->op_response = talloc_steal(ac, ares->response);
 
 	/* If we have modfies to make, this is the time to do them for modify and delete */
 	ret = la_queue_mod_request(ac);
-	
+
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
@@ -842,11 +842,11 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
-	
+
 	if (ac->ops) {
 		struct ldb_request *search_req;
 		static const char *attrs[] = { NULL };
-		
+
 		/* The callback does all the hard work here - we need
 		 * the objectGUID and SID of the added record */
 		ret = ldb_build_search_req(&search_req, ldb, ac,
@@ -856,7 +856,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 					   NULL,
 					   ac, la_mod_search_callback,
 					   ac->req);
-		
+
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_request_add_control(search_req,
 						      LDB_CONTROL_EXTENDED_DN_OID,
@@ -871,7 +871,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 		ac->op_response = talloc_steal(ac, ares->response);
 
 		return ldb_next_request(ac->module, search_req);
-		
+
 	} else {
 		return ldb_module_done(ac->req, ares->controls,
 				       ares->response, ares->error);
@@ -916,7 +916,7 @@ static int la_down_req(struct la_context *ac)
   use the GUID part of an extended DN to find the target DN, in case
   it has moved
  */
-static int la_find_dn_target(struct ldb_module *module, struct la_context *ac, 
+static int la_find_dn_target(struct ldb_module *module, struct la_context *ac,
 			     struct GUID *guid, struct ldb_dn **dn)
 {
 	return dsdb_find_dn_by_guid(ldb_module_get_ctx(ac->module), ac, guid, dn);
@@ -968,10 +968,10 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 
 #if 0
 	ldb_debug(ldb, LDB_DEBUG_WARNING,
-		  "link on %s %s: %s %s\n", 
-		  ldb_dn_get_linearized(new_msg->dn), ret_el->name, 
+		  "link on %s %s: %s %s\n",
+		  ldb_dn_get_linearized(new_msg->dn), ret_el->name,
 		  ret_el->values[0].data, ac->ops->op == LA_OP_ADD ? "added" : "deleted");
-#endif	
+#endif
 
 	if (DEBUGLVL(4)) {
 		DEBUG(4,("Applying linked attribute change:\n%s\n",
@@ -1007,7 +1007,7 @@ static int la_do_mod_request(struct ldb_module *module, struct la_context *ac)
 
 
 /*
-  we hook into the transaction operations to allow us to 
+  we hook into the transaction operations to allow us to
   perform the linked attribute updates at the end of the whole
   transaction. This allows a forward linked attribute to be created
   before the target is created, as long as the target is created
@@ -1034,7 +1034,7 @@ static int linked_attributes_start_transaction(struct ldb_module *module)
  */
 static int linked_attributes_prepare_commit(struct ldb_module *module)
 {
-	struct la_private *la_private = 
+	struct la_private *la_private =
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	struct la_context *ac;
 
@@ -1058,20 +1058,20 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed mod request ret=%d\n", ret));
 			talloc_free(la_private);
-			ldb_module_set_private(module, NULL);	
+			ldb_module_set_private(module, NULL);
 			return ret;
 		}
 	}
 
 	talloc_free(la_private);
-	ldb_module_set_private(module, NULL);	
+	ldb_module_set_private(module, NULL);
 
 	return ldb_next_prepare_commit(module);
 }
 
 static int linked_attributes_del_transaction(struct ldb_module *module)
 {
-	struct la_private *la_private = 
+	struct la_private *la_private =
 		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	talloc_free(la_private);
 	ldb_module_set_private(module, NULL);
