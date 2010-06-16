@@ -241,13 +241,10 @@ static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
 	uint32_t high_hwm;
 	uint32_t hwm = 0;
 	NTSTATUS status;
-	struct idmap_tdb2_context *ctx;
 	struct idmap_tdb2_allocate_id_context state;
 
 	status = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -267,7 +264,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct idmap_domain *dom,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	high_hwm = ctx->filter_high_id;
+	high_hwm = dom->high_id;
 
 	state.hwm = hwm;
 	state.high_hwm = high_hwm;
