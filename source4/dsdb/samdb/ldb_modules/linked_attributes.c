@@ -641,9 +641,17 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		}
 		msg = res->msgs[0];
 
-		if (msg->num_elements != 1 ||
-		    ldb_attr_cmp(msg->elements[0].name, target->lDAPDisplayName) != 0) {
-			ldb_set_errstring(ldb, "Bad msg elements in linked_attributes_fix_links");
+		if (msg->num_elements == 0) {
+			/* Forward link without backlink remaining - nothing to do here */
+			continue;
+		} else if (msg->num_elements != 1) {
+			ldb_asprintf_errstring(ldb, "Bad msg elements - got %u elements, expected one element to be returned in linked_attributes_fix_links for %s", 
+					       msg->num_elements, ldb_dn_get_linearized(msg->dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		if (ldb_attr_cmp(msg->elements[0].name, target->lDAPDisplayName) != 0) {
+			ldb_asprintf_errstring(ldb, "Bad returned attribute in linked_attributes_fix_links: got %s, expected %s for %s", msg->elements[0].name, target->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
