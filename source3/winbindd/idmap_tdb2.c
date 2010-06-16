@@ -267,7 +267,7 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 	struct idmap_tdb2_context *ctx;
 	NTSTATUS status;
 
-	ctx = talloc(dom, struct idmap_tdb2_context);
+	ctx = talloc_zero(dom, struct idmap_tdb2_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
