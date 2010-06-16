@@ -120,6 +120,14 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	int i, p;
 	uint16_t levels[] = { 0, 1, 2, 3, 4, 5 };
 
+	r.in.level = 0;
+	r.in.bufsize = 0;
+	r.in.PrintQueueName = "";
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netprintqgetinfo(cli->tree, tctx, &r),
+		"smbcli_rap_netprintqgetinfo failed");
+
 	r_enum.in.level = 5;
 	r_enum.in.bufsize = 8192;
 
