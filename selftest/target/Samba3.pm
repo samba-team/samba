@@ -341,39 +341,6 @@ sub check_or_start($$$$$) {
 	return 0;
 }
 
-sub create_clientconf($$$)
-{
-	my ($self, $prefix, $domain) = @_;
-
-	my $lockdir = "$prefix/locks";
-	my $logdir = "$prefix/logs";
-	my $piddir = "$prefix/pid";
-	my $privatedir = "$prefix/private";
-	my $conffile = "$prefix/smb.conf";
-
-	my $torture_interfaces='127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.0.0.10/8,127.0.0.11/8';
-	open(CONF, ">$conffile");
-	print CONF "
-[global]
-	workgroup = $domain
-
-	private dir = $privatedir
-	pid directory = $piddir
-	lock directory = $lockdir
-	log file = $logdir/log.\%m
-	log level = 0
-
-	name resolve order = bcast
-
-	netbios name = TORTURE_6
-	interfaces = $torture_interfaces
-	panic action = $RealBin/gdb_backtrace \%d %\$(MAKE_TEST_BINARY)
-
-	passdb backend = tdbsam
-	";
-	close(CONF);
-}
-
 sub provision($$$$$$)
 {
 	my ($self, $prefix, $server, $swiface, $password, $extra_options) = @_;
