@@ -895,6 +895,10 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+
+	DEBUG(10, ("Received %d bytes. There is %smore data outstanding\n",
+		   (int)state->nread, state->is_data_outstanding?"":"no "));
+
 	*nread = state->nread;
 	*is_data_outstanding = state->is_data_outstanding;
 	return NT_STATUS_OK;
