@@ -930,9 +930,10 @@ static int samba_ldb_dn_link_canonicalise(struct ldb_context *ldb, void *mem_ctx
 	/* By including the RMD_FLAGS of a deleted DN, we ensure it
 	 * does not casually match a not deleted DN */
 	if (dsdb_dn_is_deleted_val(in)) {
-		out->data = talloc_asprintf(mem_ctx, "<RMD_FLAGS=%u>%s",
-					    dsdb_dn_val_rmd_flags(in),
-					    ldb_dn_get_casefold(dn));
+		out->data = (uint8_t *)talloc_asprintf(mem_ctx,
+						       "<RMD_FLAGS=%u>%s",
+						       dsdb_dn_val_rmd_flags(in),
+						       ldb_dn_get_casefold(dn));
 	} else {
 		out->data = (uint8_t *)ldb_dn_alloc_casefold(mem_ctx, dn);
 	}
