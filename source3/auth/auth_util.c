@@ -468,8 +468,8 @@ NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
 	return make_user_info_map(user_info, smb_name, 
 				  client_domain, 
 				  get_remote_machine_name(), 
-				  lm_resp.data ? &lm_resp : NULL, 
-				  nt_resp.data ? &nt_resp : NULL, 
+				  lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
+				  nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
 				  NULL, NULL, NULL,
 				  True);
 }
