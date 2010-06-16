@@ -171,13 +171,13 @@
 		    </listitem></varlistentry>
 
 		  <varlistentry>
-		  <term>Username</term>
+		  <term>NT-Domain</term>
                 <listitem><para>The user's domain, expected to be in
                 Samba's <smbconfoption name="unix charset"/>.
                 </para>
 
-		      <para><example>Domain: WORKGROUP</example></para>
-		      <para><example>Domain:: V09SS0dST1VQ</example></para>
+		      <para><example>NT-Domain: WORKGROUP</example></para>
+		      <para><example>NT-Domain:: V09SS0dST1VQ</example></para>
 		    </listitem></varlistentry>
 
 		  <varlistentry>
