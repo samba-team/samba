@@ -38,6 +38,8 @@
  delete job
  try writing 2nd half
 
+ SMBsplretq
+
 */
 
 #define TORTURE_PRINT_FILE "torture_print_file"
