@@ -44,12 +44,6 @@ struct idmap_tdb2_context {
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-static struct idmap_tdb2_state {
-	/* User and group id pool */
-	uid_t low_uid, high_uid;               /* Range of uids to allocate */
-	gid_t low_gid, high_gid;               /* Range of gids to allocate */
-} idmap_tdb2_state;
-
 
 static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
 				       struct id_map *map);
@@ -58,43 +52,6 @@ static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
 static struct db_context *idmap_tdb2;
 
 static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom);
-
-static NTSTATUS idmap_tdb2_load_ranges(void)
-{
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
-
-	if (!lp_idmap_uid(&low_uid, &high_uid)) {
-		DEBUG(1, ("idmap uid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap gid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	idmap_tdb2_state.low_uid = low_uid;
-	idmap_tdb2_state.high_uid = high_uid;
-	idmap_tdb2_state.low_gid = low_gid;
-	idmap_tdb2_state.high_gid = high_gid;
-
-	if (idmap_tdb2_state.high_uid <= idmap_tdb2_state.low_uid) {
-		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
-}
 
 /*
   open the permanent tdb
@@ -136,15 +93,7 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 */
 static NTSTATUS idmap_tdb2_alloc_load(struct idmap_domain *dom)
 {
-	NTSTATUS status;
 	uint32 low_id;
-
-	/* load ranges */
-
-	status = idmap_tdb2_load_ranges();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/* Create high water marks for group and user id */
 
