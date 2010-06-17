@@ -593,6 +593,13 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 
 	dom->private_data = ctx;
 
+	ret = idmap_ldap_alloc_init(dom, params);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("idmap_ldap_db_init: Failed to initialize alloc "
+			  "subsystem: %s\n", nt_errstr(ret)));
+		goto done;
+	}
+
 	talloc_free(config_option);
 	return NT_STATUS_OK;
 
