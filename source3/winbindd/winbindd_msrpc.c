@@ -38,102 +38,62 @@
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
-static NTSTATUS query_user_list(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       uint32 *num_entries, 
-			       struct wbint_userinfo **info)
+static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      uint32_t *pnum_info,
+				      struct wbint_userinfo **pinfo)
 {
-	NTSTATUS result;
+	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol;
-	unsigned int i, start_idx;
-	uint32 loop_count;
-	struct rpc_pipe_client *cli;
+	struct wbint_userinfo *info = NULL;
+	uint32_t num_info = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	DEBUG(3,("rpc: query_user_list\n"));
+	DEBUG(3,("rpc_query_user_list\n"));
 
-	*num_entries = 0;
-	*info = NULL;
+	if (pnum_info) {
+		*pnum_info = 0;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user_list: No incoming trust for domain %s\n",
 			  domain->name));
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-	i = start_idx = 0;
-	loop_count = 0;
+	status = rpc_query_user_list(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     &domain->sid,
+				     &num_info,
+				     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-	do {
-		uint32 num_dom_users, j;
-		uint32 max_entries, max_size;
-		uint32_t total_size, returned_size;
+	if (pnum_info) {
+		*pnum_info = num_info;
+	}
 
-		union samr_DispInfo disp_info;
+	if (pinfo) {
+		*pinfo = talloc_move(mem_ctx, &info);
+	}
 
-		/* this next bit is copied from net_user_list_internal() */
-
-		get_query_dispinfo_params(loop_count, &max_entries,
-					  &max_size);
-
-		result = rpccli_samr_QueryDisplayInfo(cli, mem_ctx,
-						      &dom_pol,
-						      1,
-						      start_idx,
-						      max_entries,
-						      max_size,
-						      &total_size,
-						      &returned_size,
-						      &disp_info);
-		num_dom_users = disp_info.info1.count;
-		start_idx += disp_info.info1.count;
-		loop_count++;
-
-		*num_entries += num_dom_users;
-
-		*info = TALLOC_REALLOC_ARRAY(mem_ctx, *info,
-					     struct wbint_userinfo,
-					     *num_entries);
-
-		if (!(*info)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		for (j = 0; j < num_dom_users; i++, j++) {
-
-			uint32_t rid = disp_info.info1.entries[j].rid;
-			struct samr_DispEntryGeneral *src;
-			struct wbint_userinfo *dst;
-
-			src = &(disp_info.info1.entries[j]);
-			dst = &((*info)[i]);
-
-			dst->acct_name = talloc_strdup(
-				mem_ctx, src->account_name.string);
-			dst->full_name = talloc_strdup(
-				mem_ctx, src->full_name.string);
-			dst->homedir = NULL;
-			dst->shell = NULL;
-			sid_compose(&dst->user_sid, &domain->sid, rid);
-
-			/* For the moment we set the primary group for
-			   every user to be the Domain Users group.
-			   There are serious problems with determining
-			   the actual primary group for large domains.
-			   This should really be made into a 'winbind
-			   force group' smb.conf parameter or
-			   something like that. */
-
-			sid_compose(&dst->group_sid, &domain->sid,
-				    DOMAIN_RID_USERS);
-		}
-
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-
-	return result;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* list all domain groups */
@@ -1303,7 +1263,7 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	False,
-	query_user_list,
+	msrpc_query_user_list,
 	msrpc_enum_dom_groups,
 	enum_local_groups,
 	msrpc_name_to_sid,
