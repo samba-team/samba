@@ -48,12 +48,13 @@ def build(bld):
     link_command = 'rm -rf blib && ln -fs blib %s' % blib_bld
     
     bld.SET_BUILD_GROUP('main')
-    for src, manpage in pidl_manpages.iteritems():
-        bld(rule='${PERL} ${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
-            shell=True,
-            source=src,
-            install_path=os.path.dirname(bld.EXPAND_VARIABLES('${MANDIR}/'+manpage)),
-            target=os.path.basename(manpage))
+    if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
+        for src, manpage in pidl_manpages.iteritems():
+            bld(rule='${PERL} ${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
+                shell=True,
+                source=src,
+                install_path=os.path.dirname(bld.EXPAND_VARIABLES('${MANDIR}/'+manpage)),
+                target=os.path.basename(manpage))
 
     # we want to prefer the git version of the parsers if we can. Only if the
     # source has changed do we want to re-run yapp
