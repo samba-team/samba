@@ -744,7 +744,7 @@ reply:
 				       &errstr);
 	}
 
-	modify_result = &modify_reply->msg->r.AddResponse;
+	modify_result = &modify_reply->msg->r.ModifyResponse;
 	modify_result->dn = NULL;
 
 	if (res->refs != NULL) {
