@@ -847,11 +847,73 @@ done:
  lookup a set of sids. 
 **********************************/
 
+struct idmap_tdb_sids_to_unixids_context {
+	struct idmap_domain *dom;
+	struct id_map **ids;
+	bool allocate_unmapped;
+};
+
+static NTSTATUS idmap_tdb_sids_to_unixids_action(struct db_context *db,
+						 void *private_data)
+{
+	struct idmap_tdb_sids_to_unixids_context *state;
+	int i;
+	NTSTATUS ret;
+
+	state = (struct idmap_tdb_sids_to_unixids_context *)private_data;
+
+	DEBUG(10, ("idmap_tdb_sids_to_unixids_action: "
+		   " domain: [%s], allocate: %s\n",
+		   state->dom->name,
+		   state->allocate_unmapped ? "yes" : "no"));
+
+	for (i = 0; state->ids[i]; i++) {
+		if ((state->ids[i]->status == ID_UNKNOWN) ||
+		    /* retry if we could not map in previous run: */
+		    (state->ids[i]->status == ID_UNMAPPED))
+		{
+			NTSTATUS ret2;
+
+			ret2 = idmap_tdb_sid_to_id(state->dom, state->ids[i]);
+			if (!NT_STATUS_IS_OK(ret2)) {
+
+				/* if it is just a failed mapping, continue */
+				if (NT_STATUS_EQUAL(ret2, NT_STATUS_NONE_MAPPED)) {
+
+					/* make sure it is marked as unmapped */
+					state->ids[i]->status = ID_UNMAPPED;
+					ret = STATUS_SOME_UNMAPPED;
+				} else {
+					/* some fatal error occurred, return immediately */
+					ret = ret2;
+					goto done;
+				}
+			} else {
+				/* all ok, id is mapped */
+				state->ids[i]->status = ID_MAPPED;
+			}
+		}
+
+		if ((state->ids[i]->status == ID_UNMAPPED) &&
+		    state->allocate_unmapped)
+		{
+			ret = idmap_tdb_new_mapping(state->dom, state->ids[i]);
+			if (!NT_STATUS_IS_OK(ret)) {
+				goto done;
+			}
+		}
+	}
+
+done:
+	return ret;
+}
+
 static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
 	int i;
+	struct idmap_tdb_sids_to_unixids_context state;
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
@@ -860,31 +922,22 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
-	for (i = 0; ids[i]; i++) {
-		ret = idmap_tdb_sid_to_id(dom, ids[i]);
-		if ( ! NT_STATUS_IS_OK(ret)) {
+	state.dom = dom;
+	state.ids = ids;
+	state.allocate_unmapped = false;
 
-			/* if it is just a failed mapping continue */
-			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
+	ret = idmap_tdb_sids_to_unixids_action(ctx->db, &state);
 
-				/* make sure it is marked as unmapped */
-				ids[i]->status = ID_UNMAPPED;
-				continue;
-			}
-			
-			/* some fatal error occurred, return immediately */
-			goto done;
-		}
-
-		/* all ok, id is mapped */
-		ids[i]->status = ID_MAPPED;
+	if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED) && !dom->read_only) {
+		state.allocate_unmapped = true;
+		ret = dbwrap_trans_do(ctx->db,
+				      idmap_tdb_sids_to_unixids_action,
+				      &state);
 	}
 
-	ret = NT_STATUS_OK;
-
-done:
 	return ret;
 }
+
 
 /**********************************
  Close the idmap tdb instance
