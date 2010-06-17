@@ -360,6 +360,8 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *search_req;
 	struct oc_context *ac;
 	struct ldb_dn *parent_dn;
+	const struct ldb_val *val;
+	char *value;
 	int ret;
 	static const char * const parent_attrs[] = { "objectGUID", "objectClass", NULL };
 
@@ -370,6 +372,30 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	/* An add operation on the root basedn has a special handling when the
+	 * relax control isn't specified. */
+	if (ldb_dn_compare(ldb_get_root_basedn(ldb), req->op.add.message->dn) == 0) {
+		if (ldb_request_get_control(req,
+					    LDB_CONTROL_RELAX_OID) == NULL) {
+			/* When we are trying to readd the root basedn then
+			 * this is denied, but with an interesting mechanism:
+			 * there is generated a referral with the last
+			 * component value as hostname. */
+			val = ldb_dn_get_component_val(req->op.add.message->dn,
+						       ldb_dn_get_comp_num(req->op.add.message->dn) - 1);
+			if (val == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			value = talloc_asprintf(req, "ldap://%s/%s", val->data,
+						ldb_dn_get_linearized(req->op.add.message->dn));
+			if (value == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			return ldb_module_send_referral(req, value);
+		}
 	}
 
 	/* the objectClass must be specified on add */
