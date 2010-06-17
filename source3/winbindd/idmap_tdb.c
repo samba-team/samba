@@ -474,16 +474,6 @@ static NTSTATUS idmap_tdb_get_new_id(struct idmap_domain *dom,
 	return ret;
 }
 
-/**********************************
- Close the alloc tdb 
-**********************************/
-
-static NTSTATUS idmap_tdb_alloc_close(void)
-{
-	TALLOC_FREE(idmap_alloc_db);
-	return NT_STATUS_OK;
-}
-
 /**********************************************************************
  IDMAP MAPPING TDB BACKEND
 **********************************************************************/
