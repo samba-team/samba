@@ -14,6 +14,7 @@
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Jeremy Allison 2006
    Copyright (C) Simo Sorce 2003-2006
+   Copyright (C) Michael Adam 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
