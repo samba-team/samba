@@ -317,6 +317,11 @@ failed:
 	return ret;
 }
 
+
+/**
+ * store a mapping in the database.
+ */
+
 struct idmap_tdb2_set_mapping_context {
 	const char *ksidstr;
 	const char *kidstr;
@@ -363,6 +368,63 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 
 done:
 	talloc_free(tmp_ctx);
+	return ret;
+}
+
+static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id_map *map)
+{
+	struct idmap_tdb2_context *ctx;
+	NTSTATUS ret;
+	char *ksidstr, *kidstr;
+	struct idmap_tdb2_set_mapping_context state;
+
+	if (!map || !map->sid) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ksidstr = kidstr = NULL;
+
+	/* TODO: should we filter a set_mapping using low/high filters ? */
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
+
+	switch (map->xid.type) {
+
+	case ID_TYPE_UID:
+		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		break;
+
+	case ID_TYPE_GID:
+		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		break;
+
+	default:
+		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (kidstr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ksidstr = sid_string_talloc(ctx, map->sid);
+	if (ksidstr == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state.ksidstr = ksidstr;
+	state.kidstr = kidstr;
+
+	ret = dbwrap_trans_do(ctx->db, idmap_tdb2_set_mapping_action,
+			      &state);
+
+done:
+	talloc_free(ksidstr);
+	talloc_free(kidstr);
 	return ret;
 }
 
@@ -775,67 +837,6 @@ static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_m
 	return ret;
 }
 
-
-/*
-  set a mapping. 
-*/
-
-static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id_map *map)
-{
-	struct idmap_tdb2_context *ctx;
-	NTSTATUS ret;
-	char *ksidstr, *kidstr;
-	struct idmap_tdb2_set_mapping_context state;
-
-	if (!map || !map->sid) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ksidstr = kidstr = NULL;
-
-	/* TODO: should we filter a set_mapping using low/high filters ? */
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
-
-	switch (map->xid.type) {
-
-	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
-		break;
-
-	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
-		break;
-
-	default:
-		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (kidstr == NULL) {
-		DEBUG(0, ("ERROR: Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	ksidstr = sid_string_talloc(ctx, map->sid);
-	if (ksidstr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	state.ksidstr = ksidstr;
-	state.kidstr = kidstr;
-
-	ret = dbwrap_trans_do(ctx->db, idmap_tdb2_set_mapping_action,
-			      &state);
-
-done:
-	talloc_free(ksidstr);
-	talloc_free(kidstr);
-	return ret;
-}
 
 /**
  * Create a new mapping for an unmapped SID, also allocating a new ID.
