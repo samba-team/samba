@@ -70,9 +70,6 @@ struct idmap_ldap_alloc_context {
 	char *url;
 	char *suffix;
 	char *user_dn;
-	uid_t low_uid, high_uid;      /* Range of uids */
-	gid_t low_gid, high_gid;      /* Range of gids */
-
 };
 
 #define CHECK_ALLOC_DONE(mem) do { \
