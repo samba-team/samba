@@ -47,4 +47,14 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			       uint32_t *pnum_info,
 			       struct acct_info **pinfo);
 
+/* Convert a single name to a sid in a domain */
+NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
+			 struct rpc_pipe_client *lsa_pipe,
+			 struct policy_handle *lsa_policy,
+			 const char *domain_name,
+			 const char *name,
+			 uint32_t flags,
+			 struct dom_sid *psid,
+			 enum lsa_SidType *ptype);
+
 #endif /* _WINBINDD_RPC_H_ */
