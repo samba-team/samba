@@ -153,7 +153,7 @@ done:
  Verify the sambaUnixIdPool entry in the directory.
 **********************************************************************/
 
-static NTSTATUS verify_idpool(void)
+static NTSTATUS verify_idpool(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	TALLOC_CTX *ctx;
@@ -209,9 +209,9 @@ static NTSTATUS verify_idpool(void)
 		char *uid_str, *gid_str;
 
 		uid_str = talloc_asprintf(ctx, "%lu",
-				(unsigned long)idmap_alloc_ldap->low_uid);
+				(unsigned long)dom->low_id);
 		gid_str = talloc_asprintf(ctx, "%lu",
-				(unsigned long)idmap_alloc_ldap->low_gid);
+				(unsigned long)dom->low_id);
 
 		smbldap_set_mod(&mods, LDAP_MOD_ADD,
 				"objectClass", LDAP_OBJ_IDPOOL);
@@ -244,14 +244,11 @@ done:
  Initialise idmap database.
 *****************************************************************************/
 
-static NTSTATUS idmap_ldap_alloc_init(const char *params)
+static NTSTATUS idmap_ldap_alloc_init(struct idmap_domain *dom,
+				      const char *params)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	const char *tmp;
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
 
 	/* Only do init if we are online */
 	if (idmap_is_offline())	{
@@ -260,34 +257,6 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 
 	idmap_alloc_ldap = TALLOC_ZERO_P(NULL, struct idmap_ldap_alloc_context);
         CHECK_ALLOC_DONE( idmap_alloc_ldap );
-
-	/* load ranges */
-
-	if (!lp_idmap_uid(&low_uid, &high_uid)
-	    || !lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap uid or idmap gid missing\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	idmap_alloc_ldap->low_uid = low_uid;
-	idmap_alloc_ldap->high_uid = high_uid;
-	idmap_alloc_ldap->low_gid = low_gid;
-	idmap_alloc_ldap->high_gid= high_gid;
-
-	if (idmap_alloc_ldap->high_uid <= idmap_alloc_ldap->low_uid) {
-		DEBUG(1, ("idmap uid range invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	if (idmap_alloc_ldap->high_gid <= idmap_alloc_ldap->low_gid) {
-		DEBUG(1, ("idmap gid range invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
 
 	if (params && *params) {
 		/* assume location is the only parameter */
@@ -343,7 +312,7 @@ static NTSTATUS idmap_ldap_alloc_init(const char *params)
 
 	/* see if the idmap suffix and sub entries exists */
 
-	ret = verify_idpool();
+	ret = verify_idpool(dom);
 
  done:
 	if ( !NT_STATUS_IS_OK( ret ) )
