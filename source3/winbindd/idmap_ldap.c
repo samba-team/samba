@@ -564,62 +564,14 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 	}
 
 	if (strequal(dom->name, "*")) {
-		uid_t low_uid = 0;
-		uid_t high_uid = 0;
-		gid_t low_gid = 0;
-		gid_t high_gid = 0;
-
-		ctx->filter_low_id = 0;
-		ctx->filter_high_id = 0;
-
-		if (lp_idmap_uid(&low_uid, &high_uid)) {
-			ctx->filter_low_id = low_uid;
-			ctx->filter_high_id = high_uid;
-		} else {
-			DEBUG(3, ("Warning: 'idmap uid' not set!\n"));
-		}
-
-		if (lp_idmap_gid(&low_gid, &high_gid)) {
-			if ((low_gid != low_uid) || (high_gid != high_uid)) {
-				DEBUG(1, ("Warning: 'idmap uid' and 'idmap gid'"
-				      " ranges do not agree -- building "
-				      "intersection\n"));
-				ctx->filter_low_id = MAX(ctx->filter_low_id,
-							 low_gid);
-				ctx->filter_high_id = MIN(ctx->filter_high_id,
-							  high_gid);
-			}
-		} else {
-			DEBUG(3, ("Warning: 'idmap gid' not set!\n"));
-		}
+		/* more specific configuration can go here */
 	} else {
-		const char *range = NULL;
-
 		config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
 		if ( ! config_option) {
 			DEBUG(0, ("Out of memory!\n"));
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-
-		/* load ranges */
-		range = lp_parm_const_string(-1, config_option, "range", NULL);
-		if (range && range[0]) {
-			if ((sscanf(range, "%u - %u", &ctx->filter_low_id,
-							&ctx->filter_high_id) != 2))
-			{
-				DEBUG(1, ("ERROR: invalid filter range [%s]", range));
-				ctx->filter_low_id = 0;
-				ctx->filter_high_id = 0;
-			}
-		}
-	}
-
-	if (ctx->filter_low_id > ctx->filter_high_id) {
-		DEBUG(1, ("ERROR: invalid filter range [%u-%u]",
-		      ctx->filter_low_id, ctx->filter_high_id));
-		ctx->filter_low_id = 0;
-		ctx->filter_high_id = 0;
 	}
 
 	if (params != NULL) {
