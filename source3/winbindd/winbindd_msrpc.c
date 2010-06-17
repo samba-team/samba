@@ -156,72 +156,61 @@ done:
 
 /* List all domain groups */
 
-static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
-				struct acct_info **info)
+static NTSTATUS msrpc_enum_local_groups(struct winbindd_domain *domain,
+					TALLOC_CTX *mem_ctx,
+					uint32_t *pnum_info,
+					struct acct_info **pinfo)
 {
+	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	NTSTATUS result;
-	struct rpc_pipe_client *cli;
+	struct acct_info *info = NULL;
+	uint32_t num_info = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	*num_entries = 0;
-	*info = NULL;
+	DEBUG(3,("msrpc_enum_local_groups\n"));
 
-	DEBUG(3,("rpc: enum_local_groups\n"));
+	if (pnum_info) {
+		*pnum_info = 0;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("enum_local_groups: No incoming trust for domain %s\n",
 			  domain->name));
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-	do {
-		struct samr_SamArray *sam_array = NULL;
-		uint32 count = 0, start = *num_entries;
-		TALLOC_CTX *mem_ctx2;
-		int g;
+	status = rpc_enum_local_groups(mem_ctx,
+				       samr_pipe,
+				       &dom_pol,
+				       &num_info,
+				       &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-		mem_ctx2 = talloc_init("enum_dom_local_groups[rpc]");
+	if (pnum_info) {
+		*pnum_info = num_info;
+	}
 
-		result = rpccli_samr_EnumDomainAliases(cli, mem_ctx2,
-						       &dom_pol,
-						       &start,
-						       &sam_array,
-						       0xFFFF, /* buffer size? */
-						       &count);
-		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES) )
-		{
-			talloc_destroy(mem_ctx2);
-			return result;
-		}
+	if (pinfo) {
+		*pinfo = talloc_move(mem_ctx, &info);
+	}
 
-		(*info) = TALLOC_REALLOC_ARRAY(mem_ctx, *info,
-					       struct acct_info,
-					       (*num_entries) + count);
-		if (! *info) {
-			talloc_destroy(mem_ctx2);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		for (g=0; g < count; g++) {
-
-			fstrcpy((*info)[*num_entries + g].acct_name,
-				sam_array->entries[g].name.string);
-			(*info)[*num_entries + g].rid = sam_array->entries[g].idx;
-		}
-
-		(*num_entries) += count;
-		talloc_destroy(mem_ctx2);
-
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-
-	return result;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* convert a single name to a sid in a domain */
@@ -1265,7 +1254,7 @@ struct winbindd_methods msrpc_methods = {
 	False,
 	msrpc_query_user_list,
 	msrpc_enum_dom_groups,
-	enum_local_groups,
+	msrpc_enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
 	msrpc_rids_to_names,
