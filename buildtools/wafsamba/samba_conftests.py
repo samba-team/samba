@@ -34,17 +34,19 @@ def CHECK_LARGEFILE(conf, define='HAVE_LARGEFILE'):
 
 
 @conf
-def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None):
+def CHECK_C_PROTOTYPE(conf, function, prototype, define, headers=None, msg=None):
     '''verify that a C prototype matches the one on the current system'''
     if not conf.CHECK_DECLS(function, headers=headers):
         return False
+    if not msg:
+        msg = 'Checking C prototype for %s' % function
     return conf.CHECK_CODE('%s; void *_x = (void *)%s' % (prototype, function),
                            define=define,
                            local_include=False,
                            headers=headers,
                            link=False,
                            execute=False,
-                           msg='Checking C prototype for %s' % function)
+                           msg=msg)
 
 
 @conf
