@@ -62,7 +62,6 @@ struct idmap_ldap_context {
 	char *url;
 	char *suffix;
 	char *user_dn;
-	uint32_t filter_low_id, filter_high_id;		/* Filter range */
 	bool anon;
 };
 
