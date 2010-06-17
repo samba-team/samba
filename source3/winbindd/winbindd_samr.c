@@ -25,6 +25,8 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "winbindd_rpc.h"
+
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/srv_samr.h"
@@ -180,12 +182,11 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
 	struct acct_info *info = NULL;
-	TALLOC_CTX *tmp_ctx;
-	uint32_t start = 0;
 	uint32_t num_info = 0;
+	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: query_user_list\n"));
+	DEBUG(3,("sam_enum_dom_groups\n"));
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -201,45 +202,14 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 		goto error;
 	}
 
-	do {
-		struct samr_SamArray *sam_array = NULL;
-		uint32_t count = 0;
-		uint32_t g;
-
-		/* start is updated by this call. */
-		status = rpccli_samr_EnumDomainGroups(samr_pipe,
-						      tmp_ctx,
-						      &dom_pol,
-						      &start,
-						      &sam_array,
-						      0xFFFF, /* buffer size? */
-						      &count);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				DEBUG(2,("query_user_list: failed to enum domain groups: %s\n",
-					 nt_errstr(status)));
-				goto error;
-			}
-		}
-
-		info = TALLOC_REALLOC_ARRAY(tmp_ctx,
-					    info,
-					    struct acct_info,
-					    num_info + count);
-		if (info == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-
-		for (g = 0; g < count; g++) {
-			fstrcpy(info[num_info + g].acct_name,
-				sam_array->entries[g].name.string);
-
-			info[num_info + g].rid = sam_array->entries[g].idx;
-		}
-
-		num_info += count;
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	status = rpc_enum_dom_groups(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     &num_info,
+				     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
 
 	if (pnum_info) {
 		*pnum_info = num_info;
