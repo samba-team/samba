@@ -712,13 +712,16 @@ done:
  Single sid to id lookup function. 
 **********************************/
 
-static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map *map)
+static NTSTATUS idmap_tdb_sid_to_id(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
+	struct idmap_tdb_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	keystr = sid_string_talloc(tmp_ctx, map->sid);
 	if (keystr == NULL) {
@@ -830,7 +833,7 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
-		ret = idmap_tdb_sid_to_id(ctx, ids[i]);
+		ret = idmap_tdb_sid_to_id(dom, ids[i]);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			/* if it is just a failed mapping continue */
