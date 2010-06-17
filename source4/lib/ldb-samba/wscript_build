@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-bld.SAMBA_LIBRARY('LDBSAMBA',
+bld.SAMBA_SUBSYSTEM('LDBSAMBA',
 	source='ldif_handlers.c ldb_wrap.c',
 	autoproto='ldif_handlers_proto.h',
 	public_deps='ldb',
