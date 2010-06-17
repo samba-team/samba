@@ -328,7 +328,8 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	}
 
 	ctx->db = talloc_move(ctx, &db);
-	ret = NT_STATUS_OK;
+
+	ret = idmap_tdb_init_hwm(dom);
 
 done:
 	talloc_free(mem_ctx);
