@@ -268,6 +268,11 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
+	if (ctx->db) {
+		/* it is already open */
+		return NT_STATUS_OK;
+	}
+
 	/* use our own context here */
 	mem_ctx = talloc_stackframe();
 
