@@ -231,16 +231,13 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				    struct wbint_userinfo **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
-	struct wbint_userinfo *info = NULL;
 	struct policy_handle dom_pol;
+	struct wbint_userinfo *info = NULL;
 	uint32_t num_info = 0;
-	uint32_t loop_count = 0;
-	uint32_t start_idx = 0;
-	uint32_t i = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: query_user_list\n"));
+	DEBUG(3,("samr_query_user_list\n"));
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -253,89 +250,18 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 
 	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	do {
-		uint32_t j;
-		uint32_t num_dom_users;
-		uint32_t max_entries, max_size;
-		uint32_t total_size, returned_size;
-		union samr_DispInfo disp_info;
-
-		get_query_dispinfo_params(loop_count,
-					  &max_entries,
-					  &max_size);
-
-		status = rpccli_samr_QueryDisplayInfo(samr_pipe,
-						      tmp_ctx,
-						      &dom_pol,
-						      1, /* level */
-						      start_idx,
-						      max_entries,
-						      max_size,
-						      &total_size,
-						      &returned_size,
-						      &disp_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				goto error;
-			}
-		}
-
-		/* increment required start query values */
-		start_idx += disp_info.info1.count;
-		loop_count++;
-		num_dom_users = disp_info.info1.count;
-
-		num_info += num_dom_users;
-
-		info = TALLOC_REALLOC_ARRAY(tmp_ctx,
-					    info,
-					    struct wbint_userinfo,
-					    num_info);
-		if (info == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-
-		for (j = 0; j < num_dom_users; i++, j++) {
-			uint32_t rid = disp_info.info1.entries[j].rid;
-			struct samr_DispEntryGeneral *src;
-			struct wbint_userinfo *dst;
-
-			src = &(disp_info.info1.entries[j]);
-			dst = &(info[i]);
-
-			dst->acct_name = talloc_strdup(info,
-						       src->account_name.string);
-			if (dst->acct_name == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto error;
-			}
-
-			dst->full_name = talloc_strdup(info, src->full_name.string);
-			if (dst->full_name == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto error;
-			}
-
-			dst->homedir = NULL;
-			dst->shell = NULL;
-
-			sid_compose(&dst->user_sid, &domain->sid, rid);
-
-			/* For the moment we set the primary group for
-			   every user to be the Domain Users group.
-			   There are serious problems with determining
-			   the actual primary group for large domains.
-			   This should really be made into a 'winbind
-			   force group' smb.conf parameter or
-			   something like that. */
-			sid_compose(&dst->group_sid, &domain->sid,
-				    DOMAIN_RID_USERS);
-		}
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	status = rpc_query_user_list(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     &domain->sid,
+				     &num_info,
+				     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	if (pnum_info) {
 		*pnum_info = num_info;
@@ -345,7 +271,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 		*pinfo = talloc_move(mem_ctx, &info);
 	}
 
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
