@@ -91,10 +91,6 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		return False;
 	}
 
-	prs_mem_free(&p->out_data.frag);
-	prs_mem_free(&p->out_data.rdata);
-	prs_mem_free(&p->in_data.data);
-
 	if (p->auth.auth_data_free_func) {
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}

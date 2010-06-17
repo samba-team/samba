@@ -1373,13 +1373,6 @@ struct rpc_api_pipe_state {
 	uint32_t incoming_pdu_offset;
 };
 
-static int rpc_api_pipe_state_destructor(struct rpc_api_pipe_state *state)
-{
-	prs_mem_free(&state->incoming_frag);
-	prs_mem_free(&state->incoming_pdu);
-	return 0;
-}
-
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq);
 static void rpc_api_pipe_got_pdu(struct tevent_req *subreq);
 
@@ -1408,8 +1401,6 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
 	/* Make incoming_pdu dynamic with no memory. */
 	prs_give_memory(&state->incoming_pdu, NULL, 0, true);
-
-	talloc_set_destructor(state, rpc_api_pipe_state_destructor);
 
 	/*
 	 * Ensure we're not sending too much.
@@ -1633,7 +1624,6 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 			error_message(ret) ));
 
 		data_blob_free(&tkt);
-		prs_mem_free(auth_data);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1645,7 +1635,6 @@ static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
 	/* Auth len in the rpc header doesn't include auth_header. */
 	if (!prs_copy_data_in(auth_data, (char *)tkt_wrapped.data, tkt_wrapped.length)) {
 		data_blob_free(&tkt_wrapped);
-		prs_mem_free(auth_data);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1683,7 +1672,6 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		data_blob_free(&request);
-		prs_mem_free(auth_data);
 		return nt_status;
 	}
 
@@ -1695,7 +1683,6 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 	/* Auth len in the rpc header doesn't include auth_header. */
 	if (!prs_copy_data_in(auth_data, (char *)spnego_msg.data, spnego_msg.length)) {
 		data_blob_free(&spnego_msg);
-		prs_mem_free(auth_data);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1729,14 +1716,12 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		data_blob_free(&request);
-		prs_mem_free(auth_data);
 		return nt_status;
 	}
 
 	/* Auth len in the rpc header doesn't include auth_header. */
 	if (!prs_copy_data_in(auth_data, (char *)request.data, request.length)) {
 		data_blob_free(&request);
-		prs_mem_free(auth_data);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1786,7 +1771,6 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));
-		prs_mem_free(auth_data);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
@@ -1796,7 +1780,6 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 
 	if (!prs_copy_data_in(auth_data, (const char *)blob.data, blob.length))
 	{
-		prs_mem_free(auth_data);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1909,7 +1892,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_SCHANNEL:
 			ret = create_schannel_auth_rpc_bind_req(cli, auth_level, &hdr_auth, &auth_info);
 			if (!NT_STATUS_IS_OK(ret)) {
-				prs_mem_free(&auth_info);
 				return ret;
 			}
 			break;
@@ -1917,7 +1899,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_NTLMSSP:
 			ret = create_ntlmssp_auth_rpc_bind_req(cli, auth_level, &hdr_auth, &auth_info);
 			if (!NT_STATUS_IS_OK(ret)) {
-				prs_mem_free(&auth_info);
 				return ret;
 			}
 			break;
@@ -1925,7 +1906,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli, auth_level, &hdr_auth, &auth_info);
 			if (!NT_STATUS_IS_OK(ret)) {
-				prs_mem_free(&auth_info);
 				return ret;
 			}
 			break;
@@ -1933,7 +1913,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_KRB5:
 			ret = create_krb5_auth_bind_req(cli, auth_level, &hdr_auth, &auth_info);
 			if (!NT_STATUS_IS_OK(ret)) {
-				prs_mem_free(&auth_info);
 				return ret;
 			}
 			break;
@@ -1954,7 +1933,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 						&hdr_auth,
 						&auth_info);
 
-	prs_mem_free(&auth_info);
 	return ret;
 }
 
@@ -2202,13 +2180,6 @@ struct rpc_api_pipe_req_state {
 	prs_struct reply_pdu;
 };
 
-static int rpc_api_pipe_req_state_destructor(struct rpc_api_pipe_req_state *s)
-{
-	prs_mem_free(&s->outgoing_frag);
-	prs_mem_free(&s->reply_pdu);
-	return 0;
-}
-
 static void rpc_api_pipe_req_write_done(struct tevent_req *subreq);
 static void rpc_api_pipe_req_done(struct tevent_req *subreq);
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
@@ -2250,8 +2221,6 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 		      state, MARSHALL)) {
 		goto fail;
 	}
-
-	talloc_set_destructor(state, rpc_api_pipe_req_state_destructor);
 
 	status = prepare_next_frag(state, &is_last_frag);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2623,7 +2592,6 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 
 	if (pauth_blob->length) {
 		if (!prs_copy_data_in(&auth_info, (const char *)pauth_blob->data, pauth_blob->length)) {
-			prs_mem_free(&auth_info);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -2635,7 +2603,6 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 						transfer,
 						&hdr_auth,
 						&auth_info);
-	prs_mem_free(&auth_info);
 	return ret;
 }
 
@@ -2649,12 +2616,6 @@ struct rpc_pipe_bind_state {
 	prs_struct rpc_out;
 	uint32_t rpc_call_id;
 };
-
-static int rpc_pipe_bind_state_destructor(struct rpc_pipe_bind_state *state)
-{
-	prs_mem_free(&state->rpc_out);
-	return 0;
-}
 
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
@@ -2692,7 +2653,6 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	state->rpc_call_id = get_rpc_call_id();
 
 	prs_init_empty(&state->rpc_out, state, MARSHALL);
-	talloc_set_destructor(state, rpc_pipe_bind_state_destructor);
 
 	cli->auth = talloc_move(cli, &auth);
 
@@ -2748,7 +2708,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	/* Unmarshall the RPC header */
 	if (!smb_io_rpc_hdr("hdr", &hdr, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
-		prs_mem_free(&reply_pdu);
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
@@ -2756,14 +2715,12 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	if (!smb_io_rpc_hdr_ba("", &hdr_ba, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: Failed to unmarshall "
 			  "RPC_HDR_BA.\n"));
-		prs_mem_free(&reply_pdu);
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
 	if (!check_bind_response(&hdr_ba, &state->cli->transfer_syntax)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
-		prs_mem_free(&reply_pdu);
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
@@ -2780,7 +2737,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	case PIPE_AUTH_TYPE_NONE:
 	case PIPE_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
-		prs_mem_free(&reply_pdu);
 		tevent_req_done(req);
 		break;
 
@@ -2788,7 +2744,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		/* Need to send AUTH3 packet - no reply. */
 		status = rpc_finish_auth3_bind_send(req, state, &hdr,
 						    &reply_pdu);
-		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 		}
@@ -2798,7 +2753,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		/* Need to send alter context request and reply. */
 		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &hdr,
 							     &reply_pdu);
-		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 		}
@@ -2810,7 +2764,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	default:
 		DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
 			 (unsigned int)state->cli->auth->auth_type));
-		prs_mem_free(&reply_pdu);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	}
 }
