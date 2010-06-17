@@ -414,23 +414,17 @@ static int objectclass_do_add(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *add_req;
-	char *value;
 	struct ldb_message_element *objectclass_element, *el;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
-	int ret;
+	const char *rdn_name = NULL;
+	char *value;
 	const struct dsdb_class *objectclass;
 	int32_t systemFlags = 0;
-	const char *rdn_name = NULL;
+	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
-
-	mem_ctx = talloc_new(ac);
-	if (mem_ctx == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 
@@ -438,33 +432,34 @@ static int objectclass_do_add(struct oc_context *ac)
 	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
 		if (ldb_dn_compare(ldb_get_root_basedn(ldb), msg->dn) == 0) {
-			/* Allow the tree to be started */
-			
-			/* but don't keep any error string, it's meaningless */
+			/* Allow the tree to be started but don't keep any
+			 * error strings - they're meaningless. */
 			ldb_set_errstring(ldb, NULL);
 		} else {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 	} else {
-
 		/* Fix up the DN to be in the standard form, taking
 		 * particular care to match the parent DN */
 		ret = fix_dn(msg, 
 			     ac->req->op.add.message->dn,
 			     ac->search_res->message->dn,
 			     &msg->dn);
-
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "objectclass: Could not munge DN %s into normal form",
 					       ldb_dn_get_linearized(ac->req->op.add.message->dn));
-			talloc_free(mem_ctx);
 			return ret;
 		}
-
 	}
+
+	mem_ctx = talloc_new(ac);
+	if (mem_ctx == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	if (ac->schema != NULL) {
 		/* This is now the objectClass list from the database */
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
