@@ -445,11 +445,7 @@ static NTSTATUS idmap_ldap_allocate_id(struct unixid *xid)
 	if ( ! (id_str = smbldap_talloc_single_attribute(idmap_alloc_ldap->smbldap_state->ldap_struct,
 				entry, type, ctx))) {
 		DEBUG(0,("%s attribute not found\n", type));
-		goto done;
-	}
-	if ( ! id_str) {
-		DEBUG(0,("Out of memory\n"));
-		ret = NT_STATUS_NO_MEMORY;
+		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
