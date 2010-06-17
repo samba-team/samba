@@ -714,24 +714,22 @@ done:
 }
 
 /* convert a single name to a sid in a domain */
-static NTSTATUS common_name_to_sid(struct winbindd_domain *domain,
+static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   const char *domain_name,
 				   const char *name,
 				   uint32_t flags,
-				   struct dom_sid *sid,
-				   enum lsa_SidType *type)
+				   struct dom_sid *psid,
+				   enum lsa_SidType *ptype)
 {
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy;
-	enum lsa_SidType *types = NULL;
-	struct dom_sid *sids = NULL;
-	char *full_name = NULL;
-	char *mapped_name = NULL;
+	struct dom_sid sid;
+	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: name to sid\n"));
+	DEBUG(3,("sam_name_to_sid\n"));
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -740,58 +738,29 @@ static NTSTATUS common_name_to_sid(struct winbindd_domain *domain,
 
 	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	if (name == NULL || name[0] == '\0') {
-		full_name = talloc_asprintf(tmp_ctx, "%s", domain_name);
-	} else if (domain_name == NULL || domain_name[0] == '\0') {
-		full_name = talloc_asprintf(tmp_ctx, "%s", name);
-	} else {
-		full_name = talloc_asprintf(tmp_ctx, "%s\\%s", domain_name, name);
-	}
-
-	if (full_name == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-	}
-
-	status = normalize_name_unmap(tmp_ctx, full_name, &mapped_name);
-	/* Reset the full_name pointer if we mapped anything */
-	if (NT_STATUS_IS_OK(status) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		full_name = mapped_name;
-	}
-
-	DEBUG(3,("name_to_sid: %s for domain %s\n",
-		 full_name ? full_name : "", domain_name ));
-
-	/*
-	 * We don't run into deadlocks here, cause winbind_off() is
-	 * called in the main function.
-	 */
-	status = rpccli_lsa_lookup_names(lsa_pipe,
-					 tmp_ctx,
-					 &lsa_policy,
-					 1, /* num_names */
-					 (const char **) &full_name,
-					 NULL, /* domains */
-					 1, /* level */
-					 &sids,
-					 &types);
+	status = rpc_name_to_sid(tmp_ctx,
+				 lsa_pipe,
+				 &lsa_policy,
+				 domain_name,
+				 name,
+				 flags,
+				 &sid,
+				 &type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("name_to_sid: failed to lookup name: %s\n",
-			nt_errstr(status)));
-		goto error;
+		goto done;
 	}
 
-	if (sid) {
-		sid_copy(sid, &sids[0]);
+	if (psid) {
+		sid_copy(psid, &sid);
 	}
-	if (type) {
-		*type = types[0];
+	if (ptype) {
+		*ptype = type;
 	}
 
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -1344,7 +1313,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.query_user_list       = builtin_query_user_list,
 	.enum_dom_groups       = builtin_enum_dom_groups,
 	.enum_local_groups     = sam_enum_local_groups,
-	.name_to_sid           = common_name_to_sid,
+	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = common_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
 	.query_user            = builtin_query_user,
@@ -1364,7 +1333,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.query_user_list       = sam_query_user_list,
 	.enum_dom_groups       = sam_enum_dom_groups,
 	.enum_local_groups     = sam_enum_local_groups,
-	.name_to_sid           = common_name_to_sid,
+	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = common_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
 	.query_user            = sam_query_user,
