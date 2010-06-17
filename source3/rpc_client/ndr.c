@@ -103,7 +103,6 @@ static void cli_do_rpc_ndr_done(struct tevent_req *subreq)
 
 	status = rpc_api_pipe_req_recv(subreq, state, &state->r_ps);
 	TALLOC_FREE(subreq);
-	prs_mem_free(&state->q_ps);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -126,7 +125,6 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	}
 
 	ret = prs_data_blob(&state->r_ps, &blob, talloc_tos());
-	prs_mem_free(&state->r_ps);
 	if (!ret) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -42,7 +42,9 @@ typedef struct _prs_struct {
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current allocated size of the buffer. */
 	uint32 grow_size; /* size requested via prs_grow() calls */
-	char *data_p; /* The buffer itself. */
+	/* The buffer itself. If "is_dynamic" is true this
+	 * MUST BE TALLOC'ed off mem_ctx. */
+	char *data_p;
 	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
 } prs_struct;
 

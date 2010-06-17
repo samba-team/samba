@@ -237,24 +237,29 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 }
 
 /****************************************************************************
- Call this to free any talloc'ed memory. Do this before and after processing
- a complete PDU.
+  Call this to free any talloc'ed memory. Do this after processing
+  a complete incoming and outgoing request (multiple incoming/outgoing
+  PDU's).
 ****************************************************************************/
 
 static void free_pipe_context(pipes_struct *p)
 {
-	if (p->mem_ctx) {
-		DEBUG(3, ("free_pipe_context: "
-			  "destroying talloc pool of size %lu\n",
-			  (unsigned long)talloc_total_size(p->mem_ctx)));
-		talloc_free_children(p->mem_ctx);
-	} else {
-		p->mem_ctx = talloc_named(p, 0, "pipe %s %p",
-				    get_pipe_name_from_syntax(talloc_tos(),
-							      &p->syntax), p);
-		if (p->mem_ctx == NULL) {
-			p->fault_state = True;
-		}
+	prs_mem_free(&p->out_data.frag);
+	prs_mem_free(&p->out_data.rdata);
+	prs_mem_free(&p->in_data.data);
+
+	DEBUG(3, ("free_pipe_context: "
+		"destroying talloc pool of size %lu\n",
+		(unsigned long)talloc_total_size(p->mem_ctx)));
+	talloc_free_children(p->mem_ctx);
+	/*
+	 * Re-initialize to set back to marshalling and set the
+	 * offset back to the start of the buffer.
+	 */
+	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
+		DEBUG(0, ("free_pipe_context: "
+			  "rps_init failed!\n"));
+		p->fault_state = True;
 	}
 }
 
@@ -399,24 +404,10 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		 * Process the complete data stream here.
 		 */
 
-		free_pipe_context(p);
-
 		if(pipe_init_outgoing_data(p)) {
 			ret = api_pipe_request(p);
 		}
 
-		free_pipe_context(p);
-
-		/*
-		 * We have consumed the whole data stream. Set back to
-		 * marshalling and set the offset back to the start of
-		 * the buffer to re-use it (we could also do a prs_mem_free()
-		 * and then re_init on the next start of PDU. Not sure which
-		 * is best here.... JRA.
-		 */
-
-		prs_switch_type(&p->in_data.data, MARSHALL);
-		prs_set_offset(&p->in_data.data, 0);
 		return ret;
 	}
 
@@ -868,6 +859,16 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		p->out_data.current_pdu_sent = 0;
 		prs_mem_free(&p->out_data.frag);
 	}
+
+	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
+		/*
+		 * We're completely finished with both outgoing and
+		 * incoming data streams. It's safe to free all temporary
+		 * data from this request.
+		 */
+		free_pipe_context(p);
+	}
+
 	return data_returned;
 }
 

@@ -1453,7 +1453,6 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t *rdata = NULL;
 	uint32_t rdata_len = 0;
-	char *rdata_copy;
 
 	status = cli_api_pipe_recv(subreq, state, &rdata, &rdata_len);
 	TALLOC_FREE(subreq);
@@ -1471,16 +1470,11 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 	}
 
 	/*
-	 * Give the memory received from cli_trans as dynamic to the current
-	 * pdu. Duplicating it sucks, but prs_struct doesn't know about talloc
-	 * :-(
+	 * This is equivalent to a talloc_steal - gives rdata to
+	 * the prs_struct state->incoming_frag.
 	 */
-	rdata_copy = (char *)memdup(rdata, rdata_len);
-	TALLOC_FREE(rdata);
-	if (tevent_req_nomem(rdata_copy, req)) {
-		return;
-	}
-	prs_give_memory(&state->incoming_frag, rdata_copy, rdata_len, true);
+	prs_give_memory(&state->incoming_frag, (char *)rdata, rdata_len, true);
+	rdata = NULL;
 
 	/* Ensure we have enough data for a pdu. */
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
@@ -1597,9 +1591,10 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	reply_pdu->mem_ctx = mem_ctx;
 
 	/*
-	 * Prevent state->incoming_pdu from being freed in
-	 * rpc_api_pipe_state_destructor()
+	 * Prevent state->incoming_pdu from being freed
+	 * when state is freed.
 	 */
+	talloc_steal(mem_ctx, prs_data_p(reply_pdu));
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
 
 	return NT_STATUS_OK;
@@ -2458,9 +2453,10 @@ NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	reply_pdu->mem_ctx = mem_ctx;
 
 	/*
-	 * Prevent state->req_pdu from being freed in
-	 * rpc_api_pipe_req_state_destructor()
+	 * Prevent state->req_pdu from being freed
+	 * when state is freed.
 	 */
+	talloc_steal(mem_ctx, prs_data_p(reply_pdu));
 	prs_init_empty(&state->reply_pdu, state, UNMARSHALL);
 
 	return NT_STATUS_OK;

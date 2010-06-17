@@ -93,7 +93,7 @@ void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
  * Initialise an expandable parse structure.
  *
  * @param size Initial buffer size.  If >0, a new buffer will be
- * created with malloc().
+ * created with talloc().
  *
  * @return False if allocation fails, otherwise True.
  **/
@@ -112,11 +112,11 @@ bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io)
 
 	if (size != 0) {
 		ps->buffer_size = size;
-		if((ps->data_p = (char *)SMB_MALLOC((size_t)size)) == NULL) {
-			DEBUG(0,("prs_init: malloc fail for %u bytes.\n", (unsigned int)size));
+		ps->data_p = talloc_zero_size(ps->mem_ctx, size);
+		if(ps->data_p == NULL) {
+			DEBUG(0,("prs_init: talloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
 		}
-		memset(ps->data_p, '\0', (size_t)size);
 		ps->is_dynamic = True; /* We own this memory. */
 	} else if (MARSHALLING(ps)) {
 		/* If size is zero and we're marshalling we should allocate memory on demand. */
@@ -130,14 +130,18 @@ bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io)
  Delete the memory in a parse structure - if we own it.
 
  NOTE: Contrary to the somewhat confusing naming, this function is not
-       intended for freeing memory allocated by prs_alloc_mem().  That memory
-       is attached to the talloc context given by ps->mem_ctx.
+       intended for freeing memory allocated by prs_alloc_mem().
+       That memory is also attached to the talloc context given by
+       ps->mem_ctx, but is only freed when that talloc context is
+       freed. prs_mem_free() is used to delete "dynamic" memory
+       allocated in marshalling/unmarshalling.
  ********************************************************************/
 
 void prs_mem_free(prs_struct *ps)
 {
-	if(ps->is_dynamic)
-		SAFE_FREE(ps->data_p);
+	if(ps->is_dynamic) {
+		TALLOC_FREE(ps->data_p);
+	}
 	ps->is_dynamic = False;
 	ps->buffer_size = 0;
 	ps->data_offset = 0;
@@ -184,11 +188,17 @@ TALLOC_CTX *prs_get_mem_context(prs_struct *ps)
 
 /*******************************************************************
  Hand some already allocated memory to a prs_struct.
+ If "is_dynamic" is true, this is a talloc_steal.
+ If "is_dynamic" is false, just make ps->data_p a pointer to
+ the unwritable memory.
  ********************************************************************/
 
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic)
 {
 	ps->is_dynamic = is_dynamic;
+	if (ps->is_dynamic && buf) {
+		talloc_steal(ps->mem_ctx, buf);
+	}
 	ps->data_p = buf;
 	ps->buffer_size = size;
 }
@@ -207,14 +217,16 @@ bool prs_set_buffer_size(prs_struct *ps, uint32 newsize)
 
 		/* newsize == 0 acts as a free and set pointer to NULL */
 		if (newsize == 0) {
-			SAFE_FREE(ps->data_p);
+			TALLOC_FREE(ps->data_p);
 		} else {
-			ps->data_p = (char *)SMB_REALLOC(ps->data_p, newsize);
+			ps->data_p = talloc_realloc(ps->mem_ctx,
+						ps->data_p,
+						char,
+						newsize);
 
 			if (ps->data_p == NULL) {
 				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
 					(unsigned int)newsize));
-				DEBUG(0,("prs_set_buffer_size: Reason %s\n",strerror(errno)));
 				return False;
 			}
 		}
@@ -261,11 +273,11 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 		 */
 		new_size = MAX(128, extra_space);
 
-		if((ps->data_p = (char *)SMB_MALLOC(new_size)) == NULL) {
-			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
+		ps->data_p = (char *)talloc_zero_size(ps->mem_ctx, new_size);
+		if(ps->data_p == NULL) {
+			DEBUG(0,("prs_grow: talloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
-		memset(ps->data_p, '\0', (size_t)new_size );
 	} else {
 		/*
 		 * If the current buffer size is bigger than the space needed,
@@ -276,7 +288,11 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 		new_size = MAX(ps->buffer_size*2,
 			       ps->buffer_size + extra_space + 64);
 
-		if ((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+		ps->data_p = talloc_realloc(ps->mem_ctx,
+						ps->data_p,
+						char,
+						new_size);
+		if (ps->data_p == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
@@ -305,7 +321,11 @@ bool prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	if((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
+	ps->data_p = (char *)talloc_realloc(ps->mem_ctx,
+					ps->data_p,
+					char,
+					new_size);
+	if(ps->data_p == NULL) {
 		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
 			(unsigned int)new_size));
 		return False;
