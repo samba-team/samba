@@ -650,10 +650,9 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_domain *dom, struct id_map *map
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	/* apply filters before checking */
-	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
-	    (ctx->filter_high_id && (map->xid.id > ctx->filter_high_id))) {
+	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				map->xid.id, ctx->filter_low_id, ctx->filter_high_id));
+				map->xid.id, dom->low_id, dom->high_id));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -760,10 +759,9 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_domain *dom, struct id_map *map
 	}
 
 	/* apply filters before returning result */
-	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
-	    (ctx->filter_high_id && (map->xid.id > ctx->filter_high_id))) {
+	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				map->xid.id, ctx->filter_low_id, ctx->filter_high_id));
+				map->xid.id, dom->low_id, dom->high_id));
 		ret = NT_STATUS_NONE_MAPPED;
 	}
 
