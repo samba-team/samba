@@ -206,41 +206,6 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	return True;
 }
 
-static NTSTATUS idmap_tdb_load_ranges(void)
-{
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
-
-	if (!lp_idmap_uid(&low_uid, &high_uid)) {
-		DEBUG(1, ("idmap uid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap gid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	idmap_tdb_state.low_uid = low_uid;
-	idmap_tdb_state.high_uid = high_uid;
-	idmap_tdb_state.low_gid = low_gid;
-	idmap_tdb_state.high_gid = high_gid;
-
-	if (idmap_tdb_state.high_uid <= idmap_tdb_state.low_uid) {
-		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (idmap_tdb_state.high_gid <= idmap_tdb_state.low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
