@@ -325,7 +325,8 @@ static NTSTATUS idmap_ldap_alloc_init(struct idmap_domain *dom,
  Allocate a new uid or gid
 ********************************/
 
-static NTSTATUS idmap_ldap_allocate_id(struct unixid *xid)
+static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
+				       struct unixid *xid)
 {
 	TALLOC_CTX *ctx;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -424,17 +425,17 @@ static NTSTATUS idmap_ldap_allocate_id(struct unixid *xid)
 
 	switch (xid->type) {
 	case ID_TYPE_UID:
-		if (xid->id > idmap_alloc_ldap->high_uid) {
+		if (xid->id > dom->high_id) {
 			DEBUG(0,("Cannot allocate uid above %lu!\n",
-				 (unsigned long)idmap_alloc_ldap->high_uid));
+				 (unsigned long)dom->high_id));
 			goto done;
 		}
 		break;
 
 	case ID_TYPE_GID:
-		if (xid->id > idmap_alloc_ldap->high_gid) {
+		if (xid->id > dom->high_id) {
 			DEBUG(0,("Cannot allocate gid above %lu!\n",
-				 (unsigned long)idmap_alloc_ldap->high_uid));
+				 (unsigned long)dom->high_id));
 			goto done;
 		}
 		break;
