@@ -1695,8 +1695,9 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 		if (r->in.addresses[i].size < sizeof(sa_family_t)) {
 			continue;
 		}
-		/* the first two byte of the buffer are the "sin_family" */
-		sin_family = (sa_family_t) *r->in.addresses[i].buffer;
+		/* The first two byte of the buffer are reserved for the
+		 * "sin_family" but for now only the first one is used. */
+		sin_family = r->in.addresses[i].buffer[0];
 
 		switch (sin_family) {
 		case AF_INET:
