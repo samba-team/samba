@@ -57,4 +57,14 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 			 struct dom_sid *psid,
 			 enum lsa_SidType *ptype);
 
+/* Convert a domain SID to a user or group name */
+NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
+			 struct rpc_pipe_client *lsa_pipe,
+			 struct policy_handle *lsa_policy,
+			 struct winbindd_domain *domain,
+			 const struct dom_sid *sid,
+			 char **pdomain_name,
+			 char **pname,
+			 enum lsa_SidType *ptype);
+
 #endif /* _WINBINDD_RPC_H_ */

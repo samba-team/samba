@@ -310,3 +310,59 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/* Convert a domain SID to a user or group name */
+NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
+			 struct rpc_pipe_client *lsa_pipe,
+			 struct policy_handle *lsa_policy,
+			 struct winbindd_domain *domain,
+			 const struct dom_sid *sid,
+			 char **pdomain_name,
+			 char **pname,
+			 enum lsa_SidType *ptype)
+{
+	char *mapped_name = NULL;
+	char **domains = NULL;
+	char **names = NULL;
+	enum lsa_SidType *types = NULL;
+	NTSTATUS map_status;
+	NTSTATUS status;
+
+	status = rpccli_lsa_lookup_sids(lsa_pipe,
+					mem_ctx,
+					lsa_policy,
+					1, /* num_sids */
+					sid,
+					&domains,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("sid_to_name: failed to lookup sids: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	*ptype = (enum lsa_SidType) types[0];
+
+	map_status = normalize_name_map(mem_ctx,
+					domain,
+					*pname,
+					&mapped_name);
+	if (NT_STATUS_IS_OK(map_status) ||
+	    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
+		*pname = talloc_strdup(mem_ctx, mapped_name);
+		DEBUG(5,("returning mapped name -- %s\n", *pname));
+	} else {
+		*pname = talloc_strdup(mem_ctx, names[0]);
+	}
+	if (*pname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*pdomain_name = talloc_strdup(mem_ctx, domains[0]);
+	if (*pdomain_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
