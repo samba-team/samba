@@ -170,11 +170,8 @@ char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 }
 
 /*****************************************************************
- Essentially a renamed dom_sid_string from librpc/ndr with a
- panic if it didn't work
-
- This introduces a dependency on librpc/ndr/sid.o which can easily
- be turned around if necessary
+ Essentially a renamed dom_sid_string from
+ ../libcli/security/dom_sid.c with a panic if it didn't work.
 *****************************************************************/
 
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
