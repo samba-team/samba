@@ -41,14 +41,6 @@ struct idmap_tdb_context {
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
 
-static struct idmap_tdb_state {
-
-	/* User and group id pool */
-	uid_t low_uid, high_uid;               /* Range of uids to allocate */
-	gid_t low_gid, high_gid;               /* Range of gids to allocate */
-
-} idmap_tdb_state;
-
 struct convert_fn_state {
 	struct db_context *db;
 	bool failed;
