@@ -734,14 +734,53 @@ done:
  set a mapping.
 **********************************/
 
+struct idmap_tdb_set_mapping_context {
+	const char *ksidstr;
+	const char *kidstr;
+};
+
+static NTSTATUS idmap_tdb_set_mapping_action(struct db_context *db,
+					     void *private_data)
+{
+	NTSTATUS ret;
+	struct idmap_tdb_set_mapping_context *state;
+
+	state = (struct idmap_tdb_set_mapping_context *)private_data;
+
+	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
+
+	ret = dbwrap_store_bystring(db, state->ksidstr,
+				    string_term_tdb_data(state->kidstr),
+				    TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing SID -> ID (%s -> %s): %s\n",
+			  state->ksidstr, state->kidstr, nt_errstr(ret)));
+		goto done;
+	}
+
+	ret = dbwrap_store_bystring(db, state->kidstr,
+				    string_term_tdb_data(state->ksidstr),
+				    TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing ID -> SID (%s -> %s): %s\n",
+			  state->kidstr, state->ksidstr, nt_errstr(ret)));
+		goto done;
+	}
+
+	DEBUG(10,("Stored %s <-> %s\n", state->ksidstr, state->kidstr));
+	ret = NT_STATUS_OK;
+
+done:
+	return ret;
+}
+
 static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
 				      const struct id_map *map)
 {
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
-	TDB_DATA ksid, kid;
 	char *ksidstr, *kidstr;
-	fstring tmp;
+	struct idmap_tdb_set_mapping_context state;
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -776,48 +815,17 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
 		goto done;
 	}
 
-	if ((ksidstr = talloc_asprintf(
-		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
+	ksidstr = sid_string_talloc(ctx, map->sid);
+	if (ksidstr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	DEBUG(10, ("Storing %s <-> %s map\n", ksidstr, kidstr));
-	kid = string_term_tdb_data(kidstr);
-	ksid = string_term_tdb_data(ksidstr);
+	state.ksidstr = ksidstr;
+	state.kidstr = kidstr;
 
-	if (ctx->db->transaction_start(ctx->db) != 0) {
-		DEBUG(0, ("Failed to start transaction for %s\n",
-			  ksidstr));
-		ret = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
-	ret = dbwrap_store(ctx->db, ksid, kid, TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(ret)) {
-		ctx->db->transaction_cancel(ctx->db);
-		DEBUG(0, ("Error storing SID -> ID (%s -> %s): %s\n",
-			  ksidstr, kidstr, nt_errstr(ret)));
-		goto done;
-	}
-	ret = dbwrap_store(ctx->db, kid, ksid, TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(ret)) {
-		ctx->db->transaction_cancel(ctx->db);
-		DEBUG(0, ("Error storing ID -> SID (%s -> %s): %s\n",
-			  kidstr, ksidstr, nt_errstr(ret)));
-		goto done;
-	}
-
-	if (ctx->db->transaction_commit(ctx->db) != 0) {
-		DEBUG(0, ("Failed to commit transaction for (%s -> %s)\n",
-			  ksidstr, kidstr));
-		ret = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
-	DEBUG(10,("Stored %s <-> %s\n", ksidstr, kidstr));
-	ret = NT_STATUS_OK;
+	ret = dbwrap_trans_do(ctx->db, idmap_tdb_set_mapping_action, &state);
 
 done:
 	talloc_free(ksidstr);
