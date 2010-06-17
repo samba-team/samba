@@ -2476,12 +2476,14 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 						     "didn't return default site");
 		}
 		for (i = 3; i < 6; i++) {
-/* Windows returns "NULL" for the sitename if it isn't IPv6 configured
-			torture_assert_casestr_equal(tctx,
-						     ctr->sitename[i].string,
-						     samdb_server_site_name(sam_ctx, tctx),
-						     "didn't return default site");
-*/
+			/* Windows returns "NULL" for the sitename if it isn't
+			 * IPv6 configured */
+			if (torture_setting_bool(tctx, "samba4", false)) {
+				torture_assert_casestr_equal(tctx,
+							     ctr->sitename[i].string,
+							     samdb_server_site_name(sam_ctx, tctx),
+							     "didn't return default site");
+			}
 		}
 	}
 
@@ -2653,12 +2655,14 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 				       "subnet should be null");
 		}
 		for (i = 3; i < 6; i++) {
-/* Windows returns "NULL" for the sitename if it isn't IPv6 configured
-			torture_assert_casestr_equal(tctx,
-						     ctr->sitename[i].string,
-						     samdb_server_site_name(sam_ctx, tctx),
-						     "didn't return default site");
-*/
+			/* Windows returns "NULL" for the sitename if it isn't
+			 * IPv6 configured */
+			if (torture_setting_bool(tctx, "samba4", false)) {
+				torture_assert_casestr_equal(tctx,
+							     ctr->sitename[i].string,
+							     samdb_server_site_name(sam_ctx, tctx),
+							     "didn't return default site");
+			}
 			torture_assert(tctx, ctr->subnetname[i].string == NULL,
 				       "subnet should be null");
 		}
