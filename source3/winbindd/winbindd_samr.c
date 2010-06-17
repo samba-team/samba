@@ -766,24 +766,35 @@ done:
 }
 
 /* convert a domain SID to a user or group name */
-static NTSTATUS common_sid_to_name(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx,
-				   const struct dom_sid *sid,
-				   char **domain_name,
-				   char **name,
-				   enum lsa_SidType *type)
+static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *sid,
+				char **pdomain_name,
+				char **pname,
+				enum lsa_SidType *ptype)
 {
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy;
-	char *mapped_name = NULL;
-	char **domains = NULL;
-	char **names = NULL;
-	enum lsa_SidType *types = NULL;
+	char *domain_name = NULL;
+	char *name = NULL;
+	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS map_status;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: sid to name\n"));
+	DEBUG(3,("sam_sid_to_name\n"));
+
+	/* Paranoia check */
+	if (!sid_check_is_in_builtin(sid) &&
+	    !sid_check_is_in_our_domain(sid) &&
+	    !sid_check_is_in_unix_users(sid) &&
+	    !sid_check_is_unix_users(sid) &&
+	    !sid_check_is_in_unix_groups(sid) &&
+	    !sid_check_is_unix_groups(sid) &&
+	    !sid_check_is_in_wellknown_domain(sid)) {
+		DEBUG(0, ("sam_sid_to_name: possible deadlock - trying to "
+			  "lookup SID %s\n", sid_string_dbg(sid)));
+		return NT_STATUS_NONE_MAPPED;
+	}
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -792,58 +803,31 @@ static NTSTATUS common_sid_to_name(struct winbindd_domain *domain,
 
 	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	/*
-	 * We don't run into deadlocks here, cause winbind_off() is called in
-	 * the main function.
-	 */
-	status = rpccli_lsa_lookup_sids(lsa_pipe,
-					tmp_ctx,
-					&lsa_policy,
-					1, /* num_sids */
-					sid,
-					&domains,
-					&names,
-					&types);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("sid_to_name: failed to lookup sids: %s\n",
-			nt_errstr(status)));
-		goto error;
+	status = rpc_sid_to_name(tmp_ctx,
+				 lsa_pipe,
+				 &lsa_policy,
+				 domain,
+				 sid,
+				 &domain_name,
+				 &name,
+				 &type);
+
+	if (ptype) {
+		*ptype = type;
 	}
 
-	if (type) {
-		*type = (enum lsa_SidType) types[0];
+	if (pname) {
+		*pname = talloc_move(mem_ctx, &name);
 	}
 
-	if (name) {
-		map_status = normalize_name_map(tmp_ctx,
-						domain,
-						*name,
-						&mapped_name);
-		if (NT_STATUS_IS_OK(map_status) ||
-		    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
-			*name = talloc_strdup(mem_ctx, mapped_name);
-			DEBUG(5,("returning mapped name -- %s\n", *name));
-		} else {
-			*name = talloc_strdup(mem_ctx, names[0]);
-		}
-		if (*name == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
+	if (pdomain_name) {
+		*pdomain_name = talloc_move(mem_ctx, &domain_name);
 	}
 
-	if (domain_name) {
-		*domain_name = talloc_strdup(mem_ctx, domains[0]);
-		if (*domain_name == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-	}
-
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -1314,7 +1298,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.enum_dom_groups       = builtin_enum_dom_groups,
 	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = sam_name_to_sid,
-	.sid_to_name           = common_sid_to_name,
+	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
 	.query_user            = builtin_query_user,
 	.lookup_usergroups     = common_lookup_usergroups,
@@ -1334,7 +1318,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.enum_dom_groups       = sam_enum_dom_groups,
 	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = sam_name_to_sid,
-	.sid_to_name           = common_sid_to_name,
+	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
 	.query_user            = sam_query_user,
 	.lookup_usergroups     = common_lookup_usergroups,
