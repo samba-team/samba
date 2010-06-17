@@ -15,6 +15,7 @@ def configure(conf):
 
     # yapp is used for building the parser
     conf.find_program('yapp', var='YAPP')
+    conf.find_program('pod2man', var='POD2MAN')
 
 def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'pidl', chmod=0755)
@@ -48,7 +49,7 @@ def build(bld):
     
     bld.SET_BUILD_GROUP('main')
     for src, manpage in pidl_manpages.iteritems():
-        bld(rule='pod2man -c "Samba Documentation" ${SRC} ${TGT}', 
+        bld(rule='${PERL} ${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
             shell=True,
             source=src,
             install_path=os.path.dirname(bld.EXPAND_VARIABLES('${MANDIR}/'+manpage)),
