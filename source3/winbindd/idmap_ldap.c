@@ -497,6 +497,31 @@ done:
 	return ret;
 }
 
+/**
+ * Allocate a new unix-ID.
+ * For now this is for the default idmap domain only.
+ * Should be extended later on.
+ */
+static NTSTATUS idmap_ldap_get_new_id(struct idmap_domain *dom,
+				      struct unixid *id)
+{
+	NTSTATUS ret;
+
+	if (!strequal(dom->name, "*")) {
+		DEBUG(3, ("idmap_ldap_get_new_id: "
+			  "Refusing allocation of a new unixid for domain'%s'. "
+			  "Currently only supported for the default "
+			  "domain \"*\".\n",
+			   dom->name));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ret = idmap_ldap_allocate_id(dom, id);
+
+	return ret;
+}
+
+
 /**********************************************************************
  IDMAP MAPPING LDAP BACKEND
 **********************************************************************/
