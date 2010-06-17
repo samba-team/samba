@@ -266,7 +266,7 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 	p.mem_ctx = talloc_stackframe();
 	p.in_data.data.buffer_size = state->request->extra_len;
 	p.in_data.data.data_p = state->request->extra_data.data;
-	prs_init(&p.out_data.rdata, 0, state->mem_ctx, false);
+	prs_init(&p.out_data.rdata, 0, state->mem_ctx, MARSHALL);
 
 	ret = fns[state->request->data.ndrcmd].fn(&p);
 	TALLOC_FREE(p.mem_ctx);
