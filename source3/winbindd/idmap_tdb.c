@@ -506,6 +506,110 @@ failed:
 	return ret;
 }
 
+
+/**
+ * store a mapping in the database
+ */
+
+struct idmap_tdb_set_mapping_context {
+	const char *ksidstr;
+	const char *kidstr;
+};
+
+static NTSTATUS idmap_tdb_set_mapping_action(struct db_context *db,
+					     void *private_data)
+{
+	NTSTATUS ret;
+	struct idmap_tdb_set_mapping_context *state;
+
+	state = (struct idmap_tdb_set_mapping_context *)private_data;
+
+	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
+
+	ret = dbwrap_store_bystring(db, state->ksidstr,
+				    string_term_tdb_data(state->kidstr),
+				    TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing SID -> ID (%s -> %s): %s\n",
+			  state->ksidstr, state->kidstr, nt_errstr(ret)));
+		goto done;
+	}
+
+	ret = dbwrap_store_bystring(db, state->kidstr,
+				    string_term_tdb_data(state->ksidstr),
+				    TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing ID -> SID (%s -> %s): %s\n",
+			  state->kidstr, state->ksidstr, nt_errstr(ret)));
+		goto done;
+	}
+
+	DEBUG(10,("Stored %s <-> %s\n", state->ksidstr, state->kidstr));
+	ret = NT_STATUS_OK;
+
+done:
+	return ret;
+}
+
+static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
+				      const struct id_map *map)
+{
+	struct idmap_tdb_context *ctx;
+	NTSTATUS ret;
+	char *ksidstr, *kidstr;
+	struct idmap_tdb_set_mapping_context state;
+
+	if (!map || !map->sid) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ksidstr = kidstr = NULL;
+
+	/* TODO: should we filter a set_mapping using low/high filters ? */
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
+
+	switch (map->xid.type) {
+
+	case ID_TYPE_UID:
+		kidstr = talloc_asprintf(ctx, "UID %lu",
+					 (unsigned long)map->xid.id);
+		break;
+
+	case ID_TYPE_GID:
+		kidstr = talloc_asprintf(ctx, "GID %lu",
+					 (unsigned long)map->xid.id);
+		break;
+
+	default:
+		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (kidstr == NULL) {
+		DEBUG(0, ("ERROR: Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ksidstr = sid_string_talloc(ctx, map->sid);
+	if (ksidstr == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state.ksidstr = ksidstr;
+	state.kidstr = kidstr;
+
+	ret = dbwrap_trans_do(ctx->db, idmap_tdb_set_mapping_action, &state);
+
+done:
+	talloc_free(ksidstr);
+	talloc_free(kidstr);
+	return ret;
+}
+
 /**********************************
  Single id to sid lookup function. 
 **********************************/
@@ -727,109 +831,6 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	ret = NT_STATUS_OK;
 
 done:
-	return ret;
-}
-
-/**********************************
- set a mapping.
-**********************************/
-
-struct idmap_tdb_set_mapping_context {
-	const char *ksidstr;
-	const char *kidstr;
-};
-
-static NTSTATUS idmap_tdb_set_mapping_action(struct db_context *db,
-					     void *private_data)
-{
-	NTSTATUS ret;
-	struct idmap_tdb_set_mapping_context *state;
-
-	state = (struct idmap_tdb_set_mapping_context *)private_data;
-
-	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
-
-	ret = dbwrap_store_bystring(db, state->ksidstr,
-				    string_term_tdb_data(state->kidstr),
-				    TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Error storing SID -> ID (%s -> %s): %s\n",
-			  state->ksidstr, state->kidstr, nt_errstr(ret)));
-		goto done;
-	}
-
-	ret = dbwrap_store_bystring(db, state->kidstr,
-				    string_term_tdb_data(state->ksidstr),
-				    TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Error storing ID -> SID (%s -> %s): %s\n",
-			  state->kidstr, state->ksidstr, nt_errstr(ret)));
-		goto done;
-	}
-
-	DEBUG(10,("Stored %s <-> %s\n", state->ksidstr, state->kidstr));
-	ret = NT_STATUS_OK;
-
-done:
-	return ret;
-}
-
-static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
-				      const struct id_map *map)
-{
-	struct idmap_tdb_context *ctx;
-	NTSTATUS ret;
-	char *ksidstr, *kidstr;
-	struct idmap_tdb_set_mapping_context state;
-
-	if (!map || !map->sid) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ksidstr = kidstr = NULL;
-
-	/* TODO: should we filter a set_mapping using low/high filters ? */
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
-
-	switch (map->xid.type) {
-
-	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu",
-					 (unsigned long)map->xid.id);
-		break;
-
-	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu",
-					 (unsigned long)map->xid.id);
-		break;
-
-	default:
-		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (kidstr == NULL) {
-		DEBUG(0, ("ERROR: Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	ksidstr = sid_string_talloc(ctx, map->sid);
-	if (ksidstr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	state.ksidstr = ksidstr;
-	state.kidstr = kidstr;
-
-	ret = dbwrap_trans_do(ctx->db, idmap_tdb_set_mapping_action, &state);
-
-done:
-	talloc_free(ksidstr);
-	talloc_free(kidstr);
 	return ret;
 }
 
