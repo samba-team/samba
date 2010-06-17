@@ -136,7 +136,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
  Convert the idmap database from an older version.
 *****************************************************************************/
 
-static bool idmap_tdb_upgrade(struct db_context *db)
+static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 {
 	int32 vers;
 	bool bigendianheader;
@@ -162,7 +162,7 @@ static bool idmap_tdb_upgrade(struct db_context *db)
 		if (wm != -1) {
 			wm = IREV(wm);
 		}  else {
-			wm = idmap_tdb_state.low_uid;
+			wm = dom->low_id;
 		}
 
 		if (dbwrap_store_int32(db, HWM_USER, wm) == -1) {
@@ -174,7 +174,7 @@ static bool idmap_tdb_upgrade(struct db_context *db)
 		if (wm != -1) {
 			wm = IREV(wm);
 		} else {
-			wm = idmap_tdb_state.low_gid;
+			wm = dom->low_id;
 		}
 
 		if (dbwrap_store_int32(db, HWM_GROUP, wm) == -1) {
@@ -293,7 +293,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 			goto done;
 		}
 
-		if (!idmap_tdb_upgrade(db)) {
+		if (!idmap_tdb_upgrade(dom, db)) {
 			db->transaction_cancel(db);
 			DEBUG(0, ("Unable to open idmap database, it's in an old format, and upgrade failed!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
