@@ -636,15 +636,18 @@ failed:
  Single id to sid lookup function. 
 **********************************/
 
-static NTSTATUS idmap_tdb_id_to_sid(struct idmap_tdb_context *ctx, struct id_map *map)
+static NTSTATUS idmap_tdb_id_to_sid(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
+	struct idmap_tdb_context *ctx;
 
-	if (!ctx || !map) {
+	if (!dom || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	/* apply filters before checking */
 	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
@@ -784,7 +787,7 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
-		ret = idmap_tdb_id_to_sid(ctx, ids[i]);
+		ret = idmap_tdb_id_to_sid(dom, ids[i]);
 		if ( ! NT_STATUS_IS_OK(ret)) {
 
 			/* if it is just a failed mapping continue */
