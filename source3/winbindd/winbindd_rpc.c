@@ -366,3 +366,82 @@ NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/* Convert a bunch of rids to user or group names */
+NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
+			   struct rpc_pipe_client *lsa_pipe,
+			   struct policy_handle *lsa_policy,
+			   struct winbindd_domain *domain,
+			   const struct dom_sid *sid,
+			   uint32_t *rids,
+			   size_t num_rids,
+			   char **pdomain_name,
+			   char ***pnames,
+			   enum lsa_SidType **ptypes)
+{
+	enum lsa_SidType *types = NULL;
+	char *domain_name = NULL;
+	char **domains = NULL;
+	char **names = NULL;
+	struct dom_sid *sids;
+	size_t i;
+	NTSTATUS status;
+
+	if (num_rids > 0) {
+		sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_rids);
+		if (sids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		sids = NULL;
+	}
+
+	for (i = 0; i < num_rids; i++) {
+		if (!sid_compose(&sids[i], sid, rids[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	status = rpccli_lsa_lookup_sids(lsa_pipe,
+					mem_ctx,
+					lsa_policy,
+					num_rids,
+					sids,
+					&domains,
+					&names,
+					&types);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+		DEBUG(2,("rids_to_names: failed to lookup sids: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	for (i = 0; i < num_rids; i++) {
+		char *mapped_name = NULL;
+		NTSTATUS map_status;
+
+		if (types[i] != SID_NAME_UNKNOWN) {
+			map_status = normalize_name_map(mem_ctx,
+							domain,
+							names[i],
+							&mapped_name);
+			if (NT_STATUS_IS_OK(map_status) ||
+			    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
+				TALLOC_FREE(names[i]);
+				names[i] = talloc_strdup(names, mapped_name);
+				if (names[i] == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+
+			domain_name = domains[i];
+		}
+	}
+
+	*pdomain_name = domain_name;
+	*ptypes = types;
+	*pnames = names;
+
+	return NT_STATUS_OK;
+}

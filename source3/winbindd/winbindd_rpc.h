@@ -67,4 +67,16 @@ NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
 			 char **pname,
 			 enum lsa_SidType *ptype);
 
+/* Convert a bunch of rids to user or group names */
+NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
+			   struct rpc_pipe_client *lsa_pipe,
+			   struct policy_handle *lsa_policy,
+			   struct winbindd_domain *domain,
+			   const struct dom_sid *sid,
+			   uint32_t *rids,
+			   size_t num_rids,
+			   char **pdomain_name,
+			   char ***pnames,
+			   enum lsa_SidType **ptypes);
+
 #endif /* _WINBINDD_RPC_H_ */
