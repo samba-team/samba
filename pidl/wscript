@@ -47,7 +47,7 @@ def build(bld):
 
     link_command = 'rm -rf blib && ln -fs blib %s' % blib_bld
     
-    bld.SET_BUILD_GROUP('main')
+    bld.SET_BUILD_GROUP('final')
     if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
         for src, manpage in pidl_manpages.iteritems():
             bld(rule='${PERL} ${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
