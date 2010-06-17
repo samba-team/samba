@@ -1256,13 +1256,22 @@ again:
 		goto again;
 	}
 
-	ret = NT_STATUS_OK;
-
-	/* mark all unknwon/expired ones as unmapped */
+	/*
+	 *  try to create new mappings for unmapped sids
+	 */
 	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status != ID_MAPPED)
+		if (ids[i]->status != ID_MAPPED) {
 			ids[i]->status = ID_UNMAPPED;
+			if (ids[i]->sid != NULL) {
+				ret = idmap_ldap_new_mapping(dom, ids[i]);
+				if (!NT_STATUS_IS_OK(ret)) {
+					goto done;
+				}
+			}
+		}
 	}
+
+	ret = NT_STATUS_OK;
 
 done:
 	talloc_free(memctx);
