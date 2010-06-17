@@ -33,6 +33,10 @@
 
 #define IDMAP_VERSION 2
 
+struct idmap_tdb_context {
+	struct db_context *db;
+};
+
 /* High water mark keys */
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"
@@ -535,10 +539,6 @@ static NTSTATUS idmap_tdb_alloc_close(void)
 /**********************************************************************
  IDMAP MAPPING TDB BACKEND
 **********************************************************************/
- 
-struct idmap_tdb_context {
-	struct db_context *db;
-};
 
 /*****************************
  Initialise idmap database. 
