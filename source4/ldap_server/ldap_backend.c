@@ -746,8 +746,7 @@ reply:
 
 	modify_result = &modify_reply->msg->r.ModifyResponse;
 	modify_result->dn = NULL;
-
-	if (res->refs != NULL) {
+	if ((res != NULL) && (res->refs != NULL)) {
 		modify_result->resultcode = map_ldb_error(local_ctx,
 							  LDB_ERR_REFERRAL,
 							  NULL, &errstr);
@@ -837,7 +836,7 @@ reply:
 
 	add_result = &add_reply->msg->r.AddResponse;
 	add_result->dn = NULL;
-	if (res->refs != NULL) {
+	if ((res != NULL) && (res->refs != NULL)) {
 		add_result->resultcode =  map_ldb_error(local_ctx,
 							LDB_ERR_REFERRAL, NULL,
 							&errstr);
@@ -893,7 +892,7 @@ reply:
 
 	del_result = &del_reply->msg->r.DelResponse;
 	del_result->dn = NULL;
-	if (res->refs != NULL) {
+	if ((res != NULL) && (res->refs != NULL)) {
 		del_result->resultcode = map_ldb_error(local_ctx,
 						       LDB_ERR_REFERRAL, NULL,
 						       &errstr);
@@ -998,7 +997,7 @@ reply:
 
 	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
 	modifydn->dn = NULL;
-	if (res->refs != NULL) {
+	if ((res != NULL) && (res->refs != NULL)) {
 		modifydn->resultcode = map_ldb_error(local_ctx,
 						     LDB_ERR_REFERRAL, NULL,
 						     &errstr);;
