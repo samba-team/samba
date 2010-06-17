@@ -218,6 +218,8 @@ static WERROR ad_error(const char *err_msg, char **reason)
 	return err;
 }
 
+/* This has to be done using the LDAP API since the LDB API does only transmit
+ * the error code and not the error message. */
 static bool test_error_codes(struct torture_context *tctx,
 	struct ldap_connection *conn, const char *basedn)
 {
@@ -228,7 +230,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	WERROR err;
 	NTSTATUS status;
 
-	printf("Testing error codes - to make this test pass against SAMBA 4 you have to specify the target!\n");
+	printf("Testing the most important error code -> error message conversions!\n");
 
 	if (!basedn) {
 		return false;
@@ -253,7 +255,7 @@ static bool test_error_codes(struct torture_context *tctx,
 
 	status = ldap_result_one(req, &rep, LDAP_TAG_AddResponse);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("error in ldap addition request - %s\n", nt_errstr(status));
+		printf("error in ldap add request - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -268,19 +270,86 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.AddResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_REFERRAL))
-			|| (rep->r.AddResponse.resultcode != 10)) {
+	if ((!W_ERROR_EQUAL(err, WERR_DS_REFERRAL))
+			|| (rep->r.AddResponse.resultcode != LDAP_REFERRAL)) {
 			return false;
-		}
-	} else {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_CLASS_VIOLATION))
-			|| (rep->r.AddResponse.resultcode != 65)) {
+	}
+	if ((rep->r.AddResponse.referral == NULL)
+			|| (strstr(rep->r.AddResponse.referral, basedn) == NULL)) {
 			return false;
-		}
+	}
+
+	printf(" Try another wrong addition\n");
+
+	msg->type = LDAP_TAG_AddRequest;
+	msg->r.AddRequest.dn = "";
+	msg->r.AddRequest.num_attributes = 0;
+	msg->r.AddRequest.attributes = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_AddResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap add request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.AddResponse.resultcode == 0)
+		|| (rep->r.AddResponse.errormessage == NULL)
+		|| (strtol(rep->r.AddResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.AddResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_DS_ROOT_MUST_BE_NC) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_NAMING_VIOLATION))
+		|| (rep->r.AddResponse.resultcode != LDAP_NAMING_VIOLATION)) {
+		return false;
 	}
 
 	printf(" Try a wrong modification\n");
+
+	msg->type = LDAP_TAG_ModifyRequest;
+	msg->r.ModifyRequest.dn = basedn;
+	msg->r.ModifyRequest.num_mods = 0;
+	msg->r.ModifyRequest.mods = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap modifification request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyResponse.resultcode == 0)
+		|| (rep->r.ModifyResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_UNWILLING_TO_PERFORM))
+		|| (rep->r.ModifyResponse.resultcode != LDAP_UNWILLING_TO_PERFORM)) {
+		return false;
+	}
+
+	printf(" Try another wrong modification\n");
 
 	msg->type = LDAP_TAG_ModifyRequest;
 	msg->r.ModifyRequest.dn = "";
@@ -309,19 +378,46 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM))
-			|| (rep->r.ModifyResponse.resultcode != 53)) {
-			return false;
-		}
-	} else {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_OPERATIONS_ERROR))
-			|| (rep->r.ModifyResponse.resultcode != 1)) {
-			return false;
-		}
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_UNWILLING_TO_PERFORM))
+		|| (rep->r.ModifyResponse.resultcode != LDAP_UNWILLING_TO_PERFORM)) {
+		return false;
 	}
 
 	printf(" Try a wrong removal\n");
+
+	msg->type = LDAP_TAG_DelRequest;
+	msg->r.DelRequest.dn = basedn;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_DelResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap removal request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.DelResponse.resultcode == 0)
+		|| (rep->r.DelResponse.errormessage == NULL)
+		|| (strtol(rep->r.DelResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.DelResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_DS_CANT_DELETE) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_UNWILLING_TO_PERFORM))
+		|| (rep->r.DelResponse.resultcode != LDAP_UNWILLING_TO_PERFORM)) {
+		return false;
+	}
+
+	printf(" Try another wrong removal\n");
 
 	msg->type = LDAP_TAG_DelRequest;
 	msg->r.DelRequest.dn = "";
@@ -348,16 +444,154 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.DelResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_NOT_FOUND))
-			|| (rep->r.DelResponse.resultcode != 32)) {
-			return false;
-		}
-	} else {
-		if ((!W_ERROR_EQUAL(err, WERR_DS_INVALID_DN_SYNTAX))
-			|| (rep->r.DelResponse.resultcode != 34)) {
-			return false;
-		}
+	if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_NOT_FOUND) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_NO_SUCH_OBJECT))
+		|| (rep->r.DelResponse.resultcode != LDAP_NO_SUCH_OBJECT)) {
+		return false;
+	}
+
+	printf(" Try a wrong rename\n");
+
+	msg->type = LDAP_TAG_ModifyDNRequest;
+	msg->r.ModifyDNRequest.dn = basedn;
+	msg->r.ModifyDNRequest.newrdn = "dc=test";
+	msg->r.ModifyDNRequest.deleteolddn = true;
+	msg->r.ModifyDNRequest.newsuperior = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyDNResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap rename request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyDNResponse.resultcode == 0)
+		|| (rep->r.ModifyDNResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyDNResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_DS_NO_PARENT_OBJECT) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_GENERIC_ERROR))
+		|| (rep->r.ModifyDNResponse.resultcode != LDAP_OTHER)) {
+		return false;
+	}
+
+	printf(" Try another wrong rename\n");
+
+	msg->type = LDAP_TAG_ModifyDNRequest;
+	msg->r.ModifyDNRequest.dn = basedn;
+	msg->r.ModifyDNRequest.newrdn = basedn;
+	msg->r.ModifyDNRequest.deleteolddn = true;
+	msg->r.ModifyDNRequest.newsuperior = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyDNResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap rename request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyDNResponse.resultcode == 0)
+		|| (rep->r.ModifyDNResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyDNResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_NAMING_VIOLATION))
+		|| (rep->r.ModifyDNResponse.resultcode != LDAP_NAMING_VIOLATION)) {
+		return false;
+	}
+
+	printf(" Try another wrong rename\n");
+
+	msg->type = LDAP_TAG_ModifyDNRequest;
+	msg->r.ModifyDNRequest.dn = basedn;
+	msg->r.ModifyDNRequest.newrdn = "";
+	msg->r.ModifyDNRequest.deleteolddn = true;
+	msg->r.ModifyDNRequest.newsuperior = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyDNResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap rename request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyDNResponse.resultcode == 0)
+		|| (rep->r.ModifyDNResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyDNResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_PROTOCOL_ERROR))
+		|| (rep->r.ModifyDNResponse.resultcode != LDAP_PROTOCOL_ERROR)) {
+		return false;
+	}
+
+	printf(" Try another wrong rename\n");
+
+	msg->type = LDAP_TAG_ModifyDNRequest;
+	msg->r.ModifyDNRequest.dn = "";
+	msg->r.ModifyDNRequest.newrdn = "cn=temp";
+	msg->r.ModifyDNRequest.deleteolddn = true;
+	msg->r.ModifyDNRequest.newsuperior = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_result_one(req, &rep, LDAP_TAG_ModifyDNResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap rename request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if ((rep->r.ModifyDNResponse.resultcode == 0)
+		|| (rep->r.ModifyDNResponse.errormessage == NULL)
+		|| (strtol(rep->r.ModifyDNResponse.errormessage, &endptr,16) <= 0)
+		|| (*endptr != ':')) {
+		printf("Invalid error message!\n");
+		return false;
+	}
+
+	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
+	err_code_str = win_errstr(err);
+	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
+	if ((!W_ERROR_EQUAL(err, WERR_DS_OBJ_NOT_FOUND) &&
+	     !W_ERROR_EQUAL(err, WERR_DS_NO_SUCH_OBJECT))
+		|| (rep->r.ModifyDNResponse.resultcode != LDAP_NO_SUCH_OBJECT)) {
+		return false;
 	}
 
 	return true;
