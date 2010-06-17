@@ -663,10 +663,10 @@ static NTSTATUS builtin_trusted_domains(struct winbindd_domain *domain,
 *********************************************************************/
 
 /* List all local groups (aliases) */
-static NTSTATUS common_enum_local_groups(struct winbindd_domain *domain,
-					 TALLOC_CTX *mem_ctx,
-					 uint32_t *pnum_info,
-					 struct acct_info **pinfo)
+static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      uint32_t *pnum_info,
+				      struct acct_info **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
@@ -688,45 +688,17 @@ static NTSTATUS common_enum_local_groups(struct winbindd_domain *domain,
 
 	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	do {
-		struct samr_SamArray *sam_array = NULL;
-		uint32_t count = 0;
-		uint32_t start = num_info;
-		uint32_t g;
-
-		status = rpccli_samr_EnumDomainAliases(samr_pipe,
-						       tmp_ctx,
-						       &dom_pol,
-						       &start,
-						       &sam_array,
-						       0xFFFF, /* buffer size? */
-						       &count);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				goto error;
-			}
-		}
-
-		info = TALLOC_REALLOC_ARRAY(tmp_ctx,
-					    info,
-					    struct acct_info,
-					    num_info + count);
-		if (info == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-
-		for (g = 0; g < count; g++) {
-			fstrcpy(info[num_info + g].acct_name,
-				sam_array->entries[g].name.string);
-			info[num_info + g].rid = sam_array->entries[g].idx;
-		}
-
-		num_info += count;
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	status = rpc_enum_local_groups(mem_ctx,
+				       samr_pipe,
+				       &dom_pol,
+				       &num_info,
+				       &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	if (pnum_info) {
 		*pnum_info = num_info;
@@ -736,7 +708,7 @@ static NTSTATUS common_enum_local_groups(struct winbindd_domain *domain,
 		*pinfo = talloc_move(mem_ctx, &info);
 	}
 
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -1371,7 +1343,7 @@ struct winbindd_methods builtin_passdb_methods = {
 
 	.query_user_list       = builtin_query_user_list,
 	.enum_dom_groups       = builtin_enum_dom_groups,
-	.enum_local_groups     = common_enum_local_groups,
+	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = common_name_to_sid,
 	.sid_to_name           = common_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
@@ -1391,7 +1363,7 @@ struct winbindd_methods sam_passdb_methods = {
 
 	.query_user_list       = sam_query_user_list,
 	.enum_dom_groups       = sam_enum_dom_groups,
-	.enum_local_groups     = common_enum_local_groups,
+	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = common_name_to_sid,
 	.sid_to_name           = common_sid_to_name,
 	.rids_to_names         = common_rids_to_names,
