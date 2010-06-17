@@ -856,12 +856,10 @@ again:
 		}
 
 		id = strtoul(tmp, NULL, 10);
-		if ((id == 0) ||
-		    (ctx->filter_low_id && (id < ctx->filter_low_id)) ||
-		    (ctx->filter_high_id && (id > ctx->filter_high_id))) {
+		if (!idmap_unix_id_is_in_range(id, dom)) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
 				  "Filtered!\n", id,
-				  ctx->filter_low_id, ctx->filter_high_id));
+				  dom->low_id, dom->high_id));
 			TALLOC_FREE(sidstr);
 			TALLOC_FREE(tmp);
 			continue;
@@ -1105,12 +1103,10 @@ again:
 		}
 
 		id = strtoul(tmp, NULL, 10);
-		if ((id == 0) ||
-		    (ctx->filter_low_id && (id < ctx->filter_low_id)) ||
-		    (ctx->filter_high_id && (id > ctx->filter_high_id))) {
+		if (!idmap_unix_id_is_in_range(id, dom)) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
 				  "Filtered!\n", id,
-				  ctx->filter_low_id, ctx->filter_high_id));
+				  dom->low_id, dom->high_id));
 			TALLOC_FREE(sidstr);
 			TALLOC_FREE(tmp);
 			continue;
