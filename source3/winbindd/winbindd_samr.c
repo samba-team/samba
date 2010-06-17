@@ -832,27 +832,37 @@ done:
 	return status;
 }
 
-static NTSTATUS common_rids_to_names(struct winbindd_domain *domain,
-				     TALLOC_CTX *mem_ctx,
-				     const struct dom_sid *sid,
-				     uint32 *rids,
-				     size_t num_rids,
-				     char **pdomain_name,
-				     char ***pnames,
-				     enum lsa_SidType **ptypes)
+static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *sid,
+				  uint32 *rids,
+				  size_t num_rids,
+				  char **pdomain_name,
+				  char ***pnames,
+				  enum lsa_SidType **ptypes)
 {
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy;
 	enum lsa_SidType *types = NULL;
 	char *domain_name = NULL;
-	char **domains = NULL;
 	char **names = NULL;
-	struct dom_sid *sids;
-	size_t i;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: rids to names for domain %s\n", domain->name));
+	DEBUG(3,("sam_rids_to_names for %s\n", domain->name));
+
+	/* Paranoia check */
+	if (!sid_check_is_in_builtin(sid) &&
+	    !sid_check_is_in_our_domain(sid) &&
+	    !sid_check_is_in_unix_users(sid) &&
+	    !sid_check_is_unix_users(sid) &&
+	    !sid_check_is_in_unix_groups(sid) &&
+	    !sid_check_is_unix_groups(sid) &&
+	    !sid_check_is_in_wellknown_domain(sid)) {
+		DEBUG(0, ("sam_rids_to_names: possible deadlock - trying to "
+			  "lookup SID %s\n", sid_string_dbg(sid)));
+		return NT_STATUS_NONE_MAPPED;
+	}
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -861,74 +871,25 @@ static NTSTATUS common_rids_to_names(struct winbindd_domain *domain,
 
 	status = open_internal_lsa_conn(tmp_ctx, &lsa_pipe, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	if (num_rids) {
-		sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_rids);
-		if (sids == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-	} else {
-		sids = NULL;
-	}
-
-	for (i = 0; i < num_rids; i++) {
-		if (!sid_compose(&sids[i], sid, rids[i])) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto error;
-		}
-	}
-
-	/*
-	 * We don't run into deadlocks here, cause winbind_off() is called in
-	 * the main function.
-	 */
-	status = rpccli_lsa_lookup_sids(lsa_pipe,
-					tmp_ctx,
-					&lsa_policy,
-					num_rids,
-					sids,
-					&domains,
-					&names,
-					&types);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-		DEBUG(2,("rids_to_names: failed to lookup sids: %s\n",
-			nt_errstr(status)));
-		goto error;
-	}
-
-	for (i = 0; i < num_rids; i++) {
-		char *mapped_name = NULL;
-		NTSTATUS map_status;
-
-		if (types[i] != SID_NAME_UNKNOWN) {
-			map_status = normalize_name_map(tmp_ctx,
-							domain,
-							names[i],
-							&mapped_name);
-			if (NT_STATUS_IS_OK(map_status) ||
-			    NT_STATUS_EQUAL(map_status, NT_STATUS_FILE_RENAMED)) {
-				TALLOC_FREE(names[i]);
-				names[i] = talloc_strdup(names, mapped_name);
-				if (names[i] == NULL) {
-					status = NT_STATUS_NO_MEMORY;
-					goto error;
-				}
-			}
-
-			domain_name = domains[i];
-		}
+	status = rpc_rids_to_names(tmp_ctx,
+				   lsa_pipe,
+				   &lsa_policy,
+				   domain,
+				   sid,
+				   rids,
+				   num_rids,
+				   &domain_name,
+				   &names,
+				   &types);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
 	if (pdomain_name) {
-		*pdomain_name = talloc_strdup(mem_ctx, domain_name);
-		if (*pdomain_name == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
+		*pdomain_name = talloc_move(mem_ctx, &domain_name);
 	}
 
 	if (ptypes) {
@@ -939,7 +900,7 @@ static NTSTATUS common_rids_to_names(struct winbindd_domain *domain,
 		*pnames = talloc_move(mem_ctx, &names);
 	}
 
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -1299,7 +1260,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
-	.rids_to_names         = common_rids_to_names,
+	.rids_to_names         = sam_rids_to_names,
 	.query_user            = builtin_query_user,
 	.lookup_usergroups     = common_lookup_usergroups,
 	.lookup_useraliases    = common_lookup_useraliases,
@@ -1319,7 +1280,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.enum_local_groups     = sam_enum_local_groups,
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
-	.rids_to_names         = common_rids_to_names,
+	.rids_to_names         = sam_rids_to_names,
 	.query_user            = sam_query_user,
 	.lookup_usergroups     = common_lookup_usergroups,
 	.lookup_useraliases    = common_lookup_useraliases,
