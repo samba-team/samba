@@ -34,6 +34,107 @@
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
 
+/* Query display info for a domain */
+NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *samr_pipe,
+			     struct policy_handle *samr_policy,
+			     const struct dom_sid *domain_sid,
+			     uint32_t *pnum_info,
+			     struct wbint_userinfo **pinfo)
+{
+	struct wbint_userinfo *info = NULL;
+	uint32_t num_info = 0;
+	uint32_t loop_count = 0;
+	uint32_t start_idx = 0;
+	uint32_t i = 0;
+	NTSTATUS status;
+
+	*pnum_info = 0;
+
+	do {
+		uint32_t j;
+		uint32_t num_dom_users;
+		uint32_t max_entries, max_size;
+		uint32_t total_size, returned_size;
+		union samr_DispInfo disp_info;
+
+		get_query_dispinfo_params(loop_count,
+					  &max_entries,
+					  &max_size);
+
+		status = rpccli_samr_QueryDisplayInfo(samr_pipe,
+						      mem_ctx,
+						      samr_policy,
+						      1, /* level */
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &disp_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				return status;
+			}
+		}
+
+		/* increment required start query values */
+		start_idx += disp_info.info1.count;
+		loop_count++;
+		num_dom_users = disp_info.info1.count;
+
+		num_info += num_dom_users;
+
+		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+					    info,
+					    struct wbint_userinfo,
+					    num_info);
+		if (info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (j = 0; j < num_dom_users; i++, j++) {
+			uint32_t rid = disp_info.info1.entries[j].rid;
+			struct samr_DispEntryGeneral *src;
+			struct wbint_userinfo *dst;
+
+			src = &(disp_info.info1.entries[j]);
+			dst = &(info[i]);
+
+			dst->acct_name = talloc_strdup(info,
+						       src->account_name.string);
+			if (dst->acct_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			dst->full_name = talloc_strdup(info, src->full_name.string);
+			if (dst->full_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			dst->homedir = NULL;
+			dst->shell = NULL;
+
+			sid_compose(&dst->user_sid, domain_sid, rid);
+
+			/* For the moment we set the primary group for
+			   every user to be the Domain Users group.
+			   There are serious problems with determining
+			   the actual primary group for large domains.
+			   This should really be made into a 'winbind
+			   force group' smb.conf parameter or
+			   something like that. */
+			sid_compose(&dst->group_sid, domain_sid,
+				    DOMAIN_RID_USERS);
+		}
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	*pnum_info = num_info;
+	*pinfo = info;
+
+	return NT_STATUS_OK;
+}
+
 /* List all domain groups */
 NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,

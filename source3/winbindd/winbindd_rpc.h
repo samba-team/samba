@@ -26,6 +26,14 @@
 #ifndef _WINBINDD_RPC_H_
 #define _WINBINDD_RPC_H_
 
+/* Query display info for a domain */
+NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *samr_pipe,
+			     struct policy_handle *samr_policy,
+			     const struct dom_sid *domain_sid,
+			     uint32_t *pnum_info,
+			     struct wbint_userinfo **pinfo);
+
 NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,
 			     struct policy_handle *sam_policy,
