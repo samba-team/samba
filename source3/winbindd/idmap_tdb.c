@@ -329,29 +329,24 @@ static struct db_context *idmap_alloc_db;
  Initialise idmap alloc database. 
 **********************************/
 
-static NTSTATUS idmap_tdb_alloc_init( const char *params )
+static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 {
 	int ret;
-	NTSTATUS status;
 	uint32_t low_uid;
 	uint32_t low_gid;
 	bool update_uid = false;
 	bool update_gid = false;
+	struct idmap_tdb_context *ctx;
 
-	status = idmap_tdb_open_db(NULL, true, &idmap_alloc_db);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("idmap will be unable to map foreign SIDs: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
-	low_uid = dbwrap_fetch_int32(idmap_alloc_db, HWM_USER);
-	if (low_uid == -1 || low_uid < idmap_tdb_state.low_uid) {
+	low_uid = dbwrap_fetch_int32(ctx->db, HWM_USER);
+	if (low_uid == -1 || low_uid < dom->low_id) {
 		update_uid = true;
 	}
 
-	low_gid = dbwrap_fetch_int32(idmap_alloc_db, HWM_GROUP);
-	if (low_gid == -1 || low_gid < idmap_tdb_state.low_gid) {
+	low_gid = dbwrap_fetch_int32(ctx->db, HWM_GROUP);
+	if (low_gid == -1 || low_gid < dom->low_id) {
 		update_gid = true;
 	}
 
@@ -359,18 +354,15 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 		return NT_STATUS_OK;
 	}
 
-	if (idmap_alloc_db->transaction_start(idmap_alloc_db) != 0) {
-		TALLOC_FREE(idmap_alloc_db);
+	if (ctx->db->transaction_start(ctx->db) != 0) {
 		DEBUG(0, ("Unable to start upgrade transaction!\n"));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
 	if (update_uid) {
-		ret = dbwrap_store_int32(idmap_alloc_db, HWM_USER,
-					 idmap_tdb_state.low_uid);
+		ret = dbwrap_store_int32(ctx->db, HWM_USER, dom->low_id);
 		if (ret == -1) {
-			idmap_alloc_db->transaction_cancel(idmap_alloc_db);
-			TALLOC_FREE(idmap_alloc_db);
+			ctx->db->transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
@@ -378,19 +370,16 @@ static NTSTATUS idmap_tdb_alloc_init( const char *params )
 	}
 
 	if (update_gid) {
-		ret = dbwrap_store_int32(idmap_alloc_db, HWM_GROUP,
-					 idmap_tdb_state.low_gid);
+		ret = dbwrap_store_int32(ctx->db, HWM_GROUP, dom->low_id);
 		if (ret == -1) {
-			idmap_alloc_db->transaction_cancel(idmap_alloc_db);
-			TALLOC_FREE(idmap_alloc_db);
+			ctx->db->transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
 
-	if (idmap_alloc_db->transaction_commit(idmap_alloc_db) != 0) {
-		TALLOC_FREE(idmap_alloc_db);
+	if (ctx->db->transaction_commit(ctx->db) != 0) {
 		DEBUG(0, ("Unable to commit upgrade transaction!\n"));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
