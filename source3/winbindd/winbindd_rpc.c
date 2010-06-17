@@ -193,3 +193,57 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       uint32_t *pnum_info,
+			       struct acct_info **pinfo)
+{
+	struct acct_info *info = NULL;
+	uint32_t num_info = 0;
+	NTSTATUS status;
+
+	*pnum_info = 0;
+
+	do {
+		struct samr_SamArray *sam_array = NULL;
+		uint32_t count = 0;
+		uint32_t start = num_info;
+		uint32_t g;
+
+		status = rpccli_samr_EnumDomainAliases(samr_pipe,
+						       mem_ctx,
+						       samr_policy,
+						       &start,
+						       &sam_array,
+						       0xFFFF, /* buffer size? */
+						       &count);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				return status;
+			}
+		}
+
+		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+					    info,
+					    struct acct_info,
+					    num_info + count);
+		if (info == NULL) {
+			return  NT_STATUS_NO_MEMORY;
+		}
+
+		for (g = 0; g < count; g++) {
+			fstrcpy(info[num_info + g].acct_name,
+				sam_array->entries[g].name.string);
+			info[num_info + g].rid = sam_array->entries[g].idx;
+		}
+
+		num_info += count;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	*pnum_info = num_info;
+	*pinfo = info;
+
+	return NT_STATUS_OK;
+}

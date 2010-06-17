@@ -40,4 +40,11 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     uint32_t *pnum_info,
 			     struct acct_info **pinfo);
 
+/* List all domain groups */
+NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       uint32_t *pnum_info,
+			       struct acct_info **pinfo);
+
 #endif /* _WINBINDD_RPC_H_ */
