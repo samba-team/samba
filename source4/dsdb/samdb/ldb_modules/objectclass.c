@@ -398,9 +398,10 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	/* the objectClass must be specified on add */
-	if (ldb_msg_find_element(req->op.add.message, 
-				 "objectClass") == NULL) {
+	/* the various objectclasses must be specified on add operations */
+	if (ldb_msg_find_element(req->op.add.message, "objectClass") == NULL) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, no objectclass specified!",
+				       ldb_dn_get_linearized(req->op.add.message->dn));
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
