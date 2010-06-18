@@ -105,7 +105,7 @@ def build(bld):
         modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
         bld.SAMBA_LIBRARY('ldb',
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
-                          deps='tevent ldb',
+                          deps='tevent',
                           includes='include',
                           public_headers='include/ldb.h include/ldb_errors.h '\
                               'include/ldb_module.h include/ldb_handlers.h',
