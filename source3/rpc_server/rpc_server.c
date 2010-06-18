@@ -22,6 +22,7 @@
 #include "rpc_dce.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "registry/reg_parse_prs.h"
+#include "lib/tsocket/tsocket.h"
 
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
@@ -118,6 +119,85 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+/* Add some helper functions to wrap the common ncacn packet reading functions
+ * until we can share more dcerpc code */
+struct named_pipe_read_packet_state {
+	struct ncacn_packet *pkt;
+	DATA_BLOB buffer;
+};
+
+static void named_pipe_read_packet_done(struct tevent_req *subreq);
+
+static struct tevent_req *named_pipe_read_packet_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *tstream)
+{
+	struct named_pipe_read_packet_state *state;
+	struct tevent_req *req, *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct named_pipe_read_packet_state);
+	if (!req) {
+		return NULL;
+	}
+	ZERO_STRUCTP(state);
+
+	subreq = dcerpc_read_ncacn_packet_send(state, ev, tstream);
+	if (!subreq) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		tevent_req_post(req, ev);
+		return req;
+	}
+	tevent_req_set_callback(subreq, named_pipe_read_packet_done, req);
+
+	return req;
+}
+
+static void named_pipe_read_packet_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct named_pipe_read_packet_state *state =
+		tevent_req_data(req, struct named_pipe_read_packet_state);
+	NTSTATUS status;
+
+	status = dcerpc_read_ncacn_packet_recv(subreq, state,
+						&state->pkt,
+						&state->buffer);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Failed to receive dceprc packet!\n"));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS named_pipe_read_packet_recv(struct tevent_req *req,
+						TALLOC_CTX *mem_ctx,
+						DATA_BLOB *buffer)
+{
+	struct named_pipe_read_packet_state *state =
+		tevent_req_data(req, struct named_pipe_read_packet_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	buffer->data = talloc_move(mem_ctx, &state->buffer.data);
+	buffer->length = state->buffer.length;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+
+
+/* Start listening on the appropriate unix socket and setup all is needed to
+ * dispatch requests to the pipes rpc implementation */
 
 struct named_pipe_listen_state {
 	int fd;

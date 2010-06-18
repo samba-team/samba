@@ -168,6 +168,10 @@ struct ndr_pull;
 struct tevent_context;
 struct tstream_context;
 
+/* from ../librpc/rpc/dcerpc_util.c */
+void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
+uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
+void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
 struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct tstream_context *stream);
