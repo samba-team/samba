@@ -1242,10 +1242,84 @@ static int objectclass_do_rename2(struct oc_context *ac)
 	return ldb_next_request(ac->module, rename_req);
 }
 
+static int objectclass_do_delete(struct oc_context *ac);
+
+static int objectclass_delete(struct ldb_module *module, struct ldb_request *req)
+{
+	static const char * const attrs[] = { "systemFlags", NULL };
+	struct ldb_context *ldb;
+	struct ldb_request *search_req;
+	struct oc_context *ac;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectclass_delete\n");
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.del.dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* Bypass the "systemFlags" checks when we do have the "RELAX" control
+	 * set. */
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
+		return ldb_next_request(module, req);
+	}
+
+	ac = oc_init_context(module, req);
+	if (ac == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* this looks up the entry object for fetching some important
+	 * informations (systemFlags...) */
+	ret = ldb_build_search_req(&search_req, ldb,
+				   ac, req->op.del.dn, LDB_SCOPE_BASE,
+				   "(objectClass=*)",
+				   attrs, NULL,
+				   ac, get_search_callback,
+				   req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ac->step_fn = objectclass_do_delete;
+
+	return ldb_next_request(ac->module, search_req);
+}
+
+static int objectclass_do_delete(struct oc_context *ac)
+{
+	struct ldb_context *ldb;
+	int32_t systemFlags;
+
+	ldb = ldb_module_get_ctx(ac->module);
+
+	/* Check if we have a valid entry - this check is needed since
+	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
+	if (ac->search_res == NULL) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, entry does not exist!",
+				       ldb_dn_get_linearized(ac->req->op.del.dn));
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	systemFlags = ldb_msg_find_attr_as_int(ac->search_res->message,
+					       "systemFlags", 0);
+	if ((systemFlags & SYSTEM_FLAG_DISALLOW_DELETE) != 0) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it isn't permitted!",
+				       ldb_dn_get_linearized(ac->req->op.del.dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return ldb_next_request(ac->module, ac->req);
+}
+
 static int objectclass_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
+
 	/* Init everything else */
 	ret = ldb_next_init(module);
 	if (ret != LDB_SUCCESS) {
@@ -1259,9 +1333,10 @@ static int objectclass_init(struct ldb_module *module)
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
-	.name		   = "objectclass",
-	.add           = objectclass_add,
-	.modify        = objectclass_modify,
-	.rename        = objectclass_rename,
-	.init_context  = objectclass_init
+	.name		= "objectclass",
+	.add		= objectclass_add,
+	.modify		= objectclass_modify,
+	.rename		= objectclass_rename,
+	.del		= objectclass_delete,
+	.init_context	= objectclass_init
 };
