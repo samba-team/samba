@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.5.4
-			    , 2010
+			   June 23, 2010
                    =============================
 
 
@@ -8,12 +8,64 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.4 include:
 
-  o
+  o Fix smbd crash when sambaLMPassword and sambaNTPassword entries missing
+    from ldap (bug #7448).
+  o Fix init_sam_from_ldap storing group in sid2uid cache (bug #7507).
+
 
 Changes since 3.5.3
 -------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 7507: Fix init_sam_from_ldap storing group in sid2uid cache.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7188: Make ea data checks identical for trans2open and trans2mkdir.
+    * BUG 7410: Samba sends "raw" inode number as uniqueid with unix extensions.
+    * BUG 7449: Fix spnego returning incorrect mechListMIC string.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7341: Fix Winbind over IPv6.
+    * BUG 7459: Fix some crash bugs and missing error codes in AddDriver paths.
+    * BUG 7479: Fix crash bug in _samr_QueryUserInfo{2} level 18.
+    * BUG 7517: Fix session setup from linux kernel cifs clients with
+      "sec=ntlmv2".
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 7209: Fix build on RHEL5.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7427: Using IBM xl_C compiler produces wrong results in configure.
+    * BUG 7503: Fix calculation of st_blocks in vfs_streams_xattr.
+    * BUG 7504: Fix numerous build issues.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7253: Fix Samba login cache problem on Sparc Architecture.
+    * BUG 7262: Fix editing users' groups via UsrMgr.
+
+
+o   Buchan Milne <bgmilne@mandriva.org>
+    * BUG 7500: Fix 'not a string literal' warning in netdomjoin-gui.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 7099: Allow previous password to be stored and use it to check
+      tickets.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 7423: Fix printing large formats.
+
+
+o   Roel van Meer <rolek@bokxing.nl>
+    * BUG 7448: Fix smbd crash when sambaLMPassword and sambaNTPassword entries
+      missing from ldap.
 
 
 ######################################################################
