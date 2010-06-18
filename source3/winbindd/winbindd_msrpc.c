@@ -392,95 +392,72 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 }
 
 /* Lookup user information from a rid or username. */
-static NTSTATUS query_user(struct winbindd_domain *domain, 
+static NTSTATUS msrpc_query_user(struct winbindd_domain *domain,
 			   TALLOC_CTX *mem_ctx, 
 			   const struct dom_sid *user_sid,
 			   struct wbint_userinfo *user_info)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct policy_handle dom_pol, user_pol;
-	union samr_UserInfo *info = NULL;
-	uint32 user_rid;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
 	struct netr_SamInfo3 *user;
-	struct rpc_pipe_client *cli;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	DEBUG(3,("rpc: query_user sid=%s\n", sid_string_dbg(user_sid)));
+	DEBUG(3,("msrpc_query_user sid=%s\n", sid_string_dbg(user_sid)));
 
-	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
-		return NT_STATUS_UNSUCCESSFUL;
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	user_info->homedir = NULL;
-	user_info->shell = NULL;
-	user_info->primary_gid = (gid_t)-1;
+	if (user_info) {
+		user_info->homedir = NULL;
+		user_info->shell = NULL;
+		user_info->primary_gid = (gid_t)-1;
+	}
 
 	/* try netsamlogon cache first */
-
-	if ( (user = netsamlogon_cache_get( mem_ctx, user_sid )) != NULL ) 
-	{
-
-		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
+	user = netsamlogon_cache_get(tmp_ctx, user_sid);
+	if (user != NULL) {
+		DEBUG(5,("msrpc_query_user: Cache lookup succeeded for %s\n",
 			sid_string_dbg(user_sid)));
 
 		sid_compose(&user_info->user_sid, &domain->sid, user->base.rid);
 		sid_compose(&user_info->group_sid, &domain->sid,
 			    user->base.primary_gid);
 
-		user_info->acct_name = talloc_strdup(mem_ctx,
+		user_info->acct_name = talloc_strdup(user_info,
 						     user->base.account_name.string);
-		user_info->full_name = talloc_strdup(mem_ctx,
+		user_info->full_name = talloc_strdup(user_info,
 						     user->base.full_name.string);
 
-		TALLOC_FREE(user);
-
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user: No incoming trust for domain %s\n",
 			  domain->name));
-		return NT_STATUS_OK;
+		goto done;
 	}
 
 	/* no cache; hit the wire */
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	status = rpc_query_user(tmp_ctx,
+				samr_pipe,
+				&dom_pol,
+				&domain->sid,
+				user_sid,
+				user_info);
 
-	/* Get user handle */
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
-				      &dom_pol,
-				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      user_rid,
-				      &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/* Get user info */
-	result = rpccli_samr_QueryUserInfo(cli, mem_ctx,
-					   &user_pol,
-					   0x15,
-					   &info);
-
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	sid_compose(&user_info->user_sid, &domain->sid, user_rid);
-	sid_compose(&user_info->group_sid, &domain->sid,
-		    info->info21.primary_gid);
-	user_info->acct_name = talloc_strdup(mem_ctx,
-					     info->info21.account_name.string);
-	user_info->full_name = talloc_strdup(mem_ctx,
-					     info->info21.full_name.string);
-	user_info->homedir = NULL;
-	user_info->shell = NULL;
-	user_info->primary_gid = (gid_t)-1;
-
-	return NT_STATUS_OK;
-}                                   
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
@@ -1258,7 +1235,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
 	msrpc_rids_to_names,
-	query_user,
+	msrpc_query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
