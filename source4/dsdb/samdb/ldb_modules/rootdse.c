@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    rootDSE ldb module
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Simo Sorce 2005-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -153,13 +153,13 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	talloc_free(tmp_ctx);
 
 	return LDB_SUCCESS;
-}	
-			
+}
+
 
 /*
   add dynamically generated attributes to rootDSE result
 */
-static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg, 
+static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg,
 			       const char * const *attrs, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -189,7 +189,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	ldb_msg_remove_attr(msg, "name");
 
 	if (do_attribute(attrs, "currentTime")) {
-		if (ldb_msg_add_steal_string(msg, "currentTime", 
+		if (ldb_msg_add_steal_string(msg, "currentTime",
 					     ldb_timestring(msg, time(NULL))) != 0) {
 			goto failed;
 		}
@@ -220,7 +220,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  		}
 	}
 
-	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanims"), 
+	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanims"),
 				       char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
 		unsigned int i;
@@ -240,7 +240,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		uint64_t seq_num;
 		int ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 		if (ret == LDB_SUCCESS) {
-			if (ldb_msg_add_fmt(msg, "highestCommittedUSN", 
+			if (ldb_msg_add_fmt(msg, "highestCommittedUSN",
 					    "%llu", (unsigned long long)seq_num) != 0) {
 				goto failed;
 			}
@@ -255,7 +255,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			n++;
 		}
 
-		if (ldb_msg_add_fmt(msg, "dsSchemaAttrCount", 
+		if (ldb_msg_add_fmt(msg, "dsSchemaAttrCount",
 				    "%u", n) != 0) {
 			goto failed;
 		}
@@ -269,14 +269,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			n++;
 		}
 
-		if (ldb_msg_add_fmt(msg, "dsSchemaClassCount", 
+		if (ldb_msg_add_fmt(msg, "dsSchemaClassCount",
 				    "%u", n) != 0) {
 			goto failed;
 		}
 	}
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaPrefixCount")) {
-		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount", 
+		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount",
 				    "%u", schema->prefixmap->length) != 0) {
 			goto failed;
 		}
@@ -320,14 +320,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (do_attribute_explicit(attrs, "vendorVersion")) {
-		if (ldb_msg_add_fmt(msg, "vendorVersion", 
+		if (ldb_msg_add_fmt(msg, "vendorVersion",
 				    "%s", SAMBA_VERSION_STRING) != 0) {
 			goto failed;
 		}
 	}
 
 	if (priv && do_attribute(attrs, "domainFunctionality")) {
-		if (ldb_msg_add_fmt(msg, "domainFunctionality", 
+		if (ldb_msg_add_fmt(msg, "domainFunctionality",
 				    "%d", dsdb_functional_level(ldb)) != 0) {
 			goto failed;
 		}
@@ -335,7 +335,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (priv && do_attribute(attrs, "forestFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int))) {
-		if (ldb_msg_add_fmt(msg, "forestFunctionality", 
+		if (ldb_msg_add_fmt(msg, "forestFunctionality",
 				    "%d", *val) != 0) {
 			goto failed;
 		}
@@ -343,7 +343,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (priv && do_attribute(attrs, "domainControllerFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int))) {
-		if (ldb_msg_add_fmt(msg, "domainControllerFunctionality", 
+		if (ldb_msg_add_fmt(msg, "domainControllerFunctionality",
 				    "%d", *val) != 0) {
 			goto failed;
 		}
@@ -633,7 +633,7 @@ static int rootdse_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int domain_behaviour_version
-			= ldb_msg_find_attr_as_int(res->msgs[0], 
+			= ldb_msg_find_attr_as_int(res->msgs[0],
 						   "msDS-Behavior-Version", -1);
 		if (domain_behaviour_version != -1) {
 			int *val = talloc(ldb, int);
@@ -656,7 +656,7 @@ static int rootdse_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int forest_behaviour_version
-			= ldb_msg_find_attr_as_int(res->msgs[0], 
+			= ldb_msg_find_attr_as_int(res->msgs[0],
 						   "msDS-Behavior-Version", -1);
 		if (forest_behaviour_version != -1) {
 			int *val = talloc(ldb, int);
@@ -679,14 +679,14 @@ static int rootdse_init(struct ldb_module *module)
 			 LDB_SCOPE_BASE, ds_attrs, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		struct ldb_dn *ds_dn
-			= ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], 
+			= ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0],
 						  "dsServiceName");
 		if (ds_dn) {
-			ret = ldb_search(ldb, mem_ctx, &res, ds_dn, 
+			ret = ldb_search(ldb, mem_ctx, &res, ds_dn,
 					 LDB_SCOPE_BASE, attrs, NULL);
 			if (ret == LDB_SUCCESS && res->count == 1) {
 				int domain_controller_behaviour_version
-					= ldb_msg_find_attr_as_int(res->msgs[0], 
+					= ldb_msg_find_attr_as_int(res->msgs[0],
 								   "msDS-Behavior-Version", -1);
 				if (domain_controller_behaviour_version != -1) {
 					int *val = talloc(ldb, int);
@@ -696,7 +696,7 @@ static int rootdse_init(struct ldb_module *module)
 					return LDB_ERR_OPERATIONS_ERROR;
 					}
 					*val = domain_controller_behaviour_version;
-					ret = ldb_set_opaque(ldb, 
+					ret = ldb_set_opaque(ldb,
 							     "domainControllerFunctionality", val);
 					if (ret != LDB_SUCCESS) {
 						talloc_free(mem_ctx);
@@ -708,7 +708,7 @@ static int rootdse_init(struct ldb_module *module)
 	}
 
 	talloc_free(mem_ctx);
-	
+
 	return LDB_SUCCESS;
 }
 
