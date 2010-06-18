@@ -571,3 +571,87 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
+				struct rpc_pipe_client *samr_pipe,
+				struct policy_handle *samr_policy,
+				uint32_t num_sids,
+				const struct dom_sid *sids,
+				uint32_t *pnum_aliases,
+				uint32_t **palias_rids)
+{
+#define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
+	uint32_t num_query_sids = 0;
+	uint32_t num_queries = 1;
+	uint32_t num_aliases = 0;
+	uint32_t total_sids = 0;
+	uint32_t *alias_rids = NULL;
+	uint32_t rangesize = MAX_SAM_ENTRIES_W2K;
+	uint32_t i;
+	struct samr_Ids alias_rids_query;
+	NTSTATUS status;
+
+	do {
+		/* prepare query */
+		struct lsa_SidArray sid_array;
+
+		ZERO_STRUCT(sid_array);
+
+		num_query_sids = MIN(num_sids - total_sids, rangesize);
+
+		DEBUG(10,("rpc: lookup_useraliases: entering query %d for %d sids\n",
+			num_queries, num_query_sids));
+
+		if (num_query_sids) {
+			sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_query_sids);
+			if (sid_array.sids == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			sid_array.sids = NULL;
+		}
+
+		for (i = 0; i < num_query_sids; i++) {
+			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[total_sids++]);
+			if (sid_array.sids[i].sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		sid_array.num_sids = num_query_sids;
+
+		/* do request */
+		status = rpccli_samr_GetAliasMembership(samr_pipe,
+							mem_ctx,
+							samr_policy,
+							&sid_array,
+							&alias_rids_query);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/* process output */
+		for (i = 0; i < alias_rids_query.count; i++) {
+			size_t na = num_aliases;
+
+			if (!add_rid_to_array_unique(mem_ctx,
+						     alias_rids_query.ids[i],
+						     &alias_rids,
+						     &na)) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				num_aliases = na;
+		}
+
+		num_queries++;
+
+	} while (total_sids < num_sids);
+
+	DEBUG(10,("rpc: rpc_lookup_useraliases: got %d aliases in %d queries "
+		  "(rangesize: %d)\n", num_aliases, num_queries, rangesize));
+
+	*pnum_aliases = num_aliases;
+	*palias_rids = alias_rids;
+
+	return NT_STATUS_OK;
+#undef MAX_SAM_ENTRIES_W2K
+}

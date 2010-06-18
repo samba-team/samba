@@ -96,4 +96,12 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 			       uint32_t *pnum_groups,
 			       struct dom_sid **puser_grpsids);
 
+NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
+				struct rpc_pipe_client *samr_pipe,
+				struct policy_handle *samr_policy,
+				uint32_t num_sids,
+				const struct dom_sid *sids,
+				uint32_t *pnum_aliases,
+				uint32_t **palias_rids);
+
 #endif /* _WINBINDD_RPC_H_ */
