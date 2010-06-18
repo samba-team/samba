@@ -230,6 +230,7 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	struct dsdb_class *cur;
 	struct dsdb_attribute *a;
 	unsigned int i;
+	unsigned int num_int_id;
 
 	talloc_free(schema->classes_by_lDAPDisplayName);
 	talloc_free(schema->classes_by_governsID_id);
@@ -268,35 +269,54 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	/* now build the attribute accessor arrays */
 	talloc_free(schema->attributes_by_lDAPDisplayName);
 	talloc_free(schema->attributes_by_attributeID_id);
+	talloc_free(schema->attributes_by_msDS_IntId);
 	talloc_free(schema->attributes_by_attributeID_oid);
 	talloc_free(schema->attributes_by_linkID);
 
-	/* count the attributes */
-	for (i=0, a=schema->attributes; a; i++, a=a->next) /* noop */ ;
+	/* count the attributes
+	 * and attributes with msDS-IntId set */
+	num_int_id = 0;
+	for (i=0, a=schema->attributes; a; i++, a=a->next) {
+		if (a->msDS_IntId != 0) {
+			num_int_id++;
+		}
+	}
 	schema->num_attributes = i;
+	schema->num_int_id_attr = num_int_id;
 
 	/* setup attributes_by_* */
 	schema->attributes_by_lDAPDisplayName = talloc_array(schema, struct dsdb_attribute *, i);
 	schema->attributes_by_attributeID_id    = talloc_array(schema, struct dsdb_attribute *, i);
+	schema->attributes_by_msDS_IntId        = talloc_array(schema,
+	                                                       struct dsdb_attribute *, num_int_id);
 	schema->attributes_by_attributeID_oid   = talloc_array(schema, struct dsdb_attribute *, i);
 	schema->attributes_by_linkID              = talloc_array(schema, struct dsdb_attribute *, i);
 	if (schema->attributes_by_lDAPDisplayName == NULL ||
 	    schema->attributes_by_attributeID_id == NULL ||
+	    schema->attributes_by_msDS_IntId == NULL ||
 	    schema->attributes_by_attributeID_oid == NULL ||
 	    schema->attributes_by_linkID == NULL) {
 		goto failed;
 	}
 
+	num_int_id = 0;
 	for (i=0, a=schema->attributes; a; i++, a=a->next) {
 		schema->attributes_by_lDAPDisplayName[i] = a;
 		schema->attributes_by_attributeID_id[i]    = a;
 		schema->attributes_by_attributeID_oid[i]   = a;
 		schema->attributes_by_linkID[i]          = a;
+		/* append attr-by-msDS-IntId values */
+		if (a->msDS_IntId != 0) {
+			schema->attributes_by_msDS_IntId[num_int_id] = a;
+			num_int_id++;
+		}
 	}
+	SMB_ASSERT(num_int_id == schema->num_int_id_attr);
 
 	/* sort the arrays */
 	TYPESAFE_QSORT(schema->attributes_by_lDAPDisplayName, schema->num_attributes, dsdb_compare_attribute_by_lDAPDisplayName);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_id, schema->num_attributes, dsdb_compare_attribute_by_attributeID_id);
+	TYPESAFE_QSORT(schema->attributes_by_msDS_IntId, schema->num_int_id_attr, dsdb_compare_attribute_by_attributeID_id);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_oid, schema->num_attributes, dsdb_compare_attribute_by_attributeID_oid);
 	TYPESAFE_QSORT(schema->attributes_by_linkID, schema->num_attributes, dsdb_compare_attribute_by_linkID);
 
@@ -309,6 +329,7 @@ failed:
 	schema->classes_by_cn = NULL;
 	schema->attributes_by_lDAPDisplayName = NULL;
 	schema->attributes_by_attributeID_id = NULL;
+	schema->attributes_by_msDS_IntId = NULL;
 	schema->attributes_by_attributeID_oid = NULL;
 	schema->attributes_by_linkID = NULL;
 	ldb_oom(ldb);
