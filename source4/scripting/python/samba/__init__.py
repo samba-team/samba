@@ -147,7 +147,7 @@ class Ldb(_Ldb):
 
         try:
             for msg in res:
-                self.delete(msg.dn)
+                self.delete(msg.dn, ["relax:0"])
         except ldb.LdbError, (errno, _):
             if errno != ldb.ERR_NO_SUCH_OBJECT:
                 # Ignore no such object errors
@@ -170,7 +170,7 @@ class Ldb(_Ldb):
                                "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
                                [], controls=["show_deleted:0"]):
             try:
-                self.delete(msg.dn)
+                self.delete(msg.dn, ["relax:0"])
             except ldb.LdbError, (errno, _):
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore no such object errors
@@ -184,7 +184,7 @@ class Ldb(_Ldb):
         for attr in ["@SUBCLASSES", "@MODULES",
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
-                self.delete(attr)
+                self.delete(attr, ["relax:0"])
             except ldb.LdbError, (errno, _):
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore missing dn errors
@@ -198,7 +198,7 @@ class Ldb(_Ldb):
         # delete the specials
         for attr in ["@INDEXLIST", "@ATTRIBUTES"]:
             try:
-                self.delete(attr)
+                self.delete(attr, ["relax:0"])
             except ldb.LdbError, (errno, _):
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore missing dn errors
@@ -220,7 +220,7 @@ class Ldb(_Ldb):
                 erase_recursive(self, msg.dn)
 
             try:
-                self.delete(dn)
+                self.delete(dn, ["relax:0"])
             except ldb.LdbError, (errno, _):
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore no such object errors
