@@ -538,98 +538,60 @@ done:
 static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 					 TALLOC_CTX *mem_ctx,
 					 uint32 num_sids, const struct dom_sid *sids,
-					 uint32 *num_aliases,
-					 uint32 **alias_rids)
+					 uint32 *pnum_aliases,
+					 uint32 **palias_rids)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32 num_query_sids = 0;
-	int i;
-	struct rpc_pipe_client *cli;
-	struct samr_Ids alias_rids_query;
-	int rangesize = MAX_SAM_ENTRIES_W2K;
-	uint32 total_sids = 0;
-	int num_queries = 1;
+	uint32_t num_aliases = 0;
+	uint32_t *alias_rids = NULL;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	*num_aliases = 0;
-	*alias_rids = NULL;
+	DEBUG(3,("msrpc_lookup_useraliases\n"));
 
-	DEBUG(3,("rpc: lookup_useraliases\n"));
-
-	if ( !winbindd_can_contact_domain( domain ) ) {
-		DEBUG(10,("msrpc_lookup_useraliases: No incoming trust for domain %s\n",
-			  domain->name));
-		return NT_STATUS_OK;
+	if (pnum_aliases) {
+		*pnum_aliases = 0;
 	}
 
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	do {
-		/* prepare query */
-		struct lsa_SidArray sid_array;
+	if (!winbindd_can_contact_domain(domain)) {
+		DEBUG(10,("msrpc_lookup_useraliases: No incoming trust for domain %s\n",
+			  domain->name));
+		goto done;
+	}
 
-		ZERO_STRUCT(sid_array);
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-		num_query_sids = MIN(num_sids - total_sids, rangesize);
+	status = rpc_lookup_useraliases(tmp_ctx,
+					samr_pipe,
+					&dom_pol,
+					num_sids,
+					sids,
+					&num_aliases,
+					&alias_rids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
-		DEBUG(10,("rpc: lookup_useraliases: entering query %d for %d sids\n", 
-			num_queries, num_query_sids));	
+	if (pnum_aliases) {
+		*pnum_aliases = num_aliases;
+	}
 
-		if (num_query_sids) {
-			sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_query_sids);
-			if (sid_array.sids == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		} else {
-			sid_array.sids = NULL;
-		}
+	if (palias_rids) {
+		*palias_rids = talloc_move(mem_ctx, &alias_rids);
+	}
 
-		for (i=0; i<num_query_sids; i++) {
-			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[total_sids++]);
-			if (!sid_array.sids[i].sid) {
-				TALLOC_FREE(sid_array.sids);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		sid_array.num_sids = num_query_sids;
-
-		/* do request */
-		result = rpccli_samr_GetAliasMembership(cli, mem_ctx,
-							&dom_pol,
-							&sid_array,
-							&alias_rids_query);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			*num_aliases = 0;
-			*alias_rids = NULL;
-			TALLOC_FREE(sid_array.sids);
-			goto done;
-		}
-
-		/* process output */
-
-		for (i=0; i<alias_rids_query.count; i++) {
-			size_t na = *num_aliases;
-			if (!add_rid_to_array_unique(mem_ctx, alias_rids_query.ids[i],
-						alias_rids, &na)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*num_aliases = na;
-		}
-
-		TALLOC_FREE(sid_array.sids);
-
-		num_queries++;
-
-	} while (total_sids < num_sids);
-
- done:
-	DEBUG(10,("rpc: lookup_useraliases: got %d aliases in %d queries "
-		"(rangesize: %d)\n", *num_aliases, num_queries, rangesize));
-
-	return result;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 
