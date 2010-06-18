@@ -610,7 +610,7 @@ ctdb_attachdb_send(struct ctdb_connection *ctdb,
 	req = new_ctdb_control_request(ctdb, opcode, CTDB_CURRENT_NODE, name,
 				       strlen(name) + 1, attachdb_done, db);
 	if (!req) {
-		DEBUG(db->ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ERR,
 		      "ctdb_attachdb_send: failed allocating DB_ATTACH");
 		free(db);
 		return NULL;
