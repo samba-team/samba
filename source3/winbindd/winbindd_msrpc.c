@@ -460,33 +460,36 @@ done:
 }
 
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
-static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  const struct dom_sid *user_sid,
-				  uint32 *num_groups, struct dom_sid **user_grpsids)
+static NTSTATUS msrpc_lookup_usergroups(struct winbindd_domain *domain,
+					TALLOC_CTX *mem_ctx,
+					const struct dom_sid *user_sid,
+					uint32_t *pnum_groups,
+					struct dom_sid **puser_grpsids)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct policy_handle dom_pol, user_pol;
-	uint32 des_access = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct samr_RidWithAttributeArray *rid_array = NULL;
-	unsigned int i;
-	uint32 user_rid;
-	struct rpc_pipe_client *cli;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
+	struct dom_sid *user_grpsids = NULL;
+	uint32_t num_groups = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	DEBUG(3,("rpc: lookup_usergroups sid=%s\n", sid_string_dbg(user_sid)));
+	DEBUG(3,("msrpc_lookup_usergroups sid=%s\n", sid_string_dbg(user_sid)));
 
-	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid))
-		return NT_STATUS_UNSUCCESSFUL;
+	*pnum_groups = 0;
 
-	*num_groups = 0;
-	*user_grpsids = NULL;
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	/* so lets see if we have a cached user_info_3 */
-	result = lookup_usergroups_cached(domain, mem_ctx, user_sid, 
-					  num_groups, user_grpsids);
-
-	if (NT_STATUS_IS_OK(result)) {
-		return NT_STATUS_OK;
+	/* Check if we have a cached user_info_3 */
+	status = lookup_usergroups_cached(domain,
+					  tmp_ctx,
+					  user_sid,
+					  &num_groups,
+					  &user_grpsids);
+	if (NT_STATUS_IS_OK(status)) {
+		goto cached;
 	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
@@ -494,46 +497,39 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 			  domain->name));
 
 		/* Tell the cache manager not to remember this one */
-
-		return NT_STATUS_SYNCHRONIZATION_REQUIRED;
+		status = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+		goto done;
 	}
 
 	/* no cache; hit the wire */
-
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/* Get user handle */
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
-				      &dom_pol,
-				      des_access,
-				      user_rid,
-				      &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	/* Query user rids */
-	result = rpccli_samr_GetGroupsForUser(cli, mem_ctx,
-					      &user_pol,
-					      &rid_array);
-	*num_groups = rid_array->count;
-
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-
-	if (!NT_STATUS_IS_OK(result) || (*num_groups) == 0)
-		return result;
-
-	(*user_grpsids) = TALLOC_ARRAY(mem_ctx, struct dom_sid, *num_groups);
-	if (!(*user_grpsids))
-		return NT_STATUS_NO_MEMORY;
-
-	for (i=0;i<(*num_groups);i++) {
-		sid_compose(&((*user_grpsids)[i]), &domain->sid,
-			    rid_array->rids[i].rid);
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
+	status = rpc_lookup_usergroups(tmp_ctx,
+				       samr_pipe,
+				       &dom_pol,
+				       &domain->sid,
+				       user_sid,
+				       &num_groups,
+				       &user_grpsids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+cached:
+	if (pnum_groups) {
+		*pnum_groups = num_groups;
+	}
+
+	if (puser_grpsids) {
+		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 	return NT_STATUS_OK;
 }
 
@@ -1236,7 +1232,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_sid_to_name,
 	msrpc_rids_to_names,
 	msrpc_query_user,
-	lookup_usergroups,
+	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
