@@ -283,16 +283,15 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 			       struct wbint_userinfo *user_info)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol, user_pol;
-	union samr_UserInfo *info = NULL;
+	struct policy_handle dom_pol;
 	TALLOC_CTX *tmp_ctx;
-	uint32_t user_rid;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: query_user\n"));
+	DEBUG(3,("sam_query_user\n"));
 
-	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid)) {
-		return NT_STATUS_UNSUCCESSFUL;
+	/* Paranoia check */
+	if (!sid_check_is_in_our_domain(user_sid)) {
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (user_info) {
@@ -308,59 +307,17 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 
 	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	/* Get user handle */
-	status = rpccli_samr_OpenUser(samr_pipe,
-				      tmp_ctx,
-				      &dom_pol,
-				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      user_rid,
-				      &user_pol);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
+	status = rpc_query_user(tmp_ctx,
+				samr_pipe,
+				&dom_pol,
+				&domain->sid,
+				user_sid,
+				user_info);
 
-	/* Get user info */
-	status = rpccli_samr_QueryUserInfo(samr_pipe,
-					   tmp_ctx,
-					   &user_pol,
-					   0x15,
-					   &info);
-
-	rpccli_samr_Close(samr_pipe, tmp_ctx, &user_pol);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
-
-	sid_compose(&user_info->user_sid, &domain->sid, user_rid);
-	sid_compose(&user_info->group_sid, &domain->sid,
-		    info->info21.primary_gid);
-
-	if (user_info) {
-		user_info->acct_name = talloc_strdup(mem_ctx,
-						     info->info21.account_name.string);
-		if (user_info->acct_name == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-
-		user_info->full_name = talloc_strdup(mem_ctx,
-						     info->info21.full_name.string);
-		if (user_info->acct_name == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto error;
-		}
-
-		user_info->homedir = NULL;
-		user_info->shell = NULL;
-		user_info->primary_gid = (gid_t)-1;
-	}
-
-	status = NT_STATUS_OK;
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
