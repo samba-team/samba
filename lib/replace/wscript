@@ -364,7 +364,11 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
-                      hide_symbols=bld.BUILTIN_LIBRARY('replace'),
+					  # FIXME: Ideally symbols should be hidden here so they 
+					  # don't appear in the global namespace when Samba 
+					  # libraries are loaded, but this doesn't appear to work 
+					  # at the moment:
+					  # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       deps='crypt dl nsl socket')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
