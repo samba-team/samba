@@ -132,7 +132,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         SET_TARGET_TYPE(bld, libname, 'EMPTY')
         return
 
-    if target_type != 'PYTHON' and BUILTIN_LIBRARY(bld, libname):
+    if BUILTIN_LIBRARY(bld, libname):
         obj_target = libname
     else:
         obj_target = libname + '.objlist'
@@ -155,7 +155,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         hide_symbols   = hide_symbols,
                         local_include  = local_include)
 
-    if libname == obj_target:
+    if BUILTIN_LIBRARY(bld, libname):
         return
 
     if not SET_TARGET_TYPE(bld, libname, target_type):
