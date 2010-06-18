@@ -992,34 +992,24 @@ done:
 	return status;
 }
 
-static NTSTATUS common_lookup_useraliases(struct winbindd_domain *domain,
-					  TALLOC_CTX *mem_ctx,
-					  uint32_t num_sids,
-					  const struct dom_sid *sids,
-					  uint32_t *pnum_aliases,
-					  uint32_t **palias_rids)
+static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
+				       TALLOC_CTX *mem_ctx,
+				       uint32_t num_sids,
+				       const struct dom_sid *sids,
+				       uint32_t *pnum_aliases,
+				       uint32_t **palias_rids)
 {
-#define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32_t num_query_sids = 0;
-	uint32_t num_queries = 1;
 	uint32_t num_aliases = 0;
-	uint32_t total_sids = 0;
-	uint32_t rangesize = MAX_SAM_ENTRIES_W2K;
-	uint32_t i;
-	struct samr_Ids alias_rids_query;
+	uint32_t *alias_rids = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: lookup useraliases\n"));
+	DEBUG(3,("sam_lookup_useraliases\n"));
 
 	if (pnum_aliases) {
 		*pnum_aliases = 0;
-	}
-
-	if (palias_rids) {
-		*palias_rids = NULL;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -1029,77 +1019,31 @@ static NTSTATUS common_lookup_useraliases(struct winbindd_domain *domain,
 
 	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	do {
-		/* prepare query */
-		struct lsa_SidArray sid_array;
-
-		ZERO_STRUCT(sid_array);
-
-		num_query_sids = MIN(num_sids - total_sids, rangesize);
-
-		DEBUG(10,("rpc: lookup_useraliases: entering query %d for %d sids\n",
-			num_queries, num_query_sids));
-
-		if (num_query_sids) {
-			sid_array.sids = TALLOC_ZERO_ARRAY(tmp_ctx, struct lsa_SidPtr, num_query_sids);
-			if (sid_array.sids == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto error;
-			}
-		} else {
-			sid_array.sids = NULL;
-		}
-
-		for (i = 0; i < num_query_sids; i++) {
-			sid_array.sids[i].sid = sid_dup_talloc(tmp_ctx, &sids[total_sids++]);
-			if (sid_array.sids[i].sid == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto error;
-			}
-		}
-		sid_array.num_sids = num_query_sids;
-
-		/* do request */
-		status = rpccli_samr_GetAliasMembership(samr_pipe,
-							tmp_ctx,
-							&dom_pol,
-							&sid_array,
-							&alias_rids_query);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto error;
-		}
-
-		if (palias_rids) {
-			/* process output */
-			for (i = 0; i < alias_rids_query.count; i++) {
-				size_t na = num_aliases;
-
-				if (!add_rid_to_array_unique(mem_ctx,
-							     alias_rids_query.ids[i],
-							     palias_rids,
-							     &na)) {
-					status = NT_STATUS_NO_MEMORY;
-					goto error;
-				}
-				num_aliases = na;
-			}
-		}
-
-		num_queries++;
-
-	} while (total_sids < num_sids);
+	status = rpc_lookup_useraliases(tmp_ctx,
+					samr_pipe,
+					&dom_pol,
+					num_sids,
+					sids,
+					&num_aliases,
+					&alias_rids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	if (pnum_aliases) {
 		*pnum_aliases = num_aliases;
 	}
 
-error:
+	if (palias_rids) {
+		*palias_rids = talloc_move(mem_ctx, &alias_rids);
+	}
+
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
-#undef MAX_SAM_ENTRIES_W2K
 }
 
 /* find the sequence number for a domain */
@@ -1185,7 +1129,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.rids_to_names         = sam_rids_to_names,
 	.query_user            = builtin_query_user,
 	.lookup_usergroups     = sam_lookup_usergroups,
-	.lookup_useraliases    = common_lookup_useraliases,
+	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = common_sequence_number,
 	.lockout_policy        = common_lockout_policy,
@@ -1205,7 +1149,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.rids_to_names         = sam_rids_to_names,
 	.query_user            = sam_query_user,
 	.lookup_usergroups     = sam_lookup_usergroups,
-	.lookup_useraliases    = common_lookup_useraliases,
+	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = common_sequence_number,
 	.lockout_policy        = common_lockout_policy,
