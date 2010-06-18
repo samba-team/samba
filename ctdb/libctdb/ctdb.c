@@ -470,9 +470,6 @@ struct ctdb_db {
 	uint32_t id;
 	struct tdb_context *tdb;
 
-	/* The lock we are holding, if any (we can only have one!) */
-	struct ctdb_lock *lock;
-
 	ctdb_callback_t callback;
 	void *private_data;
 };
