@@ -72,7 +72,7 @@ typedef void (*ctdb_log_fn_t)(void *log_priv,
  * @log: the logging function
  * @log_priv: the private argument to the logging function.
  *
- * Returns a ctdb context if successful or NULL.  Use ctdb_free() to
+ * Returns a ctdb context if successful or NULL.  Use ctdb_disconnect() to
  * release the returned ctdb_connection when finished.
  *
  * See Also:
@@ -99,6 +99,14 @@ void ctdb_log_file(FILE *, int, const char *, va_list);
  * Set it to LOG_DEBUG to receive all messages.
  */
 extern int ctdb_log_level;
+
+/**
+ * ctdb_disconnect - close down a connection to ctdbd.
+ * @ctdb: the ctdb connectio returned from ctdb_connect.
+ *
+ * The @ctdb arg will be freed by this call, and must not be used again.
+ */
+void ctdb_disconnect(struct ctdb_connection *ctdb);
 
 /***
  *
@@ -185,7 +193,7 @@ typedef void (*ctdb_callback_t)(struct ctdb_connection *ctdb,
  * This represents a particular open database: you receive it from
  * ctdb_attachdb or ctdb_attachdb_recv to manipulate a database.
  *
- * You have to free the handle with ctdb_detach_db() when finished with it.
+ * You have to free the handle with ctdb_detachdb() when finished with it.
  */
 struct ctdb_db;
 
@@ -455,6 +463,15 @@ void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req);
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			      const char *name, bool persistent,
 			      uint32_t tdb_flags);
+
+/**
+ * ctdb_detachdb - close a clustered TDB.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @db: the database from ctdb_attachdb/ctdb_attachdb_send
+ *
+ * Closes a clustered tdb.
+ */
+void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db);
 
 /**
  * ctdb_readrecordlock - read and lock a record (synchronous)

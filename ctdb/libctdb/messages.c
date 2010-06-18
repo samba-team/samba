@@ -43,6 +43,18 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	}
 }
 
+void remove_message_handlers(struct ctdb_connection *ctdb)
+{
+	struct message_handler_info *i;
+
+	/* ctdbd should unregister automatically when we close fd, so we don't
+	   need to do that here. */
+	while ((i = ctdb->message_handlers) != NULL) {
+		DLIST_REMOVE(ctdb->message_handlers, i);
+		free(i);
+	}
+}
+
 bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 				   struct ctdb_request *req)
 {
