@@ -19,6 +19,105 @@
 
 #include "includes.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_dce.h"
+#include "librpc/gen_ndr/netlogon.h"
+#include "registry/reg_parse_prs.h"
+
+/* Creates a pipes_struct and initializes it with the information
+ * sent from the client */
+static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
+				    const char *pipe_name,
+				    const struct ndr_syntax_id id,
+				    const char *client_address,
+				    struct netr_SamInfo3 *info3,
+				    struct pipes_struct **_p,
+				    int *perrno)
+{
+	struct pipes_struct *p;
+	NTSTATUS status;
+	bool ok;
+
+	p = talloc_zero(mem_ctx, struct pipes_struct);
+	if (!p) {
+		*perrno = ENOMEM;
+		return -1;
+	}
+	p->syntax = id;
+
+	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
+	if (!p->mem_ctx) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+
+	ok = init_pipe_handles(p, &id);
+	if (!ok) {
+		DEBUG(1, ("Failed to init handles\n"));
+		TALLOC_FREE(p);
+		*perrno = EINVAL;
+		return -1;
+	}
+
+	/*
+	 * Initialize the incoming RPC data buffer with one PDU worth of
+	 * memory. We cheat here and say we're marshalling, as we intend
+	 * to add incoming data directly into the prs_struct and we want
+	 * it to auto grow. We will change the type to UNMARSALLING before
+	 * processing the stream.
+	 */
+	if (!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
+		DEBUG(0, ("malloc fail for in_data struct.\n"));
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+
+	/*
+	 * Initialize the outgoing RPC data buffer with no memory.
+	 */
+	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
+
+	p->endian = RPC_LITTLE_ENDIAN;
+
+	status = make_server_info_info3(p,
+					info3->base.account_name.string,
+					info3->base.domain.string,
+					&p->server_info, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to init server info\n"));
+		TALLOC_FREE(p);
+		*perrno = EINVAL;
+		return -1;
+	}
+
+	/*
+	 * Some internal functions need a local token to determine access to
+	 * resoutrces.
+	 */
+	status = create_local_token(p->server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to init local auth token\n"));
+		TALLOC_FREE(p);
+		*perrno = EINVAL;
+		return -1;
+	}
+
+	p->client_id = talloc_zero(p, struct client_address);
+	if (!p->client_id) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+	strlcpy(p->client_id->addr,
+		client_address, sizeof(p->client_id->addr));
+
+	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
+
+	*_p = p;
+	return 0;
+}
+
 
 struct named_pipe_listen_state {
 	int fd;
