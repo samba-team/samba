@@ -201,6 +201,13 @@ struct ctdb_request *new_ctdb_request(size_t len,
 
 void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
+	if (req->next || req->prev) {
+		DEBUG(ctdb, LOG_ALERT,
+		      "ctdb_request_free: request not complete! ctdb_cancel? %p (id %u)",
+		      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
+		ctdb_cancel(ctdb, req);
+		return;
+	}
 	if (req->extra_destructor) {
 		req->extra_destructor(ctdb, req);
 	}
@@ -456,6 +463,14 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 
 void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
+	if (!req->next && !req->prev) {
+		DEBUG(ctdb, LOG_ALERT,
+		      "ctdb_cancel: request completed! ctdb_request_free? %p (id %u)",
+		      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
+		ctdb_request_free(ctdb, req);
+		return;
+	}
+
 	DEBUG(ctdb, LOG_DEBUG, "ctdb_cancel: %p (id %u)",
 	      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
 
