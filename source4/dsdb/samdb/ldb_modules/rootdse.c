@@ -960,9 +960,24 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 	return ldb_module_done(req, NULL, NULL, ret);
 }
 
+static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	/*
+		If dn is not "" we should let it pass through
+	*/
+	if (!ldb_dn_is_null(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_set_errstring(ldb, "rootdse_add: you cannot add a new rootdse entry!");
+	return LDB_ERR_NAMING_VIOLATION;
+}
+
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	/*
 		If dn is not "" we should let it pass through
@@ -970,8 +985,6 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	if (!ldb_dn_is_null(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
-
-	ldb = ldb_module_get_ctx(module);
 
 	/*
 		dn is empty so check for schemaUpdateNow attribute
@@ -989,10 +1002,27 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_UNWILLING_TO_PERFORM;
 }
 
+static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	/*
+		If dn is not "" we should let it pass through
+	*/
+	if (!ldb_dn_is_null(req->op.del.dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_set_errstring(ldb, "rootdse_remove: you cannot delete the rootdse entry!");
+	return LDB_ERR_NO_SUCH_OBJECT;
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.name		= "rootdse",
 	.init_context   = rootdse_init,
 	.search         = rootdse_search,
 	.request	= rootdse_request,
-	.modify         = rootdse_modify
+	.add		= rootdse_add,
+	.modify         = rootdse_modify,
+	.del		= rootdse_delete
 };
