@@ -729,28 +729,28 @@ static int get_optional_feature_dn_guid(struct ldb_request *req, struct ldb_cont
 
 	ldb_val_str = ldb_msg_find_attr_as_string(msg, "enableOptionalFeature", NULL);
 	if (!ldb_val_str) {
-		ldb_asprintf_errstring(ldb,
-				       "rootdse: unable to find enableOptionalFeature\n");
+		ldb_set_errstring(ldb,
+				  "rootdse: unable to find 'enableOptionalFeature'!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	guid = strchr(ldb_val_str, ':');
 	if (!guid) {
-		ldb_asprintf_errstring(ldb,
-				       "rootdse: unable to find GUID in enableOptionalFeature\n");
+		ldb_set_errstring(ldb,
+				  "rootdse: unable to find GUID in 'enableOptionalFeature'!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 	status = GUID_from_string(guid+1, op_feature_guid);
 	if (!NT_STATUS_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb,
-				       "rootdse: bad GUID in enableOptionalFeature\n");
+		ldb_set_errstring(ldb,
+				  "rootdse: bad GUID in 'enableOptionalFeature'!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	dn = talloc_strndup(tmp_ctx, ldb_val_str, guid-ldb_val_str);
 	if (!dn) {
-		ldb_asprintf_errstring(ldb,
-				       "rootdse: bad DN in enableOptionalFeature\n");
+		ldb_set_errstring(ldb,
+				  "rootdse: bad DN in 'enableOptionalFeature'!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -787,8 +787,8 @@ static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_cont
 	}
 	if (res->count != 1) {
 		ldb_asprintf_errstring(ldb,
-				"More than one object found matching optional feature GUID %s\n",
-				GUID_string(tmp_ctx, &op_feature_guid));
+				       "More than one object found matching optional feature GUID %s\n",
+				       GUID_string(tmp_ctx, &op_feature_guid));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -813,16 +813,15 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	ret = ldb_msg_find_attr_as_int(op_feature_msg, "msDS-RequiredForestBehaviorVersion", 0);
 	if (domain_func_level < ret){
 		ldb_asprintf_errstring(ldb,
-						       "rootdse: Domain functional level must be at least %d\n",
-						       ret);
+				       "rootdse_enable_recycle_bin: Domain functional level must be at least %d\n",
+				       ret);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
 	ntds_settings_dn = samdb_ntds_settings_dn(ldb);
 	if (!ntds_settings_dn) {
-		ldb_asprintf_errstring(ldb,
-				__location__ ": Failed to find NTDS settings DN\n");
+		DEBUG(0, (__location__ ": Failed to find NTDS settings DN\n"));
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		talloc_free(tmp_ctx);
 		return ret;
@@ -845,8 +844,9 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	ret = dsdb_module_modify(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
-				"rootdse_enable_recycle_bin: Failed to modify object %s - %s",
-				ldb_dn_get_linearized(ntds_settings_dn), ldb_errstring(ldb));
+				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
+				       ldb_dn_get_linearized(ntds_settings_dn),
+				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -854,8 +854,10 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	msg->dn = op_feature_scope_dn;
 	ret = dsdb_module_modify(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
-				       ldb_dn_get_linearized(op_feature_scope_dn), ldb_errstring(ldb));
+		ldb_asprintf_errstring(ldb,
+				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
+				       ldb_dn_get_linearized(op_feature_scope_dn),
+				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -886,7 +888,7 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 	const char *guid_string;
 
 	if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
-		ldb_asprintf_errstring(ldb, "rootdse: Insufficient rights for enableoptionalfeature");
+		ldb_set_errstring(ldb, "rootdse: Insufficient rights for enableoptionalfeature");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -898,14 +900,15 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 
 	guid_string = GUID_string(tmp_ctx, &op_feature_guid);
 	if (!guid_string) {
-		ldb_asprintf_errstring(ldb, "rootdse: bad optional feature GUID");
+		ldb_set_errstring(ldb, "rootdse: bad optional feature GUID");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	ret = dsdb_find_optional_feature(module, ldb, tmp_ctx, op_feature_guid, &op_feature_msg);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "rootdse: unable to find optional feature for %s - %s",
-						       guid_string, ldb_errstring(ldb));
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: unable to find optional feature for %s - %s",
+				       guid_string, ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -915,13 +918,15 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 							 tmp_ctx, op_feature_scope_dn,
 							 op_feature_msg);
 	} else {
-		ldb_asprintf_errstring(ldb, "rootdse: unknown optional feature %s",
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: unknown optional feature %s",
 				       guid_string);
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "rootdse: failed to set optional feature for %s - %s",
+		ldb_asprintf_errstring(ldb,
+				       "rootdse: failed to set optional feature for %s - %s",
 				       guid_string, ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
