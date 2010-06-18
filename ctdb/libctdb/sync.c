@@ -45,7 +45,7 @@ static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 			DEBUG(ctdb, LOG_ERR, "ctdb_synchronous: poll failed");
 			return NULL;
 		}
-		if (ctdb_service(ctdb, fds.revents) < 0) {
+		if (!ctdb_service(ctdb, fds.revents)) {
 			/* It can have failed after it completed request. */
 			if (!*done)
 				ctdb_cancel(ctdb, req);
