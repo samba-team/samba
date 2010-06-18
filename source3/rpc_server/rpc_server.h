@@ -1,5 +1,5 @@
 /*
- *  RPC Pipe server helper headers
+ *  RPC Server helper headers
  *  Almost completely rewritten by (C) Jeremy Allison 2005 - 2010
  *  Copyright (C) Simo Sorce <idra@samba.org> - 2010
  *
@@ -22,5 +22,7 @@
 
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p);
+bool setup_named_pipe_socket(const char *pipe_name,
+			     struct tevent_context *ev_ctx);
 
 #endif /* _PRC_SERVER_H_ */
