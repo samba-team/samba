@@ -938,35 +938,24 @@ error:
 	return status;
 }
 
-/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
-static NTSTATUS common_lookup_usergroups(struct winbindd_domain *domain,
-					 TALLOC_CTX *mem_ctx,
-					 const struct dom_sid *user_sid,
-					 uint32_t *pnum_groups,
-					 struct dom_sid **puser_grpsids)
+/* Lookup groups a user is a member of. */
+static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      const struct dom_sid *user_sid,
+				      uint32_t *pnum_groups,
+				      struct dom_sid **puser_grpsids)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol, usr_pol;
-	uint32_t samr_access = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct policy_handle dom_pol;
 	struct dom_sid *user_grpsids = NULL;
-	uint32_t num_groups = 0, i;
-	uint32_t user_rid;
+	uint32_t num_groups = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: lookup usergroups\n"));
-
-	if (!sid_peek_check_rid(&domain->sid, user_sid, &user_rid)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	DEBUG(3,("sam_lookup_usergroups\n"));
 
 	if (pnum_groups) {
 		*pnum_groups = 0;
-	}
-
-	if (puser_grpsids) {
-		*puser_grpsids = NULL;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -976,42 +965,18 @@ static NTSTATUS common_lookup_usergroups(struct winbindd_domain *domain,
 
 	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	/* Get user handle */
-	status = rpccli_samr_OpenUser(samr_pipe,
-				      tmp_ctx,
-				      &dom_pol,
-				      samr_access,
-				      user_rid,
-				      &usr_pol);
+	status = rpc_lookup_usergroups(tmp_ctx,
+				       samr_pipe,
+				       &dom_pol,
+				       &domain->sid,
+				       user_sid,
+				       &num_groups,
+				       &user_grpsids);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* Query user rids */
-	status = rpccli_samr_GetGroupsForUser(samr_pipe,
-					      tmp_ctx,
-					      &usr_pol,
-					      &rid_array);
-	num_groups = rid_array->count;
-
-	rpccli_samr_Close(samr_pipe, tmp_ctx, &usr_pol);
-
-	if (!NT_STATUS_IS_OK(status) || num_groups == 0) {
-		return status;
-	}
-
-	user_grpsids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_groups);
-	if (user_grpsids == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto error;
-	}
-
-	for (i = 0; i < num_groups; i++) {
-		sid_compose(&(user_grpsids[i]), &domain->sid,
-			    rid_array->rids[i].rid);
+		goto done;
 	}
 
 	if (pnum_groups) {
@@ -1022,7 +987,7 @@ static NTSTATUS common_lookup_usergroups(struct winbindd_domain *domain,
 		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
 	}
 
-error:
+done:
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -1219,7 +1184,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
 	.query_user            = builtin_query_user,
-	.lookup_usergroups     = common_lookup_usergroups,
+	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = common_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = common_sequence_number,
@@ -1239,7 +1204,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
 	.query_user            = sam_query_user,
-	.lookup_usergroups     = common_lookup_usergroups,
+	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = common_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = common_sequence_number,
