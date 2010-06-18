@@ -95,6 +95,15 @@ class SimpleLdb(unittest.TestCase):
         l = ldb.Ldb(filename())
         self.assertRaises(ldb.LdbError, lambda: l.delete(ldb.Dn(l, "dc=foo2")))
 
+    def test_delete_w_unhandled_ctrl(self):
+        l = ldb.Ldb(filename())
+        m = ldb.Message()
+        m.dn = ldb.Dn(l, "dc=foo1")
+        m["b"] = ["a"]
+        l.add(m)
+        self.assertRaises(ldb.LdbError, lambda: l.delete(m.dn, ["search_options:1:2"]))
+        l.delete(m.dn)
+
     def test_contains(self):
         l = ldb.Ldb(filename())
         self.assertFalse(ldb.Dn(l, "dc=foo3") in l)
