@@ -147,10 +147,9 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct loadparm_context *lp_ctx,
 					  struct interface *ifaces)
 {
-	int num_interfaces;
+	int i, num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
-	unsigned int i;
 
 	num_interfaces = iface_count(ifaces);
 
