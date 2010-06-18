@@ -41,12 +41,16 @@ static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 			/* Signalled is OK, other error is bad. */
 			if (errno == EINTR)
 				continue;
-			ctdb_request_free(ctdb, req);
+			ctdb_cancel(ctdb, req);
 			DEBUG(ctdb, LOG_ERR, "ctdb_synchronous: poll failed");
 			return NULL;
 		}
 		if (ctdb_service(ctdb, fds.revents) < 0) {
-			ctdb_request_free(ctdb, req);
+			/* It can have failed after it completed request. */
+			if (!*done)
+				ctdb_cancel(ctdb, req);
+			else
+				ctdb_request_free(ctdb, req);
 			return NULL;
 		}
 	}
