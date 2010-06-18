@@ -87,4 +87,13 @@ NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
 			const struct dom_sid *user_sid,
 			struct wbint_userinfo *user_info);
 
+/* Lookup groups a user is a member of. */
+NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       const struct dom_sid *domain_sid,
+			       const struct dom_sid *user_sid,
+			       uint32_t *pnum_groups,
+			       struct dom_sid **puser_grpsids);
+
 #endif /* _WINBINDD_RPC_H_ */

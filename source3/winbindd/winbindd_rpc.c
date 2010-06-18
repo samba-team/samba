@@ -509,3 +509,65 @@ NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/* Lookup groups a user is a member of. */
+NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       const struct dom_sid *domain_sid,
+			       const struct dom_sid *user_sid,
+			       uint32_t *pnum_groups,
+			       struct dom_sid **puser_grpsids)
+{
+	struct policy_handle user_policy;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct dom_sid *user_grpsids = NULL;
+	uint32_t num_groups = 0, i;
+	uint32_t user_rid;
+	NTSTATUS status;
+
+	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get user handle */
+	status = rpccli_samr_OpenUser(samr_pipe,
+				      mem_ctx,
+				      samr_policy,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Query user rids */
+	status = rpccli_samr_GetGroupsForUser(samr_pipe,
+					      mem_ctx,
+					      &user_policy,
+					      &rid_array);
+	num_groups = rid_array->count;
+
+	rpccli_samr_Close(samr_pipe, mem_ctx, &user_policy);
+
+	if (!NT_STATUS_IS_OK(status) || num_groups == 0) {
+		return status;
+	}
+
+	user_grpsids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_groups);
+	if (user_grpsids == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		return status;
+	}
+
+	for (i = 0; i < num_groups; i++) {
+		sid_compose(&(user_grpsids[i]), domain_sid,
+			    rid_array->rids[i].rid);
+	}
+
+	*pnum_groups = num_groups;
+
+	*puser_grpsids = user_grpsids;
+
+	return NT_STATUS_OK;
+}
