@@ -445,3 +445,67 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/* Lookup user information from a rid or username. */
+NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
+			struct rpc_pipe_client *samr_pipe,
+			struct policy_handle *samr_policy,
+			const struct dom_sid *domain_sid,
+			const struct dom_sid *user_sid,
+			struct wbint_userinfo *user_info)
+{
+	struct policy_handle user_policy;
+	union samr_UserInfo *info = NULL;
+	uint32_t user_rid;
+	NTSTATUS status;
+
+	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get user handle */
+	status = rpccli_samr_OpenUser(samr_pipe,
+				      mem_ctx,
+				      samr_policy,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Get user info */
+	status = rpccli_samr_QueryUserInfo(samr_pipe,
+					   mem_ctx,
+					   &user_policy,
+					   0x15,
+					   &info);
+
+	rpccli_samr_Close(samr_pipe, mem_ctx, &user_policy);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sid_compose(&user_info->user_sid, domain_sid, user_rid);
+	sid_compose(&user_info->group_sid, domain_sid,
+		    info->info21.primary_gid);
+
+	user_info->acct_name = talloc_strdup(user_info,
+					info->info21.account_name.string);
+	if (user_info->acct_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	user_info->full_name = talloc_strdup(user_info,
+					info->info21.full_name.string);
+	if (user_info->acct_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	user_info->homedir = NULL;
+	user_info->shell = NULL;
+	user_info->primary_gid = (gid_t)-1;
+
+	return NT_STATUS_OK;
+}

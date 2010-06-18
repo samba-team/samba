@@ -79,4 +79,12 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 			   char ***pnames,
 			   enum lsa_SidType **ptypes);
 
+/* Lookup user information from a rid or username. */
+NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
+			struct rpc_pipe_client *samr_pipe,
+			struct policy_handle *samr_policy,
+			const struct dom_sid *domain_sid,
+			const struct dom_sid *user_sid,
+			struct wbint_userinfo *user_info);
+
 #endif /* _WINBINDD_RPC_H_ */
