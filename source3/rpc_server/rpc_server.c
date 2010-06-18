@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "registry/reg_parse_prs.h"
 #include "lib/tsocket/tsocket.h"
+#include "libcli/named_pipe_auth/npa_tstream.h"
 
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
@@ -60,24 +61,9 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/*
-	 * Initialize the incoming RPC data buffer with one PDU worth of
-	 * memory. We cheat here and say we're marshalling, as we intend
-	 * to add incoming data directly into the prs_struct and we want
-	 * it to auto grow. We will change the type to UNMARSALLING before
-	 * processing the stream.
-	 */
-	if (!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
-		DEBUG(0, ("malloc fail for in_data struct.\n"));
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
 
-	/*
-	 * Initialize the outgoing RPC data buffer with no memory.
-	 */
-	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
+	data_blob_free(&p->in_data.data);
+	data_blob_free(&p->in_data.pdu);
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
@@ -304,7 +290,341 @@ static void named_pipe_listener(struct tevent_context *ev,
 	named_pipe_accept_function(state->name, sd);
 }
 
+
+/* This is the core of the rpc server.
+ * Accepts connections from clients and process requests using the appropriate
+ * dispatcher table. */
+
+struct named_pipe_client {
+	const char *pipe_name;
+	struct ndr_syntax_id pipe_id;
+
+	struct tevent_context *ev;
+
+	uint16_t file_type;
+	uint16_t device_state;
+	uint64_t allocation_size;
+
+	struct tstream_context *tstream;
+
+	struct tsocket_address *client;
+	char *client_name;
+	struct tsocket_address *server;
+	char *server_name;
+	struct netr_SamInfo3 *info3;
+	DATA_BLOB session_key;
+	DATA_BLOB delegated_creds;
+
+	struct pipes_struct *p;
+
+	struct tevent_queue *write_queue;
+
+	struct iovec *iov;
+	size_t count;
+};
+
+static void named_pipe_accept_done(struct tevent_req *subreq);
+
 static void named_pipe_accept_function(const char *pipe_name, int fd)
 {
+	struct ndr_syntax_id syntax;
+	struct named_pipe_client *npc;
+	struct tstream_context *plain;
+	struct tevent_req *subreq;
+	bool ok;
+	int ret;
+
+	ok = is_known_pipename(pipe_name, &syntax);
+	if (!ok) {
+		DEBUG(1, ("Unknown pipe [%s]\n", pipe_name));
+		close(fd);
+		return;
+	}
+
+	npc = talloc_zero(NULL, struct named_pipe_client);
+	if (!npc) {
+		DEBUG(0, ("Out of memory!\n"));
+		close(fd);
+		return;
+	}
+	npc->pipe_name = pipe_name;
+	npc->pipe_id = syntax;
+	npc->ev = server_event_context();
+
+	/* make sure socket is in NON blocking state */
+	ret = set_blocking(fd, false);
+	if (ret != 0) {
+		DEBUG(2, ("Failed to make socket non-blocking\n"));
+		TALLOC_FREE(npc);
+		close(fd);
+		return;
+	}
+
+	ret = tstream_bsd_existing_socket(npc, fd, &plain);
+	if (ret != 0) {
+		DEBUG(2, ("Failed to create tstream socket\n"));
+		TALLOC_FREE(npc);
+		close(fd);
+		return;
+	}
+
+	npc->file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
+	npc->device_state = 0xff | 0x0400 | 0x0100;
+	npc->allocation_size = 4096;
+
+	subreq = tstream_npa_accept_existing_send(npc, npc->ev, plain,
+						  npc->file_type,
+						  npc->device_state,
+						  npc->allocation_size);
+	if (!subreq) {
+		DEBUG(2, ("Failed to start async accept procedure\n"));
+		TALLOC_FREE(npc);
+		close(fd);
+		return;
+	}
+	tevent_req_set_callback(subreq, named_pipe_accept_done, npc);
+}
+
+static void named_pipe_packet_process(struct tevent_req *subreq);
+static void named_pipe_packet_done(struct tevent_req *subreq);
+
+static void named_pipe_accept_done(struct tevent_req *subreq)
+{
+	struct named_pipe_client *npc =
+		tevent_req_callback_data(subreq, struct named_pipe_client);
+	const char *cli_addr;
+	int error;
+	int ret;
+
+	ret = tstream_npa_accept_existing_recv(subreq, &error, npc,
+						&npc->tstream,
+						&npc->client,
+						&npc->client_name,
+						&npc->server,
+						&npc->server_name,
+						&npc->info3,
+						&npc->session_key,
+						&npc->delegated_creds);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		DEBUG(2, ("Failed to accept named pipe connection! (%s)\n",
+			  strerror(error)));
+		TALLOC_FREE(npc);
+		return;
+	}
+
+	if (tsocket_address_is_inet(npc->client, "ip")) {
+		cli_addr = tsocket_address_inet_addr_string(npc->client,
+							    subreq);
+		if (cli_addr == NULL) {
+			TALLOC_FREE(npc);
+			return;
+		}
+	} else {
+		cli_addr = "";
+	}
+
+	ret = make_server_pipes_struct(npc,
+					npc->pipe_name, npc->pipe_id,
+					cli_addr, npc->info3,
+					&npc->p, &error);
+	if (ret != 0) {
+		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
+			  strerror(error)));
+		goto fail;
+	}
+
+	npc->write_queue = tevent_queue_create(npc, "np_server_write_queue");
+	if (!npc->write_queue) {
+		DEBUG(2, ("Failed to set up write queue!\n"));
+		goto fail;
+	}
+
+	/* And now start receaving and processing packets */
+	subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+	if (!subreq) {
+		DEBUG(2, ("Failed to start receving packets\n"));
+		goto fail;
+	}
+	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
+	return;
+
+fail:
+	DEBUG(2, ("Fatal error. Terminating client(%s) connection!\n",
+		  npc->client_name));
+	/* terminate client connection */
+	talloc_free(npc);
 	return;
 }
+
+static void named_pipe_packet_process(struct tevent_req *subreq)
+{
+	struct named_pipe_client *npc =
+		tevent_req_callback_data(subreq, struct named_pipe_client);
+	struct _output_data *out = &npc->p->out_data;
+	DATA_BLOB recv_buffer;
+	NTSTATUS status;
+	ssize_t data_left;
+	ssize_t data_used;
+	char *data;
+	uint32_t to_send;
+	bool ok;
+
+	status = named_pipe_read_packet_recv(subreq, npc, &recv_buffer);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	data_left = recv_buffer.length;
+	data = (char *)recv_buffer.data;
+
+	while (data_left) {
+
+		data_used = process_incoming_data(npc->p, data, data_left);
+		if (data_used < 0) {
+			DEBUG(3, ("Failed to process dceprc request!\n"));
+			status = NT_STATUS_UNEXPECTED_IO_ERROR;
+			goto fail;
+		}
+
+		data_left -= data_used;
+		data += data_used;
+	}
+
+	/* Do not leak this buffer, npc is a long lived context */
+	talloc_free(recv_buffer.data);
+
+	/* this is needed because of the way DCERPC Binds work in
+	 * the RPC marshalling code */
+	to_send = out->frag.length - out->current_pdu_sent;
+	if (to_send > 0) {
+
+		DEBUG(10, ("Current_pdu_len = %u, "
+			   "current_pdu_sent = %u "
+			   "Returning %u bytes\n",
+			   (unsigned int)out->frag.length,
+			   (unsigned int)out->current_pdu_sent,
+			   (unsigned int)to_send));
+
+		npc->iov = talloc_zero(npc, struct iovec);
+		if (!npc->iov) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		npc->count = 1;
+
+		npc->iov[0].iov_base = out->frag.data
+					+ out->current_pdu_sent;
+		npc->iov[0].iov_len = to_send;
+
+		out->current_pdu_sent += to_send;
+	}
+
+	/* this condition is false for bind packets, or when we haven't
+	 * yet got a full request, and need to wait for more data from
+	 * the client */
+	while (out->data_sent_length < out->rdata.length) {
+
+		ok = create_next_pdu(npc->p);
+		if (!ok) {
+			DEBUG(3, ("Failed to create next PDU!\n"));
+			status = NT_STATUS_UNEXPECTED_IO_ERROR;
+			goto fail;
+		}
+
+		npc->iov = talloc_realloc(npc, npc->iov,
+					    struct iovec, npc->count + 1);
+		if (!npc->iov) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		npc->iov[npc->count].iov_base = out->frag.data;
+		npc->iov[npc->count].iov_len = out->frag.length;
+
+		DEBUG(10, ("PDU number: %d, PDU Length: %u\n",
+			   (unsigned int)npc->count,
+			   (unsigned int)npc->iov[npc->count].iov_len));
+		dump_data(11, npc->iov[npc->count].iov_base,
+				npc->iov[npc->count].iov_len);
+		npc->count++;
+	}
+
+	/* we still don't have a complete request, go back and wait for more
+	 * data */
+	if (npc->count == 0) {
+		/* Wait for the next packet */
+		subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+		if (!subreq) {
+			DEBUG(2, ("Failed to start receving packets\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
+		return;
+	}
+
+	DEBUG(10, ("Sending a total of %u bytes\n",
+		   (unsigned int)npc->p->out_data.data_sent_length));
+
+	subreq = tstream_writev_queue_send(npc, npc->ev,
+					   npc->tstream,
+					   npc->write_queue,
+					   npc->iov, npc->count);
+	if (!subreq) {
+		DEBUG(2, ("Failed to send packet\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(subreq, named_pipe_packet_done, npc);
+	return;
+
+fail:
+	DEBUG(2, ("Fatal error(%s). "
+		  "Terminating client(%s) connection!\n",
+		  nt_errstr(status), npc->client_name));
+	/* terminate client connection */
+	talloc_free(npc);
+	return;
+}
+
+static void named_pipe_packet_done(struct tevent_req *subreq)
+{
+	struct named_pipe_client *npc =
+		tevent_req_callback_data(subreq, struct named_pipe_client);
+	int sys_errno;
+	int ret;
+
+	ret = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		DEBUG(2, ("Writev failed!\n"));
+		goto fail;
+	}
+
+	/* clear out any data that may have been left around */
+	npc->count = 0;
+	TALLOC_FREE(npc->iov);
+	data_blob_free(&npc->p->in_data.data);
+	data_blob_free(&npc->p->out_data.frag);
+	data_blob_free(&npc->p->out_data.rdata);
+
+	/* Wait for the next packet */
+	subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+	if (!subreq) {
+		DEBUG(2, ("Failed to start receving packets\n"));
+		sys_errno = ENOMEM;
+		goto fail;
+	}
+	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
+	return;
+
+fail:
+	DEBUG(2, ("Fatal error(%s). "
+		  "Terminating client(%s) connection!\n",
+		  strerror(sys_errno), npc->client_name));
+	/* terminate client connection */
+	talloc_free(npc);
+	return;
+ }
