@@ -985,7 +985,8 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 		return rootdse_enableoptionalfeature(module, req);
 	}
 
-	return LDB_ERR_OPERATIONS_ERROR;
+	ldb_set_errstring(ldb, "rootdse_modify: unknown attribute to change!");
+	return LDB_ERR_UNWILLING_TO_PERFORM;
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
