@@ -36,18 +36,11 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 				struct ldap_Result *result)
 {
 	struct ldap_SearchResEntry *ent = NULL;
-	struct ldb_dn *basedn;
 	struct ldb_result *res = NULL;
 	struct ldb_request *lreq;
-	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
-	int ret = 0;
-	int ldb_ret = -1;
-
-	basedn = ldb_dn_new(mem_ctx, cldapd->samctx, NULL);
-	if (basedn == NULL) goto nomem;
-	scope = LDB_SCOPE_BASE;
+	int ret = LDAP_SUCCESS, ldb_ret;
 
 	if (search->num_attributes >= 1) {
 		int i;
@@ -65,7 +58,7 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 	if (res == NULL) goto nomem;
 
 	ldb_ret = ldb_build_search_req_ex(&lreq, cldapd->samctx, mem_ctx,
-					  basedn, scope,
+					  NULL, LDB_SCOPE_BASE,
 					  search->tree, attrs,
 					  NULL,
 					  res, ldb_search_default_callback,
@@ -106,10 +99,12 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 			goto reply;
 		}
 		ent->num_attributes = res->msgs[0]->num_elements;
-		ent->attributes = talloc_array(ent, struct ldb_message_element, ent->num_attributes);
+		ent->attributes = talloc_array(ent, struct ldb_message_element,
+					       ent->num_attributes);
 		if (ent->attributes == NULL) goto nomem;
 		for (j=0; j < ent->num_attributes; j++) {
-			ent->attributes[j].name = talloc_steal(ent->attributes, res->msgs[0]->elements[j].name);
+			ent->attributes[j].name = talloc_steal(ent->attributes,
+							       res->msgs[0]->elements[j].name);
 			ent->attributes[j].num_values = 0;
 			ent->attributes[j].values = NULL;
 			if (search->attributesonly && (res->msgs[0]->elements[j].num_values == 0)) {
@@ -122,7 +117,7 @@ static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 	}
 
 reply:
-	if (ret) {
+	if (ret != LDAP_SUCCESS) {
 		/* nothing ... */
 	} else if (ldb_ret == LDB_SUCCESS) {
 		ret = LDAP_SUCCESS;
@@ -163,7 +158,8 @@ void cldapd_rootdse_request(struct cldap_socket *cldap,
 	reply.response		= NULL;
 	reply.result		= &result;
 
-	cldapd_rootdse_fill(cldapd, tmp_ctx, search, &reply.response, reply.result);
+	cldapd_rootdse_fill(cldapd, tmp_ctx, search, &reply.response,
+			    reply.result);
 
 	status = cldap_reply_send(cldap, &reply);
 	if (!NT_STATUS_IS_OK(status)) {
