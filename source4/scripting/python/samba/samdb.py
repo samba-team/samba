@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2010
 # Copyright (C) Matthias Dieter Wallnoefer 2009
 #
 # Based on the original in EJS:
@@ -26,8 +26,6 @@
 import dsdb
 import samba
 import ldb
-from samba.idmap import IDmapDB
-import pwd
 import time
 import base64
 
@@ -127,11 +125,11 @@ pwdLastSet: 0
 
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
-	ldbmessage = {"dn": group_dn,
+        ldbmessage = {"dn": group_dn,
             "sAMAccountName": groupname,
             "objectClass": "group"}
 
-	if grouptype is not None:
+        if grouptype is not None:
             ldbmessage["groupType"] = "%d" % ((grouptype)-2**32)
 
         if description is not None:
@@ -234,11 +232,11 @@ member: %s
 
     def newuser(self, username, password,
                 force_password_change_at_next_login_req=False,
-		useusernameascn=False, userou=None, surname=None, givenname=None, initials=None,
-		profilepath=None, scriptpath=None, homedrive=None, homedirectory=None,
-		jobtitle=None, department=None, company=None, description=None,
-		mailaddress=None, internetaddress=None, telephonenumber=None,
-		physicaldeliveryoffice=None):
+                useusernameascn=False, userou=None, surname=None, givenname=None, initials=None,
+                profilepath=None, scriptpath=None, homedrive=None, homedirectory=None,
+                jobtitle=None, department=None, company=None, description=None,
+                mailaddress=None, internetaddress=None, telephonenumber=None,
+                physicaldeliveryoffice=None):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -261,7 +259,7 @@ member: %s
         :param internetaddress: Home page of the new user
         :param telephonenumber: Phone number of the new user
         :param physicaldeliveryoffice: Office location of the new user
-	"""
+        """
 
         displayname = "";
         if givenname is not None:
@@ -273,7 +271,7 @@ member: %s
         if surname is not None:
             displayname += ' %s' % surname
 
-	cn = username
+        cn = username
         if useusernameascn is None and displayname is not "":
             cn = displayname
 
@@ -281,24 +279,24 @@ member: %s
 
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
-	ldbmessage = {"dn": user_dn,
+        ldbmessage = {"dn": user_dn,
             "sAMAccountName": username,
             "objectClass": "user"}
 
-	if surname is not None:
+        if surname is not None:
             ldbmessage["sn"] = surname
 
-	if givenname is not None:
+        if givenname is not None:
             ldbmessage["givenName"] = givenname
 
-	if displayname is not "":
+        if displayname is not "":
             ldbmessage["displayName"] = displayname
             ldbmessage["name"] = displayname
 
-	if initials is not None:
+        if initials is not None:
             ldbmessage["initials"] = '%s.' % initials
 
-	if profilepath is not None:
+        if profilepath is not None:
             ldbmessage["profilePath"] = profilepath
 
         if scriptpath is not None:
@@ -451,6 +449,9 @@ accountExpires: %u
         :param invocation_id: GUID of the invocation id.
         """
         dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
+
+    def get_oid_from_attid(self, attid):
+        return dsdb.dsdb_get_oid_from_attid(self, attid)
 
     def get_invocation_id(self):
         "Get the invocation_id id"

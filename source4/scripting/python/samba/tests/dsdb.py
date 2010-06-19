@@ -38,5 +38,5 @@ class DsdbTests(TestCase):
         session = system_session()
         test_ldb = SamDB(os.path.join(self._baseprovpath(), "private", "sam.ldb"),
             session_info=session, credentials=creds,lp=lp)
-        oid = test_ldb.dsdb_get_oid_from_attid(591614)
+        oid = test_ldb.get_oid_from_attid(591614)
         self.assertEquals(oid, "1.2.840.113556.1.4.1790")
