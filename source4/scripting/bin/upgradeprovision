@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ldb
 import logging
 import optparse
 import os
@@ -41,7 +42,6 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn)
 from samba import param
-from samba.misc import messageEltFlagToString
 from samba.provision import (find_setup_dir, get_domain_descriptor,
                             get_config_descriptor, secretsdb_self_join,
                             ProvisioningError, getLastProvisionUSN,
@@ -683,6 +683,13 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
     else:
         delta.remove(att)
 
+
+msg_elt_flag_strs = {
+    ldb.FLAG_MOD_ADD: "MOD_ADD",
+    ldb.FLAG_MOD_REPLACE: "MOD_REPLACE",
+    ldb.FLAG_MOD_DELETE: "MOD_DELETE" }
+
+
 def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
     """ This function updates the object that are already present in the
         provision
@@ -857,11 +864,11 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                             if opts.debugchange or opts.debugall:
                                 try:
                                     dump_denied_change(dn, att,
-                                        messageEltFlagToString(msgElt.flags()),
+                                        msg_elt_flag_strs[msgElt.flags()],
                                         current[0][att], reference[0][att])
                                 except KeyError:
                                     dump_denied_change(dn, att,
-                                        messageEltFlagToString(msgElt.flags()),
+                                        msg_elt_flag_strs[msgElt.flags()],
                                         current[0][att], None)
                             delta.remove(att)
                         continue
@@ -880,6 +887,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
             changed = changed + 1
             samdb.modify(delta)
     return changed
+
 
 def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
     """Check differences between the reference provision and the upgraded one.
@@ -958,7 +966,6 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
         (typ, val, tb) = sys.exc_info()
         traceback.print_exception(typ, val, tb)
         return 0
-
 
 
 def check_updated_sd(ref_sam, cur_sam, names):

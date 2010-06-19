@@ -19,7 +19,7 @@
 
 import samba.dsdb
 from samba.credentials import Credentials
-from samba import Ldb
+from samba.samdb import SamDB
 from samba.auth import system_session
 from testtools.testcase import TestCase
 import os
@@ -36,7 +36,7 @@ class DsdbTests(TestCase):
         creds = Credentials()
         creds.guess(lp)
         session = system_session()
-        test_ldb = Ldb(os.path.join(self._baseprovpath(), "private", "sam.ldb"),
+        test_ldb = SamDB(os.path.join(self._baseprovpath(), "private", "sam.ldb"),
             session_info=session, credentials=creds,lp=lp)
-        oid = samba.dsdb.dsdb_get_oid_from_attid(test_ldb, 591614)
+        oid = test_ldb.dsdb_get_oid_from_attid(591614)
         self.assertEquals(oid, "1.2.840.113556.1.4.1790")
