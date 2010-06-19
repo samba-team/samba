@@ -29,6 +29,8 @@
  */
 
 #include "includes.h"
+#include <ldb.h>
+#include <ldb_module.h>
 
 struct subren_msg_store {
 	struct subren_msg_store *next;

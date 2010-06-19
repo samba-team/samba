@@ -31,6 +31,8 @@
  */
 
 #include "includes.h"
+#include <ldb.h>
+#include <ldb_module.h>
 #include "dsdb/samdb/ldb_modules/util.h"
 
 
