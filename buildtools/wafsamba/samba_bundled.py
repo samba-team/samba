@@ -107,7 +107,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         for syslib in TO_LIST(onlyif):
             f = 'FOUND_SYSTEMLIB_%s' % syslib
             if not f in conf.env:
-                if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
+                if not conf.LIB_MAY_BE_BUNDLED(libname):
                     Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
                     sys.exit(1)
                 conf.env[found] = False
@@ -134,7 +134,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                 conf.SET_SYSLIB_DEPS(libname, implied_deps)
             return True
     conf.env[found] = False
-    if conf.LIB_MAY_BE_BUNDLED(libname):
+    if not conf.LIB_MAY_BE_BUNDLED(libname):
         Logs.error('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
         sys.exit(1)
     return False
