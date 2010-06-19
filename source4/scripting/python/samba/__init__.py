@@ -278,7 +278,7 @@ class Ldb(_Ldb):
         dsdb.samdb_get_domain_sid(self)
 
     def set_schema_from_ldif(self, pf, df):
-        _glue.dsdb_set_schema_from_ldif(self, pf, df)
+        dsdb.dsdb_set_schema_from_ldif(self, pf, df)
 
     def get_oid_from_attid(self, attid):
         return dsdb.dsdb_get_oid_from_attid(self, attid)

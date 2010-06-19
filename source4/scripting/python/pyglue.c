@@ -148,23 +148,7 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
-{
-	WERROR result;
-	char *pf, *df;
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
 
-	if (!PyArg_ParseTuple(args, "Oss", &py_ldb, &pf, &df))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	result = dsdb_set_schema_from_ldif(ldb, pf, df);
-	PyErr_WERROR_IS_ERR_RAISE(result);
-
-	Py_RETURN_NONE;
-}
 
 static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObject *args)
 {
@@ -284,8 +268,6 @@ static PyMethodDef py_misc_methods[] = {
 		"nttime2unix(nttime) -> timestamp" },
 	{ "nttime2string", (PyCFunction)py_nttime2string, METH_VARARGS,
 		"nttime2string(nttime) -> string" },
-	{ "dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
-		NULL },
 	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
