@@ -1488,6 +1488,10 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 		unsigned int n;
 		long long int i, j;
 
+		if (dn->comp_num == 0) {
+			return false;
+		}
+
 		if ( ! ldb_dn_validate(child)) {
 			return false;
 		}
@@ -1534,6 +1538,9 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 	}
 
 	if (dn->linearized) {
+		if (dn->linearized[0] == '\0') {
+			return false;
+		}
 
 		s = ldb_dn_get_linearized(child);
 		if ( ! s) {
