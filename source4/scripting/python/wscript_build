@@ -5,6 +5,7 @@ bld.SAMBA_SUBSYSTEM('LIBPYTHON',
                  public_deps='EXT_LIB_PYTHON',
                  init_function_sentinal='{NULL,NULL}',
 				 needs_python=True,
+				 deps='talloc',
 	)
 
 
