@@ -1100,7 +1100,7 @@ static int objectclass_do_rename(struct oc_context *ac)
 	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
 		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, parent does not exist!",
-				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
+				       ldb_dn_get_linearized(ac->req->op.rename.olddn));
 		return LDB_ERR_OTHER;
 	}
 
@@ -1140,7 +1140,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
 		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, entry does not exist!",
-				       ldb_dn_get_linearized(ac->req->op.rename.newdn));
+				       ldb_dn_get_linearized(ac->req->op.rename.olddn));
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
