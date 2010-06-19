@@ -20,7 +20,7 @@
 from samba.ntacls import setntacl, getntacl, XattrBackendError
 from samba.dcerpc import xattr, security
 from samba.param import LoadParm
-from unittest import TestCase
+from samba.tests import TestCase, TestSkipped
 import random
 import os
 
@@ -83,18 +83,17 @@ class NtaclsTests(TestCase):
         self.assertRaises(XattrBackendError, setntacl, lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467","ttdb", os.path.join(path,"eadbtest.tdb"))
 
     def test_setntacl_forcenative(self):
-        if os.getuid() != 0:
-            random.seed()
-            lp = LoadParm()
-            acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-            path = os.environ['SELFTEST_PREFIX']
-            tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-            ntacl = xattr.NTACL()
-            ntacl.version = 1
-            open(tempf, 'w').write("empty")
-            lp.set("posix:eadb", os.path.join(path,"eadbtest.tdb"))
-            self.assertRaises(Exception, setntacl, lp, tempf ,acl,
-                "S-1-5-21-2212615479-2695158682-2101375467","native")
-            os.unlink(tempf)
-        else:
-            print "Running test as root, test skipped"
+        if os.getuid() == 0:
+            raise TestSkipped("Running test as root, test skipped")
+        random.seed()
+        lp = LoadParm()
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        ntacl = xattr.NTACL()
+        ntacl.version = 1
+        open(tempf, 'w').write("empty")
+        lp.set("posix:eadb", os.path.join(path,"eadbtest.tdb"))
+        self.assertRaises(Exception, setntacl, lp, tempf ,acl,
+            "S-1-5-21-2212615479-2695158682-2101375467","native")
+        os.unlink(tempf)
