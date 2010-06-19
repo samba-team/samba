@@ -19,32 +19,12 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "ldb.h"
-#include "ldb_errors.h"
-#include "ldb_wrap.h"
 #include "param/param.h"
-#include "auth/credentials/credentials.h"
-#include "dsdb/samdb/samdb.h"
-#include "lib/ldb-samba/ldif_handlers.h"
-#include "librpc/ndr/libndr.h"
 #include "version.h"
-#include "lib/ldb/pyldb.h"
 #include "libcli/util/pyerrors.h"
-#include "libcli/security/security.h"
-#include "auth/pyauth.h"
 #include "param/pyparam.h"
-#include "auth/credentials/pycredentials.h"
 #include "lib/socket/netif.h"
 #include "lib/socket/netif_proto.h"
-
-/* FIXME: These should be in a header file somewhere, once we finish moving
- * away from SWIG .. */
-#define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
-/*	if (!PyLdb_Check(py_ldb)) { \
-		PyErr_SetString(py_ldb_get_exception(), "Ldb connection object required"); \
-		return NULL; \
-	} */\
-	ldb = PyLdb_AsLdbContext(py_ldb);
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
@@ -189,8 +169,8 @@ static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"generate_random_str(len) -> string\n"
 		"Generate random string with specified length." },
-	{ "generate_random_password", (PyCFunction)py_generate_random_password, METH_VARARGS,
-		"generate_random_password(min, max) -> string\n"
+	{ "generate_random_password", (PyCFunction)py_generate_random_password,
+		METH_VARARGS, "generate_random_password(min, max) -> string\n"
 		"Generate random password with a length >= min and <= max." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
@@ -216,15 +196,13 @@ void init_glue(void)
 	if (m == NULL)
 		return;
 
-	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
+	PyModule_AddObject(m, "version",
+					   PyString_FromString(SAMBA_VERSION_STRING));
 
 	/* one of the most annoying things about python scripts is
  	   that they don't die when you hit control-C. This fixes that
  	   sillyness. As we do all database operations using
- 	   transactions, this is also safe. In fact, not dying
- 	   immediately is unsafe as we could end up treating the
- 	   control-C exception as a different error and try to modify
- 	   as database incorrectly 
+ 	   transactions, this is also safe. 
 	*/
 	signal(SIGINT, SIG_DFL);
 }
