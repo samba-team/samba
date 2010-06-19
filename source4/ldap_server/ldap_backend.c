@@ -940,9 +940,16 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
 	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
 
-	if (ldb_dn_get_comp_num(newrdn) != 1) {
-		result = LDAP_INVALID_DN_SYNTAX;
-		map_ldb_error(local_ctx, LDB_ERR_INVALID_DN_SYNTAX, NULL,
+	if (ldb_dn_get_comp_num(newrdn) == 0) {
+		result = LDAP_PROTOCOL_ERROR;
+		map_ldb_error(local_ctx, LDB_ERR_PROTOCOL_ERROR, NULL,
+			      &errstr);
+		goto reply;
+	}
+
+	if (ldb_dn_get_comp_num(newrdn) > 1) {
+		result = LDAP_NAMING_VIOLATION;
+		map_ldb_error(local_ctx, LDB_ERR_NAMING_VIOLATION, NULL,
 			      &errstr);
 		goto reply;
 	}
@@ -961,24 +968,20 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 		parentdn = ldb_dn_new(local_ctx, samdb, req->newsuperior);
 		VALID_DN_SYNTAX(parentdn);
 		DEBUG(10, ("ModifyDNRequest: newsuperior: [%s]\n", req->newsuperior));
-		
-		if (ldb_dn_get_comp_num(parentdn) < 1) {
-			result = LDAP_AFFECTS_MULTIPLE_DSAS;
-			map_ldb_error(local_ctx, LDB_ERR_AFFECTS_MULTIPLE_DSAS,
-				      NULL, &errstr);
-			errstr = talloc_asprintf(local_ctx,
-				"%s. Error new Superior DN invalid", errstr);
-			goto reply;
-		}
 	}
 
 	if (!parentdn) {
 		parentdn = ldb_dn_get_parent(local_ctx, olddn);
-		NT_STATUS_HAVE_NO_MEMORY(parentdn);
+	}
+	if (!parentdn) {
+		result = LDAP_NO_SUCH_OBJECT;
+		map_ldb_error(local_ctx, LDB_ERR_NO_SUCH_OBJECT, NULL, &errstr);
+		goto reply;
 	}
 
 	if ( ! ldb_dn_add_child(parentdn, newrdn)) {
 		result = LDAP_OTHER;
+		map_ldb_error(local_ctx, LDB_ERR_OTHER, NULL, &errstr);
 		goto reply;
 	}
 	newdn = parentdn;
