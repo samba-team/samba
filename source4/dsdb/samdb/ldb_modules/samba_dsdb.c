@@ -354,7 +354,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_samba_dsdb_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_samba_dsdb_module_ops = {
 	.name		   = "samba_dsdb",
 	.init_context	   = samba_dsdb_init,
 };

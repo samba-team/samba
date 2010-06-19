@@ -806,7 +806,7 @@ static int operational_init(struct ldb_module *ctx)
 	return LDB_SUCCESS;
 }
 
-const struct ldb_module_ops ldb_operational_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_operational_module_ops = {
 	.name              = "operational",
 	.search            = operational_search,
 	.init_context	   = operational_init

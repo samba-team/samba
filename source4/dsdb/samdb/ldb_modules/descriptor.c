@@ -898,5 +898,3 @@ _PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.rename        = descriptor_rename,
 	.init_context  = descriptor_init
 };
-
-

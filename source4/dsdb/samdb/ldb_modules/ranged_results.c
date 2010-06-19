@@ -246,7 +246,7 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-const struct ldb_module_ops ldb_ranged_results_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_ranged_results_module_ops = {
 	.name		   = "ranged_results",
 	.search            = rr_search,
 };
