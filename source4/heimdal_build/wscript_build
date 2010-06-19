@@ -1,590 +1,592 @@
 #!/usr/bin/env python
+# vim: expandtab
 
-bld.SAMBA_GENERATOR(
-    name="HEIMDAL_ERRORLIST",
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
-    target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h'
+if not bld.CONFIG_SET('USING_SYSTEM_HEIMDAL'):
+    bld.SAMBA_GENERATOR(
+        name="HEIMDAL_ERRORLIST",
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
+        target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h'
+        )
+
+
+    bld.SAMBA_GENERATOR(
+        name = 'HEIMDAL_NORMALIZE_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
+        target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
+    )
+
+    bld.SAMBA_GENERATOR(
+        name = 'HEIMDAL_COMBINING_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
+        target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
+    )
+
+    bld.SAMBA_GENERATOR(
+        name = 'HEIMDAL_BIDI_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
+        target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c'
     )
 
 
-bld.SAMBA_GENERATOR(
-    name = 'HEIMDAL_NORMALIZE_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
-    target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
-)
-
-bld.SAMBA_GENERATOR(
-    name = 'HEIMDAL_COMBINING_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
-    target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
-)
-
-bld.SAMBA_GENERATOR(
-    name = 'HEIMDAL_BIDI_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
-    target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c'
-)
-
-
-bld.SAMBA_GENERATOR(
-    name = 'HEIMDAL_MAP_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
-    target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c'
-)
-
-
-bld.SAMBA_ASN1('HEIMDAL_SPNEGO_ASN1',
-        source='../heimdal/lib/gssapi/spnego/spnego.asn1',
-	options='--sequence=MechTypeList',
-        includes='../heimdal/lib/asn1',
-	directory='lib/gssapi'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_GSSAPI_ASN1',
-	'../heimdal/lib/gssapi/mech/gssapi.asn1',
-        includes='../heimdal/lib/asn1',
-	directory='lib/gssapi'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_KRB5_ASN1',
-	'../heimdal/lib/asn1/krb5.asn1',
-	option_file='../heimdal/lib/asn1/krb5.opt',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_DIGEST_ASN1',
-	'../heimdal/lib/asn1/digest.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_PKCS8_ASN1',
-	'../heimdal/lib/asn1/pkcs8.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_PKCS9_ASN1',
-	'../heimdal/lib/asn1/pkcs9.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_PKCS12_ASN1',
-	'../heimdal/lib/asn1/pkcs12.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_RFC2459_ASN1',
-	'../heimdal/lib/asn1/rfc2459.asn1',
-	options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_PKINIT_ASN1',
-	'../heimdal/lib/asn1/pkinit.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_CMS_ASN1',
-	'../heimdal/lib/asn1/cms.asn1',
-	option_file='../heimdal/lib/asn1/cms.opt',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_OCSP_ASN1',
-	'../heimdal/lib/hx509/ocsp.asn1',
-	options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
-        includes='../heimdal/lib/asn1',
-	directory='lib/hx509'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_KX509_ASN1',
-	'../heimdal/lib/asn1/kx509.asn1',
-	directory='lib/asn1'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_PKCS10_ASN1',
-	'../heimdal/lib/hx509/pkcs10.asn1',
-	options='--preserve-binary=CertificationRequestInfo',
-        includes='../heimdal/lib/asn1',
-	directory='lib/hx509'
-	)
-
-
-bld.SAMBA_ASN1('HEIMDAL_HDB_ASN1',
-	'../heimdal/lib/hdb/hdb.asn1',
-        includes='../heimdal/lib/asn1')
-
-bld.SAMBA_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
-	'../heimdal/lib/asn1/asn1_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_HDB_ERR_ET',
-	'../heimdal/lib/hdb/hdb_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
-	'../heimdal/lib/krb5/heim_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_K524_ERR_ET',
-	'../heimdal/lib/krb5/k524_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_KRB_ERR_ET',
-	'../heimdal/lib/krb5/krb_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
-	'../heimdal/lib/krb5/krb5_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
-	'../heimdal/lib/gssapi/krb5/gkrb5_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_HX509_ERR_ET',
-	'../heimdal/lib/hx509/hx509_err.et')
-
-
-bld.SAMBA_ERRTABLE('HEIMDAL_WIND_ERR_ET',
-	'../heimdal/lib/wind/wind_err.et')
-
-HEIMDAL_ROKEN_HOSTCC_SOURCE = '''
-	../heimdal/lib/roken/base64.c
-	../heimdal/lib/roken/ct.c
-	../heimdal/lib/roken/hex.c
-	../heimdal/lib/roken/bswap.c
-	../heimdal/lib/roken/dumpdata.c
-	../heimdal/lib/roken/emalloc.c
-	../heimdal/lib/roken/ecalloc.c
-	../heimdal/lib/roken/getarg.c
-	../heimdal/lib/roken/get_window_size.c
-	../heimdal/lib/roken/getdtablesize.c
-	../heimdal/lib/roken/h_errno.c
-	../heimdal/lib/roken/issuid.c
-	../heimdal/lib/roken/net_read.c
-	../heimdal/lib/roken/net_write.c
-	../heimdal/lib/roken/parse_time.c
-	../heimdal/lib/roken/parse_units.c
-	../heimdal/lib/roken/signal.c
-	../heimdal/lib/roken/vis.c
-	../heimdal/lib/roken/strlwr.c
-	../heimdal/lib/roken/strsep_copy.c
-	../heimdal/lib/roken/strsep.c
-	../heimdal/lib/roken/strupr.c
-	../heimdal/lib/roken/strpool.c
-	../heimdal/lib/roken/estrdup.c
-	../heimdal/lib/roken/erealloc.c
-	../heimdal/lib/roken/simple_exec.c
-	../heimdal/lib/roken/strcollect.c
-	../heimdal/lib/roken/rtbl.c
-	../heimdal/lib/roken/cloexec.c
-	../heimdal/lib/roken/xfree.c
-	replace.c
-'''
-
-if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
-	HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
-		../heimdal/lib/roken/getprogname.c
-		../heimdal/lib/roken/setprogname.c
-	'''
-
-if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
-	HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
-		../heimdal/lib/roken/closefrom.c
-	'''
-
-HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_HOSTCC_SOURCE + '''
-	../heimdal/lib/roken/resolve.c
-	../heimdal/lib/roken/socket.c
-	../heimdal/lib/roken/roken_gethostby.c
-'''
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
-	HEIMDAL_ROKEN_SOURCE,
-	includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-	deps='resolv UID_WRAPPER util'
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_KDC',
-                    source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
-                    includes='../heimdal/kdc',
-                    heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
-                    heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 HEIMDAL_NTLM HEIMDAL_HCRYPTO'
-                    )
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_NTLM',
-                    source='../heimdal/lib/ntlm/ntlm.c',
-                    includes='../heimdal/lib/ntlm',
-                    heimdal_autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
-                    deps='HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5'
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
-	'../heimdal/lib/hdb/keys.c',
-	includes='../heimdal/lib/hdb',
-	deps='HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5 HEIMDAL_HDB_ASN1'
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB',
-                    source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
-                              ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
-                              ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
-                              hdb-glue.c''',
-                    includes='../heimdal/lib/hdb ../heimdal/lib/com_err',
-                    heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
-                    heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
-                    deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1'
-	)
-
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_GSSAPI',
-                    '''
-../heimdal/lib/gssapi/spnego/init_sec_context.c ../heimdal/lib/gssapi/spnego/external.c ../heimdal/lib/gssapi/spnego/compat.c
-../heimdal/lib/gssapi/spnego/context_stubs.c ../heimdal/lib/gssapi/spnego/cred_stubs.c ../heimdal/lib/gssapi/spnego/accept_sec_context.c
-../heimdal/lib/gssapi/krb5/copy_ccache.c ../heimdal/lib/gssapi/krb5/delete_sec_context.c ../heimdal/lib/gssapi/krb5/init_sec_context.c
-../heimdal/lib/gssapi/krb5/context_time.c ../heimdal/lib/gssapi/krb5/init.c ../heimdal/lib/gssapi/krb5/address_to_krb5addr.c
-../heimdal/lib/gssapi/krb5/get_mic.c ../heimdal/lib/gssapi/krb5/inquire_context.c ../heimdal/lib/gssapi/krb5/add_cred.c
-../heimdal/lib/gssapi/krb5/inquire_cred.c ../heimdal/lib/gssapi/krb5/inquire_cred_by_oid.c ../heimdal/lib/gssapi/krb5/inquire_cred_by_mech.c
-../heimdal/lib/gssapi/krb5/inquire_mechs_for_name.c ../heimdal/lib/gssapi/krb5/inquire_names_for_mech.c ../heimdal/lib/gssapi/krb5/indicate_mechs.c
-../heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.c ../heimdal/lib/gssapi/krb5/export_sec_context.c ../heimdal/lib/gssapi/krb5/import_sec_context.c
-../heimdal/lib/gssapi/krb5/duplicate_name.c ../heimdal/lib/gssapi/krb5/import_name.c ../heimdal/lib/gssapi/krb5/compare_name.c
-../heimdal/lib/gssapi/krb5/export_name.c ../heimdal/lib/gssapi/krb5/canonicalize_name.c ../heimdal/lib/gssapi/krb5/unwrap.c
-../heimdal/lib/gssapi/krb5/wrap.c ../heimdal/lib/gssapi/krb5/release_name.c ../heimdal/lib/gssapi/krb5/cfx.c
-../heimdal/lib/gssapi/krb5/8003.c ../heimdal/lib/gssapi/krb5/arcfour.c ../heimdal/lib/gssapi/krb5/encapsulate.c
-../heimdal/lib/gssapi/krb5/display_name.c ../heimdal/lib/gssapi/krb5/sequence.c ../heimdal/lib/gssapi/krb5/display_status.c
-../heimdal/lib/gssapi/krb5/release_buffer.c ../heimdal/lib/gssapi/krb5/external.c ../heimdal/lib/gssapi/krb5/compat.c
-../heimdal/lib/gssapi/krb5/creds.c ../heimdal/lib/gssapi/krb5/acquire_cred.c ../heimdal/lib/gssapi/krb5/release_cred.c
-../heimdal/lib/gssapi/krb5/store_cred.c ../heimdal/lib/gssapi/krb5/set_cred_option.c ../heimdal/lib/gssapi/krb5/decapsulate.c
-../heimdal/lib/gssapi/krb5/verify_mic.c ../heimdal/lib/gssapi/krb5/accept_sec_context.c ../heimdal/lib/gssapi/krb5/set_sec_context_option.c
-../heimdal/lib/gssapi/krb5/process_context_token.c ../heimdal/lib/gssapi/krb5/prf.c ../heimdal/lib/gssapi/krb5/aeap.c
-../heimdal/lib/gssapi/mech/context.c ../heimdal/lib/gssapi/mech/gss_krb5.c ../heimdal/lib/gssapi/mech/gss_mech_switch.c
-../heimdal/lib/gssapi/mech/gss_process_context_token.c ../heimdal/lib/gssapi/mech/gss_buffer_set.c
-../heimdal/lib/gssapi/mech/gss_aeap.c ../heimdal/lib/gssapi/mech/gss_add_cred.c ../heimdal/lib/gssapi/mech/gss_cred.c
-../heimdal/lib/gssapi/mech/gss_add_oid_set_member.c ../heimdal/lib/gssapi/mech/gss_compare_name.c ../heimdal/lib/gssapi/mech/gss_release_oid_set.c
-../heimdal/lib/gssapi/mech/gss_create_empty_oid_set.c ../heimdal/lib/gssapi/mech/gss_decapsulate_token.c ../heimdal/lib/gssapi/mech/gss_inquire_cred_by_oid.c
-../heimdal/lib/gssapi/mech/gss_canonicalize_name.c ../heimdal/lib/gssapi/mech/gss_inquire_sec_context_by_oid.c ../heimdal/lib/gssapi/mech/gss_inquire_names_for_mech.c
-../heimdal/lib/gssapi/mech/gss_inquire_mechs_for_name.c ../heimdal/lib/gssapi/mech/gss_wrap_size_limit.c ../heimdal/lib/gssapi/mech/gss_names.c
-../heimdal/lib/gssapi/mech/gss_verify.c ../heimdal/lib/gssapi/mech/gss_display_name.c
-../heimdal/lib/gssapi/mech/gss_duplicate_oid.c ../heimdal/lib/gssapi/mech/gss_display_status.c ../heimdal/lib/gssapi/mech/gss_release_buffer.c
-../heimdal/lib/gssapi/mech/gss_release_oid.c ../heimdal/lib/gssapi/mech/gss_test_oid_set_member.c
-../heimdal/lib/gssapi/mech/gss_release_cred.c
-../heimdal/lib/gssapi/mech/gss_set_sec_context_option.c ../heimdal/lib/gssapi/mech/gss_export_name.c ../heimdal/lib/gssapi/mech/gss_seal.c
-../heimdal/lib/gssapi/mech/gss_acquire_cred.c ../heimdal/lib/gssapi/mech/gss_unseal.c ../heimdal/lib/gssapi/mech/gss_verify_mic.c
-../heimdal/lib/gssapi/mech/gss_accept_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_cred_by_mech.c ../heimdal/lib/gssapi/mech/gss_indicate_mechs.c
-../heimdal/lib/gssapi/mech/gss_delete_sec_context.c ../heimdal/lib/gssapi/mech/gss_sign.c ../heimdal/lib/gssapi/mech/gss_utils.c
-../heimdal/lib/gssapi/mech/gss_init_sec_context.c ../heimdal/lib/gssapi/mech/gss_oid_equal.c ../heimdal/lib/gssapi/mech/gss_oid_to_str.c
-../heimdal/lib/gssapi/mech/gss_context_time.c ../heimdal/lib/gssapi/mech/gss_encapsulate_token.c ../heimdal/lib/gssapi/mech/gss_get_mic.c
-../heimdal/lib/gssapi/mech/gss_import_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_cred.c ../heimdal/lib/gssapi/mech/gss_wrap.c
-../heimdal/lib/gssapi/mech/gss_import_name.c ../heimdal/lib/gssapi/mech/gss_duplicate_name.c ../heimdal/lib/gssapi/mech/gss_unwrap.c
-../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
-../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
-	includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-	deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 HEIMDAL_ROKEN HEIMDAL_KRB5'
-	)
-
-
-bld.SAMBA_GENERATOR(
-    name="HEIMDAL_IFADDRS_H",
-    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-    source = 'ifaddrs.hin',
-    target = 'ifaddrs.h',
-    enabled = not bld.CONFIG_SET('HAVE_IFADDRS_H')
+    bld.SAMBA_GENERATOR(
+        name = 'HEIMDAL_MAP_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
+        target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c'
     )
 
-bld.SAMBA_GENERATOR(
-    group='build_compiler_source',
-    name="HEIMDAL_ERR_H",
-    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-    source = '../heimdal/lib/roken/err.hin',
-    target = '../heimdal/lib/roken/err.h',
-    enabled = not bld.CONFIG_SET('HAVE_ERR_H')
-    )
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_KRB5',
-                    bld.SUBDIR('../heimdal/lib/krb5/',
-                               '''acache.c add_et_list.c
-                               addr_families.c appdefault.c
-                               asn1_glue.c auth_context.c
-                               build_ap_req.c build_auth.c cache.c
-                               changepw.c codec.c config_file.c
-                               constants.c context.c convert_creds.c
-                               copy_host_realm.c crc.c creds.c
-                               crypto.c data.c eai_to_heim_errno.c
-                               error_string.c expand_hostname.c
-                               fcache.c free.c free_host_realm.c
-                               generate_seq_number.c generate_subkey.c
-                               get_addrs.c get_cred.c
-                               get_default_principal.c
-                               get_default_realm.c get_for_creds.c
-                               get_host_realm.c get_in_tkt.c
-                               get_port.c init_creds.c init_creds_pw.c
-                               kcm.c keyblock.c keytab.c keytab_any.c
-                               keytab_file.c keytab_memory.c
-                               keytab_keyfile.c krbhst.c log.c
-                               mcache.c misc.c mk_error.c mk_priv.c
-                               mk_rep.c mk_req.c mk_req_ext.c
-                               mit_glue.c n-fold.c padata.c pkinit.c
-                               plugin.c principal.c prog_setup.c pac.c
-                               prompter_posix.c rd_cred.c rd_error.c
-                               rd_priv.c rd_rep.c rd_req.c replay.c
-                               send_to_kdc.c set_default_realm.c
-                               store.c store_emem.c store_fd.c
-                               store_mem.c ticket.c time.c transited.c
-                               v4_glue.c version.c warn.c krb5_err.c
-                               heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
-                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/lib/com_err',
-                    public_deps='HEIMDAL_COM_ERR',
-                    heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
-                    heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
-                    heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
-                    deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl'
-                    )
+    bld.SAMBA_ASN1('HEIMDAL_SPNEGO_ASN1',
+            source='../heimdal/lib/gssapi/spnego/spnego.asn1',
+        options='--sequence=MechTypeList',
+            includes='../heimdal/lib/asn1',
+        directory='lib/gssapi'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
-	'../heimdal/lib/asn1/der_get.c ../heimdal/lib/asn1/der_put.c ../heimdal/lib/asn1/der_free.c ../heimdal/lib/asn1/der_format.c ../heimdal/lib/asn1/der_length.c ../heimdal/lib/asn1/der_copy.c ../heimdal/lib/asn1/der_cmp.c ../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
-        includes='../heimdal/lib/asn1',
-	deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
-	)
+    bld.SAMBA_ASN1('HEIMDAL_GSSAPI_ASN1',
+        '../heimdal/lib/gssapi/mech/gssapi.asn1',
+            includes='../heimdal/lib/asn1',
+        directory='lib/gssapi'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
-	'../heimdal/lib/hcrypto/imath/imath.c ../heimdal/lib/hcrypto/imath/iprime.c',
-        includes='../heimdal/lib/hcrypto/imath',
-	deps='HEIMDAL_ROKEN'
-	)
+    bld.SAMBA_ASN1('HEIMDAL_KRB5_ASN1',
+        '../heimdal/lib/asn1/krb5.asn1',
+        option_file='../heimdal/lib/asn1/krb5.opt',
+        directory='lib/asn1'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO',
-	'../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c',
-	includes='../heimdal/lib/hcrypto ../heimdal/lib',
-	deps='HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1'
-	)
+    bld.SAMBA_ASN1('HEIMDAL_DIGEST_ASN1',
+        '../heimdal/lib/asn1/digest.asn1',
+        directory='lib/asn1'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_HX509',
-	'../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
-	includes='../heimdal/lib/hx509',
-	deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 HEIMDAL_WIND'
-	)
+    bld.SAMBA_ASN1('HEIMDAL_PKCS8_ASN1',
+        '../heimdal/lib/asn1/pkcs8.asn1',
+        directory='lib/asn1'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
-	'../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
-	includes='../heimdal/lib/wind',
-	deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
-	)
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_HOSTCC',
-	HEIMDAL_ROKEN_HOSTCC_SOURCE,
-	use_hostcc=True,
-	use_global_deps=False,
-	includes='../heimdal/lib/roken',
-	cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	group='compiler_libraries',
-	deps='LIBREPLACE_HOSTCC'
-	)
+    bld.SAMBA_ASN1('HEIMDAL_PKCS9_ASN1',
+        '../heimdal/lib/asn1/pkcs9.asn1',
+        directory='lib/asn1'
+        )
 
 
-bld.SAMBA_SUBSYSTEM('HEIMDAL_COM_ERR',
-	'../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
-	includes='../heimdal/lib/com_err',
-	deps='HEIMDAL_ROKEN',
-        enabled=not bld.CONFIG_SET('HAVE_COM_ERR')
-	)
+    bld.SAMBA_ASN1('HEIMDAL_PKCS12_ASN1',
+        '../heimdal/lib/asn1/pkcs12.asn1',
+        directory='lib/asn1'
+        )
 
 
-# here is the asn1 compiler build rule
-bld.SAMBA_BINARY('asn1_compile',
-	'../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
-	use_hostcc=True,
+    bld.SAMBA_ASN1('HEIMDAL_RFC2459_ASN1',
+        '../heimdal/lib/asn1/rfc2459.asn1',
+        options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
+        directory='lib/asn1'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_PKINIT_ASN1',
+        '../heimdal/lib/asn1/pkinit.asn1',
+        directory='lib/asn1'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_CMS_ASN1',
+        '../heimdal/lib/asn1/cms.asn1',
+        option_file='../heimdal/lib/asn1/cms.opt',
+        directory='lib/asn1'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_OCSP_ASN1',
+        '../heimdal/lib/hx509/ocsp.asn1',
+        options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
+            includes='../heimdal/lib/asn1',
+        directory='lib/hx509'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_KX509_ASN1',
+        '../heimdal/lib/asn1/kx509.asn1',
+        directory='lib/asn1'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_PKCS10_ASN1',
+        '../heimdal/lib/hx509/pkcs10.asn1',
+        options='--preserve-binary=CertificationRequestInfo',
+            includes='../heimdal/lib/asn1',
+        directory='lib/hx509'
+        )
+
+
+    bld.SAMBA_ASN1('HEIMDAL_HDB_ASN1',
+        '../heimdal/lib/hdb/hdb.asn1',
+            includes='../heimdal/lib/asn1')
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
+        '../heimdal/lib/asn1/asn1_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_HDB_ERR_ET',
+        '../heimdal/lib/hdb/hdb_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
+        '../heimdal/lib/krb5/heim_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_K524_ERR_ET',
+        '../heimdal/lib/krb5/k524_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_KRB_ERR_ET',
+        '../heimdal/lib/krb5/krb_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
+        '../heimdal/lib/krb5/krb5_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
+        '../heimdal/lib/gssapi/krb5/gkrb5_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_HX509_ERR_ET',
+        '../heimdal/lib/hx509/hx509_err.et')
+
+
+    bld.SAMBA_ERRTABLE('HEIMDAL_WIND_ERR_ET',
+        '../heimdal/lib/wind/wind_err.et')
+
+    HEIMDAL_ROKEN_HOSTCC_SOURCE = '''
+        ../heimdal/lib/roken/base64.c
+        ../heimdal/lib/roken/ct.c
+        ../heimdal/lib/roken/hex.c
+        ../heimdal/lib/roken/bswap.c
+        ../heimdal/lib/roken/dumpdata.c
+        ../heimdal/lib/roken/emalloc.c
+        ../heimdal/lib/roken/ecalloc.c
+        ../heimdal/lib/roken/getarg.c
+        ../heimdal/lib/roken/get_window_size.c
+        ../heimdal/lib/roken/getdtablesize.c
+        ../heimdal/lib/roken/h_errno.c
+        ../heimdal/lib/roken/issuid.c
+        ../heimdal/lib/roken/net_read.c
+        ../heimdal/lib/roken/net_write.c
+        ../heimdal/lib/roken/parse_time.c
+        ../heimdal/lib/roken/parse_units.c
+        ../heimdal/lib/roken/signal.c
+        ../heimdal/lib/roken/vis.c
+        ../heimdal/lib/roken/strlwr.c
+        ../heimdal/lib/roken/strsep_copy.c
+        ../heimdal/lib/roken/strsep.c
+        ../heimdal/lib/roken/strupr.c
+        ../heimdal/lib/roken/strpool.c
+        ../heimdal/lib/roken/estrdup.c
+        ../heimdal/lib/roken/erealloc.c
+        ../heimdal/lib/roken/simple_exec.c
+        ../heimdal/lib/roken/strcollect.c
+        ../heimdal/lib/roken/rtbl.c
+        ../heimdal/lib/roken/cloexec.c
+        ../heimdal/lib/roken/xfree.c
+        replace.c
+    '''
+
+    if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
+        HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
+            ../heimdal/lib/roken/getprogname.c
+            ../heimdal/lib/roken/setprogname.c
+        '''
+
+    if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
+        HEIMDAL_ROKEN_HOSTCC_SOURCE += '''
+            ../heimdal/lib/roken/closefrom.c
+        '''
+
+    HEIMDAL_ROKEN_SOURCE = HEIMDAL_ROKEN_HOSTCC_SOURCE + '''
+        ../heimdal/lib/roken/resolve.c
+        ../heimdal/lib/roken/socket.c
+        ../heimdal/lib/roken/roken_gethostby.c
+    '''
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN',
+        HEIMDAL_ROKEN_SOURCE,
+        includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
+        deps='resolv UID_WRAPPER util'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_KDC',
+                        source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
+                        includes='../heimdal/kdc',
+                        heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
+                        heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
+                        deps='HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 HEIMDAL_NTLM HEIMDAL_HCRYPTO'
+                        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_NTLM',
+                        source='../heimdal/lib/ntlm/ntlm.c',
+                        includes='../heimdal/lib/ntlm',
+                        heimdal_autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
+                        deps='HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
+        '../heimdal/lib/hdb/keys.c',
+        includes='../heimdal/lib/hdb',
+        deps='HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5 HEIMDAL_HDB_ASN1'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB',
+                        source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
+                                  ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
+                                  ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
+                                  hdb-glue.c''',
+                        includes='../heimdal/lib/hdb ../heimdal/lib/com_err',
+                        heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
+                        heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
+                        deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_GSSAPI',
+                        '''
+    ../heimdal/lib/gssapi/spnego/init_sec_context.c ../heimdal/lib/gssapi/spnego/external.c ../heimdal/lib/gssapi/spnego/compat.c
+    ../heimdal/lib/gssapi/spnego/context_stubs.c ../heimdal/lib/gssapi/spnego/cred_stubs.c ../heimdal/lib/gssapi/spnego/accept_sec_context.c
+    ../heimdal/lib/gssapi/krb5/copy_ccache.c ../heimdal/lib/gssapi/krb5/delete_sec_context.c ../heimdal/lib/gssapi/krb5/init_sec_context.c
+    ../heimdal/lib/gssapi/krb5/context_time.c ../heimdal/lib/gssapi/krb5/init.c ../heimdal/lib/gssapi/krb5/address_to_krb5addr.c
+    ../heimdal/lib/gssapi/krb5/get_mic.c ../heimdal/lib/gssapi/krb5/inquire_context.c ../heimdal/lib/gssapi/krb5/add_cred.c
+    ../heimdal/lib/gssapi/krb5/inquire_cred.c ../heimdal/lib/gssapi/krb5/inquire_cred_by_oid.c ../heimdal/lib/gssapi/krb5/inquire_cred_by_mech.c
+    ../heimdal/lib/gssapi/krb5/inquire_mechs_for_name.c ../heimdal/lib/gssapi/krb5/inquire_names_for_mech.c ../heimdal/lib/gssapi/krb5/indicate_mechs.c
+    ../heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.c ../heimdal/lib/gssapi/krb5/export_sec_context.c ../heimdal/lib/gssapi/krb5/import_sec_context.c
+    ../heimdal/lib/gssapi/krb5/duplicate_name.c ../heimdal/lib/gssapi/krb5/import_name.c ../heimdal/lib/gssapi/krb5/compare_name.c
+    ../heimdal/lib/gssapi/krb5/export_name.c ../heimdal/lib/gssapi/krb5/canonicalize_name.c ../heimdal/lib/gssapi/krb5/unwrap.c
+    ../heimdal/lib/gssapi/krb5/wrap.c ../heimdal/lib/gssapi/krb5/release_name.c ../heimdal/lib/gssapi/krb5/cfx.c
+    ../heimdal/lib/gssapi/krb5/8003.c ../heimdal/lib/gssapi/krb5/arcfour.c ../heimdal/lib/gssapi/krb5/encapsulate.c
+    ../heimdal/lib/gssapi/krb5/display_name.c ../heimdal/lib/gssapi/krb5/sequence.c ../heimdal/lib/gssapi/krb5/display_status.c
+    ../heimdal/lib/gssapi/krb5/release_buffer.c ../heimdal/lib/gssapi/krb5/external.c ../heimdal/lib/gssapi/krb5/compat.c
+    ../heimdal/lib/gssapi/krb5/creds.c ../heimdal/lib/gssapi/krb5/acquire_cred.c ../heimdal/lib/gssapi/krb5/release_cred.c
+    ../heimdal/lib/gssapi/krb5/store_cred.c ../heimdal/lib/gssapi/krb5/set_cred_option.c ../heimdal/lib/gssapi/krb5/decapsulate.c
+    ../heimdal/lib/gssapi/krb5/verify_mic.c ../heimdal/lib/gssapi/krb5/accept_sec_context.c ../heimdal/lib/gssapi/krb5/set_sec_context_option.c
+    ../heimdal/lib/gssapi/krb5/process_context_token.c ../heimdal/lib/gssapi/krb5/prf.c ../heimdal/lib/gssapi/krb5/aeap.c
+    ../heimdal/lib/gssapi/mech/context.c ../heimdal/lib/gssapi/mech/gss_krb5.c ../heimdal/lib/gssapi/mech/gss_mech_switch.c
+    ../heimdal/lib/gssapi/mech/gss_process_context_token.c ../heimdal/lib/gssapi/mech/gss_buffer_set.c
+    ../heimdal/lib/gssapi/mech/gss_aeap.c ../heimdal/lib/gssapi/mech/gss_add_cred.c ../heimdal/lib/gssapi/mech/gss_cred.c
+    ../heimdal/lib/gssapi/mech/gss_add_oid_set_member.c ../heimdal/lib/gssapi/mech/gss_compare_name.c ../heimdal/lib/gssapi/mech/gss_release_oid_set.c
+    ../heimdal/lib/gssapi/mech/gss_create_empty_oid_set.c ../heimdal/lib/gssapi/mech/gss_decapsulate_token.c ../heimdal/lib/gssapi/mech/gss_inquire_cred_by_oid.c
+    ../heimdal/lib/gssapi/mech/gss_canonicalize_name.c ../heimdal/lib/gssapi/mech/gss_inquire_sec_context_by_oid.c ../heimdal/lib/gssapi/mech/gss_inquire_names_for_mech.c
+    ../heimdal/lib/gssapi/mech/gss_inquire_mechs_for_name.c ../heimdal/lib/gssapi/mech/gss_wrap_size_limit.c ../heimdal/lib/gssapi/mech/gss_names.c
+    ../heimdal/lib/gssapi/mech/gss_verify.c ../heimdal/lib/gssapi/mech/gss_display_name.c
+    ../heimdal/lib/gssapi/mech/gss_duplicate_oid.c ../heimdal/lib/gssapi/mech/gss_display_status.c ../heimdal/lib/gssapi/mech/gss_release_buffer.c
+    ../heimdal/lib/gssapi/mech/gss_release_oid.c ../heimdal/lib/gssapi/mech/gss_test_oid_set_member.c
+    ../heimdal/lib/gssapi/mech/gss_release_cred.c
+    ../heimdal/lib/gssapi/mech/gss_set_sec_context_option.c ../heimdal/lib/gssapi/mech/gss_export_name.c ../heimdal/lib/gssapi/mech/gss_seal.c
+    ../heimdal/lib/gssapi/mech/gss_acquire_cred.c ../heimdal/lib/gssapi/mech/gss_unseal.c ../heimdal/lib/gssapi/mech/gss_verify_mic.c
+    ../heimdal/lib/gssapi/mech/gss_accept_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_cred_by_mech.c ../heimdal/lib/gssapi/mech/gss_indicate_mechs.c
+    ../heimdal/lib/gssapi/mech/gss_delete_sec_context.c ../heimdal/lib/gssapi/mech/gss_sign.c ../heimdal/lib/gssapi/mech/gss_utils.c
+    ../heimdal/lib/gssapi/mech/gss_init_sec_context.c ../heimdal/lib/gssapi/mech/gss_oid_equal.c ../heimdal/lib/gssapi/mech/gss_oid_to_str.c
+    ../heimdal/lib/gssapi/mech/gss_context_time.c ../heimdal/lib/gssapi/mech/gss_encapsulate_token.c ../heimdal/lib/gssapi/mech/gss_get_mic.c
+    ../heimdal/lib/gssapi/mech/gss_import_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_cred.c ../heimdal/lib/gssapi/mech/gss_wrap.c
+    ../heimdal/lib/gssapi/mech/gss_import_name.c ../heimdal/lib/gssapi/mech/gss_duplicate_name.c ../heimdal/lib/gssapi/mech/gss_unwrap.c
+    ../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
+    ../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
+        includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
+        deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 HEIMDAL_ROKEN HEIMDAL_KRB5'
+        )
+
+
+    bld.SAMBA_GENERATOR(
+        name="HEIMDAL_IFADDRS_H",
+        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+        source = 'ifaddrs.hin',
+        target = 'ifaddrs.h',
+        enabled = not bld.CONFIG_SET('HAVE_IFADDRS_H')
+        )
+
+    bld.SAMBA_GENERATOR(
+        group='build_compiler_source',
+        name="HEIMDAL_ERR_H",
+        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+        source = '../heimdal/lib/roken/err.hin',
+        target = '../heimdal/lib/roken/err.h',
+        enabled = not bld.CONFIG_SET('HAVE_ERR_H')
+        )
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_KRB5',
+                        bld.SUBDIR('../heimdal/lib/krb5/',
+                                   '''acache.c add_et_list.c
+                                   addr_families.c appdefault.c
+                                   asn1_glue.c auth_context.c
+                                   build_ap_req.c build_auth.c cache.c
+                                   changepw.c codec.c config_file.c
+                                   constants.c context.c convert_creds.c
+                                   copy_host_realm.c crc.c creds.c
+                                   crypto.c data.c eai_to_heim_errno.c
+                                   error_string.c expand_hostname.c
+                                   fcache.c free.c free_host_realm.c
+                                   generate_seq_number.c generate_subkey.c
+                                   get_addrs.c get_cred.c
+                                   get_default_principal.c
+                                   get_default_realm.c get_for_creds.c
+                                   get_host_realm.c get_in_tkt.c
+                                   get_port.c init_creds.c init_creds_pw.c
+                                   kcm.c keyblock.c keytab.c keytab_any.c
+                                   keytab_file.c keytab_memory.c
+                                   keytab_keyfile.c krbhst.c log.c
+                                   mcache.c misc.c mk_error.c mk_priv.c
+                                   mk_rep.c mk_req.c mk_req_ext.c
+                                   mit_glue.c n-fold.c padata.c pkinit.c
+                                   plugin.c principal.c prog_setup.c pac.c
+                                   prompter_posix.c rd_cred.c rd_error.c
+                                   rd_priv.c rd_rep.c rd_req.c replay.c
+                                   send_to_kdc.c set_default_realm.c
+                                   store.c store_emem.c store_fd.c
+                                   store_mem.c ticket.c time.c transited.c
+                                   v4_glue.c version.c warn.c krb5_err.c
+                                   heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
+                        includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/lib/com_err',
+                        public_deps='HEIMDAL_COM_ERR',
+                        heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
+                        heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
+                        heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
+                        deps='HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl'
+                        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
+        '../heimdal/lib/asn1/der_get.c ../heimdal/lib/asn1/der_put.c ../heimdal/lib/asn1/der_free.c ../heimdal/lib/asn1/der_format.c ../heimdal/lib/asn1/der_length.c ../heimdal/lib/asn1/der_copy.c ../heimdal/lib/asn1/der_cmp.c ../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
+            includes='../heimdal/lib/asn1',
+        deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
+        '../heimdal/lib/hcrypto/imath/imath.c ../heimdal/lib/hcrypto/imath/iprime.c',
+            includes='../heimdal/lib/hcrypto/imath',
+        deps='HEIMDAL_ROKEN'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO',
+        '../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c',
+        includes='../heimdal/lib/hcrypto ../heimdal/lib',
+        deps='HEIMDAL_ROKEN HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_HX509',
+        '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
+        includes='../heimdal/lib/hx509',
+        deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 HEIMDAL_WIND'
+        )
+
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_WIND',
+        '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
+        includes='../heimdal/lib/wind',
+        deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
+        )
+
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_HOSTCC',
+        HEIMDAL_ROKEN_HOSTCC_SOURCE,
+        use_hostcc=True,
         use_global_deps=False,
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
-        group='build_compilers',
-	deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
-        install=False
-	)
-
-
-bld.SAMBA_BINARY('compile_et',
-	'../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
-	use_hostcc=True,
-        use_global_deps=False,
-	includes='../heimdal/lib/com_err',
-        group='build_compilers',
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-	deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
-        install=False
-	)
-
-
-bld.SAMBA_BINARY('samba4kinit',
-	'../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-	deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
-        install=False
-	)
+        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+        group='compiler_libraries',
+        deps='LIBREPLACE_HOSTCC'
+        )
 
 
-bld.SAMBA_BINARY('samba4kpasswd',
-	'../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
-        includes='../heimdal/lib/roken',
-	deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
-        install=False
-	)
+    bld.SAMBA_SUBSYSTEM('HEIMDAL_COM_ERR',
+        '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
+        includes='../heimdal/lib/com_err',
+        deps='HEIMDAL_ROKEN',
+            enabled=not bld.CONFIG_SET('HAVE_COM_ERR')
+        )
 
 
-bld.SAMBA_BINARY('rkpty',
-	'../heimdal/lib/roken/rkpty.c',
-	deps='HEIMDAL_ROKEN OPENPTY',
-        cflags='-DPACKAGE="Samba"',
-        install=False
-	)
-
-HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
-	../heimdal/lib/gssapi/spnego/init_sec_context.c
-	../heimdal/lib/gssapi/spnego/external.c
-	../heimdal/lib/gssapi/spnego/compat.c
-	../heimdal/lib/gssapi/spnego/context_stubs.c
-	../heimdal/lib/gssapi/spnego/cred_stubs.c
-	../heimdal/lib/gssapi/spnego/accept_sec_context.c
-'''
-
-bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/spnego/spnego-private.h',
-                              HEIMDAL_GSSAPI_SPNEGO_SOURCE)
+    # here is the asn1 compiler build rule
+    bld.SAMBA_BINARY('asn1_compile',
+        '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
+        use_hostcc=True,
+            use_global_deps=False,
+            cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+            includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
+            group='build_compilers',
+        deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+            install=False
+        )
 
 
-HEIMDAL_GSSAPI_KRB5_SOURCE = '''
-	../heimdal/lib/gssapi/krb5/copy_ccache.c
-	../heimdal/lib/gssapi/krb5/delete_sec_context.c
-	../heimdal/lib/gssapi/krb5/init_sec_context.c
-	../heimdal/lib/gssapi/krb5/context_time.c
-	../heimdal/lib/gssapi/krb5/init.c
-	../heimdal/lib/gssapi/krb5/address_to_krb5addr.c
-	../heimdal/lib/gssapi/krb5/get_mic.c
-	../heimdal/lib/gssapi/krb5/inquire_context.c
-	../heimdal/lib/gssapi/krb5/add_cred.c
-	../heimdal/lib/gssapi/krb5/inquire_cred.c
-	../heimdal/lib/gssapi/krb5/inquire_cred_by_oid.c
-	../heimdal/lib/gssapi/krb5/inquire_cred_by_mech.c
-	../heimdal/lib/gssapi/krb5/inquire_mechs_for_name.c
-	../heimdal/lib/gssapi/krb5/inquire_names_for_mech.c
-	../heimdal/lib/gssapi/krb5/indicate_mechs.c
-	../heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.c
-	../heimdal/lib/gssapi/krb5/export_sec_context.c
-	../heimdal/lib/gssapi/krb5/import_sec_context.c
-	../heimdal/lib/gssapi/krb5/duplicate_name.c
-	../heimdal/lib/gssapi/krb5/import_name.c
-	../heimdal/lib/gssapi/krb5/compare_name.c
-	../heimdal/lib/gssapi/krb5/export_name.c
-	../heimdal/lib/gssapi/krb5/canonicalize_name.c
-	../heimdal/lib/gssapi/krb5/unwrap.c
-	../heimdal/lib/gssapi/krb5/wrap.c
-	../heimdal/lib/gssapi/krb5/release_name.c
-	../heimdal/lib/gssapi/krb5/cfx.c
-	../heimdal/lib/gssapi/krb5/8003.c
-	../heimdal/lib/gssapi/krb5/arcfour.c
-	../heimdal/lib/gssapi/krb5/encapsulate.c
-	../heimdal/lib/gssapi/krb5/display_name.c
-	../heimdal/lib/gssapi/krb5/sequence.c
-	../heimdal/lib/gssapi/krb5/display_status.c
-	../heimdal/lib/gssapi/krb5/release_buffer.c
-	../heimdal/lib/gssapi/krb5/external.c
-	../heimdal/lib/gssapi/krb5/compat.c
-	../heimdal/lib/gssapi/krb5/creds.c
-	../heimdal/lib/gssapi/krb5/acquire_cred.c
-	../heimdal/lib/gssapi/krb5/release_cred.c
-	../heimdal/lib/gssapi/krb5/store_cred.c
-	../heimdal/lib/gssapi/krb5/set_cred_option.c
-	../heimdal/lib/gssapi/krb5/decapsulate.c
-	../heimdal/lib/gssapi/krb5/verify_mic.c
-	../heimdal/lib/gssapi/krb5/accept_sec_context.c
-	../heimdal/lib/gssapi/krb5/set_sec_context_option.c
-	../heimdal/lib/gssapi/krb5/process_context_token.c
-	../heimdal/lib/gssapi/krb5/prf.c
-	../heimdal/lib/gssapi/krb5/aeap.c
-'''
-
-bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
-                              HEIMDAL_GSSAPI_KRB5_SOURCE)
+    bld.SAMBA_BINARY('compile_et',
+        '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
+        use_hostcc=True,
+            use_global_deps=False,
+        includes='../heimdal/lib/com_err',
+            group='build_compilers',
+            cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+        deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+            install=False
+        )
 
 
-HEIMDAL_HX509_OBJH_SOURCE = '''
-	../heimdal/lib/hx509/ca.c
-	../heimdal/lib/hx509/cert.c
-	../heimdal/lib/hx509/cms.c
-	../heimdal/lib/hx509/collector.c
-	../heimdal/lib/hx509/crypto.c
-	../heimdal/lib/hx509/error.c
-	../heimdal/lib/hx509/env.c
-	../heimdal/lib/hx509/file.c
-	../heimdal/lib/hx509/keyset.c
-	../heimdal/lib/hx509/ks_dir.c
-	../heimdal/lib/hx509/ks_file.c
-	../heimdal/lib/hx509/ks_keychain.c
-	../heimdal/lib/hx509/ks_mem.c
-	../heimdal/lib/hx509/ks_null.c
-	../heimdal/lib/hx509/ks_p11.c
-	../heimdal/lib/hx509/ks_p12.c
-	../heimdal/lib/hx509/lock.c
-	../heimdal/lib/hx509/name.c
-	../heimdal/lib/hx509/peer.c
-	../heimdal/lib/hx509/print.c
-	../heimdal/lib/hx509/req.c
-	../heimdal/lib/hx509/revoke.c
-	../heimdal/lib/hx509/sel.c
-	../heimdal/lib/hx509/hx509_err.c
-'''
-
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
-                      HEIMDAL_HX509_OBJH_SOURCE,
-                      options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
-
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
-                      HEIMDAL_HX509_OBJH_SOURCE,
-                      options="-q -P comment -p")
-
-HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
-	../heimdal/lib/asn1/der_get.c
-	../heimdal/lib/asn1/der_put.c
-	../heimdal/lib/asn1/der_free.c
-	../heimdal/lib/asn1/der_format.c
-	../heimdal/lib/asn1/der_length.c
-	../heimdal/lib/asn1/der_copy.c
-	../heimdal/lib/asn1/der_cmp.c
-'''
-
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
-                      HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'compiler_prototypes',
-                      options="-q -P comment -o")
+    bld.SAMBA_BINARY('samba4kinit',
+        '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
+            includes='../heimdal/lib/roken',
+        deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+            install=False
+        )
 
 
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
-                      HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'compiler_prototypes',
-                      options="-q -P comment -p")
+    bld.SAMBA_BINARY('samba4kpasswd',
+        '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
+            includes='../heimdal/lib/roken',
+        deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+            install=False
+        )
+
+
+    bld.SAMBA_BINARY('rkpty',
+        '../heimdal/lib/roken/rkpty.c',
+        deps='HEIMDAL_ROKEN OPENPTY',
+            cflags='-DPACKAGE="Samba"',
+            install=False
+        )
+
+    HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
+        ../heimdal/lib/gssapi/spnego/init_sec_context.c
+        ../heimdal/lib/gssapi/spnego/external.c
+        ../heimdal/lib/gssapi/spnego/compat.c
+        ../heimdal/lib/gssapi/spnego/context_stubs.c
+        ../heimdal/lib/gssapi/spnego/cred_stubs.c
+        ../heimdal/lib/gssapi/spnego/accept_sec_context.c
+    '''
+
+    bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/spnego/spnego-private.h',
+                                  HEIMDAL_GSSAPI_SPNEGO_SOURCE)
+
+
+    HEIMDAL_GSSAPI_KRB5_SOURCE = '''
+        ../heimdal/lib/gssapi/krb5/copy_ccache.c
+        ../heimdal/lib/gssapi/krb5/delete_sec_context.c
+        ../heimdal/lib/gssapi/krb5/init_sec_context.c
+        ../heimdal/lib/gssapi/krb5/context_time.c
+        ../heimdal/lib/gssapi/krb5/init.c
+        ../heimdal/lib/gssapi/krb5/address_to_krb5addr.c
+        ../heimdal/lib/gssapi/krb5/get_mic.c
+        ../heimdal/lib/gssapi/krb5/inquire_context.c
+        ../heimdal/lib/gssapi/krb5/add_cred.c
+        ../heimdal/lib/gssapi/krb5/inquire_cred.c
+        ../heimdal/lib/gssapi/krb5/inquire_cred_by_oid.c
+        ../heimdal/lib/gssapi/krb5/inquire_cred_by_mech.c
+        ../heimdal/lib/gssapi/krb5/inquire_mechs_for_name.c
+        ../heimdal/lib/gssapi/krb5/inquire_names_for_mech.c
+        ../heimdal/lib/gssapi/krb5/indicate_mechs.c
+        ../heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.c
+        ../heimdal/lib/gssapi/krb5/export_sec_context.c
+        ../heimdal/lib/gssapi/krb5/import_sec_context.c
+        ../heimdal/lib/gssapi/krb5/duplicate_name.c
+        ../heimdal/lib/gssapi/krb5/import_name.c
+        ../heimdal/lib/gssapi/krb5/compare_name.c
+        ../heimdal/lib/gssapi/krb5/export_name.c
+        ../heimdal/lib/gssapi/krb5/canonicalize_name.c
+        ../heimdal/lib/gssapi/krb5/unwrap.c
+        ../heimdal/lib/gssapi/krb5/wrap.c
+        ../heimdal/lib/gssapi/krb5/release_name.c
+        ../heimdal/lib/gssapi/krb5/cfx.c
+        ../heimdal/lib/gssapi/krb5/8003.c
+        ../heimdal/lib/gssapi/krb5/arcfour.c
+        ../heimdal/lib/gssapi/krb5/encapsulate.c
+        ../heimdal/lib/gssapi/krb5/display_name.c
+        ../heimdal/lib/gssapi/krb5/sequence.c
+        ../heimdal/lib/gssapi/krb5/display_status.c
+        ../heimdal/lib/gssapi/krb5/release_buffer.c
+        ../heimdal/lib/gssapi/krb5/external.c
+        ../heimdal/lib/gssapi/krb5/compat.c
+        ../heimdal/lib/gssapi/krb5/creds.c
+        ../heimdal/lib/gssapi/krb5/acquire_cred.c
+        ../heimdal/lib/gssapi/krb5/release_cred.c
+        ../heimdal/lib/gssapi/krb5/store_cred.c
+        ../heimdal/lib/gssapi/krb5/set_cred_option.c
+        ../heimdal/lib/gssapi/krb5/decapsulate.c
+        ../heimdal/lib/gssapi/krb5/verify_mic.c
+        ../heimdal/lib/gssapi/krb5/accept_sec_context.c
+        ../heimdal/lib/gssapi/krb5/set_sec_context_option.c
+        ../heimdal/lib/gssapi/krb5/process_context_token.c
+        ../heimdal/lib/gssapi/krb5/prf.c
+        ../heimdal/lib/gssapi/krb5/aeap.c
+    '''
+
+    bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
+                                  HEIMDAL_GSSAPI_KRB5_SOURCE)
+
+
+    HEIMDAL_HX509_OBJH_SOURCE = '''
+        ../heimdal/lib/hx509/ca.c
+        ../heimdal/lib/hx509/cert.c
+        ../heimdal/lib/hx509/cms.c
+        ../heimdal/lib/hx509/collector.c
+        ../heimdal/lib/hx509/crypto.c
+        ../heimdal/lib/hx509/error.c
+        ../heimdal/lib/hx509/env.c
+        ../heimdal/lib/hx509/file.c
+        ../heimdal/lib/hx509/keyset.c
+        ../heimdal/lib/hx509/ks_dir.c
+        ../heimdal/lib/hx509/ks_file.c
+        ../heimdal/lib/hx509/ks_keychain.c
+        ../heimdal/lib/hx509/ks_mem.c
+        ../heimdal/lib/hx509/ks_null.c
+        ../heimdal/lib/hx509/ks_p11.c
+        ../heimdal/lib/hx509/ks_p12.c
+        ../heimdal/lib/hx509/lock.c
+        ../heimdal/lib/hx509/name.c
+        ../heimdal/lib/hx509/peer.c
+        ../heimdal/lib/hx509/print.c
+        ../heimdal/lib/hx509/req.c
+        ../heimdal/lib/hx509/revoke.c
+        ../heimdal/lib/hx509/sel.c
+        ../heimdal/lib/hx509/hx509_err.c
+    '''
+
+    bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
+                          HEIMDAL_HX509_OBJH_SOURCE,
+                          options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
+
+    bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
+                          HEIMDAL_HX509_OBJH_SOURCE,
+                          options="-q -P comment -p")
+
+    HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
+        ../heimdal/lib/asn1/der_get.c
+        ../heimdal/lib/asn1/der_put.c
+        ../heimdal/lib/asn1/der_free.c
+        ../heimdal/lib/asn1/der_format.c
+        ../heimdal/lib/asn1/der_length.c
+        ../heimdal/lib/asn1/der_copy.c
+        ../heimdal/lib/asn1/der_cmp.c
+    '''
+
+    bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
+                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          group = 'compiler_prototypes',
+                          options="-q -P comment -o")
+
+
+    bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
+                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          group = 'compiler_prototypes',
+                          options="-q -P comment -p")
 
