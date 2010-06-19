@@ -33,12 +33,9 @@ import os
 sys.path.append("bin/python")
 
 from samba.auth import system_session
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
-from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import SCOPE_BASE, LdbError
 from samba import Ldb
 
-import unittest
 import samba.tests
 import samba.dcerpc.drsuapi
 from samba.dcerpc.drsblobs import schemaInfoBlob
@@ -46,7 +43,7 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc.misc import GUID
 
 
-class SchemaInfoTestCase(samba.tests.RpcInterfaceTestCase):
+class SchemaInfoTestCase(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaInfoTestCase, self).setUp()
@@ -62,10 +59,8 @@ class SchemaInfoTestCase(samba.tests.RpcInterfaceTestCase):
         # get DC invocation_id
         self.invocation_id = GUID(ldb.get_invocation_id())
 
-
     def tearDown(self):
         super(SchemaInfoTestCase, self).tearDown()
-
 
     def _getSchemaInfo(self):
         try:
@@ -192,8 +187,6 @@ systemOnly: FALSE
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
         self._checkSchemaInfo(schi_before, schi_after)
-        pass
-
 
 
 ########################################################################################
