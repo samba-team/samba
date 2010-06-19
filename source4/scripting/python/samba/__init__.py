@@ -105,7 +105,7 @@ class Ldb(_Ldb):
             if nosync_p is not None and nosync_p == True:
                 flags |= ldb.FLG_NOSYNC
 
-        self.set_create_perms()
+        self.set_create_perms(0600)
 
         if url is not None:
             self.connect(url, flags, options)
@@ -288,18 +288,6 @@ class Ldb(_Ldb):
 
     def convert_schema_to_openldap(self, target, mapping):
         return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
-
-    def get_invocation_id(self):
-        """Get the invocation_id id"""
-        return dsdb.samdb_ntds_invocation_id(self)
-
-    def get_ntds_GUID(self):
-        """Get the NTDS objectGUID"""
-        return dsdb.samdb_ntds_objectGUID(self)
-
-    def server_site_name(self):
-        """Get the server site name"""
-        return dsdb.samdb_server_site_name(self)
 
 
 def substitute_var(text, values):

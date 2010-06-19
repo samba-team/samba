@@ -34,7 +34,7 @@ sys.path.append("bin/python")
 
 from samba.auth import system_session
 from ldb import SCOPE_BASE, LdbError
-from samba import Ldb
+from samba.samdb import SamDB
 
 import samba.tests
 import samba.dcerpc.drsuapi
@@ -203,7 +203,7 @@ if not "://" in ldb_url:
         # user 'paged_search' module when connecting remotely
         ldb_options = ["modules:paged_searches"]
 
-ldb = Ldb(url=ldb_url,
+ldb = SamDB(url=ldb_url,
           lp=samba.tests.env_loadparm(),
           session_info=system_session(),
           credentials=samba.tests.cmdline_credentials,
