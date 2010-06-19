@@ -449,13 +449,14 @@ def library_flags(conf, libs):
     ccflags = []
     ldflags = []
     for lib in TO_LIST(libs):
-        inc_path = None
         inc_path = getattr(conf.env, 'CPPPATH_%s' % lib.upper(), [])
         lib_path = getattr(conf.env, 'LIBPATH_%s' % lib.upper(), [])
-        for i in inc_path:
-            ccflags.append('-I%s' % i)
-        for l in lib_path:
-            ldflags.append('-L%s' % l)
+        ccflags.extend(['-I%s' % i for i in inc_path])
+        ldflags.extend(['-L%s' % l for l in lib_path])
+        extra_ccflags = TO_LIST(getattr(conf.env, 'CCFLAGS_%s' % lib.upper(), []))
+        extra_ldflags = TO_LIST(getattr(conf.env, 'LDFLAGS_%s' % lib.upper(), []))
+        ccflags.extend(extra_ccflags)
+        ldflags.extend(extra_ldflags)
     return (ccflags, ldflags)
 
 
