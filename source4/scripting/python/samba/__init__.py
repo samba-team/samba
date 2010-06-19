@@ -284,7 +284,7 @@ class Ldb(_Ldb):
         return dsdb.dsdb_get_oid_from_attid(self, attid)
 
     def set_schema_from_ldb(self, ldb):
-        _glue.dsdb_set_schema_from_ldb(self, ldb)
+        dsdb.dsdb_set_schema_from_ldb(self, ldb)
 
     def write_prefixes_from_schema(self):
         _glue.dsdb_write_prefixes_from_schema_to_ldb(self)

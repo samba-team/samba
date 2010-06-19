@@ -408,6 +408,35 @@ static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	PyObject *py_from_ldb;
+	struct ldb_context *from_ldb;
+	struct dsdb_schema *schema;
+	int ret;
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_from_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	PyErr_LDB_OR_RAISE(py_from_ldb, from_ldb);
+
+	schema = dsdb_get_schema(from_ldb, NULL);
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on 'from' ldb!\n");
+		return NULL;
+	}
+
+	ret = dsdb_reference_schema(ldb, schema, true);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	Py_RETURN_NONE;
+}
+
+
+
 static PyMethodDef py_dsdb_methods[] = {
 	{ "samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
@@ -445,6 +474,8 @@ static PyMethodDef py_dsdb_methods[] = {
 		(PyCFunction)py_dsdb_set_am_rodc, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
+		NULL },
+	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

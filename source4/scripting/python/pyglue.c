@@ -46,25 +46,6 @@
 	} */\
 	ldb = PyLdb_AsLdbContext(py_ldb);
 
-static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
-{
-	if (ret == LDB_ERR_PYTHON_EXCEPTION)
-		return; /* Python exception should already be set, just keep that */
-
-	PyErr_SetObject(error, 
-			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
-			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
-}
-
-static PyObject *py_ldb_get_exception(void)
-{
-	PyObject *mod = PyImport_ImportModule("ldb");
-	if (mod == NULL)
-		return NULL;
-
-	return PyObject_GetAttrString(mod, "LdbError");
-}
-
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	int len;
@@ -174,33 +155,6 @@ static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObj
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-	PyObject *py_from_ldb;
-	struct ldb_context *from_ldb;
-	struct dsdb_schema *schema;
-	int ret;
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_from_ldb))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	PyErr_LDB_OR_RAISE(py_from_ldb, from_ldb);
-
-	schema = dsdb_get_schema(from_ldb, NULL);
-	if (!schema) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on 'from' ldb!\n");
-		return NULL;
-	}
-
-	ret = dsdb_reference_schema(ldb, schema, true);
-	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
-
-	Py_RETURN_NONE;
-}
-
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -269,8 +223,6 @@ static PyMethodDef py_misc_methods[] = {
 	{ "nttime2string", (PyCFunction)py_nttime2string, METH_VARARGS,
 		"nttime2string(nttime) -> string" },
 	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
-		NULL },
-	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
 		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
