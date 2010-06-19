@@ -55,7 +55,7 @@ bld.SAMBA_PYTHON('param',
 
 bld.SAMBA_SUBSYSTEM('pyparam_util',
 	source='pyparam_util.c',
-	deps='LIBPYTHON',
+	deps='LIBPYTHON LIBSAMBA-HOSTCONFIG',
 	needs_python=True
 	)
 

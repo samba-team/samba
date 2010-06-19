@@ -26,7 +26,7 @@ bld.SAMBA_PYTHON('python_uuid',
 
 bld.SAMBA_PYTHON('python_glue',
                  source='pyglue.c',
-                 deps='LIBNDR ldb SAMDB CREDENTIALS python_dcerpc_misc python_dcerpc_security pyauth pyldb_util pyparam_util',
+                 deps='pyparam_util LIBSAMBA-UTIL LIBNETIF',
                  realname='samba/_glue.so'
 	)
 
