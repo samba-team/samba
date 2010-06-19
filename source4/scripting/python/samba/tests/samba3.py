@@ -24,8 +24,8 @@ from samba.samba3 import (WinsDatabase, SmbpasswdFile, ACB_NORMAL,
 from samba.tests import TestCase
 import os
 
-DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
-print "Samba 3 data dir: %s" % DATADIR
+DATADIR = os.path.join(os.path.dirname(__file__),
+                       "../../../../../testdata/samba3")
 
 class RegistryTestCase(TestCase):
 
@@ -35,6 +35,7 @@ class RegistryTestCase(TestCase):
 
     def tearDown(self):
         self.registry.close()
+        super(RegistryTestCase, self).tearDown()
 
     def test_length(self):
         self.assertEquals(28, len(self.registry))

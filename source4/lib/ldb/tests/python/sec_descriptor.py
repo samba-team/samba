@@ -19,7 +19,6 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
-from samba import Ldb
 from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
@@ -28,6 +27,7 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc.security import (
     SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
 from subunit.run import SubunitTestRunner
+import samba.tests
 import unittest
 
 parser = optparse.OptionParser("sec_descriptor [options] <host>")
@@ -54,7 +54,7 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
-class DescriptorTests(unittest.TestCase):
+class DescriptorTests(samba.tests.TestCase):
 
     def delete_force(self, ldb, dn):
         try:
@@ -271,6 +271,7 @@ member: """ + self.get_users_domain_dn(username)
         self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
 
     def setUp(self):
+        super(DescriptorTests, self).setUp()
         self.ldb_admin = ldb
         self.base_dn = self.find_basedn(self.ldb_admin)
         self.configuration_dn = self.find_configurationdn(self.ldb_admin)
@@ -307,7 +308,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
 
     def setUp(self):
-        DescriptorTests.setUp(self)
+        super(OwnerGroupDescriptorTests, self).setUp()
         self.deleteAll()
             ### Create users
             # User 1
@@ -453,6 +454,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
             self.DS_BEHAVIOR = "ds_behavior_win2008"
 
     def tearDown(self):
+        super(DescriptorTests, self).tearDown()
         self.deleteAll()
 
     def check_user_belongs(self, user_dn, groups=[]):
@@ -1364,10 +1366,7 @@ class DaclDescriptorTests(DescriptorTests):
         self.delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
 
     def setUp(self):
-        DescriptorTests.setUp(self)
-        self.deleteAll()
-
-    def tearDown(self):
+        super(DaclDescriptorTests, self).setUp()
         self.deleteAll()
 
     def create_clean_ou(self, object_dn):
@@ -1696,11 +1695,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
 
     def setUp(self):
-        DescriptorTests.setUp(self)
+        super(SdFlagsDescriptorTests, self).setUp()
         self.test_descr = "O:AUG:AUD:(D;;CC;;;LG)S:(OU;;WP;;;AU)"
-        self.deleteAll()
-
-    def tearDown(self):
         self.deleteAll()
 
     def test_301(self):
@@ -1849,6 +1845,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertFalse("S:" in desc_sddl)
         self.assertFalse("G:" in desc_sddl)
 
+
 class RightsAttributesTests(DescriptorTests):
 
     def deleteAll(self):
@@ -1857,7 +1854,7 @@ class RightsAttributesTests(DescriptorTests):
         self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
 
     def setUp(self):
-        DescriptorTests.setUp(self)
+        super(RightsAttributesTests, self).setUp()
         self.deleteAll()
             ### Create users
             # User 1
@@ -1865,9 +1862,6 @@ class RightsAttributesTests(DescriptorTests):
         # User 2, Domain Admins
         self.create_enable_user("testuser_attr2")
         self.add_user_to_group(self.ldb_admin, "testuser_attr2", "Domain Admins")
-
-    def tearDown(self):
-        self.deleteAll()
 
     def test_sDRightsEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn

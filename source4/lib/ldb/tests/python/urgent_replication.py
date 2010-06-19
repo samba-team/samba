@@ -15,6 +15,7 @@ from samba.auth import system_session
 from ldb import (SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, Message,
     MessageElement, Dn, FLAG_MOD_REPLACE)
 from samba.samdb import SamDB
+import samba.tests
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -37,7 +38,7 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-class UrgentReplicationTests(unittest.TestCase):
+class UrgentReplicationTests(samba.tests.TestCase):
 
     def delete_force(self, ldb, dn):
         try:
@@ -52,6 +53,7 @@ class UrgentReplicationTests(unittest.TestCase):
         return res[0]["defaultNamingContext"][0]
 
     def setUp(self):
+        super(UrgentReplicationTests, self).setUp()
         self.ldb = ldb
         self.base_dn = self.find_basedn(ldb)
 

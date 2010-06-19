@@ -23,10 +23,11 @@ Note that this just tests the bindings work. It does not intend to test
 the functionality, that's already done in other tests.
 """
 
-import unittest
 from samba import auth
+import samba.tests
 
-class AuthTests(unittest.TestCase):
+class AuthTests(samba.tests.TestCase):
+
     def test_system_session(self):
         auth.system_session()
 

@@ -17,11 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import unittest
+import samba.tests
 from samba.dcerpc import security
 
-class SecurityTokenTests(unittest.TestCase):
+class SecurityTokenTests(samba.tests.TestCase):
+
     def setUp(self):
+        super(SecurityTokenTests, self).setUp()
         self.token = security.token()
 
     def test_is_system(self):
@@ -45,9 +47,10 @@ class SecurityTokenTests(unittest.TestCase):
         self.assertTrue(self.token.has_privilege(security.SEC_PRIV_SHUTDOWN))
 
 
-class SecurityDescriptorTests(unittest.TestCase):
+class SecurityDescriptorTests(samba.tests.TestCase):
 
     def setUp(self):
+        super(SecurityDescriptorTests, self).setUp()
         self.descriptor = security.descriptor()
 
     def test_from_sddl(self):
@@ -62,11 +65,12 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.assertRaises(TypeError,security.descriptor.from_sddl, "foo",security.dom_sid("S-2-0-0"))
 
     def test_from_sddl_invalidtype1(self):
-        self.assertRaises(TypeError,security.descriptor.from_sddl, security.dom_sid('S-2-0-0-512'),security.dom_sid("S-2-0-0"))
+        self.assertRaises(TypeError, security.descriptor.from_sddl, security.dom_sid('S-2-0-0-512'),security.dom_sid("S-2-0-0"))
 
-    def test_from_sddl_invalidtype1(self):
+    def test_from_sddl_invalidtype2(self):
         sddl = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
-        self.assertRaises(TypeError,security.descriptor.from_sddl, sddl,"S-2-0-0")
+        self.assertRaises(TypeError, security.descriptor.from_sddl, sddl,
+                "S-2-0-0")
 
     def test_as_sddl(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
@@ -106,7 +110,8 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.assertEquals((security.dom_sid("S-2-0"), 7), dom.split())
 
 
-class DomSidTests(unittest.TestCase):
+class DomSidTests(samba.tests.TestCase):
+
     def test_parse_sid(self):
         sid = security.dom_sid("S-1-5-21")
         self.assertEquals("S-1-5-21", str(sid))
@@ -126,10 +131,13 @@ class DomSidTests(unittest.TestCase):
         self.assertTrue(repr(sid).startswith("dom_sid('S-1-5-21-"))
 
 
-class PrivilegeTests(unittest.TestCase):
+class PrivilegeTests(samba.tests.TestCase):
+
     def test_privilege_name(self):
-        self.assertEquals("SeShutdownPrivilege", security.privilege_name(security.SEC_PRIV_SHUTDOWN))
+        self.assertEquals("SeShutdownPrivilege",
+                security.privilege_name(security.SEC_PRIV_SHUTDOWN))
 
     def test_privilege_id(self):
-        self.assertEquals(security.SEC_PRIV_SHUTDOWN, security.privilege_id("SeShutdownPrivilege"))
+        self.assertEquals(security.SEC_PRIV_SHUTDOWN,
+                security.privilege_id("SeShutdownPrivilege"))
 

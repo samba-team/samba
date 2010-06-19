@@ -32,6 +32,7 @@ def toArray((handle, array, num_entries)):
 class SamrTests(RpcInterfaceTestCase):
 
     def setUp(self):
+        super(SamrTests, self).setUp()
         self.conn = samr.samr("ncalrpc:", self.get_loadparm())
 
     def test_connect5(self):

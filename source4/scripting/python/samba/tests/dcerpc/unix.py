@@ -23,6 +23,7 @@ from samba.tests import RpcInterfaceTestCase
 class UnixinfoTests(RpcInterfaceTestCase):
 
     def setUp(self):
+        super(UnixinfoTests, self).setUp()
         self.conn = unixinfo.unixinfo("ncalrpc:", self.get_loadparm())
 
     def test_getpwuid(self):

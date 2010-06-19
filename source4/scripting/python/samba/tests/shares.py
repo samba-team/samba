@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from samba.shares import SharesContainer
-from unittest import TestCase
+from samba.tests import TestCase
 
 
 class MockService(object):

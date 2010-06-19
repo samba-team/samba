@@ -18,9 +18,10 @@
 #
 
 from samba import param
-import unittest
+import samba.tests
 
-class LoadParmTestCase(unittest.TestCase):
+class LoadParmTestCase(samba.tests.TestCase):
+
     def test_init(self):
         file = param.LoadParm()
         self.assertTrue(file is not None)

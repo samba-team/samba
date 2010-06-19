@@ -81,6 +81,7 @@ class BasicTests(unittest.TestCase):
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
     def setUp(self):
+        super(BasicTests, self).setUp()
         self.ldb = ldb
         self.gc_ldb = gc_ldb
         self.base_dn = self.find_basedn(ldb)
@@ -2569,8 +2570,11 @@ nTSecurityDescriptor:: """ + desc_base64
         finally:
             self.delete_force(self.ldb, user_dn)
 
+
 class BaseDnTests(unittest.TestCase):
+
     def setUp(self):
+        super(BaseDnTests, self).setUp()
         self.ldb = ldb
 
     def test_rootdse_attrs(self):

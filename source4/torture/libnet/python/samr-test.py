@@ -26,11 +26,9 @@
 #  PYTHONPATH="$samba4srcdir/torture/libnet/python" $SUBUNITRUN samr-test -Ukma-exch.devel/Administrator%333
 #
 
-import sys
 import os
 
 from samba import net
-import unittest
 import samba.tests
 
 if not "ACCOUNT_NAME" in os.environ.keys():
@@ -48,7 +46,7 @@ creds = samba.tests.cmdline_credentials
 # Tests start here
 #
 
-class Libnet_SetPwdTest(unittest.TestCase):
+class Libnet_SetPwdTest(samba.tests.TestCase):
 
     ########################################################################################
 

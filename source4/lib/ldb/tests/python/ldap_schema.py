@@ -45,6 +45,7 @@ creds = credopts.get_credentials(lp)
 
 
 class SchemaTests(unittest.TestCase):
+
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn)
@@ -63,6 +64,7 @@ class SchemaTests(unittest.TestCase):
         return res[0]["defaultNamingContext"][0]
 
     def setUp(self):
+        super(SchemaTests, self).setUp()
         self.ldb = ldb
         self.schema_dn = self.find_schemadn(ldb)
         self.base_dn = self.find_basedn(ldb)
@@ -214,6 +216,7 @@ name: """ + object_name + """
 class SchemaTests_msDS_IntId(unittest.TestCase):
 
     def setUp(self):
+        super(SchemaTests_msDS_IntId, self).setUp()
         self.ldb = ldb
         res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
@@ -481,9 +484,11 @@ systemOnly: FALSE
             else:
                 self.assertTrue("msDS-IntId" not in ldb_msg)
 
+
 class SchemaTests_msDS_isRODC(unittest.TestCase):
 
     def setUp(self):
+        super(SchemaTests_msDS_isRODC, self).setUp()
         self.ldb = ldb
         res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)

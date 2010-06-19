@@ -20,7 +20,7 @@
 import samba.xattr_native, samba.xattr_tdb
 from samba.dcerpc import xattr
 from samba.ndr import ndr_pack
-from testtools.testcase import TestCase, TestSkipped
+from samba.tests import TestCase, TestSkipped
 import random
 import os
 

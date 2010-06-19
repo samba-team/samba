@@ -20,8 +20,7 @@
 import os
 from samba.provision import setup_secretsdb, findnss
 import samba.tests
-from samba.tests import env_loadparm
-import unittest
+from samba.tests import env_loadparm, TestCase
 
 setup_dir = "setup"
 def setup_path(file):
@@ -42,8 +41,9 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
             os.unlink(path)
             
 
-class FindNssTests(unittest.TestCase):
+class FindNssTests(TestCase):
     """Test findnss() function."""
+
     def test_nothing(self):
         def x(y):
             raise KeyError

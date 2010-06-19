@@ -19,9 +19,10 @@
 #
 
 from samba.messaging import Messaging
-from unittest import TestCase
+from samba.tests import TestCase
 
 class MessagingTests(TestCase):
+
     def get_context(self, *args, **kwargs):
         kwargs["messaging_path"] = "."
         return Messaging(*args, **kwargs)

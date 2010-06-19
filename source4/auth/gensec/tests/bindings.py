@@ -23,16 +23,16 @@ Note that this just tests the bindings work. It does not intend to test
 the functionality, that's already done in other tests.
 """
 
-import unittest
 from samba import gensec
-from samba.tests import env_loadparm
+import samba.tests
 
-class CredentialsTests(unittest.TestCase):
+class CredentialsTests(samba.tests.TestCase):
 
     def setUp(self):
+        super(CredentialsTests, self).setUp()
         settings = {}
         settings["target_hostname"] = "localhost"
-        settings["lp_ctx"] = env_loadparm()
+        settings["lp_ctx"] = samba.tests.env_loadparm()
         self.gensec = gensec.Security.start_client(settings)
 
     def test_info(self):

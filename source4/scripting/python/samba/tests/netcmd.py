@@ -17,11 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import unittest
-
 from samba.netcmd import Command
+import samba.tests
 
-class CommandTests(unittest.TestCase):
+class CommandTests(samba.tests.TestCase):
 
     def test_name(self):
         class cmd_foo(Command):

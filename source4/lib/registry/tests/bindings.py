@@ -18,11 +18,11 @@
 #
 
 import os
-import unittest
 from samba import registry
 import samba.tests
 
-class HelperTests(unittest.TestCase):
+class HelperTests(samba.tests.TestCase):
+
     def test_predef_to_name(self):
         self.assertEquals("HKEY_LOCAL_MACHINE", 
                           registry.get_predef_name(0x80000002))
@@ -33,6 +33,7 @@ class HelperTests(unittest.TestCase):
 
 
 class HiveTests(samba.tests.TestCaseInTempDir):
+
     def setUp(self):
         super(HiveTests, self).setUp()
         self.hive_path = os.path.join(self.tempdir, "ldb_new.ldb")
@@ -41,6 +42,7 @@ class HiveTests(samba.tests.TestCaseInTempDir):
     def tearDown(self):
         del self.hive
         os.unlink(self.hive_path)
+        super(HiveTests, self).tearDown()
 
     def test_ldb_new(self):
         self.assertTrue(self.hive is not None)
@@ -52,6 +54,7 @@ class HiveTests(samba.tests.TestCaseInTempDir):
     #    self.hive.del_value("FOO")
 
 
-class RegistryTests(unittest.TestCase):
+class RegistryTests(samba.tests.TestCase):
+
     def test_new(self):
         self.registry = registry.Registry()

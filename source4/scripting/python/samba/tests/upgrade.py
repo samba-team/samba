@@ -21,6 +21,7 @@ from samba.upgrade import import_wins
 from samba.tests import LdbTestCase
 
 class WinsUpgradeTests(LdbTestCase):
+
     def test_upgrade(self):
         winsdb = {
             "FOO#20": (200, ["127.0.0.1", "127.0.0.2"], 0x60)

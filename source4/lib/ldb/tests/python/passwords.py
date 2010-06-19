@@ -12,7 +12,6 @@
 
 import optparse
 import sys
-import time
 import base64
 import os
 
@@ -75,6 +74,7 @@ class PasswordTests(samba.tests.TestCase):
         return res[0]["defaultNamingContext"][0]
 
     def setUp(self):
+        super(PasswordTests, self).setUp()
         self.ldb = ldb
         self.base_dn = self.find_basedn(ldb)
 
@@ -558,6 +558,7 @@ userPassword: thatsAcomplPASS4
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"] })
 
     def tearDown(self):
+        super(PasswordTests, self).tearDown()
         self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         # Close the second LDB connection (with the user credentials)
