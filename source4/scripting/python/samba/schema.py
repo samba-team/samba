@@ -28,6 +28,7 @@ from samba.dcerpc import security
 from samba.ms_schema import read_ms_schema
 from samba.ndr import ndr_pack
 from samba.samdb import SamDB
+from samba import dsdb
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
 import os
 
@@ -134,6 +135,10 @@ dn: @INDEXLIST
 
     def dnsyntax_attributes(self):
         return get_dnsyntax_attributes(self.schemadn, self.ldb)
+
+    def convert_to_openldap(self, target, mapping):
+        return dsdb.dsdb_convert_schema_to_openldap(self.ldb, target, mapping)
+
 
 # Return a hash with the forward attribute as a key and the back as the value 
 def get_linked_attributes(schemadn,schemaldb):

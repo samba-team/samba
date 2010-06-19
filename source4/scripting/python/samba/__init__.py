@@ -286,9 +286,6 @@ class Ldb(_Ldb):
     def write_prefixes_from_schema(self):
         dsdb.dsdb_write_prefixes_from_schema_to_ldb(self)
 
-    def convert_schema_to_openldap(self, target, mapping):
-        return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
-
 
 def substitute_var(text, values):
     """Substitute strings of the form ${NAME} in str, replacing

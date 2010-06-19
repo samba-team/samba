@@ -484,7 +484,7 @@ class OpenLDAPBackend(LDAPBackend):
         backend_schema = "backend-schema.schema"
 
         f = open(self.setup_path(mapping), 'r')
-        backend_schema_data = self.schema.ldb.convert_schema_to_openldap(
+        backend_schema_data = self.schema.convert_to_openldap(
                 "openldap", f.read())
         assert backend_schema_data is not None
         f = open(os.path.join(self.ldapdir, backend_schema), 'w')
@@ -686,7 +686,7 @@ class FDSBackend(LDAPBackend):
         backend_schema = "99_ad.ldif"
     
         # Build a schema file in Fedora DS format
-        backend_schema_data = self.schema.ldb.convert_schema_to_openldap("fedora-ds", open(self.setup_path(mapping), 'r').read())
+        backend_schema_data = self.schema.convert_to_openldap("fedora-ds", open(self.setup_path(mapping), 'r').read())
         assert backend_schema_data is not None
         f = open(os.path.join(self.ldapdir, backend_schema), 'w')
         try:
