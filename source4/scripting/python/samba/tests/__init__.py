@@ -24,9 +24,12 @@ import ldb
 import samba
 from samba import param
 import tempfile
-import unittest
 
-class LdbTestCase(unittest.TestCase):
+# Other modules import these two classes from here, for convenience:
+from testtools.testcase import TestCase, TestSkipped
+
+
+class LdbTestCase(TestCase):
 
     """Trivial test case for running tests against a LDB."""
     def setUp(self):
@@ -42,7 +45,7 @@ class LdbTestCase(unittest.TestCase):
         self.ldb = samba.Ldb(self.filename)
 
 
-class TestCaseInTempDir(unittest.TestCase):
+class TestCaseInTempDir(TestCase):
 
     def setUp(self):
         super(TestCaseInTempDir, self).setUp()
@@ -54,7 +57,7 @@ class TestCaseInTempDir(unittest.TestCase):
         os.rmdir(self.tempdir)
 
 
-class SubstituteVarTestCase(unittest.TestCase):
+class SubstituteVarTestCase(TestCase):
 
     def test_empty(self):
         self.assertEquals("", samba.substitute_var("", {}))
@@ -101,7 +104,7 @@ def env_loadparm():
 
 cmdline_credentials = None
 
-class RpcInterfaceTestCase(unittest.TestCase):
+class RpcInterfaceTestCase(TestCase):
 
     def get_loadparm(self):
         return env_loadparm()
@@ -110,7 +113,7 @@ class RpcInterfaceTestCase(unittest.TestCase):
         return cmdline_credentials
 
 
-class ValidNetbiosNameTests(unittest.TestCase):
+class ValidNetbiosNameTests(TestCase):
 
     def test_valid(self):
         self.assertTrue(samba.valid_netbios_name("FOO"))
