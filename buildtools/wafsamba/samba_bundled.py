@@ -72,6 +72,18 @@ def minimum_library_version(conf, libname, default):
     return default
 
 
+@conf
+def LIB_MAY_BE_BUNDLED(conf, libname):
+    return ('NONE' not in conf.env.BUNDLED_LIBS and
+            '!%s' % libname not in conf.env.BUNDLED_LIBS)
+
+
+@conf
+def LIB_MUST_BE_BUNDLED(conf, libname):
+    return ('ALL' in conf.env.BUNDLED_LIBS or 
+            libname in conf.env.BUNDLED_LIBS)
+
+
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
@@ -82,7 +94,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     this first tries via pkg-config, then if that fails
     tries by testing for a specified function in the specified lib
     '''
-    if 'ALL' in conf.env.BUNDLED_LIBS or libname in conf.env.BUNDLED_LIBS:
+    if conf.LIB_MUST_BE_BUNDLED(libname):
         return False
     found = 'FOUND_SYSTEMLIB_%s' % libname
     if found in conf.env:
@@ -122,7 +134,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                 conf.SET_SYSLIB_DEPS(libname, implied_deps)
             return True
     conf.env[found] = False
-    if 'NONE' in conf.env.BUNDLED_LIBS or '!'+libname in conf.env.BUNDLED_LIBS:
+    if conf.LIB_MAY_BE_BUNDLED(libname):
         Logs.error('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
         sys.exit(1)
     return False
