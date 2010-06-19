@@ -22,18 +22,16 @@ import samba.getopt as options
 
 from samba.auth import system_session
 from samba.credentials import Credentials
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
-from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
-from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
+from ldb import ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NO_SUCH_ATTRIBUTE
-from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
-from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
-from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
+from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import gensec
 from samba.samdb import SamDB
+import samba.tests
 from subunit.run import SubunitTestRunner
 import unittest
 
@@ -62,7 +60,8 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 # Tests start here
 #
 
-class PasswordTests(unittest.TestCase):
+class PasswordTests(samba.tests.TestCase):
+
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn)
