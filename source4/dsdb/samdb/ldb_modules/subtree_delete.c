@@ -30,7 +30,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_module.h"
+#include "includes.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
 

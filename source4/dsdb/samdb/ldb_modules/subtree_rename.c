@@ -28,7 +28,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_module.h"
+#include "includes.h"
 
 struct subren_msg_store {
 	struct subren_msg_store *next;
