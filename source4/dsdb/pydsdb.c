@@ -435,6 +435,30 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	WERROR result;
+	struct dsdb_schema *schema;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on ldb!\n");
+		return NULL;
+	}
+
+	result = dsdb_write_prefixes_from_schema_to_ldb(NULL, ldb, schema);
+	PyErr_WERROR_IS_ERR_RAISE(result);
+
+	Py_RETURN_NONE;
+}
+
 
 
 static PyMethodDef py_dsdb_methods[] = {
@@ -476,6 +500,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
 		NULL },
 	{ "dsdb_set_schema_from_ldb", (PyCFunction)py_dsdb_set_schema_from_ldb, METH_VARARGS,
+		NULL },
+	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

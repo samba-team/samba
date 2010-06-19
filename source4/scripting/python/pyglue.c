@@ -131,30 +131,6 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 
 
 
-static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObject *args)
-{
-	PyObject *py_ldb;
-	struct ldb_context *ldb;
-	WERROR result;
-	struct dsdb_schema *schema;
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb))
-		return NULL;
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-
-	schema = dsdb_get_schema(ldb, NULL);
-	if (!schema) {
-		PyErr_SetString(PyExc_RuntimeError, "Failed to set find a schema on ldb!\n");
-		return NULL;
-	}
-
-	result = dsdb_write_prefixes_from_schema_to_ldb(NULL, ldb, schema);
-	PyErr_WERROR_IS_ERR_RAISE(result);
-
-	Py_RETURN_NONE;
-}
-
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -222,8 +198,6 @@ static PyMethodDef py_misc_methods[] = {
 		"nttime2unix(nttime) -> timestamp" },
 	{ "nttime2string", (PyCFunction)py_nttime2string, METH_VARARGS,
 		"nttime2string(nttime) -> string" },
-	{ "dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
-		NULL },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
