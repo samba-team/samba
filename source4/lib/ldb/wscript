@@ -22,7 +22,7 @@ samba_dist.DIST_DIRS('''source4/lib/ldb:. lib/replace:lib/replace lib/talloc:lib
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
-    opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextenion='ldb')
+    opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextension='ldb')
     opt.RECURSE('lib/tdb')
     opt.RECURSE('lib/tevent')
 

@@ -19,7 +19,7 @@ samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
-    opt.BUNDLED_EXTENSION_DEFAULT('tevent', noextenion='tevent')
+    opt.BUNDLED_EXTENSION_DEFAULT('tevent', noextension='tevent')
     opt.RECURSE('lib/replace')
     opt.RECURSE('lib/talloc')
 

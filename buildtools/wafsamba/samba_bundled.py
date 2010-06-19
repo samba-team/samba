@@ -46,12 +46,12 @@ def BUILTIN_DEFAULT(opt, builtins):
 Options.Handler.BUILTIN_DEFAULT = BUILTIN_DEFAULT
 
 
-def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextenion=''):
+def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextension=''):
     '''set a default bundled library extension'''
     if 'BUNDLED_EXTENSION_DEFAULT' in Options.options:
         return
     Options.options['BUNDLED_EXTENSION_DEFAULT'] = extension
-    Options.options['BUNDLED_EXTENSION_EXCEPTION'] = noextenion
+    Options.options['BUNDLED_EXTENSION_EXCEPTION'] = noextension
 Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
 
 

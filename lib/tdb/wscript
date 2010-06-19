@@ -19,7 +19,7 @@ samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
-    opt.BUNDLED_EXTENSION_DEFAULT('tdb', noextenion='tdb')
+    opt.BUNDLED_EXTENSION_DEFAULT('tdb', noextension='tdb')
     opt.RECURSE('lib/replace')
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
