@@ -221,6 +221,24 @@ static int dsdb_compare_attribute_by_linkID(struct dsdb_attribute **a1, struct d
 	return uint32_cmp((*a1)->linkID, (*a2)->linkID);
 }
 
+/**
+ * Clean up Classes and Attributes accessor arrays
+ */
+static void dsdb_sorted_accessors_free(struct dsdb_schema *schema)
+{
+	/* free classes accessors */
+	TALLOC_FREE(schema->classes_by_lDAPDisplayName);
+	TALLOC_FREE(schema->classes_by_governsID_id);
+	TALLOC_FREE(schema->classes_by_governsID_oid);
+	TALLOC_FREE(schema->classes_by_cn);
+	/* free attribute accessors */
+	TALLOC_FREE(schema->attributes_by_lDAPDisplayName);
+	TALLOC_FREE(schema->attributes_by_attributeID_id);
+	TALLOC_FREE(schema->attributes_by_msDS_IntId);
+	TALLOC_FREE(schema->attributes_by_attributeID_oid);
+	TALLOC_FREE(schema->attributes_by_linkID);
+}
+
 /*
   create the sorted accessor arrays for the schema
  */
@@ -232,10 +250,8 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	unsigned int i;
 	unsigned int num_int_id;
 
-	talloc_free(schema->classes_by_lDAPDisplayName);
-	talloc_free(schema->classes_by_governsID_id);
-	talloc_free(schema->classes_by_governsID_oid);
-	talloc_free(schema->classes_by_cn);
+	/* free all caches */
+	dsdb_sorted_accessors_free(schema);
 
 	/* count the classes */
 	for (i=0, cur=schema->classes; cur; i++, cur=cur->next) /* noop */ ;
@@ -267,11 +283,6 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	TYPESAFE_QSORT(schema->classes_by_cn, schema->num_classes, dsdb_compare_class_by_cn);
 
 	/* now build the attribute accessor arrays */
-	talloc_free(schema->attributes_by_lDAPDisplayName);
-	talloc_free(schema->attributes_by_attributeID_id);
-	talloc_free(schema->attributes_by_msDS_IntId);
-	talloc_free(schema->attributes_by_attributeID_oid);
-	talloc_free(schema->attributes_by_linkID);
 
 	/* count the attributes
 	 * and attributes with msDS-IntId set */
@@ -323,15 +334,7 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 
 failed:
-	schema->classes_by_lDAPDisplayName = NULL;
-	schema->classes_by_governsID_id = NULL;
-	schema->classes_by_governsID_oid = NULL;
-	schema->classes_by_cn = NULL;
-	schema->attributes_by_lDAPDisplayName = NULL;
-	schema->attributes_by_attributeID_id = NULL;
-	schema->attributes_by_msDS_IntId = NULL;
-	schema->attributes_by_attributeID_oid = NULL;
-	schema->attributes_by_linkID = NULL;
+	dsdb_sorted_accessors_free(schema);
 	ldb_oom(ldb);
 	return LDB_ERR_OPERATIONS_ERROR;
 }
