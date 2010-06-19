@@ -1054,8 +1054,9 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 
 	parent_dn = ldb_dn_get_parent(ac, req->op.rename.newdn);
 	if (parent_dn == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot rename %s, the parent DN does not exist!",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
 	/* this looks up the parent object for fetching some important
