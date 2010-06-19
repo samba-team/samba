@@ -292,13 +292,6 @@ class Ldb(_Ldb):
     def convert_schema_to_openldap(self, target, mapping):
         return dsdb.dsdb_convert_schema_to_openldap(self, target, mapping)
 
-    def set_invocation_id(self, invocation_id):
-        """Set the invocation id for this SamDB handle.
-
-        :param invocation_id: GUID of the invocation id.
-        """
-        dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
-
     def get_invocation_id(self):
         """Get the invocation_id id"""
         return dsdb.samdb_ntds_invocation_id(self)
