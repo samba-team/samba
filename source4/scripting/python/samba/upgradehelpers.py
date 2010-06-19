@@ -166,6 +166,7 @@ def get_ldbs(paths, creds, session, lp):
 
     return ldbs
 
+
 def usn_in_range(usn, range):
     """Check if the usn is in one of the range provided.
     To do so, the value is checked to be between the lower bound and
@@ -174,24 +175,26 @@ def usn_in_range(usn, range):
     :param usn: A integer value corresponding to the usn that we want to update
     :param range: A list of integer representing ranges, lower bounds are in
                   the even indices, higher in odd indices
-    :return: 1 if the usn is in one of the range, 0 otherwise"""
+    :return: True if the usn is in one of the range, False otherwise
+    """
 
     idx = 0
-    cont = 1
-    ok = 0
-    while (cont == 1):
+    cont = True
+    ok = False
+    while cont:
         if idx ==  len(range):
-            cont = 0
+            cont = False
             continue
         if usn < int(range[idx]):
             if idx %2 == 1:
-                ok = 1
-            cont = 0
+                ok = True
+            cont = False
         if usn == int(range[idx]):
-            cont = 0
-            ok = 1
+            cont = False
+            ok = True
         idx = idx + 1
     return ok
+
 
 def get_paths(param, targetdir=None, smbconf=None):
     """Get paths to important provision objects (smb.conf, ldb files, ...)
@@ -237,6 +240,7 @@ def update_policyids(names, samdb):
     else:
         names.policyid_dc = None
 
+
 def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp):
     """Get key provision parameters (realm, domain, ...) from a given provision
 
@@ -246,8 +250,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     :param paths: A list of path to provision object
     :param smbconf: Path to the smb.conf file
     :param lp: A LoadParm object
-    :return: A list of key provision parameters"""
-
+    :return: A list of key provision parameters
+    """
     names = ProvisionNames()
     names.adminpass = None
 
@@ -408,15 +412,18 @@ def dn_sort(x, y):
                     return -1
     return ret
 
+
 def identic_rename(ldbobj, dn):
     """Perform a back and forth rename to trigger renaming on attribute that
-       can't be directly modified.
+    can't be directly modified.
 
     :param lbdobj: An Ldb Object
-    :param dn: DN of the object to manipulate """
+    :param dn: DN of the object to manipulate
+    """
     (before, sep, after)=str(dn).partition('=')
     ldbobj.rename(dn, ldb.Dn(ldbobj, "%s=foo%s" % (before, after)))
     ldbobj.rename(ldb.Dn(ldbobj, "%s=foo%s" % (before, after)), dn)
+
 
 def chunck_acl(acl):
     """Return separate ACE of an ACL
@@ -659,7 +666,7 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     Set ACL correctly also.
     Check ACLs for sysvol/netlogon dirs also
     """
-    resetacls = 0
+    resetacls = False
     try:
         ntacls.checkset_backend(lp, None, None)
         eadbname = lp.get("posix:eadb")
@@ -674,10 +681,10 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
             attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
                                 xattr.XATTR_NTACL_NAME)
     except:
-       resetacls = 1
+       resetacls = True
 
     if force:
-        resetacls = 1
+        resetacls = True
 
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid)
     if not os.path.isdir(dir):

@@ -40,9 +40,11 @@ def create_dummy_secretsdb(path, lp=None):
     secrets_ldb.transaction_commit()
     return secrets_ldb
 
+
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     """Some simple tests for individual functions in the provisioning code.
     """
+
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
         ldb = setup_secretsdb(path, setup_path, None, None, lp=env_loadparm())

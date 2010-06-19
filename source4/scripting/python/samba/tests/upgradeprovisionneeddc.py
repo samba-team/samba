@@ -20,6 +20,8 @@
 import os
 import re
 import shutil
+
+from samba import param
 from samba.credentials import Credentials
 from samba.auth import system_session
 from samba.provision import getpolicypath
@@ -27,67 +29,66 @@ from samba.upgradehelpers import (get_paths, get_ldbs,
                                  find_provision_key_parameters, identic_rename,
                                  updateOEMInfo, getOEMInfo, update_gpo,
                                  delta_update_basesamdb,search_constructed_attrs_stored)
-
-from samba.tests.provision import create_dummy_secretsdb
-from samba import param
 from samba.tests import env_loadparm, TestCaseInTempDir
+from samba.tests.provision import create_dummy_secretsdb
 import ldb
 
 
 def dummymessage(a=None, b=None):
-    if 0:
-        print "none"
+    pass
 
-lp = env_loadparm()
-smbConfPath = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
+smb_conf_path = "%s/%s/%s" % (os.environ["SELFTEST_PREFIX"], "dc", "etc/smb.conf")
 
 class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
     """Some simple tests for individual functions in the provisioning code.
     """
 
     def test_get_ldbs(self):
-        paths = get_paths(param, None, smbConfPath)
+        paths = get_paths(param, None, smb_conf_path)
         creds = Credentials()
+        lp = env_loadparm()
         creds.guess(lp)
         get_ldbs(paths, creds, system_session(), lp)
 
     def test_find_key_param(self):
-        paths = get_paths(param, None, smbConfPath)
+        paths = get_paths(param, None, smb_conf_path)
         creds = Credentials()
+        lp = env_loadparm()
         creds.guess(lp)
         rootdn = "dc=samba,dc=example,dc=com"
         ldbs = get_ldbs(paths, creds, system_session(), lp)
         names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
-                                                paths, smbConfPath, lp)
+                                                paths, smb_conf_path, lp)
         self.assertEquals(names.realm, "SAMBA.EXAMPLE.COM")
-        self.assertTrue(str(names.rootdn).lower() == rootdn.lower())
+        self.assertEquals(str(names.rootdn).lower(), rootdn.lower())
         self.assertTrue(names.policyid_dc != None)
         self.assertTrue(names.ntdsguid != "")
 
 
 class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
+
     def _getEmptyDbName(self):
         return os.path.join(self.tempdir, "sam.ldb")
 
     def setUp(self):
         super(UpgradeProvisionWithLdbTestCase, self).setUp()
-        paths = get_paths(param, None, smbConfPath)
+        paths = get_paths(param, None, smb_conf_path)
         self.creds = Credentials()
-        self.creds.guess(lp)
+        self.lp = env_loadparm()
+        self.creds.guess(self.lp)
         self.paths = paths
-        self.ldbs = get_ldbs(paths, self.creds, system_session(), lp)
-        self.lp = lp
+        self.ldbs = get_ldbs(paths, self.creds, system_session(), self.lp)
         self.names = find_provision_key_parameters(self.ldbs.sam, self.ldbs.secrets,
-                                                       self.ldbs.idmap, paths, smbConfPath, lp)
+                                   self.ldbs.idmap, paths, smb_conf_path, self.lp)
         self.referencedb = create_dummy_secretsdb(
             os.path.join(self.tempdir, "ref.ldb"))
-
 
     def test_search_constructed_attrs_stored(self):
         hashAtt = search_constructed_attrs_stored(self.ldbs.sam,
                                                   self.names.rootdn,
                                                   ["msds-KeyVersionNumber"])
         self.assertFalse(hashAtt.has_key("msds-KeyVersionNumber"))
+
     def test_identic_rename(self):
         rootdn = "DC=samba,DC=example,DC=com"
 

@@ -81,6 +81,7 @@ def find_setup_dir():
 # hard coded at this point, but will probably be changed when
 # we enable different fsmo roles
 
+
 def get_config_descriptor(domain_sid):
     sddl = "O:EAG:EAD:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
            "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
@@ -192,8 +193,10 @@ class ProvisionNames(object):
         self.sitename = None
         self.smbconf = None
 
-def updateProvisionUSN(samdb, low, high, replace = 0):
+
+def update_provision_usn(samdb, low, high, replace=False):
     """Update the field provisionUSN in sam.ldb
+
     This field is used to track range of USN modified by provision and 
     upgradeprovision.
     This value is used afterward by next provision to figure out if 
@@ -203,26 +206,28 @@ def updateProvisionUSN(samdb, low, high, replace = 0):
     :param low: The lowest USN modified by this upgrade
     :param high: The highest USN modified by this upgrade
     :param replace: A boolean indicating if the range should replace any 
-                    existing one or appended (default)"""
+                    existing one or appended (default)
+    """
 
     tab = []
     if not replace:
         entry = samdb.search(expression="(&(dn=@PROVISION)(%s=*))" % \
                                 LAST_PROVISION_USN_ATTRIBUTE, base="", 
                                 scope=ldb.SCOPE_SUBTREE,
-                                attrs=[LAST_PROVISION_USN_ATTRIBUTE,"dn"])
+                                attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
         for e in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
             tab.append(str(e))
 
-    tab.append("%s-%s"%(str(low), str(high)))
+    tab.append("%s-%s" % (low, high))
     delta = ldb.Message()
-    delta.dn = ldb.Dn(samdb,"@PROVISION")
+    delta.dn = ldb.Dn(samdb, "@PROVISION")
     delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
                                                     ldb.FLAG_MOD_REPLACE,
                                                     LAST_PROVISION_USN_ATTRIBUTE)
     samdb.modify(delta)
 
-def setProvisionUSN(samdb, low, high):
+
+def set_provision_usn(samdb, low, high):
     """Set the field provisionUSN in sam.ldb
     This field is used to track range of USN modified by provision and
     upgradeprovision.
@@ -233,13 +238,14 @@ def setProvisionUSN(samdb, low, high):
     :param low: The lowest USN modified by this upgrade
     :param high: The highest USN modified by this upgrade"""
     tab = []
-    tab.append("%s-%s"%(str(low), str(high)))
+    tab.append("%s-%s" % (low, high))
     delta = ldb.Message()
-    delta.dn = ldb.Dn(samdb,"@PROVISION")
+    delta.dn = ldb.Dn(samdb, "@PROVISION")
     delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
                                                   ldb.FLAG_MOD_ADD,
                                                   LAST_PROVISION_USN_ATTRIBUTE)
     samdb.add(delta)
+
 
 def get_max_usn(samdb,basedn):
     """ This function return the biggest USN present in the provision
@@ -256,7 +262,7 @@ def get_max_usn(samdb,basedn):
                                    "paged_results:1:1"])
     return res[0]["uSNChanged"]
     
-def getLastProvisionUSN(sam):
+def get_last_provision_usn(sam):
     """Get the lastest USN modified by a provision or an upgradeprovision
 
     :param sam: An LDB object pointing to the sam.ldb
@@ -541,7 +547,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             privdir = os.path.join(targetdir, "private")
         else:
             privdir = default_lp.get("private dir")
-        posixeadb_line = "posix:eadb = " + os.path.abspath(os.path.join(privdir,"eadb.tdb"))
+        posixeadb_line = "posix:eadb = " + os.path.abspath(os.path.join(privdir, "eadb.tdb"))
     else:
         posixeadb_line = ""
 
@@ -1159,7 +1165,7 @@ def set_gpo_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
     set_dir_acl(policy_path,dsacl2fsacl(POLICIES_ACL, str(domainsid)), 
         lp, str(domainsid))
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
-                        attrs=["cn","nTSecurityDescriptor"],
+                        attrs=["cn", "nTSecurityDescriptor"],
                         expression="", scope=ldb.SCOPE_ONELEVEL)
     for policy in res:
         acl = ndr_unpack(security.descriptor, 
@@ -1322,8 +1328,8 @@ def provision(setup_dir, logger, session_info,
 
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
-    if not os.path.exists(os.path.join(paths.private_dir,"tls")):
-        os.mkdir(os.path.join(paths.private_dir,"tls"))
+    if not os.path.exists(os.path.join(paths.private_dir, "tls")):
+        os.mkdir(os.path.join(paths.private_dir, "tls"))
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
  
@@ -1489,12 +1495,12 @@ def provision(setup_dir, logger, session_info,
             logger.info("A Kerberos configuration suitable for Samba 4 has been "
                     "generated at %s", paths.krb5conf)
 
-        lastProvisionUSNs = getLastProvisionUSN(samdb)
+        lastProvisionUSNs = get_last_provision_usn(samdb)
         maxUSN = get_max_usn(samdb, str(names.rootdn))
         if lastProvisionUSNs != None:
-            updateProvisionUSN(samdb, 0, maxUSN, 1)
+            update_provision_usn(samdb, 0, maxUSN, 1)
         else:
-            setProvisionUSN(samdb, 0, maxUSN)
+            set_provision_usn(samdb, 0, maxUSN)
 
     if serverrole == "domain controller":
         create_dns_update_list(lp, logger, paths, setup_path)
@@ -1544,7 +1550,6 @@ def provision(setup_dir, logger, session_info,
             logger.info(provision_backend.slapd_command_escaped)
             logger.info("This slapd-Commandline is also stored under: %s/ldap_backend_startup.sh", 
                     provision_backend.ldapdir)
-
 
     result = ProvisionResult()
     result.domaindn = domaindn
@@ -1708,6 +1713,7 @@ def create_named_conf(paths, setup_path, realm, dnsdomain,
 
     setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
+
 def create_named_txt(path, setup_path, realm, dnsdomain,
                       private_dir, keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
@@ -1728,6 +1734,7 @@ def create_named_txt(path, setup_path, realm, dnsdomain,
             "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
             "PRIVATE_DIR": private_dir
         })
+
 
 def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
     """Write out a file containing zone statements suitable for inclusion in a

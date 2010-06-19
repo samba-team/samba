@@ -23,16 +23,13 @@ from samba.upgradehelpers import  (usn_in_range, dn_sort,
                                   construct_existor_expr)
 
 from samba.tests.provision import create_dummy_secretsdb
-from samba.tests import env_loadparm, TestCaseInTempDir
+from samba.tests import TestCaseInTempDir
 from samba import Ldb
 from ldb import SCOPE_SUBTREE
 import samba.tests
 
-lp = env_loadparm()
-
 def dummymessage(a=None, b=None):
-    if 0:
-        print "none"
+    pass
 
 
 class UpgradeProvisionTestCase(TestCaseInTempDir):
@@ -60,7 +57,8 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         self.assertEquals(dn_sort("dc=toto,dc=tata",
                                     "cn=foo,dc=toto,dc=tata"), -1)
         self.assertEquals(dn_sort("cn=bar, dc=toto,dc=tata",
-                                    "cn=foo, dc=toto,dc=tata"),-1)
+                                    "cn=foo, dc=toto,dc=tata"), -1)
+
     def test_get_diff_sddl(self):
         sddl = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
@@ -75,19 +73,19 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         sddl5 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
 
-        self.assertEquals(get_diff_sddls(sddl, sddl1) ,"")
+        self.assertEquals(get_diff_sddls(sddl, sddl1), "")
         txt = get_diff_sddls(sddl, sddl2)
-        self.assertEquals(txt ,"\tOwner mismatch: SA (in ref) BA(in current)\n")
+        self.assertEquals(txt, "\tOwner mismatch: SA (in ref) BA(in current)\n")
         txt = get_diff_sddls(sddl, sddl3)
-        self.assertEquals(txt ,"\tGroup mismatch: DU (in ref) BA(in current)\n")
+        self.assertEquals(txt, "\tGroup mismatch: DU (in ref) BA(in current)\n")
         txt = get_diff_sddls(sddl, sddl4)
         txtmsg = "\tPart dacl is different between reference and current here\
  is the detail:\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
  the reference\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA) ACE is not present in\
  the current\n"
-        self.assertEquals(txt , txtmsg)
+        self.assertEquals(txt, txtmsg)
         txt = get_diff_sddls(sddl, sddl5)
-        self.assertEquals(txt ,"\tCurrent ACL hasn't a sacl part\n")
+        self.assertEquals(txt, "\tCurrent ACL hasn't a sacl part\n")
 
     def test_construct_existor_expr(self):
         res = construct_existor_expr([])
@@ -99,7 +97,9 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         res = construct_existor_expr(["foo", "bar"])
         self.assertEquals(res, "(|(foo=*)(bar=*))")
 
+
 class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
+
     def setUp(self):
         super(UpdateSecretsTests, self).setUp()
         self.referencedb = create_dummy_secretsdb(
