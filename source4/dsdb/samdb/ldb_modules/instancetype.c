@@ -84,6 +84,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+	struct ldb_message_element *el;
 	struct it_context *ac;
 	uint32_t instance_type;
 	int ret;
@@ -97,8 +98,17 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (ldb_msg_find_element(req->op.add.message, "instanceType")) {
-		unsigned int instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
+	el = ldb_msg_find_element(req->op.add.message, "instanceType");
+	if (el != NULL) {
+		unsigned int instanceType;
+
+		if (el->num_values != 1) {
+			ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute is single-valued!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		instanceType = ldb_msg_find_attr_as_uint(req->op.add.message,
+							 "instanceType", 0);
 		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
 			return ldb_next_request(module, req);		
 		}
