@@ -47,30 +47,31 @@ from samba import getopt as options
 # configuration settings.
 
 def do_global_checks(lp, logger):
-    ret = False
+    valid = True
 
     lockdir = lp.get("lockdir")
 
     if not os.path.isdir(lockdir):
         logger.error("lock directory %s does not exist", lockdir)
-        ret = True
+        valid = False
 
     piddir = lp.get("pid directory")
 
     if os.path.isdir(piddir):
         logger.error("pid directory %s does not exist", piddir)
-        ret = True
+        valid = False
 
     winbind_separator = lp.get("winbind separator")
 
     if len(winbind_separator) != 1:
         logger.error("the 'winbind separator' parameter must be a single character.")
-        ret = True
+        valid = False
 
     if winbind_separator == '+':
         logger.error("'winbind separator = +' might cause problems with group membership.")
+        valid = False
 
-    return ret
+    return valid
 
 
 def allow_access(deny_list, allow_list, cname, caddr):
@@ -78,6 +79,7 @@ def allow_access(deny_list, allow_list, cname, caddr):
 
 
 def do_share_checks(lp, logger):
+    valid = True
     for s in lp.services():
         if len(s) > 12:
             logger.warning("You have some share names that are longer than 12 characters. These may not be accessible to some older clients. (Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)")
@@ -90,12 +92,14 @@ def do_share_checks(lp, logger):
             for entry in deny_list:
                 if "*" in entry or "?" in entry:
                     logger.error("Invalid character (* or ?) in hosts deny list (%s) for service %s.", entry, s)
+                    valid = False
 
         if allow_list:
             for entry in allow_list:
                 if "*" in entry or "?" in entry:
                     logger.error("Invalid character (* or ?) in hosts allow list (%s) for service %s.", entry, s)
-
+                    valid = False
+    return valid
 
 def dump(lp, section_name=None, parameter_name=None, silent_mode=False,
          show_defaults=False):
@@ -104,9 +108,9 @@ def dump(lp, section_name=None, parameter_name=None, silent_mode=False,
         sys.stdin.readline()
     if section_name is not None or parameter_name is not None:
         if parameter_name is None:
-            lp.dump_service(sys.stdout, section_name, show_defaults)
+            lp[section_name].dump(sys.stdout, lp.default_service, show_defaults)
         else:
-            lp.dump_parameter(sys.stdout, section_name, parameter_name)
+            print lp.get(parameter_name, section_name)
     else:
         lp.dump(sys.stdout, show_defaults)
 
@@ -181,17 +185,20 @@ if __name__ == '__main__':
     samba.set_debug_level(2)
 
     logger = logging.getLogger("testparm")
+    logger.addHandler(logging.StreamHandler(sys.stdout))
 
-    print "Loaded smb config files from %s\n" % lp.configfile
-
+    logger.info("Loaded smb config files from %s", lp.configfile)
     logger.info("Loaded services file OK.")
 
-    do_global_checks(lp, logger)
-    do_share_checks(lp, logger)
+    valid = do_global_checks(lp, logger)
+    valid = valid and do_share_checks(lp, logger)
     if cname is not None:
         check_client_access(lp, cname, caddr)
     else:
         dump(lp, opts.section_name, opts.parameter_name, 
                 not opts.suppress_prompt, opts.verbose or False)
 
-    sys.exit(0)
+    if valid:
+        sys.exit(0)
+    else:
+        sys.exit(1)
