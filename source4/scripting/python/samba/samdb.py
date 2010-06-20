@@ -48,9 +48,9 @@ class SamDB(samba.Ldb):
                 options=options)
 
         if global_schema:
-            dsdb.dsdb_set_global_schema(self)
+            dsdb._dsdb_set_global_schema(self)
 
-        dsdb.dsdb_set_am_rodc(self, am_rodc)
+        dsdb._dsdb_set_am_rodc(self, am_rodc)
 
     def connect(self, url=None, flags=0, options=None):
         if self.lp is not None:
@@ -422,27 +422,27 @@ accountExpires: %u
 
         :param sid: The new domain sid to use.
         """
-        dsdb.samdb_set_domain_sid(self, sid)
+        dsdb._samdb_set_domain_sid(self, sid)
 
     def get_domain_sid(self):
         """Read the domain SID used by this LDB.
 
         """
-        dsdb.samdb_get_domain_sid(self)
+        dsdb._samdb_get_domain_sid(self)
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
 
         :param invocation_id: GUID of the invocation id.
         """
-        dsdb.dsdb_set_ntds_invocation_id(self, invocation_id)
+        dsdb._dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def get_oid_from_attid(self, attid):
-        return dsdb.dsdb_get_oid_from_attid(self, attid)
+        return dsdb._dsdb_get_oid_from_attid(self, attid)
 
     def get_invocation_id(self):
         "Get the invocation_id id"
-        return dsdb.samdb_ntds_invocation_id(self)
+        return dsdb._samdb_ntds_invocation_id(self)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName rootDSE attribute
@@ -451,7 +451,7 @@ accountExpires: %u
 
         :param ntds_settings_dn: The new DN to use
         """
-        dsdb.samdb_set_ntds_settings_dn(self, ntds_settings_dn)
+        dsdb._samdb_set_ntds_settings_dn(self, ntds_settings_dn)
 
     invocation_id = property(get_invocation_id, set_invocation_id)
 
@@ -459,20 +459,20 @@ accountExpires: %u
 
     def get_ntds_GUID(self):
         "Get the NTDS objectGUID"
-        return dsdb.samdb_ntds_objectGUID(self)
+        return dsdb._samdb_ntds_objectGUID(self)
 
     def server_site_name(self):
         "Get the server site name"
-        return dsdb.samdb_server_site_name(self)
+        return dsdb._samdb_server_site_name(self)
 
     def load_partition_usn(self, base_dn):
-        return dsdb.dsdb_load_partition_usn(self, base_dn)
+        return dsdb._dsdb_load_partition_usn(self, base_dn)
 
     def set_schema(self, schema):
         self.set_schema_from_ldb(schema.ldb)
 
     def set_schema_from_ldb(self, ldb):
-        dsdb.dsdb_set_schema_from_ldb(self, ldb)
+        dsdb._dsdb_set_schema_from_ldb(self, ldb)
 
     def write_prefixes_from_schema(self):
-        dsdb.dsdb_write_prefixes_from_schema_to_ldb(self)
+        dsdb._dsdb_write_prefixes_from_schema_to_ldb(self)

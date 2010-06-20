@@ -109,7 +109,7 @@ class Schema(object):
         self.set_from_ldif(prefixmap_ldif, self.schema_data)
 
     def set_from_ldif(self, pf, df):
-        dsdb.dsdb_set_schema_from_ldif(self.ldb, pf, df)
+        dsdb._dsdb_set_schema_from_ldif(self.ldb, pf, df)
 
     def write_to_tmp_ldb(self, schemadb_path):
         self.ldb.connect(url=schemadb_path)
@@ -140,7 +140,7 @@ dn: @INDEXLIST
         return get_dnsyntax_attributes(self.schemadn, self.ldb)
 
     def convert_to_openldap(self, target, mapping):
-        return dsdb.dsdb_convert_schema_to_openldap(self.ldb, target, mapping)
+        return dsdb._dsdb_convert_schema_to_openldap(self.ldb, target, mapping)
 
 
 # Return a hash with the forward attribute as a key and the back as the value 

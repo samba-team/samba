@@ -42,7 +42,6 @@ else:
 
 
 import ldb
-import _glue
 from samba._ldb import Ldb as _Ldb
 
 class Ldb(_Ldb):
@@ -264,7 +263,7 @@ class Ldb(_Ldb):
 
 def substitute_var(text, values):
     """Substitute strings of the form ${NAME} in str, replacing
-    with substitutions from subobj.
+    with substitutions from values.
 
     :param text: Text in which to subsitute.
     :param values: Dictionary with keys and values.
@@ -355,6 +354,7 @@ def ensure_external_module(modulename, location):
             sys.modules[modulename] = __import__(
                 "samba.external.%s" % modulename, fromlist=["samba.external"])
 
+import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
