@@ -175,7 +175,7 @@ static PyObject *py_lp_ctx_get(py_talloc_Object *self, PyObject *args)
 	char *param_name;
 	char *section_name = NULL;
 	PyObject *ret;
-	if (!PyArg_ParseTuple(args, "s|s", &param_name, &section_name))
+	if (!PyArg_ParseTuple(args, "s|z", &param_name, &section_name))
 		return NULL;
 
 	ret = py_lp_ctx_get_helper(PyLoadparmContext_AsLoadparmContext(self), section_name, param_name);
