@@ -1687,7 +1687,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 	struct samr_domain_state *d_state;
 	const char **names;
 	struct lsa_String *lsa_names;
-	uint32_t *ids;
+	enum lsa_SidType *ids;
 
 	ZERO_STRUCTP(r->out.names);
 	ZERO_STRUCTP(r->out.types);
@@ -1701,7 +1701,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 
 	lsa_names = talloc_zero_array(mem_ctx, struct lsa_String, r->in.num_rids);
 	names = talloc_zero_array(mem_ctx, const char *, r->in.num_rids);
-	ids = talloc_zero_array(mem_ctx, uint32_t, r->in.num_rids);
+	ids = talloc_zero_array(mem_ctx, enum lsa_SidType, r->in.num_rids);
 
 	if ((lsa_names == NULL) || (names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -1709,7 +1709,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 	r->out.names->names = lsa_names;
 	r->out.names->count = r->in.num_rids;
 
-	r->out.types->ids = ids;
+	r->out.types->ids = (uint32_t *) ids;
 	r->out.types->count = r->in.num_rids;
 
 	status = dsdb_lookup_rids(d_state->sam_ctx, mem_ctx, d_state->domain_sid,
