@@ -192,6 +192,6 @@ if __name__ == '__main__':
         check_client_access(lp, cname, caddr)
     else:
         dump(lp, opts.section_name, opts.parameter_name, 
-                not opts.suppress_prompt, opts.verbose)
+                not opts.suppress_prompt, opts.verbose or False)
 
     sys.exit(0)

@@ -246,6 +246,27 @@ static PyObject *py_lp_ctx_services(py_talloc_Object *self)
 	return ret;
 }
 
+static PyObject *py_lp_dump(PyObject *self, PyObject *args)
+{
+	PyObject *py_stream;
+	bool show_defaults = false;
+	FILE *f;
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+
+	if (!PyArg_ParseTuple(args, "O|b", &py_stream, &show_defaults))
+		return NULL;
+
+	f = PyFile_AsFile(py_stream);
+	if (f == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Not a file stream");
+		return NULL;
+	}
+
+	lp_dump(lp_ctx, f, show_defaults, lp_numservices(lp_ctx));
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
 		"S.load(filename) -> None\n"
@@ -269,6 +290,8 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"S.private_path(name) -> path\n" },
 	{ "services", (PyCFunction)py_lp_ctx_services, METH_NOARGS,
 		"S.services() -> list" },
+	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
+		"S.dump(stream, show_defaults=False)" },
 	{ NULL }
 };
 
