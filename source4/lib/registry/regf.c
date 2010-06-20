@@ -158,7 +158,7 @@ static DATA_BLOB hbin_alloc(struct regf_data *data, uint32_t size,
 			    uint32_t *offset)
 {
 	DATA_BLOB ret;
-	uint32_t rel_offset = -1; /* Relative offset ! */
+	uint32_t rel_offset = (uint32_t) -1; /* Relative offset ! */
 	struct hbin_block *hbin = NULL;
 	unsigned int i;
 
@@ -1775,7 +1775,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	struct nk_block *nk = private_data->nk;
 	struct vk_block vk;
 	uint32_t i;
-	uint32_t tmp_vk_offset, vk_offset, old_vk_offset = -1;
+	uint32_t tmp_vk_offset, vk_offset, old_vk_offset = (uint32_t) -1;
 	DATA_BLOB values;
 
 	ZERO_STRUCT(vk);
