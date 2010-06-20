@@ -8,12 +8,6 @@ bld.SAMBA_BINARY('ntlm_auth',
 	)
 
 
-bld.SAMBA_BINARY('testparm',
-	source='testparm.c',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt samba_socket POPT_SAMBA LIBCLI_RESOLVE CHARSET'
-	)
-
-
 bld.SAMBA_BINARY('oLschema2ldif',
 	source='oLschema2ldif.c',
 	manpages='man/oLschema2ldif.1',
