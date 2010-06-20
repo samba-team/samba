@@ -402,6 +402,7 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 	int local_fd, remote_fd;
 	int buf[1024];
 	int nread, total_read;
+	struct stat s;
 
 	dir = opendir(local_path);
 	while ((dirent = readdir(dir)) != NULL) {
@@ -418,7 +419,10 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 		                                    remote_path, dirent->d_name);
 		NT_STATUS_HAVE_NO_MEMORY(entry_remote_path);
 
-		if (dirent->d_type == DT_DIR) {
+		if (stat(dirent->d_name, &s) != 0) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		if (s.st_mode & S_IFDIR) {
 			DEBUG(6, ("Pushing directory %s to %s on sysvol\n",
 			          entry_local_path, entry_remote_path));
 			smbcli_mkdir(gp_ctx->cli->tree, entry_remote_path);
