@@ -200,39 +200,6 @@ class Ldb(_Ldb):
                     # Ignore missing dn errors
                     raise
 
-    def erase_partitions(self):
-        """Erase an ldb, removing all records."""
-
-        def erase_recursive(self, dn):
-            try:
-                res = self.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=[],
-                                  controls=["show_deleted:0"])
-            except ldb.LdbError, (errno, _):
-                if errno == ldb.ERR_NO_SUCH_OBJECT:
-                    # Ignore no such object errors
-                    return
-
-            for msg in res:
-                erase_recursive(self, msg.dn)
-
-            try:
-                self.delete(dn, ["relax:0"])
-            except ldb.LdbError, (errno, _):
-                if errno != ldb.ERR_NO_SUCH_OBJECT:
-                    # Ignore no such object errors
-                    raise
-
-        res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)",
-                         ["namingContexts"])
-        assert len(res) == 1
-        if not "namingContexts" in res[0]:
-            return
-        for basedn in res[0]["namingContexts"]:
-            # Try to delete user/computer accounts to allow deletion of groups
-            self.erase_users_computers(basedn)
-            # Try and erase from the bottom-up in the tree
-            erase_recursive(self, basedn)
-
     def load_ldif_file_add(self, ldif_path):
         """Load a LDIF file.
 

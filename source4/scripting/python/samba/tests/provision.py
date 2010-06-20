@@ -107,7 +107,4 @@ class Disabled(object):
     def test_vampire(self):
         raise NotImplementedError(self.test_vampire)
 
-    def test_erase_partitions(self):
-        raise NotImplementedError(self.test_erase_partitions)
-
 
