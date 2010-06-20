@@ -134,8 +134,10 @@ static void dcesrv_sock_reply_done(struct tevent_req *subreq)
 }
 
 struct dcerpc_read_ncacn_packet_state {
+#if 0
 	struct {
 	} caller;
+#endif
 	DATA_BLOB buffer;
 	struct ncacn_packet *pkt;
 };
