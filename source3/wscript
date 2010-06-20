@@ -362,15 +362,18 @@ utimensat vsyslog _write __write __xstat
                                 define='HAVE_DIRENT_D_OFF')
 
     conf.CHECK_FUNCS('setnetgrent getnetgrent endnetgrent')
-    conf.CHECK_C_PROTOTYPE('setnetgrent',
-                           'extern int setnetgrent(const char* netgroup)',
-                           define='HAVE_SETNETGRENT_PROTOTYPE', headers='netdb.h')
-    conf.CHECK_C_PROTOTYPE('getnetgrent',
-                           'extern int getnetgrent(char **host, char **user, char **domain)',
-                           define='HAVE_GETNETGRENT_PROTOTYPE', headers='netdb.h')
-    conf.CHECK_C_PROTOTYPE('endnetgrent',
-                           'extern void endnetgrent(void)',
-                           define='HAVE_ENDNETGRENT_PROTOTYPE', headers='netdb.h')
+    conf.CHECK_CODE('setnetgrent("foo")', 'HAVE_SETNETGRENT_PROTOTYPE',
+                    msg="Checking for setnetgrent prototype",
+                    headers='netdb.h',
+                    cflags="-Werror-implicit-function-declaration")
+    conf.CHECK_CODE('getnetgrent', 'HAVE_GETNETGRENT_PROTOTYPE',
+                    msg="Checking for getnetgrent prototype",
+                    headers='netdb.h',
+                    cflags="-Werror-implicit-function-declaration")
+    conf.CHECK_CODE('endnetgrent', 'HAVE_ENDNETGRENT_PROTOTYPE',
+                    msg="Checking for endnetgrent prototype",
+                    headers='netdb.h',
+                    cflags="-Werror-implicit-function-declaration")
 
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
     if Options.options.with_ads:
