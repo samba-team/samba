@@ -364,15 +364,15 @@ utimensat vsyslog _write __write __xstat
     conf.CHECK_FUNCS('setnetgrent getnetgrent endnetgrent')
     conf.CHECK_CODE('setnetgrent("foo")', 'HAVE_SETNETGRENT_PROTOTYPE',
                     msg="Checking for setnetgrent prototype",
-                    headers='netdb.h',
+                    headers='netdb.h netgroup.h',
                     cflags="-Werror-implicit-function-declaration")
     conf.CHECK_CODE('getnetgrent', 'HAVE_GETNETGRENT_PROTOTYPE',
                     msg="Checking for getnetgrent prototype",
-                    headers='netdb.h',
+                    headers='netdb.h netgroup.h',
                     cflags="-Werror-implicit-function-declaration")
     conf.CHECK_CODE('endnetgrent', 'HAVE_ENDNETGRENT_PROTOTYPE',
                     msg="Checking for endnetgrent prototype",
-                    headers='netdb.h',
+                    headers='netdb.h netgroup.h',
                     cflags="-Werror-implicit-function-declaration")
 
     #FIXME: Should just be set when krb5 and ldap requirements are fulfilled

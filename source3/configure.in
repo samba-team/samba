@@ -6423,19 +6423,22 @@ AC_SUBST(FLAGS1)
 CFLAGS_SAVE=$CFLAGS
 CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 AC_CACHE_CHECK([for setnetgrent prototype],samba_cv_setnetgrent_prototype, [
-    AC_TRY_COMPILE([#include<netdb.h>],[setnetgrent("foo")],
+    AC_TRY_COMPILE([#include<netdb.h>
+                    #include<netgroup.h>],[setnetgrent("foo")],
                     samba_cv_setnetgrent_prototype=yes, samba_cv_setnetgrent_prototype=no)])
 if test x"$samba_cv_setnetgrent_prototype" = x"yes"; then
     AC_DEFINE(HAVE_SETNETGRENT_PROTOTYPE, 1, [If setnetgrent prototype is defined])
 fi
 AC_CACHE_CHECK([for getnetgrent prototype],samba_cv_getnetgrent_prototype, [
-    AC_TRY_COMPILE([#include<netdb.h>],[char *dom, *user,*host; getnetgrent(&dom,&user,&host)],
+    AC_TRY_COMPILE([#include<netdb.h>
+                    #include<netgroup.h>],[char *dom, *user,*host; getnetgrent(&dom,&user,&host)],
                     samba_cv_getnetgrent_prototype=yes, samba_cv_getnetgrent_prototype=no)])
 if test x"$samba_cv_getnetgrent_prototype" = x"yes"; then
     AC_DEFINE(HAVE_GETNETGRENT_PROTOTYPE, 1, [If getnetgrent prototype is defined])
 fi
 AC_CACHE_CHECK([for endnetgrent prototype],samba_cv_endnetgrent_prototype, [
-    AC_TRY_COMPILE([#include<netdb.h>],[endnetgrent()],
+    AC_TRY_COMPILE([#include<netdb.h>
+                    #include<netgroup.h>],[endnetgrent()],
                     samba_cv_endnetgrent_prototype=yes, samba_cv_endnetgrent_prototype=no)])
 if test x"$samba_cv_endnetgrent_prototype" = x"yes"; then
     AC_DEFINE(HAVE_ENDNETGRENT_PROTOTYPE, 1, [If endnetgrent prototype is defined])
