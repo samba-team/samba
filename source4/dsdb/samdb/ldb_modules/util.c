@@ -407,6 +407,59 @@ int dsdb_module_add(struct ldb_module *module,
 	return ret;
 }
 
+/*
+  a ldb_delete request operating on modules below the
+  current module
+ */
+int dsdb_module_del(struct ldb_module *module,
+		    struct ldb_dn *dn,
+		    uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_del_req(&req, ldb, tmp_ctx,
+				dn,
+				NULL,
+				res,
+				ldb_modify_default_callback,
+				NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Run the new request */
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->del(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
+	} else {
+		ret = ldb_next_request(module, req);
+	}
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
 
 const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
 {

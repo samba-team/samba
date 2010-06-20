@@ -31,5 +31,5 @@
 #define DSDB_MODIFY_RELAX		      0x0020
 #define DSDB_MODIFY_PERMISSIVE		      0x0040
 #define DSDB_FLAG_AS_SYSTEM		      0x0080
-
-#define DSDB_SEARCH_ONE_ONLY		      0x0020 /* give an error unless 1 record */
+#define DSDB_TREE_DELETE		      0x0100
+#define DSDB_SEARCH_ONE_ONLY		      0x0200 /* give an error unless 1 record */
