@@ -1125,10 +1125,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed");
 		}
 		return ret;
-
-
-		/* we should lookup trusted domains */
-		return HDB_ERR_NOENTRY;
 	}
 
 }
