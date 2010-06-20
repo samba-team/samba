@@ -35,8 +35,8 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
-                 credentials=None, flags=0, options=None, global_schema=True, auto_connect=True,
-                 am_rodc=False):
+                 credentials=None, flags=0, options=None, global_schema=True,
+                 auto_connect=True, am_rodc=False):
         self.lp = lp
         if not auto_connect:
             url = None
@@ -141,14 +141,7 @@ pwdLastSet: 0
         if notes is not None:
             ldbmessage["info"] = notes
 
-        self.transaction_start()
-        try:
-            self.add(ldbmessage)
-        except:
-            self.transaction_cancel()
-            raise
-        else:
-            self.transaction_commit()
+        self.add(ldbmessage)
 
     def deletegroup(self, groupname):
         """Deletes a group
@@ -335,7 +328,6 @@ member: %s
             # Sets the password for it
             self.setpassword("(dn=" + user_dn + ")", password,
               force_password_change_at_next_login_req)
-
         except:
             self.transaction_cancel()
             raise
