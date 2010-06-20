@@ -3,7 +3,7 @@
 bld.SAMBA_LIBRARY('policy',
 	source='gp_ldap.c gp_filesys.c gp_manage.c gp_ini.c',
 	pc_files='policy.pc',
-	public_deps='LIBLDB LIBSAMBA-NET',
+	public_deps='ldb LIBSAMBA-NET',
 	public_headers='policy.h',
 	vnum='0.0.1'
 	)

@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "param/param.h"
 #include "lib/ldb/include/ldb.h"
-#include "lib/ldb_wrap.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/nbt.h"
 #include "libcli/libcli.h"
