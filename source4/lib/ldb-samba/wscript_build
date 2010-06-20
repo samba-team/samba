@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
+# LDBSAMBA gets included in the ldb build when we are building ldb_ildap 
+# as a built-in module and this delutes the symbols in the ldb library with 
+# the symbols of all of ldb_ildap's dependencies. 
 
-# It is important that this is a library!
-# Otherwise samba specific symbols end up in
-# 'ldb' and we fail the ABI check, when not using
-# a system 'ldb'.
-bld.SAMBA_LIBRARY('LDBSAMBA',
+# However, LDBSAMBA has to be a subsystem, otherwise we end up with an unusable
+# build when building against the system ldb.
+
+# When adding/modifying public symbols in LDBSAMBA, please make sure that 
+# lib/ldb/ABI/ldb-samba-X.sigs gets updated.
+bld.SAMBA_SUBSYSTEM('LDBSAMBA',
 	source='ldif_handlers.c ldb_wrap.c',
 	autoproto='ldif_handlers_proto.h',
 	public_deps='ldb',
