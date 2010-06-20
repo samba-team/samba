@@ -8,12 +8,6 @@ bld.SAMBA_BINARY('ntlm_auth',
 	)
 
 
-bld.SAMBA_BINARY('setnttoken',
-	source='setnttoken.c',
-	deps='talloc'
-	)
-
-
 bld.SAMBA_BINARY('testparm',
 	source='testparm.c',
 	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt samba_socket POPT_SAMBA LIBCLI_RESOLVE CHARSET'
