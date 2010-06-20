@@ -101,11 +101,7 @@ def do_share_checks(lp, logger):
                     valid = False
     return valid
 
-def dump(lp, section_name=None, parameter_name=None, silent_mode=False,
-         show_defaults=False):
-    if not silent_mode:
-        print "Press enter to see a dump of your service definitions\n"
-        sys.stdin.readline()
+def dump(lp, section_name=None, parameter_name=None, show_defaults=False):
     if section_name is not None or parameter_name is not None:
         if parameter_name is None:
             lp[section_name].dump(sys.stdout, lp.default_service, show_defaults)
@@ -195,8 +191,10 @@ if __name__ == '__main__':
     if cname is not None:
         check_client_access(lp, cname, caddr)
     else:
-        dump(lp, opts.section_name, opts.parameter_name, 
-                not opts.suppress_prompt, opts.verbose or False)
+        if not opts.suppress_prompt:
+            print "Press enter to see a dump of your service definitions\n"
+            sys.stdin.readline()
+        dump(lp, opts.section_name, opts.parameter_name, opts.verbose or False)
 
     if valid:
         sys.exit(0)
