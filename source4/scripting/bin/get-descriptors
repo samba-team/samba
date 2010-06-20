@@ -27,24 +27,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import getopt
 import optparse
 import sys
-import os
 import base64
-import re
 
 sys.path.insert(0, "bin/python")
 
 import samba
 from samba.auth import system_session
 import samba.getopt as options
-from samba import param
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 from samba import Ldb
 from samba.samdb import SamDB
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import SCOPE_SUBTREE, SCOPE_BASE
 
 parser = optparse.OptionParser("get-descriptor [options]")
 sambaopts = options.SambaOptions(parser)
@@ -65,6 +61,7 @@ creds = credopts.get_credentials(lp)
 opts = parser.parse_args()[0]
 
 class DescrGetter:
+
     def __init__(self, localdomain, remotedomain):
         self.samdb = SamDB(session_info=system_session(), lp=lp, options=["modules:paged_searches"])
         self.remote_ldb= Ldb("ldap://" + opts.host + ":389", credentials=creds, lp=lp,

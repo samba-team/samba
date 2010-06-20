@@ -5,7 +5,6 @@
 
 import base64
 import optparse
-import os
 import sys
 
 # Find right directory when running from source tree
@@ -13,7 +12,7 @@ sys.path.insert(0, "bin/python")
 
 import samba
 from samba import getopt as options, Ldb
-from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError
+from ldb import SCOPE_SUBTREE, SCOPE_BASE
 import sys
 
 parser = optparse.OptionParser("fullschema <URL>")

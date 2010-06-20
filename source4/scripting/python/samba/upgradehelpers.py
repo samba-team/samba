@@ -506,8 +506,8 @@ def get_diff_sddls(refsddl, cursddl):
             for elem in c_ref["aces"]:
                 h_ref.add(elem)
 
-            for k in h_ref:
-                if h_new.has_key(k):
+            for k in set(h_ref):
+                if k in h_new:
                     h_new.remove(k)
                     h_ref.remove(k)
 
