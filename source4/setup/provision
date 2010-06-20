@@ -252,7 +252,8 @@ try:
 		  backend_type=opts.ldap_backend_type,
 		  ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
 		  slapd_path=opts.slapd_path, setup_ds_path=opts.setup_ds_path,
-		  nosync=opts.nosync,ldap_dryrun_mode=opts.ldap_dryrun_mode,useeadb=eadb)
+		  nosync=opts.nosync, ldap_dryrun_mode=opts.ldap_dryrun_mode, 
+		  useeadb=eadb)
 except ProvisioningError, e:
 	print str(e)
 	exit(1)

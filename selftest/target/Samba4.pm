@@ -669,13 +669,13 @@ nogroup:x:65534:nobody
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
-	my $testparm = $self->bindir_path("testparm");
+	my $testparm = $self->bindir_path("../scripting/bin/testparm");
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$testparm -v --suppress-prompt $configuration >&2");
 		die("Failed to create a valid smb.conf configuration $testparm!");
 	}
 
-	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
+	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
 
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
