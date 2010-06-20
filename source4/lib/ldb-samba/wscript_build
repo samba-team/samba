@@ -4,11 +4,6 @@
 # as a built-in module and this delutes the symbols in the ldb library with 
 # the symbols of all of ldb_ildap's dependencies. 
 
-# However, LDBSAMBA has to be a subsystem, otherwise we end up with an unusable
-# build when building against the system ldb.
-
-# When adding/modifying public symbols in LDBSAMBA, please make sure that 
-# lib/ldb/ABI/ldb-samba-X.sigs gets updated.
 bld.SAMBA_SUBSYSTEM('LDBSAMBA',
 	source='ldif_handlers.c ldb_wrap.c',
 	autoproto='ldif_handlers_proto.h',
