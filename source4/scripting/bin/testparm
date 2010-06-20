@@ -49,6 +49,18 @@ from samba import getopt as options
 def do_global_checks(lp, logger):
     valid = True
 
+    netbios_name = lp.get("netbios name")
+    if not samba.valid_netbios_name(netbios_name):
+        logger.error("netbios name %s is not a valid netbios name", 
+                     netbios_name)
+        valid = False
+
+    workgroup = lp.get("workgroup")
+    if not samba.valid_netbios_name(workgroup):
+        logger.error("workgroup name %s is not a valid netbios name", 
+                     workgroup)
+        valid = False
+
     lockdir = lp.get("lockdir")
 
     if not os.path.isdir(lockdir):
@@ -64,11 +76,13 @@ def do_global_checks(lp, logger):
     winbind_separator = lp.get("winbind separator")
 
     if len(winbind_separator) != 1:
-        logger.error("the 'winbind separator' parameter must be a single character.")
+        logger.error("the 'winbind separator' parameter must be a single "
+                     "character.")
         valid = False
 
     if winbind_separator == '+':
-        logger.error("'winbind separator = +' might cause problems with group membership.")
+        logger.error("'winbind separator = +' might cause problems with group "
+                     "membership.")
         valid = False
 
     return valid
@@ -82,7 +96,10 @@ def do_share_checks(lp, logger):
     valid = True
     for s in lp.services():
         if len(s) > 12:
-            logger.warning("You have some share names that are longer than 12 characters. These may not be accessible to some older clients. (Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)")
+            logger.warning("You have some share names that are longer than 12 "
+                "characters. These may not be accessible to some older "
+                "clients. (Eg. Windows9x, WindowsMe, and not listed in "
+                "smbclient in Samba 3.0.)")
             break
 
     for s in lp.services():
@@ -91,26 +108,28 @@ def do_share_checks(lp, logger):
         if deny_list:
             for entry in deny_list:
                 if "*" in entry or "?" in entry:
-                    logger.error("Invalid character (* or ?) in hosts deny list (%s) for service %s.", entry, s)
+                    logger.error("Invalid character (* or ?) in hosts deny "
+                                 "list (%s) for service %s.", entry, s)
                     valid = False
 
         if allow_list:
             for entry in allow_list:
                 if "*" in entry or "?" in entry:
-                    logger.error("Invalid character (* or ?) in hosts allow list (%s) for service %s.", entry, s)
+                    logger.error("Invalid character (* or ?) in hosts allow "
+                                 "list (%s) for service %s.", entry, s)
                     valid = False
     return valid
 
 def check_client_access(lp, cname, caddr):
     # this is totally ugly, a real `quick' hack
     for s in lp.services():
-        if (allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname, caddr) and
-            allow_access(lp.get("hosts deny", s), lp.get("hosts allow", s), cname, caddr)):
-            logger.info("Allow connection from %s (%s) to %s",
-                   cname, caddr, s)
+        if (allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname,
+                         caddr) and
+            allow_access(lp.get("hosts deny", s), lp.get("hosts allow", s),
+                         cname, caddr)):
+            logger.info("Allow connection from %s (%s) to %s", cname, caddr, s)
         else:
-            logger.info("Deny connection from %s (%s) to %s",
-                   cname, caddr, s)
+            logger.info("Deny connection from %s (%s) to %s", cname, caddr, s)
 
 
 if __name__ == '__main__':
@@ -120,7 +139,8 @@ if __name__ == '__main__':
     parser.add_option("--parameter-name", type="string", metavar="PARAMETER",
             help="Limit testparm to a named parameter")
     parser.add_option("--client-name", type="string", metavar="HOSTNAME",
-            help="Client DNS name for 'hosts allow' checking (should match reverse lookup)")
+            help="Client DNS name for 'hosts allow' checking "
+                 "(should match reverse lookup)")
     parser.add_option("--client-ip", type="string", metavar="IP",
             help="Client IP address for 'hosts allow' checking")
     parser.add_option("--suppress-prompt", action="store_true", default=False,
@@ -156,7 +176,8 @@ if __name__ == '__main__':
         caddr = None
 
     if cname is not None and caddr is None:
-        print "ERROR: For 'hosts allow' check you must specify both a DNS name and an IP address.\n"
+        print "Both a DNS name and an IP address are required for the host " \
+              "access check."
         sys.exit(1)
 
 #   FIXME: We need support for smb.conf macros before this will work again 
@@ -183,7 +204,8 @@ if __name__ == '__main__':
     else:
         if opts.section_name is not None or opts.parameter_name is not None:
             if opts.parameter_name is None:
-                lp[opts.section_name].dump(sys.stdout, lp.default_service, opts.verbose)
+                lp[opts.section_name].dump(sys.stdout, lp.default_service,
+                                           opts.verbose)
             else:
                 print lp.get(opts.parameter_name, opts.section_name)
         else:

@@ -46,8 +46,8 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 	void *parm_ptr = NULL;
 	int i;
 
-	if (service_name != NULL && !strwicmp(service_name, GLOBAL_NAME) && 
-		!strwicmp(service_name, GLOBAL_NAME2)) {
+	if (service_name != NULL && strwicmp(service_name, GLOBAL_NAME) && 
+		strwicmp(service_name, GLOBAL_NAME2)) {
 		struct loadparm_service *service;
 		/* its a share parameter */
 		service = lp_service(lp_ctx, service_name);
