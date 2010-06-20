@@ -175,51 +175,6 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	/* result is 1:1 for now */
 	return ldb_err;
 }
-/* create and execute a modify request */
-static int ldb_mod_req_with_controls(struct ldb_context *ldb,
-				     const struct ldb_message *message,
-				     struct ldb_control **controls,
-				     void *context)
-{
-	struct ldb_request *req;
-	int ret;
-
-	ret = ldb_msg_sanity_check(ldb, message);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = ldb_build_mod_req(&req, ldb, ldb,
-					message,
-					controls,
-					context,
-					ldb_modify_default_callback,
-					NULL);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = ldb_transaction_start(ldb);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_transaction_commit(ldb);
-	}
-	else {
-		ldb_transaction_cancel(ldb);
-	}
-
-	talloc_free(req);
-	return ret;
-}
 
 /*
   connect to the sam database
@@ -320,9 +275,9 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
-int ldb_add_with_context(struct ldb_context *ldb,
-			 const struct ldb_message *message,
-			 void *context)
+static int ldb_add_with_context(struct ldb_context *ldb,
+				const struct ldb_message *message,
+				void *context)
 {
 	struct ldb_request *req;
 	int ret;
@@ -362,9 +317,55 @@ int ldb_add_with_context(struct ldb_context *ldb,
 	return ret;
 }
 
-int ldb_delete_with_context(struct ldb_context *ldb,
-			    struct ldb_dn *dn,
-			    void *context)
+/* create and execute a modify request */
+static int ldb_mod_req_with_controls(struct ldb_context *ldb,
+				     const struct ldb_message *message,
+				     struct ldb_control **controls,
+				     void *context)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_msg_sanity_check(ldb, message);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_build_mod_req(&req, ldb, ldb,
+					message,
+					controls,
+					context,
+					ldb_modify_default_callback,
+					NULL);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+	}
+	else {
+		ldb_transaction_cancel(ldb);
+	}
+
+	talloc_free(req);
+	return ret;
+}
+
+static int ldb_delete_with_context(struct ldb_context *ldb,
+				   struct ldb_dn *dn,
+				   void *context)
 {
 	struct ldb_request *req;
 	int ret;
