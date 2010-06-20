@@ -627,50 +627,55 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 	struct ldb_control **parsed_controls;
 	struct ldb_message *msg;
 	int ret;
+	TALLOC_CTX *mem_ctx;
+
 	if (!PyArg_ParseTuple(args, "O|O", &py_msg, &py_controls))
 		return NULL;
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ldb_ctx = PyLdb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
 	} else {
-		const char **controls = PyList_AsStringList(ldb_ctx, py_controls, "controls");
-		parsed_controls = ldb_parse_control_strings(ldb_ctx, ldb_ctx, controls);
+		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
 
 	if (!PyLdbMessage_Check(py_msg)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	msg = PyLdbMessage_AsMessage(py_msg);
 
 	ret = ldb_msg_sanity_check(ldb_ctx, msg);
-        if (ret != LDB_SUCCESS) {
-		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+	if (ret != LDB_SUCCESS) {
+		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
-        }
+	}
 
-        ret = ldb_build_mod_req(&req, ldb_ctx, ldb_ctx,
-                                        msg,
-                                        parsed_controls,
-                                        NULL,
-                                        ldb_op_default_callback,
-                                        NULL);
-
+	ret = ldb_build_mod_req(&req, ldb_ctx, mem_ctx, msg, parsed_controls,
+				NULL, ldb_op_default_callback, NULL);
         if (ret != LDB_SUCCESS) {
 		PyErr_SetString(PyExc_TypeError, "failed to build request");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
         /* do request and autostart a transaction */
 	/* Then let's LDB handle the message error in case of pb as they are meaningful */
 
-        ret = ldb_transaction_start(ldb_ctx);
-        if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+	ret = ldb_transaction_start(ldb_ctx);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
         }
 
         ret = ldb_request(ldb_ctx, req);
@@ -687,8 +692,9 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 			ldb_asprintf_errstring(ldb_ctx, "%s (%d)", ldb_strerror(ret), ret);
 		}
 	}
-	talloc_free(req);
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+
+	talloc_free(mem_ctx);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 
 	Py_RETURN_NONE;
 }
@@ -770,7 +776,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
         
 	ret = ldb_msg_sanity_check(ldb_ctx, msg);
         if (ret != LDB_SUCCESS) {
-		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 		talloc_free(mem_ctx);
 		return NULL;
         }
@@ -892,6 +898,7 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args)
 	int ret;
 	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
+
 	if (!PyArg_ParseTuple(args, "OO", &py_dn1, &py_dn2))
 		return NULL;
 
@@ -900,7 +907,9 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
+
 	ldb = PyLdb_AsLdbContext(self);
+
 	if (!PyObject_AsDn(mem_ctx, py_dn1, ldb, &dn1)) {
 		talloc_free(mem_ctx);
 		return NULL;
