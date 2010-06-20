@@ -214,12 +214,12 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
 	r.in.name = &name;
-	r.in.type = type;
+	r.in.type = (enum winreg_Type *) type;
 	r.in.value = &value;
 	r.in.size = &val_size;
 	r.in.length = &zero;
 	r.out.name = &name;
-	r.out.type = type;
+	r.out.type = (enum winreg_Type *) type;
 	r.out.value = &value;
 	r.out.size = &val_size;
 	r.out.length = &zero;
@@ -263,11 +263,11 @@ static WERROR rpc_get_value_by_name(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
 	r.in.value_name = &name;
-	r.in.type = type;
+	r.in.type = (enum winreg_Type *) type;
 	r.in.data = &value;
 	r.in.data_size = &val_size;
 	r.in.data_length = &zero;
-	r.out.type = type;
+	r.out.type = (enum winreg_Type *) type;
 	r.out.data = &value;
 	r.out.data_size = &val_size;
 	r.out.data_length = &zero;
