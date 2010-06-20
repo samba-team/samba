@@ -672,7 +672,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("ModifyRequest"));
-	DEBUGADD(10, (" dn: %s", req->dn));
+	DEBUGADD(10, (" dn: %s\n", req->dn));
 
 	local_ctx = talloc_named(call, 0, "ModifyRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -780,7 +780,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("AddRequest"));
-	DEBUGADD(10, (" dn: %s", req->dn));
+	DEBUGADD(10, (" dn: %s\n", req->dn));
 
 	local_ctx = talloc_named(call, 0, "AddRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -868,7 +868,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	struct ldb_result *res = NULL;
 
 	DEBUG(10, ("DelRequest"));
-	DEBUGADD(10, (" dn: %s", req->dn));
+	DEBUGADD(10, (" dn: %s\n", req->dn));
 
 	local_ctx = talloc_named(call, 0, "DelRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -926,7 +926,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 
 	DEBUG(10, ("ModifyDNRequest"));
 	DEBUGADD(10, (" dn: %s", req->dn));
-	DEBUGADD(10, (" newrdn: %s", req->newrdn));
+	DEBUGADD(10, (" newrdn: %s\n", req->newrdn));
 
 	local_ctx = talloc_named(call, 0, "ModifyDNRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -1034,7 +1034,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	int ldb_ret;
 
 	DEBUG(10, ("CompareRequest"));
-	DEBUGADD(10, (" dn: %s", req->dn));
+	DEBUGADD(10, (" dn: %s\n", req->dn));
 
 	local_ctx = talloc_named(call, 0, "CompareRequest local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
