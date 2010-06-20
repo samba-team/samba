@@ -83,7 +83,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		ldb_oom(ldb);
 		goto op_error;
 	}
-	msg_idx->dn = ldb_dn_new(msg, ldb, "@INDEXLIST");
+	msg_idx->dn = ldb_dn_new(msg_idx, ldb, "@INDEXLIST");
 	if (!msg_idx->dn) {
 		ldb_oom(ldb);
 		goto op_error;
