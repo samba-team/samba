@@ -1116,6 +1116,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	struct ldb_control **parsed_controls;
 	struct ldb_dn *base;
 	PyObject *py_ret;
+	TALLOC_CTX *mem_ctx;
 
 	/* type "int" rather than "enum" for "scope" is intentional */
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OizOO",
@@ -1123,14 +1124,22 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 					 &py_base, &scope, &expr, &py_attrs, &py_controls))
 		return NULL;
 
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ldb_ctx = PyLdb_AsLdbContext(self);
 
 	if (py_attrs == Py_None) {
 		attrs = NULL;
 	} else {
-		attrs = PyList_AsStringList(NULL, py_attrs, "attrs");
-		if (attrs == NULL)
+		attrs = PyList_AsStringList(mem_ctx, py_attrs, "attrs");
+		if (attrs == NULL) {
+			talloc_free(mem_ctx);
 			return NULL;
+		}
 	}
 
 	if (py_base == Py_None) {
@@ -1145,19 +1154,19 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
 	} else {
-		const char **controls = PyList_AsStringList(ldb_ctx, py_controls, "controls");
-		parsed_controls = ldb_parse_control_strings(ldb_ctx, ldb_ctx, controls);
+		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
 
-	res = talloc_zero(ldb_ctx, struct ldb_result);
+	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (res == NULL) {
 		PyErr_NoMemory();
-		talloc_free(attrs);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	ret = ldb_build_search_req(&req, ldb_ctx, ldb_ctx,
+	ret = ldb_build_search_req(&req, ldb_ctx, mem_ctx,
 				   base,
 				   scope,
 				   expr,
@@ -1170,7 +1179,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	talloc_steal(req, attrs);
 
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		talloc_free(mem_ctx);
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 		return NULL;
 	}
@@ -1181,17 +1190,15 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
-
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		talloc_free(mem_ctx);
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 		return NULL;
 	}
 
 	py_ret = PyLdbResult_FromResult(res);
 
-	talloc_free(res);
+	talloc_free(mem_ctx);
 
 	return py_ret;
 }
