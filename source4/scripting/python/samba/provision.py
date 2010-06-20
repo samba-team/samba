@@ -66,10 +66,12 @@ __docformat__ = "restructuredText"
 def find_setup_dir():
     """Find the setup directory used by provision."""
     import sys
-    for suffix in ["share/setup", "share/samba/setup", "setup"]:
-        ret = os.path.join(sys.prefix, suffix)
-        if os.path.isdir(ret):
-            return ret
+    for prefix in [sys.prefix,
+            os.path.join(os.path.dirname(__file__), "../../../..")]:
+        for suffix in ["share/setup", "share/samba/setup", "setup"]:
+            ret = os.path.join(prefix, suffix)
+            if os.path.isdir(ret):
+                return ret
     # In source tree
     dirname = os.path.dirname(__file__)
     ret = os.path.join(dirname, "../../../setup")
