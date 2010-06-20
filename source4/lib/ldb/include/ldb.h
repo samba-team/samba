@@ -528,6 +528,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_NOTIFICATION_OID	"1.2.840.113556.1.4.528"
 
 /**
+   OID for performing subtree deletes
+
+   \sa <a href="http://msdn.microsoft.com/en-us/library/aa366991(v=VS.85).aspx">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_TREE_DELETE_OID	"1.2.840.113556.1.4.805"
+
+/**
    OID for getting deleted objects
 
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_show_deleted_oid.asp">Microsoft documentation of this OID</a>

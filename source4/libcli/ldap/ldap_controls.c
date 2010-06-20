@@ -445,6 +445,15 @@ static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
+static bool decode_tree_delete_request(void *mem_ctx, DATA_BLOB in, void *_out)
+{
+	if (in.length != 0) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
@@ -969,6 +978,16 @@ static bool encode_notification_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
+static bool encode_tree_delete_request(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	if (in) {
+		return false;
+	}
+
+	*out = data_blob(NULL, 0);
+	return true;
+}
+
 static bool encode_show_deleted_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	if (in) {
@@ -1278,6 +1297,7 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
 	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
+	{ "1.2.840.113556.1.4.805", decode_tree_delete_request, encode_tree_delete_request },
 	{ "1.2.840.113556.1.4.417", decode_show_deleted_request, encode_show_deleted_request },
 	{ "1.2.840.113556.1.4.2064", decode_show_recycled_request, encode_show_recycled_request },
 	{ "1.2.840.113556.1.4.2065", decode_show_deactivated_link_request, encode_show_deactivated_link_request },
