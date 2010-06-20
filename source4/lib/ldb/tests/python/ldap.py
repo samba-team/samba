@@ -105,6 +105,8 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
+        self.delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcontainer2," + self.base_dn)
         self.delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
@@ -1508,6 +1510,52 @@ objectClass: container
         res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         self.assertTrue("subScheamSubEntry" not in res[0])
+
+    def test_subtree_delete(self):
+        """Tests subtree deletes"""
+
+        print "Test subtree deletes"""
+
+        ldb.add({
+            "dn": "cn=ldaptestcontainer," + self.base_dn,
+            "objectclass": "container"})
+        ldb.add({
+            "dn": "cn=entry1,cn=ldaptestcontainer," + self.base_dn,
+            "objectclass": "container"})
+        ldb.add({
+            "dn": "cn=entry2,cn=ldaptestcontainer," + self.base_dn,
+            "objectclass": "container"})
+
+        try:
+            ldb.delete("cn=ldaptestcontainer," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+
+        ldb.delete("cn=ldaptestcontainer," + self.base_dn, ["tree_delete:0"])
+
+        try:
+            res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
+                             scope=SCOPE_BASE, attrs=[])
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+        try:
+            res = ldb.search("cn=entry1,cn=ldaptestcontainer," + self.base_dn,
+                             scope=SCOPE_BASE, attrs=[])
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+        try:
+            res = ldb.search("cn=entry2,cn=ldaptestcontainer," + self.base_dn,
+                             scope=SCOPE_BASE, attrs=[])
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        self.delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
+        self.delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
     def test_all(self):
         """Basic tests"""
