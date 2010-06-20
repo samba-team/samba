@@ -477,81 +477,6 @@ static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
 
 
 /*
- * samldb_set_defaultObjectCategory_callback (async)
- */
-
-static int samldb_set_defaultObjectCategory_callback(struct ldb_request *req,
-						     struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		return ldb_module_send_referral(ac->req, ares->referral);
-	}
-
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb,
-			"Invalid reply type!");
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-
-	ret = samldb_next_step(ac);
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-static int samldb_set_defaultObjectCategory(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct ldb_message *msg;
-	struct ldb_request *req;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	/* (Re)set the default object category to have it set to the DN in the
-	 * storage format */
-	msg = ldb_msg_new(ac);
-	msg->dn = ac->msg->dn;
-	ldb_msg_add_empty(msg, "defaultObjectCategory",
-			  LDB_FLAG_MOD_REPLACE, NULL);
-	ldb_msg_add_steal_string(msg, "defaultObjectCategory",
-				 ldb_dn_alloc_linearized(msg, ac->res_dn));
-
-	ret = ldb_build_mod_req(&req, ldb, ac,
-				msg, NULL,
-				ac,
-				samldb_set_defaultObjectCategory_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return ret;
-	}
-
-	return ldb_next_request(ac->module, req);
-}
-
-/*
  * samldb_find_for_defaultObjectCategory (async)
  */
 
@@ -940,9 +865,6 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		/* Now perform the checks for the 'defaultObjectCategory'. The
 		 * lookup DN was already saved in "ac->dn" */
 		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
-		if (ret != LDB_SUCCESS) return ret;
-
-		ret = samldb_add_step(ac, samldb_set_defaultObjectCategory);
 		if (ret != LDB_SUCCESS) return ret;
 
 		return samldb_first_step(ac);
