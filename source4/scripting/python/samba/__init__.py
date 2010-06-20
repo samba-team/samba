@@ -42,7 +42,6 @@ else:
 
 
 import ldb
-import dsdb
 import _glue
 from samba._ldb import Ldb as _Ldb
 
@@ -109,11 +108,6 @@ class Ldb(_Ldb):
 
         if url is not None:
             self.connect(url, flags, options)
-
-    def set_create_perms(self, perms=0600):
-        # we usually want Samba databases to be private. If we later find we
-        # need one public, we will have to change this here
-        super(Ldb, self).set_create_perms(perms)
 
     def searchone(self, attribute, basedn=None, expression=None,
                   scope=ldb.SCOPE_BASE):
@@ -266,12 +260,6 @@ class Ldb(_Ldb):
                 self.add(msg, controls)
             else:
                 self.modify(msg, controls)
-
-    def domain_sid(self):
-        """Read the domain SID used by this LDB.
-
-        """
-        dsdb.samdb_get_domain_sid(self)
 
 
 def substitute_var(text, values):
