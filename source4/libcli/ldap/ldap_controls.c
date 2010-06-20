@@ -1270,25 +1270,6 @@ static bool decode_relax_request(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
-static bool encode_recalculate_sd_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool decode_recalculate_sd_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
 static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
