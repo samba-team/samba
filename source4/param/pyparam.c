@@ -42,63 +42,63 @@ PyObject *PyLoadparmService_FromService(struct loadparm_service *service)
 
 static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const char *service_name, const char *param_name)
 {
-    struct parm_struct *parm = NULL;
-    void *parm_ptr = NULL;
-    int i;
+	struct parm_struct *parm = NULL;
+	void *parm_ptr = NULL;
+	int i;
 
-    if (service_name != NULL) {
-	struct loadparm_service *service;
-	/* its a share parameter */
-	service = lp_service(lp_ctx, service_name);
-	if (service == NULL) {
-	    return NULL;
-	}
-	if (strchr(param_name, ':')) {
-	    /* its a parametric option on a share */
-	    const char *type = talloc_strndup(lp_ctx, 
-			      param_name, 
-			      strcspn(param_name, ":"));
-	    const char *option = strchr(param_name, ':') + 1;
-	    const char *value;
-	    if (type == NULL || option == NULL) {
-		return NULL;
-	    }
-	    value = lp_get_parametric(lp_ctx, service, type, option);
-	    if (value == NULL) {
-		return NULL;
-	    }
-	    return PyString_FromString(value);
-	}
+	if (service_name != NULL && !strwicmp(service_name, GLOBAL_NAME) && 
+		!strwicmp(service_name, GLOBAL_NAME2)) {
+		struct loadparm_service *service;
+		/* its a share parameter */
+		service = lp_service(lp_ctx, service_name);
+		if (service == NULL) {
+			return NULL;
+		}
+		if (strchr(param_name, ':')) {
+			/* its a parametric option on a share */
+			const char *type = talloc_strndup(lp_ctx, param_name, 
+											  strcspn(param_name, ":"));
+			const char *option = strchr(param_name, ':') + 1;
+			const char *value;
+			if (type == NULL || option == NULL) {
+			return NULL;
+			}
+			value = lp_get_parametric(lp_ctx, service, type, option);
+			if (value == NULL) {
+			return NULL;
+			}
+			return PyString_FromString(value);
+		}
 
-	parm = lp_parm_struct(param_name);
-	if (parm == NULL || parm->pclass == P_GLOBAL) {
-	    return NULL;
-	}
-	parm_ptr = lp_parm_ptr(lp_ctx, service, parm);
+		parm = lp_parm_struct(param_name);
+		if (parm == NULL || parm->pclass == P_GLOBAL) {
+			return NULL;
+		}
+		parm_ptr = lp_parm_ptr(lp_ctx, service, parm);
     } else if (strchr(param_name, ':')) {
-	/* its a global parametric option */
-	const char *type = talloc_strndup(lp_ctx, 
-			  param_name, strcspn(param_name, ":"));
-	const char *option = strchr(param_name, ':') + 1;
-	const char *value;
-	if (type == NULL || option == NULL) {
-	    return NULL;
+		/* its a global parametric option */
+		const char *type = talloc_strndup(lp_ctx, 
+				  param_name, strcspn(param_name, ":"));
+		const char *option = strchr(param_name, ':') + 1;
+		const char *value;
+		if (type == NULL || option == NULL) {
+			return NULL;
+		}
+		value = lp_get_parametric(lp_ctx, NULL, type, option);
+		if (value == NULL)
+			return NULL;
+		return PyString_FromString(value);
+	} else {
+		/* its a global parameter */
+		parm = lp_parm_struct(param_name);
+		if (parm == NULL) {
+			return NULL;
+		}
+		parm_ptr = lp_parm_ptr(lp_ctx, NULL, parm);
 	}
-	value = lp_get_parametric(lp_ctx, NULL, type, option);
-	if (value == NULL)
-	    return NULL;
-	return PyString_FromString(value);
-    } else {
-	/* its a global parameter */
-	parm = lp_parm_struct(param_name);
-	if (parm == NULL) {
-	    return NULL;
-	}
-	parm_ptr = lp_parm_ptr(lp_ctx, NULL, parm);
-    }
 
-    if (parm == NULL || parm_ptr == NULL) {
-	return NULL;
+	if (parm == NULL || parm_ptr == NULL) {
+		return NULL;
     }
 
     /* construct and return the right type of python object */
