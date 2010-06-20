@@ -39,8 +39,10 @@
 static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	static const char * const attrs[] = { NULL };
-	int ret;
 	struct ldb_result *res = NULL;
+	uint32_t flags;
+	unsigned int i;
+	int ret;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		/* do not manipulate our control entries */
@@ -56,20 +58,54 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 	if (res->count > 0) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "Cannot delete %s, not a leaf node "
-				       "(has %d children)\n",
-				       ldb_dn_get_linearized(req->op.del.dn),
-				       res->count);
-		talloc_free(res);
-		return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
+		if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID) == NULL) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Cannot delete %s, not a leaf node "
+					       "(has %d children)\n",
+					       ldb_dn_get_linearized(req->op.del.dn),
+					       res->count);
+			talloc_free(res);
+			return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
+		}
+
+		/* we need to start from the top since other LDB modules could
+		 * enforce constraints (eg "objectclass" and "samldb" do so). */
+		flags = DSDB_FLAG_TOP_MODULE | DSDB_TREE_DELETE;
+		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
+			flags |= DSDB_MODIFY_RELAX;
+		}
+
+		for (i = 0; i < res->count; i++) {
+			ret = dsdb_module_del(module, res->msgs[i]->dn, flags);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
 	}
 	talloc_free(res);
 
 	return ldb_next_request(module, req);
 }
 
+static int subtree_delete_init(struct ldb_module *module)
+{
+	struct ldb_context *ldb;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_TREE_DELETE_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			"subtree_delete: Unable to register control with rootdse!\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_next_init(module);
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_subtree_delete_module_ops = {
 	.name		   = "subtree_delete",
-	.del               = subtree_delete,
+	.init_context      = subtree_delete_init,
+	.del               = subtree_delete
 };
