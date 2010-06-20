@@ -456,13 +456,7 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 /* sorting helpers */
 typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 
-/**
-   OID for the allowing client to request temporary relaxed 
-   enforcement of constraints of the x.500 model.
-
-   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
-*/
-#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+/* Individual controls */
 
 /**
   OID for getting and manipulating attributes from the ldb
@@ -492,6 +486,8 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    updating prefix map
 */
 #define LDB_CONTROL_AS_SYSTEM_OID "1.3.6.1.4.1.7165.4.3.7"
+
+/* AD controls */
 
 /**
    OID for the paged results control. This control is included in the
@@ -657,6 +653,16 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    interval. Otherwise the entry is going to be removed.
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
+
+/* Other standardised controls */
+
+/**
+   OID for the allowing client to request temporary relaxed
+   enforcement of constraints of the x.500 model.
+
+   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
+*/
+#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
 
 /*
    OID for LDAP Extended Operation PASSWORD_CHANGE.
