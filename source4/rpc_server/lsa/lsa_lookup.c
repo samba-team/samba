@@ -193,7 +193,7 @@ static const struct {
 
 static NTSTATUS lookup_well_known_names(TALLOC_CTX *mem_ctx, const char *domain,
 					const char *name, const char **authority_name, 
-					struct dom_sid **sid, uint32_t *rtype) 
+					struct dom_sid **sid, enum lsa_SidType *rtype)
 {
 	unsigned int i;
 	for (i=0; well_known[i].sid; i++) {
