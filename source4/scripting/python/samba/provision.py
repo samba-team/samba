@@ -749,8 +749,9 @@ def secretsdb_setup_dns(secretsdb, setup_path, private_dir,
 
 def setup_secretsdb(path, setup_path, session_info, backend_credentials, lp):
     """Setup the secrets database.
-       This function does not handle exceptions and transaction on purpose,
-       it's up to the caller to do this job.
+
+   :note: This function does not handle exceptions and transaction on purpose,
+   it's up to the caller to do this job.
 
     :param path: Path to the secrets database.
     :param setup_path: Get the path to a setup file.
@@ -768,22 +769,26 @@ def setup_secretsdb(path, setup_path, session_info, backend_credentials, lp):
     secrets_ldb = Ldb(path, session_info=session_info, 
                       lp=lp)
     secrets_ldb.transaction_start()
-    secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
+    try:
+        secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
 
-    if backend_credentials is not None and backend_credentials.authentication_requested():
-        if backend_credentials.get_bind_dn() is not None:
-            setup_add_ldif(secrets_ldb, setup_path("secrets_simple_ldap.ldif"), {
-                    "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
-                    "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password())
-                    })
-        else:
-            setup_add_ldif(secrets_ldb, setup_path("secrets_sasl_ldap.ldif"), {
-                    "LDAPADMINUSER": backend_credentials.get_username(),
-                    "LDAPADMINREALM": backend_credentials.get_realm(),
-                    "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password())
-                    })
+        if backend_credentials is not None and backend_credentials.authentication_requested():
+            if backend_credentials.get_bind_dn() is not None:
+                setup_add_ldif(secrets_ldb, setup_path("secrets_simple_ldap.ldif"), {
+                        "LDAPMANAGERDN": backend_credentials.get_bind_dn(),
+                        "LDAPMANAGERPASS_B64": b64encode(backend_credentials.get_password())
+                        })
+            else:
+                setup_add_ldif(secrets_ldb, setup_path("secrets_sasl_ldap.ldif"), {
+                        "LDAPADMINUSER": backend_credentials.get_username(),
+                        "LDAPADMINREALM": backend_credentials.get_realm(),
+                        "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password())
+                        })
 
-    return secrets_ldb
+        return secrets_ldb
+    except:
+        secrets_ldb.transaction_cancel()
+        raise
 
 def setup_privileges(path, setup_path, session_info, lp):
     """Setup the privileges database.
@@ -1398,118 +1403,122 @@ def provision(setup_dir, logger, session_info,
         session_info=session_info,
         backend_credentials=provision_backend.secrets_credentials, lp=lp)
 
-    logger.info("Setting up the registry")
-    setup_registry(paths.hklm, setup_path, session_info, 
-                   lp=lp)
+    try:
+        logger.info("Setting up the registry")
+        setup_registry(paths.hklm, setup_path, session_info, 
+                       lp=lp)
 
-    logger.info("Setting up the privileges database")
-    setup_privileges(paths.privilege, setup_path, session_info, lp=lp)
+        logger.info("Setting up the privileges database")
+        setup_privileges(paths.privilege, setup_path, session_info, lp=lp)
 
-    logger.info("Setting up idmap db")
-    idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
-                          lp=lp)
+        logger.info("Setting up idmap db")
+        idmap = setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
+                              lp=lp)
 
-    logger.info("Setting up SAM db")
-    samdb = setup_samdb(paths.samdb, setup_path, session_info, 
-                        provision_backend, lp, names,
-                        logger=logger, 
-                        domainsid=domainsid, 
-                        schema=schema, domainguid=domainguid,
-                        policyguid=policyguid, policyguid_dc=policyguid_dc,
-                        fill=samdb_fill, 
-                        adminpass=adminpass, krbtgtpass=krbtgtpass,
-                        invocationid=invocationid, 
-                        machinepass=machinepass, dnspass=dnspass, 
-                        ntdsguid=ntdsguid, serverrole=serverrole,
-                        dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc)
-
-    if serverrole == "domain controller":
-        if paths.netlogon is None:
-            logger.info("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
-            logger.info("Please either remove %s or see the template at %s" % 
-                    (paths.smbconf, setup_path("provision.smb.conf.dc")))
-            assert paths.netlogon is not None
-
-        if paths.sysvol is None:
-            logger.info("Existing smb.conf does not have a [sysvol] share, but you"
-                    " are configuring a DC.")
-            logger.info("Please either remove %s or see the template at %s" % 
-                    (paths.smbconf, setup_path("provision.smb.conf.dc")))
-            assert paths.sysvol is not None
-
-        if not os.path.isdir(paths.netlogon):
-            os.makedirs(paths.netlogon, 0755)
-
-    if samdb_fill == FILL_FULL:
-        setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
-                            root_uid=root_uid, nobody_uid=nobody_uid,
-                            users_gid=users_gid, wheel_gid=wheel_gid)
-
-        if serverrole == "domain controller":
-            # Set up group policies (domain policy and domain controller policy)
-            setup_gpo(paths.sysvol, names.dnsdomain, policyguid, policyguid_dc)
-            setsysvolacl(samdb, paths.netlogon, paths.sysvol, wheel_gid, 
-                         domainsid, names.dnsdomain, names.domaindn, lp)
-
-        logger.info("Setting up sam.ldb rootDSE marking as synchronized")
-        setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
-
-        secretsdb_self_join(secrets_ldb, domain=names.domain,
-                            realm=names.realm,
-                            dnsdomain=names.dnsdomain,
-                            netbiosname=names.netbiosname,
+        logger.info("Setting up SAM db")
+        samdb = setup_samdb(paths.samdb, setup_path, session_info, 
+                            provision_backend, lp, names,
+                            logger=logger, 
                             domainsid=domainsid, 
-                            machinepass=machinepass,
-                            secure_channel_type=SEC_CHAN_BDC)
+                            schema=schema, domainguid=domainguid,
+                            policyguid=policyguid, policyguid_dc=policyguid_dc,
+                            fill=samdb_fill, 
+                            adminpass=adminpass, krbtgtpass=krbtgtpass,
+                            invocationid=invocationid, 
+                            machinepass=machinepass, dnspass=dnspass, 
+                            ntdsguid=ntdsguid, serverrole=serverrole,
+                            dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc)
 
         if serverrole == "domain controller":
-            secretsdb_setup_dns(secrets_ldb, setup_path,
-                                paths.private_dir,
-                                realm=names.realm, dnsdomain=names.dnsdomain,
-                                dns_keytab_path=paths.dns_keytab,
-                                dnspass=dnspass)
+            if paths.netlogon is None:
+                logger.info("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
+                logger.info("Please either remove %s or see the template at %s" % 
+                        (paths.smbconf, setup_path("provision.smb.conf.dc")))
+                assert paths.netlogon is not None
 
-            domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
-            assert isinstance(domainguid, str)
+            if paths.sysvol is None:
+                logger.info("Existing smb.conf does not have a [sysvol] share, but you"
+                        " are configuring a DC.")
+                logger.info("Please either remove %s or see the template at %s" % 
+                        (paths.smbconf, setup_path("provision.smb.conf.dc")))
+                assert paths.sysvol is not None
 
-            # Only make a zone file on the first DC, it should be replicated
-            # with DNS replication
-            create_zone_file(lp, logger, paths, targetdir, setup_path,
-                dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
-                hostname=names.hostname, realm=names.realm, 
-                domainguid=domainguid, ntdsguid=names.ntdsguid)
+            if not os.path.isdir(paths.netlogon):
+                os.makedirs(paths.netlogon, 0755)
 
-            create_named_conf(paths, setup_path, realm=names.realm,
-                              dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
+        if samdb_fill == FILL_FULL:
+            setup_name_mappings(samdb, idmap, str(domainsid), names.domaindn,
+                                root_uid=root_uid, nobody_uid=nobody_uid,
+                                users_gid=users_gid, wheel_gid=wheel_gid)
 
-            create_named_txt(paths.namedtxt, setup_path, realm=names.realm,
-                              dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
-                              keytab_name=paths.dns_keytab)
-            logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
-            logger.info("and %s for further documentation required for secure DNS "
-                    "updates", paths.namedtxt)
+            if serverrole == "domain controller":
+                # Set up group policies (domain policy and domain controller policy)
+                setup_gpo(paths.sysvol, names.dnsdomain, policyguid, policyguid_dc)
+                setsysvolacl(samdb, paths.netlogon, paths.sysvol, wheel_gid, 
+                             domainsid, names.dnsdomain, names.domaindn, lp)
 
-            create_krb5_conf(paths.krb5conf, setup_path,
-                             dnsdomain=names.dnsdomain, hostname=names.hostname,
-                             realm=names.realm)
-            logger.info("A Kerberos configuration suitable for Samba 4 has been "
-                    "generated at %s", paths.krb5conf)
+            logger.info("Setting up sam.ldb rootDSE marking as synchronized")
+            setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
 
-        lastProvisionUSNs = get_last_provision_usn(samdb)
-        maxUSN = get_max_usn(samdb, str(names.rootdn))
-        if lastProvisionUSNs is not None:
-            update_provision_usn(samdb, 0, maxUSN, 1)
-        else:
-            set_provision_usn(samdb, 0, maxUSN)
+            secretsdb_self_join(secrets_ldb, domain=names.domain,
+                                realm=names.realm,
+                                dnsdomain=names.dnsdomain,
+                                netbiosname=names.netbiosname,
+                                domainsid=domainsid, 
+                                machinepass=machinepass,
+                                secure_channel_type=SEC_CHAN_BDC)
 
-    if serverrole == "domain controller":
-        create_dns_update_list(lp, logger, paths, setup_path)
+            if serverrole == "domain controller":
+                secretsdb_setup_dns(secrets_ldb, setup_path,
+                                    paths.private_dir,
+                                    realm=names.realm, dnsdomain=names.dnsdomain,
+                                    dns_keytab_path=paths.dns_keytab,
+                                    dnspass=dnspass)
 
-    provision_backend.post_setup()
-    provision_backend.shutdown()
-    
-    create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
-                               ldapi_url)
+                domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
+                assert isinstance(domainguid, str)
+
+                # Only make a zone file on the first DC, it should be replicated
+                # with DNS replication
+                create_zone_file(lp, logger, paths, targetdir, setup_path,
+                    dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                    hostname=names.hostname, realm=names.realm, 
+                    domainguid=domainguid, ntdsguid=names.ntdsguid)
+
+                create_named_conf(paths, setup_path, realm=names.realm,
+                                  dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
+
+                create_named_txt(paths.namedtxt, setup_path, realm=names.realm,
+                                  dnsdomain=names.dnsdomain, private_dir=paths.private_dir,
+                                  keytab_name=paths.dns_keytab)
+                logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+                logger.info("and %s for further documentation required for secure DNS "
+                        "updates", paths.namedtxt)
+
+                create_krb5_conf(paths.krb5conf, setup_path,
+                                 dnsdomain=names.dnsdomain, hostname=names.hostname,
+                                 realm=names.realm)
+                logger.info("A Kerberos configuration suitable for Samba 4 has been "
+                        "generated at %s", paths.krb5conf)
+
+            lastProvisionUSNs = get_last_provision_usn(samdb)
+            maxUSN = get_max_usn(samdb, str(names.rootdn))
+            if lastProvisionUSNs is not None:
+                update_provision_usn(samdb, 0, maxUSN, 1)
+            else:
+                set_provision_usn(samdb, 0, maxUSN)
+
+        if serverrole == "domain controller":
+            create_dns_update_list(lp, logger, paths, setup_path)
+
+        provision_backend.post_setup()
+        provision_backend.shutdown()
+        
+        create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
+                                   ldapi_url)
+    except:
+        secrets_ldb.transaction_cancel()
+        raise
 
     #Now commit the secrets.ldb to disk
     secrets_ldb.transaction_commit()
