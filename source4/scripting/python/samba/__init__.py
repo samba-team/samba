@@ -133,7 +133,11 @@ class Ldb(_Ldb):
         return self.schema_format_value(attribute, values.pop())
 
     def erase_users_computers(self, dn):
-        """Erases user and computer objects from our AD. This is needed since the 'samldb' module denies the deletion of primary groups. Therefore all groups shouldn't be primary somewhere anymore."""
+        """Erases user and computer objects from our AD.
+        
+        This is needed since the 'samldb' module denies the deletion of primary
+        groups. Therefore all groups shouldn't be primary somewhere anymore.
+        """
 
         try:
             res = self.search(base=dn, scope=ldb.SCOPE_SUBTREE, attrs=[],
@@ -167,8 +171,8 @@ class Ldb(_Ldb):
 
         # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE,
-                               "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
-                               [], controls=["show_deleted:0"]):
+                       "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+                       [], controls=["show_deleted:0"]):
             try:
                 self.delete(msg.dn, ["relax:0"])
             except ldb.LdbError, (errno, _):
@@ -192,7 +196,6 @@ class Ldb(_Ldb):
 
     def erase(self):
         """Erase this ldb, removing all records."""
-
         self.erase_except_schema_controlled()
 
         # delete the specials
@@ -259,32 +262,16 @@ class Ldb(_Ldb):
         :param ldif: LDIF text.
         """
         for changetype, msg in self.parse_ldif(ldif):
-            if (changetype == ldb.CHANGETYPE_ADD):
+            if changetype == ldb.CHANGETYPE_ADD:
                 self.add(msg, controls)
             else:
                 self.modify(msg, controls)
-
-    def set_domain_sid(self, sid):
-        """Change the domain SID used by this LDB.
-
-        :param sid: The new domain sid to use.
-        """
-        dsdb.samdb_set_domain_sid(self, sid)
 
     def domain_sid(self):
         """Read the domain SID used by this LDB.
 
         """
         dsdb.samdb_get_domain_sid(self)
-
-    def set_schema_from_ldif(self, pf, df):
-        dsdb.dsdb_set_schema_from_ldif(self, pf, df)
-
-    def set_schema_from_ldb(self, ldb):
-        dsdb.dsdb_set_schema_from_ldb(self, ldb)
-
-    def write_prefixes_from_schema(self):
-        dsdb.dsdb_write_prefixes_from_schema_to_ldb(self)
 
 
 def substitute_var(text, values):

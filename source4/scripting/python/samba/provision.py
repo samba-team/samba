@@ -976,7 +976,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
     logger.info("Pre-loading the Samba 4 and AD schema")
 
     # Load the schema from the one we computed earlier
-    samdb.set_schema_from_ldb(schema.ldb)
+    samdb.set_schema(schema)
 
     # And now we can connect to the DB - the schema won't be loaded from the DB
     samdb.connect(path)

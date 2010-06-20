@@ -38,6 +38,7 @@ from samba.provision import (ProvisionNames, provision_paths_from_lp,
                             setsysvolacl)
 from samba.dcerpc import misc, security, xattr
 from samba.ndr import ndr_unpack
+from samba.samdb import SamDB
 
 # All the ldb related to registry are commented because the path for them is relative
 # in the provisionPath object
@@ -66,6 +67,7 @@ hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
                         "sAMAccountType":1 }
 
 class ProvisionLDB(object):
+
     def __init__(self):
         self.sam = None
         self.secrets = None
@@ -155,7 +157,7 @@ def get_ldbs(paths, creds, session, lp):
 
     ldbs = ProvisionLDB()
 
-    ldbs.sam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp, options=["modules:samba_dsdb"])
+    ldbs.sam = SamDB(paths.samdb, session_info=session, credentials=creds, lp=lp, options=["modules:samba_dsdb"])
     ldbs.secrets = Ldb(paths.secrets, session_info=session, credentials=creds, lp=lp)
     ldbs.idmap = Ldb(paths.idmapdb, session_info=session, credentials=creds, lp=lp)
     ldbs.privilege = Ldb(paths.privilege, session_info=session, credentials=creds, lp=lp)

@@ -107,7 +107,7 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
 
 
 backlinked = []
-forwardlinked = {}
+forwardlinked = set()
 dn_syntax_att = []
 def define_what_to_log(opts):
     what = 0
@@ -223,7 +223,8 @@ def populate_links(samdb, schemadn):
     linkedAttHash = get_linked_attributes(Dn(samdb, str(schemadn)), samdb)
     backlinked.extend(linkedAttHash.values())
     for t in linkedAttHash.keys():
-        forwardlinked[t] = 1
+        forwardlinked.add(t)
+
 
 def populate_dnsyntax(samdb, schemadn):
     """Populate an array with all the attributes that have DN synthax
@@ -777,7 +778,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
             if usns is not None:
                 # We have updated by provision usn information so let's exploit
                 # replMetadataProperties
-                if forwardlinked.has_key(att):
+                if att in forwardlinked:
                     handle_links(samdb, att, basedn, current[0]["dn"],
                                     current[0][att], reference[0][att], delta)
 
@@ -952,7 +953,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
     # a complete schema is needed as the insertion of attributes
     # and class is done against it
     # and the schema is self validated
-    samdb.set_schema_from_ldb(schema.ldb)
+    samdb.set_schema(schema)
     try:
         message(SIMPLE, "There are %d missing objects" % (len(listMissing)))
         add_deletedobj_containers(ref_samdb, samdb, names)

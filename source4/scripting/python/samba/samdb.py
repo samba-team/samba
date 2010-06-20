@@ -150,7 +150,7 @@ pwdLastSet: 0
         else:
             self.transaction_commit()
 
-    def deletegroup (self, groupname):
+    def deletegroup(self, groupname):
         """Deletes a group
 
         :param groupname: Name of the target group
@@ -162,19 +162,16 @@ pwdLastSet: 0
             targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                expression=groupfilter, attrs=[])
             if len(targetgroup) == 0:
-                print('Unable to find group "%s"' % (groupname or expression))
-                raise
+                raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
-
-            self.delete (targetgroup[0].dn);
-
+            self.delete(targetgroup[0].dn);
         except:
             self.transaction_cancel()
             raise
         else:
             self.transaction_commit()
 
-    def add_remove_group_members (self, groupname, listofmembers,
+    def add_remove_group_members(self, groupname, listofmembers,
                                   add_members_operation=True):
         """Adds or removes group members
 
@@ -191,8 +188,7 @@ pwdLastSet: 0
             targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                expression=groupfilter, attrs=['member'])
             if len(targetgroup) == 0:
-                print('Unable to find group "%s"' % (groupname or expression))
-                raise
+                raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
 
             modified = False
@@ -364,8 +360,7 @@ member: %s
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                               expression=filter, attrs=[])
             if len(res) == 0:
-                print('Unable to find user "%s"' % (username or filter))
-                raise
+                raise Exception('Unable to find user "%s"' % (username or filter))
             assert(len(res) == 1)
             user_dn = res[0].dn
 
@@ -480,3 +475,12 @@ accountExpires: %u
 
     def load_partition_usn(self, base_dn):
         return dsdb.dsdb_load_partition_usn(self, base_dn)
+
+    def set_schema(self, schema):
+        self.set_schema_from_ldb(schema.ldb)
+
+    def set_schema_from_ldb(self, ldb):
+        dsdb.dsdb_set_schema_from_ldb(self, ldb)
+
+    def write_prefixes_from_schema(self):
+        dsdb.dsdb_write_prefixes_from_schema_to_ldb(self)
