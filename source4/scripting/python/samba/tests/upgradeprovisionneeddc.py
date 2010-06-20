@@ -28,7 +28,8 @@ from samba.provision import getpolicypath
 from samba.upgradehelpers import (get_paths, get_ldbs,
                                  find_provision_key_parameters, identic_rename,
                                  updateOEMInfo, getOEMInfo, update_gpo,
-                                 delta_update_basesamdb,search_constructed_attrs_stored)
+                                 delta_update_basesamdb,
+                                 search_constructed_attrs_stored)
 from samba.tests import env_loadparm, TestCaseInTempDir
 from samba.tests.provision import create_dummy_secretsdb
 import ldb
@@ -61,8 +62,8 @@ class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
                                                 paths, smb_conf_path, lp)
         self.assertEquals(names.realm, "SAMBA.EXAMPLE.COM")
         self.assertEquals(str(names.rootdn).lower(), rootdn.lower())
-        self.assertTrue(names.policyid_dc != None)
-        self.assertTrue(names.ntdsguid != "")
+        self.assertNotEquals(names.policyid_dc, None)
+        self.assertNotEquals(names.ntdsguid, "")
 
 
 class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
@@ -78,8 +79,9 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.creds.guess(self.lp)
         self.paths = paths
         self.ldbs = get_ldbs(paths, self.creds, system_session(), self.lp)
-        self.names = find_provision_key_parameters(self.ldbs.sam, self.ldbs.secrets,
-                                   self.ldbs.idmap, paths, smb_conf_path, self.lp)
+        self.names = find_provision_key_parameters(self.ldbs.sam,
+                self.ldbs.secrets, self.ldbs.idmap, paths, smb_conf_path,
+                self.lp)
         self.referencedb = create_dummy_secretsdb(
             os.path.join(self.tempdir, "ref.ldb"))
 
@@ -102,10 +104,12 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
     def test_delta_update_basesamdb(self):
         dummysampath = self._getEmptyDbName()
         delta_update_basesamdb(self.paths.samdb, dummysampath,
-                                self.creds, system_session(), self.lp, dummymessage)
+                                self.creds, system_session(), self.lp,
+                                dummymessage)
 
     def test_update_gpo_simple(self):
-        dir = getpolicypath(self.paths.sysvol, self.names.dnsdomain, self.names.policyid)
+        dir = getpolicypath(self.paths.sysvol, self.names.dnsdomain,
+                self.names.policyid)
         shutil.rmtree(dir)
         self.assertFalse(os.path.isdir(dir))
         update_gpo(self.paths, self.ldbs.sam, self.names, self.lp, dummymessage)
@@ -117,7 +121,8 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.paths.sysvol = path
         os.mkdir(path)
         os.mkdir(os.path.join(path, self.names.dnsdomain))
-        os.mkdir(os.path.join(os.path.join(path, self.names.dnsdomain), "Policies"))
+        os.mkdir(os.path.join(os.path.join(path, self.names.dnsdomain),
+            "Policies"))
         update_gpo(self.paths, self.ldbs.sam, self.names, self.lp, dummymessage)
         shutil.rmtree(path)
         self.paths.sysvol = save
@@ -126,7 +131,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         realm = self.lp.get("realm")
         basedn = "DC=%s" % realm.replace(".", ", DC=")
         oem = getOEMInfo(self.ldbs.sam, basedn)
-        self.assertTrue(oem != "")
+        self.assertNotEquals(oem, "")
 
     def test_updateOEMInfo(self):
         realm = self.lp.get("realm")
@@ -134,7 +139,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         oem = getOEMInfo(self.ldbs.sam, basedn)
         updateOEMInfo(self.ldbs.sam, basedn)
         oem2 = getOEMInfo(self.ldbs.sam, basedn)
-        self.assertTrue(str(oem) != str(oem2))
+        self.assertNotEquals(str(oem), str(oem2))
         self.assertTrue(re.match(".*upgrade to.*", str(oem2)))
 
     def tearDown(self):

@@ -1497,7 +1497,7 @@ def provision(setup_dir, logger, session_info,
 
         lastProvisionUSNs = get_last_provision_usn(samdb)
         maxUSN = get_max_usn(samdb, str(names.rootdn))
-        if lastProvisionUSNs != None:
+        if lastProvisionUSNs is not None:
             update_provision_usn(samdb, 0, maxUSN, 1)
         else:
             set_provision_usn(samdb, 0, maxUSN)

@@ -319,7 +319,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
                 "objectSid","msDS-Behavior-Version" ])
     names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
     names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
-    if res6[0].get("msDS-Behavior-Version") == None or \
+    if res6[0].get("msDS-Behavior-Version") is None or \
         int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
         names.domainlevel = DS_DOMAIN_FUNCTION_2000
     else:
@@ -495,31 +495,31 @@ def get_diff_sddls(refsddl, cursddl):
         if hash_new.has_key(part) and hash_ref.has_key(part):
 
             # both are present, check if they contain the same ACE
-            h_new = {}
-            h_ref = {}
+            h_new = set()
+            h_ref = set()
             c_new = chunck_acl(hash_new[part])
             c_ref = chunck_acl(hash_ref[part])
 
             for elem in c_new["aces"]:
-                h_new[elem] = 1
+                h_new.add(elem)
 
             for elem in c_ref["aces"]:
-                h_ref[elem] = 1
+                h_ref.add(elem)
 
-            for k in h_ref.keys():
+            for k in h_ref:
                 if h_new.has_key(k):
-                    h_new.pop(k)
-                    h_ref.pop(k)
+                    h_new.remove(k)
+                    h_ref.remove(k)
 
-            if len(h_new.keys()) + len(h_ref.keys()) > 0:
+            if len(h_new) + len(h_ref) > 0:
                 txt = "%s\tPart %s is different between reference" \
                       " and current here is the detail:\n" % (txt, part)
 
-                for item in h_new.keys():
+                for item in h_new:
                     txt = "%s\t\t%s ACE is not present in the" \
                           " reference\n" % (txt, item)
 
-                for item in h_ref.keys():
+                for item in h_ref:
                     txt = "%s\t\t%s ACE is not present in the" \
                           " current\n" % (txt, item)
 
@@ -692,7 +692,7 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
 
-    if names.policyid_dc == None:
+    if names.policyid_dc is None:
         raise ProvisioningError("Policy ID for Domain controller is missing")
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
     if not os.path.isdir(dir):
