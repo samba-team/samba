@@ -32,12 +32,6 @@
 # Useful for a quick 'syntax check' of a configuration file.
 #
 
-#/***********************************************
-# Here we do a set of 'hard coded' checks for bad
-# configuration settings.
-#************************************************/
-#
-
 import logging
 import optparse
 import os
@@ -48,6 +42,9 @@ sys.path.insert(0, "bin/python")
 
 import samba
 from samba import getopt as options
+
+# Here we do a set of 'hard coded' checks for bad
+# configuration settings.
 
 def do_global_checks(lp, logger):
     ret = False
@@ -80,10 +77,7 @@ def allow_access(deny_list, allow_list, cname, caddr):
     raise NotImplementedError(allow_access)
 
 
-def do_share_checks(lp, cname, caddr, silent_mode, show_defaults, section_name,
-        parameter_name, logger):
-    ret = False
-
+def do_share_checks(lp, logger):
     for s in lp.services():
         if len(s) > 12:
             logger.warning("You have some share names that are longer than 12 characters. These may not be accessible to some older clients. (Eg. Windows9x, WindowsMe, and not listed in smbclient in Samba 3.0.)")
@@ -102,39 +96,34 @@ def do_share_checks(lp, cname, caddr, silent_mode, show_defaults, section_name,
                 if "*" in entry or "?" in entry:
                     logger.error("Invalid character (* or ?) in hosts allow list (%s) for service %s.", entry, s)
 
-    if cname is not None:
-        if not silent_mode:
-            print "Press enter to see a dump of your service definitions\n"
-            sys.stdin.readline()
-        if section_name is not None or parameter_name is not None:
-            if parameter_name is None:
-                lp.dump_service(sys.stdout, section_name, show_defaults)
-            else:
-                lp.dump_parameter(sys.stdout, section_name, parameter_name)
+
+def dump(lp, section_name=None, parameter_name=None, silent_mode=False,
+         show_defaults=False):
+    if not silent_mode:
+        print "Press enter to see a dump of your service definitions\n"
+        sys.stdin.readline()
+    if section_name is not None or parameter_name is not None:
+        if parameter_name is None:
+            lp.dump_service(sys.stdout, section_name, show_defaults)
         else:
-            lp.dump(sys.stdout, show_defaults)
-        return ret
+            lp.dump_parameter(sys.stdout, section_name, parameter_name)
+    else:
+        lp.dump(sys.stdout, show_defaults)
 
-    if cname is not None and caddr is not None:
-        # this is totally ugly, a real `quick' hack
-        for s in lp.services():
-            if (allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname, caddr) and
-                allow_access(lp.get("hosts deny", s), lp.get("hosts allow", s), cname, caddr)):
-                logger.info("Allow connection from %s (%s) to %s",
-                       cname, caddr, s)
-            else:
-                logger.info("Deny connection from %s (%s) to %s",
-                       cname, caddr, s)
 
-    return ret
+def check_client_access(lp, cname, caddr):
+    # this is totally ugly, a real `quick' hack
+    for s in lp.services():
+        if (allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname, caddr) and
+            allow_access(lp.get("hosts deny", s), lp.get("hosts allow", s), cname, caddr)):
+            logger.info("Allow connection from %s (%s) to %s",
+                   cname, caddr, s)
+        else:
+            logger.info("Deny connection from %s (%s) to %s",
+                   cname, caddr, s)
 
 
 if __name__ == '__main__':
-    section_name = None
-    parameter_name = None
-    silent_mode = False
-    show_defaults = False
-
     parser = optparse.OptionParser("testparm [OPTION...] [host-name] [host-ip]")
     parser.add_option("--section-name", type="string", metavar="SECTION",
             help="Limit testparm to a named section")
@@ -198,7 +187,11 @@ if __name__ == '__main__':
     logger.info("Loaded services file OK.")
 
     do_global_checks(lp, logger)
-    do_share_checks(lp, cname, caddr, silent_mode, show_defaults,
-            section_name, parameter_name, logger)
+    do_share_checks(lp, logger)
+    if cname is not None:
+        check_client_access(lp, cname, caddr)
+    else:
+        dump(lp, opts.section_name, opts.parameter_name, 
+                not opts.suppress_prompt, opts.verbose)
 
     sys.exit(0)
