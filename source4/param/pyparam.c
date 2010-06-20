@@ -30,6 +30,7 @@ typedef inquiry lenfunc;
 #endif
 
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_type(obj, struct loadparm_context)
+#define PyLoadparmService_AsLoadparmService(obj) py_talloc_get_type(obj, struct loadparm_service)
 
 PyAPI_DATA(PyTypeObject) PyLoadparmContext;
 PyAPI_DATA(PyTypeObject) PyLoadparmService;
@@ -267,6 +268,7 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
 		"S.load(filename) -> None\n"
@@ -368,10 +370,48 @@ PyTypeObject PyLoadparmContext = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
+{
+	PyObject *py_stream;
+	bool show_defaults = false;
+	FILE *f;
+	struct loadparm_service *service = PyLoadparmService_AsLoadparmService(self);
+	struct loadparm_service *default_service;
+	PyObject *py_default_service;
+
+	if (!PyArg_ParseTuple(args, "OO|b", &py_stream, &py_default_service,
+						  &show_defaults))
+		return NULL;
+
+	f = PyFile_AsFile(py_stream);
+	if (f == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Not a file stream");
+		return NULL;
+	}
+
+	if (!PyObject_TypeCheck(py_default_service, &PyLoadparmService)) {
+		PyErr_SetNone(PyExc_TypeError);
+		return NULL;
+	}
+
+	default_service = PyLoadparmService_AsLoadparmService(py_default_service);
+
+	lp_dump_one(f, show_defaults, service, default_service);
+
+	Py_RETURN_NONE;
+}
+
+static PyMethodDef py_lp_service_methods[] = {
+	{ "dump", (PyCFunction)py_lp_service_dump, METH_VARARGS, 
+		"S.dump(f, default_service, show_defaults=False)" },
+	{ NULL }
+};
+
 PyTypeObject PyLoadparmService = {
 	.tp_name = "LoadparmService",
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_methods = py_lp_service_methods,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
