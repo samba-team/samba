@@ -254,7 +254,7 @@ static NTSTATUS gp_get_file (struct smbcli_tree *tree, const char *remote_src,
 	/* Bytes read should match the file size, or the copy was incomplete */
 	if (nread != file_size) {
 		DEBUG(0, ("Remote/local file size mismatch after copying file: "
-		          "%s (remote %ld, local %ld).\n",
+		          "%s (remote %zu, local %zu).\n",
 		          remote_src, file_size, nread));
 		talloc_free(buf);
 		return NT_STATUS_UNSUCCESSFUL;
