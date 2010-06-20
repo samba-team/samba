@@ -363,16 +363,18 @@ static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 	return ret;
 }
 
-static int ldb_delete_with_context(struct ldb_context *ldb,
-				   struct ldb_dn *dn,
-				   void *context)
+/* create and execute a delete request */
+static int ldb_del_req_with_controls(struct ldb_context *ldb,
+				     struct ldb_dn *dn,
+				     struct ldb_control **controls,
+				     void *context)
 {
 	struct ldb_request *req;
 	int ret;
 
 	ret = ldb_build_del_req(&req, ldb, ldb,
 					dn,
-					NULL,
+					controls,
 					context,
 					ldb_modify_default_callback,
 					NULL);
@@ -886,7 +888,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_delete_with_context(samdb, dn, res);
+		ldb_ret = ldb_del_req_with_controls(samdb, dn, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
