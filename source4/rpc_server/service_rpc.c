@@ -90,7 +90,7 @@ static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 			substate->call = call;
 		}
 
-		substate->iov.iov_base = rep->blob.data;
+		substate->iov.iov_base = (void *) rep->blob.data;
 		substate->iov.iov_len = rep->blob.length;
 
 		subreq = tstream_writev_queue_send(substate,
@@ -231,7 +231,7 @@ static int dcerpc_read_ncacn_packet_next_vector(struct tstream_context *stream,
 		return -1;
 	}
 
-	vector[0].iov_base = state->buffer.data + ofs;
+	vector[0].iov_base = (void *) (state->buffer.data + ofs);
 	vector[0].iov_len = state->buffer.length - ofs;
 
 	*_vector = vector;
