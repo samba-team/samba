@@ -739,9 +739,9 @@ struct libnet_BecomeDC_state {
 
 static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
 {
-	/* per default we are (Windows) 2008 compatible */
+	/* per default we are (Windows) 2008 R2 compatible */
 	return lp_parm_int(lp_ctx, NULL, "ads", "dc function level",
-		DS_DOMAIN_FUNCTION_2008);
+			   DS_DOMAIN_FUNCTION_2008_R2);
 }
 
 static void becomeDC_recv_cldap(struct tevent_req *req);
