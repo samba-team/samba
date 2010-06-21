@@ -89,6 +89,8 @@ int ctdb_local_store(struct tdb_context *tdb, TDB_DATA key,
 		errno = ENOMEM;
 		return -1;
 	}
+	memcpy(rec.dptr, header, sizeof(*header));
+	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
 
 	ret = tdb_store(tdb, key, rec, TDB_REPLACE);
 	free(old.dptr);
