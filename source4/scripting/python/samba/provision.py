@@ -972,8 +972,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         names=names, serverrole=serverrole, schema=schema)
 
     if schema is None:
-        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn,
-                        am_rodc=am_rodc)
+        schema = Schema(setup_path, domainsid, schemadn=names.schemadn, serverdn=names.serverdn)
 
     # Load the database, but don's load the global schema and don't connect quite yet
     samdb = SamDB(session_info=session_info, url=None, auto_connect=False,
@@ -1341,7 +1340,7 @@ def provision(setup_dir, logger, session_info,
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
  
     schema = Schema(setup_path, domainsid, invocationid=invocationid, schemadn=names.schemadn,
-                    serverdn=names.serverdn, am_rodc=am_rodc)
+                    serverdn=names.serverdn)
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type,
