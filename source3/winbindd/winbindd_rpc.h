@@ -104,4 +104,17 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 				uint32_t *pnum_aliases,
 				uint32_t **palias_rids);
 
+/* Lookup group membership given a rid.   */
+NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *samr_pipe,
+			     struct policy_handle *samr_policy,
+			     const char *domain_name,
+			     const struct dom_sid *domain_sid,
+			     const struct dom_sid *group_sid,
+			     enum lsa_SidType type,
+			     uint32_t *pnum_names,
+			     struct dom_sid **psid_mem,
+			     char ***pnames,
+			     uint32_t **pname_types);
+
 #endif /* _WINBINDD_RPC_H_ */

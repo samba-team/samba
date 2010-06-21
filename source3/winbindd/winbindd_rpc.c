@@ -655,3 +655,131 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 #undef MAX_SAM_ENTRIES_W2K
 }
+
+/* Lookup group membership given a rid.   */
+NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *samr_pipe,
+			     struct policy_handle *samr_policy,
+			     const char *domain_name,
+			     const struct dom_sid *domain_sid,
+			     const struct dom_sid *group_sid,
+			     enum lsa_SidType type,
+			     uint32_t *pnum_names,
+			     struct dom_sid **psid_mem,
+			     char ***pnames,
+			     uint32_t **pname_types)
+{
+	struct policy_handle group_policy;
+	struct samr_RidTypeArray *rids = NULL;
+	uint32_t group_rid;
+	uint32_t *rid_mem = NULL;
+
+	uint32_t num_names = 0;
+	uint32_t total_names = 0;
+	struct dom_sid *sid_mem = NULL;
+	char **names = NULL;
+	uint32_t *name_types = NULL;
+
+	struct lsa_Strings tmp_names;
+	struct samr_Ids tmp_types;
+
+	uint32_t j, r;
+	NTSTATUS status;
+
+	if (!sid_peek_check_rid(domain_sid, group_sid, &group_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = rpccli_samr_OpenGroup(samr_pipe,
+				       mem_ctx,
+				       samr_policy,
+				       SEC_FLAG_MAXIMUM_ALLOWED,
+				       group_rid,
+				       &group_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Step #1: Get a list of user rids that are the members of the group.
+	 */
+	status = rpccli_samr_QueryGroupMember(samr_pipe,
+					      mem_ctx,
+					      &group_policy,
+					      &rids);
+
+	rpccli_samr_Close(samr_pipe, mem_ctx, &group_policy);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (rids == NULL || rids->count == 0) {
+		pnum_names = 0;
+		pnames = NULL;
+		pname_types = NULL;
+		psid_mem = NULL;
+
+		return NT_STATUS_OK;
+	}
+
+	num_names = rids->count;
+	rid_mem = rids->rids;
+
+	/*
+	 * Step #2: Convert list of rids into list of usernames.
+	 */
+	if (num_names > 0) {
+		names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_names);
+		name_types = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t, num_names);
+		sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_names);
+		if (names == NULL || name_types == NULL || sid_mem == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	for (j = 0; j < num_names; j++) {
+		sid_compose(&sid_mem[j], domain_sid, rid_mem[j]);
+	}
+
+	status = rpccli_samr_LookupRids(samr_pipe,
+					mem_ctx,
+					samr_policy,
+					num_names,
+					rid_mem,
+					&tmp_names,
+					&tmp_types);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
+			return status;
+		}
+	}
+
+	/* Copy result into array.  The talloc system will take
+	   care of freeing the temporary arrays later on. */
+	if (tmp_names.count != tmp_types.count) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	for (r = 0; r < tmp_names.count; r++) {
+		if (tmp_types.ids[r] == SID_NAME_UNKNOWN) {
+			continue;
+		}
+		names[total_names] = fill_domain_username_talloc(names,
+								 domain_name,
+								 tmp_names.names[r].string,
+								 true);
+		if (names[total_names] == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		name_types[total_names] = tmp_types.ids[r];
+		total_names++;
+	}
+
+	*pnum_names = total_names;
+	*pnames = names;
+	*pname_types = name_types;
+	*psid_mem = sid_mem;
+
+	return NT_STATUS_OK;
+}
