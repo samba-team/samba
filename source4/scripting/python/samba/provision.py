@@ -43,7 +43,7 @@ from samba.auth import system_session, admin_session
 import samba
 from samba import version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted, read_and_sub_file, setup_file
-from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DC_FUNCTION_2008
+from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
@@ -955,7 +955,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
 
     # ATTENTION: Do NOT change these default values without discussion with the
     # team and/or release manager. They have a big impact on the whole program!
-    domainControllerFunctionality = DS_DC_FUNCTION_2008
+    domainControllerFunctionality = DS_DOMAIN_FUNCTION_2008
 
     if dom_for_fun_level is None:
         dom_for_fun_level = DS_DOMAIN_FUNCTION_2003

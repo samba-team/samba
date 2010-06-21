@@ -20,7 +20,7 @@ from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
 from samba import Ldb
-from samba.dsdb import DS_DC_FUNCTION_2003
+from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -278,7 +278,7 @@ systemOnly: FALSE
 
         # 1. Create attribute without systemFlags
         # msDS-IntId should be created if forest functional
-        # level is >= DS_DC_FUNCTION_2003
+        # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("msDS-IntId-Attr-1-")
         ldif = self._make_attr_ldif(attr_name, attr_dn)
@@ -300,7 +300,7 @@ systemOnly: FALSE
         res = self.ldb.search(attr_dn, scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
-        if self.forest_level >= DS_DC_FUNCTION_2003:
+        if self.forest_level >= DS_DOMAIN_FUNCTION_2003:
             if self._is_schema_base_object(res[0]):
                 self.assertTrue("msDS-IntId" not in res[0])
             else:
@@ -319,7 +319,7 @@ systemOnly: FALSE
 
         # 2. Create attribute with systemFlags = FLAG_SCHEMA_BASE_OBJECT
         # msDS-IntId should be created if forest functional
-        # level is >= DS_DC_FUNCTION_2003
+        # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("msDS-IntId-Attr-2-")
         ldif = self._make_attr_ldif(attr_name, attr_dn)
@@ -342,7 +342,7 @@ systemOnly: FALSE
         res = self.ldb.search(attr_dn, scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_name)
-        if self.forest_level >= DS_DC_FUNCTION_2003:
+        if self.forest_level >= DS_DOMAIN_FUNCTION_2003:
             if self._is_schema_base_object(res[0]):
                 self.assertTrue("msDS-IntId" not in res[0])
             else:
@@ -384,7 +384,7 @@ systemOnly: FALSE
 
         # 1. Create Class without systemFlags
         # msDS-IntId should be created if forest functional
-        # level is >= DS_DC_FUNCTION_2003
+        # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-1-")
         ldif = self._make_class_ldif(class_dn, class_name)
@@ -421,7 +421,7 @@ systemOnly: FALSE
 
         # 2. Create Class with systemFlags = FLAG_SCHEMA_BASE_OBJECT
         # msDS-IntId should be created if forest functional
-        # level is >= DS_DC_FUNCTION_2003
+        # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-3-")
         ldif = self._make_class_ldif(class_dn, class_name)
@@ -469,7 +469,7 @@ systemOnly: FALSE
                               attrs=["systemFlags", "msDS-IntId", "attributeID", "cn"])
         self.assertTrue(len(res) > 1)
         for ldb_msg in res:
-            if self.forest_level >= DS_DC_FUNCTION_2003:
+            if self.forest_level >= DS_DOMAIN_FUNCTION_2003:
                 if self._is_schema_base_object(ldb_msg):
                     self.assertTrue("msDS-IntId" not in ldb_msg)
                 else:

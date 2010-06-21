@@ -170,18 +170,14 @@
 #define SEARCH_FLAG_NEVERVALUEAUDIT	0x0000100
 #define SEARCH_FLAG_RODC_ATTRIBUTE	0x0000200
 
-/* "domainFunctionality", "forestFunctionality" in the rootDSE */
+/* "domainFunctionality", "forestFunctionality" and "domainControllerFunctionality" in the rootDSE */
 #define DS_DOMAIN_FUNCTION_2000		0
-#define DS_DOMAIN_FUNCTION_2003_MIXED	1
+#define DS_DOMAIN_FUNCTION_2003_MIXED	1 /* Not a valid/meaningfulxs
+					   * domainControllerFunctionality
+					   * Level */
 #define DS_DOMAIN_FUNCTION_2003		2
 #define DS_DOMAIN_FUNCTION_2008		3
 #define DS_DOMAIN_FUNCTION_2008_R2	4 
-
-/* "domainControllerFunctionality" in the rootDSE */
-#define DS_DC_FUNCTION_2000		0
-#define DS_DC_FUNCTION_2003		2
-#define DS_DC_FUNCTION_2008		3
-#define DS_DC_FUNCTION_2008_R2		4
 
 /* sa->systemFlags on attributes */
 #define DS_FLAG_ATTR_NOT_REPLICATED    0x00000001

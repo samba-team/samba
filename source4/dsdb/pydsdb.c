@@ -578,14 +578,4 @@ void initdsdb(void)
 					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008));
 	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008_R2",
 					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008_R2));
-
-	/* "domainControllerFunctionality" flags in the rootDSE */
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2000",
-					   PyInt_FromLong(DS_DC_FUNCTION_2000));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2003",
-					   PyInt_FromLong(DS_DC_FUNCTION_2003));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2008",
-					   PyInt_FromLong(DS_DC_FUNCTION_2008));
-	PyModule_AddObject(m, "DS_DC_FUNCTION_2008_R2",
-					   PyInt_FromLong(DS_DC_FUNCTION_2008_R2));
 }

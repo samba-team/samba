@@ -40,10 +40,6 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003_MIXED,
     DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2,
-    DS_DC_FUNCTION_2000,
-    DS_DC_FUNCTION_2003,
-    DS_DC_FUNCTION_2008,
-    DS_DC_FUNCTION_2008_R2,
     )
 
 class cmd_domainlevel(Command):
@@ -119,7 +115,7 @@ class cmd_domainlevel(Command):
                 self.message("\nATTENTION: You run SAMBA 4 on a forest function level lower than Windows 2003 (Native). This isn't supported! Please raise!")
             if level_domain < DS_DOMAIN_FUNCTION_2003:
                 self.message("\nATTENTION: You run SAMBA 4 on a domain function level lower than Windows 2003 (Native). This isn't supported! Please raise!")
-            if min_level_dc < DS_DC_FUNCTION_2003:
+            if min_level_dc < DS_DOMAIN_FUNCTION_2003:
                 self.message("\nATTENTION: You run SAMBA 4 on a lowest function level of a DC lower than Windows 2003. This isn't supported! Please step-up or upgrade the concerning DC(s)!")
 
             self.message("")
@@ -154,13 +150,13 @@ class cmd_domainlevel(Command):
                 outstr = "higher than 2008 R2"
             self.message("Domain function level: (Windows) " + outstr)
 
-            if min_level_dc == DS_DC_FUNCTION_2000:
+            if min_level_dc == DS_DOMAIN_FUNCTION_2000:
                 outstr = "2000"
-            elif min_level_dc == DS_DC_FUNCTION_2003:
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2003:
                 outstr = "2003"
-            elif min_level_dc == DS_DC_FUNCTION_2008:
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2008:
                 outstr = "2008"
-            elif min_level_dc == DS_DC_FUNCTION_2008_R2:
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2008_R2:
                 outstr = "2008 R2"
             else:
                 outstr = "higher than 2008 R2"
