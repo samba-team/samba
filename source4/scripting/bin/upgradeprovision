@@ -150,6 +150,8 @@ opts = parser.parse_args()[0]
 
 handler = logging.StreamHandler(sys.stdout)
 upgrade_logger = logging.getLogger("upgradeprovision")
+upgrade_logger.setLevel(logging.INFO)
+
 upgrade_logger.addHandler(handler)
 
 provision_logger = logging.getLogger("provision")
