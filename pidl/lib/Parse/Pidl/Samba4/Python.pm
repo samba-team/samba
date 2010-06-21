@@ -820,12 +820,39 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		$actual_ctype = $actual_ctype->{DATA};
 	}
 
-	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
-		$actual_ctype->{TYPE} eq "SCALAR" and (
-		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]*|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
+	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP") {
 		$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
 		$self->pidl("$target = PyInt_AsLong($cvar);");
 		return;
+	}
+	if ($actual_ctype->{TYPE} eq "SCALAR" ) {
+		if (expandAlias($actual_ctype->{NAME}) =~ /^(u?int64|hyper|dlong|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+			$self->pidl("if (PyObject_TypeCheck($cvar, &PyLong_Type)) {");
+			$self->indent;
+			$self->pidl("$target = PyLong_AsLongLong($cvar);");
+			$self->deindent;
+			$self->pidl("} else {");
+			$self->indent;
+			$self->pidl("if (PyObject_TypeCheck($cvar, &PyInt_Type)) {");
+			$self->indent;
+			$self->pidl("$target = PyInt_AsLong($cvar);");
+			$self->deindent;
+			$self->pidl("} else {");
+			$self->indent;
+			$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
+			$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
+			$self->pidl($fail);
+			$self->deindent;
+			$self->pidl("}");
+			$self->deindent;
+			$self->pidl("}");
+			return;
+		}
+		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t)$/) {
+			$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
+			$self->pidl("$target = PyInt_AsLong($cvar);");
+			return;
+		}
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
