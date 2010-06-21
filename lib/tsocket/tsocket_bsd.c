@@ -1663,7 +1663,7 @@ static void tstream_bsd_readv_handler(void *private_data)
 			uint8_t *base;
 			base = (uint8_t *)state->vector[0].iov_base;
 			base += ret;
-			state->vector[0].iov_base = base;
+			state->vector[0].iov_base = (void *)base;
 			state->vector[0].iov_len -= ret;
 			break;
 		}
@@ -1823,7 +1823,7 @@ static void tstream_bsd_writev_handler(void *private_data)
 			uint8_t *base;
 			base = (uint8_t *)state->vector[0].iov_base;
 			base += ret;
-			state->vector[0].iov_base = base;
+			state->vector[0].iov_base = (void *)base;
 			state->vector[0].iov_len -= ret;
 			break;
 		}
