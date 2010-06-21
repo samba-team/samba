@@ -419,7 +419,7 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->iov.iov_base = blob.data;
+	state->iov.iov_base = (void *)blob.data;
 	state->iov.iov_len = blob.length;
 
 	subreq = tstream_writev_queue_send(state, ev, ld->conn, ld->outgoing,
