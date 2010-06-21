@@ -1249,6 +1249,26 @@ static PyObject *py_ldb_modules(PyLdbObject *self)
 	return ret;
 }
 
+static PyObject *py_ldb_sequence_number(PyLdbObject *self, PyObject *args)
+{
+	struct ldb_context *ldb = PyLdb_AsLdbContext(self);
+	int type, ret;
+	uint64_t value;
+
+	/* type "int" rather than "enum" for "scope" is intentional */
+	if (!PyArg_ParseTuple(args, "i", &type))
+		return NULL;
+
+	/* FIXME: More interpretation */
+
+	ret = ldb_sequence_number(ldb, type, &value);
+
+	if (ret != LDB_SUCCESS) {
+		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb);
+		return NULL;
+	}
+	return PyLong_FromLongLong(value);
+}
 static PyMethodDef py_ldb_methods[] = {
 	{ "set_debug", (PyCFunction)py_ldb_set_debug, METH_VARARGS, 
 		"S.set_debug(callback) -> None\n"
@@ -1335,6 +1355,9 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "modules", (PyCFunction)py_ldb_modules, METH_NOARGS,
 		"S.modules() -> list\n"
 		"Return the list of modules on this LDB connection " },
+	{ "sequence_number", (PyCFunction)py_ldb_sequence_number, METH_VARARGS,
+		"S.sequence_number(type) -> value\n"
+		"Return the value of the sequence according to the requested type" },
 	{ NULL },
 };
 
@@ -2594,6 +2617,9 @@ void initldb(void)
 	if (m == NULL)
 		return;
 
+	PyModule_AddObject(m, "SEQ_HIGHEST_SEQ", PyInt_FromLong(LDB_SEQ_HIGHEST_SEQ));
+	PyModule_AddObject(m, "SEQ_HIGHEST_TIMESTAMP", PyInt_FromLong(LDB_SEQ_HIGHEST_TIMESTAMP));
+	PyModule_AddObject(m, "SEQ_NEXT", PyInt_FromLong(LDB_SEQ_NEXT));
 	PyModule_AddObject(m, "SCOPE_DEFAULT", PyInt_FromLong(LDB_SCOPE_DEFAULT));
 	PyModule_AddObject(m, "SCOPE_BASE", PyInt_FromLong(LDB_SCOPE_BASE));
 	PyModule_AddObject(m, "SCOPE_ONELEVEL", PyInt_FromLong(LDB_SCOPE_ONELEVEL));
