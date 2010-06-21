@@ -3216,6 +3216,39 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
 			SET_UINT  (msg, info21.code_page,      "codePage");
+
+		/* password change fields */
+		IFSET(SAMR_FIELD_LAST_PWD_CHANGE)
+			return NT_STATUS_ACCESS_DENIED;
+
+		IFSET((SAMR_FIELD_LM_PASSWORD_PRESENT
+					| SAMR_FIELD_NT_PASSWORD_PRESENT)) {
+			uint8_t *lm_pwd_hash = NULL, *nt_pwd_hash = NULL;
+
+			if (r->in.info->info21.lm_password_set) {
+				if ((r->in.info->info21.lm_owf_password.length != 16)
+				 || (r->in.info->info21.lm_owf_password.size != 16)) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+
+				lm_pwd_hash = (uint8_t *) r->in.info->info21.lm_owf_password.array;
+			}
+			if (r->in.info->info21.nt_password_set) {
+				if ((r->in.info->info21.nt_owf_password.length != 16)
+				 || (r->in.info->info21.nt_owf_password.size != 16)) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+
+				nt_pwd_hash = (uint8_t *) r->in.info->info21.nt_owf_password.array;
+			}
+			status = samr_set_password_buffers(dce_call,
+							   a_state->sam_ctx,
+							   a_state->account_dn,
+							   a_state->domain_state->domain_dn,
+							   mem_ctx,
+							   lm_pwd_hash,
+							   nt_pwd_hash);
+		}
 #undef IFSET
 		break;
 
