@@ -832,3 +832,72 @@ seq_num:
 
 	return status;
 }
+
+/* Get a list of trusted domains */
+NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *lsa_pipe,
+			     struct policy_handle *lsa_policy,
+			     uint32_t *pnum_trusts,
+			     struct netr_DomainTrust **ptrusts)
+{
+	struct netr_DomainTrust *array = NULL;
+	uint32_t enum_ctx = 0;
+	uint32_t count = 0;
+	NTSTATUS status;
+
+	do {
+		struct lsa_DomainList dom_list;
+		uint32_t start_idx;
+		uint32_t i;
+
+		/*
+		 * We don't run into deadlocks here, cause winbind_off() is
+		 * called in the main function.
+		 */
+		status = rpccli_lsa_EnumTrustDom(lsa_pipe,
+						 mem_ctx,
+						 lsa_policy,
+						 &enum_ctx,
+						 &dom_list,
+						 (uint32_t) -1);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+				return status;
+			}
+		}
+
+		start_idx = count;
+		count += dom_list.count;
+
+		array = talloc_realloc(mem_ctx,
+				       array,
+				       struct netr_DomainTrust,
+				       count);
+		if (array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < dom_list.count; i++) {
+			struct netr_DomainTrust *trust = &array[i];
+			struct dom_sid *sid;
+
+			ZERO_STRUCTP(trust);
+
+			trust->netbios_name = talloc_move(array,
+							  &dom_list.domains[i].name.string);
+			trust->dns_name = NULL;
+
+			sid = talloc(array, struct dom_sid);
+			if (sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			sid_copy(sid, dom_list.domains[i].sid);
+			trust->sid = sid;
+		}
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	*pnum_trusts = count;
+	*ptrusts = array;
+
+	return NT_STATUS_OK;
+}

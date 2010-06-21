@@ -124,4 +124,11 @@ NTSTATUS rpc_sequence_number(TALLOC_CTX *mem_ctx,
 			     const char *domain_name,
 			     uint32_t *pseq);
 
+/* Get a list of trusted domains */
+NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
+			     struct rpc_pipe_client *lsa_pipe,
+			     struct policy_handle *lsa_policy,
+			     uint32_t *pnum_trusts,
+			     struct netr_DomainTrust **ptrusts);
+
 #endif /* _WINBINDD_RPC_H_ */
