@@ -26,14 +26,23 @@ class UnixinfoTests(RpcInterfaceTestCase):
         super(UnixinfoTests, self).setUp()
         self.conn = unixinfo.unixinfo("ncalrpc:", self.get_loadparm())
 
-    def test_getpwuid(self):
+    def test_getpwuid_int(self):
         infos = self.conn.GetPWUid(range(512))
         self.assertEquals(512, len(infos))
         self.assertEquals("/bin/false", infos[0].shell)
         self.assertTrue(isinstance(infos[0].homedir, unicode))
 
+    def test_getpwuid(self):
+        infos = self.conn.GetPWUid(map(long, range(512)))
+        self.assertEquals(512, len(infos))
+        self.assertEquals("/bin/false", infos[0].shell)
+        self.assertTrue(isinstance(infos[0].homedir, unicode))
+
     def test_gidtosid(self):
-        self.conn.GidToSid(1000)
+        self.conn.GidToSid(1000L)
 
     def test_uidtosid(self):
         self.conn.UidToSid(1000)
+    
+    def test_uidtosid_fail(self):
+        self.assertRaises(TypeError, self.conn.UidToSid, "100")
