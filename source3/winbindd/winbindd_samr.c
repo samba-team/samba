@@ -779,9 +779,9 @@ done:
 	return status;
 }
 
-static NTSTATUS common_lockout_policy(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      struct samr_DomInfo12 *lockout_policy)
+static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   struct samr_DomInfo12 *lockout_policy)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
@@ -789,7 +789,7 @@ static NTSTATUS common_lockout_policy(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: lockout policy\n"));
+	DEBUG(3,("sam_lockout_policy\n"));
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -1021,7 +1021,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = sam_sequence_number,
-	.lockout_policy        = common_lockout_policy,
+	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = common_password_policy,
 	.trusted_domains       = builtin_trusted_domains
 };
@@ -1041,7 +1041,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = sam_sequence_number,
-	.lockout_policy        = common_lockout_policy,
+	.lockout_policy        = sam_lockout_policy,
 	.password_policy       = common_password_policy,
 	.trusted_domains       = sam_trusted_domains
 };
