@@ -554,3 +554,51 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				  NULL, NULL);
 }
 
+/*
+  set password via encrypted NT and LM hash buffers
+*/
+NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
+				   struct ldb_context *sam_ctx,
+				   struct ldb_dn *account_dn,
+				   struct ldb_dn *domain_dn,
+				   TALLOC_CTX *mem_ctx,
+				   const uint8_t *lm_pwd_hash,
+				   const uint8_t *nt_pwd_hash)
+{
+	struct samr_Password *d_lm_pwd_hash = NULL, *d_nt_pwd_hash = NULL;
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB in, out;
+	NTSTATUS nt_status = NT_STATUS_OK;
+
+	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	if (lm_pwd_hash != NULL) {
+		in = data_blob_const(lm_pwd_hash, 16);
+		out = data_blob_talloc_zero(mem_ctx, 16);
+
+		sess_crypt_blob(&out, &in, &session_key, false);
+
+		d_lm_pwd_hash = (struct samr_Password *) out.data;
+	}
+	if (nt_pwd_hash != NULL) {
+		in = data_blob_const(nt_pwd_hash, 16);
+		out = data_blob_talloc_zero(mem_ctx, 16);
+
+		sess_crypt_blob(&out, &in, &session_key, false);
+
+		d_nt_pwd_hash = (struct samr_Password *) out.data;
+	}
+
+	if ((d_lm_pwd_hash != NULL) || (d_nt_pwd_hash != NULL)) {
+		nt_status = samdb_set_password(sam_ctx, mem_ctx, account_dn,
+					       domain_dn, NULL,
+					       d_lm_pwd_hash, d_nt_pwd_hash,
+					       false, /* this is a password set */
+					       NULL, NULL);
+	}
+
+	return nt_status;
+}
