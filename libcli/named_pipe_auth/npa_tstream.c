@@ -73,7 +73,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	int ret;
 	enum ndr_err_code ndr_err;
-	char *lower_case_npipe = strlower_talloc(talloc_tos(), npipe);
+	char *lower_case_npipe = strlower_talloc(mem_ctx, npipe);
 
 	if (!lower_case_npipe) {
 		return NULL;
