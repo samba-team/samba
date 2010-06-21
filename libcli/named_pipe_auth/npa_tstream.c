@@ -420,6 +420,8 @@ int _tstream_npa_connect_recv(struct tevent_req *req,
 					struct tstream_npa,
 					location);
 	if (!stream) {
+		*perrno = ENOMEM;
+		tevent_req_received(req);
 		return -1;
 	}
 	ZERO_STRUCTP(npas);
