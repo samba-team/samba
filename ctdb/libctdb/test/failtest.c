@@ -94,6 +94,20 @@ static void cmdline_failtest_no_report(struct option *opt)
 }
 cmdline_opt("failtest-no-report", 1, 0, cmdline_failtest_no_report);
 
+/*** XML Argument:
+    <section id="a:no-failtest">
+     <title><option>--no-failtest</option></title>
+     <subtitle>Don't test failure cases</subtitle>
+
+     <para>This is the default in interactive mode.</para>
+    </section>
+*/
+static void cmdline_no_failtest(struct option *opt)
+{
+	failtest = false;
+}
+cmdline_opt("no-failtest", 0, 0, cmdline_no_failtest);
+
 /* Separate function to make .gdbinit easier */
 static bool failpath_fail(void)
 {
