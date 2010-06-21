@@ -231,56 +231,54 @@ for t in $dfsc; do
     plansmbtorturetestsuite "$t" dc $ADDARGS //\$SERVER/ipc$ -U"\$USERNAME"%"\$PASSWORD"
 done
 
-# Tests for the NET API
+# Tests for the NET API (NET-API-BECOME-DC tested below against all the roles)
 
-net=`$smb4torture --list | grep "^NET-"`
+net=`$smb4torture --list | grep "^NET-" | grep -v NET-API-BECOME-DC`
 
 for t in $net; do
     plansmbtorturetestsuite "$t" dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 done
 
-plansmbtorturetestsuite NET-API-BECOME-DC fl2000dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
-
-# Tests for session keys
+# Tests for session keys and encryption of RPC pipes
 # FIXME: Integrate these into a single smbtorture test
 
 bindoptions=""
 transport="ncacn_np"
 for ntlmoptions in \
-        "-k no --option=usespnego=yes" \
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no" \
-        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes" \
-        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no" \
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no" \
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes" \
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no" \
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
-        "-k no --option=usespnego=no --option=clientntlmv2auth=yes" \
-        "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
-        "-k no --option=usespnego=no"; do
-	name="rpc.lsa.secrets on $transport with $bindoptions with $ntlmoptions"
-   plantestsuite "$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-LSA-SECRETS "$*"
+    "-k no --option=usespnego=yes" \
+    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no" \
+    "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes" \
+    "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no" \
+    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
+    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no" \
+    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes" \
+    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no" \
+    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes" \
+    "-k no --option=usespnego=no --option=clientntlmv2auth=yes" \
+    "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
+    "-k no --option=usespnego=no"; do
+    name="rpc.lsa.secrets on $transport with $bindoptions with $ntlmoptions"
+    plantestsuite "$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-LSA-SECRETS "$*"
 done
-plantestsuite "rpc.lsa.secrets on $transport with $bindoptions with Kerberos" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
-plantestsuite "rpc.lsa.secrets on $transport with $bindoptions with Kerberos - use target principal" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
-plantestsuite "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
-plantestsuite "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
 
-# Echo tests
-transports="ncacn_np ncacn_ip_tcp ncalrpc"
+transports="ncacn_np ncacn_ip_tcp"
 
-for transport in $transports; do
- for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
-  for ntlmoptions in \
-        "--option=socket:testnonblock=True --option=torture:quick=yes"; do
-   env="dc"
-   if test x"$transport" = x"ncalrpc"; then
-      env="dc:local"
-   fi
-   plantestsuite "rpc.echo on $transport with $bindoptions and $ntlmoptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
-  done
- done
+#Kerberos varies between functional levels, so it is important to check this on all of them
+for env in dc fl2000dc fl2003dc fl2008r2dc; do
+    for transport in $transports; do
+	plantestsuite "rpc.lsa.secrets on $transport with $bindoptions with Kerberos" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
+	plantestsuite "rpc.lsa.secrets on $transport with $bindoptions with Kerberos - use target principal" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
+	plantestsuite "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
+	plantestsuite "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
+	plansmbtorturetestsuite NET-API-BECOME-DC $env "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
+	plantestsuite "rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+	
+    # Echo tests test bulk Kerberos encryption of DCE/RPC
+	for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
+	    echooptions="--option=socket:testnonblock=True --option=torture:quick=yes -k yes"
+	    plantestsuite "rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $echooptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+	done
+    done
 done
 
 for transport in $transports; do
@@ -495,11 +493,13 @@ plantestsuite "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba
 plantestsuite "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "schemaInfo.python" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 plantestsuite "urgent_replication.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
-plantestsuite "ldap_schema.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "ldap.possibleInferiors.python" dc $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "ldap.secdesc.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "ldap.acl.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "ldap.passwords.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+for env in "dc" "fl2000dc" "fl2003dc" "fl2008r2dc"; do
+    plantestsuite "ldap_schema.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "ldap.possibleInferiors.python" $env $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "ldap.secdesc.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "ldap.acl.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "ldap.passwords.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/lib/ldb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+done
 plantestsuite "upgradeprovisiondc.python" dc:local $SUBUNITRUN samba.tests.upgradeprovisionneeddc
 plantestsuite "upgradeprovisionnodc.python" none $SUBUNITRUN samba.tests.upgradeprovision
 plantestsuite "xattr.python" none $SUBUNITRUN samba.tests.xattr

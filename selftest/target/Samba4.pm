@@ -1027,6 +1027,50 @@ sub provision_fl2000dc($$)
 	return $ret;
 }
 
+sub provision_fl2003dc($$)
+{
+	my ($self, $prefix) = @_;
+
+	print "PROVISIONING DC...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "localfl2003dc6",
+				   "localfl2003dc",
+				   "SAMBA2003",
+				   "samba2003.example.com",
+				   "2003",
+				   6,
+				   "locDCpass6",
+				   "127.0.0.6", "");
+
+	$self->add_wins_config("$prefix/private") or
+		die("Unable to add wins configuration");
+
+	return $ret;
+}
+
+sub provision_fl2008r2dc($$)
+{
+	my ($self, $prefix) = @_;
+
+	print "PROVISIONING DC...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "localfl2008r2dc6",
+				   "localfl2000r2dc",
+				   "SAMBA2008R2",
+				   "samba2008R2.example.com",
+				   "2008_r2",
+				   7,
+				   "locDCpass7",
+				   "127.0.0.7", "");
+
+	$self->add_wins_config("$prefix/private") or
+		die("Unable to add wins configuration");
+
+	return $ret;
+}
+
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
@@ -1104,6 +1148,10 @@ sub setup_env($$$)
 		return $self->setup_dc("$path/dc");
 	} elsif ($envname eq "fl2000dc") {
 		return $self->setup_fl2000dc("$path/fl2000dc");
+	} elsif ($envname eq "fl2003dc") {
+		return $self->setup_fl2003dc("$path/fl2003dc");
+	} elsif ($envname eq "fl2008r2dc") {
+		return $self->setup_fl2008r2dc("$path/fl2008r2dc");
 	} elsif ($envname eq "rpc_proxy") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1143,6 +1191,26 @@ sub setup_env($$$)
 			$ret->{FL2000DC_NETBIOSALIAS} = $fl2000dc_ret->{NETBIOSALIAS};
 			$ret->{FL2000DC_USERNAME} = $fl2000dc_ret->{USERNAME};
 			$ret->{FL2000DC_PASSWORD} = $fl2000dc_ret->{PASSWORD};
+		}
+		if (not defined($self->{vars}->{fl2003dc})) {
+			my $fl2003dc_ret = $self->setup_fl2003dc("$path/fl2003dc", $self->{vars}->{dc});
+
+			$ret->{FL2003DC_SERVER} = $fl2003dc_ret->{SERVER};
+			$ret->{FL2003DC_SERVER_IP} = $fl2003dc_ret->{SERVER_IP};
+			$ret->{FL2003DC_NETBIOSNAME} = $fl2003dc_ret->{NETBIOSNAME};
+			$ret->{FL2003DC_NETBIOSALIAS} = $fl2003dc_ret->{NETBIOSALIAS};
+			$ret->{FL2003DC_USERNAME} = $fl2003dc_ret->{USERNAME};
+			$ret->{FL2003DC_PASSWORD} = $fl2003dc_ret->{PASSWORD};
+		}
+		if (not defined($self->{vars}->{fl2008r2dc})) {
+			my $fl2008r2dc_ret = $self->setup_fl2008r2dc("$path/fl2008r2dc", $self->{vars}->{dc});
+
+			$ret->{FL2008R2DC_SERVER} = $fl2008r2dc_ret->{SERVER};
+			$ret->{FL2008R2DC_SERVER_IP} = $fl2008r2dc_ret->{SERVER_IP};
+			$ret->{FL2008R2DC_NETBIOSNAME} = $fl2008r2dc_ret->{NETBIOSNAME};
+			$ret->{FL2008R2DC_NETBIOSALIAS} = $fl2008r2dc_ret->{NETBIOSALIAS};
+			$ret->{FL2008R2DC_USERNAME} = $fl2008r2dc_ret->{USERNAME};
+			$ret->{FL2008R2DC_PASSWORD} = $fl2008r2dc_ret->{PASSWORD};
 		}
 		return $ret;
 	} else {
@@ -1208,6 +1276,38 @@ sub setup_fl2000dc($$)
 	$self->wait_for_start($env);
 
 	$self->{vars}->{fl2000dc} = $env;
+
+	return $env;
+}
+
+sub setup_fl2003dc($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_fl2003dc($path);
+
+	$self->check_or_start($env,
+		($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{fl2003dc} = $env;
+
+	return $env;
+}
+
+sub setup_fl2008r2dc($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_fl2008r2dc($path);
+
+	$self->check_or_start($env,
+		($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{fl2008r2dc} = $env;
 
 	return $env;
 }
