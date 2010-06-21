@@ -2655,13 +2655,12 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
 
 	p_ctrl = talloc(req, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {
-		talloc_free(res);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	p_ctrl->dn = dn;
 	
-
 	ret = ldb_request_add_control(req,
 				      DSDB_CONTROL_CURRENT_PARTITION_OID,
 				      false, p_ctrl);
