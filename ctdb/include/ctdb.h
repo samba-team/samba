@@ -475,6 +475,7 @@ void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db);
 
 /**
  * ctdb_readrecordlock - read and lock a record (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
  * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
  * @key: the key of the record to lock.
  * @req: a pointer to the request, if one is needed.
@@ -482,7 +483,8 @@ void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db);
  * Do a ctdb_readrecordlock_send and wait for it to complete.
  * Returns NULL on failure.
  */
-struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
+struct ctdb_lock *ctdb_readrecordlock(struct ctdb_connection *ctdb,
+				      struct ctdb_db *ctdb_db, TDB_DATA key,
 				      TDB_DATA *data);
 
 

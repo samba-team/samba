@@ -794,6 +794,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 		/* Now it's their responsibility to free lock & request! */
 		req->extra_destructor = NULL;
 		lock->callback(lock->ctdb_db, lock, data, private);
+		ctdb_request_free(ctdb, req);
 		return;
 	}
 
