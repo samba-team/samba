@@ -251,7 +251,7 @@ static char *get_cmdline_optstr(void)
 static int ctdb_test_poll(struct pollfd *fds, nfds_t nfds, int timeout,
 			  const char *location)
 {
-	if (should_i_fail("poll")) {
+	if (should_i_fail("poll", location)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -260,7 +260,7 @@ static int ctdb_test_poll(struct pollfd *fds, nfds_t nfds, int timeout,
 
 static void *ctdb_test_malloc(size_t size, const char *location)
 {
-	if (should_i_fail("malloc")) {
+	if (should_i_fail("malloc", location)) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -274,7 +274,7 @@ static void ctdb_test_free(void *ptr, const char *location)
 
 static void *ctdb_test_realloc(void *ptr, size_t size, const char *location)
 {
-	if (should_i_fail("realloc")) {
+	if (should_i_fail("realloc", location)) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -288,7 +288,7 @@ static void *ctdb_test_realloc(void *ptr, size_t size, const char *location)
 static ssize_t ctdb_test_read(int fd, void *buf, size_t count,
 			      const char *location)
 {
-	if (should_i_fail("read")) {
+	if (should_i_fail("read", location)) {
 		errno = EBADF;
 		return -1;
 	}
@@ -305,7 +305,7 @@ static ssize_t ctdb_test_read(int fd, void *buf, size_t count,
 static ssize_t ctdb_test_write(int fd, const void *buf, size_t count,
 			       const char *location)
 {
-	if (should_i_fail("write")) {
+	if (should_i_fail("write", location)) {
 		errno = EBADF;
 		return -1;
 	}
@@ -323,7 +323,7 @@ static ssize_t ctdb_test_write(int fd, const void *buf, size_t count,
 static int ctdb_test_socket(int domain, int type, int protocol,
 			    const char *location)
 {
-	if (should_i_fail("socket")) {
+	if (should_i_fail("socket", location)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -333,7 +333,7 @@ static int ctdb_test_socket(int domain, int type, int protocol,
 static int ctdb_test_connect(int sockfd, const struct sockaddr *addr,
 			     socklen_t addrlen, const char *location)
 {
-	if (should_i_fail("connect")) {
+	if (should_i_fail("connect", location)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -347,7 +347,7 @@ static struct tdb_context *ctdb_test_tdb_open_ex(const char *name,
 						 tdb_hash_func hash_fn,
 						 const char *location)
 {
-	if (should_i_fail("tdb_open_ex")) {
+	if (should_i_fail("tdb_open_ex", location)) {
 		errno = ENOENT;
 		return NULL;
 	}

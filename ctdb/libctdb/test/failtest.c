@@ -199,11 +199,23 @@ bool am_parent(void)
 	return true;
 }
 
+static char *make_location(const char *func, const char *caller)
+{
+	const char *afterslash;
+
+	afterslash = strrchr(caller, '/');
+	if (afterslash)
+		afterslash++;
+	else
+		afterslash = caller;
+	return talloc_asprintf(working, "%s(%s)", func, afterslash);
+}
+
 /* Should I fail at this point?  Once only: it would be too expensive
  * to fail at every possible call. */
-bool should_i_fail_once(const char *location)
+bool should_i_fail_once(const char *func, const char *caller)
 {
-	char *p;
+	char *p, *location = make_location(func, caller);
 	struct fail_decision *i;
 
 	if (failpath) {
@@ -219,7 +231,7 @@ bool should_i_fail_once(const char *location)
 		if (streq(location, i->location))
 			return false;
 
-	if (should_i_fail(location)) {
+	if (should_i_fail(func, caller)) {
 		excessive_fails++;
 		return true;
 	}
@@ -227,16 +239,17 @@ bool should_i_fail_once(const char *location)
 }
 
 /* Should I fail at this point? */
-bool should_i_fail(const char *func)
+bool should_i_fail(const char *func, const char *caller)
 {
 	pid_t child;
 	int status, pfd[2];
 	struct fail_decision *dec;
 	size_t log_size;
 	char *log;
+	char *location = make_location(func, caller);
 
 	if (failpath)
-		return do_failpath(func);
+		return do_failpath(location);
 
 	failpoints++;
 	if (!failtest)
@@ -251,7 +264,7 @@ bool should_i_fail(const char *func)
 	}
 
 	dec = talloc(NULL, struct fail_decision);
-	dec->location = talloc_strdup(dec, func);
+	dec->location = talloc_steal(dec, location);
 	dec->tui_line = tui_linenum;
 
 	DLIST_ADD_END(decisions, dec, struct fail_decision);

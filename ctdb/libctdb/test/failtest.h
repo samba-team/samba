@@ -2,8 +2,8 @@
 #define FAILTEST_H
 #include <stdbool.h>
 
-bool should_i_fail_once(const char *location);
-bool should_i_fail(const char *func);
+bool should_i_fail_once(const char *func, const char *caller);
+bool should_i_fail(const char *func, const char *caller);
 
 bool failtest;
 
