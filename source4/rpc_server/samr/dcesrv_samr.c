@@ -3287,6 +3287,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_CODE_PAGE)
 			SET_UINT  (msg, info23.info.code_page,      "codePage");
 
+		/* password change fields */
+		IFSET(SAMR_FIELD_LAST_PWD_CHANGE)
+			return NT_STATUS_ACCESS_DENIED;
+
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
 						   a_state->sam_ctx,
@@ -3349,6 +3353,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_UINT  (msg, info25.info.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
 			SET_UINT  (msg, info25.info.code_page,      "codePage");
+
+		/* password change fields */
+		IFSET(SAMR_FIELD_LAST_PWD_CHANGE)
+			return NT_STATUS_ACCESS_DENIED;
 
 		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
