@@ -1208,8 +1208,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 	uint32_t sec_info;
 	DATA_BLOB blob;
 	struct security_descriptor sec_desc;
-	uint32_t access_mask = REG_KEY_READ |
-			       SEC_FLAG_MAXIMUM_ALLOWED |
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED |
 			       SEC_FLAG_SYSTEM_SECURITY;
 
 	if (argc <1 || argc > 2 || c->display_usage) {
