@@ -395,8 +395,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	uint32_t ntlmssp_command, chal_flags;
 	uint8_t cryptkey[8];
 	const char *target_name;
-	struct NEGOTIATE_MESSAGE negotiate;
-	struct CHALLENGE_MESSAGE challenge;
 	NTSTATUS status;
 
 	/* parse the NTLMSSP packet */
@@ -417,11 +415,16 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		debug_ntlmssp_flags(neg_flags);
 
 		if (DEBUGLEVEL >= 10) {
-			if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(&request,
-						       ntlmssp_state,
-						       &negotiate)))
-			{
-				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
+			struct NEGOTIATE_MESSAGE *negotiate = talloc(
+				talloc_tos(), struct NEGOTIATE_MESSAGE);
+			if (negotiate != NULL) {
+				status = ntlmssp_pull_NEGOTIATE_MESSAGE(
+					&request, negotiate, negotiate);
+				if (NT_STATUS_IS_OK(status)) {
+					NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
+							negotiate);
+				}
+				TALLOC_FREE(negotiate);
 			}
 		}
 	}
@@ -514,11 +517,17 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		data_blob_free(&version_blob);
 
 		if (DEBUGLEVEL >= 10) {
-			if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(reply,
-						       ntlmssp_state,
-						       &challenge)))
-			{
-				NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
+			struct CHALLENGE_MESSAGE *challenge = talloc(
+				talloc_tos(), struct CHALLENGE_MESSAGE);
+			if (challenge != NULL) {
+				challenge->NegotiateFlags = chal_flags;
+				status = ntlmssp_pull_CHALLENGE_MESSAGE(
+					reply, challenge, challenge);
+				if (NT_STATUS_IS_OK(status)) {
+					NDR_PRINT_DEBUG(CHALLENGE_MESSAGE,
+							challenge);
+				}
+				TALLOC_FREE(challenge);
 			}
 		}
 	}
@@ -548,7 +557,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB session_key = data_blob_null;
 	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct AUTHENTICATE_MESSAGE authenticate;
 
 	/* used by NTLM2 */
 	bool doing_ntlm2 = False;
@@ -617,11 +625,18 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
 
 	if (DEBUGLEVEL >= 10) {
-		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(&request,
-						  ntlmssp_state,
-						  &authenticate)))
-		{
-			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);
+		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
+			talloc_tos(), struct AUTHENTICATE_MESSAGE);
+		if (authenticate != NULL) {
+			NTSTATUS status;
+			authenticate->NegotiateFlags = auth_flags;
+			status = ntlmssp_pull_AUTHENTICATE_MESSAGE(
+				&request, authenticate, authenticate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE,
+						authenticate);
+			}
+			TALLOC_FREE(authenticate);
 		}
 	}
 
