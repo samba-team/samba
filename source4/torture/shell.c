@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "torture/smbtorture.h"
+#include "param/param.h"
 
 struct shell_command;
 
