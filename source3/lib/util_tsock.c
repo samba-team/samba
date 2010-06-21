@@ -51,7 +51,7 @@ struct tevent_req *tstream_read_packet_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->buf, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->iov.iov_base = state->buf;
+	state->iov.iov_base = (void *)state->buf;
 	state->iov.iov_len = initial;
 
 	state->ev = ev;
@@ -114,7 +114,7 @@ static void tstream_read_packet_done(struct tevent_req *subreq)
 	}
 	state->buf = tmp;
 
-	state->iov.iov_base = state->buf + total;
+	state->iov.iov_base = (void *)(state->buf + total);
 	state->iov.iov_len = more;
 
 	subreq = tstream_readv_send(state, state->ev, state->stream,
