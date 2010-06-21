@@ -44,5 +44,4 @@ bool log_line(enum log_type type, const char *format, ...);
 /* Builds up buffer and prints out line at a time. */
 void log_partial(enum log_type type, char *buf, unsigned bufsize,
 		 const char *format, ...);
-
 #endif /* __HAVE_LOG_H */

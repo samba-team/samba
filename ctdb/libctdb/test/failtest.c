@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "tui.h"
 #include "log.h"
 #include "failtest.h"
+#include "ctdb-test.h"
 #include "talloc.h"
 #include "dlinklist.h"
 #include <stdlib.h>
@@ -229,8 +230,10 @@ bool should_i_fail_once(const char *location)
 bool should_i_fail(const char *func)
 {
 	pid_t child;
-	int status;
+	int status, pfd[2];
 	struct fail_decision *dec;
+	size_t log_size;
+	char *log;
 
 	if (failpath)
 		return do_failpath(func);
@@ -253,6 +256,9 @@ bool should_i_fail(const char *func)
 
 	DLIST_ADD_END(decisions, dec, struct fail_decision);
 
+	if (pipe(pfd) != 0)
+		err(1, "pipe failed for failtest!");
+
 	fflush(stdout);
 	child = fork();
 	if (child == -1)
@@ -261,6 +267,10 @@ bool should_i_fail(const char *func)
 	/* The child actually fails.  The script will screw up at this
 	 * point, but should not crash. */
 	if (child == 0) {
+		/* Log to parent (including stderr if things go really bad). */
+		close(pfd[0]);
+		dup2(pfd[1], STDOUT_FILENO);
+		dup2(pfd[1], STDERR_FILENO);
 		dec->failed = true;
 		if (!failtest_no_report || !strstr(func, failtest_no_report))
 			fails++;
@@ -268,6 +278,10 @@ bool should_i_fail(const char *func)
 	}
 
 	dec->failed = false;
+
+	close(pfd[1]);
+	log = grab_fd(pfd[0], &log_size);
+
 	while (waitpid(child, &status, 0) < 0) {
 		if (errno != EINTR)
 			err(1, "failtest waitpid failed for child %i",
@@ -276,19 +290,20 @@ bool should_i_fail(const char *func)
 
 	/* If child succeeded, or mere script failure, continue. */
 	if (WIFEXITED(status) && (WEXITSTATUS(status) == EXIT_SUCCESS
-				  || WEXITSTATUS(status) == EXIT_SCRIPTFAIL))
+				  || WEXITSTATUS(status) == EXIT_SCRIPTFAIL)) {
+		talloc_free(log);
 		return false;
-
-	/* Report unless child already reported it. */
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_SILENT) {
-		/* Reproduce child's path */
-		dec->failed = true;
-		log_line(LOG_ALWAYS, "Child %s %i on failure path: %s",
-			 WIFEXITED(status) ? "exited" : "signalled",
-			 WIFEXITED(status) ? WEXITSTATUS(status)
-			 : WTERMSIG(status), failpath_string());
 	}
-	exit(EXIT_SILENT);
+
+	/* Reproduce child's path */
+	dec->failed = true;
+
+	log_line(LOG_ALWAYS, "Child %s %i on failure path: %s",
+		 WIFEXITED(status) ? "exited" : "signalled",
+		 WIFEXITED(status) ? WEXITSTATUS(status)
+		 : WTERMSIG(status), failpath_string());
+	log_line(LOG_ALWAYS, "Child output:\n%s", log);
+	exit(EXIT_FAILURE);
 }
 
 void dump_failinfo(void)

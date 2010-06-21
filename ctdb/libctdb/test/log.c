@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "expect.h"
 #include <string.h>
 #include <talloc.h>
+#include <err.h>
 
 static struct {
 	enum log_type	type;
@@ -37,7 +38,6 @@ static struct {
 	{ LOG_VERBOSE,	"verbose" },
 };
 
-static FILE *logstream;
 static int typemask = ~LOG_VERBOSE;
 
 bool log_line(enum log_type type, const char *format, ...)
@@ -50,8 +50,10 @@ bool log_line(enum log_type type, const char *format, ...)
 	line = talloc_vasprintf(NULL, format, ap);
 	va_end(ap);
 
-	if (!type || (type & typemask))
-		fprintf(logstream ?: stderr, "%s\n", line);
+	if (!type || (type & typemask)) {
+		printf("%s\n", line);
+		fflush(stdout);
+	}
 
 	ret = expect_log_hook(line);
 	talloc_free(line);
@@ -69,8 +71,9 @@ static void log_partial_v(enum log_type type,
 
 	/* write to the end of buffer */
 	if (vsnprintf(buf + len, bufsize - len - 1, format, ap)
-			> bufsize - len - 1)
-		log_line(LOG_ALWAYS, "log_line_partial buffer is full!");
+	    > bufsize - len - 1) {
+		errx(1, "log_line_partial buffer is full!");
+	}
 
 	ptr = buf;
 
@@ -222,7 +225,6 @@ static void log_admin_help(int agc, char **argv)
 
 static void log_init(void)
 {
-	logstream = stdout;
 	if (tui_quiet)
 		typemask = 0;
 	tui_register_command("log", log_admin, log_admin_help);

@@ -56,7 +56,6 @@ static inline bool strends(const char *a, const char *b)
 enum exitcodes {
 	/* EXIT_SUCCESS, EXIT_FAILURE is in stdlib.h */
 	EXIT_SCRIPTFAIL = EXIT_FAILURE + 1,
-	EXIT_SILENT,
 };
 
 /* init code */
