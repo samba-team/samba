@@ -261,6 +261,7 @@ bool should_i_fail(const char *func, const char *caller)
 	size_t log_size;
 	char *log;
 	char *location = make_location(func, caller);
+	void *databases;
 
 	if (failpath)
 		return do_failpath(location);
@@ -285,6 +286,8 @@ bool should_i_fail(const char *func, const char *caller)
 
 	if (pipe(pfd) != 0)
 		err(1, "pipe failed for failtest!");
+
+	databases = save_databases();
 
 	fflush(stdout);
 	child = fork();
@@ -319,10 +322,11 @@ bool should_i_fail(const char *func, const char *caller)
 	if (WIFEXITED(status) && (WEXITSTATUS(status) == EXIT_SUCCESS
 				  || WEXITSTATUS(status) == EXIT_SCRIPTFAIL)) {
 		talloc_free(log);
+		restore_databases(databases);
 		return false;
 	}
 
-	/* Reproduce child's path */
+	/* Reproduce child's path: leave databases for post-mortem. */
 	dec->failed = true;
 
 	log_line(LOG_ALWAYS, "Child %s %i on failure path: %s",

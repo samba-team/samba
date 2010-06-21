@@ -16,4 +16,11 @@ struct ctdb_connection *get_ctdb(void);
 /* Talloc bytes from an fd until EOF.  Nul terminate. */
 void *grab_fd(int fd, size_t *size);
 
+/* Check the databases are still ok. */
+void check_databases(void);
+
+/* Save and restore databases, in case children do damage. */
+void *save_databases(void);
+void restore_databases(void *);
+
 #endif /* __HAVE_CTDB_TEST_H */

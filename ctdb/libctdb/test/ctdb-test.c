@@ -447,6 +447,7 @@ int main(int argc, char *argv[])
 		     "unfulfilled remaining. / "
 		     "Testing blossoms fail.");
 	check_allocations();
+	check_databases();
 	dump_failinfo();
 
 	return EXIT_SUCCESS;

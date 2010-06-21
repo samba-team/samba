@@ -196,6 +196,7 @@ void script_fail(const char *fmt, ...)
 	talloc_free(str);
 
 	check_allocations();
+	check_databases();
 	exit(EXIT_SCRIPTFAIL);
 }
 
