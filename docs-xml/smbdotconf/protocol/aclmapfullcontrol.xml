@@ -6,7 +6,7 @@
 <description>
     <para>
 	This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry>maps a POSIX ACE entry of "rwx" (read/write/execute), the maximum
+	<manvolnum>8</manvolnum></citerefentry> maps a POSIX ACE entry of "rwx" (read/write/execute), the maximum
 	allowed POSIX permission set, into a Windows ACL of "FULL CONTROL". If this parameter is set to true any POSIX
 	ACE entry of "rwx" will be returned in a Windows ACL as "FULL CONTROL", is this parameter is set to false any
 	POSIX ACE entry of "rwx" will be returned as the specific Windows ACL bits representing read, write and
