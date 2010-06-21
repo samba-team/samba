@@ -964,73 +964,45 @@ done:
 }
 
 /* find the sequence number for a domain */
-static NTSTATUS common_sequence_number(struct winbindd_domain *domain,
-				       uint32_t *seq)
+static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
+				    uint32_t *pseq)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	union samr_DomainInfo *info = NULL;
-	bool got_seq_num = false;
-	TALLOC_CTX *mem_ctx;
+	uint32_t seq;
+	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
 	DEBUG(3,("samr: sequence number\n"));
 
-	mem_ctx = talloc_init("common_sequence_number");
-	if (mem_ctx == NULL) {
+	if (pseq) {
+		*pseq = DOM_SEQUENCE_NONE;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (seq) {
-		*seq = DOM_SEQUENCE_NONE;
-	}
-
-	status = open_internal_samr_conn(mem_ctx, domain, &samr_pipe, &dom_pol);
+	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
+		goto done;
 	}
 
-	/* query domain info */
-	status = rpccli_samr_QueryDomainInfo(samr_pipe,
-					     mem_ctx,
-					     &dom_pol,
-					     8,
-					     &info);
-	if (NT_STATUS_IS_OK(status)) {
-		if (seq) {
-			*seq = info->info8.sequence_num;
-			got_seq_num = true;
-		}
-		goto seq_num;
+	status = rpc_sequence_number(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     domain->name,
+				     &seq);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	/* retry with info-level 2 in case the dc does not support info-level 8
-	 * (like all older samba2 and samba3 dc's) - Guenther */
-	status = rpccli_samr_QueryDomainInfo(samr_pipe,
-					     mem_ctx,
-					     &dom_pol,
-					     2,
-					     &info);
-	if (NT_STATUS_IS_OK(status)) {
-		if (seq) {
-			*seq = info->general.sequence_num;
-			got_seq_num = true;
-		}
+	if (pseq) {
+		*pseq = seq;
 	}
-
-seq_num:
-	if (got_seq_num) {
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n",
-			  domain->name, (unsigned)*seq));
-	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence "
-			  "number (%u) for domain %s\n",
-			  (unsigned) *seq, domain->name ));
-		status = NT_STATUS_OK;
-	}
-
-error:
-	talloc_destroy(mem_ctx);
+done:
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
@@ -1048,7 +1020,7 @@ struct winbindd_methods builtin_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
-	.sequence_number       = common_sequence_number,
+	.sequence_number       = sam_sequence_number,
 	.lockout_policy        = common_lockout_policy,
 	.password_policy       = common_password_policy,
 	.trusted_domains       = builtin_trusted_domains
@@ -1068,7 +1040,7 @@ struct winbindd_methods sam_passdb_methods = {
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
-	.sequence_number       = common_sequence_number,
+	.sequence_number       = sam_sequence_number,
 	.lockout_policy        = common_lockout_policy,
 	.password_policy       = common_password_policy,
 	.trusted_domains       = sam_trusted_domains
