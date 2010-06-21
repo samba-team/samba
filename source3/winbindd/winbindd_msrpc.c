@@ -890,70 +890,49 @@ done:
 }
 
 /* get a list of trusted domains */
-static NTSTATUS trusted_domains(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				struct netr_DomainTrustList *trusts)
+static NTSTATUS msrpc_trusted_domains(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      struct netr_DomainTrustList *ptrust_list)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 enum_ctx = 0;
-	struct rpc_pipe_client *cli;
+	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy;
+	struct netr_DomainTrust *trusts = NULL;
+	uint32_t num_trusts = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
-	DEBUG(3,("rpc: trusted_domains\n"));
+	DEBUG(3,("samr: trusted domains\n"));
 
-	ZERO_STRUCTP(trusts);
-
-	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	result = STATUS_MORE_ENTRIES;
-
-	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-		uint32 start_idx;
-		int i;
-		struct lsa_DomainList dom_list;
-
-		result = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
-						 &lsa_policy,
-						 &enum_ctx,
-						 &dom_list,
-						 (uint32_t)-1);
-
-		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
-			break;
-
-		start_idx = trusts->count;
-		trusts->count += dom_list.count;
-
-		trusts->array = talloc_realloc(
-			mem_ctx, trusts->array, struct netr_DomainTrust,
-			trusts->count);
-		if (trusts->array == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		for (i=0; i<dom_list.count; i++) {
-			struct netr_DomainTrust *trust = &trusts->array[i];
-			struct dom_sid *sid;
-
-			ZERO_STRUCTP(trust);
-
-			trust->netbios_name = talloc_move(
-				trusts->array,
-				&dom_list.domains[i].name.string);
-			trust->dns_name = NULL;
-
-			sid = talloc(trusts->array, struct dom_sid);
-			if (sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			sid_copy(sid, dom_list.domains[i].sid);
-			trust->sid = sid;
-		}
+	if (ptrust_list) {
+		ZERO_STRUCTP(ptrust_list);
 	}
-	return result;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cm_connect_lsa(domain, tmp_ctx, &lsa_pipe, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status))
+		return status;
+
+	status = rpc_trusted_domains(tmp_ctx,
+				     lsa_pipe,
+				     &lsa_policy,
+				     &num_trusts,
+				     &trusts);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (ptrust_list) {
+		ptrust_list->count = num_trusts;
+		ptrust_list->array = talloc_move(mem_ctx, &trusts);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* find the lockout policy for a domain */
@@ -1185,5 +1164,5 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_sequence_number,
 	msrpc_lockout_policy,
 	msrpc_password_policy,
-	trusted_domains,
+	msrpc_trusted_domains,
 };
