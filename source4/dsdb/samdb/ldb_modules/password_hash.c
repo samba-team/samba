@@ -1494,16 +1494,6 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 		} else if (io->og.lm_hash) {
-			struct loadparm_context *lp_ctx =
-				(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
-
-			if (!lp_lanman_auth(lp_ctx)) {
-				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
-					"The password change through the LM hash is deactivated!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-
 			if (!io->o.lm_hash) {
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
@@ -1640,6 +1630,8 @@ static int setup_io(struct ph_context *ac,
 { 
 	const struct ldb_val *quoted_utf16, *old_quoted_utf16, *lm_hash, *old_lm_hash;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct loadparm_context *lp_ctx =
+		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 	int ret;
 
 	ZERO_STRUCTP(io);
@@ -1845,13 +1837,13 @@ static int setup_io(struct ph_context *ac,
 			"it's not allowed to set the LM hash password directly'");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	if (lm_hash != NULL) {
+
+	if (lp_lanman_auth(lp_ctx) && (lm_hash != NULL)) {
 		io->n.lm_hash = talloc(io->ac, struct samr_Password);
 		memcpy(io->n.lm_hash->hash, lm_hash->data, MIN(lm_hash->length,
 		       sizeof(io->n.lm_hash->hash)));
 	}
-
-	if (old_lm_hash != NULL) {
+	if (lp_lanman_auth(lp_ctx) && (old_lm_hash != NULL)) {
 		io->og.lm_hash = talloc(io->ac, struct samr_Password);
 		memcpy(io->og.lm_hash->hash, old_lm_hash->data, MIN(old_lm_hash->length,
 		       sizeof(io->og.lm_hash->hash)));
@@ -1873,6 +1865,17 @@ static int setup_io(struct ph_context *ac,
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
 			"it's only allowed to set the cleartext password as 'unicodePwd' or as 'userPassword' or as 'clearTextPassword'");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* refuse the change if someone tries to set/change the password by
+	 * the lanman hash alone and we've deactivated that mechanism. This
+	 * would end in an account without any password! */
+	if ((!io->n.cleartext_utf8) && (!io->n.cleartext_utf16)
+	    && (!io->n.nt_hash) && (!io->n.lm_hash)) {
+		ldb_asprintf_errstring(ldb,
+			"setup_io: "
+			"The password change/set operations performed using the LAN Manager hash alone are deactivated!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
