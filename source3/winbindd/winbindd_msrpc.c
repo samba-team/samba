@@ -809,44 +809,54 @@ static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 #endif /* HAVE_LDAP */
 
 /* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
+static NTSTATUS msrpc_sequence_number(struct winbindd_domain *domain,
+				      uint32_t *pseq)
 {
-	TALLOC_CTX *mem_ctx;
-	union samr_DomainInfo *info = NULL;
-	NTSTATUS result;
+	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	bool got_seq_num = False;
-	struct rpc_pipe_client *cli;
+	uint32_t seq;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
 	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
+
+	if (pseq) {
+		*pseq = DOM_SEQUENCE_NONE;
+	}
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("sequence_number: No incoming trust for domain %s\n",
 			  domain->name));
-		*seq = time(NULL);
-		return NT_STATUS_OK;
+		if (pseq) {
+			*pseq = time(NULL);
+		}
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
-	*seq = DOM_SEQUENCE_NONE;
-
-	if (!(mem_ctx = talloc_init("sequence_number[rpc]")))
-		return NT_STATUS_NO_MEMORY;
-
 #ifdef HAVE_LDAP
-	if ( domain->active_directory ) 
-	{
-		int res;
+	if (domain->active_directory) {
+		int rc;
 
 		DEBUG(8,("using get_ldap_seq() to retrieve the "
 			 "sequence number\n"));
 
-		res =  get_ldap_sequence_number( domain, seq );
-		if (res == 0)
-		{			
-			result = NT_STATUS_OK;
+		rc =  get_ldap_sequence_number(domain, &seq);
+		if (rc == 0) {
 			DEBUG(10,("domain_sequence_number: LDAP for "
 				  "domain %s is %u\n",
-				  domain->name, *seq));
+				  domain->name, seq));
+
+			if (pseq) {
+				*pseq = seq;
+			}
+
+			status = NT_STATUS_OK;
 			goto done;
 		}
 
@@ -856,52 +866,27 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	}
 #endif /* HAVE_LDAP */
 
-	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result)) {
+	status = cm_connect_sam(domain, tmp_ctx, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	/* Query domain info */
-
-	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
-					     &dom_pol,
-					     8,
-					     &info);
-
-	if (NT_STATUS_IS_OK(result)) {
-		*seq = info->info8.sequence_num;
-		got_seq_num = True;
-		goto seq_num;
+	status = rpc_sequence_number(tmp_ctx,
+				     samr_pipe,
+				     &dom_pol,
+				     domain->name,
+				     &seq);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	/* retry with info-level 2 in case the dc does not support info-level 8
-	 * (like all older samba2 and samba3 dc's) - Guenther */
-
-	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
-					     &dom_pol,
-					     2,
-					     &info);
-
-	if (NT_STATUS_IS_OK(result)) {
-		*seq = info->general.sequence_num;
-		got_seq_num = True;
+	if (pseq) {
+		*pseq = seq;
 	}
 
- seq_num:
-	if (got_seq_num) {
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n",
-			  domain->name, (unsigned)*seq));
-	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence "
-			  "number (%u) for domain %s\n",
-			  (unsigned)*seq, domain->name ));
-	}
-
-  done:
-
-	talloc_destroy(mem_ctx);
-
-	return result;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* get a list of trusted domains */
@@ -1197,7 +1182,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
-	sequence_number,
+	msrpc_sequence_number,
 	msrpc_lockout_policy,
 	msrpc_password_policy,
 	trusted_domains,
