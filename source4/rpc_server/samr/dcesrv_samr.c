@@ -3176,6 +3176,18 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 						   mem_ctx,
 						   r->in.info->info18.lm_pwd_active ? r->in.info->info18.lm_pwd.hash : NULL,
 						   r->in.info->info18.nt_pwd_active ? r->in.info->info18.nt_pwd.hash : NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (r->in.info->info18.password_expired > 0) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 		break;
 
 	case 20:
@@ -3251,6 +3263,18 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 							   mem_ctx,
 							   lm_pwd_hash,
 							   nt_pwd_hash);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+
+		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
 		}
 #undef IFSET
 		break;
@@ -3312,6 +3336,18 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 						   mem_ctx,
 						   &r->in.info->info23.password);
 		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 #undef IFSET
 		break;
 
@@ -3323,6 +3359,18 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 					   a_state->domain_state->domain_dn,
 					   mem_ctx,
 					   &r->in.info->info24.password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (r->in.info->info24.password_expired > 0) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 		break;
 
 	case 25:
@@ -3382,6 +3430,18 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 						      mem_ctx,
 						      &r->in.info->info25.password);
 		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 #undef IFSET
 		break;
 
@@ -3393,8 +3453,19 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 					      a_state->domain_state->domain_dn,
 					      mem_ctx,
 					      &r->in.info->info26.password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (r->in.info->info26.password_expired > 0) {
+			struct ldb_message_element *set_el;
+			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, "pwdLastSet", 0) != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			set_el = ldb_msg_find_element(msg, "pwdLastSet");
+			set_el->flags = LDB_FLAG_MOD_REPLACE;
+		}
 		break;
-		
 
 	default:
 		/* many info classes are not valid for SetUserInfo */
