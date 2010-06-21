@@ -323,6 +323,38 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		}
 	}
 				
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg->dn = res->msgs[0]->dn;
+
+	rtn = ldb_msg_add_fmt(msg, "msDS-SupportedEncryptionTypes",
+			      "%lu",
+			      (long unsigned int)(ENC_CRC32 | ENC_RSA_MD5 |
+						  ENC_RC4_HMAC_MD5 |
+						  ENC_HMAC_SHA1_96_AES128 |
+						  ENC_HMAC_SHA1_96_AES256));
+	if (rtn == -1) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rtn = dsdb_replace(remote_ldb, msg, 0);
+	/* The remote server may not support this attribute, if it
+	 * isn't a modern schema */
+	if (rtn != 0 && rtn != LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		r->out.error_string
+			= talloc_asprintf(r,
+					  "Failed to replace msDS-SupportedEncryptionType on %s",
+					  ldb_dn_get_linearized(msg->dn));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	/* DsCrackNames to find out the DN of the domain. */
 	r_crack_names.in.req->req1.format_offered = DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r_crack_names.in.req->req1.format_desired = DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
