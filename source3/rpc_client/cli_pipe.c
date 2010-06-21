@@ -1238,8 +1238,6 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, cli_api_pipe_write_done, req);
 	return req;
 
-	status = NT_STATUS_INVALID_PARAMETER;
-
  post_status:
 	tevent_req_nterror(req, status);
 	return tevent_req_post(req, ev);
