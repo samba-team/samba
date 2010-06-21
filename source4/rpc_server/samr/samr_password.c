@@ -184,7 +184,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	/* this call can only work with lanman auth */
 	if (!lp_lanman_auth(dce_call->conn->dce_ctx->lp_ctx)) {
-		return NT_STATUS_NOT_SUPPORTED;
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* To change a password we need to open as system */
