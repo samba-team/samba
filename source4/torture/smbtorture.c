@@ -639,29 +639,29 @@ int main(int argc,char *argv[])
 
 	gensec_init(cmdline_lp_ctx);
 
-	// At this point, we should just have a target string,
-	// followed by a series of test names. Unless we are in
-	// shell mode, in which case we don't need anythig more.
+	if (shell) {
+		/* In shell mode, just ignore any remaining test names. */
+		torture_shell(torture);
+	} else {
 
-	if (argc_new > 1) {
-		// Take the target name or binding.
+		/* At this point, we should just have a target string,
+		 * followed by a series of test names. Unless we are in
+		 * shell mode, in which case we don't need anythig more.
+		 */
+
+		if (argc_new < 3) {
+			printf("You must specify a test to run, or 'ALL'\n");
+			usage(pc);
+			exit(1);
+		}
+
+		/* Take the target name or binding. */
 		if (!torture_parse_target(cmdline_lp_ctx, argv_new[1])) {
 			usage(pc);
 			exit(1);
 		}
 
-		argc_new--;
-	}
-
-	if (shell) {
-		// In shell mode, just ignore any remaining test names.
-		torture_shell(torture);
-	} else if (argc_new == 1) {
-		printf("You must specify a test to run, or 'ALL'\n");
-		usage(pc);
-		exit(1);
-	} else {
-		for (i=1;i<argc_new;i++) {
+		for (i=2;i<argc_new;i++) {
 			if (!torture_run_named_tests(torture, argv_new[i],
 				    (const char **)restricted)) {
 				correct = false;
