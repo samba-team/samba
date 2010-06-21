@@ -23,4 +23,6 @@ void check_databases(void);
 void *save_databases(void);
 void restore_databases(void *);
 
+struct ctdb_db *find_db_by_id(unsigned int id);
+
 #endif /* __HAVE_CTDB_TEST_H */

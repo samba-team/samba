@@ -20,6 +20,17 @@ struct db {
 	uint32_t tdb_flags;
 };
 
+struct ctdb_db *find_db_by_id(unsigned int id)
+{
+	struct db *db;
+
+	for (db = dbs; db; db = db->next) {
+		if (db->num == id)
+			return db->db;
+	}
+	return NULL;
+}
+
 static void attachdb_help(int agc, char **argv)
 {
 #include "generated-attachdb-help:attachdb"
