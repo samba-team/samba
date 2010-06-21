@@ -596,13 +596,14 @@ done:
 
 
 /* Lookup group membership given a rid.   */
-static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *group_sid,
-				enum lsa_SidType type,
-				uint32 *num_names,
-				struct dom_sid **sid_mem, char ***names,
-				uint32 **name_types)
+static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      const struct dom_sid *group_sid,
+				      enum lsa_SidType type,
+				      uint32_t *num_names,
+				      struct dom_sid **sid_mem,
+				      char ***names,
+				      uint32_t **name_types)
 {
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
@@ -1160,7 +1161,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_query_user,
 	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
-	lookup_groupmem,
+	msrpc_lookup_groupmem,
 	msrpc_sequence_number,
 	msrpc_lockout_policy,
 	msrpc_password_policy,
