@@ -70,11 +70,11 @@
 	struct ldb_message_element *set_el;				\
 	if (r->in.info->field.string == NULL) return NT_STATUS_INVALID_PARAMETER; \
         if (r->in.info->field.string[0] == '\0') {			\
-		if (ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, NULL)) { \
+		if (ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, NULL) != LDB_SUCCESS) { \
 			return NT_STATUS_NO_MEMORY;			\
 		}							\
 	}								\
-        if (ldb_msg_add_string(msg, attr, r->in.info->field.string) != 0) { \
+        if (ldb_msg_add_string(msg, attr, r->in.info->field.string) != LDB_SUCCESS) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -83,7 +83,7 @@
 
 #define SET_UINT(msg, field, attr) do {					\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_uint(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_uint(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != LDB_SUCCESS) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -92,7 +92,7 @@
 									
 #define SET_INT64(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_int64(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_int64(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != LDB_SUCCESS) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -101,7 +101,7 @@
 									
 #define SET_UINT64(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != LDB_SUCCESS) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -134,7 +134,7 @@
 									
 #define SET_LHOURS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_logon_hours(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+	if (samdb_msg_add_logon_hours(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != LDB_SUCCESS) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -144,7 +144,7 @@
 #define SET_PARAMETERS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
 	if (r->in.info->field.length != 0) {				\
-		if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+		if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != LDB_SUCCESS) { \
 			return NT_STATUS_NO_MEMORY;			\
 		}							\
 		set_el = ldb_msg_find_element(msg, attr);		\
