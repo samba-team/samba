@@ -606,18 +606,6 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result->read_queue = tevent_queue_create(result, "np_read");
-	if (result->read_queue == NULL) {
-		DEBUG(0, ("tevent_queue_create failed\n"));
-		goto fail;
-	}
-
-	result->write_queue = tevent_queue_create(result, "np_write");
-	if (result->write_queue == NULL) {
-		DEBUG(0, ("tevent_queue_create failed\n"));
-		goto fail;
-	}
-
 	ev = s3_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		DEBUG(0, ("s3_tevent_context_init failed\n"));
@@ -756,9 +744,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	status = rpc_transport_tstream_init(result,
-					    proxy_state->npipe,
-					    proxy_state->read_queue,
-					    proxy_state->write_queue,
+					    &proxy_state->npipe,
 					    &result->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
