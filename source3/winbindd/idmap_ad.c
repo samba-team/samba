@@ -202,12 +202,14 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
 	char *config_option;
 	const char *schema_mode = NULL;	
 
-	if ( (ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context)) == NULL ) {
+	ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context);
+	if (ctx == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( (config_option = talloc_asprintf(ctx, "idmap config %s", dom->name)) == NULL ) {
+	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
+	if (config_option == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		talloc_free(ctx);
 		return NT_STATUS_NO_MEMORY;
