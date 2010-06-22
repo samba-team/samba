@@ -549,10 +549,15 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
-	nss_get_info_cached( domain, sid, mem_ctx, ads, msg, 
+	status = nss_get_info_cached( domain, sid, mem_ctx, ads, msg,
 		      &info->homedir, &info->shell, &info->full_name, 
 		      &gid);
 	info->primary_gid = gid;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("nss_get_info_cached failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
 
 	if (info->full_name == NULL) {
 		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
