@@ -123,7 +123,7 @@ PRIVATE_DEPENDENCIES = \
 		dcerpc_server service process_model ntvfs SERVICE_SMB RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_LDB_MODULE
 
 torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
-		join.o lsa.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
+		join.o lsa.o forest_trust.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
 		drsuapi_cracknames.o dssync.o dsgetinfo.o spoolss.o spoolss_notify.o spoolss_win.o spoolss_access.o \
 		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
 		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
