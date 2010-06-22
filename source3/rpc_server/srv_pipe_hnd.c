@@ -845,7 +845,8 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 						      np_ipc_readv_next_vector,
 						      &state->next_vector);
 		if (subreq == NULL) {
-
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
 		}
 		tevent_req_set_callback(subreq, np_read_done, req);
 		return req;
