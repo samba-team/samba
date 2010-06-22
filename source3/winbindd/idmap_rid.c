@@ -26,8 +26,6 @@
 
 struct idmap_rid_context {
 	const char *domain_name;
-	uint32_t low_id;
-	uint32_t high_id;
 	uint32_t base_rid;
 };
 
@@ -42,11 +40,6 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom,
 	NTSTATUS ret;
 	struct idmap_rid_context *ctx;
 	char *config_option = NULL;
-	const char *range;
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
 
 	ctx = TALLOC_ZERO_P(dom, struct idmap_rid_context);
 	if (ctx == NULL) {
@@ -58,38 +51,6 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom,
 	if ( ! config_option) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	range = lp_parm_const_string(-1, config_option, "range", NULL);
-	if ( !range ||
-	    (sscanf(range, "%u - %u", &ctx->low_id, &ctx->high_id) != 2) ||
-	    (ctx->low_id > ctx->high_id)) 
-	{
-		ctx->low_id = 0;
-		ctx->high_id = 0;
-	}
-
-	/* lets see if the range is defined by the old idmap uid/idmap gid */
-	if (!ctx->low_id && !ctx->high_id) {
-		if (lp_idmap_uid(&low_uid, &high_uid)) {
-			ctx->low_id = low_uid;
-			ctx->high_id = high_uid;
-		}
-
-		if (lp_idmap_gid(&low_gid, &high_gid)) {
-			if ((ctx->low_id != low_gid) ||
-			    (ctx->high_id != high_uid)) {
-				DEBUG(1, ("ERROR: idmap uid range must match idmap gid range\n"));
-				ret = NT_STATUS_UNSUCCESSFUL;
-				goto failed;
-			}
-		}
-	}
-
-	if (!ctx->low_id || !ctx->high_id) {
-		DEBUG(1, ("ERROR: Invalid configuration, ID range missing or invalid\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
 
