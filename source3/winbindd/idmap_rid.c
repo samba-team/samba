@@ -25,7 +25,6 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 struct idmap_rid_context {
-	const char *domain_name;
 	uint32_t base_rid;
 };
 
@@ -55,8 +54,7 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom,
 	}
 
 	ctx->base_rid = lp_parm_int(-1, config_option, "base_rid", 0);
-	ctx->domain_name = talloc_strdup( ctx, dom->name );
-	
+
 	dom->private_data = ctx;
 
 	talloc_free(config_option);
