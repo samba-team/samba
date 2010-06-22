@@ -599,6 +599,7 @@ LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       librpc/rpc/rpc_common.o \
 	       rpc_client/rpc_transport_np.o \
 	       rpc_client/rpc_transport_sock.o \
+	       rpc_client/rpc_transport_tstream.o \
 	       ../librpc/rpc/binding.o \
 	       ../librpc/rpc/dcerpc_util.o \
 	       ../librpc/rpc/binding_handle.o \
