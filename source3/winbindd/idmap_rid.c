@@ -140,18 +140,21 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map
  Single sid to id lookup function. 
 **********************************/
 
-static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_sid_to_id(struct idmap_domain *dom, struct id_map *map)
 {
 	uint32_t rid;
+	struct idmap_rid_context *ctx;
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	sid_peek_rid(map->sid, &rid);
-	map->xid.id = rid - ctx->base_rid + ctx->low_id;
+	map->xid.id = rid - ctx->base_rid + dom->low_id;
 
 	/* apply filters before returning result */
 
-	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
+	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				map->xid.id, ctx->low_id, ctx->high_id));
+				map->xid.id, dom->low_id, dom->high_id));
 		map->status = ID_UNMAPPED;
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -199,7 +202,6 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_rid_context *ridctx;
 	NTSTATUS ret;
 	int i;
 
@@ -207,12 +209,10 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
-	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_rid_sid_to_id(ridctx, ids[i]);
+		ret = idmap_rid_sid_to_id(dom, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
