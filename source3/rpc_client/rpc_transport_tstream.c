@@ -316,17 +316,13 @@ static NTSTATUS rpc_tstream_write_recv(struct tevent_req *req, ssize_t *sent)
 *
 * @param mem_ctx	- memory context used to allocate the transport
 * @param stream		- a ready to use tstream
-* @param read_queue	- pre-createted tstream read queue
-* @param write_queue	- pre-createted tstream write queue
 * @param presult	- the transport structure
 *
 * @return		- a NT Status error code.
 */
 NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
-				struct tstream_context *stream,
-				struct tevent_queue *read_queue,
-				struct tevent_queue *write_queue,
-				 struct rpc_cli_transport **presult)
+				struct tstream_context **stream,
+				struct rpc_cli_transport **presult)
 {
 	struct rpc_cli_transport *result;
 	struct rpc_tstream_state *state;
@@ -342,9 +338,18 @@ NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 	}
 	result->priv = state;
 
-	state->stream = talloc_steal(state, stream);
-	state->read_queue = talloc_steal(state, read_queue);
-	state->write_queue = talloc_steal(state, write_queue);
+	state->read_queue = tevent_queue_create(state, "read_queue");
+	if (state->read_queue == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->write_queue = tevent_queue_create(state, "write_queue");
+	if (state->write_queue == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->stream = talloc_move(state, stream);
 	state->timeout = 10000; /* 10 seconds. */
 
 	result->trans_send = NULL;
