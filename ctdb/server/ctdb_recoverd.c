@@ -887,10 +887,11 @@ static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te,
 /*
   wait for a given number of seconds
  */
-static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
+static void ctdb_wait_timeout(struct ctdb_context *ctdb, double secs)
 {
 	uint32_t timed_out = 0;
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, 0), ctdb_wait_handler, &timed_out);
+	time_t usecs = (secs - (time_t)secs) * 1000000;
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, usecs), ctdb_wait_handler, &timed_out);
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
@@ -3462,17 +3463,25 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	for (;;) {
 		TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+		struct timeval start;
+		double elapsed;
+
 		if (!mem_ctx) {
 			DEBUG(DEBUG_CRIT,(__location__
 					  " Failed to create temp context\n"));
 			exit(-1);
 		}
 
+		start = timeval_current();
 		main_loop(ctdb, rec, mem_ctx);
 		talloc_free(mem_ctx);
 
 		/* we only check for recovery once every second */
-		ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
+		elapsed = timeval_elapsed(&start);
+		if (elapsed < ctdb->tunable.recover_interval) {
+			ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval
+					  - elapsed);
+		}
 	}
 }
 
