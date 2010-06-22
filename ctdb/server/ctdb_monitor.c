@@ -301,7 +301,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			     timeval_current_ofs(1, 0), 
+			     timeval_current(),
 			     ctdb_check_health, ctdb);
 }
 
