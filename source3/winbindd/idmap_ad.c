@@ -48,8 +48,6 @@
 } while (0)
 
 struct idmap_ad_context {
-	uint32_t filter_low_id;
-	uint32_t filter_high_id;
 	ADS_STRUCT *ads;
 	struct posix_schema *ad_schema;
 	enum wb_posix_mapping ad_map_type; /* WB_POSIX_MAP_UNKNOWN */
@@ -202,7 +200,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;
-	const char *range = NULL;
 	const char *schema_mode = NULL;	
 
 	if ( (ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context)) == NULL ) {
@@ -214,17 +211,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
 		DEBUG(0, ("Out of memory!\n"));
 		talloc_free(ctx);
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* load ranges */
-	range = lp_parm_const_string(-1, config_option, "range", NULL);
-	if (range && range[0]) {
-		if ((sscanf(range, "%u - %u", &ctx->filter_low_id, &ctx->filter_high_id) != 2) ||
-		    (ctx->filter_low_id > ctx->filter_high_id)) {
-			DEBUG(1, ("ERROR: invalid filter range [%s]", range));
-			ctx->filter_low_id = 0;
-			ctx->filter_high_id = 0;
-		}
 	}
 
 	/* default map type */
