@@ -25,7 +25,7 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 import ldb
 import os
-import samba.dsdb
+import samba
 
 
 class DsdbTests(TestCase):
@@ -107,3 +107,27 @@ class DsdbTests(TestCase):
         msg.dn = res[0].dn
         msg["replPropertyMetaData"] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, "replPropertyMetaData")
         self.samdb.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
+
+    def test_ok_get_attribute_from_attid(self):
+        self.assertEquals(self.samdb.get_attribute_from_attid(13), "description")
+
+    def test_ko_get_attribute_from_attid(self):
+        self.assertEquals(self.samdb.get_attribute_from_attid(11979), None)
+
+    def test_get_attribute_replmetadata_version(self):
+        res = self.samdb.search(expression="cn=Administrator",
+                            scope=ldb.SCOPE_SUBTREE,
+                            attrs=["dn"])
+        self.assertEquals(len(res), 1)
+        dn = str(res[0].dn)
+        self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "unicodePwd"), 1)
+
+    def test_set_attribute_replmetadata_version(self):
+        res = self.samdb.search(expression="cn=Administrator",
+                            scope=ldb.SCOPE_SUBTREE,
+                            attrs=["dn"])
+        self.assertEquals(len(res), 1)
+        dn = str(res[0].dn)
+        version = self.samdb.get_attribute_replmetadata_version(dn, "description")
+        self.samdb.set_attribute_replmetadata_version(dn, "description", version + 2)
+        self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "description"), version + 2)
