@@ -106,7 +106,7 @@ failed:
 	return ret;
 }
 
-static NTSTATUS idmap_rid_id_to_sid(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map *map)
 {
 	struct winbindd_domain *domain;	
 
@@ -187,7 +187,7 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_rid_id_to_sid(ctx, ridctx, ids[i]);
+		ret = idmap_rid_id_to_sid(ridctx, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
