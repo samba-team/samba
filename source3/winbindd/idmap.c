@@ -207,12 +207,14 @@ static bool parse_idmap_module(TALLOC_CTX *mem_ctx, const char *param,
  * @param[in] domainname	which domain is this for
  * @param[in] modulename	which backend module
  * @param[in] params		parameter to pass to the init function
+ * @param[in] check_range	whether range checking should be done
  * @result The initialized structure
  */
 static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 					      const char *domainname,
 					      const char *modulename,
-					      const char *params)
+					      const char *params,
+					      bool check_range)
 {
 	struct idmap_domain *result;
 	NTSTATUS status;
@@ -246,16 +248,20 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		result->high_id = 0;
 
 		if (!lp_idmap_uid(&low_uid, &high_uid)) {
-			DEBUG(1, ("Error: 'idmap uid' not set!\n"));
-			goto fail;
+			DEBUG(1, ("'idmap uid' not set!\n"));
+			if (check_range) {
+				goto fail;
+			}
 		}
 
 		result->low_id = low_uid;
 		result->high_id = high_uid;
 
 		if (!lp_idmap_gid(&low_gid, &high_gid)) {
-			DEBUG(1, ("Error: 'idmap gid' not set!\n"));
-			goto fail;
+			DEBUG(1, ("'idmap gid' not set!\n"));
+			if (check_range) {
+				goto fail;
+			}
 		}
 
 		if ((low_gid != low_uid) || (high_gid != high_uid)) {
@@ -280,17 +286,19 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 
 		range = lp_parm_const_string(-1, config_option, "range", NULL);
 		if (range == NULL) {
-			DEBUG(1, ("Error: idmap range not specified for "
-				  "domain %s\n", result ->name));
-			goto fail;
-		}
-
-		if (sscanf(range, "%u - %u", &result->low_id, &result->high_id)
-		    != 2)
+			DEBUG(1, ("idmap range not specified for domain %s\n",
+				  result ->name));
+			if (check_range) {
+				goto fail;
+			}
+		} else if (sscanf(range, "%u - %u", &result->low_id,
+				  &result->high_id) != 2)
 		{
-			DEBUG(1, ("Error: invalid range '%s' specified for "
-				  "domain %s\n", range, result->name));
-			goto fail;
+			DEBUG(1, ("invalid range '%s' specified for domain "
+				  "'%s'\n", range, result->name));
+			if (check_range) {
+				goto fail;
+			}
 		}
 
 		result->read_only = lp_parm_bool(-1, config_option, "read only",
@@ -300,11 +308,12 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	if (result->low_id > result->high_id) {
-		DEBUG(1, ("Error: invalid idmap range detected: "
-			  "%lu - %lu\n",
+		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
 			  (unsigned long)result->low_id,
 			  (unsigned long)result->high_id));
-		goto fail;
+		if (check_range) {
+			goto fail;
+		}
 	}
 
 	result->methods = get_methods(modulename);
@@ -366,7 +375,7 @@ static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
 
 	DEBUG(3, ("idmap_init: using '%s' as remote backend\n", modulename));
 
-	result = idmap_init_domain(mem_ctx, "*", modulename, params);
+	result = idmap_init_domain(mem_ctx, "*", modulename, params, true);
 	if (result == NULL) {
 		goto fail;
 	}
@@ -412,7 +421,7 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	result = idmap_init_domain(mem_ctx, domname, backend, NULL);
+	result = idmap_init_domain(mem_ctx, domname, backend, NULL, true);
 	if (result == NULL) {
 		goto fail;
 	}
@@ -443,7 +452,7 @@ static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 	}
 
 	passdb_idmap_domain = idmap_init_domain(NULL, get_global_sam_name(),
-						"passdb", NULL);
+						"passdb", NULL, false);
 	if (passdb_idmap_domain == NULL) {
 		DEBUG(1, ("Could not init passdb idmap domain\n"));
 	}
