@@ -106,22 +106,26 @@ failed:
 	return ret;
 }
 
-static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map)
 {
-	struct winbindd_domain *domain;	
+	struct winbindd_domain *domain;
+	struct idmap_rid_context *ctx;
+
+	ctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	/* apply filters before checking */
-	if ((map->xid.id < ctx->low_id) || (map->xid.id > ctx->high_id)) {
+	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
 		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				map->xid.id, ctx->low_id, ctx->high_id));
+				map->xid.id, dom->low_id, dom->high_id));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	if ( (domain = find_domain_from_name_noinit(ctx->domain_name)) == NULL ) {
+	domain = find_domain_from_name_noinit(dom->name);
+	if (domain == NULL ) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
-	
-	sid_compose(map->sid, &domain->sid, map->xid.id - ctx->low_id + ctx->base_rid);
+
+	sid_compose(map->sid, &domain->sid, map->xid.id - dom->low_id + ctx->base_rid);
 
 	/* We **really** should have some way of validating 
 	   the SID exists and is the correct type here.  But 
@@ -167,7 +171,6 @@ static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map
 
 static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_rid_context *ridctx;
 	NTSTATUS ret;
 	int i;
 
@@ -175,12 +178,10 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
-	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_rid_id_to_sid(ridctx, ids[i]);
+		ret = idmap_rid_id_to_sid(dom, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
