@@ -37,7 +37,7 @@ EOF
 
 cat <<EOF | $VALGRIND ldbmodify --controls "relax:0" && exit 1
 dn: dc=bar
-changetype: replace
+changetype: modify
 replace someThing
 someThing: someThingElseBetter
 EOF
