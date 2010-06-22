@@ -1294,6 +1294,7 @@ static struct idmap_methods idmap_ldap_methods = {
 	.init = idmap_ldap_db_init,
 	.unixids_to_sids = idmap_ldap_unixids_to_sids,
 	.sids_to_unixids = idmap_ldap_sids_to_unixids,
+	.allocate_id = idmap_ldap_get_new_id,
 	.close_fn = idmap_ldap_close
 };
 
