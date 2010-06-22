@@ -278,8 +278,10 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 				count++;
 			}
 			if (!levels[i].only_paths &&
+			   (NT_STATUS_EQUAL(levels[i].fnum_status,
+			    NT_STATUS_NOT_SUPPORTED) ||
 			    NT_STATUS_EQUAL(levels[i].fnum_status,
-			    NT_STATUS_NOT_SUPPORTED)) {
+			    NT_STATUS_NOT_IMPLEMENTED))) {
 				torture_warning(torture, "fnum level %s %s",
 					levels[i].name,
 					nt_errstr(levels[i].fnum_status));
@@ -293,8 +295,10 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			}
 		} else {
 			if (!levels[i].only_paths &&
+			   (NT_STATUS_EQUAL(levels[i].fnum_status,
+			    NT_STATUS_NOT_SUPPORTED) ||
 			    NT_STATUS_EQUAL(levels[i].fnum_status,
-			    NT_STATUS_NOT_SUPPORTED)) {
+			    NT_STATUS_NOT_IMPLEMENTED))) {
 				torture_warning(torture, "fnum level %s %s",
 					levels[i].name,
 					nt_errstr(levels[i].fnum_status));
@@ -302,8 +306,10 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			}
 
 			if (!levels[i].only_handles &&
+			   (NT_STATUS_EQUAL(levels[i].fname_status,
+			    NT_STATUS_NOT_SUPPORTED) ||
 			    NT_STATUS_EQUAL(levels[i].fname_status,
-			    NT_STATUS_NOT_SUPPORTED)) {
+			    NT_STATUS_NOT_IMPLEMENTED))) {
                                 torture_warning(torture, "fname level %s %s",
 					levels[i].name,
 					nt_errstr(levels[i].fname_status));
