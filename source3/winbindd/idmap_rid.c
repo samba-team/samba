@@ -136,7 +136,7 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_rid_context *ctx, struct id_map
  Single sid to id lookup function. 
 **********************************/
 
-static NTSTATUS idmap_rid_sid_to_id(TALLOC_CTX *memctx, struct idmap_rid_context *ctx, struct id_map *map)
+static NTSTATUS idmap_rid_sid_to_id(struct idmap_rid_context *ctx, struct id_map *map)
 {
 	uint32_t rid;
 
@@ -218,7 +218,7 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_rid_sid_to_id(ctx, ridctx, ids[i]);
+		ret = idmap_rid_sid_to_id(ridctx, ids[i]);
 
 		if (( ! NT_STATUS_IS_OK(ret)) &&
 		    ( ! NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
