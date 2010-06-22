@@ -1299,6 +1299,7 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
 
 extern int script_log_level;
+extern bool fast_start;
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 					     uint32_t call_type,

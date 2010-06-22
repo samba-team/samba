@@ -245,7 +245,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	}
 
 
-	if (timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
+	if (!fast_start && timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
 		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
 
 		DEBUG(DEBUG_NOTICE,(__location__ " wait for pending recoveries to end. Wait one more second.\n"));
