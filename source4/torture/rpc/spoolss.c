@@ -4815,7 +4815,14 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 		"torture,data",
 		"torture,data,ex",
 		"torture,data\\ex",
-		"torture\\data,ex"
+		"torture\\data,ex",
+		"torture/data",
+		"torture/data ex",
+		"torture/data ex/sub",
+		"torture//data",
+		"torture//data ex",
+		"torture//data ex/sub",
+		"torture//data ex//sub",
 	};
 	int i;
 
