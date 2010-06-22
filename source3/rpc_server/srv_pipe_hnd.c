@@ -904,6 +904,95 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 	return NT_STATUS_OK;
 }
 
+
+static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct ndr_syntax_id *abstract_syntax,
+				struct auth_serversupplied_info *server_info,
+				struct rpc_pipe_client **_result)
+{
+	struct tsocket_address *local, *remote;
+	struct rpc_pipe_client *result = NULL;
+	struct np_proxy_state *proxy_state = NULL;
+	struct pipe_auth_data *auth;
+	NTSTATUS status;
+	int ret;
+
+	/* this is an internal connection, fake up ip addresses */
+	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+						NULL, 0, &local);
+	if (ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+						NULL, 0, &remote);
+	if (ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	proxy_state = make_external_rpc_pipe_p(mem_ctx, pipe_name,
+						local, remote, server_info);
+	if (!proxy_state) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+
+	result->desthost = get_myname(result);
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	status = rpc_transport_tstream_init(result,
+					    proxy_state->npipe,
+					    proxy_state->read_queue,
+					    proxy_state->write_queue,
+					    &result->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	result->auth = talloc_zero(result, struct pipe_auth_data);
+	if (!result->auth) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	result->auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+	result->auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to initialize anonymous bind.\n"));
+		goto done;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to bind spoolss pipe.\n"));
+		goto done;
+	}
+done:
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(result);
+	}
+	TALLOC_FREE(proxy_state);
+	*_result = result;
+	return status;
+}
+
 /**
  * @brief Create a new RPC client context which uses a local dispatch function.
  *
@@ -917,16 +1006,40 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
 				  struct rpc_pipe_client **spoolss_pipe)
 {
+	const char *server_type;
 	NTSTATUS status;
 
-	/* TODO: check and handle disconnections */
+	DEBUG(10, ("Connecting to spoolss pipe.\n"));
+	*spoolss_pipe = NULL;
 
-	if (!conn->spoolss_pipe) {
+	if (rpccli_is_connected(conn->spoolss_pipe)) {
+		*spoolss_pipe = conn->spoolss_pipe;
+		return NT_STATUS_OK;
+	} else {
+		TALLOC_FREE(conn->spoolss_pipe);
+	}
+
+	server_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "spoolss",
+					   "embedded");
+	if (StrCaseCmp(server_type, "embedded") == 0) {
 		status = rpc_pipe_open_internal(conn,
 						&ndr_table_spoolss.syntax_id,
 						conn->server_info,
 						&conn->sconn->client_id,
 						conn->sconn->msg_ctx,
+						&conn->spoolss_pipe);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
+		 * for now we need to use the special proxy setup to connect
+		 * to spoolssd. */
+
+		status = rpc_pipe_open_external(conn, "spoolss",
+						&ndr_table_spoolss.syntax_id,
+						conn->server_info,
 						&conn->spoolss_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
