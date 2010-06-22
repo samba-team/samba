@@ -744,6 +744,7 @@ sub provision($$$$$$$$$)
 	server max protocol = SMB2
         $extra_smbconf_options
 	host msdfs = $msdfs
+	lanman auth = yes
 
 [tmp]
 	path = $ctx->{tmpdir}
