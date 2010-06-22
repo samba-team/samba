@@ -905,6 +905,7 @@ static void ctdb_election_timeout(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	rec->election_timeout = NULL;
+	fast_start = false;
 
 	DEBUG(DEBUG_WARNING,(__location__ " Election timed out\n"));
 }
@@ -2091,6 +2092,8 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	/* we got an election packet - update the timeout for the election */
 	talloc_free(rec->election_timeout);
 	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						fast_start ?
+						timeval_current_ofs(0, 500000) :
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
@@ -2158,6 +2161,8 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 
 	talloc_free(rec->election_timeout);
 	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						fast_start ?
+						timeval_current_ofs(0, 500000) :
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
