@@ -118,10 +118,6 @@ static NTSTATUS idmap_rid_sid_to_id(struct idmap_domain *dom, struct id_map *map
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	/* We **really** should have some way of validating 
-	   the SID exists and is the correct type here.  But 
-	   that is a deficiency in the idmap_rid design. */
-
 	map->status = ID_MAPPED;
 
 	return NT_STATUS_OK;
