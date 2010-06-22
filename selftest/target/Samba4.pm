@@ -838,8 +838,8 @@ sub provision_member($$$)
 
 	my $ret = $self->provision($prefix,
 				   "member server",
-				   "localmember3",
 				   "localmember",
+				   "member3",
 				   "SAMBADOMAIN", 
 				   "samba.example.com", 
 				   "2008",
@@ -888,8 +888,8 @@ sub provision_rpc_proxy($$$)
 
 	my $ret = $self->provision($prefix,
 				   "member server",
-				   "localrpcproxy4",
 				   "localrpcproxy",
+				   "rpcproxy4",
 				   "SAMBADOMAIN", 
 				   "samba.example.com", 
 				   "2008",
@@ -926,8 +926,8 @@ sub provision_vampire_dc($$$)
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
-					       "localvampiredc2",
 					       "localvampiredc",
+					       "dc2",
 					       "SAMBADOMAIN", 
 					       "samba.example.com", 
 					       "2008",
@@ -983,8 +983,8 @@ sub provision_dc($$)
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "localdc1",
 				   "localdc",
+				   "dc1",
 				   "SAMBADOMAIN", 
 				   "samba.example.com", 
 				   "2008",
@@ -1012,7 +1012,7 @@ sub provision_fl2000dc($$)
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "localfl2000dc5",
+				   "dc5",
 				   "localfl2000dc",
 				   "SAMBA2000", 
 				   "samba2000.example.com", 
@@ -1034,7 +1034,7 @@ sub provision_fl2003dc($$)
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "localfl2003dc6",
+				   "dc6",
 				   "localfl2003dc",
 				   "SAMBA2003",
 				   "samba2003.example.com",
@@ -1056,7 +1056,7 @@ sub provision_fl2008r2dc($$)
 	print "PROVISIONING DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "localfl2008r2dc6",
+				   "dc7",
 				   "localfl2000r2dc",
 				   "SAMBA2008R2",
 				   "samba2008R2.example.com",
