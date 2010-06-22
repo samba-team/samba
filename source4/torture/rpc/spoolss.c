@@ -4806,23 +4806,16 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 	const char *keys[] = {
 		"torturedataex",
 		"torture data ex",
-#if 0
-	/* FIXME: not working with s3 atm. */
 		"torturedataex_with_subkey\\subkey",
 		"torturedataex_with_subkey\\subkey:0",
 		"torturedataex_with_subkey\\subkey:1",
 		"torturedataex_with_subkey\\subkey\\subsubkey",
 		"torturedataex_with_subkey\\subkey\\subsubkey:0",
 		"torturedataex_with_subkey\\subkey\\subsubkey:1",
-#endif
 		"torture,data",
-#if 0
-	/* FIXME: not working with s3 atm. */
-
 		"torture,data,ex",
 		"torture,data\\ex",
 		"torture\\data,ex"
-#endif
 	};
 	int i;
 
@@ -4836,6 +4829,16 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 		uint32_t ecount;
 		struct spoolss_PrinterEnumValues *einfo;
 		uint32_t needed;
+
+		if (torture_setting_bool(tctx, "samba3", false)) {
+			char *q;
+			q = strrchr(keys[i], '\\');
+			if (q) {
+				torture_skip(tctx,
+					talloc_asprintf(tctx, "skipping keyname '%s' including '\\' character against Samba3\n",
+						keys[i]));
+			}
+		}
 
 		blob_in = data_blob_talloc(tctx, NULL, 42);
 
