@@ -20,9 +20,9 @@
 
 #
 # Usage:
-#  export TARGET_DC=target_dc_or_local_samdb_url
+#  export DC_SERVER=target_dc_or_local_samdb_url
 #  export SUBUNITRUN=$samba4srcdir/scripting/bin/subunitrun
-#  PYTHONPATH="$samba4srcdir/torture/libnet/python" $SUBUNITRUN dsdb_schema_info -Ukma-exch.devel/Administrator%333
+#  PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python" $SUBUNITRUN dsdb_schema_info -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
 import sys
