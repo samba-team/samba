@@ -263,6 +263,9 @@ static NTSTATUS idmap_tdb2_get_new_id(struct idmap_domain *dom,
   IDMAP MAPPING TDB BACKEND
 */
 
+static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom,
+				       const struct id_map *map);
+
 /*
   Initialise idmap database. 
 */
@@ -447,43 +450,12 @@ done:
 static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *map)
 {
 	NTSTATUS ret;
+	struct idmap_tdb2_context *ctx;
 
-	if (map == NULL) {
-		ret = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
-	if ((map->xid.type != ID_TYPE_UID) && (map->xid.type != ID_TYPE_GID)) {
-		ret = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
+	ret = idmap_rw_new_mapping(dom, ctx->rw_ops, map);
 
-	if (map->sid == NULL) {
-		ret = NT_STATUS_INVALID_PARAMETER;
-		goto done;
-	}
-
-	ret = idmap_tdb2_get_new_id(dom, &map->xid);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("Could not allocate id: %s\n", nt_errstr(ret)));
-		goto done;
-	}
-
-	DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
-		   sid_string_dbg(map->sid),
-		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
-		   (unsigned long)map->xid.id));
-
-	map->status = ID_MAPPED;
-
-	/* store the mapping */
-	ret = idmap_tdb2_set_mapping(dom, map);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("Could not store the new mapping: %s\n",
-			  nt_errstr(ret)));
-	}
-
-done:
 	return ret;
 }
 
