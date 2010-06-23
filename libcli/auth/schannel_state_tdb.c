@@ -42,8 +42,6 @@
 struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 					     const char *private_dir)
 {
-	TDB_DATA vers;
-	uint32_t ver;
 	struct tdb_wrap *tdb_sc = NULL;
 	char *fname = talloc_asprintf(mem_ctx, "%s/schannel_store.tdb", private_dir);
 
@@ -51,7 +49,7 @@ struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb_sc) {
 		DEBUG(0,("open_schannel_session_store: Failed to open %s - %s\n",
@@ -60,35 +58,6 @@ struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
- again:
-	vers = tdb_fetch_bystring(tdb_sc->tdb, "SCHANNEL_STORE_VERSION");
-	if (vers.dptr == NULL) {
-		/* First opener, no version. */
-		SIVAL(&ver,0,SCHANNEL_STORE_VERSION_CURRENT);
-		vers.dptr = (uint8_t *)&ver;
-		vers.dsize = 4;
-		tdb_store_bystring(tdb_sc->tdb, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
-		vers.dptr = NULL;
-	} else if (vers.dsize == 4) {
-		ver = IVAL(vers.dptr,0);
-		if (ver == SCHANNEL_STORE_VERSION_2) {
-			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
-				(int)ver, fname ));
-			tdb_wipe_all(tdb_sc->tdb);
-			goto again;
-		}
-		if (ver != SCHANNEL_STORE_VERSION_CURRENT) {
-			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
-				(int)ver, fname ));
-			TALLOC_FREE(tdb_sc);
-		}
-	} else {
-		TALLOC_FREE(tdb_sc);
-		DEBUG(0,("open_schannel_session_store: wrong version number size %d in %s\n",
-			(int)vers.dsize, fname ));
-	}
-
-	SAFE_FREE(vers.dptr);
 	TALLOC_FREE(fname);
 
 	return tdb_sc;
