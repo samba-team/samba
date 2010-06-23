@@ -35,15 +35,12 @@
 #define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
 
 /******************************************************************************
- Open or create the schannel session store tdb.
+ Open or create the schannel session store tdb.  Non-static so it can
+ be called from parent processes to corectly handle TDB_CLEAR_IF_FIRST
 *******************************************************************************/
 
-#define SCHANNEL_STORE_VERSION_1 1
-#define SCHANNEL_STORE_VERSION_2 2 /* should not be used */
-#define SCHANNEL_STORE_VERSION_CURRENT SCHANNEL_STORE_VERSION_1
-
-static struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
-						    const char *private_dir)
+struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
+					     const char *private_dir)
 {
 	TDB_DATA vers;
 	uint32_t ver;
