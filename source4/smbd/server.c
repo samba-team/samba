@@ -31,6 +31,7 @@
 #include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/auth/schannel.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
@@ -398,6 +399,13 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	/* Setup the SECRETS subsystem */
 	if (secrets_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
 		return 1;
+	}
+
+	if (lp_server_role(cmdline_lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
+		if (!open_schannel_session_store(talloc_autofree_context(), lp_private_dir(cmdline_lp_ctx))) {
+			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
+			exit(1);
+		}
 	}
 
 	gensec_init(cmdline_lp_ctx); /* FIXME: */
