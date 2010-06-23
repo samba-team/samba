@@ -2003,6 +2003,55 @@ static bool test_SetValue_simple(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+static bool test_SetValue_values(struct dcerpc_binding_handle *b,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle)
+{
+	DATA_BLOB blob;
+	const char *values[] = {
+		"torture_value",
+		"torture value",
+		"torture,value",
+		"torture;value",
+		"torture/value",
+		"torture\\value"
+	};
+	int i;
+
+	torture_comment(tctx, "Testing SetValue (values)\n");
+
+	for (i=0; i < ARRAY_SIZE(values); i++) {
+
+		enum winreg_Type w_type;
+		uint32_t w_size, w_length;
+		uint8_t *w_data;
+
+		blob = data_blob_string_const("binary_blob");
+
+		torture_assert(tctx,
+			test_SetValue(b, tctx, handle, values[i], REG_BINARY, blob.data, blob.length),
+			"test_SetValue failed");
+		torture_assert(tctx,
+			test_QueryValue_full(b, tctx, handle, values[i], true),
+			talloc_asprintf(tctx, "test_QueryValue_full for %s value failed", values[i]));
+		torture_assert(tctx,
+			test_winreg_QueryValue(tctx, b, handle, values[i], &w_type, &w_size, &w_length, &w_data),
+			"test_winreg_QueryValue failed");
+		torture_assert(tctx,
+			test_DeleteValue(b, tctx, handle, values[i]),
+			"test_DeleteValue failed");
+
+		torture_assert_int_equal(tctx, w_type, REG_BINARY, "winreg type mismatch");
+		torture_assert_int_equal(tctx, w_size, blob.length, "winreg size mismatch");
+		torture_assert_int_equal(tctx, w_length, blob.length, "winreg length mismatch");
+		torture_assert_mem_equal(tctx, w_data, blob.data, blob.length, "winreg buffer mismatch");
+	}
+
+	torture_comment(tctx, "Testing SetValue (values) succeeded\n");
+
+	return true;
+}
+
 typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
 
 static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
@@ -2489,6 +2538,8 @@ static bool test_key_base(struct torture_context *tctx,
 		if (hkey == HKEY_CURRENT_USER) {
 			torture_assert(tctx, test_SetValue_simple(b, tctx, &newhandle),
 				"simple SetValue test failed");
+			torture_assert(tctx, test_SetValue_values(b, tctx, &newhandle),
+				"values SetValue test failed");
 			torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 				"extended SetValue test failed");
 		} else {
