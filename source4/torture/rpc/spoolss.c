@@ -4841,9 +4841,9 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 			char *q;
 			q = strrchr(keys[i], '\\');
 			if (q) {
-				torture_skip(tctx,
-					talloc_asprintf(tctx, "skipping keyname '%s' including '\\' character against Samba3\n",
-						keys[i]));
+				torture_comment(tctx, "skipping keyname '%s' including '\\' character against Samba3\n",
+						keys[i]);
+				continue;
 			}
 		}
 
@@ -4946,9 +4946,9 @@ static bool test_SetPrinterDataEx_values(struct torture_context *tctx,
 			char *q;
 			q = strrchr(values[i], ',');
 			if (q) {
-				torture_skip(tctx,
-					talloc_asprintf(tctx, "skipping valuename '%s' including ',' character against Samba3\n",
-						values[i]));
+				torture_comment(tctx, "skipping valuename '%s' including ',' character against Samba3\n",
+						values[i]);
+				continue;
 			}
 		}
 
