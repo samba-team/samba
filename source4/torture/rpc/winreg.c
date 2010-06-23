@@ -2014,7 +2014,13 @@ static bool test_SetValue_values(struct dcerpc_binding_handle *b,
 		"torture,value",
 		"torture;value",
 		"torture/value",
-		"torture\\value"
+		"torture\\value",
+		"torture_value_name",
+		"torture value name",
+		"torture,value,name",
+		"torture;value;name",
+		"torture/value/name",
+		"torture\\value\\name",
 	};
 	int i;
 
@@ -2026,7 +2032,9 @@ static bool test_SetValue_values(struct dcerpc_binding_handle *b,
 		uint32_t w_size, w_length;
 		uint8_t *w_data;
 
-		blob = data_blob_string_const("binary_blob");
+		blob = data_blob_talloc(tctx, NULL, 32);
+
+		generate_random_buffer(blob.data, 32);
 
 		torture_assert(tctx,
 			test_SetValue(b, tctx, handle, values[i], REG_BINARY, blob.data, blob.length),
