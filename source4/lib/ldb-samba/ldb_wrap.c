@@ -168,14 +168,18 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 					    "%s/ldb",
 					    lp_modulesdir(lp_ctx)));
 
-	if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
-		talloc_free(ldb);
-		return NULL;
+	if (session_info) {
+		if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
+			talloc_free(ldb);
+			return NULL;
+		}
 	}
 
-	if (ldb_set_opaque(ldb, "credentials", credentials)) {
-		talloc_free(ldb);
-		return NULL;
+	if (credentials) {
+		if (ldb_set_opaque(ldb, "credentials", credentials)) {
+			talloc_free(ldb);
+			return NULL;
+		}
 	}
 
 	if (ldb_set_opaque(ldb, "loadparm", lp_ctx)) {

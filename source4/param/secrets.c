@@ -26,6 +26,7 @@
 #include "param/param.h"
 #include "system/filesys.h"
 #include "tdb_wrap.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 #include "lib/ldb/include/ldb.h"
 #include "../tdb/include/tdb.h"
 #include "../lib/util/util_tdb.h"
@@ -92,46 +93,8 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev_ctx,
 					struct loadparm_context *lp_ctx)
 {
-	char *path;
-	const char *url;
-	struct ldb_context *ldb;
-
-	url = lp_secrets_url(lp_ctx);
-	if (!url || !url[0]) {
-		return NULL;
-	}
-
-	path = private_path(mem_ctx, lp_ctx, url);
-	if (!path) {
-		return NULL;
-	}
-
-	/* Secrets.ldb *must* always be local.  If we call for a
-	 * system_session() we will recurse */
-	ldb = ldb_init(mem_ctx, ev_ctx);
-	if (!ldb) {
-		talloc_free(path);
-		return NULL;
-	}
-
-	ldb_set_modules_dir(ldb, 
-			    talloc_asprintf(ldb, "%s/ldb", lp_modulesdir(lp_ctx)));
-
-	if (ldb_connect(ldb, path, 0, NULL) != 0) {
-		talloc_free(path);
-		return NULL;
-	}
-
-	/* the update_keytab module relies on this being setup */
-	if (ldb_set_opaque(ldb, "loadparm", lp_ctx) != LDB_SUCCESS) {
-		talloc_free(path);
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	talloc_free(path);
-	
-	return ldb;
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lp_secrets_url(lp_ctx),
+			       NULL, NULL, 0);
 }
 
 /**
