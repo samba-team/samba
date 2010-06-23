@@ -40,6 +40,7 @@
 #include "param/param.h"
 #include "../lib/crypto/md4.h"
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 #include <hdb.h>
 #include "kdc/samba_kdc.h"
 #include "kdc/db-glue.h"
@@ -191,42 +192,10 @@ static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 	talloc_free(entry_ex->ctx);
 }
 
-/* Determine, by translation between the encryption types allowed in
- * the msDS-SupportedEncTypes and their Kerberos defined values, if a
- * given encryption type is permitted for this target principal at
- * this time. */
-static bool allowed_enc_type(enum samba_kdc_ent_type ent_type,
-			     uint32_t supported_enc_types_bitmap, uint32_t enc_type_enum)
-{
-	switch (ent_type) {
-	case SAMBA_KDC_ENT_TYPE_KRBTGT:
-	case SAMBA_KDC_ENT_TYPE_TRUST:
-		/* Disallow krbtgt and trust tickets to be DES encrypted, it's just too dangerous */
-		supported_enc_types_bitmap &= (~ENC_CRC32|ENC_RSA_MD5);
-	case SAMBA_KDC_ENT_TYPE_SERVER:
-		switch (enc_type_enum) {
-		case ENCTYPE_DES_CBC_CRC:
-			return supported_enc_types_bitmap & ENC_CRC32;
-		case ENCTYPE_DES_CBC_MD5:
-			return supported_enc_types_bitmap & ENC_RSA_MD5;
-		case ENCTYPE_ARCFOUR_HMAC_MD5:
-			return supported_enc_types_bitmap & ENC_RC4_HMAC_MD5;
-		case ENCTYPE_AES128_CTS_HMAC_SHA1_96:
-			return supported_enc_types_bitmap & ENC_HMAC_SHA1_96_AES128;
-		case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
-			return supported_enc_types_bitmap & ENC_HMAC_SHA1_96_AES256;
-		default:
-			return false;
-		}
-	default:
-		return true;
-		/* Return all enc types to everyone else */
-	}
-}
-
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    TALLOC_CTX *mem_ctx,
 						    struct ldb_message *msg,
+						    uint32_t rid,
 						    unsigned int userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
 						    hdb_entry_ex *entry_ex)
@@ -244,14 +213,38 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	uint16_t i;
 	uint16_t allocated_keys = 0;
 
-	/* Supported Enc Types for TGS-REQ to this target */
-	uint32_t supported_enc_types = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncTypes",
-								 ENC_CRC32|ENC_RSA_MD5|ENC_RC4_HMAC_MD5);
+	/* Supported Enc for this entry */
+	uint32_t supported_enctypes = ENC_ALL_TYPES; /* by default, we support all enc types */
+
+	/* However, if this is a TGS-REQ, then lock it down to a
+	 * reasonable guess as to what the server can decode.  The
+	 * krbtgt is special - default to use what is stored for the KDC */
+	if (rid != DOMAIN_RID_KRBTGT && ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
+		/* This is the standard set for a server that has not declared a msDS-SupportedEncryptionTypes */
+		supported_enctypes = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+	}
+	supported_enctypes = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncryptionTypes",
+							supported_enctypes);
+	if (rid == DOMAIN_RID_KRBTGT) {
+		/* Be double-sure never to use DES here */
+		supported_enctypes &= ~(ENC_CRC32|ENC_RSA_MD5);
+	}
+
+	switch (ent_type) {
+	case SAMBA_KDC_ENT_TYPE_KRBTGT:
+	case SAMBA_KDC_ENT_TYPE_TRUST:
+		/* Disallow krbtgt and trust tickets to be DES encrypted, it's just too dangerous */
+		supported_enctypes &= ~(ENC_CRC32|ENC_RSA_MD5);
+		break;
+	default:
+		break;
+		/* No further restrictions */
+	}
 
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
 		/* However, don't allow use of DES, if we were told not to by msDS-SupportedEncTypes */
-		supported_enc_types &= ENC_CRC32|ENC_RSA_MD5;
+		supported_enctypes &= ENC_CRC32|ENC_RSA_MD5;
 	}
 
 	entry_ex->entry.keys.val = NULL;
@@ -367,7 +360,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		goto out;
 	}
 
-	if (hash && supported_enc_types & ENC_RC4_HMAC_MD5) {
+	if (hash && (supported_enctypes & ENC_RC4_HMAC_MD5)) {
 		Key key;
 
 		key.mkvno = 0;
@@ -391,7 +384,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			if (!pkb4->keys[i].value) continue;
 
-			if (!allowed_enc_type(ent_type, supported_enc_types, pkb4->keys[i].keytype)) {
+			if (!(kerberos_enctype_to_bitmap(pkb4->keys[i].keytype) & supported_enctypes)) {
 				continue;
 			}
 
@@ -450,7 +443,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			if (!pkb3->keys[i].value) continue;
 
-			if (!allowed_enc_type(ent_type, supported_enc_types, pkb3->keys[i].keytype)) {
+			if (!(kerberos_enctype_to_bitmap(pkb3->keys[i].keytype) & supported_enctypes)) {
 				continue;
 			}
 
@@ -724,7 +717,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = samba_kdc_message2entry_keys(context, p, msg, userAccountControl,
+	ret = samba_kdc_message2entry_keys(context, p, msg, 
+					   rid, userAccountControl,
 					   ent_type, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
