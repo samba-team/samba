@@ -130,7 +130,7 @@ pwdLastSet: 0
             "objectClass": "group"}
 
         if grouptype is not None:
-            ldbmessage["groupType"] = "%d" % ((grouptype)-2**32)
+            ldbmessage["groupType"] = "%d" % grouptype
 
         if description is not None:
             ldbmessage["description"] = description
