@@ -1060,7 +1060,7 @@ sub provision_fl2008r2dc($$)
 				   "localfl2000r2dc",
 				   "SAMBA2008R2",
 				   "samba2008R2.example.com",
-				   "2008_r2",
+				   "2008_R2",
 				   7,
 				   "locDCpass7",
 				   "127.0.0.7", "");
