@@ -219,6 +219,8 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 							 const char *attr_name,
 							 const struct ldb_message_element *old)
 {
+	const struct ldb_map_context *data = map_get_context(module);
+	const char *local_attr_name = attr_name;
 	struct ldb_message_element *el;
 	unsigned int i;
 
@@ -235,7 +237,19 @@ static struct ldb_message_element *ldb_msg_el_map_remote(struct ldb_module *modu
 		return NULL;
 	}
 
-	el->name = talloc_strdup(el, attr_name);
+	for (i = 0; data->attribute_maps[i].local_name; i++) {
+		struct ldb_map_attribute *am = &data->attribute_maps[i];
+		if ((am->type == LDB_MAP_RENAME &&
+			!strcmp(am->u.rename.remote_name, attr_name))
+		    || (am->type == LDB_MAP_CONVERT &&
+			!strcmp(am->u.convert.remote_name, attr_name))) {
+
+			local_attr_name = am->local_name;
+			break;
+		}
+	}
+
+	el->name = talloc_strdup(el, local_attr_name);
 	if (el->name == NULL) {
 		talloc_free(el);
 		map_oom(module);
