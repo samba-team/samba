@@ -25,6 +25,7 @@
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "registry.h"
+#include "libcli/auth/schannel.h"
 
 static_decl_rpc;
 
@@ -1021,6 +1022,13 @@ extern void build_options(bool screen);
 	if (!secrets_init()) {
 		DEBUG(0, ("ERROR: smbd can not open secrets.tdb\n"));
 		exit(1);
+	}
+
+	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
+		if (!open_schannel_session_store(talloc_autofree_context(), lp_private_dir())) {
+			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
+			exit(1);
+		}
 	}
 
 	if(!get_global_sam_sid()) {
