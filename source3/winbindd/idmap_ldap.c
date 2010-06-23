@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "secrets.h"
+#include "idmap_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -72,6 +73,7 @@ struct idmap_ldap_context {
 	char *user_dn;
 	bool anon;
 	struct idmap_ldap_alloc_context *alloc;
+	struct idmap_rw_ops *rw_ops;
 };
 
 #define CHECK_ALLOC_DONE(mem) do { \
@@ -540,6 +542,9 @@ static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
  Initialise idmap database.
 ********************************/
 
+static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
+				       const struct id_map *map);
+
 static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 				   const char *params)
 {
@@ -600,6 +605,12 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 
 	ctx->suffix = talloc_strdup(ctx, tmp);
 	CHECK_ALLOC_DONE(ctx->suffix);
+
+	ctx->rw_ops = talloc_zero(ctx, struct idmap_rw_ops);
+	CHECK_ALLOC_DONE(ctx->rw_ops);
+
+	ctx->rw_ops->get_new_id = idmap_ldap_get_new_id;
+	ctx->rw_ops->set_mapping = idmap_ldap_set_mapping;
 
 	ret = smbldap_init(ctx, winbind_event_context(), ctx->url,
 			   &ctx->smbldap_state);
