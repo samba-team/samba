@@ -2724,6 +2724,33 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
+static struct {
+	const char *name;
+	enum spoolss_JobControl val;
+} cmdvals[] = {
+	{"PAUSE", SPOOLSS_JOB_CONTROL_PAUSE},
+	{"RESUME", SPOOLSS_JOB_CONTROL_RESUME},
+	{"CANCEL", SPOOLSS_JOB_CONTROL_CANCEL},
+	{"RESTART", SPOOLSS_JOB_CONTROL_RESTART},
+	{"DELETE", SPOOLSS_JOB_CONTROL_DELETE},
+	{"SEND_TO_PRINTER", SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER},
+	{"EJECTED", SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED},
+	{"RETAIN", SPOOLSS_JOB_CONTROL_RETAIN},
+	{"RELEASE", SPOOLSS_JOB_CONTROL_RELEASE}
+};
+
+static enum spoolss_JobControl parse_setjob_command(const char *cmd)
+{
+	int i;
+
+	for (i = 0; i < sizeof(cmdvals)/sizeof(cmdvals[0]); i++) {
+		if (strequal(cmdvals[i].name, cmd)) {
+			return cmdvals[i].val;
+		}
+	}
+	return (enum spoolss_JobControl)atoi(cmd);
+}
+
 static WERROR cmd_spoolss_set_job(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx, int argc,
 				  const char **argv)
@@ -2737,11 +2764,13 @@ static WERROR cmd_spoolss_set_job(struct rpc_pipe_client *cli,
 
 	if (argc != 4) {
 		printf("Usage: %s printername job_id command\n", argv[0]);
+		printf("command = [PAUSE|RESUME|CANCEL|RESTART|DELETE|"
+			"SEND_TO_PRINTER|EJECTED|RETAIN|RELEASE]\n");
 		return WERR_OK;
 	}
 
 	job_id = atoi(argv[2]);
-	command = atoi(argv[3]);
+	command = parse_setjob_command(argv[3]);
 
 	/* Open printer handle */
 
