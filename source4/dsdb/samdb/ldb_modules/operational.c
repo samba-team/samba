@@ -217,7 +217,8 @@ static int construct_parent_guid(struct ldb_module *module,
 
 	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs, DSDB_SEARCH_SHOW_DELETED);
 	talloc_free(parent_dn);
-	/* if there is no parentGUID for this object, then return */
+
+	/* if there is no parent for this object, then return */
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
 			 ldb_dn_get_linearized(msg->dn)));
