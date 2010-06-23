@@ -1202,7 +1202,9 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(LIBTSOCKET_OBJ)
 
-IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o @IDMAP_STATIC@
+IDMAP_RW_OBJ = winbindd/idmap_rw.o
+
+IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o $(IDMAP_RW_OBJ) @IDMAP_STATIC@
 
 NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 
@@ -2683,9 +2685,9 @@ bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
 
-bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o winbindd/idmap_rw.o
+bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o $(IDMAP_RW_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) winbindd/idmap_tdb2.o winbindd/idmap_rw.o
+	@$(SHLD_MODULE) winbindd/idmap_tdb2.o $(IDMAP_RW_OBJ)
 
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
