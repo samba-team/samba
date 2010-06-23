@@ -298,7 +298,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 				return NT_STATUS_NO_MEMORY;
 			}
 			rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[i]);
-			if (rtn == -1) {
+			if (rtn != LDB_SUCCESS) {
 				r->out.error_string = NULL;
 				talloc_free(tmp_ctx);
 				return NT_STATUS_NO_MEMORY;
@@ -306,14 +306,14 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		}
 
 		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "dNSHostName", dns_host_name);
-		if (rtn == -1) {
+		if (rtn != LDB_SUCCESS) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		rtn = dsdb_replace(remote_ldb, msg, 0);
-		if (rtn != 0) {
+		if (rtn != LDB_SUCCESS) {
 			r->out.error_string
 				= talloc_asprintf(r, 
 						  "Failed to replace entries on %s", 
@@ -337,7 +337,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 						  ENC_RC4_HMAC_MD5 |
 						  ENC_HMAC_SHA1_96_AES128 |
 						  ENC_HMAC_SHA1_96_AES256));
-	if (rtn == -1) {
+	if (rtn != LDB_SUCCESS) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -346,7 +346,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	rtn = dsdb_replace(remote_ldb, msg, 0);
 	/* The remote server may not support this attribute, if it
 	 * isn't a modern schema */
-	if (rtn != 0 && rtn != LDB_ERR_NO_SUCH_ATTRIBUTE) {
+	if (rtn != LDB_SUCCESS && rtn != LDB_ERR_NO_SUCH_ATTRIBUTE) {
 		r->out.error_string
 			= talloc_asprintf(r,
 					  "Failed to replace msDS-SupportedEncryptionType on %s",
