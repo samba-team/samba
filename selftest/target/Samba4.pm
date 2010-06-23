@@ -881,7 +881,7 @@ sub provision_rpc_proxy($$$)
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING RPC PROXY...";
 
-	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:localdc1
+	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:localdc
        dcerpc endpoint servers = epmapper, remote
        dcerpc_remote:interfaces = rpcecho
 ";
