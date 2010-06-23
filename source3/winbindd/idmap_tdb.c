@@ -241,27 +241,20 @@ static NTSTATUS idmap_tdb_load_ranges(void)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
-				  bool check_config,
-				  struct db_context **dbctx)
+static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
-	TALLOC_CTX *ctx;
+	TALLOC_CTX *mem_ctx;
 	char *tdbfile = NULL;
 	struct db_context *db = NULL;
 	int32_t version;
 	bool config_error = false;
+	struct idmap_tdb_context *ctx;
 
-	ret = idmap_tdb_load_ranges();
-	if (!NT_STATUS_IS_OK(ret)) {
-		config_error = true;
-		if (check_config) {
-			return ret;
-		}
-	}
+	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	/* use our own context here */
-	ctx = talloc_stackframe();
+	mem_ctx = talloc_stackframe();
 
 	/* use the old database if present */
 	tdbfile = state_path("winbindd_idmap.tdb");
@@ -274,7 +267,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 	DEBUG(10,("Opening tdbfile %s\n", tdbfile ));
 
 	/* Open idmap repository */
-	db = db_open(ctx, tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
+	db = db_open(mem_ctx, tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
 	if (!db) {
 		DEBUG(0, ("Unable to open idmap database\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -311,11 +304,11 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 		}
 	}
 
-	*dbctx = talloc_move(memctx, &db);
+	ctx->db = talloc_move(ctx, &db);
 	ret = NT_STATUS_OK;
 
 done:
-	talloc_free(ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -553,12 +546,12 @@ static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom, const char *params)
 	}
 #endif
 
-	ret = idmap_tdb_open_db(ctx, false, &ctx->db);
+	dom->private_data = ctx;
+
+	ret = idmap_tdb_open_db(dom);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		goto failed;
 	}
-
-	dom->private_data = ctx;
 
 	return NT_STATUS_OK;
 
