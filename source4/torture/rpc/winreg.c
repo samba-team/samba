@@ -2136,6 +2136,65 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+static bool test_create_keynames(struct dcerpc_binding_handle *b,
+				 struct torture_context *tctx,
+				 struct policy_handle *handle)
+{
+	const char *keys[] = {
+		"torture_key",
+		"torture key",
+		"torture,key",
+		"torture/key",
+		"torture\\key",
+	};
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(keys); i++) {
+
+		enum winreg_CreateAction action_taken;
+		struct policy_handle new_handle;
+		char *q, *tmp;
+
+		torture_assert(tctx,
+			test_CreateKey_opts(tctx, b, handle, keys[i], NULL,
+					    REG_OPTION_NON_VOLATILE,
+					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    NULL,
+					    WERR_OK,
+					    &action_taken,
+					    &new_handle),
+			talloc_asprintf(tctx, "failed to create '%s' key", keys[i]));
+
+		torture_assert_int_equal(tctx, action_taken, REG_CREATED_NEW_KEY, "unexpected action");
+
+		torture_assert(tctx,
+			test_DeleteKey_opts(b, tctx, handle, keys[i], WERR_OK),
+			"failed to delete key");
+
+		torture_assert(tctx,
+			test_DeleteKey_opts(b, tctx, handle, keys[i], WERR_BADFILE),
+			"failed 2nd delete key");
+
+		tmp = talloc_strdup(tctx, keys[i]);
+
+		q = strchr(tmp, '\\');
+		if (q != NULL) {
+			*q = '\0';
+			q++;
+
+			torture_assert(tctx,
+				test_DeleteKey_opts(b, tctx, handle, tmp, WERR_OK),
+				"failed to delete key");
+
+			torture_assert(tctx,
+				test_DeleteKey_opts(b, tctx, handle, tmp, WERR_BADFILE),
+				"failed 2nd delete key");
+		}
+	}
+
+	return true;
+}
+
 #define KEY_CURRENT_VERSION "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
 #define VALUE_CURRENT_VERSION "CurrentVersion"
 
@@ -2550,6 +2609,8 @@ static bool test_key_base(struct torture_context *tctx,
 				"values SetValue test failed");
 			torture_assert(tctx, test_SetValue_extended(b, tctx, &newhandle),
 				"extended SetValue test failed");
+			torture_assert(tctx, test_create_keynames(b, tctx, &newhandle),
+				"keyname CreateKey test failed");
 		} else {
 			torture_assert(tctx, test_CreateKey_keytypes(tctx, b, &newhandle, test_key1, hkey),
 				"keytype test failed");
