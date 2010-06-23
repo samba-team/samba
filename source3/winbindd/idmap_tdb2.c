@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "idmap_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -40,6 +41,7 @@
 struct idmap_tdb2_context {
 	struct db_context *db;
 	const char *script; /* script to provide idmaps */
+	struct idmap_rw_ops *rw_ops;
 };
 
 /* High water mark keys */
@@ -298,6 +300,16 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
 
 		talloc_free(config_option);
 	}
+
+	ctx->rw_ops = talloc_zero(ctx, struct idmap_rw_ops);
+	if (ctx->rw_ops == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	ctx->rw_ops->get_new_id = idmap_tdb2_get_new_id;
+	ctx->rw_ops->set_mapping = idmap_tdb2_set_mapping;
 
 	dom->private_data = ctx;
 

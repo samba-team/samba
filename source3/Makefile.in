@@ -2661,9 +2661,9 @@ bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
 
-bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
+bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o winbindd/idmap_rw.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) winbindd/idmap_tdb2.o
+	@$(SHLD_MODULE) winbindd/idmap_tdb2.o winbindd/idmap_rw.o
 
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
