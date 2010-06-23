@@ -242,9 +242,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_auth_status = NULL;
 	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_identical_client_and_server;
 	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
-#ifdef HDB_STRUCT_HAS_HDB_CHECK_S4U2SELF
 	(*db)->hdb_check_s4u2self = hdb_samba4_check_identical_client_and_server;
-#endif
 
 	return NT_STATUS_OK;
 }

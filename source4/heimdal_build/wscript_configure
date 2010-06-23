@@ -1,104 +1,61 @@
 #!/usr/bin/env python
-# vim: ft=python expandtab
 
-HEIMDAL_REQ_VERSION = '1.4'
+conf.CHECK_TYPE('u_char', 'uint8_t')
+conf.CHECK_TYPE('u_int32_t', 'uint32_t')
 
-import os
+conf.CHECK_HEADERS('err.h')
 
-try:
-    krb5_config_path = os.environ['KRB5CONFIG']
-except KeyError:
-    krb5_config_path = 'krb5-config'
+conf.CHECK_HEADERS('ifaddrs.h')
+conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
+	              sys/file.h sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h
+		      sys/utsname.h time.h timezone.h ttyname.h netinet/in.h
+		      netinet/in6.h netinet6/in6.h libintl.h''')
 
-# FIXME: See if vendor is heimdal and version provided is >= HEIMDAL_REQ_VERSION,
-# if so: 
-# conf.define('USING_SYSTEM_HEIMDAL', 1)
+conf.CHECK_HEADERS('curses.h term.h termcap.h', together=True)
 
-if not conf.CONFIG_SET("USING_SYSTEM_HEIMDAL"):
-    conf.CHECK_TYPE('u_char', 'uint8_t')
-    conf.CHECK_TYPE('u_int32_t', 'uint32_t')
+conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
+                    putenv rcmd readv sendmsg setitimer strlwr strncasecmp
+		    strptime strsep strsep_copy	strtok_r strupr swab umask uname unsetenv
+		    closefrom err warn errx warnx flock writev''')
 
-    conf.CHECK_HEADERS('err.h')
+conf.CHECK_FUNCS_IN('hstrerror', 'resolv socket nsl', checklibc=True)
+conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent gethostent_r
+                       sethostent endhostent getipnodebyaddr freehostent gethostbyname
+                       gethostbyname_r gethostbyaddr''',
+                    'socket nsl',
+                    checklibc=True)
 
-    conf.CHECK_HEADERS('ifaddrs.h')
-    conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
-                      sys/file.h sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h
-                  sys/utsname.h time.h timezone.h ttyname.h netinet/in.h
-                  netinet/in6.h netinet6/in6.h libintl.h''')
+conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
 
-    conf.CHECK_HEADERS('curses.h term.h termcap.h', together=True)
+conf.CHECK_FUNCS('iruserok')
 
-    conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
-                        putenv rcmd readv sendmsg setitimer strlwr strncasecmp
-                strptime strsep strsep_copy    strtok_r strupr swab umask uname unsetenv
-                closefrom err warn errx warnx flock writev''')
+conf.CHECK_FUNCS('bswap16')
+conf.CHECK_FUNCS('bswap32')
 
-    conf.CHECK_FUNCS_IN('hstrerror', 'resolv socket nsl', checklibc=True)
-    conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent gethostent_r
-                           sethostent endhostent getipnodebyaddr freehostent gethostbyname
-                           gethostbyname_r gethostbyaddr''',
-                        'socket nsl',
-                        checklibc=True)
+conf.CHECK_TYPE('struct winsize', define='HAVE_STRUCT_WINSIZE', headers='sys/termios.h sys/ioctl.h')
+conf.CHECK_STRUCTURE_MEMBER('struct winsize', 'ws_xpixel',
+				    define='HAVE_WS_XPIXEL', headers='sys/termios.h sys/ioctl.h')
+conf.CHECK_STRUCTURE_MEMBER('struct winsize', 'ws_ypixel',
+				    define='HAVE_WS_YPIXEL', headers='sys/termios.h sys/ioctl.h')
+conf.DEFINE('HAVE_KRB_STRUCT_WINSIZE', 1)
+conf.DEFINE('VOID_RETSIGTYPE', 1)
 
-    conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
+conf.CHECK_VARIABLE('h_errno', headers='netdb.h')
 
-    conf.CHECK_FUNCS('iruserok')
+# strangely enough, we need it with another define too
+conf.CHECK_DECLS('h_errno', headers='netdb.h')
 
-    conf.CHECK_FUNCS('bswap16')
-    conf.CHECK_FUNCS('bswap32')
+conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv',
+                    checklibc=True, headers='netinet/in.h arpa/nameser.h resolv.h dns.h')
+conf.CHECK_VARIABLE('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
+conf.CHECK_DECLS('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
+conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h libutil.h')
 
-    conf.CHECK_TYPE('struct winsize', define='HAVE_STRUCT_WINSIZE', headers='sys/termios.h sys/ioctl.h')
-    conf.CHECK_STRUCTURE_MEMBER('struct winsize', 'ws_xpixel',
-                        define='HAVE_WS_XPIXEL', headers='sys/termios.h sys/ioctl.h')
-    conf.CHECK_STRUCTURE_MEMBER('struct winsize', 'ws_ypixel',
-                        define='HAVE_WS_YPIXEL', headers='sys/termios.h sys/ioctl.h')
-    conf.DEFINE('HAVE_KRB_STRUCT_WINSIZE', 1)
-    conf.DEFINE('VOID_RETSIGTYPE', 1)
+conf.DEFINE('HAVE_KRB5',1)
+conf.DEFINE('HAVE_GSSAPI',1)
 
-    conf.CHECK_VARIABLE('h_errno', headers='netdb.h')
+conf.CHECK_FUNCS('dirfd', headers='dirent.h')
+conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
+conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
 
-    # strangely enough, we need it with another define too
-    conf.CHECK_DECLS('h_errno', headers='netdb.h')
-
-    conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 'resolv',
-                        checklibc=True, headers='netinet/in.h arpa/nameser.h resolv.h dns.h')
-    conf.CHECK_VARIABLE('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
-    conf.CHECK_DECLS('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
-    conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h libutil.h')
-
-    conf.DEFINE('HAVE_KRB5',1)
-    conf.DEFINE('HAVE_GSSAPI',1)
-
-    conf.CHECK_FUNCS('dirfd', headers='dirent.h')
-    conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
-    conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
-
-    conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
-
-    conf.DEFINE('HDB_STRUCT_HAS_HDB_CHECK_S4U2SELF', 1)
-else:
-    def krb5_config_flags(library, kind):
-        return os.popen("%s --%s %s" % (krb5_config_path, kind, library)).read().rstrip()
-
-    conf.SET_TARGET_TYPE('HEIMDAL_GSSAPI', 'SYSLIB')
-    conf.env.CCFLAGS_HEIMDAL_GSSAPI = krb5_config_flags("gssapi", "cflags")
-    conf.env.LDFLAGS_HEIMDAL_GSSAPI = krb5_config_flags("gssapi", "libs")
-    conf.SET_TARGET_TYPE('HEIMDAL_KRB5', 'SYSLIB')
-    conf.env.CCFLAGS_HEIMDAL_KRB5 = krb5_config_flags("krb5", "cflags")
-    conf.env.LDFLAGS_HEIMDAL_KRB5 = krb5_config_flags("krb5", "libs")
-    conf.SET_TARGET_TYPE('HEIMDAL_HDB', 'SYSLIB')
-    conf.env.CCFLAGS_HEIMDAL_HDB = krb5_config_flags("krb5", "cflags")
-    conf.env.LDFLAGS_HEIMDAL_HDB = krb5_config_flags("krb5", "libs") + " -lhdb"
-    conf.SET_TARGET_TYPE('HEIMDAL_HDB_KEYS', 'SYSLIB')
-    conf.env.CCFLAGS_HEIMDAL_HDB_KEYS = krb5_config_flags("krb5", "cflags")
-    conf.env.LDFLAGS_HEIMDAL_HDB_KEYS = krb5_config_flags("krb5", "libs") + " -lhdb"
-    conf.SET_TARGET_TYPE('HEIMDAL_KDC', 'SYSLIB')
-    conf.env.CCFLAGS_HEIMDAL_KDC = krb5_config_flags("krb5", "cflags")
-    conf.env.LDFLAGS_HEIMDAL_KDC = krb5_config_flags("krb5", "libs") + " -lkdc"
-
-    conf.CHECK_STRUCTURE_MEMBER('struct HDB', 'hdb_check_s4u2self',
-                        define='HDB_STRUCT_HAS_HDB_CHECK_S4U2SELF', headers='hdb.h')
-
-    conf.DEFINE('HAVE_KRB5',1)
-    conf.DEFINE('HAVE_GSSAPI',1)
-
+conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
