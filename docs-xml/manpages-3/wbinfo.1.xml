@@ -44,7 +44,6 @@
 		<arg choice="opt">--remove-gid-mapping gid,sid</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">--separator</arg>
-		<arg choice="opt">--sequence</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
 		<arg choice="opt">--set-uid-mapping uid,sid</arg>
 		<arg choice="opt">--set-gid-mapping gid,sid</arg>
@@ -125,7 +124,6 @@
 		operations will performed.  If special domain name '.' is used to represent
 		the current domain to which <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> belongs.  Currently only the
-		<option>--sequence</option>,
 		<option>-u</option>, and <option>-g</option> options honor this parameter.
 		</para></listitem>
 		</varlistentry>
@@ -260,12 +258,6 @@
 		<varlistentry>
 		<term>--separator</term>
 		<listitem><para>Get the active winbind separator.
-		</para></listitem>
-
-		</varlistentry>
-		<varlistentry>
-		<term>--sequence</term>
-		<listitem><para>Show sequence numbers of all known domains.
 		</para></listitem>
 		</varlistentry>
 
