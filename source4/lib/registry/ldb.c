@@ -440,7 +440,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct hive_key *k,
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 
-	/* if default value exists, give it back */
+	/* if the default value exists, give it back */
 	if (W_ERROR_IS_OK(ldb_get_default_value(mem_ctx, k, name, data_type,
 		data))) {
 		if (idx == 0)
