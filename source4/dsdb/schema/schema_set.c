@@ -140,6 +140,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		if (mod_msg->num_elements > 0) {
 			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
+		talloc_free(mod_msg);
 	}
 
 	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS || ret == LDB_ERR_INVALID_DN_SYNTAX) {
@@ -168,6 +169,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		if (mod_msg->num_elements > 0) {
 			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
+		talloc_free(mod_msg);
 	}
 	if (ret == LDB_ERR_OPERATIONS_ERROR || ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS || ret == LDB_ERR_INVALID_DN_SYNTAX) {
 		/* We might be on a read-only DB */
