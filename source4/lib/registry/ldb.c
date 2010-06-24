@@ -277,10 +277,15 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
 				      const char *path, const char *add)
 {
 	struct ldb_dn *ret;
-	char *mypath = talloc_strdup(mem_ctx, path);
+	char *mypath;
 	char *begin;
 	struct ldb_key_data *kd = talloc_get_type(from, struct ldb_key_data);
 	struct ldb_context *ldb = kd->ldb;
+
+	mypath = talloc_strdup(mem_ctx, path);
+	if (mypath == NULL) {
+		return NULL;
+	}
 
 	ret = ldb_dn_new(mem_ctx, ldb, add);
 	if (!ldb_dn_validate(ret)) {
@@ -288,32 +293,29 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	while (mypath) {
-		char *keyname;
+	if (!ldb_dn_add_base(ret, kd->dn)) {
+		talloc_free(ret);
+		return NULL;
+	}
 
-		begin = strrchr(mypath, '\\');
-
-		if (begin) keyname = begin + 1;
-		else keyname = mypath;
-
-		if (keyname[0] != '\0') {
-			if (!ldb_dn_add_base_fmt(ret, "key=%s",
-						 reg_ldb_escape(mem_ctx,
-								keyname)))
-			{
-				talloc_free(ret);
-				return NULL;
-			}
+	while (mypath[0] != '\0') {
+		begin = strchr(mypath, '\\');
+		if (begin != NULL) {
+			*begin = '\0';
 		}
 
-		if(begin) {
-			*begin = '\0';
+		if (!ldb_dn_add_child_fmt(ret, "key=%s",
+					  reg_ldb_escape(mem_ctx, mypath))) {
+			talloc_free(ret);
+			return NULL;
+		}
+
+		if (begin != NULL) {
+			mypath = begin + 1;
 		} else {
 			break;
 		}
 	}
-
-	ldb_dn_add_base(ret, kd->dn);
 
 	return ret;
 }
