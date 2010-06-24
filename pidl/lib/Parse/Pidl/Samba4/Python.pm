@@ -126,6 +126,7 @@ sub FromUnionToPythonFunction($$$$)
 			$self->ConvertObjectToPython($mem_ctx, {}, $e, "$name->$e->{NAME}", "ret", "return NULL;");
 		} else {
 			$self->pidl("ret = Py_None;");
+			$self->pidl("Py_INCREF(ret);");
 		}
 
 		$self->pidl("return ret;");
@@ -1052,6 +1053,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 			$self->pidl("if ($var_name == NULL) {");
 			$self->indent;
 			$self->pidl("$py_var = Py_None;");
+			$self->pidl("Py_INCREF($py_var);");
 			$self->deindent;
 			$self->pidl("} else {");
 			$self->indent;
