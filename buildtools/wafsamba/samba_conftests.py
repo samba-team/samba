@@ -242,7 +242,7 @@ WriteMakefile(
 
 
 @conf
-def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True):
+def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True, boolean=False):
     '''run a command and return result'''
     if msg is None:
         msg = 'Checking %s' % ' '.join(cmd)
@@ -255,10 +255,15 @@ def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True):
     except:
         conf.COMPOUND_END(False)
         return False
-    ret = ret.strip()
-    conf.COMPOUND_END(ret)
-    if define:
-        conf.DEFINE(define, ret, quote=True)
+    if boolean:
+        conf.COMPOUND_END('ok')
+        if define:
+            conf.DEFINE(define, '1')
+    else:
+        ret = ret.strip()
+        conf.COMPOUND_END(ret)
+        if define:
+            conf.DEFINE(define, ret, quote=True)
     return ret
 
 
@@ -304,4 +309,25 @@ def CHECK_INLINE(conf):
         conf.COMPOUND_END(i)
     return ret
 
+@conf
+def CHECK_XSLTPROC_MANPAGES(conf):
+    '''check if xsltproc can run with the given stylesheets'''
 
+    stylesheets='http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+
+    if not conf.CONFIG_SET('XSLTPROC'):
+        conf.find_program('xsltproc', var='XSLTPROC')
+    if not conf.CONFIG_SET('XSLTPROC'):
+        return False
+
+    for s in TO_LIST(stylesheets):
+        if not conf.CONFIG_SET('XSLTPROC_%s' % s):
+            ret = conf.CHECK_COMMAND('%s --nonet %s 2> /dev/null' % (conf.env.XSLTPROC, s),
+                                     msg='Checking for stylesheet %s' % s,
+                                     define=None, on_target=False,
+                                     boolean=True)
+            if not ret:
+                return False
+            conf.env['XSLTPROC_%s' % s] = True
+    conf.env['XSLTPROC_MANPAGES'] = True
+    return True
