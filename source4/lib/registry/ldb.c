@@ -372,14 +372,13 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 				   const char **classname,
 				   NTTIME *last_mod_time)
 {
-	struct ldb_message_element *el;
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
 
 	/* Initialization */
 	if (name != NULL)
 		*name = NULL;
 	if (classname != NULL)
-		*classname = NULL; /* TODO: Store properly */
+		*classname = NULL;
 	if (last_mod_time != NULL)
 		*last_mod_time = 0; /* TODO: we need to add this to the
 						ldb backend properly */
@@ -392,12 +391,12 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx,
 	if (idx >= kd->subkey_count)
 		return WERR_NO_MORE_ITEMS;
 
-	el = ldb_msg_find_element(kd->subkeys[idx], "key");
-	SMB_ASSERT(el != NULL);
-	SMB_ASSERT(el->num_values != 0);
-
 	if (name != NULL)
-		*name = talloc_strdup(mem_ctx, (char *)el->values[0].data);
+		*name = talloc_strdup(mem_ctx,
+				      ldb_msg_find_attr_as_string(kd->subkeys[idx], "key", NULL));
+	if (classname != NULL)
+		*classname = talloc_strdup(mem_ctx,
+					   ldb_msg_find_attr_as_string(kd->subkeys[idx], "classname", NULL));
 
 	return WERR_OK;
 }
