@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: expandtab ft=python
 
 # selftest main code.
 
@@ -95,8 +96,6 @@ def cmd_testonly(opt):
         env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
     else:
         env.FILTER_OPTIONS = '${FILTER_XFAIL}'
-        if not Options.options.FILTERED_SUBUNIT:
-            env.FILTER_OPTIONS += ' | ${FORMAT_TEST_OUTPUT}'
 
     if Options.options.VALGRIND:
         os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
@@ -119,11 +118,19 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
+    cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
+        cmd += ' | ${FORMAT_TEST_OUTPUT}'
     cmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % cmd)
     ret = RUN_COMMAND(cmd, env=env)
+    if os.path.exists(".testrepository"):
+        # "testr load -q" isn't
+        cmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
+        cmd = EXPAND_VARIABLES(opt, cmd)
+        RUN_COMMAND(cmd, env=env)
+
     if ret != 0:
         print("ERROR: test failed with exit code %d" % ret)
         sys.exit(ret)
