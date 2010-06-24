@@ -1784,7 +1784,12 @@ static WERROR regdb_set_secdesc(const char *key,
 	if (tdbkey == NULL) {
 		goto done;
 	}
-	normalize_dbkey(tdbkey);
+
+	tdbkey = normalize_reg_path(mem_ctx, tdbkey);
+	if (tdbkey == NULL) {
+		err = WERR_NOMEM;
+		goto done;
+	}
 
 	if (secdesc == NULL) {
 		/* assuming a delete */
