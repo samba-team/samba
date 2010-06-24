@@ -1740,7 +1740,12 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 		err = WERR_NOMEM;
 		goto done;
 	}
-	normalize_dbkey(tdbkey);
+
+	tdbkey = normalize_reg_path(tmp_ctx, tdbkey);
+	if (tdbkey == NULL) {
+		err = WERR_NOMEM;
+		goto done;
+	}
 
 	data = dbwrap_fetch_bystring(regdb, tmp_ctx, tdbkey);
 	if (data.dptr == NULL) {
