@@ -178,7 +178,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 		group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", group_string);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
-
+		talloc_free(group_string);
 		group_blob = data_blob_string_const(group_dn);
 
 		/* This function takes in memberOf values and expands
