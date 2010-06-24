@@ -329,8 +329,8 @@ static WERROR cache_subkeys(struct ldb_key_data *kd)
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL, NULL, "(key=*)");
-
+	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL,
+			 NULL, "(key=*)");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
 			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
@@ -352,7 +352,6 @@ static WERROR cache_values(struct ldb_key_data *kd)
 
 	ret = ldb_search(c, c, &res, kd->dn, LDB_SCOPE_ONELEVEL,
 			 NULL, "(value=*)");
-
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
 			ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
