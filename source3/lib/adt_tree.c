@@ -46,7 +46,7 @@ static bool trim_tree_keypath( char *path, char **base, char **new_path )
 
 	*base = path;
 
-	p = strchr( path, '/' );
+	p = strchr( path, '\\' );
 
 	if ( p ) {
 		*p = '\0';
@@ -214,7 +214,7 @@ WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 
 	DEBUG(8,("pathtree_add: Enter\n"));
 
-	if ( !path || *path != '/' ) {
+	if ( !path || *path != '\\' ) {
 		DEBUG(0,("pathtree_add: Attempt to add a node with a bad path [%s]\n",
 			path ? path : "NULL" ));
 		return WERR_INVALID_PARAM;
@@ -225,7 +225,7 @@ WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 		return WERR_INVALID_PARAM;
 	}
 
-	/* move past the first '/' */
+	/* move past the first '\\' */
 
 	path++;	
 	path2 = SMB_STRDUP( path );
@@ -248,7 +248,7 @@ WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 	do {
 		/* break off the remaining part of the path */
 
-		str = strchr( str, '/' );
+		str = strchr( str, '\\' );
 		if ( str )
 			*str = '\0';
 
@@ -269,7 +269,7 @@ WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 
 		base = str;
 		if ( base ) {
-			*base = '/';
+			*base = '\\';
 			base++;
 			str = base;
 		}
@@ -384,7 +384,7 @@ void* pathtree_find(struct sorted_tree *tree, char *key )
 
 	/* make a copy to play with */
 
-	if ( *key == '/' )
+	if ( *key == '\\' )
 		keystr = SMB_STRDUP( key+1 );
 	else
 		keystr = SMB_STRDUP( key );

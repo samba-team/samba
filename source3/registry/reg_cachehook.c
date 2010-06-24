@@ -46,12 +46,6 @@ static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
 		return WERR_NOMEM;
 	}
 
-	tmp_path = talloc_string_sub(mem_ctx, tmp_path, "\\", "/");
-	if (tmp_path == NULL) {
-		DEBUG(0, ("talloc_string_sub_failed!\n"));
-		return WERR_NOMEM;
-	}
-
 	*path = tmp_path;
 
 	return WERR_OK;

@@ -641,7 +641,7 @@ static WERROR regdb_delete_key_with_prefix(struct db_context *db,
 	if (prefix == NULL) {
 		path = discard_const_p(char, keyname);
 	} else {
-		path = talloc_asprintf(mem_ctx, "%s/%s", prefix, keyname);
+		path = talloc_asprintf(mem_ctx, "%s\\%s", prefix, keyname);
 		if (path == NULL) {
 			goto done;
 		}
@@ -686,14 +686,14 @@ static WERROR regdb_delete_key_lists(struct db_context *db, const char *keyname)
 
 	werr = regdb_delete_values(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+		DEBUG(1, (__location__ " Deleting %s\\%s failed: %s\n",
 			  REG_VALUE_PREFIX, keyname, win_errstr(werr)));
 		goto done;
 	}
 
 	werr = regdb_delete_secdesc(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+		DEBUG(1, (__location__ " Deleting %s\\%s failed: %s\n",
 			  REG_SECDESC_PREFIX, keyname, win_errstr(werr)));
 		goto done;
 	}
@@ -806,7 +806,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	 * Delete a sorted subkey cache for regdb_key_exists, will be
 	 * recreated automatically
 	 */
-	keyname = talloc_asprintf(ctx, "%s/%s", REG_SORTED_SUBKEYS_PREFIX,
+	keyname = talloc_asprintf(ctx, "%s\\%s", REG_SORTED_SUBKEYS_PREFIX,
 				  keyname);
 	if (keyname == NULL) {
 		werr = WERR_NOMEM;
@@ -897,7 +897,7 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 			continue;
 		}
 
-		path = talloc_asprintf(mem_ctx, "%s/%s", store_ctx->key,
+		path = talloc_asprintf(mem_ctx, "%s\\%s", store_ctx->key,
 				       oldkeyname);
 		if (!path) {
 			werr = WERR_NOMEM;
@@ -941,7 +941,7 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 	}
 
 	for (i=0; i<num_subkeys; i++) {
-		path = talloc_asprintf(mem_ctx, "%s/%s", store_ctx->key,
+		path = talloc_asprintf(mem_ctx, "%s\\%s", store_ctx->key,
 				regsubkey_ctr_specific_key(store_ctx->ctr, i));
 		if (!path) {
 			werr = WERR_NOMEM;
@@ -1184,7 +1184,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 		goto done;
 	}
 
-	path = talloc_asprintf(mem_ctx, "%s/%s", key, subkey);
+	path = talloc_asprintf(mem_ctx, "%s\\%s", key, subkey);
 	if (path == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -1228,7 +1228,7 @@ static TDB_DATA regdb_fetch_key_internal(struct db_context *db,
 
 /**
  * check whether a given key name represents a base key,
- * i.e one without a subkey separator ('/' or '\').
+ * i.e one without a subkey separator ('\').
  */
 static bool regdb_key_is_base_key(const char *key)
 {
@@ -1250,7 +1250,7 @@ static bool regdb_key_is_base_key(const char *key)
 		goto done;
 	}
 
-	ret = (strrchr(path, '/') == NULL);
+	ret = (strrchr(path, '\\') == NULL);
 
 done:
 	TALLOC_FREE(mem_ctx);
@@ -1453,7 +1453,7 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 		goto fail;
 	}
 
-	key = talloc_asprintf(talloc_tos(), "%s/%s",
+	key = talloc_asprintf(talloc_tos(), "%s\\%s",
 			      REG_SORTED_SUBKEYS_PREFIX, path);
 	if (key == NULL) {
 		goto fail;
@@ -1533,7 +1533,7 @@ static bool regdb_key_exists(struct db_context *db, const char *key)
 		goto done;
 	}
 
-	p = strrchr(path, '/');
+	p = strrchr(path, '\\');
 	if (p == NULL) {
 		/* this is a base key */
 		value = regdb_fetch_key_internal(db, mem_ctx, path);
@@ -1727,7 +1727,7 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 		goto done;
 	}
 
-	keystr = talloc_asprintf(ctx, "%s/%s", REG_VALUE_PREFIX, key);
+	keystr = talloc_asprintf(ctx, "%s\\%s", REG_VALUE_PREFIX, key);
 	if (!keystr) {
 		goto done;
 	}
@@ -1786,7 +1786,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 
 	SMB_ASSERT( len == data.dsize );
 
-	keystr = talloc_asprintf(ctx, "%s/%s", REG_VALUE_PREFIX, key );
+	keystr = talloc_asprintf(ctx, "%s\\%s", REG_VALUE_PREFIX, key );
 	if (!keystr) {
 		goto done;
 	}
@@ -1835,7 +1835,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 		goto done;
 	}
 
-	tdbkey = talloc_asprintf(tmp_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
+	tdbkey = talloc_asprintf(tmp_ctx, "%s\\%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
 		err = WERR_NOMEM;
 		goto done;
@@ -1880,7 +1880,7 @@ static WERROR regdb_set_secdesc(const char *key,
 		goto done;
 	}
 
-	tdbkey = talloc_asprintf(mem_ctx, "%s/%s", REG_SECDESC_PREFIX, key);
+	tdbkey = talloc_asprintf(mem_ctx, "%s\\%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
 		goto done;
 	}

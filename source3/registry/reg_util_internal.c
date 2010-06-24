@@ -86,9 +86,8 @@ bool reg_split_key(char *path, char **base, char **key)
 }
 
 /**
- * The full path to the registry key is used as database key
- * after the \'s are converted to /'s.
- * Leading and trailing '/' and '\' characters are stripped.
+ * The full path to the registry key is used as database key.
+ * Leading and trailing '\' characters are stripped.
  * Key string is also normalized to UPPER case.
  */
 
@@ -97,22 +96,22 @@ char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname )
 	char *p;
 	char *nkeyname;
 
-	/* skip leading '/' and '\' chars */
+	/* skip leading '\' chars */
 	p = (char *)keyname;
-	while ((*p == '/') || (*p == '\\')) {
+	while (*p == '\\') {
 		p++;
 	}
 
-	nkeyname = talloc_string_sub(ctx, p, "\\", "/");
+	nkeyname = talloc_strdup(ctx, p);
 	if (nkeyname == NULL) {
 		return NULL;
 	}
 
-	/* strip trailing '/' chars */
-	p = strrchr(nkeyname, '/');
+	/* strip trailing '\' chars */
+	p = strrchr(nkeyname, '\\');
 	while ((p != NULL) && (p[1] == '\0')) {
 		*p = '\0';
-		p = strrchr(nkeyname, '/');
+		p = strrchr(nkeyname, '\\');
 	}
 
 	strupper_m(nkeyname);
@@ -139,11 +138,7 @@ char *reg_remaining_path(TALLOC_CTX *ctx, const char *key)
 	}
 	/* normalize_reg_path( new_path ); */
 	if (!(p = strchr(new_path, '\\')) ) {
-		if (!(p = strchr( new_path, '/'))) {
-			p = new_path;
-		} else {
-			p++;
-		}
+		p = new_path;
 	} else {
 		p++;
 	}
