@@ -372,7 +372,7 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("PyObject *result = Py_None;");
+	$self->pidl("PyObject *result;");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/,@{$e->{DIRECTION}}));
 		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
@@ -391,6 +391,8 @@ sub PythonFunctionUnpackOut($$$)
 		$self->pidl("result = PyTuple_New($result_size);");
 		$signature .= "(";
 	} elsif ($result_size == 0) {
+		$self->pidl("result = Py_None;");
+		$self->pidl("Py_INCREF(result);");
 		$signature .= "None";
 	}
 
