@@ -21,6 +21,7 @@
 /* Implementation of internal registry database functions. */
 
 #include "includes.h"
+
 #include "registry.h"
 #include "reg_db.h"
 #include "reg_util_internal.h"
@@ -387,10 +388,77 @@ done:
 	return werr;
 }
 
+static int regdb_normalize_keynames_fn(struct db_record *rec,
+				       void *private_data)
+{
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	const char *keyname;
+	NTSTATUS status;
+
+	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
+		return 0;
+	}
+
+	keyname = strchr((const char *) rec->key.dptr, '/');
+	if (keyname) {
+		struct db_record new_rec;
+
+		keyname = talloc_string_sub(mem_ctx,
+					    (const char *) rec->key.dptr,
+					    "/",
+					    "\\");
+
+		DEBUG(2, ("regdb_normalize_keynames_fn: Convert %s to %s\n",
+			  (const char *) rec->key.dptr,
+			  keyname));
+
+		new_rec.value.dptr = rec->value.dptr;
+		new_rec.value.dsize = rec->value.dsize;
+		new_rec.key.dptr = (unsigned char *) keyname;
+		new_rec.key.dsize = strlen(keyname);
+		new_rec.private_data = rec->private_data;
+
+		/* Delete the original record and store the normalized key */
+		status = rec->delete_rec(rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("regdb_normalize_keynames_fn: "
+				 "tdb_delete for [%s] failed!\n",
+				 rec->key.dptr));
+			return 1;
+		}
+
+		status = rec->store(&new_rec, new_rec.value, TDB_REPLACE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("regdb_normalize_keynames_fn: "
+				 "failed to store new record for [%s]!\n",
+				 keyname));
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static WERROR regdb_upgrade_to_version_2(void)
+{
+	TALLOC_CTX *mem_ctx;
+	int rc;
+
+	mem_ctx = talloc_stackframe();
+	if (mem_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	rc = regdb->traverse(regdb, regdb_normalize_keynames_fn, mem_ctx);
+
+	talloc_destroy(mem_ctx);
+	return (rc == -1 ? WERR_REG_IO_FAILURE : WERR_OK);
+}
+
 /***********************************************************************
  Open the registry database
  ***********************************************************************/
- 
+
 WERROR regdb_init(void)
 {
 	const char *vstring = "INFO/version";
@@ -422,13 +490,12 @@ WERROR regdb_init(void)
 	regdb_refcount = 1;
 
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
-
-	if ( vers_id != REGVER_V1 ) {
+	if (vers_id == -1) {
 		NTSTATUS status;
-		/* any upgrade code here if needed */
+
 		DEBUG(10, ("regdb_init: got %s = %d != %d\n", vstring,
-			   vers_id, REGVER_V1));
-		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V1);
+			   vers_id, REGVER_V2));
+		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
 				  vstring, REGVER_V1, nt_errstr(status)));
@@ -436,6 +503,39 @@ WERROR regdb_init(void)
 		} else {
 			DEBUG(10, ("regdb_init: stored %s = %d\n",
 				  vstring, REGVER_V1));
+		}
+		vers_id = REGVER_V2;
+	}
+
+	if (vers_id != REGVER_V2) {
+		NTSTATUS status;
+
+		if (vers_id == REGVER_V1) {
+			if (regdb->transaction_start(regdb) != 0) {
+				return WERR_REG_IO_FAILURE;
+			}
+
+			werr = regdb_upgrade_to_version_2();
+			if (!W_ERROR_IS_OK(werr)) {
+				regdb->transaction_cancel(regdb);
+				return werr;
+			}
+
+			status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
+					  vstring, REGVER_V1, nt_errstr(status)));
+				regdb->transaction_cancel(regdb);
+				return ntstatus_to_werror(status);
+			} else {
+				DEBUG(10, ("regdb_init: stored %s = %d\n",
+					  vstring, REGVER_V1));
+			}
+			if (regdb->transaction_commit(regdb) != 0) {
+				return WERR_REG_IO_FAILURE;
+			}
+
+			vers_id = REGVER_V2;
 		}
 	}
 

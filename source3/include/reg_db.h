@@ -23,6 +23,7 @@
 #define REG_TDB_FLAGS   TDB_SEQNUM
 
 #define REGVER_V1       1       /* first db version with write support */
+#define REGVER_V2       2       /* version 2 with normalized keys */
 
 #define REG_VALUE_PREFIX    "SAMBA_REGVAL"
 #define REG_SECDESC_PREFIX  "SAMBA_SECDESC"
