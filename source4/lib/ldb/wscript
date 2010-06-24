@@ -46,7 +46,7 @@ def configure(conf):
             conf.define('USING_SYSTEM_LDB', 1)
 
     if conf.env.standalone_ldb:
-        conf.find_program('xsltproc', var='XSLTPROC')
+        conf.CHECK_XSLTPROC_MANPAGES()
 
         # we need this for the ldap backend
         if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):

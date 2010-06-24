@@ -39,8 +39,7 @@ def configure(conf):
 
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
-    if conf.env.standalone_tdb:
-        conf.find_program('xsltproc', var='XSLTPROC')
+    conf.CHECK_XSLTPROC_MANPAGES()
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
