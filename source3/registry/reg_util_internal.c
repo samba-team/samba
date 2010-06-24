@@ -120,16 +120,6 @@ char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname )
 	return nkeyname;
 }
 
-/**
- * normalize ther registry path in place.
- */
-void normalize_dbkey(char *key)
-{
-	size_t len = strlen(key);
-	string_sub(key, "\\", "/", len+1);
-	strupper_m(key);
-}
-
 /**********************************************************************
  move to next non-delimter character
 *********************************************************************/

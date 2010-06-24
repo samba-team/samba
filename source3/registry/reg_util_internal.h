@@ -23,7 +23,6 @@
 bool reg_split_path(char *path, char **base, char **new_path);
 bool reg_split_key(char *path, char **base, char **key);
 char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname );
-void normalize_dbkey(char *key);
 char *reg_remaining_path(TALLOC_CTX *ctx, const char *key);
 
 #endif /* _REG_UTIL_H */
