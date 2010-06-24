@@ -154,25 +154,19 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	if (!gensec_gssapi_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	gensec_gssapi_state->gss_exchange_count = 0;
-	gensec_gssapi_state->max_wrap_buf_size
-		= gensec_setting_int(gensec_security->settings, "gensec_gssapi", "max wrap buf size", 65536);
-		
-	gensec_gssapi_state->sasl = false;
-	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
 
 	gensec_security->private_data = gensec_gssapi_state;
 
 	gensec_gssapi_state->gssapi_context = GSS_C_NO_CONTEXT;
-	gensec_gssapi_state->server_name = GSS_C_NO_NAME;
-	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
-	gensec_gssapi_state->lucid = NULL;
 
 	/* TODO: Fill in channel bindings */
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
+
+	gensec_gssapi_state->server_name = GSS_C_NO_NAME;
+	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
 	
 	gensec_gssapi_state->want_flags = 0;
+
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation_by_kdc_policy", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_DELEG_POLICY_FLAG;
 	}
@@ -189,16 +183,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
 
-	gensec_gssapi_state->got_flags = 0;
-
-	gensec_gssapi_state->session_key = data_blob(NULL, 0);
-	gensec_gssapi_state->pac = data_blob(NULL, 0);
-
-	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
-	gensec_gssapi_state->sig_size = 0;
-
-	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
-
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_gssapi_state->want_flags |= GSS_C_INTEG_FLAG;
 	}
@@ -209,6 +193,8 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
 	}
 
+	gensec_gssapi_state->got_flags = 0;
+
 	switch (gensec_security->ops->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		gensec_gssapi_state->gss_oid = gss_mech_spnego;
@@ -218,6 +204,38 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->gss_oid = gss_mech_krb5;
 		break;
 	}
+
+	gensec_gssapi_state->session_key = data_blob(NULL, 0);
+	gensec_gssapi_state->pac = data_blob(NULL, 0);
+
+	ret = smb_krb5_init_context(gensec_gssapi_state,
+				    gensec_security->event_ctx,
+				    gensec_security->settings->lp_ctx,
+				    &gensec_gssapi_state->smb_krb5_context);
+	if (ret) {
+		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
+			 error_message(ret)));
+		talloc_free(gensec_gssapi_state);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	gensec_gssapi_state->client_cred = NULL;
+	gensec_gssapi_state->server_cred = NULL;
+
+	gensec_gssapi_state->lucid = NULL;
+
+	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+
+	gensec_gssapi_state->sasl = false;
+	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
+	gensec_gssapi_state->sasl_protection = 0;
+
+	gensec_gssapi_state->max_wrap_buf_size
+		= gensec_setting_int(gensec_security->settings, "gensec_gssapi", "max wrap buf size", 65536);
+	gensec_gssapi_state->gss_exchange_count = 0;
+	gensec_gssapi_state->sig_size = 0;
+
+	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
 
 	send_to_kdc.func = smb_krb5_send_and_recv_func;
 	send_to_kdc.ptr = gensec_security->event_ctx;
@@ -247,16 +265,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ret = smb_krb5_init_context(gensec_gssapi_state, 
-				    gensec_security->event_ctx,
-				    gensec_security->settings->lp_ctx,
-				    &gensec_gssapi_state->smb_krb5_context);
-	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
-			 error_message(ret)));
-		talloc_free(gensec_gssapi_state);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 	return NT_STATUS_OK;
 }
 
