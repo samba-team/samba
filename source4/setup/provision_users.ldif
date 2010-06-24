@@ -128,7 +128,7 @@ isCriticalSystemObject: TRUE
 dn: CN=Group Policy Creator Owners,CN=Users,${DOMAINDN}
 objectClass: top
 objectClass: group
-description: Members in this group can modify group policies for the domain
+description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
