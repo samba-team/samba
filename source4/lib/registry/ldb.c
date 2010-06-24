@@ -467,37 +467,34 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 			    DATA_BLOB *data)
 {
 	struct ldb_key_data *kd = talloc_get_type(k, struct ldb_key_data);
-	struct ldb_context *c = kd->ldb;
-	struct ldb_result *res;
-	int ret;
+	const char *res_name;
+	uint32_t idx;
 
 	if (name == NULL) {
 		return WERR_INVALID_PARAM;
 	}
 
+	/* the default value was requested, give it back */
 	if (name[0] == '\0') {
-		/* default value */
 		return ldb_get_default_value(mem_ctx, k, NULL, data_type, data);
-	} else {
-		/* normal value */
-		ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_ONELEVEL,
-				 NULL, "(value=%s)", name);
-
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Error getting values for '%s': %s\n",
-				ldb_dn_get_linearized(kd->dn), ldb_errstring(c)));
-			return WERR_FOOBAR;
-		}
-
-		if (res->count == 0)
-			return WERR_BADFILE;
-
-		reg_ldb_unpack_value(mem_ctx, res->msgs[0], NULL, data_type, data);
-
-		talloc_free(res);
 	}
 
-	return WERR_OK;
+	/* Do the search if necessary */
+	if (kd->values == NULL) {
+		W_ERROR_NOT_OK_RETURN(cache_values(kd));
+	}
+
+	for (idx = 0; idx < kd->value_count; idx++) {
+		res_name = ldb_msg_find_attr_as_string(kd->values[idx], "value",
+						       "");
+		if (ldb_attr_cmp(name, res_name) == 0) {
+			reg_ldb_unpack_value(mem_ctx, kd->values[idx], NULL,
+					     data_type, data);
+			return WERR_OK;
+		}
+	}
+
+	return WERR_BADFILE;
 }
 
 static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
