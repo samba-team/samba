@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 #    backend code for upgrading from Samba3
 #    Copyright Jelmer Vernooij 2005-2007

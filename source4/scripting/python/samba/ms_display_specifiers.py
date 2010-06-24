@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Create DisplaySpecifiers LDIF (as a string) from the documents provided by
 # Microsoft under the WSPP.

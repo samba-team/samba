@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Samba-specific bits for optparse
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007

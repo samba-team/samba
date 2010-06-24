@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # work out what python external libraries we need to install
 external_libs = {

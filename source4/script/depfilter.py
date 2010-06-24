@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Filter out arcs in a dotty graph that are at or below a certain
 # node.  This is useful for visualising parts of the dependency graph.

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Helpers for provision stuff
 # Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010

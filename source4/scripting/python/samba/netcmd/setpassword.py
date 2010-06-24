@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Sets a user password on a Samba4 server
 # Copyright Jelmer Vernooij 2008

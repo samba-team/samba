@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Machine passwords
 # Copyright Jelmer Vernooij 2010

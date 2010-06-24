@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Unix SMB/CIFS implementation. Tests for ntacls manipulation
 # Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010

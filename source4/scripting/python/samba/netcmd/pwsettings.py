@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Sets password settings.
 # (Password complexity, history length, minimum password length, the minimum
