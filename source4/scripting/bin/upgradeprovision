@@ -22,7 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ldb
 import logging
 import optparse
 import os
@@ -34,6 +33,7 @@ import traceback
 # Allow to run from s4 source directory (without installing samba)
 sys.path.insert(0, "bin/python")
 
+import ldb
 import samba
 import samba.getopt as options
 from samba.credentials import DONT_USE_KERBEROS
