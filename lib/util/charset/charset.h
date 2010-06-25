@@ -40,6 +40,29 @@ typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DISPLAY, CH_DOS, CH_UTF8, CH
 typedef uint16_t smb_ucs2_t;
 
 /*
+ * SMB UCS2 (16-bit unicode) internal type.
+ * smb_ucs2_t is *always* in little endian format.
+ */
+
+#ifdef WORDS_BIGENDIAN
+#define UCS2_SHIFT 8
+#else
+#define UCS2_SHIFT 0
+#endif
+
+/* turn a 7 bit character into a ucs2 character */
+#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
+
+/* return an ascii version of a ucs2 character */
+#define UCS2_TO_CHAR(c) (((c) >> UCS2_SHIFT) & 0xff)
+
+/* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
+#define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
+				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
+
+
+
+/*
  *   for each charset we have a function that pulls from that charset to
  *     a ucs2 buffer, and a function that pushes to a ucs2 buffer
  *     */
