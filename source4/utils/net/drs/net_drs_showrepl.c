@@ -126,7 +126,7 @@ static bool net_drs_showrepl_print_dc_info(struct net_drs_context *drs_ctx)
 
 	/* parse NTDS Settings DN */
 	if (!net_drs_parse_ntds_dn(dn, mem_ctx, &dc_name, &site_name, NULL)) {
-		d_printf("Unexptected: Failed to parse %s DN!\n",
+		d_printf("Unexpected: Failed to parse %s DN!\n",
 		         ldb_dn_get_linearized(dn));
 		goto failed;
 	}
@@ -224,7 +224,7 @@ static bool net_drs_exec_DsReplicaGetInfo(struct net_drs_context *drs_ctx,
 	}
 
 	if (info_type != info_type_got) {
-		d_printf("DsReplicaGetInfo: Error requested info %d, got info %d",
+		d_printf("DsReplicaGetInfo: Error requested info %d, got info %d.\n",
 		         info_type, info_type_got);
 		return false;
 	}
@@ -302,7 +302,7 @@ static bool net_drs_showrepl_print_inbound_neihbors(struct net_drs_context *drs_
 	bret = net_drs_exec_DsReplicaGetInfo(drs_ctx,
 	                                     DRSUAPI_DS_REPLICA_INFO_NEIGHBORS, &replica_info);
 	if (!bret) {
-		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES");
+		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES.\n");
 		return false;
 	}
 	reps_from = replica_info.neighbours;
@@ -331,7 +331,7 @@ static bool net_drs_showrepl_print_outbound_neihbors(struct net_drs_context *drs
 	bret = net_drs_exec_DsReplicaGetInfo(drs_ctx,
 	                                     DRSUAPI_DS_REPLICA_INFO_REPSTO, &replica_info);
 	if (!bret) {
-		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES");
+		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES.\n");
 		return false;
 	}
 	reps_to = replica_info.repsto;
@@ -470,7 +470,7 @@ static bool net_drs_showrepl_print_connect_failures(struct net_drs_context *drs_
 	                                     DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES,
 	                                     &replica_info);
 	if (!bret) {
-		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES");
+		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES.\n");
 		return false;
 	}
 	connect_failures = replica_info.connectfailures;
@@ -485,7 +485,7 @@ static bool net_drs_showrepl_print_connect_failures(struct net_drs_context *drs_
 		d_printf("******* %d CONSECUTIVE FAILURES since %s\n",
 			 failure->num_failures,
 			 nt_time_string(mem_ctx, failure->first_failure));
-		d_printf("Last error: %d (%s):",
+		d_printf("Last error: %d (%s):\n",
 		         W_ERROR_V(failure->last_result),
 		         win_errstr(failure->last_result));
 		d_printf("\t\t\t%s\n", get_friendly_werror_msg(failure->last_result));
@@ -513,7 +513,7 @@ static bool net_drs_showrepl_print_link_failures(struct net_drs_context *drs_ctx
 	bret = net_drs_exec_DsReplicaGetInfo(drs_ctx,
 	                                     DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES, &replica_info);
 	if (!bret) {
-		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES");
+		d_printf("DsReplicaGetInfo() failed for DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES.\n");
 		return false;
 	}
 	link_failures = replica_info.linkfailures;
