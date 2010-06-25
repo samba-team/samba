@@ -439,6 +439,27 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 	return 0;
 }
 
+static WERROR regdb_store_regdb_version(uint32_t version)
+{
+	NTSTATUS status;
+	const char *version_keyname = "INFO/version";
+
+	if (!regdb) {
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	status = dbwrap_trans_store_int32(regdb, version_keyname, version);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
+			  version_keyname, version, nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	} else {
+		DEBUG(10, ("regdb_init: stored %s = %d\n",
+			  version_keyname, version));
+		return WERR_OK;
+	}
+}
+
 static WERROR regdb_upgrade_v1_to_v2(void)
 {
 	TALLOC_CTX *mem_ctx;
