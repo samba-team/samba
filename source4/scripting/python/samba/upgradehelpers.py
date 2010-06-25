@@ -422,7 +422,7 @@ def identic_rename(ldbobj, dn):
     :param lbdobj: An Ldb Object
     :param dn: DN of the object to manipulate
     """
-    (before, sep, after)=str(dn).partition('=')
+    (before, after) = str(dn).split('=', 1)
     ldbobj.rename(dn, ldb.Dn(ldbobj, "%s=foo%s" % (before, after)))
     ldbobj.rename(ldb.Dn(ldbobj, "%s=foo%s" % (before, after)), dn)
 
