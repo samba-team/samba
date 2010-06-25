@@ -110,16 +110,19 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 {
 	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
 							   struct dreplsrv_service);
-	struct GUID *guid = &r->in.req->req1.naming_context->guid;
+	struct drsuapi_DsReplicaObjectIdentifier *nc = r->in.req->req1.naming_context;
 
-	r->out.result = dreplsrv_schedule_partition_pull_by_guid(service, msg, guid);
+	r->out.result = dreplsrv_schedule_partition_pull_by_nc(service, msg, nc);
 	if (W_ERROR_IS_OK(r->out.result)) {
-		DEBUG(3,("drepl_replica_sync: forcing sync of partition %s\n",
-			 GUID_string(msg, guid)));
+		DEBUG(3,("drepl_replica_sync: forcing sync of partition (%s, %s)\n",
+			 GUID_string(msg, &nc->guid),
+			 nc->dn));
 		dreplsrv_run_pending_ops(service);
 	} else {
-		DEBUG(3,("drepl_replica_sync: failed setup of sync of partition %s - %s\n",
-			 GUID_string(msg, guid), win_errstr(r->out.result)));
+		DEBUG(3,("drepl_replica_sync: failed setup of sync of partition (%s, %s) - %s\n",
+			 GUID_string(msg, &nc->guid),
+			 nc->dn,
+			 win_errstr(r->out.result)));
 	}
 	return NT_STATUS_OK;
 }

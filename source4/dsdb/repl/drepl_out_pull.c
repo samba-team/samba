@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/composite/composite.h"
+#include "libcli/security/dom_sid.h"
 
 WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
@@ -98,6 +99,34 @@ WERROR dreplsrv_schedule_partition_pull_by_guid(struct dreplsrv_service *s, TALL
 
 	return WERR_NOT_FOUND;
 }
+
+/* force an immediate of the specified partition by Naming Context */
+WERROR dreplsrv_schedule_partition_pull_by_nc(struct dreplsrv_service *s, TALLOC_CTX *mem_ctx,
+					      struct drsuapi_DsReplicaObjectIdentifier *nc)
+{
+	struct dreplsrv_partition *p;
+	bool valid_sid, valid_guid;
+	struct dom_sid null_sid;
+	ZERO_STRUCT(null_sid);
+
+	valid_sid  = !dom_sid_equal(&null_sid, &nc->sid);
+	valid_guid = !GUID_all_zero(&nc->guid);
+
+	if (!valid_sid && !valid_guid && !nc->dn) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	for (p = s->partitions; p; p = p->next) {
+		if ((valid_guid && GUID_equal(&p->nc.guid, &nc->guid))
+		    || strequal(p->nc.dn, nc->dn)
+		    || (valid_sid && dom_sid_equal(&p->nc.sid, &nc->sid))) {
+			return dreplsrv_schedule_partition_pull(s, p, mem_ctx);
+		}
+	}
+
+	return WERR_DS_DRA_BAD_NC;
+}
+
 
 static void dreplsrv_pending_op_callback(struct tevent_req *subreq)
 {
