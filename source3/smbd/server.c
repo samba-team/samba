@@ -1025,7 +1025,7 @@ extern void build_options(bool screen);
 	}
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
-		if (!open_schannel_session_store(talloc_autofree_context(), lp_private_dir())) {
+		if (!open_schannel_session_store(frame, lp_private_dir())) {
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);
 		}
