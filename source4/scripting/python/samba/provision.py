@@ -868,7 +868,7 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
-                    domainsid, invocationid, setup_path,
+                    domainsid, next_rid, invocationid, setup_path,
                     policyguid, policyguid_dc, domainControllerFunctionality,
                     ntdsguid):
     """Join a host to its own domain."""
@@ -890,6 +890,7 @@ def setup_self_join(samdb, names,
               "REALM": names.realm,
               "DOMAIN": names.domain,
               "DOMAINSID": str(domainsid),
+              "DCRID": str(next_rid),
               "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
               "NTDSGUID": ntdsguid_line,
@@ -920,6 +921,8 @@ def setup_self_join(samdb, names,
               "NETBIOSNAME": names.netbiosname,
               "NTDSGUID": names.ntdsguid,
               "DNSPASS_B64": b64encode(dnspass),
+              "RIDALLOCATIONSTART": str(next_rid + 100),
+              "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
@@ -947,7 +950,8 @@ def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
         adminpass, krbtgtpass, machinepass, invocationid, dnspass, ntdsguid,
-        serverrole, am_rodc=False, dom_for_fun_level=None, schema=None):
+        serverrole, am_rodc=False, dom_for_fun_level=None, schema=None,
+        next_rid=1000):
     """Setup a complete SAM Database.
     
     :note: This will wipe the main SAM database file!
@@ -1027,6 +1031,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
             "CREATTIME": str(int(time.time() * 1e7)), # seconds -> ticks
             "DOMAINSID": str(domainsid),
+            "NEXTRID": str(next_rid),
             "SCHEMADN": names.schemadn, 
             "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
@@ -1109,6 +1114,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
             "SERVERDN": names.serverdn,
+            "RIDAVAILABLESTART": str(next_rid + 600),
             "POLICYGUID_DC": policyguid_dc
             })
 
@@ -1132,7 +1138,9 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
             setup_self_join(samdb, names=names, invocationid=invocationid,
                             dnspass=dnspass,
                             machinepass=machinepass,
-                            domainsid=domainsid, policyguid=policyguid,
+                            domainsid=domainsid,
+                            next_rid=next_rid,
+                            policyguid=policyguid,
                             policyguid_dc=policyguid_dc,
                             setup_path=setup_path,
                             domainControllerFunctionality=domainControllerFunctionality,

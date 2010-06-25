@@ -68,7 +68,7 @@ replace: msDS-PerUserTrustTombstonesQuota
 msDS-PerUserTrustTombstonesQuota: 10
 -
 replace: nextRid
-nextRid: 1000
+nextRid: ${NEXTRID}
 -
 replace: nTMixedDomain
 nTMixedDomain: 0
