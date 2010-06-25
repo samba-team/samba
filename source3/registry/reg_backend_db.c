@@ -462,7 +462,7 @@ static WERROR regdb_upgrade_to_version_2(void)
 WERROR regdb_init(void)
 {
 	const char *vstring = "INFO/version";
-	uint32 vers_id;
+	uint32 vers_id, expected_version;
 	WERROR werr;
 
 	if (regdb) {
@@ -489,55 +489,70 @@ WERROR regdb_init(void)
 
 	regdb_refcount = 1;
 
+	expected_version = REGVER_V2;
+
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
 	if (vers_id == -1) {
 		NTSTATUS status;
 
-		DEBUG(10, ("regdb_init: got %s = %d != %d\n", vstring,
-			   vers_id, REGVER_V2));
+		DEBUG(10, ("regdb_init: registry version uninitialized "
+			   "(got %d), initializing to version %d\n",
+			   vers_id, expected_version));
+
+		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
+				  vstring, expected_version, nt_errstr(status)));
+			return ntstatus_to_werror(status);
+		} else {
+			DEBUG(10, ("regdb_init: stored %s = %d\n",
+				  vstring, expected_version));
+		}
+
+		return WERR_OK;
+	}
+
+	if (vers_id > expected_version || vers_id == 0) {
+		DEBUG(1, ("regdb_init: unknown registry version %d "
+			  "(code version = %d), refusing initialization\n",
+			  vers_id, expected_version));
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	if (vers_id == REGVER_V1) {
+		NTSTATUS status;
+
+		DEBUG(10, ("regdb_init: got registry db version %d, upgrading "
+			   "to version %d\n", REGVER_V1, REGVER_V2));
+
+		if (regdb->transaction_start(regdb) != 0) {
+			return WERR_REG_IO_FAILURE;
+		}
+
+		werr = regdb_upgrade_to_version_2();
+		if (!W_ERROR_IS_OK(werr)) {
+			regdb->transaction_cancel(regdb);
+			return werr;
+		}
+
 		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
 				  vstring, REGVER_V2, nt_errstr(status)));
+			regdb->transaction_cancel(regdb);
 			return ntstatus_to_werror(status);
 		} else {
 			DEBUG(10, ("regdb_init: stored %s = %d\n",
 				  vstring, REGVER_V2));
 		}
+		if (regdb->transaction_commit(regdb) != 0) {
+			return WERR_REG_IO_FAILURE;
+		}
+
 		vers_id = REGVER_V2;
 	}
 
-	if (vers_id != REGVER_V2) {
-		NTSTATUS status;
-
-		if (vers_id == REGVER_V1) {
-			if (regdb->transaction_start(regdb) != 0) {
-				return WERR_REG_IO_FAILURE;
-			}
-
-			werr = regdb_upgrade_to_version_2();
-			if (!W_ERROR_IS_OK(werr)) {
-				regdb->transaction_cancel(regdb);
-				return werr;
-			}
-
-			status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
-					  vstring, REGVER_V2, nt_errstr(status)));
-				regdb->transaction_cancel(regdb);
-				return ntstatus_to_werror(status);
-			} else {
-				DEBUG(10, ("regdb_init: stored %s = %d\n",
-					  vstring, REGVER_V2));
-			}
-			if (regdb->transaction_commit(regdb) != 0) {
-				return WERR_REG_IO_FAILURE;
-			}
-
-			vers_id = REGVER_V2;
-		}
-	}
+	/* future upgrade code should go here */
 
 	return WERR_OK;
 }
