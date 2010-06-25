@@ -1111,6 +1111,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* copy in the info3 */
 	result->info3 = i3 = copy_netr_SamInfo3(result, info3);
+	if (result->info3 == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Fill in the unix info we found on the way */
 	result->utok.uid = pwd->pw_uid;
