@@ -498,11 +498,11 @@ WERROR regdb_init(void)
 		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
-				  vstring, REGVER_V1, nt_errstr(status)));
+				  vstring, REGVER_V2, nt_errstr(status)));
 			return ntstatus_to_werror(status);
 		} else {
 			DEBUG(10, ("regdb_init: stored %s = %d\n",
-				  vstring, REGVER_V1));
+				  vstring, REGVER_V2));
 		}
 		vers_id = REGVER_V2;
 	}
@@ -524,12 +524,12 @@ WERROR regdb_init(void)
 			status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
-					  vstring, REGVER_V1, nt_errstr(status)));
+					  vstring, REGVER_V2, nt_errstr(status)));
 				regdb->transaction_cancel(regdb);
 				return ntstatus_to_werror(status);
 			} else {
 				DEBUG(10, ("regdb_init: stored %s = %d\n",
-					  vstring, REGVER_V1));
+					  vstring, REGVER_V2));
 			}
 			if (regdb->transaction_commit(regdb) != 0) {
 				return WERR_REG_IO_FAILURE;
