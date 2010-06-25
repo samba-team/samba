@@ -464,6 +464,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 {
 	TALLOC_CTX *mem_ctx;
 	int rc;
+	WERROR werr;
 
 	mem_ctx = talloc_stackframe();
 	if (mem_ctx == NULL) {
@@ -473,7 +474,13 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 	rc = regdb->traverse(regdb, regdb_normalize_keynames_fn, mem_ctx);
 
 	talloc_destroy(mem_ctx);
-	return (rc == -1 ? WERR_REG_IO_FAILURE : WERR_OK);
+
+	if (rc == -1) {
+		return WERR_REG_IO_FAILURE;
+	}
+
+	werr = regdb_store_regdb_version(REGVER_V2);
+	return werr;
 }
 
 /***********************************************************************
@@ -541,8 +548,6 @@ WERROR regdb_init(void)
 	}
 
 	if (vers_id == REGVER_V1) {
-		NTSTATUS status;
-
 		DEBUG(10, ("regdb_init: got registry db version %d, upgrading "
 			   "to version %d\n", REGVER_V1, REGVER_V2));
 
@@ -556,16 +561,6 @@ WERROR regdb_init(void)
 			return werr;
 		}
 
-		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
-				  vstring, REGVER_V2, nt_errstr(status)));
-			regdb->transaction_cancel(regdb);
-			return ntstatus_to_werror(status);
-		} else {
-			DEBUG(10, ("regdb_init: stored %s = %d\n",
-				  vstring, REGVER_V2));
-		}
 		if (regdb->transaction_commit(regdb) != 0) {
 			return WERR_REG_IO_FAILURE;
 		}
