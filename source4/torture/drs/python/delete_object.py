@@ -101,7 +101,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
     def _make_username(self):
         return "DrsDelObjUser_" + time.strftime("%s", time.gmtime())
-    
+
     def _check_user(self, sam_ldb, user_orig, is_deleted):
         # search the user by guid as it may be deleted
         guid_str = self._GUID_string(user_orig["objectGUID"][0])
@@ -120,7 +120,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
             self.assertEquals(user_cur["isDeleted"][0],"TRUE")
             self.assertTrue(not("objectCategory" in user_cur))
             self.assertTrue(not("sAMAccountType" in user_cur))
-            self.assertTrue(dodn in str(user_cur["dn"]), 
+            self.assertTrue(dodn in str(user_cur["dn"]),
                             "User %s is deleted but it is not located under %s!" % (name_orig, dodn))
             self.assertEquals(name_cur, name_orig + "\nDEL:" + guid_str)
         else:
@@ -135,10 +135,10 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         net_cmd = os.path.abspath("./bin/net")
         # make command line credentials string
         creds = samba.tests.cmdline_credentials
-        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(), 
+        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
                                          creds.get_username(), creds.get_password())
         # bin/net drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s drs replicate %s %s %s %s" % (net_cmd, DC, fromDC, 
+        cmd_line = "%s drs replicate %s %s %s %s" % (net_cmd, DC, fromDC,
                                                      self.domain_dn, cmd_line_auth)
         ret = os.system(cmd_line)
         self.assertEquals(ret, 0, "Replicating %s from %s has failed!" % (DC, fromDC))
@@ -213,7 +213,7 @@ def connect_samdb(samdb_url):
             samdb_url = "ldap://%s" % samdb_url
             # user 'paged_search' module when connecting remotely
             ldb_options = ["modules:paged_searches"]
-    
+
     return SamDB(url=samdb_url,
                  lp=samba.tests.env_loadparm(),
                  session_info=system_session(),
