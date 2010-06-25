@@ -344,7 +344,7 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
     ldb.add_ldif(data, controls)
 
 
-def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
+def setup_modify_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
     """Modify a ldb in the private dir.
     
     :param ldb: LDB object.
@@ -352,7 +352,7 @@ def setup_modify_ldif(ldb, ldif_path, subst_vars=None):
     :param subst_vars: Optional dictionary with substitution variables.
     """
     data = read_and_sub_file(ldif_path, subst_vars)
-    ldb.modify_ldif(data)
+    ldb.modify_ldif(data, controls)
 
 
 def setup_ldb(ldb, ldif_path, subst_vars):
