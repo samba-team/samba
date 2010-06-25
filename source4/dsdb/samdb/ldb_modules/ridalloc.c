@@ -491,7 +491,12 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		prev_alloc_pool_lo = prev_alloc_pool & 0xFFFFFFFF;
 		prev_alloc_pool_hi = prev_alloc_pool >> 32;
 
-		/* update the rIDUsedPool attribute */
+		/*
+		 * update the rIDUsedPool attribute
+		 *
+		 * Note: w2k8r2 doesn't update this attribute,
+		 *       at least if it's itself the rid master.
+		 */
 		ret = dsdb_module_set_integer(module, rid_set_dn, "rIDUsedPool", rid_used_pool+1);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, __location__ ": Failed to update rIDUsedPool on %s - %s",
