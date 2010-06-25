@@ -62,12 +62,12 @@ net_drs_server_dn_from_dc_name(struct net_drs_context *drs_ctx,
 	                     "(&(objectCategory=server)(|(name=%1$s)(dNSHostName=%1$s)))",
 	                     dc_name);
 	if (ldb_err != LDB_SUCCESS) {
-		d_printf("ldb_seach() failed with err: %d (%s);",
+		d_printf("ldb_seach() failed with err: %d (%s).\n",
 		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb));
 		goto failed;
 	}
 	if (ldb_res->count != 1) {
-		d_printf("ldb_search() should return exactly one record!");
+		d_printf("ldb_search() should return exactly one record!\n");
 		goto failed;
 	}
 
@@ -116,12 +116,12 @@ static bool net_drs_ntds_guid_from_dc_name(struct net_drs_context *drs_ctx,
 	                     server_dn, LDB_SCOPE_ONELEVEL, attrs,
 	                     "%s", "(|(objectCategory=nTDSDSA)(objectCategory=nTDSDSARO))");
 	if (ldb_err != LDB_SUCCESS) {
-		d_printf("ldb_seach() failed with err: %d (%s)",
+		d_printf("ldb_seach() failed with err: %d (%s).\n",
 		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb));
 		goto failed;
 	}
 	if (ldb_res->count != 1) {
-		d_printf("ldb_search() should return exactly one record!");
+		d_printf("ldb_search() should return exactly one record!\n");
 		goto failed;
 	}
 
@@ -171,10 +171,12 @@ static bool net_drs_replicate_sync_nc(struct net_drs_context *drs_ctx,
 	status = dcerpc_drsuapi_DsReplicaSync_r(drs_conn->drs_handle, drs_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		d_printf("DsReplicaSync failed - %s.\n", errstr);
+		d_printf("DsReplicaSync RPC failed - %s.\n", errstr);
 		return false;
 	} else if (!W_ERROR_IS_OK(req.out.result)) {
-		d_printf("DsReplicaSync failed - %s.\n", win_errstr(req.out.result));
+		d_printf("DsReplicaSync failed - %s (nc=[%s], dsa_guid=[%s]).\n",
+		         win_errstr(req.out.result),
+		         nc.dn, GUID_string(drs_ctx, &ntds_guid_src));
 		return false;
 	}
 
