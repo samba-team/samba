@@ -957,6 +957,15 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
     :note: This will wipe the main SAM database file!
     """
 
+
+    # Provision does not make much sense values larger than 1000000000
+    # as the upper range of the rIDAvailablePool is 1073741823 and
+    # we don't want to create a domain that cannot allocate rids.
+    if next_rid < 1000 or next_rid > 1000000000:
+        error = "You want to run SAMBA 4 with a next_rid of %u, " % (next_rid)
+        error += "the valid range is %u-%u. The default is %u." % (1000, 1000000000, 1000)
+        raise ProvisioningError(error)
+
     # ATTENTION: Do NOT change these default values without discussion with the
     # team and/or release manager. They have a big impact on the whole program!
     domainControllerFunctionality = DS_DOMAIN_FUNCTION_2008_R2
@@ -1216,7 +1225,8 @@ def provision(setup_dir, logger, session_info,
               rootdn=None, domaindn=None, schemadn=None, configdn=None, 
               serverdn=None,
               domain=None, hostname=None, hostip=None, hostip6=None, 
-              domainsid=None, adminpass=None, ldapadminpass=None, 
+              domainsid=None, next_rid=1000,
+              adminpass=None, ldapadminpass=None,
               krbtgtpass=None, domainguid=None, 
               policyguid=None, policyguid_dc=None, invocationid=None,
               machinepass=None, ntdsguid=None,
@@ -1436,7 +1446,8 @@ def provision(setup_dir, logger, session_info,
                             invocationid=invocationid, 
                             machinepass=machinepass, dnspass=dnspass, 
                             ntdsguid=ntdsguid, serverrole=serverrole,
-                            dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc)
+                            dom_for_fun_level=dom_for_fun_level,
+                            am_rodc=am_rodc, next_rid=next_rid)
 
         if serverrole == "domain controller":
             if paths.netlogon is None:

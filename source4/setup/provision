@@ -107,6 +107,8 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
 		  choices=["2000", "2003", "2008", "2008_R2"],
 		help="The domain and forest function level (2003 | 2008 | 2008_R2). Default is (Windows) 2003 (Native).")
+parser.add_option("--next-rid", type="int", metavar="NEXTRID", default=1000,
+		help="The initial nextRid value (only needed for upgrades).  Default is 1000.")
 parser.add_option("--partitions-only", 
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
 parser.add_option("--targetdir", type="string", metavar="DIR", 
@@ -253,7 +255,7 @@ try:
 		  ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
 		  slapd_path=opts.slapd_path, setup_ds_path=opts.setup_ds_path,
 		  nosync=opts.nosync, ldap_dryrun_mode=opts.ldap_dryrun_mode, 
-		  useeadb=eadb)
+		  useeadb=eadb, next_rid=opts.next_rid)
 except ProvisioningError, e:
 	print str(e)
 	exit(1)
