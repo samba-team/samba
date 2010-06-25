@@ -551,6 +551,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (orig->sidcount) {
+		info3->sidcount = orig->sidcount;
 		info3->sids = talloc_array(info3, struct netr_SidAttr,
 					   orig->sidcount);
 		RET_NOMEM(info3->sids);
@@ -558,6 +559,8 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 			info3->sids[i].sid = sid_dup_talloc(info3->sids,
 							    orig->sids[i].sid);
 			RET_NOMEM(info3->sids[i].sid);
+			info3->sids[i].attributes =
+				orig->sids[i].attributes;
 		}
 	}
 
