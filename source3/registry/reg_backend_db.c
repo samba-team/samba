@@ -521,23 +521,12 @@ WERROR regdb_init(void)
 
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
 	if (vers_id == -1) {
-		NTSTATUS status;
-
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
 			   vers_id, expected_version));
 
-		status = dbwrap_trans_store_int32(regdb, vstring, REGVER_V2);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
-				  vstring, expected_version, nt_errstr(status)));
-			return ntstatus_to_werror(status);
-		} else {
-			DEBUG(10, ("regdb_init: stored %s = %d\n",
-				  vstring, expected_version));
-		}
-
-		return WERR_OK;
+		werr = regdb_store_regdb_version(expected_version);
+		return werr;
 	}
 
 	if (vers_id > expected_version || vers_id == 0) {
