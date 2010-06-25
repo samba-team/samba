@@ -517,3 +517,4 @@ plantestsuite "blackbox.upgradeprovision.py" none PYTHON="$PYTHON" $samba4srcdir
 plantestsuite "blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_setpassword.sh "$PREFIX/provision"
 plantestsuite "blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
 plantestsuite "blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
+plantestsuite_loadlist "blaat" none PYTHON="$PYTHON" "$samba4srcdir/record.py"

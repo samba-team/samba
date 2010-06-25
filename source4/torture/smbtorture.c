@@ -410,9 +410,10 @@ int main(int argc,char *argv[])
 	int num_extra_users = 0;
 	char **restricted = NULL;
 	int num_restricted = -1;
+	const char *load_list = NULL;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
-	      OPT_EXTRA_USER,OPT_LOAD_LIST,};
+	      OPT_EXTRA_USER,};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -442,7 +443,7 @@ int main(int argc,char *argv[])
 		 "set maximum time for smbtorture to live", "seconds"},
 		{"extra-user",   0, POPT_ARG_STRING, NULL, OPT_EXTRA_USER,
 		 "extra user credentials", NULL},
-		{"load-list", 0, POPT_ARG_STRING, NULL, OPT_LOAD_LIST,
+		{"load-list", 0, POPT_ARG_STRING, &load_list, 0,
 	     "load a test id list from a text file", NULL},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
@@ -496,19 +497,20 @@ int main(int argc,char *argv[])
 				talloc_free(option);
 			}
 			break;
-		case OPT_LOAD_LIST:
-			restricted = file_lines_load(optarg, &num_restricted, 0,
-										 talloc_autofree_context());
-			if (restricted == NULL) {
-				printf("Unable to read load list file '%s'\n", optarg);
-				exit(1);
-			}
-			break;
 		default:
 			if (opt < 0) {
 				printf("bad command line option %d\n", opt);
 				exit(1);
 			}
+		}
+	}
+
+	if (load_list != NULL) {
+		restricted = file_lines_load(load_list, &num_restricted, 0,
+									 talloc_autofree_context());
+		if (restricted == NULL) {
+			printf("Unable to read load list file '%s'\n", load_list);
+			exit(1);
 		}
 	}
 
