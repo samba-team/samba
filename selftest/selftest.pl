@@ -944,6 +944,8 @@ $envvarstr
 			next;
 		}
 
+		# Generate a file with the individual tests to run, if the 
+		# test runner for this test suite supports it.
 		if ($$_[3] and $individual_tests and $individual_tests->{$name}) {
 			my ($fh, $listid_file) = tempfile(UNLINK => 0);
 			foreach (@{$individual_tests->{$name}}) {
