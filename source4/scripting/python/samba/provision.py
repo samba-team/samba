@@ -920,9 +920,16 @@ def setup_self_join(samdb, names,
               "SERVERDN": names.serverdn,
               "NETBIOSNAME": names.netbiosname,
               "NTDSGUID": names.ntdsguid,
-              "DNSPASS_B64": b64encode(dnspass),
               "RIDALLOCATIONSTART": str(next_rid + 100),
               "RIDALLOCATIONEND": str(next_rid + 100 + 499),
+              })
+
+    # This is Samba4 specific and should be replacted by the correct
+    # DNS AD-style setup
+    setup_add_ldif(samdb, setup_path("provision_dns_add.ldif"), {
+              "DNSDOMAIN": names.dnsdomain,
+              "DOMAINDN": names.domaindn,
+              "DNSPASS_B64": b64encode(dnspass),
               })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):

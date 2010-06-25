@@ -780,11 +780,6 @@ objectClass: top
 objectClass: container
 isCriticalSystemObject: TRUE
 
-dn: CN=MicrosoftDNS,CN=System,${DOMAINDN}
-objectClass: top
-objectClass: container
-displayName: DNS Servers
-
 dn: CN=Password Settings Container,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: msDS-PasswordSettingsContainer
