@@ -439,7 +439,7 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 	return 0;
 }
 
-static WERROR regdb_upgrade_to_version_2(void)
+static WERROR regdb_upgrade_v1_to_v2(void)
 {
 	TALLOC_CTX *mem_ctx;
 	int rc;
@@ -529,7 +529,7 @@ WERROR regdb_init(void)
 			return WERR_REG_IO_FAILURE;
 		}
 
-		werr = regdb_upgrade_to_version_2();
+		werr = regdb_upgrade_v1_to_v2();
 		if (!W_ERROR_IS_OK(werr)) {
 			regdb->transaction_cancel(regdb);
 			return werr;
