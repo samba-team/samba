@@ -22,6 +22,7 @@ import uuid
 
 from samba.auth import system_session
 from samba.provision import setup_samdb, guess_names, make_smbconf, find_setup_dir, provision_paths_from_lp
+from samba.provision import DEFAULT_POLICY_GUID, DEFAULT_DC_POLICY_GUID
 from samba.provisionbackend import ProvisionBackend
 from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
@@ -47,7 +48,7 @@ class SamDBTestCase(TestCaseInTempDir):
         configdn = "CN=Configuration," + domaindn
         schemadn = "CN=Schema," + configdn
         domainguid = str(uuid.uuid4())
-        policyguid = str(uuid.uuid4())
+        policyguid = DEFAULT_POLICY_GUID
         domainsid = security.random_sid()
         path = os.path.join(self.tempdir, "samdb.ldb")
         session_info = system_session()
@@ -56,7 +57,7 @@ class SamDBTestCase(TestCaseInTempDir):
         domain="EXAMPLE"
         dnsdomain="example.com" 
         serverrole="domain controller"
-        policyguid_dc = str(uuid.uuid4()).upper()
+        policyguid_dc = DEFAULT_DC_POLICY_GUID
 
         smbconf = os.path.join(self.tempdir, "smb.conf")
         make_smbconf(smbconf, self.setup_path, hostname, domain, dnsdomain, 
