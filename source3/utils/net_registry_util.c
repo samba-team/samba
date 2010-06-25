@@ -98,7 +98,9 @@ void print_registry_value_with_name(const char *valname,
 /**
  * Split path into hive name and subkeyname
  * normalizations performed:
- *  - convert '/' to '\\'
+ *  - if the path contains no '\\' characters,
+ *    assume that the legacy format of using '/'
+ *    as a separator is used and  convert '/' to '\\'
  *  - strip trailing '\\' chars
  */
 WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
@@ -115,7 +117,12 @@ WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
 		return WERR_INVALID_PARAM;
 	}
 
-	*hivename = talloc_string_sub(ctx, path, "/", "\\");
+	if (strchr(path, '\\') == NULL) {
+		*hivename = talloc_string_sub(ctx, path, "/", "\\");
+	} else {
+		*hivename = talloc_strdup(ctx, path);
+	}
+
 	if (*hivename == NULL) {
 		return WERR_NOMEM;
 	}
