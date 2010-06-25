@@ -563,6 +563,16 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	}
 
+	/*
+	 * We have to re-fetch ads from the domain,
+	 * nss_get_info_cached might have invalidated it.
+	 */
+	ads = ads_cached_connection(domain);
+	if (ads == NULL) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
+
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
 		DEBUG(1,("No primary group for %s !?\n",
 			 sid_string_dbg(sid)));
