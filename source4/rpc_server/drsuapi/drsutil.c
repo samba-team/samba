@@ -153,5 +153,4 @@ void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 	default:
 		return;
 	}
-	return;
 }
