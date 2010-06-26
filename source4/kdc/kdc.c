@@ -219,10 +219,10 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 
 	/* First add the length of the out buffer */
 	RSIVAL(call->out_hdr, 0, call->out.length);
-	call->out_iov[0].iov_base = call->out_hdr;
+	call->out_iov[0].iov_base = (char *) call->out_hdr;
 	call->out_iov[0].iov_len = 4;
 
-	call->out_iov[1].iov_base = call->out.data;
+	call->out_iov[1].iov_base = (char *) call->out.data;
 	call->out_iov[1].iov_len = call->out.length;
 
 	subreq = tstream_writev_queue_send(call,
