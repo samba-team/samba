@@ -233,7 +233,6 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 		return kpasswdd_change_password(kdc, mem_ctx, session_info,
 						&password, reply);
-		break;
 	}
 	case KRB5_KPASSWD_VERS_SETPW:
 	{
@@ -407,7 +406,6 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 								 version),
 						 reply);
 	}
-	return true;
 }
 
 bool kpasswdd_process(struct kdc_server *kdc,
