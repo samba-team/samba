@@ -477,8 +477,6 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 	default:
 		return WERR_INVALID_PARAM;
 	}
-
-	return WERR_INVALID_PARAM;
 }
 
 /*
