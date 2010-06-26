@@ -185,8 +185,6 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			  nt_errstr(status)));
 		return false;
 	}
-
-	return true;
 }
 
 /*
