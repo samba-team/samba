@@ -924,7 +924,7 @@ def setup_self_join(samdb, names,
               "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })
 
-    # This is Samba4 specific and should be replacted by the correct
+    # This is partially Samba4 specific and should be replaced by the correct
     # DNS AD-style setup
     setup_add_ldif(samdb, setup_path("provision_dns_add.ldif"), {
               "DNSDOMAIN": names.dnsdomain,
