@@ -68,8 +68,6 @@ static WERROR dcesrv_srvsvc_NetCharDevEnum(struct dcesrv_call_state *dce_call, T
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_OK;
 }
 
 
@@ -93,8 +91,6 @@ static WERROR dcesrv_srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -140,8 +136,6 @@ static WERROR dcesrv_srvsvc_NetCharDevQEnum(struct dcesrv_call_state *dce_call, 
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -165,8 +159,6 @@ static WERROR dcesrv_srvsvc_NetCharDevQGetInfo(struct dcesrv_call_state *dce_cal
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -194,8 +186,6 @@ static WERROR dcesrv_srvsvc_NetCharDevQSetInfo(struct dcesrv_call_state *dce_cal
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -251,8 +241,6 @@ static WERROR dcesrv_srvsvc_NetConnEnum(struct dcesrv_call_state *dce_call, TALL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -288,8 +276,6 @@ static WERROR dcesrv_srvsvc_NetFileEnum(struct dcesrv_call_state *dce_call, TALL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -313,8 +299,6 @@ static WERROR dcesrv_srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, T
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -390,8 +374,6 @@ static WERROR dcesrv_srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -618,8 +600,6 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 static WERROR dcesrv_srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -699,8 +679,6 @@ static WERROR dcesrv_srvsvc_fiel_ShareInfo(struct dcesrv_call_state *dce_call, T
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 /* 
@@ -949,8 +927,6 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -1087,8 +1063,6 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 static WERROR dcesrv_srvsvc_fill_share_info(struct share_info *info, int *count,
@@ -1527,8 +1501,6 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -1575,8 +1547,6 @@ static WERROR dcesrv_srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -1656,8 +1626,6 @@ static WERROR dcesrv_srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call,
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 /* 
@@ -1786,8 +1754,6 @@ static WERROR dcesrv_srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, 
 	default:
 		return WERR_INVALID_PARAM;
 	}
-
-	return WERR_INVALID_PARAM;
 }
 
 
@@ -2045,8 +2011,6 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
