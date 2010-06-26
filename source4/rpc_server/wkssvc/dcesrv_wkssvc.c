@@ -83,8 +83,6 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -147,8 +145,6 @@ static WERROR dcesrv_wkssvc_NetWkstaTransportEnum(struct dcesrv_call_state *dce_
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_UNKNOWN_LEVEL;
 }
 
 
