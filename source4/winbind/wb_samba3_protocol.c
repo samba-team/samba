@@ -263,7 +263,7 @@ NTSTATUS wbsrv_samba3_send_reply(struct wbsrv_samba3_call *call)
 	status = wbsrv_samba3_push_reply(call);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	call->out_iov[0].iov_base = call->out.data;
+	call->out_iov[0].iov_base = (char *) call->out.data;
 	call->out_iov[0].iov_len = call->out.length;
 
 	subreq = tstream_writev_queue_send(call,
