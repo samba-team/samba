@@ -26,7 +26,7 @@ static const struct {
 	const char *domain;
 	const char *name;
 	const char *sid;
-	int rtype;
+	enum lsa_SidType rtype;
 } well_known[] = {
 	{
 		.name = "EVERYONE",
@@ -219,7 +219,7 @@ static NTSTATUS lookup_well_known_names(TALLOC_CTX *mem_ctx, const char *domain,
 
 static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx, 
 				       const char *sid_str, const char **authority_name, 
-				       const char **name, uint32_t *rtype) 
+				       const char **name, enum lsa_SidType *rtype) 
 {
 	unsigned int i;
 	for (i=0; well_known[i].sid; i++) {
@@ -939,7 +939,8 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		const char *name = r->in.names[i].string;
 		const char *authority_name;
 		struct dom_sid *sid;
-		uint32_t rtype, sid_index, rid=0;
+		uint32_t sid_index, rid=0;
+		enum lsa_SidType rtype;
 		NTSTATUS status2;
 
 		r->out.sids->count++;
