@@ -90,7 +90,7 @@ static int net_g_lock_do(struct net_context *c, int argc, const char **argv)
 
 	status = g_lock_do(name, G_LOCK_WRITE,
 			   timeval_set(timeout / 1000, timeout % 1000),
-			   net_g_lock_do_fn, &state);
+			   procid_self(), net_g_lock_do_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR: g_lock_do failed: %s\n",
 			  nt_errstr(status));

@@ -206,7 +206,7 @@ again:
 		goto done;
 	}
 
-	self = procid_self();
+	self = messaging_server_id(ctx->msg);
 	our_index = -1;
 
 	for (i=0; i<num_locks; i++) {
@@ -312,8 +312,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		status = ctdb_watch_us(
-			messaging_ctdbd_connection(procid_self()));
+		struct server_id my_id = messaging_server_id(ctx->msg);
+		status = ctdb_watch_us(messaging_ctdbd_connection(my_id));
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("could not register retry with ctdb: %s\n",
 				   nt_errstr(status)));
@@ -388,9 +388,11 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 
 #ifdef CLUSTER_SUPPORT
 		if (lp_clustering()) {
+			struct server_id my_id;
 			struct ctdbd_connection *conn;
 
-			conn = messaging_ctdbd_connection(procid_self());
+			my_id = messaging_server_id(ctx->msg);
+			conn = messaging_ctdbd_connection(my_id);
 
 			r_fds = &_r_fds;
 			FD_ZERO(r_fds);
@@ -591,11 +593,12 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 {
 	NTSTATUS status;
 
-	status = g_lock_force_unlock(ctx, name, procid_self());
+	status = g_lock_force_unlock(ctx, name, messaging_server_id(ctx->msg));
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		ctdb_unwatch(messaging_ctdbd_connection(procid_self()));
+		struct server_id my_id = messaging_server_id(ctx->msg);
+		ctdb_unwatch(messaging_ctdbd_connection(my_id));
 	}
 #endif
 	return status;
@@ -708,6 +711,7 @@ NTSTATUS g_lock_get(struct g_lock_ctx *ctx, const char *name,
 static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 			    struct tevent_context **pev,
 			    struct messaging_context **pmsg,
+			    const struct server_id self,
 			    struct g_lock_ctx **pg_ctx)
 {
 	struct tevent_context *ev = NULL;
@@ -719,7 +723,7 @@ static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
 	}
-	msg = messaging_init(mem_ctx, procid_self(), ev);
+	msg = messaging_init(mem_ctx, self, ev);
 	if (msg == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto fail;
@@ -742,7 +746,7 @@ fail:
 }
 
 NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
-		   struct timeval timeout,
+		   struct timeval timeout, const struct server_id self,
 		   void (*fn)(void *private_data), void *private_data)
 {
 	struct tevent_context *ev = NULL;
@@ -750,7 +754,7 @@ NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
 	struct g_lock_ctx *g_ctx = NULL;
 	NTSTATUS status;
 
-	if (!g_lock_init_all(talloc_tos(), &ev, &msg, &g_ctx)) {
+	if (!g_lock_init_all(talloc_tos(), &ev, &msg, self, &g_ctx)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
