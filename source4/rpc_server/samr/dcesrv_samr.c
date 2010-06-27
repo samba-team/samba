@@ -3183,6 +3183,9 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 21:
+		if (r->in.info->info21.fields_present == 0)
+			return NT_STATUS_INVALID_PARAMETER;
+
 #define IFSET(bit) if (bit & r->in.info->info21.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");
@@ -3253,6 +3256,9 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 23:
+		if (r->in.info->info23.info.fields_present == 0)
+			return NT_STATUS_INVALID_PARAMETER;
+
 #define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info23.info.acct_expiry,    "accountExpires");
@@ -3320,6 +3326,9 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 25:
+		if (r->in.info->info25.info.fields_present == 0)
+			return NT_STATUS_INVALID_PARAMETER;
+
 #define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info25.info.acct_expiry,    "accountExpires");
