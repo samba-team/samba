@@ -607,26 +607,3 @@ NTSTATUS _wbint_RemoveMapping(struct pipes_struct *p,
 
 	return idmap_remove_mapping(&map);
 }
-
-NTSTATUS _wbint_SetHWM(struct pipes_struct *p, struct wbint_SetHWM *r)
-{
-	struct unixid id;
-	NTSTATUS status;
-
-	id.id = r->in.id;
-
-	switch (r->in.type) {
-	case WBINT_ID_TYPE_UID:
-		id.type = ID_TYPE_UID;
-		status = idmap_set_uid_hwm(&id);
-		break;
-	case WBINT_ID_TYPE_GID:
-		id.type = ID_TYPE_GID;
-		status = idmap_set_gid_hwm(&id);
-		break;
-	default:
-		status = NT_STATUS_INVALID_PARAMETER;
-		break;
-	}
-	return status;
-}

@@ -1280,7 +1280,6 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_ping_dc.o \
 		winbindd/winbindd_set_mapping.o \
 		winbindd/winbindd_remove_mapping.o \
-		winbindd/winbindd_set_hwm.o \
 		winbindd/winbindd_pam_auth.o \
 		winbindd/winbindd_pam_auth_crap.o \
 		winbindd/winbindd_pam_chauthtok.o \
