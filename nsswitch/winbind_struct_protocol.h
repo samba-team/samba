@@ -117,7 +117,6 @@ enum winbindd_cmd {
 	WINBINDD_ALLOCATE_GID,
 	WINBINDD_SET_MAPPING,
 	WINBINDD_REMOVE_MAPPING,
-	WINBINDD_SET_HWM,
 
 	/* Miscellaneous other stuff */
 
@@ -169,7 +168,6 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_GID2SID,
 	WINBINDD_DUAL_SET_MAPPING,
 	WINBINDD_DUAL_REMOVE_MAPPING,
-	WINBINDD_DUAL_SET_HWM,
 
 	/* Wrapper around possibly blocking unix nss calls */
 	WINBINDD_DUAL_USERINFO,

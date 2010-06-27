@@ -830,13 +830,6 @@ struct tevent_req *winbindd_remove_mapping_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_remove_mapping_recv(struct tevent_req *req,
 				      struct winbindd_response *response);
 
-struct tevent_req *winbindd_set_hwm_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct winbindd_cli_state *cli,
-					 struct winbindd_request *request);
-NTSTATUS winbindd_set_hwm_recv(struct tevent_req *req,
-			       struct winbindd_response *response);
-
 struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct winbindd_cli_state *cli,
