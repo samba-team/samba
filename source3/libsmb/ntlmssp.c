@@ -900,8 +900,6 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				  DATA_BLOB reply, DATA_BLOB *next_request)
 {
-	struct NEGOTIATE_MESSAGE negotiate;
-
 	if (ntlmssp_state->unicode) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 	} else {
@@ -921,11 +919,17 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		  ntlmssp_state->client.netbios_name);
 
 	if (DEBUGLEVEL >= 10) {
-		if (NT_STATUS_IS_OK(ntlmssp_pull_NEGOTIATE_MESSAGE(next_request,
-					       ntlmssp_state,
-					       &negotiate)))
-		{
-			NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE, &negotiate);
+		struct NEGOTIATE_MESSAGE *negotiate = talloc(
+			talloc_tos(), struct NEGOTIATE_MESSAGE);
+		if (negotiate != NULL) {
+			NTSTATUS status;
+			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
+				next_request, negotiate, negotiate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
+						negotiate);
+			}
+			TALLOC_FREE(negotiate);
 		}
 	}
 
@@ -958,8 +962,6 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB encrypted_session_key = data_blob_null;
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct CHALLENGE_MESSAGE challenge;
-	struct AUTHENTICATE_MESSAGE authenticate;
 
 	if (ntlmssp_state->use_ccache) {
 		struct wbcCredentialCacheParams params;
@@ -1025,11 +1027,18 @@ noccache:
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		if (NT_STATUS_IS_OK(ntlmssp_pull_CHALLENGE_MESSAGE(&reply,
-					       ntlmssp_state,
-					       &challenge)))
-		{
-			NDR_PRINT_DEBUG(CHALLENGE_MESSAGE, &challenge);
+		struct CHALLENGE_MESSAGE *challenge = talloc(
+			talloc_tos(), struct CHALLENGE_MESSAGE);
+		if (challenge != NULL) {
+			NTSTATUS status;
+			challenge->NegotiateFlags = chal_flags;
+			status = ntlmssp_pull_CHALLENGE_MESSAGE(
+				&reply, challenge, challenge);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(CHALLENGE_MESSAGE,
+						challenge);
+			}
+			TALLOC_FREE(challenge);
 		}
 	}
 
@@ -1213,11 +1222,19 @@ noccache:
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		if (NT_STATUS_IS_OK(ntlmssp_pull_AUTHENTICATE_MESSAGE(next_request,
-						  ntlmssp_state,
-						  &authenticate)))
-		{
-			NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE, &authenticate);
+		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
+			talloc_tos(), struct AUTHENTICATE_MESSAGE);
+		if (authenticate != NULL) {
+			NTSTATUS status;
+			authenticate->NegotiateFlags =
+				ntlmssp_state->neg_flags;
+			status = ntlmssp_pull_AUTHENTICATE_MESSAGE(
+				next_request, authenticate, authenticate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE,
+						authenticate);
+			}
+			TALLOC_FREE(authenticate);
 		}
 	}
 
