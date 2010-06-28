@@ -704,7 +704,8 @@ static int acl_check_self_membership(struct ldb_module *module,
 				     const struct GUID *oc_guid,
 				     const struct dsdb_attribute *attr)
 {
-	int ret, i;
+	int ret;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *user_dn;
