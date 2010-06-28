@@ -4,14 +4,24 @@ srcdir = '..'
 blddir = 'bin'
 
 APPNAME='samba'
+VERSION=None
 
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options, samba_dist, Scripting
 
-version = wafsamba.samba_version_file("./VERSION")
 
-VERSION=version.STRING
+def load_version(have_git=False):
+    '''load samba versions either from ./VERSION or git
+    return a version object for detailed breakdown'''
+    import samba_utils, Utils
+    if not have_git:
+        env = samba_utils.LOAD_ENVIRONMENT()
+        have_git = 'GIT' in env
+    version = wafsamba.samba_version_file("./VERSION", have_git=have_git)
+    Utils.g_module.VERSION = version.STRING
+    return version
+
 
 samba_dist.DIST_DIRS('.')
 
@@ -51,6 +61,8 @@ def set_options(opt):
 
 
 def configure(conf):
+    version = load_version(have_git=True)
+
     conf.DEFINE('PACKAGE_NAME', 'samba', quote=True)
     conf.DEFINE('PACKAGE_STRING', 'Samba ' + version.STRING, quote=True)
     conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
@@ -129,6 +141,7 @@ def ctags(ctx):
 # of commands in --help
 def build(bld):
     '''build all targets'''
+    load_version()
     pass
 
 
@@ -154,10 +167,12 @@ def wafdocs(ctx):
 
 def dist():
     '''makes a tarball for distribution'''
+    load_version()
     samba_dist.dist()
 
 def distcheck():
     '''test that distribution tarball builds and installs'''
+    load_version()
     import Scripting
     d = Scripting.distcheck
     d(subdir='source4')

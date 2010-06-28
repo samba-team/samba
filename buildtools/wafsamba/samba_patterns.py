@@ -10,7 +10,9 @@ def write_version_header(task):
     src = task.inputs[0].srcpath(task.env)
     tgt = task.outputs[0].bldpath(task.env)
 
-    version = samba_version_file(src)
+    have_git = 'GIT' in task.env
+
+    version = samba_version_file(src, have_git=have_git)
     string = str(version)
    
     f = open(tgt, 'w')
@@ -24,5 +26,6 @@ def SAMBA_MKVERSION(bld, target):
     t = bld.SAMBA_GENERATOR('VERSION', 
                             rule=write_version_header,
                             source= 'VERSION',
-                            target=target)
+                            target=target,
+                            always=True)
 Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION

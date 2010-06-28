@@ -1,8 +1,7 @@
-import os;
-import subprocess;
+import Utils;
 
 class samba_version(object):
-    def __init__(self, version_dict):
+    def __init__(self, version_dict, have_git=False):
         '''Determine the version number of samba
 
 See VERSION for the format.  Entries on that file are 
@@ -63,19 +62,21 @@ also accepted as dictionary entries here
 
         if self.IS_GIT_SNAPSHOT:
             #Get version from GIT
-            try:
-                git = subprocess.Popen('git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', stdout=subprocess.PIPE, close_fds=True, shell=True)
-                (output, errors) = git.communicate()
-                lines = output.splitlines();
+            if have_git:
+                git = Utils.cmd_output('git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True)
+            else:
+                git = ''
+
+            if git == '':
+                SAMBA_VERSION_STRING += "-GIT-UNKNOWN"
+            else:
+                lines = git.splitlines();
                 self.GIT_COMMIT_ABBREV = lines[0]
                 self.GIT_COMMIT_TIME = lines[1]
                 self.GIT_COMMIT_FULLREV = lines[2]
                 self.GIT_COMMIT_DATE = lines[3]
 
                 SAMBA_VERSION_STRING += ("-GIT-" + self.GIT_COMMIT_ABBREV)
-            except IndexError:
-                SAMBA_VERSION_STRING += "-GIT-UNKNOWN"
-                pass
 
         self.OFFICIAL_STRING=SAMBA_VERSION_STRING
 
@@ -147,7 +148,7 @@ also accepted as dictionary entries here
 
 
 class samba_version_file(samba_version):
-    def __init__(self, version_file):
+    def __init__(self, version_file, have_git=False):
         '''Parse the version information from a VERSION file'''
         f = open(version_file, 'r')
         version_dict = {}
@@ -166,5 +167,4 @@ class samba_version_file(samba_version):
                 print "Failed to parse line %s from %s" % (line, version_file)
                 raise
             
-        super(samba_version_file, self).__init__(version_dict)
-        
+        super(samba_version_file, self).__init__(version_dict, have_git=have_git)
