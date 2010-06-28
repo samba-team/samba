@@ -2424,6 +2424,8 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 				struct regval_blob *value;
 				DATA_BLOB blob;
 
+				ZERO_STRUCT(blob);
+
 				/* although samba replies with sane data in most cases we
 				   should try to avoid writing wrong registry data */
 
