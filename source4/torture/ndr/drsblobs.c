@@ -60,7 +60,7 @@ static bool forest_trust_info_check_out(struct torture_context *tctx,
 }
 
 static bool trust_domain_passwords_check_in(struct torture_context *tctx,
-					    struct TrustDomainPasswords *r)
+					    struct trustDomainPasswords *r)
 {
 	/* FIXME: fill in, once we have working and correct IDL - gd */
 	return true;
