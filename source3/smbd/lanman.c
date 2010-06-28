@@ -774,7 +774,7 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	union spoolss_DriverInfo driver_info;
-	union spoolss_JobInfo *job_info;
+	union spoolss_JobInfo *job_info = NULL;
 	union spoolss_PrinterInfo printer_info;
 
 	if (!str1 || !str2 || !p) {
