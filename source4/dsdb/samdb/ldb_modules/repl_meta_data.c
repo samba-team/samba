@@ -2827,6 +2827,21 @@ static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *
 				      new_m->originating_change_time);
 }
 
+static struct replPropertyMetaData1 *
+replmd_replPropertyMetaData1_find_attid(struct replPropertyMetaDataBlob *md_blob,
+                                        enum drsuapi_DsAttributeId attid)
+{
+	int i;
+	struct replPropertyMetaDataCtr1 *rpmd_ctr = &md_blob->ctr.ctr1;
+
+	for (i = 0; i < rpmd_ctr->count; i++) {
+		if (rpmd_ctr->array[i].attid == attid) {
+			return &rpmd_ctr->array[i];
+		}
+	}
+	return NULL;
+}
+
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 {
 	struct ldb_context *ldb;
@@ -2838,6 +2853,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
+	struct replPropertyMetaData1 *md_remote;
+	struct replPropertyMetaData1 *md_local;
 	unsigned int i;
 	uint32_t j,ni=0;
 	unsigned int removed_attrs = 0;
@@ -2848,24 +2865,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	rmd = ar->objs->objects[ar->index_current].meta_data;
 	ZERO_STRUCT(omd);
 	omd.version = 1;
-
-	/*
-	 * TODO: check repl data is correct after a rename
-	 */
-	if (ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_request rename %s => %s\n",
-			  ldb_dn_get_linearized(ar->search_msg->dn),
-			  ldb_dn_get_linearized(msg->dn));
-		if (dsdb_module_rename(ar->module,
-				       ar->search_msg->dn, msg->dn,
-				       DSDB_FLAG_OWN_MODULE) != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "replmd_replicated_request rename %s => %s failed - %s\n",
-				  ldb_dn_get_linearized(ar->search_msg->dn),
-				  ldb_dn_get_linearized(msg->dn),
-				  ldb_errstring(ldb));
-			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
-		}
-	}
 
 	/* find existing meta data */
 	omd_value = ldb_msg_find_ldb_val(ar->search_msg, "replPropertyMetaData");
@@ -2879,6 +2878,42 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 		if (omd.version != 1) {
 			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+		}
+	}
+
+	/* check if remote 'name' has change,
+	 * which indicates a rename operation */
+	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTRIBUTE_name);
+	if (md_remote) {
+		md_local = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTRIBUTE_name);
+		SMB_ASSERT(md_local);
+		if (replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
+			SMB_ASSERT(ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0);
+			/* TODO: Find appropriate local name (dn) for the object
+			 *       and modify msg->dn appropriately */
+
+			DEBUG(4,("replmd_replicated_request rename %s => %s\n",
+				  ldb_dn_get_linearized(ar->search_msg->dn),
+				  ldb_dn_get_linearized(msg->dn)));
+/*
+			ldb_debug(ldb, LDB_DEBUG_TRACE,
+				  "replmd_replicated_request rename %s => %s\n",
+				  ldb_dn_get_linearized(ar->search_msg->dn),
+				  ldb_dn_get_linearized(msg->dn));
+*/
+			/* pass rename to the next module
+			 * so it doesn't appear as an originating update */
+			ret = dsdb_module_rename(ar->module,
+			                         ar->search_msg->dn, msg->dn,
+			                         0);
+			if (ret != LDB_SUCCESS) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL,
+				          "replmd_replicated_request rename %s => %s failed - %s\n",
+					  ldb_dn_get_linearized(ar->search_msg->dn),
+					  ldb_dn_get_linearized(msg->dn),
+					  ldb_errstring(ldb));
+				return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
+			}
 		}
 	}
 
