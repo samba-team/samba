@@ -463,7 +463,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct netr_SamInfo3 *user = NULL;
-	gid_t gid;
+	gid_t gid = -1;
 	int ret;
 	char *ads_name;
 
@@ -471,7 +471,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->homedir = NULL;
 	info->shell = NULL;
-	info->primary_gid = (gid_t)-1;
 
 	/* try netsamlogon cache first */
 
