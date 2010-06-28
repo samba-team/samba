@@ -50,6 +50,14 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_WSTR2(tctx, field, value, flags) \
+do { \
+	if (!field.s || strcmp(field.s, value) || \
+	    wire_bad_flags(&field, flags, cli->transport)) { \
+		torture_result(tctx, TORTURE_FAIL, \
+		    "(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
+	} \
+} while (0)
 
 /* 
    basic testing of change notify on directories
@@ -1594,7 +1602,96 @@ done:
 }
 
 
-/* 
+/*
+   testing alignment of multiple change notify infos
+*/
+static bool test_notify_alignment(struct smbcli_state *cli,
+    struct torture_context *tctx)
+{
+	NTSTATUS status;
+	union smb_notify notify;
+	union smb_open io;
+	int i, fnum, fnum2;
+	struct smbcli_request *req;
+	const char *fname = BASEDIR "\\starter";
+	const char *fnames[] = { "a",
+				 "ab",
+				 "abc",
+				 "abcd" };
+	int num_names = ARRAY_SIZE(fnames);
+	const char *fpath = NULL;
+
+	torture_comment(tctx, "TESTING CHANGE NOTIFY REPLY ALIGNMENT\n");
+
+	/* get a handle on the directory */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				       NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	torture_assert_ntstatus_ok(tctx, status, "");
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify, on file creation */
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
+	notify.nttrans.in.buffer_size = 1000;
+	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_FILE_NAME;
+	notify.nttrans.in.file.fnum = fnum;
+	notify.nttrans.in.recursive = false;
+
+	/* start change tracking */
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+
+	fnum2 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum2 != -1, smbcli_errstr(cli->tree));
+	smbcli_close(cli->tree, fnum2);
+
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
+	torture_assert_ntstatus_ok(tctx, status, "");
+
+	/* create 4 files that will cause CHANGE_NOTIFY_INFO structures
+	 * to be returned in the same packet with all possible 4-byte padding
+	 * permutations.  As per MS-CIFS 2.2.7.4.2 these structures should be
+	 * 4-byte aligned. */
+
+	for (i = 0; i < num_names; i++) {
+		fpath = talloc_asprintf(tctx, "%s\\%s", BASEDIR, fnames[i]);
+		fnum2 = smbcli_open(cli->tree, fpath,
+		    O_CREAT|O_RDWR, DENY_NONE);
+		torture_assert(tctx, fnum2 != -1, smbcli_errstr(cli->tree));
+		smbcli_close(cli->tree, fnum2);
+		talloc_free(fpath);
+	}
+
+	/* We send a notify packet, and let smb_raw_changenotify_recv() do
+	 * the alignment checking for us. */
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smb_raw_changenotify_recv(req, tctx, &notify);
+	torture_assert_ntstatus_ok(tctx, status, "");
+
+	/* Do basic checking for correctness. */
+	torture_assert(tctx, notify.nttrans.out.num_changes == num_names, "");
+	for (i = 0; i < num_names; i++) {
+		torture_assert(tctx, notify.nttrans.out.changes[i].action ==
+		    NOTIFY_ACTION_ADDED, "");
+		CHECK_WSTR2(tctx, notify.nttrans.out.changes[i].name, fnames[i],
+		    STR_UNICODE);
+	}
+
+	return true;
+}
+
+/*
    basic testing of change notify
 */
 bool torture_raw_notify(struct torture_context *torture, 
@@ -1621,6 +1718,7 @@ bool torture_raw_notify(struct torture_context *torture,
 	ret &= test_notify_tree(cli, torture);
 	ret &= test_notify_overflow(cli, torture);
 	ret &= test_notify_basedir(cli, torture);
+	ret &= test_notify_alignment(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
