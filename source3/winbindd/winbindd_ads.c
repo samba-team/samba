@@ -516,15 +516,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			      &gid);
 		info->primary_gid = gid;
 
-		status = NT_STATUS_OK;
-		goto done;
+		return NT_STATUS_OK;
 	}
 
 	/* no cache...do the query */
 
 	if ( (ads = ads_cached_connection(domain)) == NULL ) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		goto done;
+		return NT_STATUS_SERVER_DISABLED;
 	}
 
 	sidstr = sid_binstring(talloc_tos(), sid);
@@ -532,22 +531,22 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ret = asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
 	if (ret == -1) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	SAFE_FREE(ldap_exp);
 	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
 			 sid_string_dbg(sid), ads_errstr(rc)));
-		goto done;
+		return ads_ntstatus(rc);
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
 		DEBUG(1,("query_user(sid=%s): Not found\n",
 			 sid_string_dbg(sid)));
-		goto done;
+		ads_msgfree(ads, msg);
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
@@ -555,9 +554,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
 		DEBUG(1,("No primary group for %s !?\n",
 			 sid_string_dbg(sid)));
-		goto done;
+		ads_msgfree(ads, msg);
+		return NT_STATUS_NO_SUCH_USER;
 	}
-
 	sid_copy(&info->user_sid, sid);
 	sid_compose(&info->group_sid, &domain->sid, group_rid);
 
@@ -566,7 +565,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	 * nss_get_info_cached call. nss_get_info_cached might destroy
 	 * the ads struct, potentially invalidating the ldap message.
 	 */
-
 	ads_name = ads_pull_string(ads, mem_ctx, msg, "name");
 
 	ads_msgfree(ads, msg);
@@ -579,7 +577,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("nss_get_info_cached failed: %s\n",
 			  nt_errstr(status)));
-		goto done;
+		return status;
 	}
 
 	if (info->full_name == NULL) {
@@ -591,8 +589,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 
 	DEBUG(3,("ads query_user gave %s\n", info->acct_name));
-done:
-	return status;
+	return NT_STATUS_OK;
 }
 
 /* Lookup groups a user is a member of - alternate method, for when
