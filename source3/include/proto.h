@@ -818,8 +818,6 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_d
 /* The following definitions come from lib/smbldap.c  */
 
 int smb_ldap_start_tls(LDAP *ldap_struct, int version);
-int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri);
-int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version) ;
 int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
 int smbldap_search(struct smbldap_state *ldap_state, 
 		   const char *base, int scope, const char *filter, 

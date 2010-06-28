@@ -744,7 +744,7 @@ int smb_ldap_start_tls(LDAP *ldap_struct, int version)
  setup a connection to the LDAP server based on a uri
 *******************************************************************/
 
-int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
+static int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 {
 	int rc;
 
@@ -848,7 +848,7 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
  version 
  *******************************************************************/
 
-int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version) 
+static int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
 {
 	int version;
 	int rc;
