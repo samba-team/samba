@@ -352,8 +352,7 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 		case 1: {
 			struct drsuapi_DsNameCtr1 *ctr1;
 			struct drsuapi_DsNameInfo1 *names;
-			int count;
-			int i;
+			uint32_t i, count;
 
 			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
 			W_ERROR_HAVE_NO_MEMORY(ctr1);
