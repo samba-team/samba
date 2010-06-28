@@ -4338,14 +4338,14 @@ do {\
 	}\
 } while(0);
 
-
+#if 0
 	if (!test_winreg_symbolic_link(tctx, winreg_handle, hive_handle,
 				       TOP_LEVEL_CONTROL_PRINTERS_KEY,
 				       "\\Registry\\Machine\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"))
 	{
 		torture_warning(tctx, "failed to check for winreg symlink");
 	}
-
+#endif
 
 	for (i=0; i < ARRAY_SIZE(keys); i++) {
 
@@ -4827,16 +4827,6 @@ static bool test_SetPrinterDataEx_keys(struct torture_context *tctx,
 		uint32_t ecount;
 		struct spoolss_PrinterEnumValues *einfo;
 		uint32_t needed;
-
-		if (torture_setting_bool(tctx, "samba3", false)) {
-			char *q;
-			q = strrchr(keys[i], '\\');
-			if (q) {
-				torture_comment(tctx, "skipping keyname '%s' including '\\' character against Samba3\n",
-						keys[i]);
-				continue;
-			}
-		}
 
 		blob_in = data_blob_talloc(tctx, NULL, 42);
 
