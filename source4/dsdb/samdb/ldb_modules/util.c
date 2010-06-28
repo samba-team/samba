@@ -186,6 +186,7 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 attrs,
+				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DELETED |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
@@ -663,7 +664,7 @@ int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ld
 	}
 	v2 = data_blob_string_const(vstring);
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	talloc_free(msg);
 	return ret;
 }
@@ -699,7 +700,7 @@ int dsdb_module_set_integer(struct ldb_module *module, struct ldb_dn *dn,
 	}
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	talloc_free(msg);
 	return ret;
 }
