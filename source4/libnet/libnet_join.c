@@ -349,7 +349,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	if (rtn != LDB_SUCCESS && rtn != LDB_ERR_NO_SUCH_ATTRIBUTE) {
 		r->out.error_string
 			= talloc_asprintf(r,
-					  "Failed to replace msDS-SupportedEncryptionType on %s",
+					  "Failed to replace msDS-SupportedEncryptionTypes on %s",
 					  ldb_dn_get_linearized(msg->dn));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
