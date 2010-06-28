@@ -52,7 +52,9 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	const char *sambaSID;
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 				 "(&(objectClass=sambaDomain)(sambaDomainName=%s))",
 				 lp_sam_name(ldb_get_opaque(ldb, "loadparm")));
 	if (ret != LDB_SUCCESS) {
