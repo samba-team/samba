@@ -81,11 +81,12 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 	} else if (s->length == 32) {
 		size_t rlen = strhex_to_str((char *)blob16.data, blob16.length,
 					    (const char *)s->data, s->length);
-		if (rlen == blob16.length) {
-			/* goto the ndr_pull_struct_blob() path */
-			status = NT_STATUS_OK;
-			s = &blob16;
+		if (rlen != blob16.length) {
+			return NT_STATUS_INVALID_PARAMETER;
 		}
+
+		s = &blob16;
+		return GUID_from_ndr_blob(s, guid);
 	}
 
 	if (s->length == 16) {
