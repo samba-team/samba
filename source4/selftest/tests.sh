@@ -518,3 +518,6 @@ plantestsuite "blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setu
 plantestsuite "blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
 plantestsuite "blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
 plantestsuite_loadlist "blaat" none PYTHON="$PYTHON" "$samba4srcdir/record.py"
+
+# DRS python tests
+plantestsuite "drs_delete_object.python" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN delete_object -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
