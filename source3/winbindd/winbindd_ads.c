@@ -536,7 +536,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
-	free(ldap_exp);
+	SAFE_FREE(ldap_exp);
 	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
 			 sid_string_dbg(sid), ads_errstr(rc)));
