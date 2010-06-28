@@ -644,6 +644,11 @@ void sync_all_dmbs(time_t t)
 		}
 	}
 
+	/* leave if we don't have to do any syncs */
+	if (count == 0) {
+		return;
+	}
+
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
 		if (strcmp(lp_workgroup(), work->work_group)) {
