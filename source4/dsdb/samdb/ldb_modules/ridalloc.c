@@ -266,7 +266,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	}
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add rIDSetReferences to %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
