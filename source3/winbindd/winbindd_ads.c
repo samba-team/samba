@@ -464,6 +464,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct netr_SamInfo3 *user = NULL;
 	gid_t gid;
+	int ret;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -527,13 +528,15 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	sidstr = sid_binstring(talloc_tos(), sid);
-	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
+
+	ret = asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (ret == -1) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	free(ldap_exp);
-	TALLOC_FREE(sidstr);
 	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
 			 sid_string_dbg(sid), ads_errstr(rc)));
