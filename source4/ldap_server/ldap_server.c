@@ -506,6 +506,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 			 address, port, nt_errstr(status)));
+		return status;
 	}
 
 	if (tls_support(ldap_service->tls_params)) {
@@ -520,6 +521,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
+			return status;
 		}
 	}
 
@@ -541,6 +543,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
+			return status;
 		}
 	}
 
@@ -548,7 +551,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 	 * connect again on each incoming LDAP connection */
 	talloc_unlink(ldap_service, ldb);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
