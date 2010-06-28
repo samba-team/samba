@@ -29,9 +29,11 @@ sys.path.insert(0, "bin/python")
 
 import samba, ldb
 import optparse
+from samba import Ldb
 from samba import getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.credentials import Credentials, DONT_USE_KERBEROS
 
 parser = optparse.OptionParser("samba_spnupdate")
 sambaopts = options.SambaOptions(parser)
@@ -39,7 +41,9 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 parser.add_option("--verbose", action="store_true")
 
-creds = None
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+
 ccachename = None
 
 opts, args = parser.parse_args()
@@ -49,6 +53,7 @@ if len(args) != 0:
     sys.exit(1)
 
 lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
 
 domain = lp.get("realm")
 host = lp.get("netbios name")
@@ -70,9 +75,31 @@ def get_subst_vars(samdb):
     return vars
 
 try:
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), lp=lp)
+    private_dir = lp.get("private dir")
+    secrets_path = os.path.join(private_dir, lp.get("secrets database"))
+
+    secrets_db = Ldb(url=secrets_path, session_info=system_session(),
+                     credentials=creds, lp=lp)
+    res = secrets_db.search(base=None,
+                            expression="(&(objectclass=ldapSecret)(cn=SAMDB Credentials))",
+                            attrs=["samAccountName", "secret"])
+
+    if len(res) == 1:
+        credentials = Credentials()
+        credentials.set_kerberos_state(DONT_USE_KERBEROS)
+
+        if "samAccountName" in res[0]:
+            credentials.set_username(res[0]["samAccountName"][0])
+
+        if "secret" in res[0]:
+            credentials.set_password(res[0]["secret"][0])
+
+    else:
+        credentials = None
+
+    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), credentials=credentials, lp=lp)
 except ldb.LdbError, (num, msg):
-    print("Unable to open sam database %s : %s" % (lp.get("sam database")), msg)
+    print("Unable to open sam database %s : %s" % (lp.get("sam database"), msg))
     sys.exit(1)
 
 # get the substitution dictionary
