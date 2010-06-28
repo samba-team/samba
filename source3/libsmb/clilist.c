@@ -260,6 +260,8 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		return -1;
 	}
 
+	ZERO_STRUCT(finfo);
+
 	while (ff_eos == 0) {
 		size_t nlen = 2*(strlen(mask)+1);
 
