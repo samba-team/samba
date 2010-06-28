@@ -1536,7 +1536,7 @@ static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	const char *attrs[1] = { "objectSid" };
-	struct tldap_message **msg;
+	struct tldap_message **msg = NULL;
 	uint32_t *alias_rids = NULL;
 	size_t num_alias_rids = 0;
 	int i, rc, count;
