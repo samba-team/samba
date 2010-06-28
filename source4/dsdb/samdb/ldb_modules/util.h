@@ -30,6 +30,7 @@ struct dsdb_fsmo_extended_op;
 
 /* extend the dsdb_request_add_controls() flags for module
    specific functions */
+#define DSDB_FLAG_NEXT_MODULE		      0x00100000
 #define DSDB_FLAG_OWN_MODULE		      0x00400000
 #define DSDB_FLAG_TOP_MODULE		      0x00800000
 
