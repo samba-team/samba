@@ -773,6 +773,7 @@ static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_cont
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				NULL,
+				DSDB_FLAG_NEXT_MODULE |
 				DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 				 "(&(objectClass=msDS-OptionalFeature)"
 				 "(msDS-OptionalFeatureGUID=%s))",GUID_string(tmp_ctx, &op_feature_guid));
@@ -841,7 +842,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	ldb_msg_add_linearized_dn(msg, "msDS-EnabledFeature", op_feature_msg->dn);
 	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
@@ -852,7 +853,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	}
 
 	msg->dn = op_feature_scope_dn;
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
