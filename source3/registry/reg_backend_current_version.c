@@ -34,7 +34,7 @@
 
 extern struct registry_ops regdb_ops;
 
-#define KEY_CURRENT_VERSION_NORM "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION"
+#define KEY_CURRENT_VERSION_NORM "HKLM\\SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
 
 static int current_version_fetch_values(const char *key, struct regval_ctr *values)
 {
