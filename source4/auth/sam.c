@@ -319,9 +319,16 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+
 	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ "when parsing DN %s we failed to find or parse SID component, so we cannot calculate the group token: %s",
+		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
+		dn = res->msgs[0]->dn;
+		status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ ": when parsing DN %s we failed to find or parse SID component, so we cannot calculate the group token: %s\n",
 			  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1), 
 			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
