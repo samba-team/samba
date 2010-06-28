@@ -35,6 +35,7 @@ struct ldb_key_data
 	struct ldb_dn *dn;
 	struct ldb_message **subkeys, **values;
 	unsigned int subkey_count, value_count;
+	const char *classname;
 };
 
 static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
@@ -524,6 +525,8 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	newkd->key.ops = &reg_backend_ldb;
 	newkd->ldb = talloc_reference(newkd, kd->ldb);
 	newkd->dn = ldb_dn_copy(mem_ctx, res->msgs[0]->dn);
+	newkd->classname = talloc_steal(newkd,
+					ldb_msg_find_attr_as_string(res->msgs[0], "classname", NULL);
 
 	*key = (struct hive_key *)newkd;
 
@@ -616,6 +619,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	newkd->ldb = talloc_reference(newkd, parentkd->ldb);
 	newkd->key.ops = &reg_backend_ldb;
 	newkd->dn = talloc_steal(newkd, msg->dn);
+	newkd->classname = talloc_steal(newkd, classname);
 
 	*newkey = (struct hive_key *)newkd;
 
@@ -903,9 +907,12 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	if (kd->subkeys == NULL) {
 		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
 	}
-
 	if (kd->values == NULL) {
 		W_ERROR_NOT_OK_RETURN(cache_values(kd));
+	}
+
+	if (classname != NULL) {
+		*classname = kd->classname;
 	}
 
 	if (num_subkeys != NULL) {
