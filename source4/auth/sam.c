@@ -304,7 +304,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	struct ldb_dn *dn;
 	struct dom_sid sid;
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	NTSTATUS status;
 	const struct ldb_message_element *el;
 
@@ -343,8 +343,12 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 
 	if (only_childs) {
-		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
-				     DSDB_SEARCH_SHOW_EXTENDED_DN);
+		/* If we didn't get the SID as extended DN then we already have
+		 * performed exactly this search. */
+		if (res == NULL) {
+			ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
+					     DSDB_SEARCH_SHOW_EXTENDED_DN);
+		}
 	} else {
 		/* This is an O(n^2) linear search */
 		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
