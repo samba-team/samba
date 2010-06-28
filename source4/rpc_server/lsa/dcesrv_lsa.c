@@ -186,13 +186,12 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		case SECURITY_ADMINISTRATOR:
 			break;
 		default:
-			/* Users and annonymous are not allowed delete things */
+			/* Users and anonymous are not allowed to delete things */
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		ret = ldb_delete(secret_state->sam_ldb, 
 				 secret_state->secret_dn);
-		talloc_free(h);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
@@ -200,6 +199,7 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		ZERO_STRUCTP(r->out.handle);
 
 		return NT_STATUS_OK;
+
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
 		struct lsa_trusted_domain_state *trusted_domain_state = 
 			talloc_get_type(h->data, struct lsa_trusted_domain_state);
@@ -228,10 +228,11 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		talloc_free(h);
+
 		ZERO_STRUCTP(r->out.handle);
 
 		return NT_STATUS_OK;
+
 	} else if (h->wire_handle.handle_type == LSA_HANDLE_ACCOUNT) {
 		struct lsa_RightSet *rights;
 		struct lsa_account_state *astate;
@@ -272,6 +273,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		ZERO_STRUCTP(r->out.handle);
+
+		return NT_STATUS_OK;
 	} 
 	
 	return NT_STATUS_INVALID_HANDLE;
