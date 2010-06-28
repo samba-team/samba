@@ -684,7 +684,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			return ret;
 		}
 
-		ret = dsdb_module_modify(module, msg, DSDB_MODIFY_RELAX);
+		ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - update failed - %s",
 					       el->name, target->lDAPDisplayName,
@@ -978,7 +978,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 			 ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg)));
 	}
 
-	ret = dsdb_module_modify(module, new_msg, 0);
+	ret = dsdb_module_modify(module, new_msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
