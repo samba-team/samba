@@ -522,11 +522,14 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	}
 
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
+	W_ERROR_HAVE_NO_MEMORY(newkd);
 	newkd->key.ops = &reg_backend_ldb;
 	newkd->ldb = talloc_reference(newkd, kd->ldb);
-	newkd->dn = ldb_dn_copy(mem_ctx, res->msgs[0]->dn);
+	newkd->dn = ldb_dn_copy(newkd, res->msgs[0]->dn);
 	newkd->classname = talloc_steal(newkd,
 					ldb_msg_find_attr_as_string(res->msgs[0], "classname", NULL);
+
+	talloc_free(res);
 
 	*key = (struct hive_key *)newkd;
 
