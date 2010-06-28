@@ -720,7 +720,7 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 				struct timeval tv_curr)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct blocking_lock_record *blr = NULL;
 	struct smbd_smb2_lock_state *state = NULL;
 	files_struct *fsp = NULL;
