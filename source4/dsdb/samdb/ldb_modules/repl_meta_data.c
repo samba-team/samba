@@ -246,7 +246,7 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	}
 	msg->elements[0].flags = bl->active?LDB_FLAG_MOD_ADD:LDB_FLAG_MOD_DELETE;
 
-	ret = dsdb_module_modify(module, msg, 0);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to %s backlink from %s to %s - %s",
 				       bl->active?"add":"remove",
@@ -2662,7 +2662,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 
 	if (deletion_state == OBJECT_NOT_DELETED) {
 		/* now rename onto the new DN */
-		ret = dsdb_module_rename(module, old_dn, new_dn, 0);
+		ret = dsdb_module_rename(module, old_dn, new_dn, DSDB_FLAG_NEXT_MODULE);
 		if (ret != LDB_SUCCESS){
 			DEBUG(0,(__location__ ": Failed to rename object from '%s' to '%s' - %s\n",
 				 ldb_dn_get_linearized(old_dn),
@@ -2899,7 +2899,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			 * so it doesn't appear as an originating update */
 			ret = dsdb_module_rename(ar->module,
 			                         ar->search_msg->dn, msg->dn,
-			                         0);
+			                         DSDB_FLAG_NEXT_MODULE);
 			if (ret != LDB_SUCCESS) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL,
 				          "replmd_replicated_request rename %s => %s failed - %s\n",
@@ -3723,6 +3723,7 @@ linked_attributes[0]:
 	   this GUID, returning attribute being modified. We will then
 	   use this msg as the basis for a modify call */
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+	                         DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_DELETED |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
@@ -3914,7 +3915,7 @@ linked_attributes[0]:
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_MODIFY_RELAX);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
