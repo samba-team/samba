@@ -2895,12 +2895,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			DEBUG(4,("replmd_replicated_request rename %s => %s\n",
 				  ldb_dn_get_linearized(ar->search_msg->dn),
 				  ldb_dn_get_linearized(msg->dn)));
-/*
-			ldb_debug(ldb, LDB_DEBUG_TRACE,
-				  "replmd_replicated_request rename %s => %s\n",
-				  ldb_dn_get_linearized(ar->search_msg->dn),
-				  ldb_dn_get_linearized(msg->dn));
-*/
 			/* pass rename to the next module
 			 * so it doesn't appear as an originating update */
 			ret = dsdb_module_rename(ar->module,
