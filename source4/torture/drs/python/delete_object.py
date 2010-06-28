@@ -82,9 +82,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
         pass
 
-    def test_noop(self):
-        pass
-
     def tearDown(self):
         super(DrsDeleteObjectTestCase, self).tearDown()
 
@@ -146,6 +143,9 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
 
     def test_NetReplicateCmd(self):
+        """Triggers replication from DC1 to DC2
+           and vice versa so both DCs are synchronized
+           before test_ReplicateDeteleteObject test"""
         # replicate Domain NC on DC2 from DC1
         self._net_drs_replicate(DC=self.dc2, fromDC=self.dc1)
         # replicate Domain NC on DC1 from DC2
@@ -153,6 +153,13 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         pass
 
     def test_ReplicateDeteleteObject(self):
+        """Verifies how a deleted-object is replicated between two DCs.
+           This test should verify that:
+            - deleted-object is replicated properly
+           TODO: We should verify that after replication,
+                 object's state to conform to a deleted-object state
+                 or tombstone -object, depending on DC's features
+                 It will also be great if check replPropertyMetaData."""
         # work-out unique username to test with
         username = self._make_username()
 
