@@ -2831,7 +2831,7 @@ static struct replPropertyMetaData1 *
 replmd_replPropertyMetaData1_find_attid(struct replPropertyMetaDataBlob *md_blob,
                                         enum drsuapi_DsAttributeId attid)
 {
-	int i;
+	uint32_t i;
 	struct replPropertyMetaDataCtr1 *rpmd_ctr = &md_blob->ctr.ctr1;
 
 	for (i = 0; i < rpmd_ctr->count; i++) {
