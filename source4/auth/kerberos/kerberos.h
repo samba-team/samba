@@ -53,6 +53,9 @@ struct keytab_container {
 #define KRB5_KEY_DATA(k)	((k)->contents)
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
+#define ENC_ALL_TYPES (ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5 |	\
+		       ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256)
+
 #ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
 #endif

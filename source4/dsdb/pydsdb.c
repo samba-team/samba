@@ -24,7 +24,8 @@
 #include "lib/ldb/pyldb.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
-
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
@@ -578,4 +579,18 @@ void initdsdb(void)
 					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008));
 	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008_R2",
 					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008_R2));
+
+	/* Kerberos encryption type constants */
+	PyModule_AddObject(m, "ENC_ALL_TYPES",
+			   PyInt_FromLong(ENC_ALL_TYPES));
+	PyModule_AddObject(m, "ENC_CRC32",
+			   PyInt_FromLong(ENC_CRC32));
+	PyModule_AddObject(m, "ENC_RSA_MD5",
+			   PyInt_FromLong(ENC_RSA_MD5));
+	PyModule_AddObject(m, "ENC_RC4_HMAC_MD5",
+			   PyInt_FromLong(ENC_RC4_HMAC_MD5));
+	PyModule_AddObject(m, "ENC_HMAC_SHA1_96_AES128",
+			   PyInt_FromLong(ENC_HMAC_SHA1_96_AES128));
+	PyModule_AddObject(m, "ENC_HMAC_SHA1_96_AES256",
+			   PyInt_FromLong(ENC_HMAC_SHA1_96_AES256));
 }

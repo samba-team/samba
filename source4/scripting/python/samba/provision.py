@@ -43,7 +43,7 @@ from samba.auth import system_session, admin_session
 import samba
 from samba import version, Ldb, substitute_var, valid_netbios_name
 from samba import check_all_substituted, read_and_sub_file, setup_file
-from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008_R2
+from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008_R2, ENC_ALL_TYPES
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
@@ -1494,6 +1494,21 @@ def provision(setup_dir, logger, session_info,
                                 domainsid=domainsid, 
                                 machinepass=machinepass,
                                 secure_channel_type=SEC_CHAN_BDC)
+
+            # Now set up the right msDS-SupportedEncryptionTypes into the DB
+            # In future, this might be determined from some configuration
+            kerberos_enctypes = str(ENC_ALL_TYPES)
+
+            try:
+                msg = ldb.Message(ldb.Dn(samdb, samdb.searchone("distinguishedName", expression="samAccountName=%s$" % names.netbiosname, scope=ldb.SCOPE_SUBTREE)))
+                msg["msDS-SupportedEncryptionTypes"] = ldb.MessageElement(elements=kerberos_enctypes, 
+                                                                          flags=ldb.FLAG_MOD_REPLACE, 
+                                                                          name="msDS-SupportedEncryptionTypes")
+                samdb.modify(msg)
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_ATTRIBUTE, _):
+                # It might be that this attribute does not exist in this schema
+                pass
+
 
             if serverrole == "domain controller":
                 secretsdb_setup_dns(secrets_ldb, setup_path,
