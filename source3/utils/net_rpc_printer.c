@@ -490,12 +490,11 @@ static NTSTATUS net_copy_driverfile(struct net_context *c,
 				    struct cli_state *cli_share_dst,
 				    const char *file, const char *short_archi) {
 
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *p;
 	char *src_name;
 	char *dst_name;
-	char *version;
-	char *filename;
+	char *version = NULL;
+	char *filename = NULL;
 	char *tok;
 
 	if (!file) {
@@ -512,29 +511,27 @@ static NTSTATUS net_copy_driverfile(struct net_context *c,
 		}
 	}
 
-	/* build source file name */
-	if (asprintf(&src_name, "\\%s\\%s\\%s", short_archi, version, filename) < 0 )
-		return NT_STATUS_NO_MEMORY;
+	if (version == NULL || filename == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
+	/* build source file name */
+	src_name = talloc_asprintf(mem_ctx, "\\%s\\%s\\%s",
+				   short_archi, version, filename);
+	if (src_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* create destination file name */
-	if (asprintf(&dst_name, "\\%s\\%s", short_archi, filename) < 0 )
-                return NT_STATUS_NO_MEMORY;
+	dst_name = talloc_asprintf(mem_ctx, "\\%s\\%s", short_archi, filename);
+	if (dst_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 
 	/* finally copy the file */
-	nt_status = net_copy_file(c, mem_ctx, cli_share_src, cli_share_dst,
-				  src_name, dst_name, false, false, false, true);
-	if (!NT_STATUS_IS_OK(nt_status))
-		goto out;
-
-	nt_status = NT_STATUS_OK;
-
-out:
-	SAFE_FREE(src_name);
-	SAFE_FREE(dst_name);
-
-	return nt_status;
+	return net_copy_file(c, mem_ctx, cli_share_src, cli_share_dst,
+			     src_name, dst_name, false, false, false, true);
 }
 
 /**
