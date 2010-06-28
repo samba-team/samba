@@ -322,7 +322,12 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 
 	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
+		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
+				     DSDB_SEARCH_SHOW_EXTENDED_DN);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 		dn = res->msgs[0]->dn;
 		status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	}
@@ -336,7 +341,8 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 
 	if (only_childs) {
-		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
+		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
+				     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	} else {
 		/* This is an O(n^2) linear search */
 		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
@@ -345,7 +351,9 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 			return NT_STATUS_OK;
 		}
 
-		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "%s", filter);
+		ret = dsdb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
+				  attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "%s",
+				  filter);
 	}
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
