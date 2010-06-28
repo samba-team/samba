@@ -151,7 +151,7 @@ url: www.example.com
 dn: """ + group_dn + """
 objectClass: group
 sAMAccountName: """ + group_dn.split(",")[0][3:] + """
-groupType: 4
+groupType: 2147483650
 url: www.example.com
 """
         if desc:
@@ -345,23 +345,36 @@ class AclModifyTests(AclTests):
     def setUp(self):
         super(AclModifyTests, self).setUp()
         self.user_with_wp = "acl_mod_user1"
+        self.user_with_sm = "acl_mod_user2"
+        self.user_with_group_sm = "acl_mod_user3"
         self.create_enable_user(self.user_with_wp)
+        self.create_enable_user(self.user_with_sm)
+        self.create_enable_user(self.user_with_group_sm)
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
-        self.user_sid = self.get_object_sid(self.get_user_dn(self.user_with_wp))
+        self.ldb_user2 = self.get_ldb_connection(self.user_with_sm, self.user_pass)
+        self.ldb_user3 = self.get_ldb_connection(self.user_with_group_sm, self.user_pass)
+        self.user_sid = self.get_object_sid( self.get_user_dn(self.user_with_wp))
+        self.create_group(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
+        self.create_group(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
+        self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user2"))
 
     def tearDown(self):
         super(AclModifyTests, self).tearDown()
         self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_group_sm))
+        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user2"))
 
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
         print "Testing modify on User object"
-        #self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         ldif = """
@@ -375,7 +388,6 @@ displayName: test_changed"""
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Second test object -- Group
         print "Testing modify on Group object"
-        #self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
         self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
@@ -400,7 +412,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % str("OU=test_modify_ou1," + self.base_dn))
         self.assertEqual(res[0]["displayName"][0], "test_changed")
 
-    def test_modify_u2(self):
+    def _test_modify_u2(self):
         """6 Modify two attributes as you have DS_WRITE_PROPERTY granted only for one of them"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
@@ -565,6 +577,92 @@ adminDescription: blah blah blah"""
                                     % self.get_user_dn(self.user_with_wp), attrs=["adminDescription"] )
         self.assertEqual(res[0]["adminDescription"][0], "blah blah blah")
 
+    def test_modify_u5(self):
+        """12 test self membership"""
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+add: Member
+Member: """ +  self.get_user_dn(self.user_with_sm)
+#the user has no rights granted, this should fail
+        try:
+            self.ldb_user2.modify_ldif(ldif)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
+            self.fail()
+
+#grant self-membership, should be able to add himself
+        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_sm))
+        mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        self.ldb_user2.modify_ldif(ldif)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+        self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_sm))
+#but not other users
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+add: Member
+Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
+        try:
+            self.ldb_user2.modify_ldif(ldif)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_modify_u6(self):
+        """13 test self membership"""
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+add: Member
+Member: """ +  self.get_user_dn(self.user_with_sm) + """
+Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
+
+#grant self-membership, should be able to add himself  but not others at the same time
+        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_sm))
+        mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        try:
+            self.ldb_user2.modify_ldif(ldif)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_modify_u7(self):
+        """13 User with WP modifying Member"""
+#a second user is given write property permission
+        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_wp))
+        mod = "(OA;;WP;;;%s)" % str(user_sid)
+        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+add: Member
+Member: """ +  self.get_user_dn(self.user_with_wp)
+        self.ldb_user.modify_ldif(ldif)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+        self.assertEqual(res[0]["Member"][0], self.get_user_dn(self.user_with_wp))
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+delete: Member"""
+        self.ldb_user.modify_ldif(ldif)
+        ldif = """
+dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
+changetype: modify
+add: Member
+Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
+        self.ldb_user.modify_ldif(ldif)
+        res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
+                                    % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
+        self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
 
 #enable these when we have search implemented
 class AclSearchTests(AclTests):

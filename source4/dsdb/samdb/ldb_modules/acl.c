@@ -654,6 +654,95 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+/* checks for validated writes */
+static int acl_check_self_write(struct ldb_request *req,
+				struct security_descriptor *sd,
+				struct security_token *token,
+				const char *self_write,
+				struct dom_sid *sid)
+{
+	struct GUID right;
+	NTSTATUS status;
+	uint32_t access_granted;
+	struct object_tree *root = NULL;
+	struct object_tree *new_node = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+
+	GUID_from_string(self_write, &right);
+
+	if (!insert_in_object_tree(tmp_ctx, &right, SEC_ADS_SELF_WRITE,
+				   &root, &new_node)) {
+		DEBUG(10, ("acl_modify: cannot add to object tree\n"));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	status = sec_access_check_ds(sd, token,
+				     SEC_ADS_SELF_WRITE,
+				     &access_granted,
+				     root,
+				     sid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Object %s has no self membershipself write right\n",
+			   ldb_dn_get_linearized(req->op.mod.message->dn)));
+		dsdb_acl_debug(sd, token,
+			       req->op.mod.message->dn,
+			       true,
+			       10);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/* ckecks if modifications are allowed on "Member" attribute */
+static int acl_check_self_membership(struct ldb_module *module,
+				     struct ldb_request *req,
+				     struct security_descriptor *sd,
+				     struct dom_sid *sid,
+				     const struct GUID *oc_guid,
+				     const struct dsdb_attribute *attr)
+{
+	int ret, i;
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_dn *user_dn;
+	struct ldb_message_element *member_el;
+	/* if we have wp, we can do whatever we like */
+	if (acl_check_access_on_attribute(module,
+					  req,
+					  sd,
+					  sid,
+					  SEC_ADS_WRITE_PROP,
+					  attr) == LDB_SUCCESS) {
+		return LDB_SUCCESS;
+	}
+	/* if we are adding/deleting ourselves, check for self membership */
+	ret = dsdb_find_dn_by_sid(ldb, req, acl_user_token(module)->user_sid, &user_dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	member_el = ldb_msg_find_element(req->op.mod.message, "Member");
+	if (!member_el) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/* user can only remove oneself */
+	if (member_el->num_values == 0) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+	for (i = 0; i < member_el->num_values; i++) {
+		if (strcasecmp((const char *)member_el->values[i].data,
+			       ldb_dn_get_extended_linearized(tmp_ctx, user_dn, 1)) != 0) {
+			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+		}
+	}
+	talloc_free(tmp_ctx);
+	return acl_check_self_write(req, sd, acl_user_token(module),
+				    GUID_DRS_SELF_MEMBERSHIP,
+				    sid);
+}
+
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
@@ -753,8 +842,18 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
 			modify_sd = true;
+		}
+		else if (ldb_attr_cmp("Member", req->op.mod.message->elements[i].name) == 0) {
+			ret = acl_check_self_membership(module,
+							req,
+							sd,
+							sid,
+							guid,
+							attr);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		} else {
-
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
 						   &new_node, &new_node)) {

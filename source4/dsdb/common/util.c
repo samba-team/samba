@@ -2514,6 +2514,37 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+/*
+  use a SID to find a DN
+ */
+int dsdb_find_dn_by_sid(struct ldb_context *ldb,
+			TALLOC_CTX *mem_ctx,
+			struct dom_sid *sid, struct ldb_dn **dn)
+{
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { NULL };
+	char *sid_str = dom_sid_string(mem_ctx, sid);
+
+	if (!sid_str) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+			  DSDB_SEARCH_SHOW_EXTENDED_DN |
+			  DSDB_SEARCH_ONE_ONLY,
+			  "objectSID=%s", sid_str);
+	talloc_free(sid_str);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	*dn = talloc_steal(mem_ctx, res->msgs[0]->dn);
+	talloc_free(res);
+
+	return LDB_SUCCESS;
+}
 
 /*
   load a repsFromTo blob list for a given partition GUID
