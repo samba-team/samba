@@ -279,16 +279,16 @@ static bool sids_contains_sid(const struct dom_sid **sids,
 
 
 /*
- * This function generates the transitive closure of a given SID "sid" (it
- * basically expands nested groups of a SID).
- * If the SID isn't located in the "res_sids" structure yet and the
- * "only_childs" flag is negative, we add it to "res_sids".
+ * This function generates the transitive closure of a given SAM object "dn_val"
+ * (it basically expands nested memberships).
+ * If the object isn't located in the "res_sids" structure yet and the
+ * "only_childs" flag is false, we add it to "res_sids".
  * Then we've always to consider the "memberOf" attributes. We invoke the
- * function recursively on each item of it with the "only_childs" flag set to
+ * function recursively on each of it with the "only_childs" flag set to
  * "false".
- * The "only_childs" flag is particularly useful if you have a user SID and
- * want to include all his groups (referenced with "memberOf") without his SID
- * itself, or considering if that SID matches the filter
+ * The "only_childs" flag is particularly useful if you have a user object and
+ * want to include all it's groups (referenced with "memberOf") but not itself
+ * or considering if that object matches the filter.
  *
  * At the beginning "res_sids" should reference to a NULL pointer.
  */
@@ -320,6 +320,8 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	/* We expect an extended DN with the SID included but we can fallback
+	 * to search the extended components if they weren't provided. */
 	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
@@ -333,7 +335,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": when parsing DN %s we failed to find or parse SID component, so we cannot calculate the group token: %s\n",
+		DEBUG(0, (__location__ ": when parsing DN %s we failed to find or SID component, so we cannot calculate the group token: %s\n",
 			  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1), 
 			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
