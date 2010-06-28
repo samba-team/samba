@@ -377,7 +377,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 	struct smb_filename *cache_smb_fname;
 	TALLOC_CTX *ctx=talloc_tos();
 	char *cachefile;
-	int retval;
+	int retval = -1;
 	int didloop;
 	DEBUG(SCANNEDONLY_DEBUG,
 	      ("smb_fname->base_name=%s, shortname=%s, base_name=%s\n"
