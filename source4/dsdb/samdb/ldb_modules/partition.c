@@ -470,12 +470,14 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
-	p = find_partition(data, NULL, req);
-	if (p != NULL) {
-		/* the caller specified what partition they want the
-		 * search - just pass it on
-		 */
-		return ldb_next_request(p->module, req);		
+	if (!ldb_dn_is_special(req->op.search.base)) {
+		p = find_partition(data, NULL, req);
+		if (p != NULL) {
+			/* the caller specified what partition they want the
+			* search - just pass it on
+			*/
+			return ldb_next_request(p->module, req);
+		}
 	}
 
 	/* Get back the search options from the search control, and mark it as
