@@ -465,6 +465,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	struct netr_SamInfo3 *user = NULL;
 	gid_t gid;
 	int ret;
+	char *ads_name;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -552,6 +553,26 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
+		DEBUG(1,("No primary group for %s !?\n",
+			 sid_string_dbg(sid)));
+		goto done;
+	}
+
+	sid_copy(&info->user_sid, sid);
+	sid_compose(&info->group_sid, &domain->sid, group_rid);
+
+	/*
+	 * We have to fetch the "name" attribute before doing the
+	 * nss_get_info_cached call. nss_get_info_cached might destroy
+	 * the ads struct, potentially invalidating the ldap message.
+	 */
+
+	ads_name = ads_pull_string(ads, mem_ctx, msg, "name");
+
+	ads_msgfree(ads, msg);
+	msg = NULL;
+
 	status = nss_get_info_cached( domain, sid, mem_ctx, ads, msg,
 		      &info->homedir, &info->shell, &info->full_name, 
 		      &gid);
@@ -563,35 +584,15 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	if (info->full_name == NULL) {
-		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+		info->full_name = ads_name;
+	} else {
+		TALLOC_FREE(ads_name);
 	}
-
-	/*
-	 * We have to re-fetch ads from the domain,
-	 * nss_get_info_cached might have invalidated it.
-	 */
-	ads = ads_cached_connection(domain);
-	if (ads == NULL) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		goto done;
-	}
-
-	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
-		DEBUG(1,("No primary group for %s !?\n",
-			 sid_string_dbg(sid)));
-		goto done;
-	}
-
-	sid_copy(&info->user_sid, sid);
-	sid_compose(&info->group_sid, &domain->sid, group_rid);
 
 	status = NT_STATUS_OK;
 
 	DEBUG(3,("ads query_user gave %s\n", info->acct_name));
 done:
-	if (msg) 
-		ads_msgfree(ads, msg);
-
 	return status;
 }
 
