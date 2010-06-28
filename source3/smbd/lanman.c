@@ -4706,7 +4706,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
-	uint32_t count;
+	uint32_t count = 0;
 	union spoolss_JobInfo *info;
 
 	if (!str1 || !str2 || !p) {
