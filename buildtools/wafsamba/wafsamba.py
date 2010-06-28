@@ -484,7 +484,8 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     group='generators', enabled=True,
                     public_headers=None,
                     header_path=None,
-                    vars=None):
+                    vars=None,
+                    always=False):
     '''A generic source generator target'''
 
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
@@ -503,6 +504,9 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         before='cc',
         ext_out='.c',
         name=name)
+
+    if always:
+        t.always = True
 
     if public_headers is not None:
         bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
