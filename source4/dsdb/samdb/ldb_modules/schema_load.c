@@ -191,7 +191,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &a_res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 0, 
+				 DSDB_FLAG_NEXT_MODULE,
 				 "(objectClass=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -205,6 +205,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &c_res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
