@@ -329,7 +329,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	   to use the same fetch/store api that we use in
 	   srv_reg_nt.c */
 
-	path = talloc_asprintf(ctx, "%s/%s", KEY_EVENTLOG, elogname );
+	path = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, elogname);
 	if (!path) {
 		goto done;
 	}
