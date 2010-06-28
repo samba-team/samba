@@ -2895,7 +2895,7 @@ void smbd_process(void)
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
-		exit_server("getpeername() failed.\n");
+		exit_server_cleanly("getpeername() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
 						sa, sa_len,
@@ -2903,7 +2903,7 @@ void smbd_process(void)
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
 			__location__, strerror(errno)));
-		exit_server("tsocket_address_bsd_from_sockaddr remote failed.\n");
+		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
 	}
 
 	sa = (struct sockaddr *)(void *)&ss;
@@ -2912,7 +2912,7 @@ void smbd_process(void)
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
-		exit_server("getsockname() failed.\n");
+		exit_server_cleanly("getsockname() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
 						sa, sa_len,
@@ -2920,7 +2920,7 @@ void smbd_process(void)
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
 			__location__, strerror(errno)));
-		exit_server("tsocket_address_bsd_from_sockaddr remote failed.\n");
+		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
 	}
 
 	smbd_server_conn->local_address = local_address;
