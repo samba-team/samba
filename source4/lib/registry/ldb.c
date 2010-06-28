@@ -527,7 +527,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	newkd->ldb = talloc_reference(newkd, kd->ldb);
 	newkd->dn = ldb_dn_copy(newkd, res->msgs[0]->dn);
 	newkd->classname = talloc_steal(newkd,
-					ldb_msg_find_attr_as_string(res->msgs[0], "classname", NULL);
+					ldb_msg_find_attr_as_string(res->msgs[0], "classname", NULL));
 
 	talloc_free(res);
 
