@@ -398,7 +398,10 @@ NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
 
 	DEBUG(10,("_eventlog_OpenEventLogW: Size [%d]\n", elog_size( info )));
 
-	sync_eventlog_params( info );
+	if (!sync_eventlog_params(info)) {
+		elog_close(p, r->out.handle);
+		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
+	}
 	prune_eventlog( ELOG_TDB_CTX(info->etdb) );
 
 	return NT_STATUS_OK;
