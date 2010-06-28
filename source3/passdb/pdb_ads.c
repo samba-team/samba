@@ -1190,7 +1190,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 		m->private_data, struct pdb_ads_state);
 	struct tldap_context *ld;
 	struct tldap_message **alias;
-	char *sidstr, *dn;
+	char *sidstr, *dn = NULL;
 	int rc;
 
 	ld = pdb_ads_ld(state);
@@ -1213,7 +1213,6 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed: %s\n",
 			   tldap_errstr(talloc_tos(), state->ld, rc)));
-		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
 	if (talloc_array_length(alias) != 1) {
@@ -1231,7 +1230,6 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
 			   tldap_errstr(talloc_tos(), state->ld, rc)));
-		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
 
