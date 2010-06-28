@@ -635,7 +635,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 
 		ret = dsdb_module_search(ac->module, ac,
 		                         &ldb_res,
-		                         schema_dn, LDB_SCOPE_ONELEVEL, NULL, 0,
+		                         schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+		                         DSDB_FLAG_NEXT_MODULE,
 		                         "(msDS-IntId=%d)", msds_intid);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
@@ -1020,7 +1021,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	werr = dsdb_module_schema_info_update(ac->module, schema, 0);
+	werr = dsdb_module_schema_info_update(ac->module, schema, DSDB_FLAG_NEXT_MODULE);
 	if (!W_ERROR_IS_OK(werr)) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "samldb_schema_info_update: "
@@ -1118,7 +1119,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 			return ret;
 		}
 
-		ret = dsdb_module_modify(ac->module, msg, 0);
+		ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1133,7 +1134,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 			return ret;
 		}
 
-		ret = dsdb_module_modify(ac->module, msg, 0);
+		ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
