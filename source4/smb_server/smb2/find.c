@@ -130,9 +130,6 @@ static NTSTATUS smb2srv_find_backend(struct smb2srv_find_state *state)
 
 		return ntvfs_search_next(state->req->ntvfs, state->fn, state, smb2srv_find_callback);
 	}
-
-	/* should not be reached */
-	return NT_STATUS_INTERNAL_ERROR;
 }
 
 void smb2srv_find_recv(struct smb2srv_request *req)
