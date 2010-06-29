@@ -357,14 +357,14 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	}
 
 	blob = regval_ctr_specific_value(key->values, idx);
-	err = registry_pull_value(mem_ctx, &val,
-				  regval_type(blob),
-				  regval_data_p(blob),
-				  regval_size(blob),
-				  regval_size(blob));
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
+
+	val = talloc_zero(mem_ctx, struct registry_value);
+	if (val == NULL) {
+		return WERR_NOMEM;
 	}
+
+	val->type = regval_type(blob);
+	val->data = data_blob_talloc(mem_ctx, regval_data_p(blob), regval_size(blob));
 
 	if (pname
 	    && !(*pname = talloc_strdup(
@@ -661,7 +661,6 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 		    const struct registry_value *val)
 {
 	WERROR err;
-	DATA_BLOB value_data;
 	int res;
 
 	if (!(key->key->access_granted & KEY_SET_VALUE)) {
@@ -672,14 +671,8 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 		return err;
 	}
 
-	err = registry_push_value(key, val, &value_data);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
-	}
-
 	res = regval_ctr_addvalue(key->values, name, val->type,
-				  value_data.data, value_data.length);
-	TALLOC_FREE(value_data.data);
+				  val->data.data, val->data.length);
 
 	if (res == 0) {
 		TALLOC_FREE(key->values);

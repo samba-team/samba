@@ -165,15 +165,11 @@ WERROR gp_store_reg_val_sz(TALLOC_CTX *mem_ctx,
 			   const char *val)
 {
 	struct registry_value reg_val;
-	ZERO_STRUCT(reg_val);
-
-	/* FIXME: hack */
-	val = val ? val : " ";
 
 	reg_val.type = REG_SZ;
-	reg_val.v.sz.len = strlen(val);
-	reg_val.v.sz.str = talloc_strdup(mem_ctx, val);
-	W_ERROR_HAVE_NO_MEMORY(reg_val.v.sz.str);
+	if (!push_reg_sz(mem_ctx, &reg_val.data, val)) {
+		return WERR_NOMEM;
+	}
 
 	return reg_setvalue(key, val_name, &reg_val);
 }
@@ -187,10 +183,10 @@ static WERROR gp_store_reg_val_dword(TALLOC_CTX *mem_ctx,
 				     uint32_t val)
 {
 	struct registry_value reg_val;
-	ZERO_STRUCT(reg_val);
 
 	reg_val.type = REG_DWORD;
-	reg_val.v.dword = val;
+	reg_val.data = data_blob_talloc(mem_ctx, NULL, 4);
+	SIVAL(reg_val.data.data, 0, val);
 
 	return reg_setvalue(key, val_name, &reg_val);
 }
@@ -213,8 +209,9 @@ WERROR gp_read_reg_val_sz(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
-	*val = talloc_strdup(mem_ctx, reg_val->v.sz.str);
-	W_ERROR_HAVE_NO_MEMORY(*val);
+	if (!pull_reg_sz(mem_ctx, &reg_val->data, val)) {
+		return WERR_NOMEM;
+	}
 
 	return WERR_OK;
 }
@@ -237,7 +234,10 @@ static WERROR gp_read_reg_val_dword(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
-	*val = reg_val->v.dword;
+	if (reg_val->data.length < 4) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+	*val = IVAL(reg_val->data.data, 0);
 
 	return WERR_OK;
 }
@@ -797,34 +797,56 @@ void dump_reg_val(int lvl, const char *direction,
 		direction, key, subkey, type_str));
 
 	switch (val->type) {
-		case REG_DWORD:
+		case REG_DWORD: {
+			uint32_t v;
+			if (val->data.length < 4) {
+				break;
+			}
+			v = IVAL(val->data.data, 0);
 			DEBUG(lvl,("%d (0x%08x)\n",
-				(int)val->v.dword, val->v.dword));
+				(int)v, v));
 			break;
-		case REG_QWORD:
+		}
+		case REG_QWORD: {
+			uint64_t v;
+			if (val->data.length < 8) {
+				break;
+			}
+			v = BVAL(val->data.data, 0);
 			DEBUG(lvl,("%d (0x%016llx)\n",
-				(int)val->v.qword,
-				(unsigned long long)val->v.qword));
+				(int)v,
+				(unsigned long long)v));
 			break;
-		case REG_SZ:
+		}
+		case REG_SZ: {
+			const char *s;
+			if (!pull_reg_sz(talloc_tos(), &val->data, &s)) {
+				break;
+			}
 			DEBUG(lvl,("%s (length: %d)\n",
-				   val->v.sz.str,
-				   (int)val->v.sz.len));
+				   s, (int)strlen_m(s)));
 			break;
-		case REG_MULTI_SZ:
-			DEBUG(lvl,("(num_strings: %d)\n",
-				   val->v.multi_sz.num_strings));
-			for (i=0; i < val->v.multi_sz.num_strings; i++) {
-				DEBUGADD(lvl,("\t%s\n",
-					val->v.multi_sz.strings[i]));
+		}
+		case REG_MULTI_SZ: {
+			const char **a;
+			if (!pull_reg_multi_sz(talloc_tos(), &val->data, &a)) {
+				break;
+			}
+			for (i=0; a[i] != NULL; i++) {
+				;;
+			}
+			DEBUG(lvl,("(num_strings: %d)\n", i));
+			for (i=0; a[i] != NULL; i++) {
+				DEBUGADD(lvl,("\t%s\n", a[i]));
 			}
 			break;
+		}
 		case REG_NONE:
 			DEBUG(lvl,("\n"));
 			break;
 		case REG_BINARY:
-			dump_data(lvl, val->v.binary.data,
-				  val->v.binary.length);
+			dump_data(lvl, val->data.data,
+				  val->data.length);
 			break;
 		default:
 			DEBUG(lvl,("unsupported type: %d\n", val->type));

@@ -96,11 +96,13 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 	data->type = data_type;
 	switch (data->type) {
 		case REG_QWORD:
-			data->v.qword = *(uint64_t *)data_p;
+			data->data = data_blob_talloc(mem_ctx, NULL, 8);
+			SBVAL(data->data.data, 0, *(uint64_t *)data_p);
 			break;
 		case REG_SZ:
-			data->v.sz.str = talloc_strdup(mem_ctx, (char *)data_p);
-			data->v.sz.len = strlen(data->v.sz.str);
+			if (!push_reg_sz(mem_ctx, &data->data, (char *)data_p)) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			break;
 		default:
 			return NT_STATUS_NOT_SUPPORTED;

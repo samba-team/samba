@@ -352,16 +352,33 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	}
 
 	if (strequal(argv[2], "dword")) {
+		uint32_t v = strtoul(argv[3], NULL, 10);
 		value.type = REG_DWORD;
-		value.v.dword = strtoul(argv[3], NULL, 10);
+		value.data = data_blob_talloc(ctx, NULL, 4);
+		SIVAL(value.data.data, 0, v);
 	} else if (strequal(argv[2], "sz")) {
 		value.type = REG_SZ;
-		value.v.sz.len = strlen(argv[3])+1;
-		value.v.sz.str = CONST_DISCARD(char *, argv[3]);
+		if (!push_reg_sz(ctx, &value.data, argv[3])) {
+			goto done;
+		}
 	} else if (strequal(argv[2], "multi_sz")) {
+		const char **array;
+		int count = argc - 3;
+		int i;
 		value.type = REG_MULTI_SZ;
-		value.v.multi_sz.num_strings = argc - 3;
-		value.v.multi_sz.strings = (char **)(argv + 3);
+		array = talloc_zero_array(ctx, const char *, count + 1);
+		if (array == NULL) {
+			goto done;
+		}
+		for (i=0; i < count; i++) {
+			array[i] = talloc_strdup(array, argv[count+i]);
+			if (array[i] == NULL) {
+				goto done;
+			}
+		}
+		if (!push_reg_multi_sz(ctx, &value.data, array)) {
+			goto done;
+		}
 	} else {
 		d_fprintf(stderr, _("type \"%s\" not implemented\n"), argv[2]);
 		goto done;
@@ -401,6 +418,7 @@ static void net_registry_increment_fn(void *private_data)
 		(struct net_registry_increment_state *)private_data;
 	struct registry_value *value;
 	struct registry_key *key = NULL;
+	uint32_t v;
 
 	state->werr = open_key(talloc_tos(), state->keyname,
 			       REG_KEY_READ|REG_KEY_WRITE, &key);
@@ -423,8 +441,16 @@ static void net_registry_increment_fn(void *private_data)
 		goto done;
 	}
 
-	value->v.dword += state->increment;
-	state->newvalue = value->v.dword;
+	if (value->data.length < 4) {
+		d_fprintf(stderr, _("value too short for regular DWORD\n"));
+		goto done;
+	}
+
+	v = IVAL(value->data.data, 0);
+	v += state->increment;
+	state->newvalue = v;
+
+	SIVAL(value->data.data, 0, v);
 
 	state->werr = reg_setvalue(key, state->valuename, value);
 	if (!W_ERROR_IS_OK(state->werr)) {

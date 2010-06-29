@@ -304,8 +304,8 @@ static int elog_size( EVENTLOG_INFO *info )
 static bool sync_eventlog_params( EVENTLOG_INFO *info )
 {
 	char *path = NULL;
-	uint32 uiMaxSize;
-	uint32 uiRetention;
+	uint32_t uiMaxSize = 0;
+	uint32_t uiRetention = 0;
 	struct registry_key *key;
 	struct registry_value *value;
 	WERROR wresult;
@@ -350,7 +350,10 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 			  win_errstr(wresult)));
 		goto done;
 	}
-	uiRetention = value->v.dword;
+
+	if (value->data.length >= 4) {
+		uiRetention = IVAL(value->data.data, 0);
+	}
 
 	wresult = reg_queryvalue(key, key, "MaxSize", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
@@ -358,7 +361,9 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 			  win_errstr(wresult)));
 		goto done;
 	}
-	uiMaxSize = value->v.dword;
+	if (value->data.length >= 4) {
+		uiMaxSize = IVAL(value->data.data, 0);
+	}
 
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_RETENTION, uiRetention );

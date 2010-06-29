@@ -352,12 +352,14 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		err = registry_pull_value(values, &values[i], type, data,
-					  data_size, value_length);
-		if (!W_ERROR_IS_OK(err)) {
-			status = werror_to_ntstatus(err);
+		values[i] = talloc_zero(values, struct registry_value);
+		if (values[i] == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto error;
 		}
+
+		values[i]->type	= type;
+		values[i]->data = data_blob_talloc(values[i], data, data_size);
 	}
 
 	*pnum_values = num_values;
@@ -394,22 +396,14 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 				  const struct registry_value *value)
 {
 	struct winreg_String name_string;
-	DATA_BLOB blob;
 	NTSTATUS result;
-	WERROR err;
-
-	err = registry_push_value(mem_ctx, value, &blob);
-	if (!W_ERROR_IS_OK(err)) {
-		return werror_to_ntstatus(err);
-	}
 
 	ZERO_STRUCT(name_string);
 
 	name_string.name = name;
-	result = rpccli_winreg_SetValue(pipe_hnd, blob.data, key_hnd,
+	result = rpccli_winreg_SetValue(pipe_hnd, mem_ctx, key_hnd,
 					name_string, value->type,
-					blob.data, blob.length, NULL);
-	TALLOC_FREE(blob.data);
+					value->data.data, value->data.length, NULL);
 	return result;
 }
 
@@ -441,13 +435,17 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 	}
 
 	if (strequal(argv[2], "dword")) {
+		uint32_t v = strtoul(argv[3], NULL, 10);
 		value.type = REG_DWORD;
-		value.v.dword = strtoul(argv[3], NULL, 10);
+		value.data = data_blob_talloc(mem_ctx, NULL, 4);
+		SIVAL(value.data.data, 0, v);
 	}
 	else if (strequal(argv[2], "sz")) {
 		value.type = REG_SZ;
-		value.v.sz.len = strlen(argv[3])+1;
-		value.v.sz.str = CONST_DISCARD(char *, argv[3]);
+		if (!push_reg_sz(mem_ctx, &value.data, argv[3])) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
 	}
 	else {
 		d_fprintf(stderr, _("type \"%s\" not implemented\n"), argv[2]);
@@ -551,11 +549,9 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 {
 	struct policy_handle hive_hnd, key_hnd;
 	NTSTATUS status;
-	WERROR werr;
 	struct winreg_String valuename;
 	struct registry_value *value = NULL;
 	enum winreg_Type type = REG_NONE;
-	uint8_t *data = NULL;
 	uint32_t data_size = 0;
 	uint32_t value_length = 0;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -573,6 +569,11 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 
 	valuename.name = argv[1];
 
+	value = talloc_zero(tmp_ctx, struct registry_value);
+	if (value == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/*
 	 * call QueryValue once with data == NULL to get the
 	 * needed memory size to be allocated, then allocate
@@ -581,7 +582,7 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
 					  &valuename,
 					  &type,
-					  data,
+					  NULL,
 					  &data_size,
 					  &value_length,
 					  NULL);
@@ -592,13 +593,12 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 		goto done;
 	}
 
-	data = (uint8 *)TALLOC(tmp_ctx, data_size);
-	value_length = 0;
+	value->data = data_blob_talloc(tmp_ctx, NULL, data_size);
 
 	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
 					  &valuename,
 					  &type,
-					  data,
+					  value->data.data,
 					  &data_size,
 					  &value_length,
 					  NULL);
@@ -606,13 +606,6 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("registry_queryvalue failed: %s\n"),
 			  nt_errstr(status));
-		goto done;
-	}
-
-	werr = registry_pull_value(tmp_ctx, &value, type, data,
-				   data_size, value_length);
-	if (!W_ERROR_IS_OK(werr)) {
-		status = werror_to_ntstatus(werr);
 		goto done;
 	}
 

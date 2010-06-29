@@ -226,7 +226,6 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	uint8_t *outbuf;
 	uint32_t outbuf_size;
 
-	DATA_BLOB val_blob;
 	bool free_buf = False;
 	bool free_prs = False;
 
@@ -305,13 +304,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 			return status;
 		}
 
-		status = registry_push_value(p->mem_ctx, val, &val_blob);
-		if (!W_ERROR_IS_OK(status)) {
-			return status;
-		}
-
-		outbuf = val_blob.data;
-		outbuf_size = val_blob.length;
+		outbuf = val->data.data;
+		outbuf_size = val->data.length;
 		*r->out.type = val->type;
 	}
 
@@ -422,7 +416,6 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
 	char *valname;
 	struct registry_value *val;
-	DATA_BLOB value_blob;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -434,11 +427,6 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
 		 key->key->name));
 
 	err = reg_enumvalue(p->mem_ctx, key, r->in.enum_index, &valname, &val);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
-	}
-
-	err = registry_push_value(p->mem_ctx, val, &value_blob);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
@@ -456,18 +444,18 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
 			return WERR_INVALID_PARAM;
 		}
 
-		if (value_blob.length > *r->out.size) {
+		if (val->data.length > *r->out.size) {
 			return WERR_MORE_DATA;
 		}
 
-		memcpy( r->out.value, value_blob.data, value_blob.length );
+		memcpy( r->out.value, val->data.data, val->data.length );
 	}
 
 	if (r->out.length != NULL) {
-		*r->out.length = value_blob.length;
+		*r->out.length = val->data.length;
 	}
 	if (r->out.size != NULL) {
-		*r->out.size = value_blob.length;
+		*r->out.size = val->data.length;
 	}
 
 	return WERR_OK;
@@ -788,7 +776,6 @@ WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	struct registry_value *val;
-	WERROR status;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -796,11 +783,13 @@ WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
 	DEBUG(8,("_winreg_SetValue: Setting value for [%s:%s]\n",
 			 key->key->name, r->in.name.name));
 
-	status = registry_pull_value(p->mem_ctx, &val, r->in.type, r->in.data,
-								 r->in.size, r->in.size);
-	if (!W_ERROR_IS_OK(status)) {
-		return status;
+	val = talloc_zero(p->mem_ctx, struct registry_value);
+	if (val == NULL) {
+		return WERR_NOMEM;
 	}
+
+	val->type = r->in.type;
+	val->data = data_blob_talloc(p->mem_ctx, r->in.data, r->in.size);
 
 	return reg_setvalue(key, r->in.name.name, val);
 }
@@ -1060,16 +1049,11 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
 
 	for (i=0; i < r->in.num_values; i++) {
 		const char *valuename = NULL;
-		DATA_BLOB blob = data_blob_null;
 
-		if (vals[i].type != REG_NONE) {
-			err = registry_push_value(p->mem_ctx, &vals[i], &blob);
-			if (!W_ERROR_IS_OK(err)) {
-				return err;
-			}
-
+		if (vals[i].data.length > 0) {
 			if (!data_blob_append(p->mem_ctx, &result,
-					      blob.data, blob.length)) {
+					      vals[i].data.data,
+					      vals[i].data.length)) {
 				return WERR_NOMEM;
 			}
 		}
@@ -1081,7 +1065,7 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
 
 		err = construct_multiple_entry(r->out.values_out,
 					       valuename,
-					       blob.length,
+					       vals[i].data.length,
 					       offset,
 					       vals[i].type,
 					       &r->out.values_out[i]);
@@ -1089,7 +1073,7 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
 			return err;
 		}
 
-		offset += blob.length;
+		offset += vals[i].data.length;
 	}
 
 	*r->out.needed = result.length;

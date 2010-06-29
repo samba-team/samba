@@ -293,23 +293,18 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 
 	switch (data->type) {
 		case REG_DWORD:
-			data->v.dword = atoi((char *)file_entry->data);
+			if (file_entry->size < 4) {
+				return false;
+			}
+			data->data = data_blob_talloc(mem_ctx, NULL, 4);
+			SIVAL(data->data.data, 0, atoi((char *)file_entry->data));
 			break;
 		case REG_BINARY:
-			data->v.binary = data_blob_talloc(mem_ctx,
-							  file_entry->data,
-							  file_entry->size);
+		case REG_SZ:
+			data->data.length = file_entry->size;
+			data->data.data = file_entry->data;
 			break;
 		case REG_NONE:
-			break;
-		case REG_SZ:
-			if (!pull_ucs2_talloc(mem_ctx, &data->v.sz.str,
-					      (const smb_ucs2_t *)
-					      file_entry->data,
-					      &data->v.sz.len)) {
-				data->v.sz.len = -1;
-			}
-
 			break;
 		case REG_DWORD_BIG_ENDIAN:
 		case REG_EXPAND_SZ:

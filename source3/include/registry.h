@@ -23,29 +23,9 @@
 #ifndef _REGISTRY_H
 #define _REGISTRY_H
 
-/*
- * A REG_SZ string is not necessarily NULL terminated. When retrieving it from
- * the net, we guarantee this however. A server might want to push it without
- * the terminator though.
- */
-
-struct registry_string {
-	size_t len;
-	char *str;
-};
-
 struct registry_value {
 	enum winreg_Type type;
-	union {
-		uint32 dword;
-		uint64 qword;
-		struct registry_string sz;
-		struct {
-			uint32 num_strings;
-			char **strings;
-		} multi_sz;
-		DATA_BLOB binary;
-	} v;
+	DATA_BLOB data;
 };
 
 /* forward declarations. definitions in reg_objects.c */
