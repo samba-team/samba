@@ -553,7 +553,7 @@ static int ipc_readv_next_vector(struct tstream_context *stream,
 		return -1;
 	}
 
-	vector[0].iov_base = state->buf + state->ofs;
+	vector[0].iov_base = (char *) (state->buf + state->ofs);
 	vector[0].iov_len = wanted;
 
 	state->ofs += wanted;
@@ -1006,7 +1006,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	state->p = p;
 	state->req = req;
 	state->trans = trans;
-	state->writev_iov.iov_base = trans->in.data.data;
+	state->writev_iov.iov_base = (char *) trans->in.data.data;
 	state->writev_iov.iov_len = trans->in.data.length;
 
 	ipc_readv_next_vector_init(&state->next_vector,
@@ -1215,7 +1215,7 @@ static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
 	state->p = p;
 	state->req = req;
 	state->io = io;
-	state->writev_iov.iov_base = io->smb2.in.out.data;
+	state->writev_iov.iov_base = (char *) io->smb2.in.out.data;
 	state->writev_iov.iov_len = io->smb2.in.out.length;
 
 	ipc_readv_next_vector_init(&state->next_vector,
