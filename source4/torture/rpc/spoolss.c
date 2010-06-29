@@ -37,6 +37,7 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
+#include "torture/ndr/ndr.h"
 
 #define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
 #define TORTURE_PRINTER			"torture_printer"
@@ -1766,16 +1767,6 @@ static bool test_PrinterInfo(struct torture_context *tctx,
 
 	return ret;
 }
-
-#define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
-	do { struct dom_sid *__got = (got), *__expected = (expected); \
-	if (!dom_sid_equal(__got, __expected)) { \
-		torture_result(torture_ctx, TORTURE_FAIL, \
-					   __location__": "#got" was %s, expected %s: %s", \
-					   dom_sid_string(torture_ctx, __got), dom_sid_string(torture_ctx, __expected), cmt); \
-		return false; \
-	} \
-	} while(0)
 
 static bool test_security_descriptor_equal(struct torture_context *tctx,
 					   const struct security_descriptor *sd1,
