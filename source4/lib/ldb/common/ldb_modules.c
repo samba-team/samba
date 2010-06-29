@@ -318,8 +318,7 @@ static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
 		return NULL;
 	}
 
-	sym = (int (*)(void))dlsym(handle, symbol);
-
+	sym = dlsym(handle, symbol);
 	if (sym == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `%s' found in %s: %s", symbol, path, dlerror());
 		return NULL;
