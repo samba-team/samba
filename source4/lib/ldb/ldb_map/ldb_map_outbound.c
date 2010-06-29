@@ -565,8 +565,6 @@ static int ldb_parse_tree_collect_attrs(struct ldb_module *module, void *mem_ctx
 		*attrs = new_attrs;
 		return 0;
 	}
-
-	return -1;
 }
 
 static int map_subtree_select_local(struct ldb_module *module, void *mem_ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *tree);
