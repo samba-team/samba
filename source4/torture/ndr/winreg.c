@@ -242,7 +242,6 @@ static const uint8_t querymultiplevalues_in_data[] = {
 static bool querymultiplevalues_in_check(struct torture_context *tctx, 
 					 struct winreg_QueryMultipleValues *r)
 {
-	torture_assert_mem_equal(tctx, r->in.key_handle, querymultiplevalues_in_data, sizeof(struct policy_handle), "key handle");
 	torture_assert_int_equal(tctx, r->in.num_values, 1, "num values");
 	torture_assert_str_equal(tctx, r->in.values_in[0].ve_valuename->name, "HOMEPATH", "name");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->length, 18, "name len");
@@ -250,7 +249,6 @@ static bool querymultiplevalues_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuelen, 0, "length");
 	torture_assert(tctx, (r->in.values_in[0].ve_valueptr == NULL), "ve_valueptr");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_type, 0, "type");
-	torture_assert_mem_equal(tctx, r->in.buffer, querymultiplevalues_in_data+0x6C, *r->in.buffer_size, "buffer");
 	torture_assert_int_equal(tctx, *r->in.buffer_size, 32, "buffer size");
 
 	return true;
@@ -300,7 +298,6 @@ const uint8_t querymultiplevalues2_in_data[] = {
 static bool querymultiplevalues2_in_check(struct torture_context *tctx,
 					  struct winreg_QueryMultipleValues2 *r)
 {
-	torture_assert_mem_equal(tctx, r->in.key_handle, querymultiplevalues2_in_data, sizeof(struct policy_handle), "key handle");
 	torture_assert_int_equal(tctx, r->in.num_values, 1, "num values");
 	torture_assert_str_equal(tctx, r->in.values_in[0].ve_valuename->name, "TEMP", "name");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->length, 10, "name len");
