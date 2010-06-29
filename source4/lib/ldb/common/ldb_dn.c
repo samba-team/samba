@@ -1925,7 +1925,6 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 					ldb_dn_mark_invalid(dn);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
-				return LDB_SUCCESS;
 			} else {
 				if (i != (dn->ext_comp_num - 1)) {
 					memmove(&dn->ext_components[i],
@@ -1943,9 +1942,10 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 					ldb_dn_mark_invalid(dn);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
-				return LDB_SUCCESS;
 			}
 			LDB_FREE(dn->ext_linearized);
+
+			return LDB_SUCCESS;
 		}
 	}
 
@@ -1975,6 +1975,8 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 	}
 	dn->ext_components = p;
 	dn->ext_comp_num++;
+
+	LDB_FREE(dn->ext_linearized);
 
 	return LDB_SUCCESS;
 }
