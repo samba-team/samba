@@ -495,7 +495,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 			   const char *name, struct hive_key **key)
 {
 	struct ldb_result *res;
-	struct ldb_dn *ldap_path;
+	struct ldb_dn *ldb_path;
 	int ret;
 	struct ldb_key_data *newkd;
 	struct ldb_key_data *kd = talloc_get_type(h, struct ldb_key_data);
@@ -505,18 +505,18 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 		return WERR_INVALID_PARAM;
 	}
 
-	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
-	W_ERROR_HAVE_NO_MEMORY(ldap_path);
+	ldb_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
+	W_ERROR_HAVE_NO_MEMORY(ldb_path);
 
-	ret = ldb_search(c, mem_ctx, &res, ldap_path, LDB_SCOPE_BASE, NULL, "(key=*)");
+	ret = ldb_search(c, mem_ctx, &res, ldb_path, LDB_SCOPE_BASE, NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Error opening key '%s': %s\n",
-			ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
+			ldb_dn_get_linearized(ldb_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	} else if (res->count == 0) {
 		DEBUG(3, ("Key '%s' not found\n",
-			ldb_dn_get_linearized(ldap_path)));
+			ldb_dn_get_linearized(ldb_path)));
 		talloc_free(res);
 		return WERR_BADFILE;
 	}
@@ -700,7 +700,7 @@ static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 	unsigned int i;
 	int ret;
 	struct ldb_key_data *parentkd = talloc_get_type(key, struct ldb_key_data);
-	struct ldb_dn *ldap_path;
+	struct ldb_dn *ldb_path;
 	struct ldb_context *c = parentkd->ldb;
 	struct ldb_result *res_keys;
 	struct ldb_result *res_vals;
@@ -717,26 +717,26 @@ static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 		return werr;
 	}
 
-	ldap_path = reg_path_to_ldb(mem_ctx, key, name, NULL);
-	W_ERROR_HAVE_NO_MEMORY(ldap_path);
+	ldb_path = reg_path_to_ldb(mem_ctx, key, name, NULL);
+	W_ERROR_HAVE_NO_MEMORY(ldb_path);
 
 	/* Search for subkeys */
-	ret = ldb_search(c, mem_ctx, &res_keys, ldap_path, LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(c, mem_ctx, &res_keys, ldb_path, LDB_SCOPE_ONELEVEL,
 			 NULL, "(key=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting subkeys for '%s': %s\n",
-		      ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
+		      ldb_dn_get_linearized(ldb_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
 	/* Search for values */
-	ret = ldb_search(c, mem_ctx, &res_vals, ldap_path, LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(c, mem_ctx, &res_vals, ldb_path, LDB_SCOPE_ONELEVEL,
 			 NULL, "(value=*)");
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting values for '%s': %s\n",
-		      ldb_dn_get_linearized(ldap_path), ldb_errstring(c)));
+		      ldb_dn_get_linearized(ldb_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -778,7 +778,7 @@ static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 	}
 
 	/* Delete the key itself */
-	ret = ldb_delete(c, ldap_path);
+	ret = ldb_delete(c, ldb_path);
 
 	if (ret != LDB_SUCCESS)
 	{
