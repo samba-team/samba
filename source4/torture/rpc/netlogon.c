@@ -2076,7 +2076,7 @@ static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
 	netlogon_creds_client_authenticator(creds, &a);
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = "";
+	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &a;
 	r.in.flags = 0;
 	r.out.return_authenticator = &return_authenticator;
