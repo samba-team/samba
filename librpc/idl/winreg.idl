@@ -371,17 +371,18 @@ import "lsa.idl", "security.idl", "misc.idl";
 	);
 
 	typedef struct {
-		winreg_String *name;
-		winreg_Type type;
-		uint32 offset;
-		uint32 length;
+		winreg_ValNameBuf *ve_valuename;
+		uint32 ve_valuelen;
+		uint32 *ve_valueptr;
+		winreg_Type ve_type;
 	} QueryMultipleValue;
-	
+
 	/******************/
 	/* Function: 0x1d */
 	[public] WERROR winreg_QueryMultipleValues(
 		[in,ref] policy_handle *key_handle, 
-		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
+		[in,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values_in,
+		[out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values_out,
 		[in] uint32 num_values,
 		[in,out,unique,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
 		[in,out,ref] uint32 *buffer_size

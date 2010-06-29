@@ -1616,13 +1616,13 @@ static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 	uint32_t bufsize=0;
 
 	ZERO_STRUCT(r);
+
 	r.in.key_handle = handle;
-	r.in.values = r.out.values = talloc_array(tctx, struct QueryMultipleValue, 1);
-	r.in.values[0].name = talloc(tctx, struct winreg_String);
-	r.in.values[0].name->name = valuename;
-	r.in.values[0].offset = 0;
-	r.in.values[0].length = 0;
-	r.in.values[0].type = 0;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, 1);
+	r.in.values_in[0].ve_valuename = talloc(tctx, struct winreg_ValNameBuf);
+	r.in.values_in[0].ve_valuename->name = valuename;
+	/* size needs to be set manually for winreg_ValNameBuf */
+	r.in.values_in[0].ve_valuename->size = strlen_m_term(valuename)*2;
 
 	r.in.num_values = 1;
 	r.in.buffer_size = r.out.buffer_size = talloc(tctx, uint32_t);

@@ -242,14 +242,16 @@ static const uint8_t querymultiplevalues_in_data[] = {
 static bool querymultiplevalues_in_check(struct torture_context *tctx, 
 					 struct winreg_QueryMultipleValues *r)
 {
+	torture_assert_mem_equal(tctx, r->in.key_handle, querymultiplevalues_in_data, sizeof(struct policy_handle), "key handle");
 	torture_assert_int_equal(tctx, r->in.num_values, 1, "num values");
-	torture_assert_str_equal(tctx, r->in.values[0].name->name, "HOMEPATH", 
-							 "name");
-
-	torture_assert_int_equal(tctx, r->in.values[0].type, 0, "type");
-	torture_assert_int_equal(tctx, r->in.values[0].offset, 0, "offset");
-	torture_assert_int_equal(tctx, r->in.values[0].length, 0, "length");
-	torture_assert_int_equal(tctx, *r->in.buffer_size, 76, "buffer size");
+	torture_assert_str_equal(tctx, r->in.values_in[0].ve_valuename->name, "HOMEPATH", "name");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->length, 18, "name len");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->size, 18, "name size");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuelen, 0, "length");
+	torture_assert(tctx, (r->in.values_in[0].ve_valueptr == NULL), "ve_valueptr");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_type, 0, "type");
+	torture_assert_mem_equal(tctx, r->in.buffer, querymultiplevalues_in_data+0x6C, *r->in.buffer_size, "buffer");
+	torture_assert_int_equal(tctx, *r->in.buffer_size, 32, "buffer size");
 
 	return true;
 }
@@ -274,16 +276,12 @@ static const uint8_t querymultiplevalues_out_data[] = {
 static bool querymultiplevalues_out_check(struct torture_context *tctx, 
 					  struct winreg_QueryMultipleValues *r)
 {
-	torture_assert_str_equal(tctx, r->out.values[0].name->name, "HOMEPATH", 
-							 "name");
-
-	torture_assert_int_equal(tctx, r->out.values[0].type, 0, "type");
-	torture_assert_int_equal(tctx, r->out.values[0].offset, 0, "offset");
-	torture_assert_int_equal(tctx, r->out.values[0].length, 0, "length");
+	torture_assert_str_equal(tctx, r->out.values_out[0].ve_valuename->name, "HOMEPATH", "name");
+	torture_assert_int_equal(tctx, r->out.values_out[0].ve_type, 0, "type");
+	torture_assert_int_equal(tctx, r->out.values_out[0].ve_valuelen, 0, "length");
 	/* FIXME: r->out.buffer */
 	torture_assert_int_equal(tctx, *r->out.buffer_size, 76, "buffer size");
-	torture_assert_werr_equal(tctx, r->out.result, WERR_MORE_DATA, 
-								  "return code");
+	torture_assert_werr_equal(tctx, r->out.result, WERR_MORE_DATA, "return code");
 
 	return true;
 }
@@ -543,8 +541,10 @@ struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryValue, queryvalue_in_data, NDR_IN, queryvalue_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryValue, queryvalue_out_data, NDR_OUT, queryvalue_out_check );
 
-	/*torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_in_data, NDR_IN, querymultiplevalues_in_check );
-	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_out_data, NDR_OUT, querymultiplevalues_out_check );*/
+	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_in_data, NDR_IN, querymultiplevalues_in_check );
+	/* we cannot do this as long we don't have the ability to bring in
+	 * r->in.num_values */
+/*	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_out_data, NDR_OUT, querymultiplevalues_out_check ); */
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_in_data, NDR_IN, flushkey_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_out_data, NDR_OUT, flushkey_out_check );
