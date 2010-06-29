@@ -292,8 +292,6 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
 
 NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
@@ -509,8 +507,6 @@ NTSTATUS smbsrv_push_passthru_fileinfo(TALLOC_CTX *mem_ctx,
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
 
 NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
@@ -636,8 +632,6 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
 
 /*
@@ -784,6 +778,4 @@ NTSTATUS smbsrv_push_passthru_search(TALLOC_CTX *mem_ctx,
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
