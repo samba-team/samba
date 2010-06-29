@@ -148,9 +148,7 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (!ldb_msg_find_element(req->op.add.message, "instanceType")) {
-		return ldb_next_request(module, req);		
-	} else {
+	if (ldb_msg_find_element(req->op.add.message, "instanceType")) {
 		/* This needs to be 'static' to ensure it does not move, and is not on the stack */
 		static const char *no_attrs[] = { NULL };
 		unsigned int instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
