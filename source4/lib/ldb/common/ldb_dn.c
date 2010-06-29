@@ -1431,9 +1431,9 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
+
 	return true;
 }
 
@@ -1559,7 +1559,6 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
 
@@ -1635,7 +1634,6 @@ bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
 
@@ -1680,9 +1678,9 @@ bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
+
 	return true;
 }
 
@@ -1703,9 +1701,9 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
+
 	return new_dn;
 }
 
@@ -1877,9 +1875,9 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 	/* Wipe the ext_linearized DN,
 	 * the GUID and SID are almost certainly no longer valid */
 	LDB_FREE(dn->ext_linearized);
-
-	dn->ext_comp_num = 0;
 	LDB_FREE(dn->ext_components);
+	dn->ext_comp_num = 0;
+
 	return LDB_SUCCESS;
 }
 
@@ -1983,9 +1981,9 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn,
 
 void ldb_dn_remove_extended_components(struct ldb_dn *dn)
 {
-	dn->ext_comp_num = 0;
-	LDB_FREE(dn->ext_components);
 	LDB_FREE(dn->ext_linearized);
+	LDB_FREE(dn->ext_components);
+	dn->ext_comp_num = 0;
 }
 
 bool ldb_dn_is_valid(struct ldb_dn *dn)
