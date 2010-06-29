@@ -291,7 +291,7 @@ out:
 
 static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
 	TALLOC_CTX *mem_ctx;
