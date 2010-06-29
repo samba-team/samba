@@ -166,58 +166,71 @@ static WERROR local_enum_key(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR local_create_key(TALLOC_CTX *mem_ctx,
-			       struct registry_key *parent_key,
-			       const char *name,
+			       struct registry_key *parent,
+			       const char *path,
 			       const char *key_class,
 			       struct security_descriptor *security,
-			       struct registry_key **key)
+			       struct registry_key **result)
 {
-	struct local_key *local_parent;
-	struct hive_key *hivekey;
-	const char **elements;
-	unsigned int i;
-	const char *last_part;
-	char *trunc_name;
+	char *orig, *curbegin, *curend;
+	struct local_key *local_parent = talloc_get_type(parent,
+							 struct local_key);
+	struct hive_key *curkey = local_parent->hive_key;
+	WERROR error;
+	const char **elements = NULL;
+	int el;
 
-	last_part = strrchr(name, '\\');
-	if (last_part == NULL) {
-		last_part = name;
-		local_parent = (struct local_key *)parent_key;
-	} else {
-		trunc_name = talloc_strndup(mem_ctx, name, last_part - name);
-		W_ERROR_HAVE_NO_MEMORY(trunc_name);
-		W_ERROR_NOT_OK_RETURN(reg_open_key(mem_ctx, parent_key,
-						   trunc_name,
-						   (struct registry_key **)&local_parent));
-		talloc_free(trunc_name);
-		last_part++;
-	}
-
-	W_ERROR_NOT_OK_RETURN(hive_key_add_name(mem_ctx, local_parent->hive_key,
-						last_part, key_class, security,
-						&hivekey));
+	orig = talloc_strdup(mem_ctx, path);
+	W_ERROR_HAVE_NO_MEMORY(orig);
+	curbegin = orig;
+	curend = strchr(orig, '\\');
 
 	if (local_parent->path.elements != NULL) {
-		elements = talloc_array(hivekey, const char *,
-					str_list_length(local_parent->path.elements)+2);
+		elements = talloc_array(mem_ctx, const char *,
+					str_list_length(local_parent->path.elements) + 1);
 		W_ERROR_HAVE_NO_MEMORY(elements);
-		for (i = 0; local_parent->path.elements[i] != NULL; i++) {
-			elements[i] = talloc_reference(elements,
-						       local_parent->path.elements[i]);
+		for (el = 0; local_parent->path.elements[el] != NULL; el++) {
+			elements[el] = talloc_reference(elements,
+							local_parent->path.elements[el]);
 		}
+		elements[el] = NULL;
 	} else {
-		elements = talloc_array(hivekey, const char *, 2);
-		W_ERROR_HAVE_NO_MEMORY(elements);
-		i = 0;
+		elements = NULL;
+		el = 0;
 	}
 
-	elements[i] = talloc_strdup(elements, name);
-	W_ERROR_HAVE_NO_MEMORY(elements[i]);
-	elements[i+1] = NULL;
+	while (curbegin != NULL && *curbegin) {
+		if (curend != NULL)
+			*curend = '\0';
+		elements = talloc_realloc(mem_ctx, elements, const char *, el+2);
+		W_ERROR_HAVE_NO_MEMORY(elements);
+		elements[el] = talloc_strdup(elements, curbegin);
+		W_ERROR_HAVE_NO_MEMORY(elements[el]);
+		el++;
+		elements[el] = NULL;
+		error = hive_get_key_by_name(mem_ctx, curkey,
+					     curbegin, &curkey);
+		if (W_ERROR_EQUAL(error, WERR_BADFILE)) {
+			error = hive_key_add_name(mem_ctx, curkey, curbegin,
+						  key_class, security,
+						  &curkey);
+		}
+		if (!W_ERROR_IS_OK(error)) {
+			DEBUG(2, ("Open/Creation of key %s failed: %s\n",
+				curbegin, win_errstr(error)));
+			talloc_free(orig);
+			return error;
+		}
+		if (curend == NULL)
+			break;
+		curbegin = curend + 1;
+		curend = strchr(curbegin, '\\');
+	}
+	talloc_free(orig);
 
-	*key = reg_import_hive_key(local_parent->global.context, hivekey,
-				   local_parent->path.predefined_key,
-				   elements);
+	*result = reg_import_hive_key(local_parent->global.context, curkey,
+				      local_parent->path.predefined_key,
+				      talloc_steal(curkey, elements));
 
 	return WERR_OK;
 }
