@@ -998,16 +998,22 @@ static int skip_file(int skipsize)
 
 static int get_file(file_info2 finfo)
 {
-	uint16_t fnum;
+	uint16_t fnum = (uint16_t) -1;
 	int pos = 0, dsize = 0, bpos = 0;
 	uint64_t rsize = 0;
+	NTSTATUS status;
 
 	DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
-	if (ensurepath(finfo.name) &&
-			(!NT_STATUS_IS_OK(cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE,&fnum)))) {
+	if (!ensurepath(finfo.name)) {
 		DEBUG(0, ("abandoning restore\n"));
-		return(False);
+		return False;
+	}
+
+	status = cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("abandoning restore\n"));
+		return False;
 	}
 
 	/* read the blocks from the tar file and write to the remote file */
