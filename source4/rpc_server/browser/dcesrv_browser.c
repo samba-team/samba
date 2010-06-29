@@ -72,8 +72,6 @@ static WERROR dcesrv_BrowserrQueryOtherDomains(struct dcesrv_call_state *dce_cal
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-
-	return WERR_INVALID_PARAM;
 }
 
 
