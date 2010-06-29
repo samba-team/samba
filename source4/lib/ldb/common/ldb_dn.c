@@ -2037,10 +2037,9 @@ int ldb_dn_update_components(struct ldb_dn *dn, const struct ldb_dn *ref_dn)
 	       sizeof(struct ldb_dn_component)*ref_dn->comp_num);
 	dn->comp_num = ref_dn->comp_num;
 
-	talloc_free(dn->linearized);
-	talloc_free(dn->ext_linearized);
-	dn->ext_linearized = NULL;
-	dn->linearized = NULL;
+	LDB_FREE(dn->casefold);
+	LDB_FREE(dn->linearized);
+	LDB_FREE(dn->ext_linearized);
 
 	return LDB_SUCCESS;
 }
