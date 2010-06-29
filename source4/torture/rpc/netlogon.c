@@ -2085,8 +2085,12 @@ static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_netr_GetForestTrustInformation_r(b, tctx, &r),
 		"netr_GetForestTrustInformation failed");
-	torture_assert_ntstatus_ok(tctx, r.out.result,
-		"netr_GetForestTrustInformation failed");
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
+		torture_comment(tctx, "not considering NT_STATUS_NOT_IMPLEMENTED as an error\n");
+	} else {
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"netr_GetForestTrustInformation failed");
+	}
 
 	torture_assert(tctx,
 		netlogon_creds_client_check(creds, &return_authenticator.cred),
