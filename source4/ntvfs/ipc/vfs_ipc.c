@@ -893,8 +893,6 @@ static NTSTATUS ipc_qfileinfo(struct ntvfs_module_context *ntvfs,
 	default:
 		return ntvfs_map_qfileinfo(ntvfs, req, info);
 	}
-	
-	return NT_STATUS_ACCESS_DENIED;
 }
 
 
@@ -1317,8 +1315,6 @@ static NTSTATUS ipc_ioctl(struct ntvfs_module_context *ntvfs,
 	default:
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	return NT_STATUS_ACCESS_DENIED;
 }
 
 
