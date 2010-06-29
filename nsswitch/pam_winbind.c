@@ -2422,7 +2422,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainSid sid;
 	enum wbcSidType type;
-	char *domain;
+	char *domain = NULL;
 	char *name;
 	char *p;
 
