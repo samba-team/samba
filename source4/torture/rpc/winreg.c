@@ -1645,6 +1645,146 @@ static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+static bool test_QueryMultipleValues_full(struct dcerpc_binding_handle *b,
+					  struct torture_context *tctx,
+					  struct policy_handle *handle,
+					  uint32_t num_values,
+					  const char **valuenames,
+					  bool existing_value)
+{
+	struct winreg_QueryMultipleValues r;
+	uint32_t bufsize = 0;
+	int i;
+
+	torture_comment(tctx, "Testing QueryMultipleValues\n");
+
+	ZERO_STRUCT(r);
+
+	r.in.key_handle = handle;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, 0);
+	r.in.buffer_size = r.out.buffer_size = &bufsize;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r),
+		"QueryMultipleValues failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues failed");
+
+	/* this test crashes w2k8 remote registry */
+#if 0
+	r.in.num_values = num_values;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, num_values);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r),
+		"QueryMultipleValues failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues failed");
+#endif
+	r.in.num_values = num_values;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, num_values);
+	for (i=0; i < r.in.num_values; i++) {
+		r.in.values_in[i].ve_valuename = talloc_zero(tctx, struct winreg_ValNameBuf);
+		r.in.values_in[i].ve_valuename->name = talloc_strdup(tctx, valuenames[i]);
+		r.in.values_in[i].ve_valuename->size = strlen_m_term(r.in.values_in[i].ve_valuename->name)*2;
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r),
+		"QueryMultipleValues failed");
+	torture_assert_werr_equal(tctx, r.out.result, existing_value ? WERR_MORE_DATA : WERR_BADFILE,
+		"QueryMultipleValues failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_BADFILE)) {
+		return true;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		*r.in.buffer_size = 0xff;
+		r.in.buffer = r.out.buffer = talloc_zero_array(tctx, uint8_t, *r.in.buffer_size);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_QueryMultipleValues_r(b, tctx, &r),
+			"QueryMultipleValues failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues failed");
+
+	return true;
+}
+
+
+static bool test_QueryMultipleValues2_full(struct dcerpc_binding_handle *b,
+					   struct torture_context *tctx,
+					   struct policy_handle *handle,
+					   uint32_t num_values,
+					   const char **valuenames,
+					   bool existing_value)
+{
+	struct winreg_QueryMultipleValues2 r;
+	uint32_t offered = 0, needed;
+	int i;
+
+	torture_comment(tctx, "Testing QueryMultipleValues2\n");
+
+	ZERO_STRUCT(r);
+
+	r.in.key_handle = handle;
+	r.in.offered = &offered;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, 0);
+	r.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+		"QueryMultipleValues2 failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues2 failed");
+
+	/* this test crashes w2k8 remote registry */
+#if 0
+	r.in.num_values = num_values;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, num_values);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+		"QueryMultipleValues2 failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues2 failed");
+#endif
+	r.in.num_values = num_values;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, num_values);
+	for (i=0; i < r.in.num_values; i++) {
+		r.in.values_in[i].ve_valuename = talloc_zero(tctx, struct winreg_ValNameBuf);
+		r.in.values_in[i].ve_valuename->name = talloc_strdup(tctx, valuenames[i]);
+		r.in.values_in[i].ve_valuename->size = strlen_m_term(r.in.values_in[i].ve_valuename->name)*2;
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+		"QueryMultipleValues2 failed");
+	torture_assert_werr_equal(tctx, r.out.result, existing_value ? WERR_MORE_DATA : WERR_BADFILE,
+		"QueryMultipleValues2 failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_BADFILE)) {
+		return true;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		*r.in.offered = *r.out.needed;
+		r.in.buffer = r.out.buffer = talloc_zero_array(tctx, uint8_t, *r.in.offered);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+			"QueryMultipleValues2 failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues2 failed");
+
+	return true;
+}
+
 static bool test_QueryMultipleValues2(struct dcerpc_binding_handle *b,
 				      struct torture_context *tctx,
 				      struct policy_handle *handle,
@@ -2238,12 +2378,65 @@ static bool test_create_keynames(struct dcerpc_binding_handle *b,
 
 #define KEY_CURRENT_VERSION "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION"
 #define VALUE_CURRENT_VERSION "CurrentVersion"
+#define VALUE_SYSTEM_ROOT "SystemRoot"
 
 static bool test_HKLM_wellknown(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle)
 {
 	struct policy_handle newhandle;
+	const char **values;
+	int i;
+	struct {
+		const char *values[3];
+		uint32_t num_values;
+		bool existing_value;
+		const char *error_message;
+	} multiple_values_tests[] = {
+		{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = NULL,
+			.values[2] = NULL,
+			.num_values = 1,
+			.existing_value = true
+		},{
+			.values[0] = VALUE_SYSTEM_ROOT,
+			.values[1] = NULL,
+			.values[2] = NULL,
+			.num_values = 1,
+			.existing_value = true
+		},{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = VALUE_SYSTEM_ROOT,
+			.values[2] = NULL,
+			.num_values = 2,
+			.existing_value = true
+		},{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = VALUE_SYSTEM_ROOT,
+			.values[2] = VALUE_CURRENT_VERSION,
+			.num_values = 3,
+			.existing_value = true
+		},{
+			.values[0] = "IDoNotExist",
+			.values[1] = NULL,
+			.values[2] = NULL,
+			.num_values = 1,
+			.existing_value = false
+		},{
+			.values[0] = "IDoNotExist",
+			.values[1] = VALUE_CURRENT_VERSION,
+			.values[2] = NULL,
+			.num_values = 2,
+			.existing_value = false
+		},{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = "IDoNotExist",
+			.values[2] = NULL,
+			.num_values = 2,
+			.existing_value = false
+		}
+	};
 
 	/* FIXME: s3 does not support SEC_FLAG_MAXIMUM_ALLOWED yet */
 	if (torture_setting_bool(tctx, "samba3", false)) {
@@ -2268,6 +2461,34 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
 		"succeeded to query nonexistent default value (\"\")");
 
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_comment(tctx, "skipping QueryMultipleValues{2} tests against Samba\n");
+		goto close_key;
+	}
+
+	for (i=0; i < ARRAY_SIZE(multiple_values_tests); i++) {
+		const char *msg;
+		msg = talloc_asprintf(tctx,
+				"failed to query %d %sexisting values\n",
+					multiple_values_tests[i].num_values,
+					multiple_values_tests[i].existing_value ? "":"non");
+
+		torture_assert(tctx,
+			test_QueryMultipleValues_full(b, tctx, &newhandle,
+						      multiple_values_tests[i].num_values,
+						      multiple_values_tests[i].values,
+						      multiple_values_tests[i].existing_value),
+			msg);
+		torture_assert(tctx,
+			test_QueryMultipleValues2_full(b, tctx, &newhandle,
+						       multiple_values_tests[i].num_values,
+						       multiple_values_tests[i].values,
+						       multiple_values_tests[i].existing_value),
+			msg);
+	}
+
+ close_key:
 	torture_assert(tctx, test_CloseKey(b, tctx, &newhandle),
 		"failed to close current version key");
 
