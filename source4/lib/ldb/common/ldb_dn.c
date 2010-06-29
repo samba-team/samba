@@ -331,8 +331,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		return true;
 	}
 
-	/* make sure we free this if alloced previously before replacing */
-	talloc_free(dn->components);
+	/* make sure we free this if allocated previously before replacing */
+	LDB_FREE(dn->components);
+	dn->comp_num = 0;
 
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
@@ -343,7 +344,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	if ( ! dn->components) {
 		return false;
 	}
-	dn->comp_num = 0;
 
 	/* Components data space is allocated here once */
 	data = talloc_array(dn->components, char, strlen(parse_dn) + 1);
