@@ -69,7 +69,7 @@ struct hive_operations {
 	 * Add a new key.
 	 */
 	WERROR (*add_key) (TALLOC_CTX *ctx,
-			   const struct hive_key *parent_key, const char *name,
+			   const struct hive_key *parent_key, const char *path,
 			   const char *classname,
 			   struct security_descriptor *desc,
 			   struct hive_key **key);

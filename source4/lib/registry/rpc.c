@@ -331,7 +331,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
-			  struct registry_key *parent, const char *name,
+			  struct registry_key *parent, const char *path,
 			  const char *key_class,
 			  struct security_descriptor *sec,
 			  struct registry_key **key)
@@ -344,7 +344,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(r);
 	r.in.handle = &parentkd->pol;
-	r.in.name.name = name;
+	r.in.name.name = path;
 	r.in.keyclass.name = NULL;
 	r.in.options = 0;
 	r.in.access_mask = 0x02000000;

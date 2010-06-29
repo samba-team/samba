@@ -202,7 +202,7 @@ _PUBLIC_ WERROR reg_key_del(TALLOC_CTX *mem_ctx, struct registry_key *parent,
  */
 _PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx,
 				 struct registry_key *parent,
-				 const char *name, const char *key_class,
+				 const char *path, const char *key_class,
 				 struct security_descriptor *desc,
 				 struct registry_key **newkey)
 {
@@ -215,7 +215,7 @@ _PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	return parent->context->ops->create_key(mem_ctx, parent, name,
+	return parent->context->ops->create_key(mem_ctx, parent, path,
 						key_class, desc, newkey);
 }
 
