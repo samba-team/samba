@@ -1645,6 +1645,45 @@ static bool test_QueryMultipleValues(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+static bool test_QueryMultipleValues2(struct dcerpc_binding_handle *b,
+				      struct torture_context *tctx,
+				      struct policy_handle *handle,
+				      const char *valuename)
+{
+	struct winreg_QueryMultipleValues2 r;
+	uint32_t offered = 0, needed;
+
+	ZERO_STRUCT(r);
+
+	r.in.key_handle = handle;
+	r.in.values_in = r.out.values_out = talloc_zero_array(tctx, struct QueryMultipleValue, 1);
+	r.in.values_in[0].ve_valuename = talloc(tctx, struct winreg_ValNameBuf);
+	r.in.values_in[0].ve_valuename->name = valuename;
+	/* size needs to be set manually for winreg_ValNameBuf */
+	r.in.values_in[0].ve_valuename->size = strlen_m_term(valuename)*2;
+
+	r.in.num_values = 1;
+	r.in.offered = &offered;
+	r.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+		"QueryMultipleValues2 failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		*r.in.offered = *r.out.needed;
+		r.in.buffer = r.out.buffer = talloc_zero_array(tctx, uint8_t, *r.in.offered);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winreg_QueryMultipleValues2_r(b, tctx, &r),
+			"QueryMultipleValues2 failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"QueryMultipleValues2 failed");
+
+	return true;
+}
+
 static bool test_QueryValue(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx,
 			    struct policy_handle *handle,
@@ -1813,6 +1852,8 @@ static bool test_EnumValue(struct dcerpc_binding_handle *b,
 					       r.out.name->name);
 			ret &= test_QueryMultipleValues(b, tctx, handle,
 							r.out.name->name);
+			ret &= test_QueryMultipleValues2(b, tctx, handle,
+							 r.out.name->name);
 		}
 
 		r.in.enum_index++;
