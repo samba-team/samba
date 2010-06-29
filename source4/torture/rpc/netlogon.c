@@ -2057,6 +2057,44 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
+						struct dcerpc_pipe *p,
+						struct cli_credentials *machine_credentials)
+{
+	struct netr_GetForestTrustInformation r;
+	struct netlogon_creds_CredentialState *creds;
+	struct netr_Authenticator a;
+	struct netr_Authenticator return_authenticator;
+	struct lsa_ForestTrustInformation *forest_trust_info;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+				    machine_credentials, &creds)) {
+		return false;
+	}
+
+	netlogon_creds_client_authenticator(creds, &a);
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computer_name = "";
+	r.in.credential = &a;
+	r.in.flags = 0;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.forest_trust_info = &forest_trust_info;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_netr_GetForestTrustInformation_r(b, tctx, &r),
+		"netr_GetForestTrustInformation failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"netr_GetForestTrustInformation failed");
+
+	torture_assert(tctx,
+		netlogon_creds_client_check(creds, &return_authenticator.cred),
+		"Credential chaining failed");
+
+	return true;
+}
+
 static bool test_netr_DsRGetForestTrustInformation(struct torture_context *tctx, 
 						   struct dcerpc_pipe *p, const char *trusted_domain_name) 
 {
@@ -3397,6 +3435,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
 	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
+	torture_rpc_tcase_add_test_creds(tcase, "GetForestTrustInformation", test_netr_GetForestTrustInformation);
 
 	return suite;
 }
