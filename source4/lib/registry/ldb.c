@@ -586,6 +586,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 			  struct hive_key **newkey)
 {
 	struct ldb_key_data *parentkd = discard_const_p(struct ldb_key_data, parent);
+	struct ldb_dn *ldb_path;
 	struct ldb_message *msg;
 	struct ldb_key_data *newkd;
 	int ret;
@@ -594,18 +595,23 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 		return WERR_INVALID_PARAM;
 	}
 
+	ldb_path = reg_path_to_ldb(mem_ctx, parent, name, NULL);
+	W_ERROR_HAVE_NO_MEMORY(ldb_path);
+
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
 
-	msg->dn = reg_path_to_ldb(msg, parent, name, NULL);
-	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+	msg->dn = ldb_path;
 
-	ldb_msg_add_string(msg, "key", talloc_strdup(mem_ctx, name));
-	if (classname != NULL)
-		ldb_msg_add_string(msg, "classname",
-				   talloc_strdup(mem_ctx, classname));
+	ldb_msg_add_string(msg, "key", name);
+	if (classname != NULL) {
+		ldb_msg_add_string(msg, "classname", classname);
+	}
 
 	ret = ldb_add(parentkd->ldb, msg);
+
+	talloc_free(msg);
+
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		return WERR_ALREADY_EXISTS;
 	}
@@ -615,13 +621,13 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 		return WERR_FOOBAR;
 	}
 
-	DEBUG(2, ("key added: %s\n", ldb_dn_get_linearized(msg->dn)));
+	DEBUG(2, ("key added: %s\n", ldb_dn_get_linearized(ldb_path)));
 
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
 	W_ERROR_HAVE_NO_MEMORY(newkd);
 	newkd->ldb = talloc_reference(newkd, parentkd->ldb);
 	newkd->key.ops = &reg_backend_ldb;
-	newkd->dn = talloc_steal(newkd, msg->dn);
+	newkd->dn = talloc_steal(newkd, ldb_path);
 	newkd->classname = talloc_steal(newkd, classname);
 
 	*newkey = (struct hive_key *)newkd;
