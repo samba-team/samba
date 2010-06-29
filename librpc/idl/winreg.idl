@@ -373,7 +373,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 	typedef struct {
 		winreg_ValNameBuf *ve_valuename;
 		uint32 ve_valuelen;
-		uint32 *ve_valueptr;
+		uint32 ve_valueptr;
 		winreg_Type ve_type;
 	} QueryMultipleValue;
 
