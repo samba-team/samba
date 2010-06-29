@@ -305,7 +305,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	struct ldb_dn *dn;
 	struct dom_sid sid;
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_result *res = NULL;
+	struct ldb_result *res;
 	NTSTATUS status;
 	const struct ldb_message_element *el;
 
@@ -321,22 +321,9 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	/* We expect an extended DN with the SID included but we can fallback
-	 * to search the extended components if they weren't provided. */
 	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
-				     DSDB_SEARCH_SHOW_EXTENDED_DN);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		dn = res->msgs[0]->dn;
-		status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": when parsing DN %s we failed to find or SID component, so we cannot calculate the group token: %s\n",
+		DEBUG(0, (__location__ ": when parsing DN %s we failed to find our SID component, so we cannot calculate the group token: %s\n",
 			  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1), 
 			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
@@ -344,12 +331,8 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	}
 
 	if (only_childs) {
-		/* If we didn't get the SID as extended DN then we already have
-		 * performed exactly this search. */
-		if (res == NULL) {
-			ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
-					     DSDB_SEARCH_SHOW_EXTENDED_DN);
-		}
+		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
+				     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	} else {
 		/* This is an O(n^2) linear search */
 		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
