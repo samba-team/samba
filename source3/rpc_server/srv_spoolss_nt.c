@@ -61,8 +61,6 @@ extern userdom_struct current_user_info;
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
-#define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
-
 static Printer_entry *printers_list;
 
 typedef struct _counter_printer_0 {
