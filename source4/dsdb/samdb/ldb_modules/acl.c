@@ -724,7 +724,7 @@ static int acl_check_self_membership(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	member_el = ldb_msg_find_element(req->op.mod.message, "Member");
+	member_el = ldb_msg_find_element(req->op.mod.message, "member");
 	if (!member_el) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -844,7 +844,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
 			modify_sd = true;
 		}
-		else if (ldb_attr_cmp("Member", req->op.mod.message->elements[i].name) == 0) {
+		else if (ldb_attr_cmp("member", req->op.mod.message->elements[i].name) == 0) {
 			ret = acl_check_self_membership(module,
 							req,
 							sd,
