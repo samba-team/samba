@@ -87,6 +87,11 @@ struct dsdb_control_password_change_status {
 */
 #define DSDB_CONTROL_APPLY_LINKS "1.3.6.1.4.1.7165.4.3.11"
 
+/*
+ * this should only be used for importing users from Samba3
+ */
+#define DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID "1.3.6.1.4.1.7165.4.3.12"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
