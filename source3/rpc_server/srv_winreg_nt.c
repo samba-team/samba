@@ -968,13 +968,22 @@ WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeK
  _winreg_QueryMultipleValues
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct winreg_QueryMultipleValues *r)
+WERROR _winreg_QueryMultipleValues(pipes_struct *p,
+				   struct winreg_QueryMultipleValues *r)
 {
-	/* fill in your code here if you think this call should
-	   do anything */
+	struct winreg_QueryMultipleValues2 r2;
+	uint32_t needed;
 
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
+	r2.in.key_handle	= r->in.key_handle;
+	r2.in.values_in		= r->in.values_in;
+	r2.in.num_values	= r->in.num_values;
+	r2.in.offered		= r->in.buffer_size;
+	r2.in.buffer		= r->in.buffer;
+	r2.out.values_out	= r->out.values_out;
+	r2.out.needed		= &needed;
+	r2.out.buffer		= r->out.buffer;
+
+	return _winreg_QueryMultipleValues2(p, &r2);
 }
 
 /*******************************************************************
