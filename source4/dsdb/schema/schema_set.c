@@ -366,6 +366,7 @@ int dsdb_setup_schema_inversion(struct ldb_context *ldb, struct dsdb_schema *sch
 
 int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
+	struct dsdb_schema *old_schema;
 	int ret;
 
 	ret = dsdb_setup_sorted_accessors(ldb, schema);
@@ -378,9 +379,16 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 		return ret;
 	}
 
+	old_schema = ldb_get_opaque(ldb, "dsdb_schema");
+
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+	/* Remove the refernece to the schema we just overwrote - if there was none, NULL is harmless here */
+	if (old_schema != schema) {
+		talloc_unlink(ldb, old_schema);
+		talloc_steal(ldb, schema);
 	}
 
 	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", NULL);
@@ -393,8 +401,6 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	talloc_steal(ldb, schema);
 
 	return LDB_SUCCESS;
 }
@@ -411,10 +417,15 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 			  bool write_attributes)
 {
 	int ret;
+	struct dsdb_schema *old_schema;
+	old_schema = ldb_get_opaque(ldb, "dsdb_schema");
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	/* Remove the refernece to the schema we just overwrote - if there was none, NULL is harmless here */
+	talloc_unlink(ldb, old_schema);
 
 	if (talloc_reference(ldb, schema) == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -438,7 +449,6 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	if (!global_schema) {
 		return LDB_SUCCESS;
 	}
-
 	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", use_global_schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -468,6 +478,10 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 	struct dsdb_schema *schema_out;
 	struct dsdb_schema *schema_in;
 	bool use_global_schema;
+	TALLOC_CTX *tmp_ctx = talloc_new(reference_ctx);
+	if (!tmp_ctx) {
+		return NULL;
+	}
 
 	/* see if we have a cached copy */
 	use_global_schema = (ldb_get_opaque(ldb, "dsdb_use_global_schema") != NULL);
@@ -478,24 +492,29 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 
 		schema_in = talloc_get_type(p, struct dsdb_schema);
 		if (!schema_in) {
+			talloc_free(tmp_ctx);
 			return NULL;
 		}
 	}
 
 	if (schema_in->refresh_fn && !schema_in->refresh_in_progress) {
+		if (!talloc_reference(tmp_ctx, schema_in)) {
+			/* ensure that the schema_in->refresh_in_progress remains valid for the right amount of time */
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 		schema_in->refresh_in_progress = true;
 		/* This may change schema, if it needs to reload it from disk */
 		schema_out = schema_in->refresh_fn(schema_in->loaded_from_module,
 						   schema_in,
 						   use_global_schema);
 		schema_in->refresh_in_progress = false;
-		if (schema_out != schema_in) {
-			talloc_unlink(schema_in, ldb);
-		}
 	} else {
 		schema_out = schema_in;
 	}
 
+	/* This removes the extra reference above */
+	talloc_free(tmp_ctx);
 	if (!reference_ctx) {
 		return schema_out;
 	} else {
