@@ -39,8 +39,6 @@ void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t 
 
 void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct ads_struct *r)
 {
-	if (!r) { return; }
-
 	ndr_print_struct(ndr, name, "ads_struct");
 	ndr->depth++;
 	ndr_print_bool(ndr, "is_mine", r->is_mine);
