@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libads/ldap_schema.h"
 
 /* for ADS */
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff

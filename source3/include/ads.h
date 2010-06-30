@@ -6,15 +6,6 @@
   basically this is a wrapper around ldap
 */
 
-enum wb_posix_mapping {
-	WB_POSIX_MAP_UNKNOWN    = -1,
-	WB_POSIX_MAP_TEMPLATE 	= 0, 
-	WB_POSIX_MAP_SFU 	= 1, 
-	WB_POSIX_MAP_SFU20 	= 2, 
-	WB_POSIX_MAP_RFC2307 	= 3,
-	WB_POSIX_MAP_UNIXINFO	= 4
-};
-
 struct ads_struct;
 
 struct ads_saslwrap_ops {
@@ -108,20 +99,6 @@ typedef struct ads_struct {
 #endif /* HAVE_LDAP */
 } ADS_STRUCT;
 
-/* used to remember the names of the posix attributes in AD */
-/* see the rfc2307 & sfu nss backends */
-
-struct posix_schema {
-	char *posix_homedir_attr;
-	char *posix_shell_attr;
-	char *posix_uidnumber_attr;
-	char *posix_gidnumber_attr;
-	char *posix_gecos_attr;
-	char *posix_uid_attr;
-};
-
-
-
 #ifdef HAVE_ADS
 typedef LDAPMod **ADS_MODLIST;
 #else
@@ -139,31 +116,6 @@ typedef void **ADS_MODLIST;
 #define ADS_ASQ_OID		"1.2.840.113556.1.4.1504"
 #define ADS_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
 #define ADS_SD_FLAGS_OID	"1.2.840.113556.1.4.801"
-
-/* ldap attribute oids (Services for Unix 3.0, 3.5) */
-#define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"
-#define ADS_ATTR_SFU_GIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.311"
-#define ADS_ATTR_SFU_HOMEDIR_OID 	"1.2.840.113556.1.6.18.1.344"
-#define ADS_ATTR_SFU_SHELL_OID 		"1.2.840.113556.1.6.18.1.312"
-#define ADS_ATTR_SFU_GECOS_OID 		"1.2.840.113556.1.6.18.1.337"
-#define ADS_ATTR_SFU_UID_OID            "1.2.840.113556.1.6.18.1.309"
-
-/* ldap attribute oids (Services for Unix 2.0) */
-#define ADS_ATTR_SFU20_UIDNUMBER_OID	"1.2.840.113556.1.4.7000.187.70"
-#define ADS_ATTR_SFU20_GIDNUMBER_OID	"1.2.840.113556.1.4.7000.187.71"
-#define ADS_ATTR_SFU20_HOMEDIR_OID	"1.2.840.113556.1.4.7000.187.106"
-#define ADS_ATTR_SFU20_SHELL_OID	"1.2.840.113556.1.4.7000.187.72"
-#define ADS_ATTR_SFU20_GECOS_OID 	"1.2.840.113556.1.4.7000.187.97"
-#define ADS_ATTR_SFU20_UID_OID          "1.2.840.113556.1.4.7000.187.102"
-
-
-/* ldap attribute oids (RFC2307) */
-#define ADS_ATTR_RFC2307_UIDNUMBER_OID	"1.3.6.1.1.1.1.0"
-#define ADS_ATTR_RFC2307_GIDNUMBER_OID	"1.3.6.1.1.1.1.1"
-#define ADS_ATTR_RFC2307_HOMEDIR_OID	"1.3.6.1.1.1.1.3"
-#define ADS_ATTR_RFC2307_SHELL_OID	"1.3.6.1.1.1.1.4"
-#define ADS_ATTR_RFC2307_GECOS_OID	"1.3.6.1.1.1.1.2"
-#define ADS_ATTR_RFC2307_UID_OID        "0.9.2342.19200300.100.1.1"
 
 /* ldap bitwise searches */
 #define ADS_LDAP_MATCHING_RULE_BIT_AND	"1.2.840.113556.1.4.803"
