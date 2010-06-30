@@ -162,46 +162,6 @@ typedef struct {
 #define SPLHND_PORTMON_TCP	3
 #define SPLHND_PORTMON_LOCAL	4
 
-/* structure to store the printer handles */
-/* and a reference to what it's pointing to */
-/* and the notify info asked about */
-/* that's the central struct */
-typedef struct _Printer{
-	struct _Printer *prev, *next;
-	bool document_started;
-	bool page_started;
-	uint32 jobid; /* jobid in printing backend */
-	int printer_type;
-	fstring servername;
-	fstring sharename;
-	uint32 type;
-	uint32 access_granted;
-	struct {
-		uint32 flags;
-		uint32 options;
-		fstring localmachine;
-		uint32 printerlocal;
-		struct spoolss_NotifyOption *option;
-		struct policy_handle client_hnd;
-		bool client_connected;
-		uint32 change;
-		/* are we in a FindNextPrinterChangeNotify() call? */
-		bool fnpcn;
-		struct messaging_context *msg_ctx;
-	} notify;
-	struct {
-		fstring machine;
-		fstring user;
-	} client;
-
-	/* devmode sent in the OpenPrinter() call */
-	struct spoolss_DeviceMode *devmode;
-
-	/* TODO cache the printer info2 structure */
-	struct spoolss_PrinterInfo2 *info2;
-	
-} Printer_entry;
-
 /*
  * The printer attributes.
  * I #defined all of them (grabbed form MSDN)
