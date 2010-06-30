@@ -1082,23 +1082,192 @@ static void construct_info_data(struct spoolss_Notify *info_data,
  back registered
  **********************************************************************/
 
+static int build_notify2_messages(TALLOC_CTX *mem_ctx,
+				  struct printer_handle *prn_hnd,
+				  SPOOLSS_NOTIFY_MSG *messages,
+				  uint32_t num_msgs,
+				  struct spoolss_Notify **_notifies,
+				  int *_count)
+{
+	struct spoolss_Notify *notifies;
+	SPOOLSS_NOTIFY_MSG *msg;
+	int count = 0;
+	uint32_t id;
+	int i;
+
+	notifies = talloc_zero_array(mem_ctx,
+				     struct spoolss_Notify, num_msgs);
+	if (!notifies) {
+		return ENOMEM;
+	}
+
+	for (i = 0; i < num_msgs; i++) {
+
+		msg = &messages[i];
+
+		/* Are we monitoring this event? */
+
+		if (!is_monitoring_event(prn_hnd, msg->type, msg->field)) {
+			continue;
+		}
+
+		DEBUG(10, ("Sending message type [0x%x] field [0x%2x] "
+			   "for printer [%s]\n",
+			   msg->type, msg->field, prn_hnd->sharename));
+
+		/*
+		 * if the is a printer notification handle and not a job
+		 * notification type, then set the id to 0.
+		 * Otherwise just use what was specified in the message.
+		 *
+		 * When registering change notification on a print server
+		 * handle we always need to send back the id (snum) matching
+		 * the printer for which the change took place.
+		 * For change notify registered on a printer handle,
+		 * this does not matter and the id should be 0.
+		 *
+		 * --jerry
+		 */
+
+		if ((msg->type == PRINTER_NOTIFY_TYPE) &&
+		    (prn_hnd->printer_type == SPLHND_PRINTER)) {
+			id = 0;
+		} else {
+			id = msg->id;
+		}
+
+		/* Convert unix jobid to smb jobid */
+
+		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
+			id = sysjob_to_jobid(msg->id);
+
+			if (id == -1) {
+				DEBUG(3, ("no such unix jobid %d\n",
+					  msg->id));
+				continue;
+			}
+		}
+
+		construct_info_data(&notifies[count],
+				    msg->type, msg->field, id);
+
+		switch(msg->type) {
+		case PRINTER_NOTIFY_TYPE:
+			if (printer_notify_table[msg->field].fn) {
+				printer_notify_table[msg->field].fn(msg,
+						&notifies[count], mem_ctx);
+			}
+			break;
+
+		case JOB_NOTIFY_TYPE:
+			if (job_notify_table[msg->field].fn) {
+				job_notify_table[msg->field].fn(msg,
+						&notifies[count], mem_ctx);
+			}
+			break;
+
+		default:
+			DEBUG(5, ("Unknown notification type %d\n",
+				  msg->type));
+			continue;
+		}
+
+		count++;
+	}
+
+	*_notifies = notifies;
+	*_count = count;
+
+	return 0;
+}
+
+static int send_notify2_printer(TALLOC_CTX *mem_ctx,
+				struct printer_handle *prn_hnd,
+				SPOOLSS_NOTIFY_MSG_GROUP *msg_group)
+{
+	struct spoolss_Notify *notifies;
+	int count = 0;
+	union spoolss_ReplyPrinterInfo info;
+	struct spoolss_NotifyInfo info0;
+	uint32_t reply_result;
+	NTSTATUS status;
+	WERROR werr;
+	int ret;
+
+	/* Is there notification on this handle? */
+	if (!prn_hnd->notify.client_connected) {
+		return 0;
+	}
+
+	DEBUG(10, ("Client connected! [\\\\%s\\%s]\n",
+		   prn_hnd->servername, prn_hnd->sharename));
+
+	/* For this printer? Print servers always receive notifications. */
+	if ((prn_hnd->printer_type == SPLHND_PRINTER)  &&
+	    (!strequal(msg_group->printername, prn_hnd->sharename))) {
+		return 0;
+	}
+
+	DEBUG(10,("Our printer\n"));
+
+	/* build the array of change notifications */
+	ret = build_notify2_messages(mem_ctx, prn_hnd,
+				     msg_group->msgs,
+				     msg_group->num_msgs,
+				     &notifies, &count);
+	if (ret) {
+		return ret;
+	}
+
+	info0.version	= 0x2;
+	info0.flags	= count ? 0x00020000 /* ??? */ : PRINTER_NOTIFY_INFO_DISCARDED;
+	info0.count	= count;
+	info0.notifies	= notifies;
+
+	info.info0 = &info0;
+
+	status = rpccli_spoolss_RouterReplyPrinterEx(
+				back_channel.cli_pipe, mem_ctx,
+				&prn_hnd->notify.client_hnd,
+				prn_hnd->notify.change, /* color */
+				prn_hnd->notify.flags,
+				&reply_result,
+				0, /* reply_type, must be 0 */
+				info, &werr);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("RouterReplyPrinterEx to client: %s "
+			  "failed: %s\n",
+			  back_channel.cli_pipe->srv_name_slash,
+			  win_errstr(werr)));
+	}
+	switch (reply_result) {
+	case 0:
+		break;
+	case PRINTER_NOTIFY_INFO_DISCARDED:
+	case PRINTER_NOTIFY_INFO_DISCARDNOTED:
+	case PRINTER_NOTIFY_INFO_COLOR_MISMATCH:
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 {
 	struct printer_handle 	 *p;
 	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
 	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
-	SPOOLSS_NOTIFY_MSG       *messages;
-	int			 sending_msg_count;
+	int ret;
 
 	if ( !msg_group ) {
 		DEBUG(5,("send_notify2_changes() called with no msg group!\n"));
 		return;
 	}
 
-	messages = msg_group->msgs;
-
-	if ( !messages ) {
-		DEBUG(5,("send_notify2_changes() called with no messages!\n"));
+	if (!msg_group->msgs) {
+		DEBUG(5, ("send_notify2_changes() called with no messages!\n"));
 		return;
 	}
 
@@ -1107,143 +1276,9 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 	/* loop over all printers */
 
 	for (p = printers_list; p; p = p->next) {
-		struct spoolss_Notify *notifies;
-		uint32_t count = 0;
-		uint32_t id;
-		int 	i;
-
-		/* Is there notification on this handle? */
-
-		if ( !p->notify.client_connected )
-			continue;
-
-		DEBUG(10,("Client connected! [\\\\%s\\%s]\n", p->servername, p->sharename));
-
-		/* For this printer?  Print servers always receive
-                   notifications. */
-
-		if ( ( p->printer_type == SPLHND_PRINTER )  &&
-		    ( !strequal(msg_group->printername, p->sharename) ) )
-			continue;
-
-		DEBUG(10,("Our printer\n"));
-
-		/* allocate the max entries possible */
-
-		notifies = TALLOC_ZERO_ARRAY(mem_ctx, struct spoolss_Notify, msg_group->num_msgs);
-		if (!notifies) {
-			return;
-		}
-
-		/* build the array of change notifications */
-
-		sending_msg_count = 0;
-
-		for ( i=0; i<msg_group->num_msgs; i++ ) {
-			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
-
-			/* Are we monitoring this event? */
-
-			if (!is_monitoring_event(p, msg->type, msg->field))
-				continue;
-
-			sending_msg_count++;
-
-
-			DEBUG(10,("process_notify2_message: Sending message type [0x%x] field [0x%2x] for printer [%s]\n",
-				msg->type, msg->field, p->sharename));
-
-			/*
-			 * if the is a printer notification handle and not a job notification
-			 * type, then set the id to 0.  Other wise just use what was specified
-			 * in the message.
-			 *
-			 * When registering change notification on a print server handle
-			 * we always need to send back the id (snum) matching the printer
-			 * for which the change took place.  For change notify registered
-			 * on a printer handle, this does not matter and the id should be 0.
-			 *
-			 * --jerry
-			 */
-
-			if ( ( p->printer_type == SPLHND_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
-				id = 0;
-			else
-				id = msg->id;
-
-
-			/* Convert unix jobid to smb jobid */
-
-			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
-				id = sysjob_to_jobid(msg->id);
-
-				if (id == -1) {
-					DEBUG(3, ("no such unix jobid %d\n", msg->id));
-					goto done;
-				}
-			}
-
-			construct_info_data(&notifies[count],
-					    (enum spoolss_NotifyType) msg->type,
-					    msg->field,
-					    id);
-
-			switch(msg->type) {
-			case PRINTER_NOTIFY_TYPE:
-				if ( printer_notify_table[msg->field].fn )
-					printer_notify_table[msg->field].fn(msg, &notifies[count], mem_ctx);
-				break;
-
-			case JOB_NOTIFY_TYPE:
-				if ( job_notify_table[msg->field].fn )
-					job_notify_table[msg->field].fn(msg, &notifies[count], mem_ctx);
-				break;
-
-			default:
-				DEBUG(5, ("Unknown notification type %d\n", msg->type));
-				goto done;
-			}
-
-			count++;
-		}
-
-		if ( sending_msg_count ) {
-			NTSTATUS status;
-			WERROR werr;
-			union spoolss_ReplyPrinterInfo info;
-			struct spoolss_NotifyInfo info0;
-			uint32_t reply_result;
-
-			info0.version	= 0x2;
-			info0.flags	= count ? 0x00020000 /* ??? */ : PRINTER_NOTIFY_INFO_DISCARDED;
-			info0.count	= count;
-			info0.notifies	= notifies;
-
-			info.info0 = &info0;
-
-			status = rpccli_spoolss_RouterReplyPrinterEx(back_channel.cli_pipe, mem_ctx,
-								     &p->notify.client_hnd,
-								     p->notify.change, /* color */
-								     p->notify.flags,
-								     &reply_result,
-								     0, /* reply_type, must be 0 */
-								     info,
-								     &werr);
-			if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
-				DEBUG(1,("RouterReplyPrinterEx to client: %s failed: %s\n",
-					back_channel.cli_pipe->srv_name_slash,
-					win_errstr(werr)));
-			}
-			switch (reply_result) {
-				case 0:
-					break;
-				case PRINTER_NOTIFY_INFO_DISCARDED:
-				case PRINTER_NOTIFY_INFO_DISCARDNOTED:
-				case PRINTER_NOTIFY_INFO_COLOR_MISMATCH:
-					break;
-				default:
-					break;
-			}
+		ret = send_notify2_printer(mem_ctx, p, msg_group);
+		if (ret) {
+			goto done;
 		}
 	}
 
