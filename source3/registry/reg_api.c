@@ -369,7 +369,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	if (pname
 	    && !(*pname = talloc_strdup(
 			 mem_ctx, regval_name(blob)))) {
-		SAFE_FREE(val);
+		TALLOC_FREE(val);
 		return WERR_NOMEM;
 	}
 
