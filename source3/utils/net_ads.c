@@ -476,7 +476,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	if (c->opt_container) {
 		ou_str = SMB_STRDUP(c->opt_container);
 	} else {
-		ou_str = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
+		ou_str = ads_default_ou_string(ads, DS_GUID_USERS_CONTAINER);
 	}
 
 	status = ads_add_user_acct(ads, argv[0], ou_str, c->opt_comment);
@@ -770,7 +770,7 @@ static int ads_group_add(struct net_context *c, int argc, const char **argv)
 	if (c->opt_container) {
 		ou_str = SMB_STRDUP(c->opt_container);
 	} else {
-		ou_str = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
+		ou_str = ads_default_ou_string(ads, DS_GUID_USERS_CONTAINER);
 	}
 
 	status = ads_add_group_acct(ads, argv[0], ou_str, c->opt_comment);

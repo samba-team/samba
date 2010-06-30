@@ -1602,7 +1602,7 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
 
 	if (!org_unit || !*org_unit) {
 
-		ret = ads_default_ou_string(ads, WELL_KNOWN_GUID_COMPUTERS);
+		ret = ads_default_ou_string(ads, DS_GUID_COMPUTERS_CONTAINER);
 
 		/* samba4 might not yet respond to a wellknownobject-query */
 		return ret ? ret : SMB_STRDUP("cn=Computers");
