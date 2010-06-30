@@ -2385,7 +2385,6 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 				struct policy_handle *handle)
 {
 	struct policy_handle newhandle;
-	const char **values;
 	int i;
 	struct {
 		const char *values[3];
@@ -2417,6 +2416,18 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 			.values[2] = VALUE_CURRENT_VERSION,
 			.num_values = 3,
 			.existing_value = true
+		},{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = NULL,
+			.values[2] = VALUE_SYSTEM_ROOT,
+			.num_values = 3,
+			.existing_value = false
+		},{
+			.values[0] = VALUE_CURRENT_VERSION,
+			.values[1] = "",
+			.values[2] = VALUE_SYSTEM_ROOT,
+			.num_values = 3,
+			.existing_value = false
 		},{
 			.values[0] = "IDoNotExist",
 			.values[1] = NULL,
