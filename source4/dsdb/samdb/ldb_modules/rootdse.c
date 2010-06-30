@@ -220,7 +220,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  		}
 	}
 
-	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanims"),
+	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanisms"),
 				       char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
 		unsigned int i;

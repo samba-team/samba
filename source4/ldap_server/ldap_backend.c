@@ -219,7 +219,7 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 			}
 		}
 		talloc_unlink(conn, ops);
-		ldb_set_opaque(conn->ldb, "supportedSASLMechanims", sasl_mechs);
+		ldb_set_opaque(conn->ldb, "supportedSASLMechanisms", sasl_mechs);
 	}
 
 	return NT_STATUS_OK;
