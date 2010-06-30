@@ -978,16 +978,125 @@ WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct winreg_QueryMultipleV
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static WERROR construct_multiple_entry(TALLOC_CTX *mem_ctx,
+				       const char *valuename,
+				       uint32_t value_length,
+				       uint32_t offset,
+				       enum winreg_Type type,
+				       struct QueryMultipleValue *r)
+{
+	r->ve_valuename = talloc_zero(mem_ctx, struct winreg_ValNameBuf);
+	if (r->ve_valuename == NULL) {
+		return WERR_NOMEM;
+	}
+
+	r->ve_valuename->name = talloc_strdup(r->ve_valuename, valuename ? valuename : "");
+	if (r->ve_valuename->name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	r->ve_valuename->size = strlen_m_term(r->ve_valuename->name)*2;
+	r->ve_valuelen = value_length;
+	r->ve_valueptr = offset;
+	r->ve_type = type;
+
+	return WERR_OK;
+}
+
+/*******************************************************************
  _winreg_QueryMultipleValues2
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultipleValues2 *r)
+WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
+				    struct winreg_QueryMultipleValues2 *r)
 {
-	/* fill in your code here if you think this call should
-	   do anything */
+	struct registry_key *regkey = find_regkey_by_hnd(p, r->in.key_handle);
+	struct registry_value *vals = NULL;
+	const char **names = NULL;
+	uint32_t offset = 0, num_vals = 0;
+	DATA_BLOB result;
+	int i;
+	WERROR err;
 
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
+	if (!regkey) {
+		return WERR_BADFID;
+	}
+
+	names = talloc_zero_array(p->mem_ctx, const char *, r->in.num_values);
+	if (names == NULL) {
+		return WERR_NOMEM;
+	}
+
+	for (i=0; i < r->in.num_values; i++) {
+		if (r->in.values_in[i].ve_valuename &&
+		    r->in.values_in[i].ve_valuename->name) {
+			names[i] = talloc_strdup(names,
+				r->in.values_in[i].ve_valuename->name);
+			if (names[i] == NULL) {
+				return WERR_NOMEM;
+			}
+		}
+	}
+
+	err = reg_querymultiplevalues(p->mem_ctx, regkey,
+				      r->in.num_values, names,
+				      &num_vals, &vals);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	result = data_blob_talloc(p->mem_ctx, NULL, 0);
+
+	for (i=0; i < r->in.num_values; i++) {
+		const char *valuename = NULL;
+		DATA_BLOB blob = data_blob_null;
+
+		if (vals[i].type != REG_NONE) {
+			err = registry_push_value(p->mem_ctx, &vals[i], &blob);
+			if (!W_ERROR_IS_OK(err)) {
+				return err;
+			}
+
+			if (!data_blob_append(p->mem_ctx, &result,
+					      blob.data, blob.length)) {
+				return WERR_NOMEM;
+			}
+		}
+
+		if (r->in.values_in[i].ve_valuename &&
+		    r->in.values_in[i].ve_valuename->name) {
+			valuename = r->in.values_in[i].ve_valuename->name;
+		}
+
+		err = construct_multiple_entry(r->out.values_out,
+					       valuename,
+					       blob.length,
+					       offset,
+					       vals[i].type,
+					       &r->out.values_out[i]);
+		if (!W_ERROR_IS_OK(err)) {
+			return err;
+		}
+
+		offset += blob.length;
+	}
+
+	*r->out.needed = result.length;
+
+	if (r->in.num_values != num_vals) {
+		return WERR_BADFILE;
+	}
+
+	if (*r->in.offered >= *r->out.needed) {
+		if (r->out.buffer) {
+			memcpy(r->out.buffer, result.data, MIN(result.length, *r->in.offered));
+		}
+		return WERR_OK;
+	} else {
+		return WERR_MORE_DATA;
+	}
 }
 
 /*******************************************************************
