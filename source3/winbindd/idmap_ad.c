@@ -27,6 +27,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../libds/common/flags.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

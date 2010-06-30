@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "idmap_adex.h"
+#include "../libds/common/flags.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

@@ -21,6 +21,7 @@
 #include "utils/net.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
+#include "../libds/common/flags.h"
 
 #ifdef HAVE_ADS
 

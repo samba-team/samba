@@ -27,6 +27,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "libads/cldap.h"
 #include "libads/dns.h"
+#include "../libds/common/flags.h"
 
 #ifdef HAVE_ADS
 

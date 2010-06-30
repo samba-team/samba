@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "tldap.h"
 #include "tldap_util.h"
+#include "../libds/common/flags.h"
 
 struct pdb_ads_state {
 	struct sockaddr_un socket_address;

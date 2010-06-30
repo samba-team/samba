@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../libds/common/flags.h"
 
 #ifdef HAVE_ADS
 

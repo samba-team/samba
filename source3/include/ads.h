@@ -6,8 +6,6 @@
   basically this is a wrapper around ldap
 */
 
-#include "../libds/common/flags.h"
-
 #define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
 #define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
 #define TOK_ID_KRB_ERROR	((const uint8_t *)"\x03\x00")

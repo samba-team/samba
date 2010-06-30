@@ -29,6 +29,8 @@
 #include "rpc_client/cli_netlogon.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_reg.h"
+#include "../libds/common/flags.h"
+
 
 /****************************************************************
 ****************************************************************/
