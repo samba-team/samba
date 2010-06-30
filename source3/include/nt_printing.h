@@ -243,7 +243,8 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername);
 const char *get_short_archi(const char *long_archi);
 
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
-		      struct spoolss_SetPrinterInfo2 *info2);
+		      struct spoolss_SetPrinterInfo2 *info2,
+		      const char *remote_machine);
 
 bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 			int access_type);

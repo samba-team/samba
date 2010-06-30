@@ -51,9 +51,6 @@
 
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= *r->out.needed)?val_true:val_false)
 
-
-extern userdom_struct current_user_info;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -5533,7 +5530,8 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *p
 ****************************************************************************/
 
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
-		      struct spoolss_SetPrinterInfo2 *info2)
+		      struct spoolss_SetPrinterInfo2 *info2,
+		      const char *remote_machine)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -5543,15 +5541,7 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 	int fd;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
-	char *remote_machine = talloc_strdup(ctx, "%m");
 
-	if (!remote_machine) {
-		return false;
-	}
-	remote_machine = talloc_sub_basic(ctx,
-				current_user_info.smb_name,
-				current_user_info.domain,
-				remote_machine);
 	if (!remote_machine) {
 		return false;
 	}
@@ -5589,7 +5579,6 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 	DEBUGADD(10,("returned [%d]\n", ret));
 
 	TALLOC_FREE(command);
-	TALLOC_FREE(remote_machine);
 
 	if ( ret != 0 ) {
 		if (fd != -1)
@@ -5958,7 +5947,7 @@ static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
 	{
 		/* add_printer_hook() will call reload_services() */
 		if (!add_printer_hook(tmp_ctx, p->server_info->ptok,
-				      printer) ) {
+				      printer, p->client_address) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7247,7 +7236,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 
 	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
-				       info2) ) {
+				       info2, p->client_address) ) {
 			return WERR_ACCESS_DENIED;
 		}
 	} else {
