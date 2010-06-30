@@ -646,12 +646,13 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 
 	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
-	new_printer = TALLOC_ZERO_P(NULL, Printer_entry);
+	new_printer = talloc_zero(p->mem_ctx, Printer_entry);
 	if (new_printer == NULL) {
 		return false;
 	}
 	talloc_set_destructor(new_printer, printer_entry_destructor);
 
+	/* This also steals the printer_handle on the policy_handle */
 	if (!create_policy_hnd(p, hnd, new_printer)) {
 		TALLOC_FREE(new_printer);
 		return false;
