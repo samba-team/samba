@@ -8,6 +8,9 @@ import base64
 import re
 
 sys.path.append("bin/python")
+import samba
+samba.ensure_external_module("subunit", "subunit/python")
+samba.ensure_external_module("testtools", "testtools")
 
 import samba.getopt as options
 

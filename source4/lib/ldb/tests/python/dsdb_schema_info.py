@@ -31,6 +31,9 @@ import random
 import os
 
 sys.path.append("bin/python")
+import samba
+samba.ensure_external_module("subunit", "subunit/python")
+samba.ensure_external_module("testtools", "testtools")
 
 from samba.auth import system_session
 from ldb import SCOPE_BASE, LdbError

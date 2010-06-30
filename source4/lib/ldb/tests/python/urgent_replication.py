@@ -6,8 +6,9 @@ import sys
 import os
 
 sys.path.append("bin/python")
-sys.path.append("../lib/subunit/python")
-sys.path.append("../lib/testtools")
+import samba
+samba.ensure_external_module("subunit", "subunit/python")
+samba.ensure_external_module("testtools", "testtools")
 
 import samba.getopt as options
 
