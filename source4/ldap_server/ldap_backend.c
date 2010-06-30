@@ -219,6 +219,12 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 			}
 		}
 		talloc_unlink(conn, ops);
+
+		/* ldb can have a different lifetime to conn, so we
+		   need to ensure that sasl_mechs lives as long as the
+		   ldb does */
+		talloc_steal(conn->ldb, sasl_mechs);
+
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanisms", sasl_mechs);
 	}
 
