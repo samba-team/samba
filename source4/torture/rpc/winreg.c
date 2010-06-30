@@ -2279,7 +2279,7 @@ static bool test_SetValue_extended(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "Testing SetValue (extended formats)\n");
 
 	for (t=0; t < ARRAY_SIZE(types); t++) {
-	for (l=0; l < 32; l++) {
+	for (l=0; l < 16; l++) {
 
 		enum winreg_Type w_type;
 		uint32_t w_size, w_length;
