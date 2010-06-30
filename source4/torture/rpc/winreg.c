@@ -2472,9 +2472,8 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 	torture_assert(tctx, test_QueryValue_full(b, tctx, &newhandle, "", false),
 		"succeeded to query nonexistent default value (\"\")");
 
-	if (torture_setting_bool(tctx, "samba3", false) ||
-	    torture_setting_bool(tctx, "samba4", false)) {
-		torture_comment(tctx, "skipping QueryMultipleValues{2} tests against Samba\n");
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_comment(tctx, "skipping QueryMultipleValues{2} tests against Samba4\n");
 		goto close_key;
 	}
 
