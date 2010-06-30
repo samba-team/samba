@@ -628,11 +628,11 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<term>default case = upper/lower</term>
 		<listitem><para>
 		controls what the default case is for new filenames (ie. files that don't currently exist in the filesystem).
-		Default <emphasis>lower</emphasis>.  IMPORTANT NOTE: This option will be used to modify the case of
-		<emphasis>all</emphasis> incoming client filenames, not just new filenames if the options <smbconfoption
-		name="case sensitive">yes</smbconfoption>, <smbconfoption name="preserve case">No</smbconfoption>,
-		<smbconfoption name="short preserve case">No</smbconfoption> are set.  This change is needed as part of the
-		optimisations for directories containing large numbers of files.
+		Default <emphasis>lower</emphasis>.  IMPORTANT NOTE: As part of the optimizations for directories containing
+		large numbers of files, the following special case applies. If the options
+		<smbconfoption 	name="case sensitive">yes</smbconfoption>, <smbconfoption name="preserve case">No</smbconfoption>, and
+		<smbconfoption name="short preserve case">No</smbconfoption> are set, then the case of <emphasis>all</emphasis>
+		incoming client filenames, not just new filenames, will be modified. See additional notes below.
 		</para></listitem>
 		</varlistentry> 
 	
