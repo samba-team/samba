@@ -65,8 +65,8 @@
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
 /* that's the central struct */
-typedef struct _Printer{
-	struct _Printer *prev, *next;
+struct printer_handle {
+	struct printer_handle *prev, *next;
 	bool document_started;
 	bool page_started;
 	uint32 jobid; /* jobid in printing backend */
@@ -99,9 +99,9 @@ typedef struct _Printer{
 	/* TODO cache the printer info2 structure */
 	struct spoolss_PrinterInfo2 *info2;
 
-} Printer_entry;
+};
 
-static Printer_entry *printers_list;
+static struct printer_handle *printers_list;
 
 struct printer_session_counter {
 	struct printer_session_counter *next;
@@ -265,7 +265,7 @@ static void srv_spoolss_replycloseprinter(
  Functions to free a printer entry datastruct.
 ****************************************************************************/
 
-static int printer_entry_destructor(Printer_entry *Printer)
+static int printer_entry_destructor(struct printer_handle *Printer)
 {
 	if (Printer->notify.client_connected == true) {
 		int snum = -1;
@@ -302,10 +302,10 @@ static int printer_entry_destructor(Printer_entry *Printer)
   find printer index by handle
 ****************************************************************************/
 
-static Printer_entry *find_printer_index_by_hnd(struct pipes_struct *p,
-						struct policy_handle *hnd)
+static struct printer_handle *find_printer_index_by_hnd(struct pipes_struct *p,
+							struct policy_handle *hnd)
 {
-	Printer_entry *find_printer = NULL;
+	struct printer_handle *find_printer = NULL;
 
 	if(!find_policy_by_hnd(p,hnd,(void **)(void *)&find_printer)) {
 		DEBUG(2,("find_printer_index_by_hnd: Printer handle not found: "));
@@ -321,7 +321,7 @@ static Printer_entry *find_printer_index_by_hnd(struct pipes_struct *p,
 
 static bool close_printer_handle(struct pipes_struct *p, struct policy_handle *hnd)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, hnd);
 
 	if (!Printer) {
 		DEBUG(2,("close_printer_handle: Invalid handle (%s:%u:%u)\n",
@@ -403,7 +403,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 
 static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle *hnd)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, hnd);
 	WERROR result;
 
 	if (!Printer) {
@@ -453,7 +453,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 static bool get_printer_snum(struct pipes_struct *p, struct policy_handle *hnd,
 			     int *number, struct share_params **params)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, hnd);
 
 	if (!Printer) {
 		DEBUG(2,("get_printer_snum: Invalid handle (%s:%u:%u)\n",
@@ -478,7 +478,7 @@ static bool get_printer_snum(struct pipes_struct *p, struct policy_handle *hnd,
  Check if it's \\server or \\server\printer
 ****************************************************************************/
 
-static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *handlename)
+static bool set_printer_hnd_printertype(struct printer_handle *Printer, const char *handlename)
 {
 	DEBUG(3,("Setting printer type=%s\n", handlename));
 
@@ -517,7 +517,7 @@ static void prune_printername_cache(void)
 static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
-				 Printer_entry *Printer,
+				 struct printer_handle *Printer,
 				 const char *handlename)
 {
 	int snum;
@@ -686,11 +686,11 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 			     const char *name, uint32_t access_granted)
 {
-	Printer_entry *new_printer;
+	struct printer_handle *new_printer;
 
 	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
-	new_printer = talloc_zero(p->mem_ctx, Printer_entry);
+	new_printer = talloc_zero(p->mem_ctx, struct printer_handle);
 	if (new_printer == NULL) {
 		return false;
 	}
@@ -739,7 +739,7 @@ static bool is_monitoring_event_flags(uint32_t flags, uint16_t notify_type,
 	return true;
 }
 
-static bool is_monitoring_event(Printer_entry *p, uint16_t notify_type,
+static bool is_monitoring_event(struct printer_handle *p, uint16_t notify_type,
 				uint16_t notify_field)
 {
 	struct spoolss_NotifyOption *option = p->notify.option;
@@ -1080,7 +1080,7 @@ static void construct_info_data(struct spoolss_Notify *info_data,
 
 static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 {
-	Printer_entry 		 *p;
+	struct printer_handle 	 *p;
 	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
 	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
 	SPOOLSS_NOTIFY_MSG       *messages;
@@ -1498,7 +1498,7 @@ done:
 
 void update_monitored_printq_cache(struct messaging_context *msg_ctx)
 {
-	Printer_entry *printer = printers_list;
+	struct printer_handle *printer = printers_list;
 	int snum;
 
 	/* loop through all printers and update the cache where
@@ -1594,7 +1594,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			      struct spoolss_OpenPrinterEx *r)
 {
 	int snum;
-	Printer_entry *Printer=NULL;
+	struct printer_handle *Printer=NULL;
 
 	if (!r->in.printername) {
 		return WERR_INVALID_PARAM;
@@ -1831,7 +1831,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 WERROR _spoolss_ClosePrinter(struct pipes_struct *p,
 			     struct spoolss_ClosePrinter *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (Printer && Printer->document_started) {
 		struct spoolss_EndDocPrinter e;
@@ -1861,7 +1861,7 @@ WERROR _spoolss_ClosePrinter(struct pipes_struct *p,
 WERROR _spoolss_DeletePrinter(struct pipes_struct *p,
 			      struct spoolss_DeletePrinter *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR result;
 	int snum;
 
@@ -2560,7 +2560,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 
 	/* store the notify value in the printer struct */
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
@@ -3235,7 +3235,7 @@ static void construct_info_data(struct spoolss_Notify *info_data,
  ********************************************************************/
 
 static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
-					  Printer_entry *print_hnd,
+					  struct printer_handle *print_hnd,
 					  struct spoolss_NotifyInfo *info,
 					  struct spoolss_PrinterInfo2 *pinfo2,
 					  int snum,
@@ -3379,7 +3379,7 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 				      TALLOC_CTX *mem_ctx)
 {
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, hnd);
 	int n_services=lp_numservices();
 	int i;
 	struct spoolss_NotifyOption *option;
@@ -3473,7 +3473,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 				  TALLOC_CTX *mem_ctx)
 {
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, hnd);
 	int i;
 	uint32_t id;
 	struct spoolss_NotifyOption *option;
@@ -3575,7 +3575,7 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 {
 	struct spoolss_NotifyInfo *info;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR result = WERR_BADFID;
 
 	/* we always have a spoolss_NotifyInfo struct */
@@ -3922,7 +3922,7 @@ static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
 
 static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      struct messaging_context *msg_ctx,
-				      Printer_entry *print_hnd,
+				      struct printer_handle *print_hnd,
 				      struct spoolss_PrinterInfo7 *r,
 				      int snum)
 {
@@ -4413,7 +4413,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 			   struct spoolss_GetPrinter *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	struct spoolss_PrinterInfo2 *info2 = NULL;
 	WERROR result = WERR_OK;
 	const char *servername = NULL;
@@ -5291,7 +5291,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 				  struct spoolss_GetPrinterDriver2 *r)
 {
-	Printer_entry *printer;
+	struct printer_handle *printer;
 	WERROR result;
 
 	int snum;
@@ -5344,7 +5344,7 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 WERROR _spoolss_StartPagePrinter(struct pipes_struct *p,
 				 struct spoolss_StartPagePrinter *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(3,("_spoolss_StartPagePrinter: "
@@ -5365,7 +5365,7 @@ WERROR _spoolss_EndPagePrinter(struct pipes_struct *p,
 {
 	int snum;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_EndPagePrinter: Invalid handle (%s:%u:%u).\n",
@@ -5391,7 +5391,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 {
 	struct spoolss_DocumentInfo1 *info_1;
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR werr;
 
 	if (!Printer) {
@@ -5463,7 +5463,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 WERROR _spoolss_EndDocPrinter(struct pipes_struct *p,
 			      struct spoolss_EndDocPrinter *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	NTSTATUS status;
 	int snum;
 
@@ -5498,7 +5498,7 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 {
 	ssize_t buffer_written;
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_WritePrinter: Invalid handle (%s:%u:%u)\n",
@@ -5540,7 +5540,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 	const struct auth_serversupplied_info *server_info = get_server_info_system();
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
 		DEBUG(2,("control_printer: Invalid handle (%s:%u:%u)\n",
@@ -5579,7 +5579,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 WERROR _spoolss_AbortPrinter(struct pipes_struct *p,
 			     struct spoolss_AbortPrinter *r)
 {
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int		snum;
 	WERROR 		errcode = WERR_OK;
 
@@ -5619,7 +5619,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 	WERROR result;
 	int snum;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer || !get_printer_snum(p, handle, &snum, NULL)) {
 		DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
@@ -6197,7 +6197,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	uint32_t printer_mask = SPOOLSS_PRINTER_INFO_ALL;
 	struct spoolss_SetPrinterInfo2 *printer = info_ctr->info.info2;
 	struct spoolss_PrinterInfo2 *old_printer;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 	const char *servername = NULL;
 	int snum;
 	WERROR result = WERR_OK;
@@ -6306,7 +6306,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	WERROR result;
 	int snum;
-	Printer_entry *Printer;
+	struct printer_handle *Printer;
 
 	if ( lp_security() != SEC_ADS ) {
 		return WERR_UNKNOWN_LEVEL;
@@ -6353,7 +6353,7 @@ static WERROR update_printer_devmode(struct pipes_struct *p,
 				     struct spoolss_DeviceMode *devmode)
 {
 	int snum;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_DEVMODE;
 
 	DEBUG(8,("update_printer_devmode\n"));
@@ -6392,7 +6392,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 {
 	WERROR result;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_SetPrinter: Invalid handle (%s:%u:%u)\n",
@@ -6435,7 +6435,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 				       struct spoolss_FindClosePrinterNotify *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_FindClosePrinterNotify: "
@@ -8106,7 +8106,7 @@ WERROR _spoolss_SetPrinterData(struct pipes_struct *p,
 WERROR _spoolss_ResetPrinter(struct pipes_struct *p,
 			     struct spoolss_ResetPrinter *r)
 {
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 
 	DEBUG(5,("_spoolss_ResetPrinter\n"));
@@ -8159,7 +8159,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	WERROR status = WERR_OK;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	DEBUG(5,("_spoolss_AddForm\n"));
 
@@ -8228,7 +8228,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 			   struct spoolss_DeleteForm *r)
 {
 	const char *form_name = r->in.form_name;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -8293,7 +8293,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	WERROR status = WERR_OK;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	DEBUG(5,("_spoolss_SetForm\n"));
 
@@ -8873,7 +8873,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 				 struct spoolss_GetPrinterDataEx *r)
 {
 
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	const char *printer;
 	int 			snum = 0;
 	WERROR result = WERR_OK;
@@ -8999,7 +8999,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int 			snum = 0;
 	WERROR 			result = WERR_OK;
-	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	char			*oid_string;
 
 	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
@@ -9116,7 +9116,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 	const char *printer;
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
 	DEBUG(5,("_spoolss_DeletePrinterDataEx\n"));
 
@@ -9166,7 +9166,7 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 			       struct spoolss_EnumPrinterKey *r)
 {
 	uint32_t	num_keys;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum = 0;
 	WERROR		result = WERR_BADFILE;
 	const char **array = NULL;
@@ -9228,7 +9228,7 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 				 struct spoolss_DeletePrinterKey *r)
 {
-	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 			snum=0;
 	WERROR			status;
 	const char *printer;
@@ -9282,7 +9282,7 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 {
 	uint32_t	count = 0;
 	struct spoolss_PrinterEnumValues *info = NULL;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 	WERROR 		result;
 
@@ -9677,7 +9677,7 @@ static WERROR process_xcvlocal_command(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_XcvData(struct pipes_struct *p,
 			struct spoolss_XcvData *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	DATA_BLOB out_data = data_blob_null;
 	WERROR werror;
 
