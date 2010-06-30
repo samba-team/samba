@@ -1339,7 +1339,7 @@ bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **
 
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
 void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
-void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping);
+void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping);
 NTSTATUS se_access_check(const struct security_descriptor *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted);
 

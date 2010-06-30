@@ -82,7 +82,7 @@ void security_acl_map_generic(struct security_acl *sa,
    objects.  Each type of object has its own mapping of standard to object
    specific access rights. */
 
-void se_map_standard(uint32 *access_mask, struct standard_mapping *mapping)
+void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping)
 {
 	uint32 old_mask = *access_mask;
 
