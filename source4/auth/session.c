@@ -170,15 +170,17 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < server_info->n_domain_groups; i++) {
-		const char *group_string;
+		char *group_string;
 		const char *group_dn;
 		DATA_BLOB group_blob;
-		group_string = dom_sid_string(tmp_ctx, server_info->domain_groups[i]);
+
+		group_string = dom_sid_string(tmp_ctx,
+					      server_info->domain_groups[i]);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_string, server_info);
 
 		group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", group_string);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
 		talloc_free(group_string);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
 		group_blob = data_blob_string_const(group_dn);
 
 		/* This function takes in memberOf values and expands
