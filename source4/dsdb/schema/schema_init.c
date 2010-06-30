@@ -471,17 +471,13 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	}								\
 } while (0)
 
-#define GET_STRING_LIST_LDB(msg, attr, mem_ctx, p, elem, strict) do {	\
+#define GET_STRING_LIST_LDB(msg, attr, mem_ctx, p, elem) do {	\
 	int get_string_list_counter;					\
 	struct ldb_message_element *get_string_list_el = ldb_msg_find_element(msg, attr); \
-	if (get_string_list_el == NULL) {				\
-		if (strict) {						\
-			d_printf("%s: %s == NULL\n", __location__, attr); \
-			return WERR_INVALID_PARAM;			\
-		} else {						\
-			(p)->elem = NULL;				\
-			break;						\
-		}							\
+	/* We may get empty attributes over the replication channel */	\
+	if (get_string_list_el == NULL || get_string_list_el->num_values == 0) {				\
+		(p)->elem = NULL;					\
+		break;							\
 	}								\
 	(p)->elem = talloc_array(mem_ctx, const char *, get_string_list_el->num_values + 1); \
         for (get_string_list_counter=0;					\
@@ -683,16 +679,16 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
  
 	GET_STRING_LDB(msg, "subClassOf", obj, obj, subClassOf, true);
 
-	GET_STRING_LIST_LDB(msg, "systemAuxiliaryClass", obj, obj, systemAuxiliaryClass, false);
-	GET_STRING_LIST_LDB(msg, "auxiliaryClass", obj, obj, auxiliaryClass, false);
+	GET_STRING_LIST_LDB(msg, "systemAuxiliaryClass", obj, obj, systemAuxiliaryClass);
+	GET_STRING_LIST_LDB(msg, "auxiliaryClass", obj, obj, auxiliaryClass);
 
-	GET_STRING_LIST_LDB(msg, "systemMustContain", obj, obj, systemMustContain, false);
-	GET_STRING_LIST_LDB(msg, "systemMayContain", obj, obj, systemMayContain, false);
-	GET_STRING_LIST_LDB(msg, "mustContain", obj, obj, mustContain, false);
-	GET_STRING_LIST_LDB(msg, "mayContain", obj, obj, mayContain, false);
+	GET_STRING_LIST_LDB(msg, "systemMustContain", obj, obj, systemMustContain);
+	GET_STRING_LIST_LDB(msg, "systemMayContain", obj, obj, systemMayContain);
+	GET_STRING_LIST_LDB(msg, "mustContain", obj, obj, mustContain);
+	GET_STRING_LIST_LDB(msg, "mayContain", obj, obj, mayContain);
 
-	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", obj, obj, systemPossSuperiors, false);
-	GET_STRING_LIST_LDB(msg, "possSuperiors", obj, obj, possSuperiors, false);
+	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", obj, obj, systemPossSuperiors);
+	GET_STRING_LIST_LDB(msg, "possSuperiors", obj, obj, possSuperiors);
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", obj, obj, defaultSecurityDescriptor, false);
 
