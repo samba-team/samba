@@ -1551,6 +1551,18 @@ enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 /* LDAP PASSWD SYNC methods */
 enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};
 
+/*
+ * This should be under the HAVE_KRB5 flag but since they're used
+ * in lp_kerberos_method(), they ned to be always available
+ * If you add any entries to KERBEROS_VERIFY defines, please modify USE.*KEYTAB macros
+ * so they remain accurate.
+ */
+
+#define KERBEROS_VERIFY_SECRETS 0
+#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
+#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
+#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
+
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 			RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_VISTA,

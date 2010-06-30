@@ -8,24 +8,6 @@
 
 #include "../libds/common/flags.h"
 
-/*
- * This should be under the HAVE_KRB5 flag but since they're used
- * in lp_kerberos_method(), they ned to be always available
- */
-#define KERBEROS_VERIFY_SECRETS 0
-#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
-#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
-#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
-
-/*
- * If you add any entries to the above, please modify the below expressions
- * so they remain accurate.
- */
-#define USE_KERBEROS_KEYTAB (KERBEROS_VERIFY_SECRETS != lp_kerberos_method())
-#define USE_SYSTEM_KEYTAB \
-    ((KERBEROS_VERIFY_SECRETS_AND_KEYTAB == lp_kerberos_method()) || \
-     (KERBEROS_VERIFY_SYSTEM_KEYTAB == lp_kerberos_method()))
-
 #define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
 #define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
 #define TOK_ID_KRB_ERROR	((const uint8_t *)"\x03\x00")

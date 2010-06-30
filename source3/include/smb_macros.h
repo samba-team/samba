@@ -204,6 +204,15 @@ copy an IP address from one buffer to another
 
 #define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
 
+/*
+ * If you add any entries to KERBEROS_VERIFY defines, please modify the below expressions
+ * so they remain accurate.
+ */
+#define USE_KERBEROS_KEYTAB (KERBEROS_VERIFY_SECRETS != lp_kerberos_method())
+#define USE_SYSTEM_KEYTAB \
+    ((KERBEROS_VERIFY_SECRETS_AND_KEYTAB == lp_kerberos_method()) || \
+     (KERBEROS_VERIFY_SYSTEM_KEYTAB == lp_kerberos_method()))
+
 /*****************************************************************************
  Safe allocation macros.
 *****************************************************************************/
