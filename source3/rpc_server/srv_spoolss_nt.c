@@ -74,9 +74,23 @@ static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pip
 static uint32_t smb_connections = 0;
 
 
-/* in printing/nt_printing.c */
+/* Map generic permissions to printer object specific permissions */
 
-extern struct standard_mapping printer_std_mapping, printserver_std_mapping;
+const struct standard_mapping printer_std_mapping = {
+	PRINTER_READ,
+	PRINTER_WRITE,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
+
+/* Map generic permissions to print server object specific permissions */
+
+const struct generic_mapping printserver_std_mapping = {
+	SERVER_READ,
+	SERVER_WRITE,
+	SERVER_EXECUTE,
+	SERVER_ALL_ACCESS
+};
 
 /* API table for Xcv Monitor functions */
 

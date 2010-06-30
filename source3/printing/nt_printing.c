@@ -40,23 +40,9 @@ const struct generic_mapping printer_generic_mapping = {
 	PRINTER_ALL_ACCESS
 };
 
-const struct standard_mapping printer_std_mapping = {
-	PRINTER_READ,
-	PRINTER_WRITE,
-	PRINTER_EXECUTE,
-	PRINTER_ALL_ACCESS
-};
-
 /* Map generic permissions to print server object specific permissions */
 
 const struct generic_mapping printserver_generic_mapping = {
-	SERVER_READ,
-	SERVER_WRITE,
-	SERVER_EXECUTE,
-	SERVER_ALL_ACCESS
-};
-
-const struct generic_mapping printserver_std_mapping = {
 	SERVER_READ,
 	SERVER_WRITE,
 	SERVER_EXECUTE,
