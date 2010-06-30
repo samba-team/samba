@@ -59,15 +59,15 @@
 
 static Printer_entry *printers_list;
 
-typedef struct _counter_printer_0 {
-	struct _counter_printer_0 *next;
-	struct _counter_printer_0 *prev;
+struct printer_session_counter {
+	struct printer_session_counter *next;
+	struct printer_session_counter *prev;
 
 	int snum;
 	uint32_t counter;
-} counter_printer_0;
+};
 
-static counter_printer_0 *counter_list;
+static struct printer_session_counter *counter_list;
 
 static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pipe handle*/
 static uint32_t smb_connections = 0;
@@ -3603,7 +3603,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 				      int snum)
 {
 	int count;
-	counter_printer_0 *session_counter;
+	struct printer_session_counter *session_counter;
 	struct timeval setuptime;
 	print_status_struct status;
 
@@ -3623,9 +3623,8 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 
 	/* it's the first time, add it to the list */
 	if (session_counter == NULL) {
-		session_counter = SMB_MALLOC_P(counter_printer_0);
+		session_counter = talloc_zero(counter_list, struct printer_session_counter);
 		W_ERROR_HAVE_NO_MEMORY(session_counter);
-		ZERO_STRUCTP(session_counter);
 		session_counter->snum		= snum;
 		session_counter->counter	= 0;
 		DLIST_ADD(counter_list, session_counter);
