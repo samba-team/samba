@@ -2187,6 +2187,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message_element *userPasswordAttr, *clearTextPasswordAttr,
 		*ntAttr, *lmAttr;
 	int ret;
+	struct ldb_control *bypass = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2199,6 +2200,15 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	/* If the caller is manipulating the local passwords directly, let them pass */
 	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.add.message->dn) == 0) {
+		return ldb_next_request(module, req);
+	}
+
+	bypass = ldb_request_get_control(req,
+					 DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID);
+	if (bypass != NULL) {
+		/* Mark the "bypass" control as uncritical (done) */
+		bypass->critical = false;
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_add (bypassing)\n");
 		return ldb_next_request(module, req);
 	}
 
@@ -2363,6 +2373,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
 	int ret;
+	struct ldb_control *bypass = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2375,6 +2386,15 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	/* If the caller is manipulating the local passwords directly, let them pass */
 	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.mod.message->dn) == 0) {
+		return ldb_next_request(module, req);
+	}
+
+	bypass = ldb_request_get_control(req,
+					 DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID);
+	if (bypass != NULL) {
+		/* Mark the "bypass" control as uncritical (done) */
+		bypass->critical = false;
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_modify (bypassing)\n");
 		return ldb_next_request(module, req);
 	}
 
