@@ -163,6 +163,12 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		     uint32 idx, char **pname, struct registry_value **pval);
 WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		      const char *name, struct registry_value **pval);
+WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
+			       struct registry_key *key,
+			       uint32_t num_names,
+			       const char **names,
+			       uint32_t *pnum_vals,
+			       struct registry_value **pvals);
 WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 			uint32_t *max_subkeylen, uint32_t *max_subkeysize,
 			uint32_t *num_values, uint32_t *max_valnamelen,

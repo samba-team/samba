@@ -402,6 +402,56 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	return WERR_BADFILE;
 }
 
+WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
+			       struct registry_key *key,
+			       uint32_t num_names,
+			       const char **names,
+			       uint32_t *pnum_vals,
+			       struct registry_value **pvals)
+{
+	WERROR err;
+	uint32_t i, n, found = 0;
+	struct registry_value *vals;
+
+	if (num_names == 0) {
+		return WERR_OK;
+	}
+
+	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (!(W_ERROR_IS_OK(err = fill_value_cache(key)))) {
+		return err;
+	}
+
+	vals = talloc_zero_array(mem_ctx, struct registry_value, num_names);
+	if (vals == NULL) {
+		return WERR_NOMEM;
+	}
+
+	for (n=0; n < num_names; n++) {
+		for (i=0; i < regval_ctr_numvals(key->values); i++) {
+			struct regval_blob *blob;
+			blob = regval_ctr_specific_value(key->values, i);
+			if (strequal(regval_name(blob), names[n])) {
+				struct registry_value *v;
+				err = reg_enumvalue(mem_ctx, key, i, NULL, &v);
+				if (!W_ERROR_IS_OK(err)) {
+					return err;
+				}
+				vals[n] = *v;
+				found++;
+			}
+		}
+	}
+
+	*pvals = vals;
+	*pnum_vals = found;
+
+	return WERR_OK;
+}
+
 WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 			uint32_t *max_subkeylen, uint32_t *max_subkeysize, 
 			uint32_t *num_values, uint32_t *max_valnamelen, 
