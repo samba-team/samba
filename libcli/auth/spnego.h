@@ -33,6 +33,12 @@
 #define SPNEGO_CONF_FLAG     0x20
 #define SPNEGO_INTEG_FLAG    0x40
 
+#define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
+#define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
+#define TOK_ID_KRB_ERROR	((const uint8_t *)"\x03\x00")
+#define TOK_ID_GSS_GETMIC	((const uint8_t *)"\x01\x01")
+#define TOK_ID_GSS_WRAP		((const uint8_t *)"\x02\x01")
+
 enum spnego_negResult {
 	SPNEGO_ACCEPT_COMPLETED = 0,
 	SPNEGO_ACCEPT_INCOMPLETE = 1,
