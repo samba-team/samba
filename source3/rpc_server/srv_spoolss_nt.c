@@ -113,9 +113,13 @@ struct printer_session_counter {
 
 static struct printer_session_counter *counter_list;
 
-static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pipe handle*/
-static uint32_t smb_connections = 0;
+struct notify_back_channel {
+	/* print notify back-channel pipe handle*/
+	struct rpc_pipe_client *cli_pipe;
+	uint32_t active_channels;
+};
 
+static struct notify_back_channel back_channel = { NULL, 0 };
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -222,12 +226,12 @@ static void srv_spoolss_replycloseprinter(
 		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
 
 	/* weird if the test succeeds !!! */
-	if (smb_connections==0) {
+	if (back_channel.active_channels == 0) {
 		DEBUG(0,("srv_spoolss_replycloseprinter:Trying to close non-existant notify backchannel !\n"));
 		return;
 	}
 
-	status = rpccli_spoolss_ReplyClosePrinter(notify_cli_pipe, talloc_tos(),
+	status = rpccli_spoolss_ReplyClosePrinter(back_channel.cli_pipe, talloc_tos(),
 						  handle,
 						  &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
@@ -235,13 +239,13 @@ static void srv_spoolss_replycloseprinter(
 			win_errstr(result)));
 
 	/* if it's the last connection, deconnect the IPC$ share */
-	if (smb_connections==1) {
+	if (back_channel.active_channels == 1) {
 
-		cli_shutdown( rpc_pipe_np_smb_conn(notify_cli_pipe) );
+		cli_shutdown(rpc_pipe_np_smb_conn(back_channel.cli_pipe));
 		/*
 		 * The above call shuts down the pipe also.
 		 */
-		notify_cli_pipe = NULL;
+		back_channel.cli_pipe = NULL;
 
 		if (msg_ctx != NULL) {
 			messaging_deregister(msg_ctx, MSG_PRINTER_NOTIFY2,
@@ -258,7 +262,7 @@ static void srv_spoolss_replycloseprinter(
 		}
 	}
 
-	smb_connections--;
+	back_channel.active_channels--;
 }
 
 /****************************************************************************
@@ -1217,7 +1221,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 
 			info.info0 = &info0;
 
-			status = rpccli_spoolss_RouterReplyPrinterEx(notify_cli_pipe, mem_ctx,
+			status = rpccli_spoolss_RouterReplyPrinterEx(back_channel.cli_pipe, mem_ctx,
 								     &p->notify.client_hnd,
 								     p->notify.change, /* color */
 								     p->notify.flags,
@@ -1227,7 +1231,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 								     &werr);
 			if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
 				DEBUG(1,("RouterReplyPrinterEx to client: %s failed: %s\n",
-					notify_cli_pipe->srv_name_slash,
+					back_channel.cli_pipe->srv_name_slash,
 					win_errstr(werr)));
 			}
 			switch (reply_result) {
@@ -2449,12 +2453,12 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * If it's the first connection, contact the client
 	 * and connect to the IPC$ share anonymously
 	 */
-	if (smb_connections==0) {
+	if (back_channel.active_channels == 0) {
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
-		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ss, unix_printer ))
+		if ( !spoolss_connect_to_client( &back_channel.cli_pipe, client_ss, unix_printer ))
 			return false;
 
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_NOTIFY2,
@@ -2473,9 +2477,9 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 	if (!print_notify_register_pid(snum))
 		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", printer ));
 
-	smb_connections++;
+	back_channel.active_channels++;
 
-	status = rpccli_spoolss_ReplyOpenPrinter(notify_cli_pipe, talloc_tos(),
+	status = rpccli_spoolss_ReplyOpenPrinter(back_channel.cli_pipe, talloc_tos(),
 						 printer,
 						 localprinter,
 						 type,
