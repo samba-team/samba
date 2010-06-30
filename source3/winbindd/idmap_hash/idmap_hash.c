@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "winbindd/winbindd.h"
 #include "idmap_hash.h"
+#include "nss_info.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

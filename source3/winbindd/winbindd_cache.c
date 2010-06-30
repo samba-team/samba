@@ -28,6 +28,7 @@
 #include "tdb_validate.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_wbint.h"
+#include "nss_info.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

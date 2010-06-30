@@ -705,7 +705,6 @@ enum flush_reason_enum {
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
     NUM_FLUSH_REASONS};
 
-#include "nss_info.h"
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 

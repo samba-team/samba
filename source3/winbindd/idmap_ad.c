@@ -29,6 +29,7 @@
 #include "winbindd.h"
 #include "../libds/common/flags.h"
 #include "libads/ldap_schema.h"
+#include "nss_info.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
