@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "libads/sitename_cache.h"
+#include "libads/dns.h"
 #include "../libcli/netlogon.h"
 
 /* nmbd.c sets this to True. */

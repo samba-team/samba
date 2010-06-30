@@ -629,7 +629,6 @@ extern void *cmdline_lp_ctx;
 #include "krb5_env.h"
 #include "libads/ads_status.h"
 #include "ads.h"
-#include "ads_dns.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "../libcli/util/error.h"

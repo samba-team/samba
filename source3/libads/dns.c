@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libads/dns.h"
 
 /* AIX resolv.h uses 'class' in struct ns_rr */
 

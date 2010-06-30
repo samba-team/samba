@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "libads/cldap.h"
+#include "libads/dns.h"
 
 #ifdef HAVE_ADS
 
