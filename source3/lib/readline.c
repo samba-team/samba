@@ -38,13 +38,6 @@
 #  endif
 #endif
 
-#ifdef HAVE_NEW_LIBREADLINE
-#  define RL_COMPLETION_CAST (rl_completion_func_t *)
-#else
-/* This type is missing from libreadline<4.0  (approximately) */
-#  define RL_COMPLETION_CAST
-#endif /* HAVE_NEW_LIBREADLINE */
-
 static bool smb_rl_done;
 
 #if HAVE_LIBREADLINE
