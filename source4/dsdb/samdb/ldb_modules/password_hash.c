@@ -1405,10 +1405,11 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 
 static int setup_password_fields(struct setup_password_fields_io *io)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
+	struct loadparm_context *lp_ctx =
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
 	int ret;
-
-	ldb = ldb_module_get_ctx(io->ac->module);
 
 	/* transform the old password (for password changes) */
 	ret = setup_given_passwords(io, &io->og);
@@ -1434,7 +1435,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	if (lp_lanman_auth(ldb_get_opaque(ldb, "loadparm"))) {
+	if (lp_lanman_auth(lp_ctx)) {
 		ret = setup_lm_fields(io);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1631,7 +1632,8 @@ static int setup_io(struct ph_context *ac,
 	const struct ldb_val *quoted_utf16, *old_quoted_utf16, *lm_hash, *old_lm_hash;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct loadparm_context *lp_ctx =
-		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
 	int ret;
 
 	ZERO_STRUCTP(io);
@@ -2641,15 +2643,16 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 
 static int password_hash_mod_do_mod(struct ph_context *ac)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct loadparm_context *lp_ctx =
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
 	const struct ldb_message *orig_msg, *searched_msg;
 	struct setup_password_fields_io io;
 	int ret;
 	NTSTATUS status;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	/* use a new message structure so that we can modify it */
 	msg = ldb_msg_new(ac);
@@ -2671,7 +2674,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	
 	/* Get the old password from the database */
 	status = samdb_result_passwords(io.ac,
-					ldb_get_opaque(ldb, "loadparm"),
+					lp_ctx,
 					discard_const_p(struct ldb_message, searched_msg),
 					&io.o.lm_hash, &io.o.nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
