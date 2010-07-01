@@ -155,10 +155,11 @@ bool wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_do
 bool wcache_tdc_add_domain( struct winbindd_domain *domain );
 struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const char *name );
 void wcache_tdc_clear( void );
+struct ads_struct;
 NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
 			      const struct dom_sid *user_sid,
 			      TALLOC_CTX *ctx,
-			      ADS_STRUCT *ads, LDAPMessage *msg,
+			      struct ads_struct *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
 			      const char **gecos, gid_t *p_gid);
 bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,

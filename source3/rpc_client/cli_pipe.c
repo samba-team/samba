@@ -30,6 +30,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "libads/kerberos_proto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI

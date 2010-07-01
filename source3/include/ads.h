@@ -148,6 +148,12 @@ typedef struct {
 	int critical;
 } ads_control;
 
-#define ADS_IGNORE_PRINCIPAL "not_defined_in_RFC4178@please_ignore"
+#include "libads/ads_proto.h"
+
+#ifdef HAVE_LDAP
+#include "libads/ads_ldap_protos.h"
+#endif
+
+#include "libads/kerberos_proto.h"
 
 #endif	/* _INCLUDE_ADS_H_ */

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 
 #ifdef HAVE_LDAP_SASL_WRAPPING
 

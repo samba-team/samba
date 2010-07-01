@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
 #include "registry.h"

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
+#include "libads/kerberos_proto.h"
 
 #ifdef HAVE_KRB5
 
@@ -282,58 +283,6 @@ int kerberos_kinit_password_ext(const char *principal,
 		krb5_free_context(ctx);
 	}
 	return code;
-}
-
-
-
-/* run kinit to setup our ccache */
-int ads_kinit_password(ADS_STRUCT *ads)
-{
-	char *s;
-	int ret;
-	const char *account_name;
-	fstring acct_name;
-
-	if (ads->auth.flags & ADS_AUTH_USER_CREDS) {
-		account_name = ads->auth.user_name;
-		goto got_accountname;
-	}
-
-	if ( IS_DC ) {
-		/* this will end up getting a ticket for DOMAIN@RUSTED.REA.LM */
-		account_name = lp_workgroup();
-	} else {
-		/* always use the sAMAccountName for security = domain */
-		/* global_myname()$@REA.LM */
-		if ( lp_security() == SEC_DOMAIN ) {
-			fstr_sprintf( acct_name, "%s$", global_myname() );
-			account_name = acct_name;
-		}
-		else 
-			/* This looks like host/global_myname()@REA.LM */
-			account_name = ads->auth.user_name;
-	}
-
- got_accountname:
-	if (asprintf(&s, "%s@%s", account_name, ads->auth.realm) == -1) {
-		return KRB5_CC_NOMEM;
-	}
-
-	if (!ads->auth.password) {
-		SAFE_FREE(s);
-		return KRB5_LIBOS_CANTREADPWD;
-	}
-	
-	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable, 
-			NULL);
-
-	if (ret) {
-		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
-			 s, error_message(ret)));
-	}
-	SAFE_FREE(s);
-	return ret;
 }
 
 int ads_kdestroy(const char *cc_name)

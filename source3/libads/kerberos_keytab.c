@@ -27,6 +27,7 @@
 
 #include "includes.h"
 #include "smb_krb5.h"
+#include "ads.h"
 
 #ifdef HAVE_KRB5
 

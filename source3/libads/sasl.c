@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "ads.h"
+#include "smb_krb5.h"
 
 #ifdef HAVE_LDAP
 

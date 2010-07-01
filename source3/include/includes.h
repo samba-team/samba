@@ -628,7 +628,6 @@ extern void *cmdline_lp_ctx;
 
 #include "krb5_env.h"
 #include "libads/ads_status.h"
-#include "ads.h"
 #include "interfaces.h"
 #include "trans2.h"
 #include "../libcli/util/error.h"
@@ -734,10 +733,6 @@ enum flush_reason_enum {
 
 #if defined(HAVE_IRIX_ACLS)
 #include "modules/vfs_irixacl.h"
-#endif
-
-#ifdef HAVE_LDAP
-#include "libads/ads_ldap_protos.h"
 #endif
 
 /* We need this after proto.h to reference GetTimeOfDay(). */

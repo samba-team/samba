@@ -23,6 +23,7 @@
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "libads/kerberos_proto.h"
 
 static const struct {
 	int prot;

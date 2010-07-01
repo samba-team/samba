@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 
 /* return a ldap dn path from a string, given separators and field name
    caller must free
