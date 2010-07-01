@@ -25,10 +25,6 @@
 #include "includes.h"
 #include "smbldap.h"
 
-#ifndef LDAP_OPT_SUCCESS
-#define LDAP_OPT_SUCCESS 0
-#endif
-
 /* Try not to hit the up or down server forever */
 
 #define SMBLDAP_DONT_PING_TIME 10	/* ping only all 10 seconds */

@@ -247,4 +247,10 @@ struct ldapsam_privates;
 #define LDAP_CONNECTION_DEFAULT_TIMEOUT 2
 #define LDAP_PAGE_SIZE 1024
 
+#ifndef LDAP_OPT_SUCCESS
+#define LDAP_OPT_SUCCESS 0
+#endif
+
+#define ADS_PAGE_CTL_OID 	"1.2.840.113556.1.4.319"
+
 #endif	/* _SMBLDAP_H */

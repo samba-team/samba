@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 #include "libads/sitename_cache.h"
 #include "libads/cldap.h"
 #include "libads/dns.h"

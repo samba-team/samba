@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 #include "nss_info.h"
 
 static struct nss_function_entry *backends = NULL;

@@ -456,7 +456,9 @@ LIBGPO_OBJ = $(LIBGPO_OBJ0)
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
 	     libads/sasl.o libads/sasl_wrapping.o \
-	     libads/krb5_setpw.o libads/ldap_user.o \
+	     libads/krb5_setpw.o \
+	     libads/kerberos_util.o \
+	     libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/ldap_schema.o libads/util.o libads/ndr.o

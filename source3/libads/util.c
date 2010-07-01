@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 
 #ifdef HAVE_KRB5
 

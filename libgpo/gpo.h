@@ -24,6 +24,7 @@
 #include "source4/libgpo/ads_convenience.h"
 #else
 struct loadparm_context;
+#include "ads.h"
 #endif
 
 enum GPO_LINK_TYPE {

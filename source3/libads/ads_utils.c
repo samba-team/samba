@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 
 const char *ads_get_ldap_server_name(ADS_STRUCT *ads)
 {

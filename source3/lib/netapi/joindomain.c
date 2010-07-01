@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-
+#include "ads.h"
 #include "librpc/gen_ndr/libnetapi.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"

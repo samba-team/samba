@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ads.h"
 #include "libads/ldap_schema.h"
 
 /* for ADS */

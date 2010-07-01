@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "ads.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 #include "../libds/common/flags.h"
