@@ -61,6 +61,8 @@
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
+struct notify_back_channel;
+
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
@@ -81,8 +83,8 @@ struct printer_handle {
 		fstring localmachine;
 		uint32 printerlocal;
 		struct spoolss_NotifyOption *option;
-		struct policy_handle client_hnd;
-		bool client_connected;
+		struct policy_handle cli_hnd;
+		struct notify_back_channel *cli_chan;
 		uint32 change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
 		bool fnpcn;
@@ -114,12 +116,17 @@ struct printer_session_counter {
 static struct printer_session_counter *counter_list;
 
 struct notify_back_channel {
+	struct notify_back_channel *prev, *next;
+
+	/* associated client */
+	struct sockaddr_storage client_address;
+
 	/* print notify back-channel pipe handle*/
 	struct rpc_pipe_client *cli_pipe;
-	uint32_t active_channels;
+	uint32_t active_connections;
 };
 
-static struct notify_back_channel back_channel = { NULL, 0 };
+static struct notify_back_channel *back_channels;
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -210,9 +217,8 @@ static int nt_printq_status(int v)
  Disconnect from the client
 ****************************************************************************/
 
-static void srv_spoolss_replycloseprinter(
-	int snum, struct policy_handle *handle,
-	struct messaging_context *msg_ctx)
+static void srv_spoolss_replycloseprinter(int snum,
+					  struct printer_handle *prn_hnd)
 {
 	WERROR result;
 	NTSTATUS status;
@@ -222,34 +228,40 @@ static void srv_spoolss_replycloseprinter(
 	 * by deregistering our PID.
 	 */
 
-	if (!print_notify_deregister_pid(snum))
-		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
+	if (!print_notify_deregister_pid(snum)) {
+		DEBUG(0, ("Failed to register our pid for printer %s\n",
+			  lp_const_servicename(snum)));
+	}
 
 	/* weird if the test succeeds !!! */
-	if (back_channel.active_channels == 0) {
-		DEBUG(0,("srv_spoolss_replycloseprinter:Trying to close non-existant notify backchannel !\n"));
+	if (prn_hnd->notify.cli_chan == NULL ||
+	    prn_hnd->notify.cli_chan->active_connections == 0) {
+		DEBUG(0, ("Trying to close unexisting backchannel!\n"));
+		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
+		TALLOC_FREE(prn_hnd->notify.cli_chan);
 		return;
 	}
 
-	status = rpccli_spoolss_ReplyClosePrinter(back_channel.cli_pipe, talloc_tos(),
-						  handle,
-						  &result);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
-		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
-			win_errstr(result)));
+	status = rpccli_spoolss_ReplyClosePrinter(
+					prn_hnd->notify.cli_chan->cli_pipe,
+					talloc_tos(),
+					&prn_hnd->notify.cli_hnd,
+					&result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("reply_close_printer failed [%s].\n",
+			  win_errstr(result)));
+	}
 
 	/* if it's the last connection, deconnect the IPC$ share */
-	if (back_channel.active_channels == 1) {
+	if (prn_hnd->notify.cli_chan->active_connections == 1) {
 
-		cli_shutdown(rpc_pipe_np_smb_conn(back_channel.cli_pipe));
-		/*
-		 * The above call shuts down the pipe also.
-		 */
-		back_channel.cli_pipe = NULL;
+		cli_shutdown(rpc_pipe_np_smb_conn(prn_hnd->notify.cli_chan->cli_pipe));
+		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
+		TALLOC_FREE(prn_hnd->notify.cli_chan);
 
-		if (msg_ctx != NULL) {
-			messaging_deregister(msg_ctx, MSG_PRINTER_NOTIFY2,
-					     NULL);
+		if (prn_hnd->notify.msg_ctx != NULL) {
+			messaging_deregister(prn_hnd->notify.msg_ctx,
+					     MSG_PRINTER_NOTIFY2, NULL);
 
 			/*
 			 * Tell the serverid.tdb we're no longer
@@ -257,12 +269,14 @@ static void srv_spoolss_replycloseprinter(
 			 */
 
 			serverid_register_msg_flags(
-				messaging_server_id(msg_ctx),
+				messaging_server_id(prn_hnd->notify.msg_ctx),
 				false, FLAG_MSG_PRINT_NOTIFY);
 		}
 	}
 
-	back_channel.active_channels--;
+	if (prn_hnd->notify.cli_chan) {
+		prn_hnd->notify.cli_chan->active_connections--;
+	}
 }
 
 /****************************************************************************
@@ -271,20 +285,23 @@ static void srv_spoolss_replycloseprinter(
 
 static int printer_entry_destructor(struct printer_handle *Printer)
 {
-	if (Printer->notify.client_connected == true) {
+	if (Printer->notify.cli_chan != NULL &&
+	    Printer->notify.cli_chan->active_connections > 0) {
 		int snum = -1;
 
-		if ( Printer->printer_type == SPLHND_SERVER) {
-			snum = -1;
-			srv_spoolss_replycloseprinter(
-				snum, &Printer->notify.client_hnd,
-				Printer->notify.msg_ctx);
-		} else if (Printer->printer_type == SPLHND_PRINTER) {
+		switch(Printer->printer_type) {
+		case SPLHND_SERVER:
+			srv_spoolss_replycloseprinter(snum, Printer);
+			break;
+
+		case SPLHND_PRINTER:
 			snum = print_queue_snum(Printer->sharename);
-			if (snum != -1)
-				srv_spoolss_replycloseprinter(
-					snum, &Printer->notify.client_hnd,
-					Printer->notify.msg_ctx);
+			if (snum != -1) {
+				srv_spoolss_replycloseprinter(snum, Printer);
+			}
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -293,8 +310,6 @@ static int printer_entry_destructor(struct printer_handle *Printer)
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
 	TALLOC_FREE(Printer->notify.option);
-	Printer->notify.client_connected = false;
-
 	TALLOC_FREE(Printer->devmode);
 
 	/* Remove from the internal list. */
@@ -1195,7 +1210,8 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 	int ret;
 
 	/* Is there notification on this handle? */
-	if (!prn_hnd->notify.client_connected) {
+	if (prn_hnd->notify.cli_chan == NULL ||
+	    prn_hnd->notify.cli_chan->active_connections == 0) {
 		return 0;
 	}
 
@@ -1227,8 +1243,9 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 	info.info0 = &info0;
 
 	status = rpccli_spoolss_RouterReplyPrinterEx(
-				back_channel.cli_pipe, mem_ctx,
-				&prn_hnd->notify.client_hnd,
+				prn_hnd->notify.cli_chan->cli_pipe,
+				mem_ctx,
+				&prn_hnd->notify.cli_hnd,
 				prn_hnd->notify.change, /* color */
 				prn_hnd->notify.flags,
 				&reply_result,
@@ -1237,7 +1254,7 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("RouterReplyPrinterEx to client: %s "
 			  "failed: %s\n",
-			  back_channel.cli_pipe->srv_name_slash,
+			  prn_hnd->notify.cli_chan->cli_pipe->srv_name_slash,
 			  win_errstr(werr)));
 	}
 	switch (reply_result) {
@@ -1541,14 +1558,13 @@ void update_monitored_printq_cache(struct messaging_context *msg_ctx)
 	int snum;
 
 	/* loop through all printers and update the cache where
-	   client_connected == true */
-	while ( printer )
-	{
-		if ( (printer->printer_type == SPLHND_PRINTER)
-			&& printer->notify.client_connected )
-		{
+	   a client is connected */
+	while (printer) {
+		if ((printer->printer_type == SPLHND_PRINTER) &&
+		    ((printer->notify.cli_chan != NULL) &&
+		     (printer->notify.cli_chan->active_connections > 0))) {
 			snum = print_queue_snum(printer->sharename);
-			print_queue_status(msg_ctx, snum, NULL, NULL );
+			print_queue_status(msg_ctx, snum, NULL, NULL);
 		}
 
 		printer = printer->next;
@@ -2478,23 +2494,43 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 					uint32_t localprinter,
 					enum winreg_Type type,
 					struct policy_handle *handle,
+					struct notify_back_channel **_chan,
 					struct sockaddr_storage *client_ss,
 					struct messaging_context *msg_ctx)
 {
 	WERROR result;
 	NTSTATUS status;
+	struct notify_back_channel *chan;
+
+	for (chan = back_channels; chan; chan = chan->next) {
+		if (memcmp(&chan->client_address, client_ss,
+			   sizeof(struct sockaddr_storage)) == 0) {
+			break;
+		}
+	}
 
 	/*
 	 * If it's the first connection, contact the client
 	 * and connect to the IPC$ share anonymously
 	 */
-	if (back_channel.active_channels == 0) {
+	if (!chan) {
 		fstring unix_printer;
 
-		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
+		/* the +2 is to strip the leading 2 backslashs */
+		fstrcpy(unix_printer, printer + 2);
 
-		if ( !spoolss_connect_to_client( &back_channel.cli_pipe, client_ss, unix_printer ))
+		chan = talloc_zero(back_channels, struct notify_back_channel);
+		if (!chan) {
 			return false;
+		}
+		chan->client_address = *client_ss;
+
+		if (!spoolss_connect_to_client(&chan->cli_pipe, client_ss, unix_printer)) {
+			TALLOC_FREE(chan);
+			return false;
+		}
+
+		DLIST_ADD(back_channels, chan);
 
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_NOTIFY2,
 				   receive_notify2_message_list);
@@ -2509,12 +2545,12 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * by registering our PID.
 	 */
 
-	if (!print_notify_register_pid(snum))
-		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", printer ));
+	if (!print_notify_register_pid(snum)) {
+		DEBUG(0, ("Failed to register our pid for printer %s\n",
+			  printer));
+	}
 
-	back_channel.active_channels++;
-
-	status = rpccli_spoolss_ReplyOpenPrinter(back_channel.cli_pipe, talloc_tos(),
+	status = rpccli_spoolss_ReplyOpenPrinter(chan->cli_pipe, talloc_tos(),
 						 printer,
 						 localprinter,
 						 type,
@@ -2522,9 +2558,12 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 						 NULL,
 						 handle,
 						 &result);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
-		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
-			win_errstr(result)));
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		DEBUG(5, ("Client RPC returned [%s]\n", win_errstr(result)));
+	}
+
+	chan->active_connections++;
+	*_chan = chan;
 
 	return (W_ERROR_IS_OK(result));
 }
@@ -2636,11 +2675,11 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, REG_SZ,
-					&Printer->notify.client_hnd,
-					&client_ss, p->msg_ctx))
+					&Printer->notify.cli_hnd,
+					&Printer->notify.cli_chan,
+					&client_ss, p->msg_ctx)) {
 		return WERR_SERVER_UNAVAILABLE;
-
-	Printer->notify.client_connected = true;
+	}
 
 	return WERR_OK;
 }
@@ -3647,7 +3686,8 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 
 	Printer->notify.fnpcn = true;
 
-	if (Printer->notify.client_connected) {
+	if (Printer->notify.cli_chan != NULL &&
+	    Printer->notify.cli_chan->active_connections > 0) {
 		DEBUG(10,("_spoolss_RouterRefreshPrinterChangeNotify: "
 			"Saving change value in request [%x]\n",
 			r->in.change_low));
@@ -6482,17 +6522,17 @@ WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	if (Printer->notify.client_connected == true) {
+	if (Printer->notify.cli_chan != NULL &&
+	    Printer->notify.cli_chan->active_connections > 0) {
 		int snum = -1;
 
-		if ( Printer->printer_type == SPLHND_SERVER)
-			snum = -1;
-		else if ( (Printer->printer_type == SPLHND_PRINTER) &&
-				!get_printer_snum(p, r->in.handle, &snum, NULL) )
-			return WERR_BADFID;
+		if (Printer->printer_type == SPLHND_PRINTER) {
+			if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+				return WERR_BADFID;
+			}
+		}
 
-		srv_spoolss_replycloseprinter(
-			snum, &Printer->notify.client_hnd, p->msg_ctx);
+		srv_spoolss_replycloseprinter(snum, Printer);
 	}
 
 	Printer->notify.flags=0;
@@ -6500,7 +6540,6 @@ WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
 	TALLOC_FREE(Printer->notify.option);
-	Printer->notify.client_connected = false;
 
 	return WERR_OK;
 }
