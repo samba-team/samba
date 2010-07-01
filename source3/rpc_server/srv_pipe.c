@@ -1139,7 +1139,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 			goto err;
 		}
 
-		switch (auth_info.auth_level) {
+		switch (pauth_info->auth_level) {
 			case DCERPC_AUTH_LEVEL_INTEGRITY:
 				auth_ntlmssp_want_sign(a);
 				break;
