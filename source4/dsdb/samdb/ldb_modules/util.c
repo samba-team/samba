@@ -159,6 +159,7 @@ int dsdb_module_search(struct ldb_module *module,
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
 		ret = ldb_next_request(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
@@ -287,6 +288,7 @@ int dsdb_module_modify(struct ldb_module *module,
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), mod_req);
 	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
 		ret = ldb_next_request(module, mod_req);
 	}
 	if (ret == LDB_SUCCESS) {
@@ -344,6 +346,7 @@ int dsdb_module_rename(struct ldb_module *module,
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
 		ret = ldb_next_request(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
@@ -398,6 +401,7 @@ int dsdb_module_add(struct ldb_module *module,
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
 		ret = ldb_next_request(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
@@ -452,6 +456,7 @@ int dsdb_module_del(struct ldb_module *module,
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
 		ret = ldb_next_request(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
