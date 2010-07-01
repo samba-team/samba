@@ -26,7 +26,7 @@ from samba.auth import system_session
 from samba.credentials import Credentials
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
-from ldb import ERR_UNWILLING_TO_PERFORM
+from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
@@ -341,6 +341,7 @@ userPassword: thatsAcomplPASS1
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -427,6 +428,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -457,6 +459,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -487,6 +490,7 @@ userPassword: thatsAcomplPASS3
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # Reverse order does work
         self.ldb2.modify_ldif("""
