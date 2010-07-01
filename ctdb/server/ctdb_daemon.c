@@ -630,7 +630,8 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	DLIST_ADD(ctdb->client_pids, client_pid);
 
 	client->queue = ctdb_queue_setup(ctdb, client, fd, CTDB_DS_ALIGNMENT, 
-					 ctdb_daemon_read_cb, client);
+					 ctdb_daemon_read_cb, client,
+					 "client-%u", client->pid);
 
 	talloc_set_destructor(client, ctdb_client_destructor);
 	talloc_set_destructor(client_pid, ctdb_clientpid_destructor);

@@ -676,7 +676,8 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx, int fd, int alignment,
 				    
 				    ctdb_queue_cb_fn_t callback,
-				    void *private_data);
+				    void *private_data, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(7,8);
 
 /*
   allocate a packet for use in client<->daemon communication
