@@ -1679,12 +1679,8 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen
 				  &size,
 				  &data_p);
 
-		/* add the new value. Paranoid protective code -- make sure data_p is valid */
-
-		if (size && data_p) {
-			regval_ctr_addvalue(values, valuename, type,
-					(uint8_t *)data_p, size);
-		}
+		regval_ctr_addvalue(values, valuename, type,
+				(uint8_t *)data_p, size);
 		SAFE_FREE(data_p); /* 'B' option to tdb_unpack does a malloc() */
 
 		DEBUG(8,("specific: [%s], len: %d\n", valuename, size));
