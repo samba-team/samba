@@ -1567,7 +1567,8 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
 				    uidtoname(p->server_info->utok.uid),
-				    NULL, NULL,
+				    p->server_info->info3->base.domain.string,
+				    NULL,
 				    p->server_info->ptok,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, r->out.handle);
@@ -1863,8 +1864,10 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	if ( (p->server_info->utok.uid != sec_initial_uid())
 		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->server_info->utok.uid), NULL,
-			NULL, p->server_info->ptok,
+			uidtoname(p->server_info->utok.uid),
+			p->server_info->info3->base.domain.string,
+			NULL,
+			p->server_info->ptok,
 			lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
@@ -1962,7 +1965,9 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	if ( (p->server_info->utok.uid != sec_initial_uid())
 		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->server_info->utok.uid), NULL, NULL,
+			uidtoname(p->server_info->utok.uid),
+			p->server_info->info3->base.domain.string,
+			NULL,
 			p->server_info->ptok, lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
@@ -7825,7 +7830,8 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
-					  NULL, NULL,
+					  p->server_info->info3->base.domain.string,
+					  NULL,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
@@ -7924,7 +7930,8 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
-					  NULL, NULL,
+					  p->server_info->info3->base.domain.string,
+					  NULL,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_DeleteForm: denied by insufficient permissions.\n"));
@@ -8007,7 +8014,8 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
-					  NULL, NULL,
+					  p->server_info->info3->base.domain.string,
+					  NULL,
 					  p->server_info->ptok,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
