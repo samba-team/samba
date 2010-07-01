@@ -3135,6 +3135,7 @@ NTSTATUS _lsa_QuerySecurity(struct pipes_struct *p,
 	case LSA_HANDLE_POLICY_TYPE:
 	case LSA_HANDLE_ACCOUNT_TYPE:
 	case LSA_HANDLE_TRUST_TYPE:
+	case LSA_HANDLE_SECRET_TYPE:
 		psd = handle->sd;
 		sd_size = ndr_size_security_descriptor(psd, 0);
 		status = NT_STATUS_OK;
