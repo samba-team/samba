@@ -31,7 +31,7 @@
 
 struct regval_blob {
 	fstring		valuename;
-	uint16_t	type;
+	uint32_t	type;
 	/* this should be encapsulated in an RPC_DATA_BLOB */
 	uint32_t	size;	/* in bytes */
 	uint8_t		*data_p;
@@ -460,7 +460,7 @@ bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value)
  **********************************************************************/
 
 struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
-				   uint16_t type,
+				   uint32_t type,
 				   const uint8_t *data_p, size_t size)
 {
 	struct regval_blob *regval = TALLOC_P(ctx, struct regval_blob);
@@ -489,7 +489,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
  Add a new registry value to the array
  **********************************************************************/
 
-int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16_t type,
+int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
                         const uint8_t *data_p, size_t size)
 {
 	if ( !name )
