@@ -5727,7 +5727,9 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
         if (!NT_STATUS_IS_OK(status) &&
 	    (token_contains_name_in_list(uidtoname(server_info->utok.uid),
-					 NULL, NULL, server_info->ptok,
+					 pdb_get_domain(server_info->sam_account),
+					 NULL,
+					 server_info->ptok,
 					 lp_printer_admin(snum)))) {
 		talloc_destroy(mem_ctx);
 		return True;
