@@ -26,6 +26,10 @@
 #include "lib/util/dlinklist.h"
 #include "db_wrap.h"
 
+static bool later_db(const char *name)
+{
+	return (strstr(name, "notify") || strstr(name, "serverid"));
+}
 
 /*
   lock all databases
@@ -43,7 +47,7 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 		if (ctdb_db->priority != priority) {
 			continue;
 		}
-		if (strstr(ctdb_db->db_name, "notify") != NULL) {
+		if (later_db(ctdb_db->db_name)) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
@@ -56,7 +60,7 @@ static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
 		if (ctdb_db->priority != priority) {
 			continue;
 		}
-		if (strstr(ctdb_db->db_name, "notify") == NULL) {
+		if (!later_db(ctdb_db->db_name)) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
