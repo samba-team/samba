@@ -686,7 +686,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/process.c smbd/service.c smbd/error.c
                printing/printfsp.c lib/sysquotas.c lib/sysquotas_linux.c
                lib/sysquotas_xfs.c lib/sysquotas_4A.c
-               smbd/change_trust_pw.c smbd/fake_file.c
+               smbd/fake_file.c
                smbd/quotas.c smbd/ntquotas.c ${AFS_SRC} smbd/msdfs.c
                ${AFS_SETTOKEN_SRC} smbd/aio.c smbd/statvfs.c
                smbd/dmapi.c smbd/signing.c
