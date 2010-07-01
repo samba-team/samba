@@ -455,6 +455,25 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "sync_browse_lists",	/* PR_VALUE_SYNC_BROWSE_LISTS */
 	    "run_elections",		/* PR_VALUE_RUN_ELECTIONS */
 	    "election",			/* PR_VALUE_ELECTION */
+	    "smb2_negprot",		/* PR_VALUE_SMB2_NEGPROT */
+	    "smb2_sesssetup",		/* PR_VALUE_SMB2_SESSETUP */
+	    "smb2_logoff",		/* PR_VALUE_SMB2_LOGOFF */
+	    "smb2_tcon",		/* PR_VALUE_SMB2_TCON */
+	    "smb2_tdis",		/* PR_VALUE_SMB2_TDIS */
+	    "smb2_create",		/* PR_VALUE_SMB2_CREATE */
+	    "smb2_close",		/* PR_VALUE_SMB2_CLOSE */
+	    "smb2_flush",		/* PR_VALUE_SMB2_FLUSH */
+	    "smb2_read",		/* PR_VALUE_SMB2_READ */
+	    "smb2_write",		/* PR_VALUE_SMB2_WRITE */
+	    "smb2_lock",		/* PR_VALUE_SMB2_LOCK */
+	    "smb2_ioctl",		/* PR_VALUE_SMB2_IOCTL */
+	    "smb2_cancel",		/* PR_VALUE_SMB2_CANCEL */
+	    "smb2_keepalive",		/* PR_VALUE_SMB2_KEEPALIVE */
+	    "smb2_find",		/* PR_VALUE_SMB2_FIND */
+	    "smb2_notify",		/* PR_VALUE_SMB2_NOTIFY */
+	    "smb2_getinfo",		/* PR_VALUE_SMB2_GETINFO */
+	    "smb2_setinfo"		/* PR_VALUE_SMB2_SETINFO */
+	    "smb2_break",		/* PR_VALUE_SMB2_BREAK */
 	    "" /* PR_VALUE_MAX */
 	};
 

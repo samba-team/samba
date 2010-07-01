@@ -400,7 +400,48 @@ bool status_profile_dump(bool verbose)
 	d_printf("run_elections_time:             %u\n", profile_p->run_elections_time);
 	d_printf("election_count:                 %u\n", profile_p->election_count);
 	d_printf("election_time:                  %u\n", profile_p->election_time);
+	profile_separator("SMB2 Calls");
+	d_printf("smb2_negprot_count:             %u\n", profile_p->smb2_negprot_count);
+	d_printf("smb2_negprot_time:              %u\n", profile_p->smb2_negprot_time);
+	d_printf("smb2_sesssetup_count:           %u\n", profile_p->smb2_sesssetup_count);
+	d_printf("smb2_sesssetup_time:            %u\n", profile_p->smb2_sesssetup_time);
+	d_printf("smb2_logoff_count:              %u\n", profile_p->smb2_logoff_count);
+	d_printf("smb2_logoff_time:               %u\n", profile_p->smb2_logoff_time);
+	d_printf("smb2_tcon_count:                %u\n", profile_p->smb2_tcon_count);
+	d_printf("smb2_tcon_time:                 %u\n", profile_p->smb2_tcon_time);
+	d_printf("smb2_tdis_count:                %u\n", profile_p->smb2_tdis_count);
+	d_printf("smb2_tdis_time:                 %u\n", profile_p->smb2_tdis_time);
+	d_printf("smb2_create_count:              %u\n", profile_p->smb2_create_count);
+	d_printf("smb2_create_time:               %u\n", profile_p->smb2_create_time);
+	d_printf("smb2_close_count:               %u\n", profile_p->smb2_close_count);
+	d_printf("smb2_close_time:                %u\n", profile_p->smb2_close_time);
+	d_printf("smb2_flush_count:               %u\n", profile_p->smb2_flush_count);
+	d_printf("smb2_flush_time:                %u\n", profile_p->smb2_flush_time);
+	d_printf("smb2_read_count:                %u\n", profile_p->smb2_read_count);
+	d_printf("smb2_read_time:                 %u\n", profile_p->smb2_read_time);
+	d_printf("smb2_write_count:               %u\n", profile_p->smb2_write_count);
+	d_printf("smb2_write_time:                %u\n", profile_p->smb2_write_time);
+	d_printf("smb2_lock_count:                %u\n", profile_p->smb2_lock_count);
+	d_printf("smb2_lock_time:                 %u\n", profile_p->smb2_lock_time);
+	d_printf("smb2_ioctl_count:               %u\n", profile_p->smb2_ioctl_count);
+	d_printf("smb2_ioctl_time:                %u\n", profile_p->smb2_ioctl_time);
+	d_printf("smb2_cancel_count:              %u\n", profile_p->smb2_cancel_count);
+	d_printf("smb2_cancel_time:               %u\n", profile_p->smb2_cancel_time);
+	d_printf("smb2_keepalive_count:           %u\n", profile_p->smb2_keepalive_count);
+	d_printf("smb2_keepalive_time:            %u\n", profile_p->smb2_keepalive_time);
+	d_printf("smb2_find_count:                %u\n", profile_p->smb2_find_count);
+	d_printf("smb2_find_time:                 %u\n", profile_p->smb2_find_time);
+	d_printf("smb2_notify_count:              %u\n", profile_p->smb2_notify_count);
+	d_printf("smb2_notify_time:               %u\n", profile_p->smb2_notify_time);
+	d_printf("smb2_getinfo_count:             %u\n", profile_p->smb2_getinfo_count);
+	d_printf("smb2_getinfo_time:              %u\n", profile_p->smb2_getinfo_time);
+	d_printf("smb2_setinfo_count:             %u\n", profile_p->smb2_setinfo_count);
+	d_printf("smb2_setinfo_time:              %u\n", profile_p->smb2_setinfo_time);
+	d_printf("smb2_break_count:               %u\n", profile_p->smb2_break_count);
+	d_printf("smb2_break_time:                %u\n", profile_p->smb2_break_time);
+
 #else /* WITH_PROFILE */
+
 	fprintf(stderr, "Profile data unavailable\n");
 #endif /* WITH_PROFILE */
 

@@ -26,7 +26,7 @@
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 11
+#define PROF_SHM_VERSION 12
 
 /* time values in the following structure are in microseconds */
 
@@ -756,6 +756,82 @@ enum profile_stats_values
 #define election_count __profile_stats_value(PR_VALUE_ELECTION, count)
 #define election_time __profile_stats_value(PR_VALUE_ELECTION, time)
 
+	PR_VALUE_SMB2_NEGPROT,
+#define smb2_negprot_count __profile_stats_value(PR_VALUE_SMB2_NEGPROT, count)
+#define smb2_negprot_time __profile_stats_value(PR_VALUE_SMB2_NEGPROT, time)
+
+	PR_VALUE_SMB2_SESSSETUP,
+#define smb2_sesssetup_count __profile_stats_value(PR_VALUE_SMB2_SESSSETUP, count)
+#define smb2_sesssetup_time __profile_stats_value(PR_VALUE_SMB2_SESSSETUP, time)
+
+	PR_VALUE_SMB2_LOGOFF,
+#define smb2_logoff_count __profile_stats_value(PR_VALUE_SMB2_LOGOFF, count)
+#define smb2_logoff_time __profile_stats_value(PR_VALUE_SMB2_LOGOFF, time)
+
+	PR_VALUE_SMB2_TCON,
+#define smb2_tcon_count __profile_stats_value(PR_VALUE_SMB2_TCON, count)
+#define smb2_tcon_time __profile_stats_value(PR_VALUE_SMB2_TCON, time)
+
+	PR_VALUE_SMB2_TDIS,
+#define smb2_tdis_count __profile_stats_value(PR_VALUE_SMB2_TDIS, count)
+#define smb2_tdis_time __profile_stats_value(PR_VALUE_SMB2_TDIS, time)
+
+	PR_VALUE_SMB2_CREATE,
+#define smb2_create_count __profile_stats_value(PR_VALUE_SMB2_CREATE, count)
+#define smb2_create_time __profile_stats_value(PR_VALUE_SMB2_CREATE, time)
+
+	PR_VALUE_SMB2_CLOSE,
+#define smb2_close_count __profile_stats_value(PR_VALUE_SMB2_CLOSE, count)
+#define smb2_close_time __profile_stats_value(PR_VALUE_SMB2_CLOSE, time)
+
+	PR_VALUE_SMB2_FLUSH,
+#define smb2_flush_count __profile_stats_value(PR_VALUE_SMB2_FLUSH, count)
+#define smb2_flush_time __profile_stats_value(PR_VALUE_SMB2_FLUSH, time)
+
+	PR_VALUE_SMB2_READ,
+#define smb2_read_count __profile_stats_value(PR_VALUE_SMB2_READ, count)
+#define smb2_read_time __profile_stats_value(PR_VALUE_SMB2_READ, time)
+
+	PR_VALUE_SMB2_WRITE,
+#define smb2_write_count __profile_stats_value(PR_VALUE_SMB2_WRITE, count)
+#define smb2_write_time __profile_stats_value(PR_VALUE_SMB2_WRITE, time)
+
+	PR_VALUE_SMB2_LOCK,
+#define smb2_lock_count __profile_stats_value(PR_VALUE_SMB2_LOCK, count)
+#define smb2_lock_time __profile_stats_value(PR_VALUE_SMB2_LOCK, time)
+
+	PR_VALUE_SMB2_IOCTL,
+#define smb2_ioctl_count __profile_stats_value(PR_VALUE_SMB2_IOCTL, count)
+#define smb2_ioctl_time __profile_stats_value(PR_VALUE_SMB2_IOCTL, time)
+
+	PR_VALUE_SMB2_CANCEL,
+#define smb2_cancel_count __profile_stats_value(PR_VALUE_SMB2_CANCEL, count)
+#define smb2_cancel_time __profile_stats_value(PR_VALUE_SMB2_CANCEL, time)
+
+	PR_VALUE_SMB2_KEEPALIVE,
+#define smb2_keepalive_count __profile_stats_value(PR_VALUE_SMB2_KEEPALIVE, count)
+#define smb2_keepalive_time __profile_stats_value(PR_VALUE_SMB2_KEEPALIVE, time)
+
+	PR_VALUE_SMB2_FIND,
+#define smb2_find_count __profile_stats_value(PR_VALUE_SMB2_FIND, count)
+#define smb2_find_time __profile_stats_value(PR_VALUE_SMB2_FIND, time)
+
+	PR_VALUE_SMB2_NOTIFY,
+#define smb2_notify_count __profile_stats_value(PR_VALUE_SMB2_NOTIFY, count)
+#define smb2_notify_time __profile_stats_value(PR_VALUE_SMB2_NOTIFY, time)
+
+	PR_VALUE_SMB2_GETINFO,
+#define smb2_getinfo_count __profile_stats_value(PR_VALUE_SMB2_GETINFO, count)
+#define smb2_getinfo_time __profile_stats_value(PR_VALUE_SMB2_GETINFO, time)
+
+	PR_VALUE_SMB2_SETINFO,
+#define smb2_setinfo_count __profile_stats_value(PR_VALUE_SMB2_SETINFO, count)
+#define smb2_setinfo_time __profile_stats_value(PR_VALUE_SMB2_SETINFO, time)
+
+	PR_VALUE_SMB2_BREAK,
+#define smb2_break_count __profile_stats_value(PR_VALUE_SMB2_BREAK, count)
+#define smb2_break_time __profile_stats_value(PR_VALUE_SMB2_BREAK, time)
+
 	/* This mist remain the last value. */
 	PR_VALUE_MAX
 }; /* enum profile_stats_values */
@@ -890,6 +966,13 @@ static inline uint64_t profile_timestamp(void)
 		    profile_timestamp() - __profstamp_##x); \
 	}
 
+#define PROFILE_AND_RETURN(x,t,c) { \
+	t __return_value; \
+	START_PROFILE(x); \
+	__return_value = (c); \
+	END_PROFILE(x); \
+	return __return_value; \
+}
 
 #else /* WITH_PROFILE */
 
@@ -900,7 +983,7 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE(x)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
-
+#define PROFILE_AND_RETURN(x,t,c) return (c);
 #endif /* WITH_PROFILE */
 
 #endif
