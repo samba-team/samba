@@ -417,8 +417,10 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx,
 		return WERR_FOOBAR;
 	}
 
-	if (res->count == 0 || res->msgs[0]->num_elements == 0)
+	if (res->count == 0 || res->msgs[0]->num_elements == 0) {
+		talloc_free(res);
 		return WERR_BADFILE;
+	}
 
 	if ((data_type != NULL) && (data != NULL)) {
 		reg_ldb_unpack_value(mem_ctx, res->msgs[0], name, data_type,
@@ -647,6 +649,9 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		ldb_msg_add_empty(msg, "type", LDB_FLAG_MOD_DELETE, NULL);
 
 		ret = ldb_modify(kd->ldb, msg);
+
+		talloc_free(msg);
+
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 			return WERR_FOOBAR;
@@ -758,6 +763,8 @@ static WERROR ldb_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 			}
 		}
 	}
+	talloc_free(res_keys);
+	talloc_free(res_vals);
 
 	/* Delete the key itself */
 	ret = ldb_delete(c, ldb_path);
@@ -835,6 +842,8 @@ static WERROR ldb_set_value(struct hive_key *parent,
 		/* ignore this -> the value didn't exist and also now doesn't */
 		ret = LDB_SUCCESS;
 	}
+
+	talloc_free(msg);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_set_value: %s\n", ldb_errstring(kd->ldb)));
