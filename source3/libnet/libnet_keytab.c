@@ -20,7 +20,9 @@
 */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "smb_krb5.h"
+#include "ads.h"
+#include "libnet/libnet_keytab.h"
 
 #ifdef HAVE_KRB5
 

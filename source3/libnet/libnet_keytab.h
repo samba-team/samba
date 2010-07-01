@@ -39,4 +39,22 @@ struct libnet_keytab_context {
 	bool clean_old_entries;
 };
 
+/* The following definitions come from libnet/libnet_keytab.c  */
+
+krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
+				   const char *keytab_name,
+				   struct libnet_keytab_context **ctx);
+krb5_error_code libnet_keytab_add(struct libnet_keytab_context *ctx);
+
+struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *ctx,
+						 const char *principal, int kvno,
+						 const krb5_enctype enctype,
+						 TALLOC_CTX *mem_ctx);
+NTSTATUS libnet_keytab_add_to_keytab_entries(TALLOC_CTX *mem_ctx,
+					     struct libnet_keytab_context *ctx,
+					     uint32_t kvno,
+					     const char *name,
+					     const char *prefix,
+					     const krb5_enctype enctype,
+					     DATA_BLOB blob);
 #endif /* HAVE_KRB5 */

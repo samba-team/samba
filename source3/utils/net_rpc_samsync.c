@@ -27,6 +27,8 @@
 #include "utils/net.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
+#include "libnet/libnet_samsync.h"
+#include "libnet/libnet_dssync.h"
 
 static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
 						      int argc,

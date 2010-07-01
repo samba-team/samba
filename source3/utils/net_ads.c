@@ -28,6 +28,10 @@
 #include "libads/cldap.h"
 #include "libads/dns.h"
 #include "../libds/common/flags.h"
+#include "ads.h"
+#include "librpc/gen_ndr/libnet_join.h"
+#include "libnet/libnet_join.h"
+#include "smb_krb5.h"
 
 #ifdef HAVE_ADS
 

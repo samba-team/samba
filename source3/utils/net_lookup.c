@@ -21,6 +21,7 @@
 #include "libads/sitename_cache.h"
 #include "libads/dns.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "smb_krb5.h"
 
 int net_lookup_usage(struct net_context *c, int argc, const char **argv)
 {

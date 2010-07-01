@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "libnet/libnet_samsync.h"
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 

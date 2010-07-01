@@ -19,7 +19,8 @@
  */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "librpc/gen_ndr/ndr_libnet_join.h"
+#include "libnet/libnet_join.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/init_samr.h"

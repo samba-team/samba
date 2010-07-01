@@ -19,7 +19,10 @@
 */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "smb_krb5.h"
+#include "ads.h"
+#include "libnet/libnet_dssync.h"
+#include "libnet/libnet_keytab.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)

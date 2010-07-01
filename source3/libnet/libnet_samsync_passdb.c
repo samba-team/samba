@@ -24,7 +24,7 @@
 */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "libnet/libnet_samsync.h"
 
 /* Convert a struct samu_DELTA to a struct samu. */
 #define STRING_CHANGED (old_string && !new_string) ||\

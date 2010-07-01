@@ -24,7 +24,7 @@
 */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "libnet/libnet_samsync.h"
 
 static void display_group_mem_info(uint32_t rid,
 				   struct netr_DELTA_GROUP_MEMBER *r)

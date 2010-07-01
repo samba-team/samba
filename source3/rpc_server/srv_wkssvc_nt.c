@@ -23,7 +23,8 @@
 /* This is the implementation of the wks interface. */
 
 #include "includes.h"
-#include "libnet/libnet.h"
+#include "librpc/gen_ndr/libnet_join.h"
+#include "libnet/libnet_join.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 
