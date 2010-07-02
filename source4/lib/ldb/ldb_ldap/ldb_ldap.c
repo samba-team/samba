@@ -549,15 +549,16 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 
 	case LDAP_RES_SEARCH_REFERENCE:
 
-		if (ldap_parse_result(lldb->ldap, result, &ret,
-					&matcheddnp, &errmsgp,
-					&referralsp, &serverctrlsp, 0) != LDAP_SUCCESS) {
+		ret = ldap_parse_reference(lldb->ldap, result,
+					   &referralsp, &serverctrlsp, 0);
+		if (ret != LDAP_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "ldap reference parse error: %s : %s",
+					       ldap_err2string(ret), errmsgp);
 			ret = LDB_ERR_OPERATIONS_ERROR;
-		}
-		if (ret != LDB_SUCCESS) {
 			break;
 		}
 		if (referralsp == NULL) {
+			ldb_asprintf_errstring(ldb, "empty ldap referrals list");
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			break;
 		}
