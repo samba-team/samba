@@ -16,7 +16,9 @@ import samba.getopt as options
 
 from ldb import (
     SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-
+from ldb import ERR_CONSTRAINT_VIOLATION
+from ldb import Message, MessageElement, Dn
+from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
@@ -154,7 +156,7 @@ url: www.example.com
 dn: """ + group_dn + """
 objectClass: group
 sAMAccountName: """ + group_dn.split(",")[0][3:] + """
-groupType: 2147483650
+groupType: 4
 url: www.example.com
 """
         if desc:
@@ -415,7 +417,7 @@ displayName: test_changed"""
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % str("OU=test_modify_ou1," + self.base_dn))
         self.assertEqual(res[0]["displayName"][0], "test_changed")
 
-    def _test_modify_u2(self):
+    def test_modify_u2(self):
         """6 Modify two attributes as you have DS_WRITE_PROPERTY granted only for one of them"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
@@ -641,7 +643,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         """13 User with WP modifying Member"""
 #a second user is given write property permission
         user_sid = self.get_object_sid(self.get_user_dn(self.user_with_wp))
-        mod = "(OA;;WP;;;%s)" % str(user_sid)
+        mod = "(A;;WP;;;%s)" % str(user_sid)
         self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
@@ -1023,11 +1025,229 @@ class AclRenameTests(AclTests):
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % ou3_dn)
         self.assertNotEqual(res, [])
 
+#tests on Control Access Rights
+class AclCARTests(AclTests):
+
+    def setUp(self):
+        super(AclCARTests, self).setUp()
+        self.user_with_wp = "acl_car_user1"
+        self.user_with_pc = "acl_car_user2"
+        self.create_enable_user(self.user_with_wp)
+        self.create_enable_user(self.user_with_pc)
+        self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
+        self.ldb_user2 = self.get_ldb_connection(self.user_with_pc, self.user_pass)
+
+    def tearDown(self):
+        super(AclCARTests, self).tearDown()
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
+
+    def test_change_password1(self):
+        """Try a password change operation without any CARs given"""
+        #users have change password by default - remove for negative testing
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
+        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            # for some reason we get constraint violation instead of insufficient access error
+            self.fail()
+
+    def test_change_password2(self):
+        """Make sure WP has no influence"""
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
+        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        mod = "(A;;WP;;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        try:
+            self.ldb_user2.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        else:
+            # for some reason we get constraint violation instead of insufficient access error
+            self.fail()
+
+    def test_change_password3(self):
+        """Make sure WP has no influence"""
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        mod = "(D;;WP;;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        self.ldb_user2.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+""")
+
+    def test_reset_password1(self):
+        """Try a user password reset operation (unicodePwd) before and after granting CAR"""
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+        mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+""")
+
+    def test_reset_password2(self):
+        """Try a user password reset operation (userPassword) before and after granting CAR"""
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: userPassword
+userPassword: thatsAcomplPASS1
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+        mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: userPassword
+userPassword: thatsAcomplPASS1
+""")
+
+    def test_reset_password3(self):
+        """Grant WP and see what happens (unicodePwd)"""
+        mod = "(A;;WP;;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_reset_password4(self):
+        """Grant WP and see what happens (userPassword)"""
+        mod = "(A;;WP;;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: userPassword
+userPassword: thatsAcomplPASS1
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+
+    def test_reset_password5(self):
+        """Explicitly deny WP but grant CAR (unicodePwd)"""
+        mod = "(D;;WP;;;PS)(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+""")
+
+    def test_reset_password6(self):
+        """Explicitly deny WP but grant CAR (userPassword)"""
+        mod = "(D;;WP;;;PS)(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+replace: userPassword
+userPassword: thatsAcomplPASS1
+""")
+
 # Important unit running information
 
 if not "://" in host:
     host = "ldap://%s" % host
 ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
+
+# Gets back the configuration basedn
+res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+                 attrs=["configurationNamingContext"])
+configuration_dn = res[0]["configurationNamingContext"][0]
+
+# Gets back the cbasedn
+res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+                 attrs=["defaultNamingContext"])
+base_dn = res[0]["defaultNamingContext"][0]
+
+# Get the old "dSHeuristics" if it was set
+res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
+                 + configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
+if "dSHeuristics" in res[0]:
+  dsheuristics = res[0]["dSHeuristics"][0]
+else:
+  dsheuristics = None
+
+# Set the "dSHeuristics" to have the tests run against Windows Server
+m = Message()
+m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+  + configuration_dn)
+m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
+  "dSHeuristics")
+ldb.modify(m)
+
+# Get the current minPwdAge
+res = ldb.search(base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
+minPwdAge = res[0]["minPwdAge"][0]
+
+#set minPwdAge to 0 so password tests can against Windows server
+m = Message()
+m.dn = Dn(ldb, base_dn)
+m["minPwdAge"] = MessageElement("0", FLAG_MOD_REPLACE, "minPwdAge")
+ldb.modify(m)
 
 runner = SubunitTestRunner()
 rc = 0
@@ -1039,4 +1259,22 @@ if not runner.run(unittest.makeSuite(AclDeleteTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
     rc = 1
+
+# Reset the "dSHeuristics" as they were before
+m = Message()
+m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+  + configuration_dn)
+if dsheuristics is not None:
+    m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
+      "dSHeuristics")
+else:
+    m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
+ldb.modify(m)
+
+# Reset minPwdAge as before
+m = Message()
+m.dn = Dn(ldb, base_dn)
+m["minPwdAge"] = MessageElement(minPwdAge, FLAG_MOD_REPLACE, "minPwdAge")
+ldb.modify(m)
+
 sys.exit(rc)
