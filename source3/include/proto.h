@@ -4875,7 +4875,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax,
-				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r),
 				struct auth_serversupplied_info *serversupplied_info,
 				struct rpc_pipe_client **presult);
 NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,

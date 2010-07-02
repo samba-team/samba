@@ -2235,7 +2235,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 	}
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
-					rpc_srvsvc_dispatch, conn->server_info,
+					conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_RNetShareAdd: could not connect to srvsvc: %s\n",
@@ -2341,7 +2341,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 	}
 
 	status = rpc_pipe_open_internal(
-		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->server_info, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -2523,7 +2523,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 	endp = *rdata + *rdata_len;
 
 	status = rpc_pipe_open_internal(
-		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->server_info, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -2679,7 +2679,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 	endp = *rdata + *rdata_len;
 
 	status = rpc_pipe_open_internal(
-		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->server_info, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -2922,7 +2922,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					rpc_samr_dispatch, conn->server_info,
+					conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_SetUserPassword: could not connect to samr: %s\n",
@@ -3138,7 +3138,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 	memcpy(hash.hash, data+516, 16);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					rpc_samr_dispatch, conn->server_info,
+					conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_SamOEMChangePassword: could not connect to samr: %s\n",
@@ -3691,7 +3691,7 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 	p2 = p + struct_len;
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
-					rpc_srvsvc_dispatch, conn->server_info,
+					conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_RNetServerGetInfo: could not connect to srvsvc: %s\n",
@@ -4113,7 +4113,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					rpc_samr_dispatch, conn->server_info,
+					conn->server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("api_RNetUserGetInfo: could not connect to samr: %s\n",

@@ -26,6 +26,8 @@
 #include "winbindd.h"
 #include "../../nsswitch/libwbclient/wbc_async.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
+#include "../librpc/gen_ndr/srv_samr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1288,6 +1290,9 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	winbindd_register_handlers();
+
+	rpc_lsarpc_init();
+	rpc_samr_init();
 
 	if (!init_system_info()) {
 		DEBUG(0,("ERROR: failed to setup system user info.\n"));

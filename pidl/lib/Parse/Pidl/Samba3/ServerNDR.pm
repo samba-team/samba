@@ -225,58 +225,6 @@ sub ParseFunction($$)
 	pidl "";
 }
 
-sub ParseDispatchFunction($)
-{
-	my ($if) = @_;
-
-	pidl_hdr "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);";
-	pidl "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)";
-	pidl "{";
-	indent;
-	pidl "if (cli->pipes_struct == NULL) {";
-	pidl "\treturn NT_STATUS_INVALID_PARAMETER;";
-	pidl "}";
-	pidl "";
-	pidl "/* set opnum in fake rpc header */";
-	pidl "cli->pipes_struct->hdr_req.opnum = opnum;";
-	pidl "";
-	pidl "switch (opnum)";
-	pidl "{";
-	indent;
-	foreach my $fn (@{$if->{FUNCTIONS}}) {
-		next if ($fn->{PROPERTIES}{noopnum});
-		my $op = "NDR_".uc($fn->{NAME});
-		pidl "case $op: {";
-		indent;
-		pidl "struct $fn->{NAME} *r = (struct $fn->{NAME} *)_r;";
-
-		pidl "if (DEBUGLEVEL >= 10) {";
-		pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, r);";
-		pidl "}";
-
-		CallWithStruct("cli->pipes_struct", "mem_ctx", $fn, 
-			sub { pidl "\treturn NT_STATUS_NO_MEMORY;"; });
-
-		pidl "if (DEBUGLEVEL >= 10) {";
-		pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
-		pidl "}";
-
-		pidl "return NT_STATUS_OK;";
-		deindent;
-		pidl "}";
-		pidl "";
-	}
-
-	pidl "default:";
-	pidl "\treturn NT_STATUS_NOT_IMPLEMENTED;";
-	deindent;
-	pidl "}";
-	deindent;
-	pidl "}";
-
-	pidl "";
-}
-
 sub ParseInterface($)
 {
 	my $if = shift;
@@ -316,8 +264,6 @@ sub ParseInterface($)
 	deindent;
 	pidl "}";
 	pidl "";
-
-	ParseDispatchFunction($if);
 
 	if (not has_property($if, "no_srv_register")) {
 	    pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";

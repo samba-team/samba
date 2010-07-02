@@ -1411,7 +1411,6 @@ NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
 	if (!conn->spoolss_pipe) {
 		status = rpc_pipe_open_internal(conn,
 						&ndr_table_spoolss.syntax_id,
-						rpc_spoolss_dispatch,
 						conn->server_info,
 						&conn->spoolss_pipe);
 		if (!NT_STATUS_IS_OK(status)) {

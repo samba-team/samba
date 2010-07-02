@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "rpc_server/srv_pipe_internal.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -186,6 +187,155 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	return p;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static NTSTATUS internal_ndr_push(TALLOC_CTX *mem_ctx,
+				  struct rpc_pipe_client *cli,
+				  const struct ndr_interface_table *table,
+				  uint32_t opnum,
+				  void *r)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_push *push;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	bool ret;
+
+	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax) ||
+	    (opnum >= table->num_calls)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	call = &table->calls[opnum];
+
+	if (DEBUGLEVEL >= 10) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name, NDR_IN, r);
+	}
+
+	push = ndr_push_init_ctx(mem_ctx);
+	if (push == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ndr_err = call->ndr_push(push, NDR_IN, r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(push);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	blob = ndr_push_blob(push);
+	ret = prs_init_data_blob(&cli->pipes_struct->in_data.data, &blob, mem_ctx);
+	TALLOC_FREE(push);
+	if (!ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static NTSTATUS internal_ndr_pull(TALLOC_CTX *mem_ctx,
+				  struct rpc_pipe_client *cli,
+				  const struct ndr_interface_table *table,
+				  uint32_t opnum,
+				  void *r)
+{
+	const struct ndr_interface_call *call;
+	struct ndr_pull *pull;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	bool ret;
+
+	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax) ||
+	    (opnum >= table->num_calls)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	call = &table->calls[opnum];
+
+	ret = prs_data_blob(&cli->pipes_struct->out_data.rdata, &blob, mem_ctx);
+	if (!ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (pull == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* have the ndr parser alloc memory for us */
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_err = call->ndr_pull(pull, NDR_OUT, r);
+	TALLOC_FREE(pull);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name, NDR_OUT, r);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   const struct ndr_interface_table *table,
+					   uint32_t opnum, void *r)
+{
+	NTSTATUS status;
+	int num_cmds = rpc_srv_get_pipe_num_cmds(&table->syntax_id);
+	const struct api_struct *cmds = rpc_srv_get_pipe_cmds(&table->syntax_id);
+	int i;
+
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* set opnum in fake rpc header */
+	cli->pipes_struct->hdr_req.opnum = opnum;
+
+	for (i = 0; i < num_cmds; i++) {
+		if (cmds[i].opnum == opnum && cmds[i].fn != NULL) {
+			break;
+		}
+	}
+
+	if (i == num_cmds) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_init_empty(&cli->pipes_struct->out_data.rdata, cli->pipes_struct->mem_ctx, MARSHALL);
+
+	status = internal_ndr_push(mem_ctx, cli, table, opnum, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!cmds[i].fn(cli->pipes_struct)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = internal_ndr_pull(mem_ctx, cli, table, opnum, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	prs_mem_free(&cli->pipes_struct->in_data.data);
+	prs_mem_free(&cli->pipes_struct->out_data.rdata);
+
+	return NT_STATUS_OK;
+}
+
 /**
  * @brief Create a new RPC client context which uses a local dispatch function.
  *
@@ -217,10 +367,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
-				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli,
-						      TALLOC_CTX *mem_ctx,
-						      const struct ndr_interface_table *table,
-						      uint32_t opnum, void *r),
 				struct auth_serversupplied_info *serversupplied_info,
 				struct rpc_pipe_client **presult)
 {
@@ -233,7 +379,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
-	result->dispatch = dispatch;
+	result->dispatch = rpc_pipe_internal_dispatch;
 
 	result->pipes_struct = make_internal_rpc_pipe_p(
 		result, abstract_syntax, "", serversupplied_info);
