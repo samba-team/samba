@@ -160,5 +160,7 @@ from samba.netcmd.vampire import cmd_vampire
 commands["vampire"] = cmd_vampire()
 from samba.netcmd.machinepw import cmd_machinepw
 commands["machinepw"] = cmd_machinepw()
+from samba.netcmd.spn import cmd_spn
+commands["spn"] = cmd_spn()
 from samba.netcmd.group import cmd_group
 commands["group"] = cmd_group()
