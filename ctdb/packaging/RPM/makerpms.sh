@@ -44,18 +44,38 @@ SPECFILE="ctdb.spec"
 SPECFILE_IN="ctdb.spec.in"
 RPMBUILD="rpmbuild"
 
-GITHASH=".$(git log --pretty=format:%h -1)"
+# We use tags and determine the version, as follows:
+# ctdb-0.9.1  (First release of 0.9).
+# ctdb-0.9.23 (23rd minor release of the 112 version)
+#
+# If we're not directly on a tag, this is a devel release; we append
+# .0.<patchnum>.<checksum>.devel to the release.
+TAG=`git describe`
+case "$TAG" in
+    ctdb-*)
+	TAG=${TAG##ctdb-}
+	case "$TAG" in
+	    *-*-g*) # 0.9-168-ge6cf0e8
+		# Not exactly on tag: devel version.
+		VERSION=`echo "$TAG" | sed 's/\([^-]\+\)-\([0-9]\+\)-\(g[0-9a-f]\+\)/\1.0.\2.\3.devel/'`
+		;;
+	    *)
+		# An actual release version
+		VERSION=$TAG
+		;;
+	esac
+	;;
+    *)
+	echo Invalid tag "$TAG" >&2
+	exit 1
+	;;
+esac
 
-if test "x$USE_GITHASH" = "xno" ; then
-	GITHASH=""
-fi
-
-sed -e s/GITHASH/${GITHASH}/g \
+sed -e s/@VERSION@/$VERSION/g \
 	< ${DIRNAME}/${SPECFILE_IN} \
 	> ${DIRNAME}/${SPECFILE}
 
 VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
-RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
 
 if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
 	GZIP="gzip -9 --rsyncable"

@@ -3,8 +3,8 @@ Name: ctdb
 Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
-Version: 1.9
-Release: 1GITHASH
+Version: @VERSION@
+Release: 1
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
