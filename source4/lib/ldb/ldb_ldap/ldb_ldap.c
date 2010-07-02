@@ -282,7 +282,7 @@ static int lldb_add(struct lldb_context *lldb_ac)
 	char *dn;
 	int ret;
 
-	ldb_module_get_ctx(module);
+	ldb = ldb_module_get_ctx(module);
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -321,7 +321,7 @@ static int lldb_modify(struct lldb_context *lldb_ac)
 	char *dn;
 	int ret;
 
-	ldb_module_get_ctx(module);
+	ldb = ldb_module_get_ctx(module);
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -359,7 +359,7 @@ static int lldb_delete(struct lldb_context *lldb_ac)
 	char *dnstr;
 	int ret;
 
-	ldb_module_get_ctx(module);
+	ldb = ldb_module_get_ctx(module);
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -391,7 +391,7 @@ static int lldb_rename(struct lldb_context *lldb_ac)
 	char *parentdn;
 	int ret;
 
-	ldb_module_get_ctx(module);
+	ldb = ldb_module_get_ctx(module);
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -502,20 +502,24 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 
 			ldbmsg = ldb_msg_new(ac);
 			if (!ldbmsg) {
+				ldb_oom(ldb);
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				break;
 			}
 
 			dn = ldap_get_dn(lldb->ldap, msg);
 			if (!dn) {
+				ldb_oom(ldb);
 				talloc_free(ldbmsg);
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				break;
 			}
 			ldbmsg->dn = ldb_dn_new(ldbmsg, ldb, dn);
 			if ( ! ldb_dn_validate(ldbmsg->dn)) {
+				ldb_asprintf_errstring(ldb, "Invalid DN '%s' in reply", dn);
 				talloc_free(ldbmsg);
 				ret = LDB_ERR_OPERATIONS_ERROR;
+				ldap_memfree(dn);
 				break;
 			}
 			ldap_memfree(dn);
@@ -539,7 +543,8 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 
 			ret = ldb_module_send_entry(ac->req, ldbmsg, NULL /* controls not yet supported */);
 			if (ret != LDB_SUCCESS) {
-
+				ldb_asprintf_errstring(ldb, "entry send failed: %s",
+						       ldb_errstring(ldb));
 				callback_failed = true;
 			}
 		} else {
@@ -568,6 +573,8 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 
 			ret = ldb_module_send_referral(ac->req, referral);
 			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb, "referral send failed: %s",
+						       ldb_errstring(ldb));
 				callback_failed = true;
 				break;
 			}
@@ -586,6 +593,8 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 			ret = LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "ldap parse error for type %d: %s : %s",
+					       type, ldap_err2string(ret), errmsgp);
 			break;
 		}
 
@@ -598,6 +607,7 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 		break;
 
 	default:
+		ldb_asprintf_errstring(ldb, "unknown ldap return type: %d", type);
 		ret = LDB_ERR_PROTOCOL_ERROR;
 		break;
 	}
