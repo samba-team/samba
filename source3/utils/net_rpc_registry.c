@@ -608,6 +608,8 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 		goto done;
 	}
 
+	value->type = type;
+
 	print_registry_value(value, raw);
 
 done:
