@@ -228,15 +228,14 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	(*schema)->loaded_from_module = module;
 	(*schema)->loaded_usn = current_usn;
 
-	/* dsdb_set_schema() steal schema into the ldb_context */
+	/* "dsdb_set_schema()" steals schema into the ldb_context */
 	ret = dsdb_set_schema(ldb, (*schema));
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
 			      ret, ldb_strerror(ret), ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
+		goto failed;
 	}
 
 	/* Ensure this module won't go away before the callback */
