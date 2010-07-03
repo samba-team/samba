@@ -183,7 +183,7 @@ systemOnly: FALSE
 searchFlags: 8
 lDAPDisplayName: test attributeSchema
 name: test attributeSchema
-systemFlags: 0""", ["relax:0"]);
+systemFlags: 0""");
 
             # urgent replication should be enabled when creating
             res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
@@ -226,7 +226,7 @@ systemMustContain: msDFS-SchemaMajorVersion
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCD
  CLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;CO)
 systemFlags: 16
-defaultHidingValue: TRUE""", ["relax:0"]);
+defaultHidingValue: TRUE""");
 
             # urgent replication should be enabled when creating
             res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
