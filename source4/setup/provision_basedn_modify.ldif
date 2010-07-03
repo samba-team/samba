@@ -35,9 +35,8 @@ lockoutThreshold: 0
 replace: maxPwdAge
 maxPwdAge: -36288000000000
 -
-# "minPwdAge" is "0" in order to let the password change tests pass
 replace: minPwdAge
-minPwdAge: 0
+minPwdAge: -864000000000
 -
 replace: minPwdLength
 minPwdLength: 7
