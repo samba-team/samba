@@ -779,7 +779,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 		return ret;
 	}
 
-	if (res->count < 1) {
+	if (res->count != 1) {
 		*uSN = 0;
 		if (urgent_uSN) {
 			*urgent_uSN = 0;
