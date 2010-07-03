@@ -7,8 +7,6 @@
 # Notice: This tests will also work against Windows Server if the connection is
 # secured enough (SASL with a minimum of 128 Bit encryption) - consider
 # MS-ADTS 3.1.1.3.1.5
-#
-# Important: Make sure that the minimum password age is set to "0"!
 
 import optparse
 import sys
@@ -584,6 +582,11 @@ res = ldb.search(base="", expression="", scope=SCOPE_BASE,
                  attrs=["configurationNamingContext"])
 configuration_dn = res[0]["configurationNamingContext"][0]
 
+# Gets back the basedn
+res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+                 attrs=["defaultNamingContext"])
+base_dn = res[0]["defaultNamingContext"][0]
+
 # Get the old "dSHeuristics" if it was set
 res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
                  + configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
@@ -600,6 +603,16 @@ m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
   "dSHeuristics")
 ldb.modify(m)
 
+# Get the old "minPwdAge"
+res = ldb.search(base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
+minPwdAge = res[0]["minPwdAge"][0]
+
+# Set it temporarely to "0"
+m = Message()
+m.dn = Dn(ldb, base_dn)
+m["minPwdAge"] = MessageElement("0", FLAG_MOD_REPLACE, "minPwdAge")
+ldb.modify(m)
+
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(PasswordTests)).wasSuccessful():
@@ -614,6 +627,12 @@ if dsheuristics is not None:
       "dSHeuristics")
 else:
     m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
+ldb.modify(m)
+
+# Reset the "minPwdAge" as it was before
+m = Message()
+m.dn = Dn(ldb, base_dn)
+m["minPwdAge"] = MessageElement(minPwdAge, FLAG_MOD_REPLACE, "minPwdAge")
 ldb.modify(m)
 
 sys.exit(rc)
