@@ -48,6 +48,8 @@ test_smbclient() {
 CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
 export CONFIG
 
+testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $net pwsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
+
 USERPASS=testPaSS@01%
 
 testit "create user locally" $VALGRIND $newuser $CONFIG nettestuser $USERPASS $@ || failed=`expr $failed + 1`
@@ -160,8 +162,6 @@ testit "change user password with kpasswd (after must change flag set)" $rkpty .
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
-
-testit "reset password policies" $VALGRIND $net pwsettings set $CONFIG --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
 NEWUSERPASS=abcdefg
 testit_expect_failure "try to set a non-complex password (command should not succeed)" $VALGRIND $net password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
