@@ -1533,7 +1533,98 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+/* This sets and resets the "minPwdAge" (in order to allow immediate user
+ * password changes). The behaviour is controlled by the "set" boolean. */
+static bool handle_minPwdAge(struct torture_context *torture,
+			     TALLOC_CTX *mem_ctx, bool set)
+{
+        struct dcerpc_pipe *p;
+	struct policy_handle connect_handle, domain_handle;
+	struct samr_Connect c_r;
+	struct samr_LookupDomain ld_r;
+	struct samr_OpenDomain od_r;
+	struct samr_QueryDomainInfo qdi_r;
+	struct samr_SetDomainInfo sdi_r;
+	struct samr_Close cl_r;
+	struct lsa_String domName;
+	struct dom_sid *domSid = NULL;
+	union samr_DomainInfo *domInfo = NULL;
+	static int64_t old_minPwdAge = 0;
+	NTSTATUS status;
 
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	c_r.in.system_name = 0;
+	c_r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	c_r.out.connect_handle = &connect_handle;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_Connect_r(p->binding_handle, mem_ctx, &c_r),
+				   "Connect failed");
+	torture_assert_ntstatus_ok(torture, c_r.out.result, "Connect failed");
+
+	ld_r.in.connect_handle = &connect_handle;
+	ld_r.in.domain_name = &domName;
+	ld_r.in.domain_name->string = lp_workgroup(torture->lp_ctx);
+	ld_r.out.sid = &domSid;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_LookupDomain_r(p->binding_handle, mem_ctx, &ld_r),
+				   "LookupDomain failed");
+	torture_assert_ntstatus_ok(torture, ld_r.out.result,
+				   "LookupDomain failed");
+
+	od_r.in.connect_handle = &connect_handle;
+	od_r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	od_r.in.sid = *ld_r.out.sid;
+	od_r.out.domain_handle = &domain_handle;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_OpenDomain_r(p->binding_handle, mem_ctx, &od_r),
+				   "OpenDomain failed");
+	torture_assert_ntstatus_ok(torture, od_r.out.result,
+				   "OpenDomain failed");
+
+	qdi_r.in.domain_handle = &domain_handle;
+	qdi_r.in.level = DomainPasswordInformation;
+	qdi_r.out.info = &domInfo;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_QueryDomainInfo_r(p->binding_handle, mem_ctx, &qdi_r),
+				   "QueryDomainInfo failed");
+	torture_assert_ntstatus_ok(torture, qdi_r.out.result,
+				   "QueryDomainInfo failed");
+
+	if (set) {
+		old_minPwdAge = domInfo->info1.min_password_age;
+		domInfo->info1.min_password_age = 0;
+	} else {
+		domInfo->info1.min_password_age = old_minPwdAge;
+	}
+
+	sdi_r.in.domain_handle = &domain_handle;
+	sdi_r.in.level = DomainPasswordInformation;
+	sdi_r.in.info = domInfo;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_SetDomainInfo_r(p->binding_handle, mem_ctx, &sdi_r),
+				   "SetDomainInfo failed");
+	torture_assert_ntstatus_ok(torture, sdi_r.out.result,
+				   "SetDomainInfo failed");
+
+	cl_r.in.handle = &connect_handle;
+	cl_r.out.handle = &connect_handle;
+
+	torture_assert_ntstatus_ok(torture,
+				   dcerpc_samr_Close_r(p->binding_handle, mem_ctx, &cl_r),
+				   "Close failed");
+	torture_assert_ntstatus_ok(torture, cl_r.out.result, "Close failed");
+
+	return true;
+}
 
 bool torture_rpc_samlogon(struct torture_context *torture)
 {
@@ -1564,6 +1655,9 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	struct netlogon_creds_CredentialState *creds;
 	struct dcerpc_pipe *tmp_p = NULL;
+
+	torture_assert(torture, handle_minPwdAge(torture, mem_ctx, true),
+		       "handle_minPwdAge error!");
 
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
@@ -1916,6 +2010,9 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	}
 failed:
+	torture_assert(torture, handle_minPwdAge(torture, mem_ctx, false),
+		       "handle_minPwdAge error!");
+
 	talloc_free(mem_ctx);
 
 	torture_leave_domain(torture, join_ctx);
