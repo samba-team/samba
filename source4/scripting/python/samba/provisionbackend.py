@@ -538,11 +538,12 @@ class OpenLDAPBackend(LDAPBackend):
         if not os.path.isdir(self.olcdir):
             os.makedirs(self.olcdir, 0770)
 
-            retcode = subprocess.call([self.slapd_path, "-Ttest", "-n", "0",
-                "-f", self.slapdconf, "-F", self.olcdir], close_fds=True,
+            slapd_cmd = [self.slapd_path, "-Ttest", "-n", "0", "-f", self.slapdconf, "-F", self.olcdir]
+            retcode = subprocess.call(slapd_cmd, close_fds=True,
                 shell=False)
 
             if retcode != 0:
+                self.logger.error("conversion from slapd.conf to cn=config failed slapd started with: %s" %  "\'" + "\' \'".join(slapd_cmd) + "\'")
                 raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
             if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):
