@@ -320,7 +320,7 @@ def handle_special_case(att, delta, new, old, usn):
                 delta.remove(att)
             return True
 
-        if (att in ("gPLink", "gPCFileSysPath") and 
+        if (att in ("gPLink", "gPCFileSysPath") and
             flag == FLAG_MOD_REPLACE and
             str(new[0].dn).lower() == str(old[0].dn).lower()):
             delta.remove(att)
@@ -530,8 +530,8 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
         depend_on_yet_tobecreated = check_dn_nottobecreated(hash, index,
                                                             delta.get(str(att)))
         if depend_on_yet_tobecreated is not None:
-            message(CHANGE, "Object %s depends on %s in attribute %s," 
-                            "delaying the creation" % (dn, 
+            message(CHANGE, "Object %s depends on %s in attribute %s,"
+                            "delaying the creation" % (dn,
                                       depend_on_yet_tobecreated, att))
             return False
 
@@ -827,16 +827,16 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 if attrUSN == -1:
                     # This attribute was last modified by another DC forget
                     # about it
-                    message(CHANGE, "%sAttribute: %s has been" 
+                    message(CHANGE, "%sAttribute: %s has been"
                             "created/modified/deleted  by another DC,"
                             " do nothing" % (txt, att ))
                     txt = ""
                     delta.remove(att)
                     continue
                 elif not usn_in_range(int(attrUSN), usns):
-                    message(CHANGE, "%sAttribute: %s has been" 
-                                    "created/modified/deleted not during a" 
-                                    " provision or upgradeprovision: current" 
+                    message(CHANGE, "%sAttribute: %s has been"
+                                    "created/modified/deleted not during a"
+                                    " provision or upgradeprovision: current"
                                     " usn %d , do nothing" % (txt, att, attrUSN))
                     txt = ""
                     delta.remove(att)
@@ -845,13 +845,13 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                     if att == "defaultSecurityDescriptor":
                         defSDmodified = True
                     if attrUSN:
-                        message(CHANGE, "%sAttribute: %s will be modified" 
-                                        "/deleted it was last modified" 
-                                        "during a provision, current usn:" 
+                        message(CHANGE, "%sAttribute: %s will be modified"
+                                        "/deleted it was last modified"
+                                        "during a provision, current usn:"
                                         "%d" % (txt, att,  attrUSN))
                         txt = ""
                     else:
-                        message(CHANGE, "%sAttribute: %s will be added because" 
+                        message(CHANGE, "%sAttribute: %s will be added because"
                                         " it hasn't existed before " % (txt, att))
                         txt = ""
                     continue
@@ -893,7 +893,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
         delta.dn = dn
         if len(delta.items()) >1:
             attributes=", ".join(delta.keys())
-            message(CHANGE, "%s is different from the reference one, changed" 
+            message(CHANGE, "%s is different from the reference one, changed"
                             " attributes: %s\n" % (dn, attributes))
             changed += 1
             samdb.modify(delta)
@@ -1073,7 +1073,7 @@ def rebuild_sd(samdb, names):
                         controls=["search_options:1:2"])
     for obj in res:
         if not (str(obj["dn"]) == str(names.rootdn) or
-            str(obj["dn"]) == str(names.configdn) or 
+            str(obj["dn"]) == str(names.configdn) or
             str(obj["dn"]) == str(names.schemadn)):
             hash[str(obj["dn"])] = obj["whenCreated"]
 
