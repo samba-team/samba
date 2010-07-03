@@ -55,7 +55,7 @@ class cmd_pwsettings(Command):
         Option("--min-pwd-length",
           help="The minimum password length (<integer> | default).  Default is 7.", type=str),
         Option("--min-pwd-age",
-          help="The minimum password age (<integer in days> | default).  Default is 0.", type=str),
+          help="The minimum password age (<integer in days> | default).  Default is 1.", type=str),
         Option("--max-pwd-age",
           help="The maximum password age (<integer in days> | default).  Default is 43.", type=str),
           ]
@@ -142,7 +142,7 @@ class cmd_pwsettings(Command):
 
             if min_pwd_age is not None:
                 if min_pwd_age == "default":
-                    min_pwd_age = 0
+                    min_pwd_age = 1
                 else:
                     min_pwd_age = int(min_pwd_age)
 
