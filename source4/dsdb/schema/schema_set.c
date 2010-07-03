@@ -428,7 +428,8 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 		return ret;
 	}
 
-	/* Remove the refernece to the schema we just overwrote - if there was none, NULL is harmless here */
+	/* Remove the reference to the schema we just overwrote - if there was
+	 * none, NULL is harmless here */
 	talloc_unlink(ldb, old_schema);
 
 	if (talloc_reference(ldb, schema) == NULL) {
