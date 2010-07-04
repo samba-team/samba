@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "smbd/globals.h"
 
 /****************************************************************************
  Run a file if it is a magic script.
@@ -152,7 +153,8 @@ static NTSTATUS close_filestruct(files_struct *fsp)
  If any deferred opens are waiting on this close, notify them.
 ****************************************************************************/
 
-static void notify_deferred_opens(struct share_mode_lock *lck)
+static void notify_deferred_opens(struct messaging_context *msg_ctx,
+				  struct share_mode_lock *lck)
 {
  	int i;
 
@@ -180,8 +182,7 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 
 			share_mode_entry_to_message(msg, e);
 
- 			messaging_send_buf(smbd_messaging_context(),
-					   e->pid, MSG_SMB_OPEN_RETRY,
+			messaging_send_buf(msg_ctx, e->pid, MSG_SMB_OPEN_RETRY,
 					   (uint8 *)msg,
 					   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
  		}
@@ -361,7 +362,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	/* Notify any deferred opens waiting on this close. */
-	notify_deferred_opens(lck);
+	notify_deferred_opens(conn->sconn->msg_ctx, lck);
 	reply_to_oplock_break_requests(fsp);
 
 	/*
