@@ -7083,7 +7083,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		status = do_unlock(smbd_messaging_context(),
+		status = do_unlock(req->sconn->msg_ctx,
 				fsp,
 				e->smblctx,
 				e->count,
@@ -7177,7 +7177,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			struct byte_range_lock *br_lck;
 			uint64_t block_smblctx;
 
-			br_lck = do_lock(smbd_messaging_context(),
+			br_lck = do_lock(req->sconn->msg_ctx,
 					fsp,
 					e->smblctx,
 					e->count,
@@ -7267,7 +7267,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		for(i--; i >= 0; i--) {
 			struct smbd_lock_element *e = &locks[i];
 
-			do_unlock(smbd_messaging_context(),
+			do_unlock(req->sconn->msg_ctx,
 				fsp,
 				e->smblctx,
 				e->count,
