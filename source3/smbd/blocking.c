@@ -659,7 +659,7 @@ void remove_pending_lock_requests_by_mid_smb1(
 
 			brl_lock_cancel(br_lck,
 					blr->smblctx,
-					procid_self(),
+					sconn_server_id(sconn),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
