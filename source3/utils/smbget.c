@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -142,7 +142,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 
 	while(*relname == '/')relname++;
 	mkdir(relname, 0755);
-	
+
 	tmpname = SMB_STRDUP(name);
 
 	while((dirent = smbc_readdir(dirhandle))) {
@@ -179,7 +179,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		case SMBC_COMMS_SHARE:
 			if(!quiet)printf("Ignoring comms share %s\n", dirent->name);
 			break;
-			
+
 		case SMBC_IPC_SHARE:
 			if(!quiet)printf("Ignoring ipc$ share %s\n", dirent->name);
 			break;
@@ -198,7 +198,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 			smbc_closedir(dirhandle);
 			return 1;
 		}
-		
+
 		if(chmod(relname, remotestat.st_mode) < 0) {
 			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname,
 				(unsigned int)remotestat.st_mode);
@@ -247,7 +247,7 @@ static void print_progress(const char *name, time_t start, time_t now, off_t sta
 	if (len == -1) {
 		return;
 	}
-	
+
 	if(columns) {
 		int required = strlen(name), available = columns - len - strlen("[] ");
 		if(required > available) {
@@ -277,7 +277,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 	struct stat localstat, remotestat;
 
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base, (*base && *name && name[0] != '/' && base[strlen(base)-1] != '/')?"/":"", name);
-	
+
 	remotehandle = smbc_open(path, O_RDONLY, 0755);
 
 	if(remotehandle < 0) {
@@ -323,7 +323,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 	} else newpath = name;
 
 	if(newpath[0] == '/')newpath++;
-	
+
 	/* Open local file according to the mode */
 	if(update) {
 		/* if it is up-to-date, skip */
@@ -350,7 +350,7 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 			smbc_close(remotehandle);
 			return 1;
 		}
-	
+
 		if (fstat(localhandle, &localstat) != 0) {
 			fprintf(stderr, "Can't fstat %s: %s\n", newpath, strerror(errno));
 			smbc_close(remotehandle);
@@ -652,7 +652,7 @@ int main(int argc, const char **argv)
 			CONST_DISCARD(char *, "smb_encrypt_level"),
 			"require");
 	}
-	
+
 	columns = get_num_cols();
 
 	total_start_time = time(NULL);
