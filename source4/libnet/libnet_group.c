@@ -147,6 +147,7 @@ NTSTATUS libnet_CreateGroup_recv(struct composite_context *c,
 		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
 	}
 
+	talloc_free(c);
 	return status;
 }
 
@@ -408,7 +409,6 @@ NTSTATUS libnet_GroupInfo_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_free(c);
-
 	return status;
 }
 
@@ -731,6 +731,7 @@ NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
+	talloc_free(c);
 	return status;
 }
 

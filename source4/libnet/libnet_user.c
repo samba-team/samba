@@ -178,6 +178,7 @@ NTSTATUS libnet_CreateUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
 	}
 
+	talloc_free(c);
 	return status;
 }
 
@@ -346,6 +347,7 @@ NTSTATUS libnet_DeleteUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 		r->out.error_string = talloc_steal(mem_ctx, s->r.out.error_string);
 	}
 	
+	talloc_free(c);
 	return status;
 }
 
@@ -572,6 +574,8 @@ NTSTATUS libnet_ModifyUser_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 				struct libnet_ModifyUser *r)
 {
 	NTSTATUS status = composite_wait(c);
+
+	talloc_free(c);
 	return status;
 }
 
@@ -868,7 +872,6 @@ NTSTATUS libnet_UserInfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_free(c);
-	
 	return status;
 }
 
@@ -1195,6 +1198,7 @@ NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 		r->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
 	}
 
+	talloc_free(c);
 	return status;
 }
 

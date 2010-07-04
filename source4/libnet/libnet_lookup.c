@@ -217,9 +217,7 @@ NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	status = finddcs_recv(c, mem_ctx, &io->out.num_dcs, &io->out.dcs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	/* "c" already freed here */
 	return status;
 }
 
