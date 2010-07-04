@@ -1013,6 +1013,8 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	smbd_server_conn->msg_ctx = smbd_messaging_context();
+
 	smbd_setup_sig_term_handler();
 	smbd_setup_sig_hup_handler();
 
