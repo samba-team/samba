@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /****************************************************************************
  Delete a connection record.
@@ -138,7 +139,7 @@ bool claim_connection(connection_struct *conn, const char *name)
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
-	crec.pid = procid_self();
+	crec.pid = sconn_server_id(conn->sconn);
 	crec.cnum = conn->cnum;
 	crec.uid = conn->server_info->utok.uid;
 	crec.gid = conn->server_info->utok.gid;
