@@ -742,7 +742,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 		struct byte_range_lock *br_lck = NULL;
 		struct smbd_lock_element *e = &state->locks[blr->lock_num];
 
-		br_lck = do_lock(smbd_messaging_context(),
+		br_lck = do_lock(fsp->conn->sconn->msg_ctx,
 				fsp,
 				e->smblctx,
 				e->count,
