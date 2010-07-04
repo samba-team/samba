@@ -90,7 +90,7 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 
 	/* 3 second timeout. */
-	print_notify_send_messages(smbd_messaging_context(), 3);
+	print_notify_send_messages(sconn->msg_ctx, 3);
 
 	/* delete our entry in the serverid database. */
 	if (am_parent) {
