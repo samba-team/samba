@@ -213,7 +213,6 @@ static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 {
 	struct serverid_exists_state *state =
 		(struct serverid_exists_state *)priv;
-	uint64_t unique_id;
 
 	if (data.dsize != sizeof(struct serverid_data)) {
 		return -1;
@@ -224,7 +223,7 @@ static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 	 * aligned.
 	 */
 	state->exists = (memcmp(&state->id->unique_id, data.dptr,
-				sizeof(unique_id)) == 0);
+				sizeof(state->id->unique_id)) == 0);
 	return 0;
 }
 
