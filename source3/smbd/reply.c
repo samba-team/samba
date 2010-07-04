@@ -4903,7 +4903,7 @@ void reply_unlock(struct smb_request *req)
 	count = (uint64_t)IVAL(req->vwv+1, 0);
 	offset = (uint64_t)IVAL(req->vwv+3, 0);
 
-	status = do_unlock(smbd_messaging_context(),
+	status = do_unlock(req->sconn->msg_ctx,
 			fsp,
 			(uint64_t)req->smbpid,
 			count,
