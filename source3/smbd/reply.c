@@ -4060,7 +4060,7 @@ void reply_writeunlock(struct smb_request *req)
 	}
 
 	if (numtowrite && !fsp->print_file) {
-		status = do_unlock(smbd_messaging_context(),
+		status = do_unlock(req->sconn->msg_ctx,
 				fsp,
 				(uint64_t)req->smbpid,
 				(uint64_t)numtowrite, 
