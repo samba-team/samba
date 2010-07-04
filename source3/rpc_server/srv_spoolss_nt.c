@@ -1267,7 +1267,8 @@ static bool srv_spoolss_drv_upgrade_printer(const char *drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 
-	messaging_send_buf(smbd_messaging_context(), procid_self(),
+	messaging_send_buf(smbd_messaging_context(),
+			   messaging_server_id(smbd_messaging_context()),
 			   MSG_PRINTER_DRVUPGRADE,
 			   (uint8_t *)drivername, len+1);
 
