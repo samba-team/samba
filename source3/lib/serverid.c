@@ -183,10 +183,12 @@ static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 		return -1;
 	}
 
-	/* memcpy, data.dptr might not be aligned */
-	memcpy(&unique_id, data.dptr, sizeof(unique_id));
-
-	state->exists = (state->id->unique_id == unique_id);
+	/*
+	 * Use memcmp, not direct compare. data.dptr might not be
+	 * aligned.
+	 */
+	state->exists =
+		(memcmp(&unique_id, data.dptr, sizeof(unique_id)) == 0);
 	return 0;
 }
 
