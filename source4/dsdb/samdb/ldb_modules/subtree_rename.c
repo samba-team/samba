@@ -31,6 +31,8 @@
 #include "includes.h"
 #include <ldb.h>
 #include <ldb_module.h>
+#include "libds/common/flags.h"
+#include "dsdb/samdb/samdb.h"
 
 struct subren_msg_store {
 	struct subren_msg_store *next;
@@ -139,6 +141,110 @@ static int subtree_rename_next_request(struct subtree_rename_context *ac)
 	return ldb_next_request(ac->module, req);
 }
 
+static int check_system_flags(struct ldb_message *msg,
+			      struct subtree_rename_context *ac,
+			      struct ldb_dn *olddn, struct ldb_dn *newdn)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_dn *dn1, *dn2;
+	int32_t systemFlags;
+	bool move_op = false;
+	bool rename_op = false;
+
+	if (ldb_dn_compare(olddn, newdn) == 0) {
+		return LDB_SUCCESS;
+	}
+
+	dn1 = ldb_dn_get_parent(ac, olddn);
+	dn2 = ldb_dn_get_parent(ac, newdn);
+
+	if (ldb_dn_compare(dn1, dn2) == 0) {
+		rename_op = true;
+	} else {
+		move_op = true;
+	}
+
+	talloc_free(dn1);
+	talloc_free(dn2);
+
+	systemFlags = ldb_msg_find_attr_as_int(msg, "systemFlags", 0);
+
+	/* the config system flags don't apply for the schema partition */
+	if ((ldb_dn_compare_base(ldb_get_config_basedn(ldb), olddn) == 0) &&
+	    (ldb_dn_compare_base(ldb_get_schema_basedn(ldb), olddn) != 0)) {
+		if (move_op &&
+		    (systemFlags & SYSTEM_FLAG_CONFIG_ALLOW_MOVE) == 0) {
+			/* Here we have to do more: control the
+			 * "ALLOW_LIMITED_MOVE" flag. This means that the
+			 * grand-grand-parents of two objects have to be equal
+			 * in order to perform the move (this is used for
+			 * moving "server" objects in the "sites" container). */
+			bool limited_move =
+				systemFlags & SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE;
+
+			if (limited_move) {
+				dn1 = ldb_dn_copy(ac, olddn);
+				dn2 = ldb_dn_copy(ac, newdn);
+
+				limited_move &= ldb_dn_remove_child_components(dn1, 3);
+				limited_move &= ldb_dn_remove_child_components(dn2, 3);
+				limited_move &= ldb_dn_compare(dn1, dn2) == 0;
+
+				talloc_free(dn1);
+				talloc_free(dn2);
+			}
+
+			if (!limited_move) {
+				ldb_asprintf_errstring(ldb,
+						       "subtree_rename: Cannot move %s, it isn't permitted!",
+						       ldb_dn_get_linearized(olddn));
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		}
+		if (rename_op &&
+		    (systemFlags & SYSTEM_FLAG_CONFIG_ALLOW_RENAME) == 0) {
+			ldb_asprintf_errstring(ldb,
+					       "subtree_rename: Cannot rename %s, it isn't permitted!",
+					       ldb_dn_get_linearized(olddn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+	if (ldb_dn_compare_base(ldb_get_schema_basedn(ldb), olddn) == 0) {
+		if (move_op) {
+			ldb_asprintf_errstring(ldb,
+					       "subtree_rename: Cannot move %s, it isn't permitted!",
+					       ldb_dn_get_linearized(olddn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		if (rename_op &&
+		    (systemFlags & SYSTEM_FLAG_SCHEMA_BASE_OBJECT) != 0) {
+			ldb_asprintf_errstring(ldb,
+					       "subtree_rename: Cannot rename %s, it isn't permitted!",
+					       ldb_dn_get_linearized(olddn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+	if (ldb_dn_compare_base(ldb_get_default_basedn(ldb),
+				ac->current->olddn) == 0) {
+		if (move_op &&
+		    (systemFlags & SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE) != 0) {
+			ldb_asprintf_errstring(ldb,
+					       "subtree_rename: Cannot move %s, it isn't permitted!",
+					       ldb_dn_get_linearized(olddn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		if (rename_op &&
+		    (systemFlags & SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME) != 0) {
+			ldb_asprintf_errstring(ldb,
+						       "subtree_rename: Cannot rename %s, it isn't permitted!",
+					       ldb_dn_get_linearized(olddn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int subtree_rename_search_callback(struct ldb_request *req,
 					  struct ldb_reply *ares)
 {
@@ -159,10 +265,18 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-
 		if (ldb_dn_compare(ares->message->dn, ac->list->olddn) == 0) {
 			/* this was already stored by the
 			 * subtree_rename_search() */
+
+			ret = check_system_flags(ares->message, ac,
+						 ac->list->olddn,
+						 ac->list->newdn);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL,
+						       ret);
+			}
+
 			talloc_free(ares);
 			return LDB_SUCCESS;
 		}
@@ -188,6 +302,12 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 		if ( ! ldb_dn_add_base(store->newdn, ac->list->newdn)) {
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = check_system_flags(ares->message, ac,
+					 store->olddn, store->newdn);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
 		break;
@@ -218,7 +338,7 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	static const char *attrs[2] = { "distinguishedName", NULL };
+	static const char * const attrs[] = { "systemFlags", NULL };
 	struct ldb_request *search_req;
 	struct subtree_rename_context *ac;
 	int ret;
