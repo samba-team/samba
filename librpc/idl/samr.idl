@@ -806,7 +806,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		lsa_String comment;
-		lsa_String unknown; /* settable, but doesn't stick. probably obsolete */
+		lsa_String reserved; /* settable, but doesn't stick. probably obsolete */
 		uint16 country_code;
 		uint16 code_page;
 	} samr_UserInfo2;
@@ -982,7 +982,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		lsa_BinaryString parameters;
 		lsa_BinaryString lm_owf_password;
 		lsa_BinaryString nt_owf_password;
-		lsa_String unknown3;
+		lsa_String private_data;
 		uint32 buf_count;
 		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
@@ -997,7 +997,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		uint8  lm_password_set;
 		uint8  nt_password_set;
 		uint8  password_expired;
-		uint8  unknown4;
+		uint8  private_data_sensitive;
 	} samr_UserInfo21;
 
 	typedef [public, flag(NDR_PAHEX)] struct {

@@ -2464,7 +2464,7 @@ static NTSTATUS get_user_info_2(TALLOC_CTX *mem_ctx,
 				struct samu *pw)
 {
 	r->comment.string		= talloc_strdup(mem_ctx, pdb_get_comment(pw));
-	r->unknown.string		= NULL;
+	r->reserved.string		= NULL;
 	r->country_code			= 0;
 	r->code_page			= 0;
 

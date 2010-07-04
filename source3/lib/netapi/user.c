@@ -113,7 +113,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	info21->parameters		= zero_parameters;
 	info21->lm_owf_password		= zero_parameters;
 	info21->nt_owf_password		= zero_parameters;
-	info21->unknown3.string		= NULL;
+	info21->private_data.string	= NULL;
 	info21->buf_count		= 0;
 	info21->buffer			= NULL;
 	info21->rid			= infoX->usriX_user_id;
@@ -128,7 +128,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	info21->lm_password_set		= 0;
 	info21->nt_password_set		= 0;
 	info21->password_expired	= infoX->usriX_password_expired;
-	info21->unknown4		= 0;
+	info21->private_data_sensitive	= 0;
 }
 
 /****************************************************************
