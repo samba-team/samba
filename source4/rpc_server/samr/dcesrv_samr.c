@@ -3199,6 +3199,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 
 #define IFSET(bit) if (bit & r->in.info->info21.fields_present)
+		IFSET(SAMR_FIELD_LAST_LOGON)
+			SET_UINT64(msg, info21.last_logon,     "lastLogon");
+		IFSET(SAMR_FIELD_LAST_LOGOFF)
+			SET_UINT64(msg, info21.last_logoff,    "lastLogoff");
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
@@ -3227,6 +3231,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_AFLAGS(msg, info21.acct_flags,     "userAccountControl");
 		IFSET(SAMR_FIELD_LOGON_HOURS)
 			SET_LHOURS(msg, info21.logon_hours,    "logonHours");
+		IFSET(SAMR_FIELD_BAD_PWD_COUNT)
+			SET_UINT  (msg, info21.bad_password_count, "badPwdCount");
+		IFSET(SAMR_FIELD_NUM_LOGONS)
+			SET_UINT  (msg, info21.logon_count,    "logonCount");
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
@@ -3284,6 +3292,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 
 #define IFSET(bit) if (bit & r->in.info->info23.info.fields_present)
+		IFSET(SAMR_FIELD_LAST_LOGON)
+			SET_UINT64(msg, info23.info.last_logon,     "lastLogon");
+		IFSET(SAMR_FIELD_LAST_LOGOFF)
+			SET_UINT64(msg, info23.info.last_logoff,    "lastLogoff");
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info23.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
@@ -3312,6 +3324,11 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_AFLAGS(msg, info23.info.acct_flags,     "userAccountControl");
 		IFSET(SAMR_FIELD_LOGON_HOURS)
 			SET_LHOURS(msg, info23.info.logon_hours,    "logonHours");
+		IFSET(SAMR_FIELD_BAD_PWD_COUNT)
+			SET_UINT  (msg, info23.info.bad_password_count, "badPwdCount");
+		IFSET(SAMR_FIELD_NUM_LOGONS)
+			SET_UINT  (msg, info23.info.logon_count,    "logonCount");
+
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info23.info.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
@@ -3378,6 +3395,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 
 #define IFSET(bit) if (bit & r->in.info->info25.info.fields_present)
+		IFSET(SAMR_FIELD_LAST_LOGON)
+			SET_UINT64(msg, info25.info.last_logon,     "lastLogon");
+		IFSET(SAMR_FIELD_LAST_LOGOFF)
+			SET_UINT64(msg, info25.info.last_logoff,    "lastLogoff");
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info25.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)         
@@ -3406,6 +3427,10 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_AFLAGS(msg, info25.info.acct_flags,     "userAccountControl");
 		IFSET(SAMR_FIELD_LOGON_HOURS)
 			SET_LHOURS(msg, info25.info.logon_hours,    "logonHours");
+		IFSET(SAMR_FIELD_BAD_PWD_COUNT)
+			SET_UINT  (msg, info25.info.bad_password_count, "badPwdCount");
+		IFSET(SAMR_FIELD_NUM_LOGONS)
+			SET_UINT  (msg, info25.info.logon_count,    "logonCount");
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info25.info.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
