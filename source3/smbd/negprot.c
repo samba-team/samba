@@ -665,7 +665,7 @@ void reply_negprot(struct smb_request *req)
 	   when the client connects to port 445.  Of course there is a small
 	   window where we are listening to messages   -- jerry */
 
-	serverid_register(procid_self(),
+	serverid_register(sconn_server_id(sconn),
 			  FLAG_MSG_GENERAL|FLAG_MSG_SMBD
 			  |FLAG_MSG_PRINT_GENERAL);
     
