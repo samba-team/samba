@@ -779,6 +779,7 @@ static bool open_sockets(bool isdaemon, int port)
 	{ NULL }
 	};
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
+	NTSTATUS status;
 
 	load_case_tables();
 
@@ -923,8 +924,11 @@ static bool open_sockets(bool isdaemon, int port)
 
 	pidfile_create("nmbd");
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(nmbd_messaging_context(),
-					       nmbd_event_context(), false))) {
+	status = reinit_after_fork(nmbd_messaging_context(),
+				   nmbd_event_context(),
+				   procid_self(), false);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

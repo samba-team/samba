@@ -873,6 +873,7 @@ void smb_msleep(unsigned int t)
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct event_context *ev_ctx,
+			   struct server_id id,
 			   bool parent_longlived)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -899,7 +900,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		 * For clustering, we need to re-init our ctdbd connection after the
 		 * fork
 		 */
-		status = messaging_reinit(msg_ctx, procid_self());
+		status = messaging_reinit(msg_ctx, id);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("messaging_reinit() failed: %s\n",
 				 nt_errstr(status)));

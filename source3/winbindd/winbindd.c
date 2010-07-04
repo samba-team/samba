@@ -1122,6 +1122,7 @@ int main(int argc, char **argv, char **envp)
 	poptContext pc;
 	int opt;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
@@ -1278,9 +1279,10 @@ int main(int argc, char **argv, char **envp)
 	 * winbindd-specific resources we must free yet. JRA.
 	 */
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(winbind_messaging_context(),
-					       winbind_event_context(),
-					       false))) {
+	status = reinit_after_fork(winbind_messaging_context(),
+				   winbind_event_context(),
+				   procid_self(), false);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

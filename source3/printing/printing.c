@@ -1430,6 +1430,7 @@ void start_background_queue(void)
 	if(background_lpq_updater_pid == 0) {
 		struct tevent_fd *fde;
 		int ret;
+		NTSTATUS status;
 
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
@@ -1437,9 +1438,11 @@ void start_background_queue(void)
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		if (!NT_STATUS_IS_OK(reinit_after_fork(server_messaging_context(),
-						       server_event_context(),
-						       true))) {
+		status = reinit_after_fork(server_messaging_context(),
+					   server_event_context(),
+					   procid_self(), true);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}

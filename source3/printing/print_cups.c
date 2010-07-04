@@ -397,6 +397,7 @@ static bool cups_pcap_load_async(int *pfd)
 {
 	int fds[2];
 	pid_t pid;
+	NTSTATUS status;
 
 	*pfd = -1;
 
@@ -434,8 +435,10 @@ static bool cups_pcap_load_async(int *pfd)
 
 	close_all_print_db();
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(server_messaging_context(),
-					       server_event_context(), true))) {
+	status = reinit_after_fork(server_messaging_context(),
+				   server_event_context(), procid_self(),
+				   true);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
 	}

@@ -409,7 +409,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		s = NULL;
 
 		status = reinit_after_fork(smbd_messaging_context(),
-					   smbd_event_context(), true);
+					   smbd_event_context(), procid_self(),
+					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_TOO_MANY_OPENED_FILES)) {
@@ -806,6 +807,7 @@ extern void build_options(bool screen);
 	};
 	struct smbd_parent_context *parent = NULL;
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
+	NTSTATUS status;
 
 	smbd_init_globals();
 
@@ -998,8 +1000,10 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
-			     smbd_event_context(), false))) {
+	status = reinit_after_fork(smbd_messaging_context(),
+				   smbd_event_context(),
+				   procid_self(), false);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

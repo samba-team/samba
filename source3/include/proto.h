@@ -1226,8 +1226,9 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
 int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
-		       struct event_context *ev_ctx,
-		       bool parent_longlived);
+			   struct event_context *ev_ctx,
+			   struct server_id id,
+			   bool parent_longlived);
 void *malloc_(size_t size);
 void *memalign_array(size_t el_size, size_t align, unsigned int count);
 void *calloc_array(size_t size, size_t nmemb);

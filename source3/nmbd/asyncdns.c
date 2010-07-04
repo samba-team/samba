@@ -137,6 +137,7 @@ void kill_async_dns_child(void)
 void start_async_dns(void)
 {
 	int fd1[2], fd2[2];
+	NTSTATUS status;
 
 	CatchChild();
 
@@ -164,8 +165,11 @@ void start_async_dns(void)
 	CatchSignal(SIGHUP, SIG_IGN);
         CatchSignal(SIGTERM, sig_term);
 
-	if (!NT_STATUS_IS_OK(reinit_after_fork(nmbd_messaging_context(),
-					       nmbd_event_context(), true))) {
+	status = reinit_after_fork(nmbd_messaging_context(),
+				   nmbd_event_context(),
+				   procid_self(), true);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}

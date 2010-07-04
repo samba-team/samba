@@ -2807,7 +2807,8 @@ static bool fork_echo_handler(struct smbd_server_connection *sconn)
 		close(listener_pipe[0]);
 
 		status = reinit_after_fork(smbd_messaging_context(),
-					   smbd_event_context(), false);
+					   smbd_event_context(),
+					   procid_self(), false);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
