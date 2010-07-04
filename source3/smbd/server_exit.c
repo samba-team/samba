@@ -93,7 +93,12 @@ static void exit_server_common(enum server_exit_reason how,
 	print_notify_send_messages(smbd_messaging_context(), 3);
 
 	/* delete our entry in the serverid database. */
-	serverid_deregister_self();
+	if (am_parent) {
+		/*
+		 * For children the parent takes care of cleaning up
+		 */
+		serverid_deregister_self();
+	}
 
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
