@@ -33,12 +33,11 @@
  called when a session is created
 ********************************************************************/
 
-bool session_claim(user_struct *vuser)
+bool session_claim(struct server_id pid, user_struct *vuser)
 {
 	TDB_DATA data;
 	int i = 0;
 	struct sessionid sessionid;
-	struct server_id pid = procid_self();
 	fstring keystr;
 	const char * hostname;
 	struct db_record *rec;

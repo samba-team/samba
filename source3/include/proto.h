@@ -6221,7 +6221,7 @@ void close_cnum(connection_struct *conn, uint16 vuid);
 /* The following definitions come from smbd/session.c  */
 
 bool session_init(void);
-bool session_claim(user_struct *vuser);
+bool session_claim(struct server_id pid, user_struct *vuser);
 void session_yield(user_struct *vuser);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 

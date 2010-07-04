@@ -444,7 +444,8 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 			register_homes_share(session->server_info->unix_name);
 	}
 
-	if (!session_claim(session->compat_vuser)) {
+	if (!session_claim(sconn_server_id(session->sconn),
+			   session->compat_vuser)) {
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%d\n",
 			session->compat_vuser->vuid));
@@ -662,7 +663,8 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 			register_homes_share(session->server_info->unix_name);
 	}
 
-	if (!session_claim(session->compat_vuser)) {
+	if (!session_claim(sconn_server_id(session->sconn),
+			   session->compat_vuser)) {
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%d\n",
 			session->compat_vuser->vuid));

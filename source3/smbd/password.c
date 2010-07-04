@@ -302,7 +302,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		"and will be vuid %u\n", (int)vuser->server_info->utok.uid,
 		 vuser->server_info->unix_name, vuser->vuid));
 
-	if (!session_claim(vuser)) {
+	if (!session_claim(sconn_server_id(sconn), vuser)) {
 		DEBUG(1, ("register_existing_vuid: Failed to claim session "
 			"for vuid=%d\n",
 			vuser->vuid));
