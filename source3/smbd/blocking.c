@@ -754,7 +754,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 			if (br_lck) {
 				brl_lock_cancel(br_lck,
 					blr->smblctx,
-					procid_self(),
+					sconn_server_id(sconn),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
@@ -791,7 +791,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 
 				brl_lock_cancel(br_lck,
 					blr->smblctx,
-					procid_self(),
+					sconn_server_id(sconn),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
