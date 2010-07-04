@@ -37,6 +37,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -87,7 +88,7 @@ void init_strict_lock_struct(files_struct *fsp,
 
 	plock->context.smblctx = smblctx;
         plock->context.tid = fsp->conn->cnum;
-        plock->context.pid = procid_self();
+        plock->context.pid = sconn_server_id(fsp->conn->sconn);
         plock->start = start;
         plock->size = size;
         plock->fnum = fsp->fnum;
