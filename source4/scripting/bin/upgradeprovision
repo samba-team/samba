@@ -56,7 +56,9 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
                                  updateOEMInfo, getOEMInfo, update_gpo,
                                  delta_update_basesamdb, update_policyids,
-                                 update_machine_account_password)
+                                 update_machine_account_password,
+                                 search_constructed_attrs_stored,
+                                 increment_calculated_keyversion_number)
 
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
@@ -1299,6 +1301,23 @@ def backup_provision(paths, dir):
     else:
         shutil.copytree(samldbdir, os.path.join(dir, "sam.ldb.d"))
 
+
+
+
+def sync_calculated_attributes(samdb, names):
+   """Synchronize attributes used for constructed ones, with the
+      old constructed that were stored in the database.
+
+      This apply for instance to msds-keyversionnumber that was
+      stored and that is now constructed from replpropertymetadata.
+
+      :param samdb: An LDB object attached to the currently upgraded samdb
+      :param names: Various key parameter about current provision.
+   """
+   listAttrs = ["msDs-KeyVersionAttribute"]
+   hash = search_constructed_attrs_stored(samdb, names.rootdn, listAttrs)
+   increment_calculated_keyversion_number(samdb, names.rootdn, hash)
+
 def setup_path(file):
     return os.path.join(setup_dir, file)
 
@@ -1546,6 +1565,8 @@ if __name__ == '__main__':
                 new_ldbs.groupedRollback()
                 shutil.rmtree(provisiondir)
                 sys.exit(1)
+            else:
+                sync_calculated_attributes(ldbs.sam, names)
         # 14)
         update_secrets(new_ldbs.secrets, ldbs.secrets, message)
         # 15)
