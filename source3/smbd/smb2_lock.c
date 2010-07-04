@@ -635,10 +635,10 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	blr->blr_private = NULL;
 
 	/* Add a pending lock record for this. */
-	status = brl_lock(smbd_messaging_context(),
+	status = brl_lock(sconn->msg_ctx,
 			br_lck,
 			smblctx,
-			procid_self(),
+			sconn_server_id(sconn),
 			offset,
 			count,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
