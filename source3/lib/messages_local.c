@@ -381,7 +381,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 	rec[msg_array->num_messages].msg_version = MESSAGE_VERSION;
 	rec[msg_array->num_messages].msg_type = msg_type & MSG_TYPE_MASK;
 	rec[msg_array->num_messages].dest = pid;
-	rec[msg_array->num_messages].src = procid_self();
+	rec[msg_array->num_messages].src = msg_ctx->id;
 	rec[msg_array->num_messages].buf = *data;
 
 	msg_array->messages = rec;
@@ -408,15 +408,16 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 }
 
 /****************************************************************************
- Retrieve all messages for the current process.
+ Retrieve all messages for a process.
 ****************************************************************************/
 
 static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
+				      struct server_id id,
 				      TALLOC_CTX *mem_ctx,
 				      struct messaging_array **presult)
 {
 	struct messaging_array *result;
-	TDB_DATA key = message_key_pid(mem_ctx, procid_self());
+	TDB_DATA key = message_key_pid(mem_ctx, id);
 	NTSTATUS status;
 
 	if (tdb_chainlock(msg_tdb, key) == -1) {
@@ -464,7 +465,7 @@ static void message_dispatch(struct messaging_context *msg_ctx)
 	DEBUG(10, ("message_dispatch: received_messages = %d\n",
 		   ctx->received_messages));
 
-	status = retrieve_all_messages(tdb->tdb, NULL, &msg_array);
+	status = retrieve_all_messages(tdb->tdb, msg_ctx->id, NULL, &msg_array);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("message_dispatch: failed to retrieve messages: %s\n",
 			   nt_errstr(status)));

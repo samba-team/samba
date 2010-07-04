@@ -80,7 +80,7 @@ static NTSTATUS messaging_ctdb_send(struct messaging_context *msg_ctx,
 	msg.msg_version	= MESSAGE_VERSION;
 	msg.msg_type	= msg_type;
 	msg.dest	= pid;
-	msg.src		= procid_self();
+	msg.src		= msg_ctx->id;
 	msg.buf		= *data;
 
 	return ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
