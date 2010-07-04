@@ -663,7 +663,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!sconn->smb2.locks.blocking_lock_unlock_state) {
-		messaging_register(smbd_messaging_context(), NULL,
+		messaging_register(sconn->msg_ctx, NULL,
 				MSG_SMB_UNLOCK, received_unlock_msg);
 		sconn->smb2.locks.blocking_lock_unlock_state = true;
         }
