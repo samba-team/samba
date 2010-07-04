@@ -127,6 +127,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 struct server_id server_id, 
 					 struct event_context *ev);
 
+struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
+
 /*
  * re-init after a fork
  */

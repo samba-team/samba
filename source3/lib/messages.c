@@ -223,6 +223,11 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	return ctx;
 }
 
+struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
+{
+	return msg_ctx->id;
+}
+
 /*
  * re-init after a fork
  */
