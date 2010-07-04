@@ -512,7 +512,8 @@ static bool process_trans2(struct blocking_lock_record *blr)
 {
 	char params[2];
 	NTSTATUS status;
-	struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
+	struct byte_range_lock *br_lck = do_lock(
+						blr->fsp->conn->sconn->msg_ctx,
 						blr->fsp,
 						blr->smblctx,
 						blr->count,
