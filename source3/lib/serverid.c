@@ -117,6 +117,58 @@ done:
 	return ret;
 }
 
+bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
+				 uint32_t msg_flags)
+{
+	struct db_context *db;
+	struct serverid_key key;
+	struct serverid_data *data;
+	struct db_record *rec;
+	TDB_DATA tdbkey, tdbdata;
+	NTSTATUS status;
+	bool ret = false;
+
+	db = serverid_db();
+	if (db == NULL) {
+		return false;
+	}
+
+	serverid_fill_key(&id, &key);
+	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
+
+	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
+	if (rec == NULL) {
+		DEBUG(1, ("Could not fetch_lock serverid.tdb record\n"));
+		return false;
+	}
+
+	if (rec->value.dsize != sizeof(struct serverid_data)) {
+		DEBUG(1, ("serverid record has unexpected size %d "
+			  "(wanted %d)\n", (int)rec->value.dsize,
+			  sizeof(struct serverid_data)));
+		goto done;
+	}
+
+	data = (struct serverid_data *)rec->value.dptr;
+
+	if (do_reg) {
+		data->msg_flags |= msg_flags;
+	} else {
+		data->msg_flags &= ~msg_flags;
+	}
+
+	status = rec->store(rec, tdbdata, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Storing serverid.tdb record failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+	ret = true;
+done:
+	TALLOC_FREE(rec);
+	return ret;
+}
+
 bool serverid_deregister(struct server_id id)
 {
 	struct db_context *db;

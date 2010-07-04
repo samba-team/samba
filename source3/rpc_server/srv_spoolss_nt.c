@@ -185,7 +185,9 @@ static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle
         	/* Tell the connections db we're no longer interested in
 		 * printer notify messages. */
 
-		register_message_flags(false, FLAG_MSG_PRINT_NOTIFY);
+		serverid_register_msg_flags(
+			procid_self(),
+			false, FLAG_MSG_PRINT_NOTIFY);
 	}
 
 	smb_connections--;
@@ -2355,7 +2357,9 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 				   receive_notify2_message_list);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
-		register_message_flags(true, FLAG_MSG_PRINT_NOTIFY);
+		serverid_register_msg_flags(
+			procid_self(),
+			true, FLAG_MSG_PRINT_NOTIFY);
 	}
 
 	/*
