@@ -187,8 +187,8 @@ static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 	 * Use memcmp, not direct compare. data.dptr might not be
 	 * aligned.
 	 */
-	state->exists =
-		(memcmp(&unique_id, data.dptr, sizeof(unique_id)) == 0);
+	state->exists = (memcmp(&state->id->unique_id, data.dptr,
+				sizeof(unique_id)) == 0);
 	return 0;
 }
 
