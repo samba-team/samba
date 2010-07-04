@@ -27,6 +27,11 @@ struct serverid_key {
 #endif
 };
 
+struct serverid_data {
+	uint64_t unique_id;
+	uint32_t msg_flags;
+};
+
 bool serverid_parent_init(void)
 {
 	struct tdb_wrap *db;
@@ -48,11 +53,6 @@ bool serverid_parent_init(void)
 	}
 	return true;
 }
-
-struct serverid_data {
-	uint64_t unique_id;
-	uint32_t msg_flags;
-};
 
 static struct db_context *serverid_db(void)
 {
