@@ -6420,7 +6420,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		(double)offset ));
 
 	if (lock_type == UNLOCK_LOCK) {
-		status = do_unlock(smbd_messaging_context(),
+		status = do_unlock(req->sconn->msg_ctx,
 				fsp,
 				smblctx,
 				count,
@@ -6429,7 +6429,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	} else {
 		uint64_t block_smblctx;
 
-		struct byte_range_lock *br_lck = do_lock(smbd_messaging_context(),
+		struct byte_range_lock *br_lck = do_lock(req->sconn->msg_ctx,
 							fsp,
 							smblctx,
 							count,
