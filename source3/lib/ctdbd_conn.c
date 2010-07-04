@@ -135,7 +135,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, sockname, sizeof(addr.sun_path));
 
-	if (sys_connect(fd, (struct sockaddr *)&addr) == -1) {
+	if (sys_connect(fd, (struct sockaddr *)(void *)&addr) == -1) {
 		DEBUG(1, ("connect(%s) failed: %s\n", sockname,
 			  strerror(errno)));
 		close(fd);
@@ -1274,15 +1274,15 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 	switch (client.ss_family) {
 	case AF_INET:
-		p4.dest = *(struct sockaddr_in *)&server;
-		p4.src = *(struct sockaddr_in *)&client;
+		p4.dest = *(struct sockaddr_in *)(void *)&server;
+		p4.src = *(struct sockaddr_in *)(void *)&client;
 		data.dptr = (uint8_t *)&p4;
 		data.dsize = sizeof(p4);
 		break;
 #ifdef HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR
 	case AF_INET6:
-		p.dest.ip6 = *(struct sockaddr_in6 *)&server;
-		p.src.ip6 = *(struct sockaddr_in6 *)&client;
+		p.dest.ip6 = *(struct sockaddr_in6 *)(void *)&server;
+		p.src.ip6 = *(struct sockaddr_in6 *)(void *)&client;
 		data.dptr = (uint8_t *)&p;
 		data.dsize = sizeof(p);
 		break;
