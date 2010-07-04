@@ -703,7 +703,7 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 	for(i = blr->lock_num - 1; i >= 0; i--) {
 		struct smbd_lock_element *e = &state->locks[i];
 
-		do_unlock(smbd_messaging_context(),
+		do_unlock(blr->fsp->conn->sconn->msg_ctx,
 			blr->fsp,
 			e->smblctx,
 			e->count,
