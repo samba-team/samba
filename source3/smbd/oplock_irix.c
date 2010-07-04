@@ -283,7 +283,7 @@ static void irix_oplocks_read_fde_handler(struct event_context *ev,
 	files_struct *fsp;
 
 	fsp = irix_oplock_receive_message(ctx->ctx);
-	break_kernel_oplock(smbd_messaging_context(), fsp);
+	break_kernel_oplock(fsp->conn->sconn->msg_ctx, fsp);
 }
 
 /****************************************************************************
