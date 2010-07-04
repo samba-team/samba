@@ -301,7 +301,8 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 		if (fsp) {
 			fsp->last_lock_failure.context.smblctx = blr->smblctx;
 			fsp->last_lock_failure.context.tid = fsp->conn->cnum;
-			fsp->last_lock_failure.context.pid = procid_self();
+			fsp->last_lock_failure.context.pid =
+				sconn_server_id(fsp->conn->sconn);
 			fsp->last_lock_failure.start = blr->offset;
 			fsp->last_lock_failure.size = blr->count;
 			fsp->last_lock_failure.fnum = fsp->fnum;
