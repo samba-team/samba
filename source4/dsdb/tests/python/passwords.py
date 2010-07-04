@@ -93,12 +93,8 @@ class PasswordTests(samba.tests.TestCase):
         # command line credentials for informations like the domain, the realm
         # and the workstation.
         creds2 = Credentials()
-        # FIXME: Reactivate the user credentials when we have user password
-        # change support also on the ACL level in s4
-        creds2.set_username(creds.get_username())
-        creds2.set_password(creds.get_password())
-        #creds2.set_username("testuser")
-        #creds2.set_password("thatsAcomplPASS1")
+        creds2.set_username("testuser")
+        creds2.set_password("thatsAcomplPASS1")
         creds2.set_domain(creds.get_domain())
         creds2.set_realm(creds.get_realm())
         creds2.set_workstation(creds.get_workstation())
@@ -338,8 +334,7 @@ userPassword: thatsAcomplPASS1
 """)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -425,8 +420,7 @@ userPassword: thatsAcomplPASS2
 """)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -456,8 +450,7 @@ userPassword: thatsAcomplPASS2
 """)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
             ldb.modify_ldif("""
@@ -487,8 +480,7 @@ userPassword: thatsAcomplPASS3
 """)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # Reverse order does work
         self.ldb2.modify_ldif("""
