@@ -223,6 +223,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *search_req;
 	struct subtree_rename_context *ac;
 	int ret;
+
 	if (ldb_dn_is_special(req->op.rename.olddn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
@@ -233,9 +234,9 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	   - Do a search for all entires under this entry 
 	   - Wait for these results to appear
 	   - In the callback for each result, issue a modify request
-	    - That will include this rename, we hope
+	   - That will include this rename, we hope
 	   - Wait for each modify result
-	   - Regain our sainity 
+	   - Regain our sanity
 	*/
 
 	ac = subren_ctx_init(module, req);
@@ -270,5 +271,5 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 
 _PUBLIC_ const struct ldb_module_ops ldb_subtree_rename_module_ops = {
 	.name		   = "subtree_rename",
-	.rename            = subtree_rename,
+	.rename            = subtree_rename
 };
