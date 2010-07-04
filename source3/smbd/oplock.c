@@ -47,7 +47,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 	/* Don't need to be root here as we're only ever
 	   sending to ourselves. */
 
-	messaging_send_buf(msg_ctx, procid_self(),
+	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
 			   MSG_SMB_KERNEL_BREAK,
 			   msg, MSG_SMB_KERNEL_BREAK_SIZE);
 }
