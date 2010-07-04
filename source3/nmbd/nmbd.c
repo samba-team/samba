@@ -255,8 +255,9 @@ static void reload_interfaces(time_t t)
 			continue;
 		}
 
-		ip = ((struct sockaddr_in *)&iface->ip)->sin_addr;
-		nmask = ((struct sockaddr_in *)&iface->netmask)->sin_addr;
+		ip = ((struct sockaddr_in *)(void *)&iface->ip)->sin_addr;
+		nmask = ((struct sockaddr_in *)(void *)
+			 &iface->netmask)->sin_addr;
 
 		/*
 		 * We don't want to add a loopback interface, in case
@@ -264,7 +265,7 @@ static void reload_interfaces(time_t t)
 		 * ignore it here. JRA.
 		 */
 
-		if (is_loopback_addr((struct sockaddr *)&iface->ip)) {
+		if (is_loopback_addr((struct sockaddr *)(void *)&iface->ip)) {
 			DEBUG(2,("reload_interfaces: Ignoring loopback "
 				"interface %s\n",
 				print_sockaddr(str, sizeof(str), &iface->ip) ));
@@ -303,8 +304,10 @@ static void reload_interfaces(time_t t)
 					"ignoring non IPv4 interface.\n"));
 				continue;
 			}
-			ip = ((struct sockaddr_in *)&iface->ip)->sin_addr;
-			nmask = ((struct sockaddr_in *)&iface->netmask)->sin_addr;
+			ip = ((struct sockaddr_in *)(void *)
+			      &iface->ip)->sin_addr;
+			nmask = ((struct sockaddr_in *)(void *)
+				 &iface->netmask)->sin_addr;
 			if (ip_equal_v4(ip, subrec->myip) &&
 			    ip_equal_v4(nmask, subrec->mask_ip)) {
 				break;
@@ -434,7 +437,7 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 	}
 
 	in_addr_to_sockaddr_storage(&ss, p->ip);
-	pss = iface_ip((struct sockaddr *)&ss);
+	pss = iface_ip((struct sockaddr *)(void *)&ss);
 
 	if (pss == NULL) {
 		DEBUG(2, ("Could not find ip for packet from %u\n",

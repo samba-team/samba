@@ -355,7 +355,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	pid_t pid = 0;
 	uint64_t unique_id;
 
-	smbd_set_server_fd(accept(s->fd,(struct sockaddr *)&addr,&in_addrlen));
+	smbd_set_server_fd(accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen));
 
 	if (smbd_server_fd() == -1 && errno == EINTR)
 		return;
