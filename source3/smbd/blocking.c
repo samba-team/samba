@@ -222,7 +222,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->blr_private = NULL;
 
 	/* Add a pending lock record for this. */
-	status = brl_lock(smbd_messaging_context(),
+	status = brl_lock(req->sconn->msg_ctx,
 			br_lck,
 			smblctx,
 			procid_self(),
@@ -248,7 +248,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!sconn->smb1.locks.blocking_lock_unlock_state) {
-		messaging_register(smbd_messaging_context(), NULL,
+		messaging_register(sconn->msg_ctx, NULL,
 				   MSG_SMB_UNLOCK, received_unlock_msg);
 		sconn->smb1.locks.blocking_lock_unlock_state = true;
 	}
