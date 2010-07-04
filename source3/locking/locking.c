@@ -1111,7 +1111,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 				  uid_t uid, uint64_t mid, uint16 op_type)
 {
 	ZERO_STRUCTP(e);
-	e->pid = procid_self();
+	e->pid = sconn_server_id(fsp->conn->sconn);
 	e->share_access = fsp->share_access;
 	e->private_options = fsp->fh->private_options;
 	e->access_mask = fsp->access_mask;
