@@ -3348,9 +3348,10 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type);
 void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 		       struct timeval request_time,
-		       struct file_id id);
+		       struct server_id pid, struct file_id id);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
-void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid);
+void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
+			     struct server_id pid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
@@ -5839,7 +5840,8 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options,
 				 uint32_t *pprivate_flags);
-void remove_deferred_open_entry(struct file_id id, uint64_t mid);
+void remove_deferred_open_entry(struct file_id id, uint64_t mid,
+				struct server_id pid);
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);

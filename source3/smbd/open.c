@@ -1090,7 +1090,8 @@ static void defer_open(struct share_mode_lock *lck,
 				       state->id, (char *)state, sizeof(*state))) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
-	add_deferred_open(lck, req->mid, request_time, state->id);
+	add_deferred_open(lck, req->mid, request_time,
+			  sconn_server_id(req->sconn), state->id);
 }
 
 
@@ -1454,14 +1455,15 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
  Remove the deferred open entry under lock.
 ****************************************************************************/
 
-void remove_deferred_open_entry(struct file_id id, uint64_t mid)
+void remove_deferred_open_entry(struct file_id id, uint64_t mid,
+				struct server_id pid)
 {
 	struct share_mode_lock *lck = get_share_mode_lock(talloc_tos(), id,
 			NULL, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0, ("could not get share mode lock\n"));
 	} else {
-		del_deferred_open_entry(lck, mid);
+		del_deferred_open_entry(lck, mid, pid);
 		TALLOC_FREE(lck);
 	}
 }
@@ -1574,7 +1576,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			   see if this has timed out. */
 
 			/* Remove the deferred open entry under lock. */
-			remove_deferred_open_entry(state->id, req->mid);
+			remove_deferred_open_entry(
+				state->id, req->mid,
+				sconn_server_id(req->sconn));
 
 			/* Ensure we don't reprocess this message. */
 			remove_deferred_open_message_smb(req->mid);
@@ -2271,7 +2275,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* If this is a successful open, we must remove any deferred open
 	 * records. */
 	if (req != NULL) {
-		del_deferred_open_entry(lck, req->mid);
+		del_deferred_open_entry(lck, req->mid,
+					sconn_server_id(req->sconn));
 	}
 	TALLOC_FREE(lck);
 

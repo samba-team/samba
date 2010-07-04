@@ -1127,10 +1127,12 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,
 				     const struct timeval request_time,
-				     struct file_id id, uint64_t mid)
+				     struct file_id id,
+				     struct server_id pid,
+				     uint64_t mid)
 {
 	ZERO_STRUCTP(e);
-	e->pid = procid_self();
+	e->pid = pid;
 	e->op_mid = mid;
 	e->op_type = DEFERRED_OPEN_ENTRY;
 	e->time.tv_sec = request_time.tv_sec;
@@ -1171,10 +1173,10 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 
 void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 		       struct timeval request_time,
-		       struct file_id id)
+		       struct server_id pid, struct file_id id)
 {
 	struct share_mode_entry entry;
-	fill_deferred_open_entry(&entry, request_time, id, mid);
+	fill_deferred_open_entry(&entry, request_time, id, pid, mid);
 	add_share_mode_entry(lck, &entry);
 }
 
@@ -1248,12 +1250,13 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
-void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid)
+void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
+			     struct server_id pid)
 {
 	struct share_mode_entry entry, *e;
 
 	fill_deferred_open_entry(&entry, timeval_zero(),
-				 lck->id, mid);
+				 lck->id, pid, mid);
 
 	e = find_share_mode_entry(lck, &entry);
 	if (e == NULL) {

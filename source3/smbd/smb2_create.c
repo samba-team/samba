@@ -1155,7 +1155,8 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 	smb2req = state->smb2req;
 	mid = get_mid_from_smb2req(smb2req);
 
-	remove_deferred_open_entry(state->id, mid);
+	remove_deferred_open_entry(state->id, mid,
+				   sconn_server_id(smb2req->sconn));
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
 	smb2req->cancelled = true;
 
