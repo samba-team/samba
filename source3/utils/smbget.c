@@ -49,7 +49,8 @@ static const char *username = NULL, *password = NULL, *workgroup = NULL;
 static int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0, verbose = 0, send_stdout = 0;
 static int blocksize = SMB_DEFAULT_BLOCKSIZE;
 
-static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile);
+static int smb_download_file(const char *base, const char *name, int recursive,
+			     int resume, int toplevel, char *outfile);
 
 static int get_num_cols(void)
 {
@@ -135,7 +136,10 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 	/* List files in directory and call smb_download_file on them */
 	dirhandle = smbc_opendir(path);
 	if(dirhandle < 1) {
-		if(errno == ENOTDIR) return smb_download_file(base, name, 1, resume, NULL);
+		if (errno == ENOTDIR) {
+			return smb_download_file(base, name, 1, resume,
+						 0, NULL);
+		}
 		fprintf(stderr, "Can't open directory %s: %s\n", path, strerror(errno));
 		return 1;
 	}
@@ -165,7 +169,8 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 			break;
 
 		case SMBC_FILE:
-			ret = smb_download_file(base, newname, 1, resume, NULL);
+			ret = smb_download_file(base, newname, 1, resume, 0,
+						NULL);
 			break;
 
 		case SMBC_FILE_SHARE:
@@ -266,7 +271,9 @@ static void print_progress(const char *name, time_t start, time_t now, off_t sta
 
 /* Return 1 on error, 0 on success. */
 
-static int smb_download_file(const char *base, const char *name, int recursive, int resume, char *outfile) {
+static int smb_download_file(const char *base, const char *name, int recursive,
+			     int resume, int toplevel, char *outfile)
+{
 	int remotehandle, localhandle;
 	time_t start_time = time(NULL);
 	const char *newpath;
@@ -322,7 +329,9 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 		if(newpath)newpath++; else newpath = base;
 	} else newpath = name;
 
-	if(newpath[0] == '/')newpath++;
+	if (!toplevel && (newpath[0] == '/')) {
+		newpath++;
+	}
 
 	/* Open local file according to the mode */
 	if(update) {
@@ -659,7 +668,8 @@ int main(int argc, const char **argv)
 
 	while ( (file = poptGetArg(pc)) ) {
 		if (!recursive) 
-			ret = smb_download_file(file, "", recursive, resume, outputfile);
+			ret = smb_download_file(file, "", recursive, resume,
+						1, outputfile);
 		else 
 			ret = smb_download_dir(file, "", resume);
 	}
