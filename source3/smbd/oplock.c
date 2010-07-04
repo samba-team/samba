@@ -638,7 +638,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 
 		share_mode_entry_to_message(msg, e);
 
-		messaging_send_buf(smbd_messaging_context(), e->pid,
+		messaging_send_buf(fsp->conn->sconn->msg_ctx, e->pid,
 				   MSG_SMB_BREAK_RESPONSE,
 				   (uint8 *)msg,
 				   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
