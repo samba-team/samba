@@ -448,7 +448,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		 * request would never have been queued. JRA.
 		 */
 		errno = 0;
-		br_lck = do_lock(smbd_messaging_context(),
+		br_lck = do_lock(fsp->conn->sconn->msg_ctx,
 				fsp,
 				smblctx,
 				count,
