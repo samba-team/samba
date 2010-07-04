@@ -186,7 +186,7 @@ static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle
 		 * printer notify messages. */
 
 		serverid_register_msg_flags(
-			procid_self(),
+			messaging_server_id(smbd_messaging_context()),
 			false, FLAG_MSG_PRINT_NOTIFY);
 	}
 
@@ -2359,7 +2359,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
 		serverid_register_msg_flags(
-			procid_self(),
+			messaging_server_id(smbd_messaging_context()),
 			true, FLAG_MSG_PRINT_NOTIFY);
 	}
 
