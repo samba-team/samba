@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell <tridge@samba.org> 2009
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
    Copyright (C) Simo Sorce <idra@samba.org> 2008
+   Copyright (C) Matthias Dieter Wallnöfer 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,9 +24,9 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb subtree delete (prevention) module
+ *  Component: ldb subtree delete module
  *
- *  Description: Prevent deletion of a subtree in LDB
+ *  Description: Delete of a subtree in LDB
  *
  *  Author: Andrew Bartlett
  */
