@@ -35,8 +35,9 @@ import ldb
 from samba.provision import (ProvisionNames, provision_paths_from_lp,
                             getpolicypath, set_gpo_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
-                            setsysvolacl)
+                            setsysvolacl, secretsdb_self_join)
 from samba.dcerpc import misc, security, xattr
+from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
 
@@ -769,6 +770,48 @@ def construct_existor_expr(attrs):
             expr = "%s(%s=*)"%(expr,att)
         expr = "%s)"%expr
     return expr
+
+def update_machine_account_password(samdb, secrets_ldb, names):
+    """Update (change) the password of the current DC both in the SAM db and in
+       secret one
+
+    :param samdb: An LDB object related to the sam.ldb file of a given provision
+    :param secrets_ldb: An LDB object related to the secrets.ldb file of a given
+                        provision
+    :param names: List of key provision parameters"""
+
+    expression = "samAccountName=%s$" % names.netbiosname
+    secrets_msg = secrets_ldb.search(expression=expression,
+                                        attrs=["secureChannelType"])
+    if int(secrets_msg[0]["secureChannelType"][0]) == SEC_CHAN_BDC:
+        res = samdb.search(expression=expression, attrs=[])
+        assert(len(res) == 1)
+
+        msg = ldb.Message(res[0].dn)
+        machinepass = samba.generate_random_password(128, 255)
+        msg["userPassword"] = ldb.MessageElement(machinepass,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "userPassword")
+        samdb.modify(msg)
+
+        res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
+                     attrs=["msDs-keyVersionNumber"])
+        assert(len(res) == 1)
+        kvno = int(str(res[0]["msDs-keyVersionNumber"]))
+        secChanType = int(secrets_msg[0]["secureChannelType"][0])
+
+        secretsdb_self_join(secrets_ldb, domain=names.domain,
+                    realm=names.realm,
+                    domainsid=names.domainsid,
+                    dnsdomain=names.dnsdomain,
+                    netbiosname=names.netbiosname,
+                    machinepass=machinepass,
+                    key_version_number=kvno,
+                    secure_channel_type=secChanType)
+    else:
+        raise ProvisioningError("Unable to find a Secure Channel"
+                                "of type SEC_CHAN_BDC")
+
 
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are

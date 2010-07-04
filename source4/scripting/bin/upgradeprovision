@@ -43,20 +43,20 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 MessageElement, Message, Dn)
 from samba import param
 from samba.provision import (find_setup_dir, get_domain_descriptor,
-                            get_config_descriptor, secretsdb_self_join,
+                            get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security, drsblobs
 from samba.ndr import ndr_unpack
-from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  find_provision_key_parameters, get_ldbs,
                                  usn_in_range, identic_rename, get_diff_sddls,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
                                  updateOEMInfo, getOEMInfo, update_gpo,
-                                 delta_update_basesamdb, update_policyids)
+                                 delta_update_basesamdb, update_policyids,
+                                 update_machine_account_password)
 
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
@@ -1185,48 +1185,6 @@ def update_samdb(ref_samdb, samdb, names, highestUSN, schema):
         return 0
 
 
-def update_machine_account_password(samdb, secrets_ldb, names):
-    """Update (change) the password of the current DC both in the SAM db and in
-       secret one
-
-    :param samdb: An LDB object related to the sam.ldb file of a given provision
-    :param secrets_ldb: An LDB object related to the secrets.ldb file of a given
-                        provision
-    :param names: List of key provision parameters"""
-
-    message(SIMPLE, "Update machine account")
-    expression = "samAccountName=%s$" % names.netbiosname
-    secrets_msg = secrets_ldb.search(expression=expression,
-                                        attrs=["secureChannelType"])
-    if int(secrets_msg[0]["secureChannelType"][0]) == SEC_CHAN_BDC:
-        res = samdb.search(expression=expression, attrs=[])
-        assert(len(res) == 1)
-
-        msg = Message(res[0].dn)
-        machinepass = samba.generate_random_password(128, 255)
-        msg["userPassword"] = MessageElement(machinepass, FLAG_MOD_REPLACE,
-                                                "userPassword")
-        samdb.modify(msg)
-
-        res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
-                     attrs=["msDs-keyVersionNumber"])
-        assert(len(res) == 1)
-        kvno = int(str(res[0]["msDs-keyVersionNumber"]))
-        secChanType = int(secrets_msg[0]["secureChannelType"][0])
-
-        secretsdb_self_join(secrets_ldb, domain=names.domain,
-                    realm=names.realm or sambaopts._lp.get('realm'),
-                    domainsid=names.domainsid,
-                    dnsdomain=names.dnsdomain,
-                    netbiosname=names.netbiosname,
-                    machinepass=machinepass,
-                    key_version_number=kvno,
-                    secure_channel_type=secChanType)
-    else:
-        raise ProvisioningError("Unable to find a Secure Channel" 
-                                "of type SEC_CHAN_BDC")
-
-
 
 def setup_path(file):
     return os.path.join(setup_dir, file)
@@ -1455,14 +1413,14 @@ if __name__ == '__main__':
 
     # 12)
     schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn),
-                    serverdn=str(names.serverdn))
+                     serverdn=str(names.serverdn))
     # 13)
     if opts.full:
         if not update_samdb(new_ldbs.sam, ldbs.sam, names, lastProvisionUSNs,
                             schema):
-            message(SIMPLE, "Rollbacking every changes. Check the reason" 
+            message(SIMPLE, "Rollbacking every changes. Check the reason"
                             " of the problem")
-            message(SIMPLE, "In any case your system as it was before" 
+            message(SIMPLE, "In any case your system as it was before"
                             " the upgrade")
             ldbs.groupedRollback()
             new_ldbs.groupedRollback()
@@ -1471,6 +1429,7 @@ if __name__ == '__main__':
     # 14)
     update_secrets(new_ldbs.secrets, ldbs.secrets, message)
     # 15)
+    message(SIMPLE, "Update machine account")
     update_machine_account_password(ldbs.sam, ldbs.secrets, names)
 
     # 16) SD should be created with admin but as some previous acl were so wrong
