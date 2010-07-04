@@ -97,7 +97,7 @@ static void exit_server_common(enum server_exit_reason how,
 		/*
 		 * For children the parent takes care of cleaning up
 		 */
-		serverid_deregister(procid_self());
+		serverid_deregister(sconn_server_id(sconn));
 	}
 
 #ifdef WITH_DFS
