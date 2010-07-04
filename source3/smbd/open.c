@@ -913,7 +913,7 @@ static NTSTATUS send_break_message(files_struct *fsp,
 			exclusive->op_type | FORCE_OPLOCK_BREAK_TO_NONE);
 	}
 
-	status = messaging_send_buf(smbd_messaging_context(), exclusive->pid,
+	status = messaging_send_buf(fsp->conn->sconn->msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
 				    (uint8 *)msg,
 				    MSG_SMB_SHARE_MODE_ENTRY_SIZE);
