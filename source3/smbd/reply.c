@@ -4848,7 +4848,7 @@ void reply_lock(struct smb_request *req)
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
-	br_lck = do_lock(smbd_messaging_context(),
+	br_lck = do_lock(req->sconn->msg_ctx,
 			fsp,
 			(uint64_t)req->smbpid,
 			count,
