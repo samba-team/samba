@@ -130,7 +130,7 @@ static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq)
 	uint16_t out_output_buffer_offset;
 	DATA_BLOB out_output_buffer = data_blob_null;
 	NTSTATUS status;
-	NTSTATUS call_status;
+	NTSTATUS call_status = NT_STATUS_OK;
 	NTSTATUS error; /* transport error */
 
 	status = smbd_smb2_getinfo_recv(subreq,
