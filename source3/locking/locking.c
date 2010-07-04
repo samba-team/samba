@@ -375,7 +375,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 
 	ok = brl_lock_cancel(br_lck,
 			smblctx,
-			procid_self(),
+			sconn_server_id(fsp->conn->sconn),
 			offset,
 			count,
 			lock_flav,
