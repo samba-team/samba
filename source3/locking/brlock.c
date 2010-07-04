@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -1483,7 +1484,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 	unsigned int i, j, dcount=0;
 	int num_deleted_windows_locks = 0;
 	struct lock_struct *locks = br_lck->lock_data;
-	struct server_id pid = procid_self();
+	struct server_id pid = sconn_server_id(fsp->conn->sconn);
 	bool unlock_individually = False;
 	bool posix_level2_contention_ended = false;
 
