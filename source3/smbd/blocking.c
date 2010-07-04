@@ -361,7 +361,7 @@ static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS stat
 		 * request would never have been queued. JRA.
 		 */
 
-		do_unlock(smbd_messaging_context(),
+		do_unlock(fsp->conn->sconn->msg_ctx,
 			fsp,
 			smblctx,
 			count,
