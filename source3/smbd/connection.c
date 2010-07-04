@@ -139,13 +139,11 @@ bool claim_connection(connection_struct *conn, const char *name)
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
 	crec.pid = procid_self();
-	crec.cnum = conn?conn->cnum:-1;
-	if (conn) {
-		crec.uid = conn->server_info->utok.uid;
-		crec.gid = conn->server_info->utok.gid;
-		strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
-			sizeof(crec.servicename));
-	}
+	crec.cnum = conn->cnum;
+	crec.uid = conn->server_info->utok.uid;
+	crec.gid = conn->server_info->utok.gid;
+	strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
+		sizeof(crec.servicename));
 	crec.start = time(NULL);
 
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
