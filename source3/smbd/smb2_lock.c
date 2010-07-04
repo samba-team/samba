@@ -910,7 +910,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 		/* Remove the entries from the lock db. */
 		brl_lock_cancel(br_lck,
 				blr->smblctx,
-				procid_self(),
+				sconn_server_id(sconn),
 				blr->offset,
 				blr->count,
 				blr->lock_flav,
