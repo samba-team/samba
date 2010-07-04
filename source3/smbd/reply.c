@@ -3231,7 +3231,7 @@ void reply_lockread(struct smb_request *req)
 	 * Note that the requested lock size is unaffected by max_recv.
 	 */
 
-	br_lck = do_lock(smbd_messaging_context(),
+	br_lck = do_lock(req->sconn->msg_ctx,
 			fsp,
 			(uint64_t)req->smbpid,
 			(uint64_t)numtoread,
