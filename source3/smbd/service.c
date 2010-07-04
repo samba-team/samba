@@ -887,7 +887,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if ((!conn->printer) && (!conn->ipc)) {
 		conn->notify_ctx = notify_init(conn,
 					       sconn_server_id(sconn),
-					       smbd_messaging_context(),
+					       sconn->msg_ctx,
 					       smbd_event_context(),
 					       conn);
 	}
