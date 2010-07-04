@@ -902,7 +902,7 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 	memcpy(msg, &blr, sizeof(blr));
 	memcpy(&msg[sizeof(blr)], &err, sizeof(NTSTATUS));
 
-	messaging_send_buf(sconn->msg_ctx, procid_self(),
+	messaging_send_buf(sconn->msg_ctx, sconn_server_id(sconn),
 			   MSG_SMB_BLOCKING_LOCK_CANCEL,
 			   (uint8 *)&msg, sizeof(msg));
 
