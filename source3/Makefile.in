@@ -384,6 +384,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/interfaces.o lib/memcache.o \
 	  lib/talloc_dict.o \
 	  lib/serverid.o \
+	  lib/util_sconn.o \
 	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
