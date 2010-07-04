@@ -325,7 +325,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 	ok = brl_unlock(msg_ctx,
 			br_lck,
 			smblctx,
-			procid_self(),
+			sconn_server_id(fsp->conn->sconn),
 			offset,
 			count,
 			lock_flav);
