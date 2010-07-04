@@ -15,7 +15,8 @@ samba.ensure_external_module("testtools", "testtools")
 import samba.getopt as options
 
 from ldb import (
-    SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+    SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT,
+    ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
@@ -1077,7 +1078,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         desc = self.read_desc(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         try:
-            self.ldb_user2.modify_ldif("""
+            self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
@@ -1093,14 +1094,11 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
     def test_change_password3(self):
         """Make sure WP has no influence"""
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
-        sddl = desc.as_sddl(self.domain_sid)
-        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
         mod = "(D;;WP;;;PS)"
         self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         desc = self.read_desc(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
-        self.ldb_user2.modify_ldif("""
+        self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 delete: unicodePwd
@@ -1108,6 +1106,64 @@ unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
 add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
 """)
+
+    def test_change_password5(self):
+        """Make sure rights have no influence on dBCSPwd"""
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
+        sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
+        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        mod = "(D;;WP;;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: dBCSPwd
+dBCSPwd: XXXXXXXXXXXXXXXX
+add: dBCSPwd
+dBCSPwd: YYYYYYYYYYYYYYYY
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        else:
+            self.fail()
+
+    def test_change_password6(self):
+        """Test uneven delete/adds"""
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: userPassword
+userPassword: thatsAcomplPASS1
+delete: userPassword
+userPassword: thatsAcomplPASS1
+add: userPassword
+userPassword: thatsAcomplPASS2
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
+        mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
+        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        try:
+            self.ldb_user.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: userPassword
+userPassword: thatsAcomplPASS1
+delete: userPassword
+userPassword: thatsAcomplPASS1
+add: userPassword
+userPassword: thatsAcomplPASS2
+""")
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        else:
+            self.fail()
 
     def test_reset_password1(self):
         """Try a user password reset operation (unicodePwd) before and after granting CAR"""
@@ -1258,6 +1314,8 @@ if not runner.run(unittest.makeSuite(AclModifyTests)).wasSuccessful():
 if not runner.run(unittest.makeSuite(AclDeleteTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(AclCARTests)).wasSuccessful():
     rc = 1
 
 # Reset the "dSHeuristics" as they were before

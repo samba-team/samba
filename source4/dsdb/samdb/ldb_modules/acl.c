@@ -259,8 +259,10 @@ static int acl_check_access_on_attribute(struct ldb_module *module,
 	else {
 		ret = LDB_SUCCESS;
 	}
+	talloc_free(tmp_ctx);
 	return ret;
 fail:
+	talloc_free(tmp_ctx);
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
@@ -655,49 +657,46 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 }
 
 /* checks for validated writes */
-static int acl_check_self_write(struct ldb_request *req,
-				struct security_descriptor *sd,
-				struct security_token *token,
-				const char *self_write,
-				struct dom_sid *sid)
+static int acl_check_extended_right(TALLOC_CTX *mem_ctx,
+				    struct security_descriptor *sd,
+				    struct security_token *token,
+				    const char *ext_right,
+				    uint32_t right_type,
+				    struct dom_sid *sid)
 {
 	struct GUID right;
 	NTSTATUS status;
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
-	GUID_from_string(self_write, &right);
+	GUID_from_string(ext_right, &right);
 
-	if (!insert_in_object_tree(tmp_ctx, &right, SEC_ADS_SELF_WRITE,
+	if (!insert_in_object_tree(tmp_ctx, &right, right_type,
 				   &root, &new_node)) {
-		DEBUG(10, ("acl_modify: cannot add to object tree\n"));
+		DEBUG(10, ("acl_ext_right: cannot add to object tree\n"));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	status = sec_access_check_ds(sd, token,
-				     SEC_ADS_SELF_WRITE,
+				     right_type,
 				     &access_granted,
 				     root,
 				     sid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Object %s has no self membershipself write right\n",
-			   ldb_dn_get_linearized(req->op.mod.message->dn)));
-		dsdb_acl_debug(sd, token,
-			       req->op.mod.message->dn,
-			       true,
-			       10);
 		talloc_free(tmp_ctx);
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
-
+	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
 
+
 /* ckecks if modifications are allowed on "Member" attribute */
-static int acl_check_self_membership(struct ldb_module *module,
+static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
+				     struct ldb_module *module,
 				     struct ldb_request *req,
 				     struct security_descriptor *sd,
 				     struct dom_sid *sid,
@@ -706,13 +705,12 @@ static int acl_check_self_membership(struct ldb_module *module,
 {
 	int ret;
 	unsigned int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *user_dn;
 	struct ldb_message_element *member_el;
 	/* if we have wp, we can do whatever we like */
 	if (acl_check_access_on_attribute(module,
-					  req,
+					  mem_ctx,
 					  sd,
 					  sid,
 					  SEC_ADS_WRITE_PROP,
@@ -720,7 +718,7 @@ static int acl_check_self_membership(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 	/* if we are adding/deleting ourselves, check for self membership */
-	ret = dsdb_find_dn_by_sid(ldb, req, acl_user_token(module)->user_sid, &user_dn);
+	ret = dsdb_find_dn_by_sid(ldb, mem_ctx, acl_user_token(module)->user_sid, &user_dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -734,14 +732,86 @@ static int acl_check_self_membership(struct ldb_module *module,
 	}
 	for (i = 0; i < member_el->num_values; i++) {
 		if (strcasecmp((const char *)member_el->values[i].data,
-			       ldb_dn_get_extended_linearized(tmp_ctx, user_dn, 1)) != 0) {
+			       ldb_dn_get_extended_linearized(mem_ctx, user_dn, 1)) != 0) {
 			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 		}
 	}
+	ret = acl_check_extended_right(mem_ctx, sd, acl_user_token(module),
+				       GUID_DRS_SELF_MEMBERSHIP,
+				       SEC_ADS_SELF_WRITE,
+				       sid);
+	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		dsdb_acl_debug(sd, acl_user_token(module),
+			       req->op.mod.message->dn,
+			       true,
+			       10);
+	}
+	return ret;
+}
+
+static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
+				     struct ldb_module *module,
+				     struct ldb_request *req,
+				     struct security_descriptor *sd,
+				     struct dom_sid *sid,
+				     const struct GUID *oc_guid)
+{
+	int ret = LDB_SUCCESS;
+	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
+	struct ldb_message_element *el;
+	struct ldb_message *msg;
+	const char *passwordAttrs[] = { "userPassword", "unicodePwd",
+					"clearTextPassword", NULL }, **l;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
+	if (msg == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	for (l = passwordAttrs; *l != NULL; l++) {
+		while ((el = ldb_msg_find_element(msg, *l)) != NULL) {
+			if (el->flags == LDB_FLAG_MOD_DELETE) {
+				++del_attr_cnt;
+			}
+			if (el->flags == LDB_FLAG_MOD_ADD) {
+				++add_attr_cnt;
+			}
+			if (el->flags == LDB_FLAG_MOD_REPLACE) {
+				++rep_attr_cnt;
+			}
+			ldb_msg_remove_element(msg, el);
+		}
+	}
+	/* a single delete will be handled by password hash
+	   later in the stack, so we let it though here */
+	if (del_attr_cnt > 0 && add_attr_cnt == 0) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+	if (rep_attr_cnt > 0 || (add_attr_cnt != del_attr_cnt)) {
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_FORCE_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+	}
+	else if (add_attr_cnt == 1 && del_attr_cnt == 1) {
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_USER_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+		/* Very strange, but we get constraint violation in this case */
+		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+	if (ret != LDB_SUCCESS) {
+		dsdb_acl_debug(sd, acl_user_token(module),
+			       req->op.mod.message->dn,
+			       true,
+			       10);
+	}
 	talloc_free(tmp_ctx);
-	return acl_check_self_write(req, sd, acl_user_token(module),
-				    GUID_DRS_SELF_MEMBERSHIP,
-				    sid);
+	return ret;
 }
 
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
@@ -750,7 +820,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_schema *schema;
 	unsigned int i;
-	bool modify_sd = false;
 	const struct GUID *guid;
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
@@ -783,27 +852,27 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
-	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.mod.message->dn,
+	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
 				    acl_attrs, 0);
 
 	if (ret != LDB_SUCCESS) {
-		return ret;
+		goto fail;
 	}
 
-	schema = dsdb_get_schema(ldb, acl_res);
+	schema = dsdb_get_schema(ldb, tmp_ctx);
 	if (!schema) {
-		talloc_free(acl_res);
-		return LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto fail;
 	}
 
-	ret = dsdb_get_sd_from_ldb_message(req, acl_res->msgs[0], &sd);
+	ret = dsdb_get_sd_from_ldb_message(tmp_ctx, acl_res->msgs[0], &sd);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10, ("acl_modify: cannot get descriptor\n"));
-		return ret;
+		goto fail;
 	}
 	/* Theoretically we pass the check if the object has no sd */
 	if (!sd) {
-		return LDB_SUCCESS;
+		goto success;
 	}
 
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
@@ -819,13 +888,58 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	for (i=0; i < req->op.mod.message->num_elements; i++){
 		const struct dsdb_attribute *attr;
-		/* clearTextPassword is not in schema */
-		if (ldb_attr_cmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
-			attr = dsdb_attribute_by_lDAPDisplayName(schema, "unicodePwd");
-		} else {
-			attr = dsdb_attribute_by_lDAPDisplayName(schema,
+		attr = dsdb_attribute_by_lDAPDisplayName(schema,
 								 req->op.mod.message->elements[i].name);
+
+		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
+			status = sec_access_check_ds(sd, acl_user_token(module),
+					     SEC_STD_WRITE_DAC,
+					     &access_granted,
+					     NULL,
+					     sid);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("Object %s has no write dacl access\n",
+					   ldb_dn_get_linearized(req->op.mod.message->dn)));
+				dsdb_acl_debug(sd,
+					       acl_user_token(module),
+					       req->op.mod.message->dn,
+					       true,
+					       10);
+				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+				goto fail;
+			}
 		}
+		else if (ldb_attr_cmp("member", req->op.mod.message->elements[i].name) == 0) {
+			ret = acl_check_self_membership(tmp_ctx,
+							module,
+							req,
+							sd,
+							sid,
+							guid,
+							attr);
+			if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
+		}
+		else if (ldb_attr_cmp("dBCSPwd", req->op.mod.message->elements[i].name) == 0) {
+			/* this one is not affected by any rights, we should let it through
+			   so that passwords_hash returns the correct error */
+			continue;
+		}
+		else if (ldb_attr_cmp("unicodePwd", req->op.mod.message->elements[i].name) == 0 ||
+			 ldb_attr_cmp("userPassword", req->op.mod.message->elements[i].name) == 0 ||
+			 ldb_attr_cmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
+			ret = acl_check_password_rights(tmp_ctx,
+							module,
+							req,
+							sd,
+							sid,
+							guid);
+			if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
+		} else {
 
 		/* This basic attribute existence check with the right errorcode
 		 * is needed since this module is the first one which requests
@@ -833,38 +947,25 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		 * The complete attribute checking is done in the
 		 * "objectclass_attrs" module behind this one.
 		 */
-		if (!attr) {
-			ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
-					       req->op.mod.message->elements[i].name,
+			if (!attr) {
+				ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
+						       req->op.mod.message->elements[i].name,
 					       ldb_dn_get_linearized(req->op.mod.message->dn));
-			talloc_free(tmp_ctx);
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
-		}
-
-		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
-			modify_sd = true;
-		}
-		else if (ldb_attr_cmp("member", req->op.mod.message->elements[i].name) == 0) {
-			ret = acl_check_self_membership(module,
-							req,
-							sd,
-							sid,
-							guid,
-							attr);
-			if (ret != LDB_SUCCESS) {
-				return ret;
+				ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
+				goto fail;
 			}
-		} else {
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
 						   &new_node, &new_node)) {
 				DEBUG(10, ("acl_modify: cannot add to object tree securityGUID\n"));
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
 
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->schemaIDGUID, SEC_ADS_WRITE_PROP, &new_node, &new_node)) {
 				DEBUG(10, ("acl_modify: cannot add to object tree attributeGUID\n"));
+				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
 		}
@@ -885,35 +986,17 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				  req->op.mod.message->dn,
 				  true,
 				  10);
-			talloc_free(tmp_ctx);
-			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-		}
-	}
-	if (modify_sd) {
-		status = sec_access_check_ds(sd, acl_user_token(module),
-					     SEC_STD_WRITE_DAC,
-					     &access_granted,
-					     NULL,
-					     sid);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Object %s has no write dacl access\n",
-				   ldb_dn_get_linearized(req->op.mod.message->dn)));
-			dsdb_acl_debug(sd,
-				  acl_user_token(module),
-				  req->op.mod.message->dn,
-				  true,
-				  10);
-			talloc_free(tmp_ctx);
-			return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			goto fail;
 		}
 	}
 
+success:
 	talloc_free(tmp_ctx);
 	return ldb_next_request(module, req);
 fail:
 	talloc_free(tmp_ctx);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ret;
 }
 
 /* similar to the modify for the time being.
