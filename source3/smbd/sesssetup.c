@@ -1349,11 +1349,16 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
  a new session setup with VC==0 is ignored.
 ****************************************************************************/
 
+struct shutdown_state {
+	const char *ip;
+	struct messaging_context *msg_ctx;
+};
+
 static int shutdown_other_smbds(const struct connections_key *key,
 				const struct connections_data *crec,
 				void *private_data)
 {
-	const char *ip = (const char *)private_data;
+	struct shutdown_state *state = (struct shutdown_state *)private_data;
 
 	if (!process_exists(crec->pid)) {
 		return 0;
@@ -1363,22 +1368,21 @@ static int shutdown_other_smbds(const struct connections_key *key,
 		return 0;
 	}
 
-	if (strcmp(ip, crec->addr) != 0) {
+	if (strcmp(state->ip, crec->addr) != 0) {
 		return 0;
 	}
 
 	DEBUG(0,("shutdown_other_smbds: shutting down pid %u "
-		 "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid), ip));
+		 "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid),
+		 state->ip));
 
-	messaging_send(smbd_messaging_context(), crec->pid, MSG_SHUTDOWN,
+	messaging_send(state->msg_ctx, crec->pid, MSG_SHUTDOWN,
 		       &data_blob_null);
 	return 0;
 }
 
-static void setup_new_vc_session(void)
+static void setup_new_vc_session(struct messaging_context *msg_ctx)
 {
-	char addr[INET6_ADDRSTRLEN];
-
 	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x "
 		"compatible we would close all old resources.\n"));
 #if 0
@@ -1386,9 +1390,12 @@ static void setup_new_vc_session(void)
 	invalidate_all_vuids();
 #endif
 	if (lp_reset_on_zero_vc()) {
-		connections_forall_read(shutdown_other_smbds,
-			CONST_DISCARD(void *,
-			client_addr(get_client_fd(),addr,sizeof(addr))));
+		char addr[INET6_ADDRSTRLEN];
+		struct shutdown_state state;
+
+		state.ip = client_addr(get_client_fd(),addr,sizeof(addr));
+		state.msg_ctx = msg_ctx;
+		connections_forall_read(shutdown_other_smbds, &state);
 	}
 }
 
@@ -1443,7 +1450,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		if (SVAL(req->vwv+4, 0) == 0) {
-			setup_new_vc_session();
+			setup_new_vc_session(req->sconn->msg_ctx);
 		}
 
 		reply_sesssetup_and_X_spnego(req);
@@ -1640,7 +1647,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	if (SVAL(req->vwv+4, 0) == 0) {
-		setup_new_vc_session();
+		setup_new_vc_session(req->sconn->msg_ctx);
 	}
 
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n",
