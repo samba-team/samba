@@ -91,13 +91,14 @@ static void cmd_list_groups_recv_domain(struct composite_context *ctx)
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
 
+	/* we use this entry also for context purposes (libnet_GroupList) */
 	state->domain = domain;
 
 	/* If this is non-null, we've looked up the domain given in the winbind
-	 * request, otherwise we'll just use the default name.*/
+	 * request, otherwise we'll just use the default name .*/
 	if (state->domain_name == NULL) {
 		state->domain_name = talloc_strdup(state,
-				domain->libnet_ctx->samr.name);
+						   state->domain->libnet_ctx->samr.name);
 		if (composite_nomem(state->domain_name, state->ctx)) return;
 	}
 
@@ -112,10 +113,11 @@ static void cmd_list_groups_recv_domain(struct composite_context *ctx)
 	group_list->in.page_size = 128;
 	group_list->in.resume_index = state->resume_index;
 
-	ctx = libnet_GroupList_send(domain->libnet_ctx, state, group_list,NULL);
+	ctx = libnet_GroupList_send(state->domain->libnet_ctx, state,
+				    group_list, NULL);
 
 	composite_continue(state->ctx, ctx, cmd_list_groups_recv_group_list,
-			state);
+			   state);
 }
 
 static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
@@ -135,7 +137,7 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 
 	/* If NTSTATUS is neither OK nor MORE_ENTRIES, something broke */
 	if (!NT_STATUS_IS_OK(status) &&
-	     !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		composite_error(state->ctx, status);
 		return;
 	}
@@ -144,8 +146,8 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 		DEBUG(5, ("Appending group '%s'\n",
 			  group_list->out.groups[i].groupname));
 		state->result = talloc_asprintf_append_buffer(state->result,
-					"%s,",
-					group_list->out.groups[i].groupname);
+							      "%s,",
+							      group_list->out.groups[i].groupname);
 		state->num_groups++;
 	}
 
@@ -171,10 +173,10 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 	group_list->in.resume_index = group_list->out.resume_index;
 
 	ctx = libnet_GroupList_send(state->domain->libnet_ctx, state,group_list,
-			NULL);
+				    NULL);
 
 	composite_continue(state->ctx, ctx, cmd_list_groups_recv_group_list,
-			state);
+			   state);
 }
 
 NTSTATUS wb_cmd_list_groups_recv(struct composite_context *ctx,
