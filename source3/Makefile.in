@@ -2617,6 +2617,10 @@ bin/rid.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_rid.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_rid.o
 
+bin/passdb.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_passdb.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) winbindd/idmap_passdb.o
+
 bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ad.o
