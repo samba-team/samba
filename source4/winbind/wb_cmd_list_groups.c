@@ -154,9 +154,11 @@ static void cmd_list_groups_recv_group_list(struct composite_context *ctx)
 	/* If the status is OK, we're finished, there's no more groups.
 	 * So we'll trim off the trailing ',' and are done.*/
 	if (NT_STATUS_IS_OK(status)) {
-		int str_len = strlen(state->result);
+		size_t str_len = strlen(state->result);
 		DEBUG(5, ("list_GroupList_recv returned NT_STATUS_OK\n"));
-		state->result[str_len - 1] = '\0';
+		if (str_len > 0) {
+			state->result[str_len - 1] = '\0';
+		}
 		composite_done(state->ctx);
 		return;
 	}
