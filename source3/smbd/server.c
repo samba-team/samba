@@ -808,6 +808,7 @@ extern void build_options(bool screen);
 	struct smbd_parent_context *parent = NULL;
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 	NTSTATUS status;
+	uint64_t unique_id;
 
 	smbd_init_globals();
 
@@ -984,6 +985,9 @@ extern void build_options(bool screen);
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
+
+        generate_random_buffer((uint8_t *)&unique_id, sizeof(unique_id));
+        set_my_unique_id(unique_id);
 
 #if HAVE_SETPGID
 	/*
