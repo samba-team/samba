@@ -190,7 +190,7 @@ NTSTATUS query_lock(files_struct *fsp,
 
 	return brl_lockquery(br_lck,
 			psmblctx,
-			procid_self(),
+			sconn_server_id(fsp->conn->sconn),
 			poffset,
 			pcount,
 			plock_type,
