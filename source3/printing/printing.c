@@ -1380,11 +1380,12 @@ static void printing_pause_fd_handler(struct tevent_context *ev,
 	exit_server_cleanly(NULL);
 }
 
+extern struct child_pid *children;
+extern int num_children;
+
 static void add_child_pid(pid_t pid)
 {
-	extern struct child_pid *children;
 	struct child_pid *child;
-	extern int num_children;
 
         child = SMB_MALLOC_P(struct child_pid);
         if (child == NULL) {
