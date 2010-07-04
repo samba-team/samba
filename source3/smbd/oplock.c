@@ -799,7 +799,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 			wait_before_sending_break();
 			break_level2_to_none_async(fsp);
 		} else {
-			messaging_send_buf(smbd_messaging_context(),
+			messaging_send_buf(fsp->conn->sconn->msg_ctx,
 					share_entry->pid,
 					MSG_SMB_ASYNC_LEVEL2_BREAK,
 					(uint8 *)msg,
