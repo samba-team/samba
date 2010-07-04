@@ -130,7 +130,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 /*
  * re-init after a fork
  */
-NTSTATUS messaging_reinit(struct messaging_context *msg_ctx);
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
+			  struct server_id id);
 
 NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 			    void *private_data,

@@ -226,11 +226,14 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 /*
  * re-init after a fork
  */
-NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
+			  struct server_id id)
 {
 	NTSTATUS status;
 
 	TALLOC_FREE(msg_ctx->local);
+
+	msg_ctx->id = id;
 
 	status = messaging_tdb_init(msg_ctx, msg_ctx, &msg_ctx->local);
 	if (!NT_STATUS_IS_OK(status)) {
