@@ -690,7 +690,7 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 	if (br_lck) {
 		brl_lock_cancel(br_lck,
 				blr->smblctx,
-				procid_self(),
+				sconn_server_id(blr->fsp->conn->sconn),
 				blr->offset,
 				blr->count,
 				blr->lock_flav,
