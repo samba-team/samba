@@ -1294,8 +1294,8 @@ bool process_exists(const struct server_id pid)
 	}
 
 #ifdef CLUSTER_SUPPORT
-	return ctdbd_process_exists(messaging_ctdbd_connection(), pid.vnn,
-				    pid.pid);
+	return ctdbd_process_exists(messaging_ctdbd_connection(procid_self()),
+				    pid.vnn, pid.pid);
 #else
 	return False;
 #endif

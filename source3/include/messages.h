@@ -116,7 +116,7 @@ bool messaging_tdb_parent_init(void);
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      TALLOC_CTX *mem_ctx,
 			      struct messaging_backend **presult);
-struct ctdbd_connection *messaging_ctdbd_connection(void);
+struct ctdbd_connection *messaging_ctdbd_connection(struct server_id id);
 
 bool message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,

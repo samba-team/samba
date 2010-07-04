@@ -38,7 +38,7 @@ struct messaging_ctdbd_context {
 static struct ctdbd_connection *global_ctdbd_connection;
 static int global_ctdb_connection_pid;
 
-struct ctdbd_connection *messaging_ctdbd_connection(void)
+struct ctdbd_connection *messaging_ctdbd_connection(struct server_id id)
 {
 	if (global_ctdb_connection_pid == 0 &&
 	    global_ctdbd_connection == NULL) {
@@ -50,7 +50,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 			DEBUG(0,("event_context_init failed\n"));
 		}
 
-		msg = messaging_init(NULL, procid_self(), ev);
+		msg = messaging_init(NULL, id, ev);
 		if (!msg) {
 			DEBUG(0,("messaging_init failed\n"));
 			return NULL;

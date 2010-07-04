@@ -794,7 +794,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 
 again:
 	/* tell ctdbd to commit to the other nodes */
-	rets = ctdbd_control_local(messaging_ctdbd_connection(),
+	rets = ctdbd_control_local(messaging_ctdbd_connection(procid_self()),
 				   CTDB_CONTROL_TRANS3_COMMIT,
 				   h->ctx->db_id, 0,
 				   db_ctdb_marshall_finish(h->m_write),
@@ -1005,7 +1005,9 @@ again:
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster : -1,
 			   get_my_vnn()));
 
-		status = ctdbd_migrate(messaging_ctdbd_connection(),ctx->db_id, key);
+		status = ctdbd_migrate(
+			messaging_ctdbd_connection(procid_self()), ctx->db_id,
+			key);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("ctdb_migrate failed: %s\n",
 				  nt_errstr(status)));
@@ -1110,7 +1112,8 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	SAFE_FREE(ctdb_data.dptr);
 
 	/* we weren't able to get it locally - ask ctdb to fetch it for us */
-	status = ctdbd_fetch(messaging_ctdbd_connection(),ctx->db_id, key, mem_ctx, data);
+	status = ctdbd_fetch(messaging_ctdbd_connection(procid_self()),
+			     ctx->db_id, key, mem_ctx, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("ctdbd_fetch failed: %s\n", nt_errstr(status)));
 		return -1;
@@ -1288,7 +1291,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
 
-	conn = messaging_ctdbd_connection();
+	conn = messaging_ctdbd_connection(procid_self());
 
 	if (!NT_STATUS_IS_OK(ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags))) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
