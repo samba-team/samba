@@ -5356,8 +5356,7 @@ void msg_force_tdis(struct messaging_context *msg,
 
 bool yield_connection(connection_struct *conn, const char *name);
 int count_current_connections( const char *sharename, bool clear  );
-bool claim_connection(connection_struct *conn, const char *name,
-		      uint32 msg_flags);
+bool claim_connection(connection_struct *conn, const char *name);
 
 /* The following definitions come from smbd/dfree.c  */
 

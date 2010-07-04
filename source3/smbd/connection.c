@@ -120,8 +120,7 @@ int count_current_connections( const char *sharename, bool clear  )
  Claim an entry in the connections database.
 ****************************************************************************/
 
-bool claim_connection(connection_struct *conn, const char *name,
-		      uint32 msg_flags)
+bool claim_connection(connection_struct *conn, const char *name)
 {
 	struct db_record *rec;
 	struct connections_data crec;
@@ -148,7 +147,6 @@ bool claim_connection(connection_struct *conn, const char *name,
 			sizeof(crec.servicename));
 	}
 	crec.start = time(NULL);
-	crec.bcast_msg_flags = msg_flags;
 
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
 	strlcpy(crec.addr,conn?conn->client_address:

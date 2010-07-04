@@ -864,7 +864,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	/*
 	 * Get us an entry in the connections db
 	 */
-	if (!claim_connection(conn, lp_servicename(snum), 0)) {
+	if (!claim_connection(conn, lp_servicename(snum))) {
 		DEBUG(1, ("Could not store connections entry\n"));
 		*pstatus = NT_STATUS_INTERNAL_DB_ERROR;
 		goto err_root_exit;

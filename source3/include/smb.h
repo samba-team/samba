@@ -841,7 +841,6 @@ struct connections_data {
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
-	uint32 bcast_msg_flags;
 };
 
 
