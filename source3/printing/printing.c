@@ -1446,8 +1446,9 @@ void start_background_queue(void)
 		smbd_setup_sig_term_handler();
 		smbd_setup_sig_hup_handler();
 
-		if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-					    |FLAG_MSG_PRINT_GENERAL)) {
+		if (!serverid_register(procid_self(),
+				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+				       |FLAG_MSG_PRINT_GENERAL)) {
 			exit(1);
 		}
 

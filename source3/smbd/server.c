@@ -242,7 +242,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 	child_id = procid_self(); /* Just initialize pid and potentially vnn */
 	child_id.pid = pid;
 
-	if (!serverid_deregister(&child_id)) {
+	if (!serverid_deregister(child_id)) {
 		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
 			  (int)pid));
 	}
@@ -424,9 +424,10 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		smbd_setup_sig_term_handler();
 		smbd_setup_sig_hup_handler();
 
-		if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-					    |FLAG_MSG_DBWRAP
-					    |FLAG_MSG_PRINT_GENERAL)) {
+		if (!serverid_register(procid_self(),
+				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+				       |FLAG_MSG_DBWRAP
+				       |FLAG_MSG_PRINT_GENERAL)) {
 			exit_server_cleanly("Could not register myself in "
 					    "serverid.tdb");
 		}
@@ -662,8 +663,9 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	   operations until it has gone thru a full startup, which
 	   includes checking to see that smbd is listening. */
 
-	if (!serverid_register_self(FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-				    |FLAG_MSG_DBWRAP)) {
+	if (!serverid_register(procid_self(),
+			       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+			       |FLAG_MSG_DBWRAP)) {
 		DEBUG(0, ("open_sockets_smbd: Failed to register "
 			  "myself in serverid.tdb\n"));
 		return false;

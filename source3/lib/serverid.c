@@ -76,7 +76,7 @@ static void serverid_fill_key(const struct server_id *id,
 #endif
 }
 
-bool serverid_register(const struct server_id *id, uint32_t msg_flags)
+bool serverid_register(const struct server_id id, uint32_t msg_flags)
 {
 	struct db_context *db;
 	struct serverid_key key;
@@ -91,7 +91,7 @@ bool serverid_register(const struct server_id *id, uint32_t msg_flags)
 		return false;
 	}
 
-	serverid_fill_key(id, &key);
+	serverid_fill_key(&id, &key);
 	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
 	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
@@ -101,7 +101,7 @@ bool serverid_register(const struct server_id *id, uint32_t msg_flags)
 	}
 
 	ZERO_STRUCT(data);
-	data.unique_id = id->unique_id;
+	data.unique_id = id.unique_id;
 	data.msg_flags = msg_flags;
 
 	tdbdata = make_tdb_data((uint8_t *)&data, sizeof(data));
@@ -117,15 +117,7 @@ done:
 	return ret;
 }
 
-bool serverid_register_self(uint32_t msg_flags)
-{
-	struct server_id pid;
-
-	pid = procid_self();
-	return serverid_register(&pid, msg_flags);
-}
-
-bool serverid_deregister(const struct server_id *id)
+bool serverid_deregister(struct server_id id)
 {
 	struct db_context *db;
 	struct serverid_key key;
@@ -139,7 +131,7 @@ bool serverid_deregister(const struct server_id *id)
 		return false;
 	}
 
-	serverid_fill_key(id, &key);
+	serverid_fill_key(&id, &key);
 	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
 	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
@@ -158,14 +150,6 @@ bool serverid_deregister(const struct server_id *id)
 done:
 	TALLOC_FREE(rec);
 	return ret;
-}
-
-bool serverid_deregister_self(void)
-{
-	struct server_id pid;
-
-	pid = procid_self();
-	return serverid_deregister(&pid);
 }
 
 struct serverid_exists_state {

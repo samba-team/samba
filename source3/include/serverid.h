@@ -25,22 +25,12 @@
 /*
  * Register a server with its unique id
  */
-bool serverid_register(const struct server_id *id, uint32_t msg_flags);
-
-/*
- * Register ourselves with a unique id
- */
-bool serverid_register_self(uint32_t msg_flags);
+bool serverid_register(const struct server_id id, uint32_t msg_flags);
 
 /*
  * De-register a server with its unique id
  */
-bool serverid_deregister(const struct server_id *id);
-
-/*
- * De-register ourself
- */
-bool serverid_deregister_self(void);
+bool serverid_deregister(const struct server_id id);
 
 /*
  * Check existence of a server id
