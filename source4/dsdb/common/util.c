@@ -520,8 +520,10 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 					  struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg)
 {
-	uint64_t attr_time = samdb_result_uint64(msg, "pwdLastSet", 0);
-	uint32_t userAccountControl = samdb_result_uint64(msg, "userAccountControl", 0);
+	int64_t attr_time = samdb_result_int64(msg, "pwdLastSet", 0);
+	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg,
+								"userAccountControl",
+								0);
 	int64_t maxPwdAge;
 
 	/* Machine accounts don't expire, and there is a flag for 'no expiry' */
@@ -533,8 +535,12 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 	if (attr_time == 0) {
 		return 0;
 	}
+	if (attr_time == -1) {
+		return 0x7FFFFFFFFFFFFFFFULL;
+	}
 
-	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, "maxPwdAge", NULL);
+	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
+				       "maxPwdAge", NULL);
 	if (maxPwdAge == 0) {
 		return 0x7FFFFFFFFFFFFFFFULL;
 	} else {
