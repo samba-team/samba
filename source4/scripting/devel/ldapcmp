@@ -7,7 +7,7 @@
 # that have to be provided sheould be able to read objects in any of the
 # above partitions.
 
-# Copyright (C) Zahari Zahariev <zahari.zahariev@postpath.com> 2009
+# Copyright (C) Zahari Zahariev <zahari.zahariev@postpath.com> 2009, 2010
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,12 +54,13 @@ class LDAPBase(object):
         self.domain_name = re.sub("[Dd][Cc]=", "", self.base_dn).replace(",", ".")
         self.domain_sid_bin = self.get_object_sid(self.base_dn)
         #
-        #print "@", self.host
-        #print "@", self.base_dn
-        #print "@", self.domain_netbios
-        #print "@", self.server_names
-        #print "@", self.domain_name
-        #print "@", self.domain_sid_bin
+        # Log some domain controller specific place-holers that are being used
+        # when compare content of two DCs. Uncomment for DEBUG purposes.
+        #print "\n@ %s" % self.host
+        #print "${DOMAIN_DN}: %s" % self.base_dn
+        #print "${DOMAIN_NETBIOS}: %s" % self.domain_netbios
+        #print "${SERVERNAME}: %s" % self.server_names
+        #print "${DOMAIN_NAME}: %s" % self.domain_name
 
     def find_servers(self):
         """
@@ -394,7 +395,7 @@ class LDAPBundel(object):
     def __eq__(self, other):
         res = True
         if self.size != other.size:
-            self.log( "\n* Lists have different size: %s != %s" % (self.size, other.size) )
+            self.log( "\n* DN lists have different size: %s != %s" % (self.size, other.size) )
             res = False
         #
         title= "\n* DNs found only in %s:" % self.con.host
@@ -483,19 +484,6 @@ class LDAPBundel(object):
         #
         global summary
         #
-        title = "\n* Ignored (DNS related) DNs in %s:" % self.con.host
-        for x in dn_list:
-            xx = "".join(re.findall("[Cc][Nn]=.*?,", x)) \
-                    + "".join(re.findall("[Oo][Uu]=.*?,", x)) \
-                    + "".join(re.findall("[Dd][Cc]=.*?,", x)) + re.search("([Dd][Cc]=[\w]+$)", x).group()
-            if x != xx:
-                if title:
-                    self.log( title )
-                    title = None
-                self.log( 4*" " + x )
-                dn_list[dn_list.index(x)] = ""
-        #
-        dn_list = [x for x in dn_list if x]
         return dn_list
 
     def print_summary(self):
