@@ -235,6 +235,7 @@ char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 
 #else
 #define LDAP void
+#define LDAPMessage void
 #define LDAPMod void
 #define LDAP_CONST const
 #define LDAPControl void
