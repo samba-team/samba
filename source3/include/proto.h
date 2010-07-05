@@ -4534,7 +4534,6 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 					  const char *user,
 					  LDAPMessage ** result,
 					  const char **attr);
-const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...);
 NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *location);
 NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location);
 NTSTATUS pdb_ldap_init(void);

@@ -4346,7 +4346,7 @@ static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	return result;
 }
 
-const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
+static const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 {
 	int i, num = 0;
 	va_list ap;
