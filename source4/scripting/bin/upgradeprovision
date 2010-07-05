@@ -516,6 +516,11 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     empty = Message()
     delta = samdb.msg_diff(empty, reference[0])
     delta.dn
+    if delta.get("objectSid"):
+        sid = str(ndr_unpack(security.dom_sid, str(reference[0]["objectSid"])))
+        m = re.match(r".*-(\d+)$", sid)
+        if m and int(m.group(1))>999:
+            delta.remove("objectSid")
     for att in hashAttrNotCopied.keys():
         delta.remove(att)
     for att in backlinked:
@@ -533,6 +538,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     delta.dn = dn
     message(CHANGE,"Object %s will be added" % dn)
     samdb.add(delta, ["relax:0"])
+
     return True
 
 def gen_dn_index_hash(listMissing):
