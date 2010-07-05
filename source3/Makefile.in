@@ -1420,6 +1420,15 @@ samba3-idl::
 		librpc/idl/wbint.idl librpc/idl/perfcount.idl \
 		librpc/idl/secrets.idl librpc/idl/libnet_join.idl
 
+idl_full::
+	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	 srcdir="$(srcdir)" ../librpc/build_idl.sh --full ../librpc/idl/*.idl
+	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh --full \
+		 librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
+		 librpc/idl/wbint.idl librpc/idl/perfcount.idl \
+		 librpc/idl/secrets.idl librpc/idl/libnet_join.idl
+
 #####################################################################
 
 
