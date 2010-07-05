@@ -167,6 +167,9 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "pull->flags |= LIBNDR_FLAG_REF_ALLOC;";
+	pidl "if (p->endian) {";
+	pidl "\tpull->flags |= LIBNDR_FLAG_BIGENDIAN;";
+	pidl "}";
 	pidl "ndr_err = call->ndr_pull(pull, NDR_IN, r);";
 	pidl "if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {";
 	pidl "\ttalloc_free(r);";
