@@ -135,6 +135,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
           lib/interfaces.c lib/memcache.c
           lib/talloc_dict.c
+          lib/util_sconn.c
           lib/serverid.c
           lib/util_transfer_file.c ../lib/async_req/async_sock.c
           ${TDB_LIB_SRC}
@@ -659,7 +660,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
-                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_OBJ}
+                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_SRC}
                   ${TDB_VALIDATE_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
