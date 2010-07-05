@@ -112,27 +112,29 @@ static void cmd_setpwent_recv_user_list(struct composite_context *ctx)
 	if (composite_nomem(user_list, state->ctx)) return;
 
 	state->ctx->status = libnet_UserList_recv(ctx, state->result,
-			user_list);
+						  user_list);
 	if (NT_STATUS_IS_OK(state->ctx->status) ||
 		NT_STATUS_EQUAL(state->ctx->status, STATUS_MORE_ENTRIES)) {
-		if( state->result->page_index == -1) { /* First run*/
+		if (state->result->page_index == -1) { /* First run*/
 			state->result->user_list = user_list;
 			state->result->page_index = 0;
 			state->result->libnet_ctx = state->libnet_ctx;
 		} else {
-			int i;
+			int i, cnt = state->result->user_list->out.count
+							+ user_list->out.count;
 			struct userlist *tmp;
 			tmp = state->result->user_list->out.users;
-			state->result->user_list->out.users = talloc_realloc(state->result,tmp,struct userlist,
-			state->result->user_list->out.count+user_list->out.count);
+			state->result->user_list->out.users = talloc_realloc(state->result,
+									     tmp, struct userlist,
+									     cnt);
 			tmp = state->result->user_list->out.users;
 			for(i=0;i<user_list->out.count;i++ ) {
-				tmp[i+state->result->user_list->out.count].username = talloc_steal(state->result,user_list->out.users[i].username);
+				tmp[state->result->user_list->out.count + i].username
+					= talloc_strdup(state->result, user_list->out.users[i].username);
 			}
-			state->result->user_list->out.count += user_list->out.count;
+			state->result->user_list->out.count = cnt;
 			talloc_free(user_list);
 		}
-
 
 		if (NT_STATUS_IS_OK(state->ctx->status) ) {
 			composite_done(state->ctx);
