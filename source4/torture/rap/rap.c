@@ -4,6 +4,7 @@
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Tim Potter 2005
    Copyright (C) Jelmer Vernooij 2007
+   Copyright (C) Guenther Deschner 2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
