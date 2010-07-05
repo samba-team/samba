@@ -3063,10 +3063,15 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
 		QUERY_AFLAGS(msg, info21.acct_flags,           "userAccountControl");
-		info->info21.fields_present = 0x00FFFFFF;
+		info->info21.fields_present = 0x08FFFFFF;
 		QUERY_LHOURS(msg, info21.logon_hours,          "logonHours");
 		QUERY_UINT  (msg, info21.bad_password_count,   "badPwdCount");
 		QUERY_UINT  (msg, info21.logon_count,          "logonCount");
+		if ((info->info21.acct_flags & ACB_PW_EXPIRED) != 0) {
+			info->info21.password_expired = PASS_MUST_CHANGE_AT_NEXT_LOGON;
+		} else {
+			info->info21.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
+		}
 		QUERY_UINT  (msg, info21.country_code,         "countryCode");
 		QUERY_UINT  (msg, info21.code_page,            "codePage");
 		break;
