@@ -405,10 +405,31 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 		 const char *logname)
 {
 	if (logprefix && logname) {
+		char *logbase = NULL;
+
+		if (lp_logfile()) {
+			char *end = NULL;
+
+			if (asprintf(&logbase, "%s", lp_logfile()) < 0) {
+				smb_panic("Internal error: asprintf failed");
+			}
+
+			if ((end = strrchr_m(logbase, '/'))) {
+				*end = '\0';
+			}
+		} else {
+			if (asprintf(&logbase, "%s", get_dyn_LOGFILEBASE()) < 0) {
+				smb_panic("Internal error: asprintf failed");
+			}
+		}
+
 		if (asprintf(&child->logfilename, "%s/%s-%s",
-			     get_dyn_LOGFILEBASE(), logprefix, logname) < 0) {
+			     logbase, logprefix, logname) < 0) {
+			SAFE_FREE(logbase);
 			smb_panic("Internal error: asprintf failed");
 		}
+
+		SAFE_FREE(logbase);
 	} else {
 		smb_panic("Internal error: logprefix == NULL && "
 			  "logname == NULL");
