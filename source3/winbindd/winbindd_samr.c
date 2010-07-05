@@ -188,6 +188,8 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 
 	DEBUG(3,("sam_enum_dom_groups\n"));
 
+	ZERO_STRUCT(dom_pol);
+
 	if (pnum_info) {
 		*pnum_info = 0;
 	}
@@ -220,6 +222,9 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 error:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -238,6 +243,8 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("samr_query_user_list\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -272,6 +279,10 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -288,6 +299,8 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_query_user\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	/* Paranoia check */
 	if (!sid_check_is_in_our_domain(user_sid)) {
@@ -318,6 +331,10 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 				user_info);
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -335,6 +352,8 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("samr: trusted domains\n"));
+
+	ZERO_STRUCT(lsa_policy);
 
 	if (ptrust_list) {
 		ZERO_STRUCTP(ptrust_list);
@@ -365,6 +384,10 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&lsa_policy)) {
+		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -391,6 +414,8 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_lookup_groupmem\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	/* Paranoia check */
 	if (sid_check_is_in_builtin(group_sid) && (type != SID_NAME_ALIAS)) {
@@ -441,6 +466,10 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -510,6 +539,8 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 
 	DEBUG(3,("samr: enum local groups\n"));
 
+	ZERO_STRUCT(dom_pol);
+
 	if (pnum_info) {
 		*pnum_info = 0;
 	}
@@ -542,6 +573,10 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -563,6 +598,8 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_name_to_sid\n"));
+
+	ZERO_STRUCT(lsa_policy);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -594,6 +631,10 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&lsa_policy)) {
+		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -615,6 +656,8 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_sid_to_name\n"));
+
+	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
@@ -661,6 +704,10 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&lsa_policy)) {
+		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -683,6 +730,8 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_rids_to_names for %s\n", domain->name));
+
+	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
@@ -734,6 +783,10 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&lsa_policy)) {
+		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -749,6 +802,8 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_lockout_policy\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -772,6 +827,10 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 	*lockout_policy = info->info12;
 
 error:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -787,6 +846,8 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_password_policy\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -810,6 +871,10 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 	*passwd_policy = info->info1;
 
 error:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -829,6 +894,8 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_lookup_usergroups\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	if (pnum_groups) {
 		*pnum_groups = 0;
@@ -864,6 +931,10 @@ static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -883,6 +954,8 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("sam_lookup_useraliases\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	if (pnum_aliases) {
 		*pnum_aliases = 0;
@@ -918,6 +991,10 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 	}
 
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, mem_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
@@ -933,6 +1010,8 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	DEBUG(3,("samr: sequence number\n"));
+
+	ZERO_STRUCT(dom_pol);
 
 	if (pseq) {
 		*pseq = DOM_SEQUENCE_NONE;
@@ -961,6 +1040,10 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 		*pseq = seq;
 	}
 done:
+	if (is_valid_policy_hnd(&dom_pol)) {
+		rpccli_samr_Close(samr_pipe, tmp_ctx, &dom_pol);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
