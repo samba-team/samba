@@ -841,6 +841,12 @@ struct connections_data {
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
+
+	/*
+	 * This field used to hold the msg_flags. For compatibility reasons,
+	 * keep the data structure in the tdb file the same.
+	 */
+	uint32 unused_compatitibility_field;
 };
 
 
