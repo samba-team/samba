@@ -225,7 +225,8 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
 	NTSTATUS status;
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, attrs,
-				    DSDB_SEARCH_SHOW_DELETED|
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED |
 				    DSDB_SEARCH_SHOW_EXTENDED_DN);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to find GUID for %s",
@@ -596,7 +597,8 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
 	attrs[0] = attribute;
 	attrs[1] = NULL;
 
-	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs, 0);
+	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs,
+	                            DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
