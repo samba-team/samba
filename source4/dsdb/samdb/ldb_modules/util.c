@@ -72,14 +72,14 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->modify(module, req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->modify(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -162,14 +162,14 @@ int dsdb_module_search(struct ldb_module *module,
 		return ret;
 	}
 
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->search(module, req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->search(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -292,14 +292,14 @@ int dsdb_module_modify(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->modify(module, mod_req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, mod_req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), mod_req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, mod_req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->modify(module, mod_req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
@@ -350,14 +350,14 @@ int dsdb_module_rename(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->rename(module, req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->rename(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -405,14 +405,14 @@ int dsdb_module_add(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->add(module, req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->add(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -460,14 +460,14 @@ int dsdb_module_del(struct ldb_module *module,
 	}
 
 	/* Run the new request */
-	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
-		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
-		ret = ops->del(module, req);
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
 	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
 		ret = ldb_request(ldb_module_get_ctx(module), req);
 	} else {
-		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
-		ret = ldb_next_request(module, req);
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->del(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
