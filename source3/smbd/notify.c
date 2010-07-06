@@ -76,6 +76,7 @@ static bool notify_marshall_changes(int num_changes,
 	for (i=0; i<num_changes; i++) {
 		struct notify_change *c;
 		size_t namelen;
+		int    rem = 0;
 		uint32 u32_tmp;	/* Temp arg to prs_uint32 to avoid
 				 * signed/unsigned issues */
 
@@ -101,6 +102,11 @@ static bool notify_marshall_changes(int num_changes,
 		 */
 
 		u32_tmp = (i == num_changes-1) ? 0 : namelen + 12;
+
+		/* Align on 4-byte boundary according to MS-CIFS 2.2.7.4.2 */
+		if ((rem = u32_tmp % 4 ) != 0)
+			u32_tmp += 4 - rem;
+
 		if (!prs_uint32("offset", ps, 1, &u32_tmp)) goto fail;
 
 		u32_tmp = c->action;
@@ -115,6 +121,10 @@ static bool notify_marshall_changes(int num_changes,
 		 * Not NULL terminated, decrease by the 2 UCS2 \0 chars
 		 */
 		prs_set_offset(ps, prs_offset(ps)-2);
+
+		if (rem != 0) {
+			if (!prs_align_custom(ps, 4)) goto fail;
+		}
 
 		TALLOC_FREE(uni_name.buffer);
 
