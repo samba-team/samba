@@ -404,6 +404,7 @@ int main(int argc,char *argv[])
 	int shell = false;
 	static const char *ui_ops_name = "subunit";
 	const char *basedir = NULL;
+	char *outputdir;
 	const char *extra_module = NULL;
 	static int list_tests = 0;
 	int num_extra_users = 0;
@@ -626,14 +627,22 @@ int main(int argc,char *argv[])
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");
 			return 1;
 		}
-		torture->outputdir = basedir;
+		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", basedir);
 	} else {
 		char *pwd = talloc_size(torture, PATH_MAX);
 		if (!getcwd(pwd, PATH_MAX)) {
 			fprintf(stderr, "Unable to determine current working directory\n");
 			return 1;
 		}
-		torture->outputdir = pwd;
+		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", pwd);
+	}
+	if (!outputdir) {
+		fprintf(stderr, "Could not allocate per-run output dir\n");
+		return 1;
+	}
+	torture->outputdir = mkdtemp(outputdir);
+	if (!torture->outputdir) {
+		perror("Failed to make temp output dir");
 	}
 
 	torture->lp_ctx = cmdline_lp_ctx;
@@ -669,6 +678,9 @@ int main(int argc,char *argv[])
 			}
 		}
 	}
+
+	/* Now delete the temp dir we created */
+	torture_deltree_outputdir(torture);
 
 	if (torture->results->returncode && correct) {
 		return(0);
