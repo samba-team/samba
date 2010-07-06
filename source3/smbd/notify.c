@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../librpc/gen_ndr/notify.h"
+#include "../librpc/gen_ndr/ndr_notify.h"
 
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
@@ -63,23 +63,19 @@ static bool notify_change_record_identical(struct notify_change *c1,
 static bool notify_marshall_changes(int num_changes,
 				uint32 max_offset,
 				struct notify_change *changes,
-				prs_struct *ps)
+				DATA_BLOB *final_blob)
 {
 	int i;
-	UNISTR uni_name;
 
 	if (num_changes == -1) {
 		return false;
 	}
 
-	uni_name.buffer = NULL;
-
 	for (i=0; i<num_changes; i++) {
+		enum ndr_err_code ndr_err;
 		struct notify_change *c;
-		size_t namelen;
-		int    rem = 0;
-		uint32 u32_tmp;	/* Temp arg to prs_uint32 to avoid
-				 * signed/unsigned issues */
+		struct FILE_NOTIFY_INFORMATION m;
+		DATA_BLOB blob;
 
 		/* Coalesce any identical records. */
 		while (i+1 < num_changes &&
@@ -90,59 +86,43 @@ static bool notify_marshall_changes(int num_changes,
 
 		c = &changes[i];
 
-		if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE,
-			c->name, strlen(c->name)+1, &uni_name.buffer,
-			&namelen, True) || (uni_name.buffer == NULL)) {
-			goto fail;
-		}
-
-		namelen -= 2;	/* Dump NULL termination */
+		m.FileName1 = c->name;
+		m.FileNameLength = strlen_m(c->name)*2;
+		m.Action = c->action;
+		m.NextEntryOffset = (i == num_changes-1) ? 0 : ndr_size_FILE_NOTIFY_INFORMATION(&m, 0);
 
 		/*
 		 * Offset to next entry, only if there is one
 		 */
 
-		u32_tmp = (i == num_changes-1) ? 0 : namelen + 12;
-
-		/* Align on 4-byte boundary according to MS-CIFS 2.2.7.4.2 */
-		if ((rem = u32_tmp % 4 ) != 0)
-			u32_tmp += 4 - rem;
-
-		if (!prs_uint32("offset", ps, 1, &u32_tmp)) goto fail;
-
-		u32_tmp = c->action;
-		if (!prs_uint32("action", ps, 1, &u32_tmp)) goto fail;
-
-		u32_tmp = namelen;
-		if (!prs_uint32("namelen", ps, 1, &u32_tmp)) goto fail;
-
-		if (!prs_unistr("name", ps, 1, &uni_name)) goto fail;
-
-		/*
-		 * Not NULL terminated, decrease by the 2 UCS2 \0 chars
-		 */
-		prs_set_offset(ps, prs_offset(ps)-2);
-
-		if (rem != 0) {
-			if (!prs_align_custom(ps, 4)) goto fail;
+		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &m,
+			(ndr_push_flags_fn_t)ndr_push_FILE_NOTIFY_INFORMATION);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return false;
 		}
 
-		TALLOC_FREE(uni_name.buffer);
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(FILE_NOTIFY_INFORMATION, &m);
+		}
 
-		if (prs_offset(ps) > max_offset) {
+		if (!data_blob_append(talloc_tos(), final_blob,
+				      blob.data, blob.length)) {
+			data_blob_free(&blob);
+			return false;
+		}
+
+		data_blob_free(&blob);
+
+		if (final_blob->length > max_offset) {
 			/* Too much data for client. */
 			DEBUG(10, ("Client only wanted %d bytes, trying to "
 				   "marshall %d bytes\n", (int)max_offset,
-				   (int)prs_offset(ps)));
+				   (int)final_blob->length));
 			return False;
 		}
 	}
 
 	return True;
-
- fail:
-	TALLOC_FREE(uni_name.buffer);
-	return False;
 }
 
 /****************************************************************************
@@ -157,7 +137,7 @@ void change_notify_reply(struct smb_request *req,
 					  NTSTATUS error_code,
 					  uint8_t *buf, size_t len))
 {
-	prs_struct ps;
+	DATA_BLOB blob = data_blob_null;
 
 	if (!NT_STATUS_IS_OK(error_code)) {
 		reply_fn(req, error_code, NULL, 0);
@@ -169,21 +149,18 @@ void change_notify_reply(struct smb_request *req,
 		return;
 	}
 
-	prs_init_empty(&ps, NULL, MARSHALL);
-
 	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
-					notify_buf->changes, &ps)) {
+					notify_buf->changes, &blob)) {
 		/*
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
 		 */
-		prs_mem_free(&ps);
-		prs_init_empty(&ps, NULL, MARSHALL);
+		data_blob_free(&blob);
 	}
 
-	reply_fn(req, NT_STATUS_OK, (uint8_t *)prs_data_p(&ps), prs_offset(&ps));
+	reply_fn(req, NT_STATUS_OK, blob.data, blob.length);
 
-	prs_mem_free(&ps);
+	data_blob_free(&blob);
 
 	TALLOC_FREE(notify_buf->changes);
 	notify_buf->num_changes = 0;
