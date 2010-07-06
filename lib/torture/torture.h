@@ -488,6 +488,7 @@ unsigned long torture_setting_ulong(struct torture_context *test,
 NTSTATUS torture_temp_dir(struct torture_context *tctx, 
 				   const char *prefix, 
 				   char **tempdir);
+NTSTATUS torture_deltree_outputdir(struct torture_context *tctx);
 
 struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 		const char *name,

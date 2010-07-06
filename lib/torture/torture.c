@@ -23,6 +23,7 @@
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 
 
 struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops)
@@ -75,7 +76,7 @@ struct torture_context *torture_context_child(struct torture_context *parent)
 }
 
 /**
- create a temporary directory.
+ create a temporary directory under the output dir
 */
 _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 				   const char *prefix, char **tempdir)
@@ -90,6 +91,69 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 		return map_nt_error_from_unix(errno);
 	}
 
+	return NT_STATUS_OK;
+}
+
+static int local_deltree(const char *path)
+{
+	int ret;
+	struct dirent *dirent;
+	DIR *dir = opendir(path);
+	if (!dir) {
+		char *error = talloc_asprintf(NULL, "Could not open directory %s", path);
+		perror(error);
+		talloc_free(error);
+		return -1;
+	}
+	while ((dirent = readdir(dir))) {
+		char *name;
+		if ((strcmp(dirent->d_name, ".") == 0) || (strcmp(dirent->d_name, "..") == 0)) {
+			continue;
+		}
+		name = talloc_asprintf(NULL, "%s/%s", path,
+				       dirent->d_name);
+		if (name == NULL) {
+			closedir(dir);
+			return -1;
+		}
+		ret = remove(name);
+		if (ret == 0) {
+			talloc_free(name);
+			continue;
+		}
+
+		if (errno == ENOTEMPTY) {
+			ret = local_deltree(name);
+			if (ret == 0) {
+				ret = remove(name);
+			}
+		}
+		talloc_free(name);
+		if (ret != 0) {
+			char *error = talloc_asprintf(NULL, "Could not remove %s", path);
+			perror(error);
+			talloc_free(error);
+			break;
+		}
+	}
+	closedir(dir);
+	return ret;
+}
+
+_PUBLIC_ NTSTATUS torture_deltree_outputdir(struct torture_context *tctx)
+{
+	SMB_ASSERT(tctx->outputdir != NULL);
+	if ((strcmp(tctx->outputdir, "/") == 0)
+	    || (strcmp(tctx->outputdir, "") == 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (local_deltree(tctx->outputdir) == -1) {
+		if (errno != 0) {
+			return map_nt_error_from_unix(errno);
+		}
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 	return NT_STATUS_OK;
 }
 
