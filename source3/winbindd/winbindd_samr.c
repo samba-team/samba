@@ -77,10 +77,10 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
-				        struct winbindd_domain *domain,
-				        struct rpc_pipe_client **samr_pipe,
-				        struct policy_handle *samr_domain_hnd)
+NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
+				 struct winbindd_domain *domain,
+				 struct rpc_pipe_client **samr_pipe,
+				 struct policy_handle *samr_domain_hnd)
 {
 	NTSTATUS status;
 	struct policy_handle samr_connect_hnd;

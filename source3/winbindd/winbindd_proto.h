@@ -875,4 +875,11 @@ NTSTATUS winbindd_pam_chng_pswd_auth_crap_recv(
 	struct tevent_req *req,
 	struct winbindd_response *response);
 
+/* The following definitions come from winbindd/winbindd_samr.c  */
+
+NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
+				 struct winbindd_domain *domain,
+				 struct rpc_pipe_client **samr_pipe,
+				 struct policy_handle *samr_domain_hnd);
+
 #endif /*  _WINBINDD_PROTO_H_  */

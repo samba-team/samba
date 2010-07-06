@@ -2078,6 +2078,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	char *machine_account = NULL;
 	char *domain_name = NULL;
 
+	if (strequal(domain->name, get_global_sam_name())) {
+		result = open_internal_samr_conn(mem_ctx, domain, cli, sam_handle);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
+		return NT_STATUS_OK;
+	}
+
 	result = init_dc_connection_rpc(domain);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;

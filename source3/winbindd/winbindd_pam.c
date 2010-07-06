@@ -31,7 +31,6 @@
 #include "rpc_client/cli_netlogon.h"
 #include "smb_krb5.h"
 #include "../lib/crypto/arcfour.h"
-#include "rpc_server/srv_samr_util.h"
 #include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
@@ -1896,12 +1895,14 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	char *oldpass;
 	char *newpass = NULL;
 	struct policy_handle dom_pol;
-	struct rpc_pipe_client *cli;
+	struct rpc_pipe_client *cli = NULL;
 	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring domain, user;
+
+	ZERO_STRUCT(dom_pol);
 
 	DEBUG(3, ("[%5lu]: dual pam chauthtok %s\n", (unsigned long)state->pid,
 		  state->request->data.auth.user));
@@ -1917,53 +1918,6 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 	/* Initialize reject reason */
 	state->response->data.auth.reject_reason = Undefined;
-
-	if (strequal(domain, get_global_sam_name())) {
-		struct samr_CryptPassword new_nt_password;
-		struct samr_CryptPassword new_lm_password;
-		struct samr_Password old_nt_hash_enc;
-		struct samr_Password old_lanman_hash_enc;
-		enum samPwdChangeReason rejectReason;
-
-		uchar old_nt_hash[16];
-		uchar old_lanman_hash[16];
-		uchar new_nt_hash[16];
-		uchar new_lanman_hash[16];
-
-		contact_domain = NULL;
-
-		E_md4hash(oldpass, old_nt_hash);
-		E_md4hash(newpass, new_nt_hash);
-
-		if (lp_client_lanman_auth() &&
-		    E_deshash(newpass, new_lanman_hash) &&
-		    E_deshash(oldpass, old_lanman_hash)) {
-
-			/* E_deshash returns false for 'long' passwords (> 14
-			   DOS chars).  This allows us to match Win2k, which
-			   does not store a LM hash for these passwords (which
-			   would reduce the effective password length to 14) */
-
-			encode_pw_buffer(new_lm_password.data, newpass, STR_UNICODE);
-			arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
-			E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
-		} else {
-			ZERO_STRUCT(new_lm_password);
-			ZERO_STRUCT(old_lanman_hash_enc);
-		}
-
-		encode_pw_buffer(new_nt_password.data, newpass, STR_UNICODE);
-
-		arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
-		E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
-
-		result = pass_oem_change(
-			user,
-			new_lm_password.data, old_lanman_hash_enc.hash,
-			new_nt_password.data, old_nt_hash_enc.hash,
-			&rejectReason);
-		goto done;
-	}
 
 	/* Get sam handle */
 
@@ -2060,6 +2014,16 @@ done:
 
 process_result:
 
+	if (strequal(contact_domain->name, get_global_sam_name())) {
+		/* FIXME: internal rpc pipe does not cache handles yet */
+		if (cli) {
+			if (is_valid_policy_hnd(&dom_pol)) {
+				rpccli_samr_Close(cli, state->mem_ctx, &dom_pol);
+			}
+			TALLOC_FREE(cli);
+		}
+	}
+
 	set_auth_errors(state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2,
@@ -2144,7 +2108,9 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	fstring  domain,user;
 	struct policy_handle dom_pol;
 	struct winbindd_domain *contact_domain = domainSt;
-	struct rpc_pipe_client *cli;
+	struct rpc_pipe_client *cli = NULL;
+
+	ZERO_STRUCT(dom_pol);
 
 	/* Ensure null termination */
 	state->request->data.chng_pswd_auth_crap.user[
@@ -2192,21 +2158,6 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n",
 		  (unsigned long)state->pid, domain, user));
 
-	if (strequal(domain, get_global_sam_name())) {
-		enum samPwdChangeReason reject_reason;
-
-		result = pass_oem_change(
-			user,
-			state->request->data.chng_pswd_auth_crap.new_lm_pswd,
-			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc,
-			state->request->data.chng_pswd_auth_crap.new_nt_pswd,
-			state->request->data.chng_pswd_auth_crap.old_nt_hash_enc,
-			&reject_reason);
-		DEBUG(10, ("pass_oem_change returned %s\n",
-			   nt_errstr(result)));
-		goto done;
-	}
-
 	/* Change password */
 	new_nt_password = data_blob_const(
 		state->request->data.chng_pswd_auth_crap.new_nt_pswd,
@@ -2242,6 +2193,16 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		new_lm_password, old_lm_hash_enc);
 
  done:
+
+	if (strequal(contact_domain->name, get_global_sam_name())) {
+		/* FIXME: internal rpc pipe does not cache handles yet */
+		if (cli) {
+			if (is_valid_policy_hnd(&dom_pol)) {
+				rpccli_samr_Close(cli, state->mem_ctx, &dom_pol);
+			}
+			TALLOC_FREE(cli);
+		}
+	}
 
 	set_auth_errors(state->response, result);
 
