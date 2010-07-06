@@ -40,6 +40,7 @@
 
 #include "ldb_includes.h"
 #include "ldb_module.h"
+#include "ldb_private.h"
 
 #define LDAP_DEPRECATED 1
 #include <ldap.h>
@@ -856,6 +857,48 @@ static int lldb_destructor(struct lldb_private *lldb)
 	return 0;
 }
 
+
+/*
+  optionally perform a bind
+ */
+static int lldb_bind(struct ldb_module *module,
+		     const char *options[])
+{
+	const char *bind_mechanism;
+	struct lldb_private *lldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+
+	bind_mechanism = ldb_options_find(ldb, options, "bindMech");
+	if (bind_mechanism == NULL) {
+		/* no bind wanted */
+		return LDB_SUCCESS;
+	}
+
+	lldb = talloc_get_type(ldb_module_get_private(module), struct lldb_private);
+
+	if (strcmp(bind_mechanism, "simple") == 0) {
+		const char *bind_id, *bind_secret;
+
+		bind_id = ldb_options_find(ldb, options, "bindID");
+		bind_secret = ldb_options_find(ldb, options, "bindSecret");
+		if (bind_id == NULL || bind_secret == NULL) {
+			ldb_asprintf_errstring(ldb, "simple bind requires bindID and bindSecret");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldap_simple_bind_s(lldb->ldap, bind_id, bind_secret);
+		if (ret != LDAP_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "bind failed: %s", ldap_err2string(ret));
+			return ret;
+		}
+		return LDB_SUCCESS;
+	}
+
+	ldb_asprintf_errstring(ldb, "bind failed: unknown mechanism %s", bind_mechanism);
+	return LDB_ERR_INAPPROPRIATE_AUTHENTICATION;
+}
+
 /*
   connect to the database
 */
@@ -897,6 +940,13 @@ static int lldb_connect(struct ldb_context *ldb,
 	}
 
 	*_module = module;
+
+	ret = lldb_bind(module, options);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+
 	return LDB_SUCCESS;
 
 failed:
