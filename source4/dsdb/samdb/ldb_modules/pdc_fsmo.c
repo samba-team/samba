@@ -46,8 +46,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	pdc_dn = ldb_get_default_basedn(ldb);
@@ -60,8 +59,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 
 	pdc_fsmo = talloc_zero(mem_ctx, struct dsdb_pdc_fsmo);
 	if (!pdc_fsmo) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ldb_module_set_private(module, pdc_fsmo);
 
@@ -89,8 +87,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	}
 
 	if (ldb_set_opaque(ldb, "dsdb_pdc_fsmo", pdc_fsmo) != LDB_SUCCESS) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	talloc_steal(module, pdc_fsmo);

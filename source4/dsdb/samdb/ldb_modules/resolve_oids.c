@@ -53,8 +53,7 @@ static int resolve_oids_need_value(struct ldb_context *ldb,
 	case DRSUAPI_ATTRIBUTE_possSuperiors:
 		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
 		if (!str) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		vo = dsdb_class_by_governsID_oid(schema, str);
 		talloc_free(str);
@@ -68,8 +67,7 @@ static int resolve_oids_need_value(struct ldb_context *ldb,
 	case DRSUAPI_ATTRIBUTE_mayContain:
 		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
 		if (!str) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		va = dsdb_attribute_by_attributeID_oid(schema, str);
 		talloc_free(str);
@@ -246,8 +244,7 @@ static int resolve_oids_replace_value(struct ldb_context *ldb,
 	case DRSUAPI_ATTRIBUTE_possSuperiors:
 		str = talloc_strndup(schema, (char *)valp->data, valp->length);
 		if (!str) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		vo = dsdb_class_by_governsID_oid(schema, str);
 		talloc_free(str);
@@ -262,8 +259,7 @@ static int resolve_oids_replace_value(struct ldb_context *ldb,
 	case DRSUAPI_ATTRIBUTE_mayContain:
 		str = talloc_strndup(schema, (char *)valp->data, valp->length);
 		if (!str) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		va = dsdb_attribute_by_attributeID_oid(schema, str);
 		talloc_free(str);
@@ -509,22 +505,19 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 
 	ac = talloc(req, struct resolve_oids_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->module = module;
 	ac->req = req;
 
 	tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
 	if (!tree) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	schema = talloc_reference(tree, schema);
 	if (!schema) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = resolve_oids_parse_tree_replace(ldb, schema,
@@ -536,8 +529,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 	attrs2 = str_list_copy_const(ac,
 				     discard_const_p(const char *, req->op.search.attrs));
 	if (req->op.search.attrs && !attrs2) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	for (i=0; attrs2 && attrs2[i]; i++) {
@@ -604,21 +596,18 @@ static int resolve_oids_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct resolve_oids_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->module = module;
 	ac->req = req;
 
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 	if (!msg) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (!talloc_reference(msg, schema)) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = resolve_oids_message_replace(ldb, schema, msg);
@@ -670,8 +659,7 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 
 	ac = talloc(req, struct resolve_oids_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->module = module;
 	ac->req = req;
@@ -679,13 +667,11 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (!talloc_reference(msg, schema)) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = resolve_oids_message_replace(ldb, schema, msg);

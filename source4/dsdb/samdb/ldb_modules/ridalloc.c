@@ -178,9 +178,8 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 
 	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
 	if (!server_dn) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
@@ -193,15 +192,13 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 
 	rid_set_dn = ldb_dn_copy(tmp_ctx, machine_dn);
 	if (rid_set_dn == NULL) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	if (! ldb_dn_add_child_fmt(rid_set_dn, "CN=RID Set")) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	/* grab a pool from the RID Manager object */
@@ -345,9 +342,8 @@ static int ridalloc_refresh_rid_set_ntds(struct ldb_module *module,
 
 	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
 	if (!server_dn) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
@@ -587,9 +583,8 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 
 	server_dn = ldb_dn_get_parent(tmp_ctx, ntds_dn);
 	if (!server_dn) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);

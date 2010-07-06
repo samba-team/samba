@@ -55,7 +55,7 @@ static int partition_load_replicate_dns(struct ldb_context *ldb, struct partitio
 		int i;
 		data->replicate = talloc_array(data, struct ldb_dn *, replicate_attributes->num_values + 1);
 		if (!data->replicate) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		for (i=0; i < replicate_attributes->num_values; i++) {
@@ -86,8 +86,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 	
 	data->modules = talloc_array(data, struct partition_module *, modules_attributes->num_values + 1);
 	if (!data->modules) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	
 	for (i=0; i < modules_attributes->num_values; i++) {
@@ -95,8 +94,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 		DATA_BLOB dn_blob;
 		data->modules[i] = talloc(data->modules, struct partition_module);
 		if (!data->modules[i]) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		dn_blob = modules_attributes->values[i];
@@ -120,7 +118,7 @@ static int partition_load_modules(struct ldb_context *ldb,
 		} else {
 			data->modules[i]->dn = ldb_dn_from_ldb_val(data->modules[i], ldb, &dn_blob);
 			if (!data->modules[i]->dn || !ldb_dn_validate(data->modules[i]->dn)) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_operr(ldb);
 			}
 		}
 	}
@@ -205,14 +203,13 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 
 	(*partition) = talloc(mem_ctx, struct dsdb_partition);
 	if (!*partition) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	(*partition)->ctrl = ctrl = talloc((*partition), struct dsdb_control_current_partition);
 	if (!ctrl) {
 		talloc_free(*partition);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* See if an LDAP backend has been specified */
@@ -227,7 +224,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 			ldb_asprintf_errstring(ldb, 
 					       "partition_init: unable to determine an relative path for partition: %s", filename);
 			talloc_free(*partition);
-			return LDB_ERR_OPERATIONS_ERROR;		
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		(*partition)->backend_url = talloc_steal((*partition), backend_url);
 
@@ -285,9 +282,8 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	/* This weirdness allows us to use ldb_next_request() in partition.c */
 	(*partition)->module = ldb_module_new(*partition, ldb, "partition_next", NULL);
 	if (!(*partition)->module) {
-		ldb_oom(ldb);
 		talloc_free(*partition);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	(*partition)->module->next = talloc_steal((*partition)->module, module_chain);
 
@@ -313,8 +309,7 @@ static int partition_register(struct ldb_context *ldb, struct dsdb_control_curre
 
 	req = talloc_zero(NULL, struct ldb_request);
 	if (req == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 		
 	req->operation = LDB_REQ_REGISTER_PARTITION;
@@ -326,7 +321,7 @@ static int partition_register(struct ldb_context *ldb, struct dsdb_control_curre
 	req->handle = ldb_handle_new(req, ldb);
 	if (req->handle == NULL) {
 		talloc_free(req);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	
 	ret = ldb_request(ldb, req);
@@ -356,8 +351,7 @@ static int add_partition_to_data(struct ldb_context *ldb, struct partition_priva
 	/* Add partition to list of partitions */
 	data->partitions = talloc_realloc(data, data->partitions, struct dsdb_partition *, i + 2);
 	if (!data->partitions) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	data->partitions[i] = talloc_steal(data->partitions, partition);
 	data->partitions[i+1] = NULL;
@@ -390,8 +384,7 @@ int partition_reload_if_required(struct ldb_module *module,
 
 	mem_ctx = talloc_new(data);
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = partition_primary_sequence_number(module, mem_ctx, LDB_SEQ_HIGHEST_SEQ, &seq);
@@ -701,8 +694,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		new_partition = true;
 		mod_msg = ldb_msg_new(req);
 		if (!mod_msg) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		
 		mod_msg->dn = ldb_dn_new(mod_msg, ldb, DSDB_PARTITION_DN);
@@ -718,7 +710,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			const char *p, *sam_name;
 			sam_name = strrchr((const char *)ldb_get_opaque(ldb, "ldb_url"), '/');
 			if (!sam_name) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_operr(ldb);
 			}
 			sam_name++;
 
@@ -735,8 +727,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			if (*p) {
 				escaped = rfc1738_escape_part(mod_msg, casefold_dn);
 				if (!escaped) {
-					ldb_oom(ldb);
-					return LDB_ERR_OPERATIONS_ERROR;
+					return ldb_oom(ldb);
 				}
 				filename = talloc_asprintf(mod_msg, "%s.d/%s.ldb", sam_name, escaped);
 				talloc_free(escaped);
@@ -745,8 +736,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 			}
 
 			if (!filename) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 		}
 		partition_record = talloc_asprintf(mod_msg, "%s:%s", casefold_dn, filename);
@@ -809,12 +799,12 @@ int partition_init(struct ldb_module *module)
 	struct partition_private_data *data;
 
 	if (!mem_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	data = talloc_zero(mem_ctx, struct partition_private_data);
 	if (data == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* When used from Samba4, this message is set by the samba4
@@ -838,14 +828,14 @@ int partition_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return ldb_next_init(module);

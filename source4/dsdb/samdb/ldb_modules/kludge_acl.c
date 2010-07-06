@@ -115,8 +115,7 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	
 	mem_ctx = talloc_new(msg);
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* To ensure that oc_el is valid, we must look for it after 
@@ -323,8 +322,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	data = talloc_get_type(ldb_module_get_private(module), struct kludge_private_data);
@@ -457,8 +455,7 @@ static int kludge_acl_init(struct ldb_module *module)
 
 	data = talloc(module, struct kludge_private_data);
 	if (data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	data->password_attrs = NULL;
@@ -467,8 +464,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	ldb_module_set_private(module, data);
 
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_search(ldb, mem_ctx, &res,
@@ -495,8 +491,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
 	if (!data->password_attrs) {
 		talloc_free(mem_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	for (i=0; i < password_attributes->num_values; i++) {
 		data->password_attrs[i] = (const char *)password_attributes->values[i].data;	

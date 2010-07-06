@@ -118,7 +118,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		 * entries (lost+found, deleted objects) */
 		ac = talloc(req, struct it_context);
 		if (ac == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		ac->module = module;
 		ac->req = req;
@@ -140,8 +140,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/*
@@ -151,8 +150,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instance_type);
 	if (ret != LDB_SUCCESS) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_add_req(&down_req, ldb, req,

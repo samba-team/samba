@@ -151,8 +151,7 @@ static int anr_replace_value(struct anr_context *ac,
 		struct ldb_val *match2 = talloc(mem_ctx, struct ldb_val);
 		*match2 = data_blob_const(match->data+1, match->length - 1);
 		if (match2 == NULL){
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		match = match2;
 		op = LDB_OP_EQUALITY;
@@ -167,8 +166,7 @@ static int anr_replace_value(struct anr_context *ac,
 			/* Inject an 'or' with the current tree */
 			tree = make_parse_list(module, mem_ctx,  LDB_OP_OR, tree, match_tree);
 			if (tree == NULL) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 		} else {
 			tree = match_tree;
@@ -186,8 +184,7 @@ static int anr_replace_value(struct anr_context *ac,
 		struct ldb_val *first_match = talloc(tree, struct ldb_val);
 		struct ldb_val *second_match = talloc(tree, struct ldb_val);
 		if (!first_match || !second_match) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		*first_match = data_blob_const(match->data, p-match->data);
 		*second_match = data_blob_const(p+1, match->length - (p-match->data) - 1);
@@ -199,8 +196,7 @@ static int anr_replace_value(struct anr_context *ac,
 
 		first_split_filter = make_parse_list(module, ac,  LDB_OP_AND, match_tree_1, match_tree_2);
 		if (first_split_filter == NULL){
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		
 		match_tree_1 = make_match_tree(module, mem_ctx, op, "sn", first_match);
@@ -208,15 +204,13 @@ static int anr_replace_value(struct anr_context *ac,
 
 		second_split_filter = make_parse_list(module, ac,  LDB_OP_AND, match_tree_1, match_tree_2);
 		if (second_split_filter == NULL){
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		split_filters = make_parse_list(module, mem_ctx,  LDB_OP_OR, 
 						first_split_filter, second_split_filter);
 		if (split_filters == NULL) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		if (tree) {
@@ -331,8 +325,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct anr_context);
 	if (!ac) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ac->module = module;
@@ -345,7 +338,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 
 	ret = anr_replace_subtrees(ac, req->op.search.tree, "anr", &anr_tree);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (!ac->found_anr) {
@@ -363,7 +356,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 					ac, anr_search_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	talloc_steal(down_req, anr_tree);
 

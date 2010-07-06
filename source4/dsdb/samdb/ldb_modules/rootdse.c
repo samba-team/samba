@@ -89,19 +89,19 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	dn_string = talloc_strndup(tmp_ctx, (const char *)v->data, v->length);
 	if (dn_string == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (res == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	dn = ldb_dn_new(tmp_ctx, ldb, dn_string);
 	if (!ldb_dn_validate(dn)) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_search_req(&req2, ldb, tmp_ctx,
@@ -137,7 +137,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 
 	if (!res || res->count != 1) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	dn2 = res->msgs[0]->dn;
@@ -147,7 +147,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 
 	if (v->data == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	talloc_free(tmp_ctx);
@@ -404,7 +404,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	return LDB_SUCCESS;
 
 failed:
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_operr(ldb);
 }
 
 /*
@@ -506,7 +506,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = rootdse_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* in our db we store the rootDSE with a DN of @ROOTDSE */
@@ -532,12 +532,12 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 
 	list = talloc_realloc(priv, priv->controls, char *, priv->num_controls + 1);
 	if (!list) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	list[priv->num_controls] = talloc_strdup(list, req->op.reg_control.oid);
 	if (!list[priv->num_controls]) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	priv->num_controls += 1;
@@ -553,12 +553,12 @@ static int rootdse_register_partition(struct ldb_module *module, struct ldb_requ
 
 	list = talloc_realloc(priv, priv->partitions, struct ldb_dn *, priv->num_partitions + 1);
 	if (!list) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	list[priv->num_partitions] = ldb_dn_copy(list, req->op.reg_partition.dn);
 	if (!list[priv->num_partitions]) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	priv->num_partitions += 1;
@@ -597,8 +597,7 @@ static int rootdse_init(struct ldb_module *module)
 
 	data = talloc_zero(module, struct private_data);
 	if (data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	data->num_controls = 0;
@@ -617,8 +616,7 @@ static int rootdse_init(struct ldb_module *module)
 
 	mem_ctx = talloc_new(data);
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* Now that the partitions are set up, do a search for:
@@ -638,9 +636,8 @@ static int rootdse_init(struct ldb_module *module)
 		if (domain_behaviour_version != -1) {
 			int *val = talloc(ldb, int);
 			if (!val) {
-				ldb_oom(ldb);
 				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			*val = domain_behaviour_version;
 			ret = ldb_set_opaque(ldb, "domainFunctionality", val);
@@ -661,9 +658,8 @@ static int rootdse_init(struct ldb_module *module)
 		if (forest_behaviour_version != -1) {
 			int *val = talloc(ldb, int);
 			if (!val) {
-				ldb_oom(ldb);
 				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			*val = forest_behaviour_version;
 			ret = ldb_set_opaque(ldb, "forestFunctionality", val);
@@ -691,9 +687,8 @@ static int rootdse_init(struct ldb_module *module)
 				if (domain_controller_behaviour_version != -1) {
 					int *val = talloc(ldb, int);
 					if (!val) {
-						ldb_oom(ldb);
 						talloc_free(mem_ctx);
-					return LDB_ERR_OPERATIONS_ERROR;
+						return ldb_oom(ldb);
 					}
 					*val = domain_controller_behaviour_version;
 					ret = ldb_set_opaque(ldb,
@@ -954,7 +949,7 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 
 	ret = ldb_extended(ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	talloc_free(ext_res);

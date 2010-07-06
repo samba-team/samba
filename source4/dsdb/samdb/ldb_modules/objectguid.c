@@ -158,7 +158,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct og_context);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->module = module;
 	ac->req = req;
@@ -167,7 +167,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
 		talloc_free(down_req);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* a new GUID */
@@ -180,7 +180,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	
 	if (add_time_element(msg, "whenCreated", t) != 0 ||
 	    add_time_element(msg, "whenChanged", t) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Get a sequence number from the backend */
@@ -190,7 +190,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
 		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 	}
 
@@ -229,7 +229,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct og_context);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->module = module;
 	ac->req = req;
@@ -237,18 +237,18 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (add_time_element(msg, "whenChanged", t) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 	}
 

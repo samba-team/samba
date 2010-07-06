@@ -103,7 +103,7 @@ static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		DEBUG(4,(__location__ ": Unable to parse GUID for dn %s\n",
 			 ldb_dn_get_linearized(dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
 
 	ret = dsdb_find_guid_by_dn(ldb_module_get_ctx(ac->module), dn, guid);
@@ -138,8 +138,7 @@ static int la_store_op(struct la_context *ac,
 
 	os = talloc_zero(ac, struct la_op_store);
 	if (!os) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	os->op = op;
@@ -162,8 +161,7 @@ static int la_store_op(struct la_context *ac,
 
 	os->name = talloc_strdup(os, name);
 	if (!os->name) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* Do deletes before adds */
@@ -209,7 +207,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 
 	ac = linked_attributes_init(module, req);
 	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (!ac->schema) {
@@ -434,7 +432,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 	ac = linked_attributes_init(module, req);
 	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (!ac->schema) {
@@ -444,8 +442,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 	ac->rc = talloc_zero(ac, struct replace_context);
 	if (!ac->rc) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	for (i=0; i < req->op.mod.message->num_elements; i++) {
@@ -536,8 +533,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 						   struct ldb_message_element,
 						   ac->rc->num_elements +1);
 			if (!search_el) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			ac->rc->el = search_el;
 
@@ -552,8 +548,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 		attrs = talloc_array(ac->rc, const char *, ac->rc->num_elements + 1);
 		if (!attrs) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		for (i = 0; ac->rc && i < ac->rc->num_elements; i++) {
 			attrs[i] = ac->rc->el[i].name;
@@ -724,8 +719,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 
 	schema = dsdb_get_schema(ldb, res);
 	if (!schema) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	msg = res->msgs[0];
@@ -760,7 +754,7 @@ static int la_queue_mod_request(struct la_context *ac)
 
 	if (la_private == NULL) {
 		ldb_debug(ldb_module_get_ctx(ac->module), LDB_DEBUG_ERROR, __location__ ": No la_private transaction setup\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
 
 	talloc_steal(la_private, ac);
@@ -935,8 +929,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 	/* Create the modify request */
 	new_msg = ldb_msg_new(ac);
 	if (!new_msg) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = la_find_dn_target(module, ac, &op->guid, &new_msg->dn);
@@ -956,8 +949,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 	}
 	ret_el->values = talloc_array(new_msg, struct ldb_val, 1);
 	if (!ret_el->values) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ret_el->num_values = 1;
 	if (op->op == LA_OP_ADD) {
@@ -1021,7 +1013,7 @@ static int linked_attributes_start_transaction(struct ldb_module *module)
 	talloc_free(la_private);
 	la_private = talloc(module, struct la_private);
 	if (la_private == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 	la_private->la_list = NULL;
 	ldb_module_set_private(module, la_private);

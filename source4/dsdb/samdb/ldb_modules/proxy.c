@@ -155,7 +155,7 @@ failed:
 	talloc_free(proxy->newdn);
 	talloc_free(proxy->upstream);
 	proxy->upstream = NULL;
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_operr(ldb);
 }
 
 
@@ -319,7 +319,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	}
 
 	if (load_proxy_info(module) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* see if the dn is within olddn */
@@ -329,7 +329,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 
 	ac = talloc(req, struct proxy_ctx);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ac->module = module;

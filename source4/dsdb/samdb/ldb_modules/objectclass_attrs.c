@@ -88,8 +88,7 @@ static int attr_handler(struct oc_context *ac)
 		msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
 	}
 	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* Check if attributes exist in the schema, if the values match,
@@ -167,7 +166,7 @@ static int attr_handler2(struct oc_context *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (ac->search_res == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* We rely here on the preceeding "objectclass" LDB module which did
@@ -175,7 +174,7 @@ static int attr_handler2(struct oc_context *ac)
 	oc_element = ldb_msg_find_element(ac->search_res->message,
 					  "objectClass");
 	if (oc_element == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	must_contain = dsdb_full_attribute_list(ac, ac->schema, oc_element,
@@ -185,7 +184,7 @@ static int attr_handler2(struct oc_context *ac)
 	found_must_contain = const_str_list(str_list_copy(ac, must_contain));
 	if ((must_contain == NULL) || (may_contain == NULL)
 	    || (found_must_contain == NULL)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Check if all specified attributes are valid in the given
@@ -195,7 +194,7 @@ static int attr_handler2(struct oc_context *ac)
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		/* Check if they're single-valued if this is requested */
@@ -365,7 +364,7 @@ static int objectclass_attrs_add(struct ldb_module *module,
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* without schema, there isn't much to do here */
@@ -394,7 +393,7 @@ static int objectclass_attrs_modify(struct ldb_module *module,
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* without schema, there isn't much to do here */

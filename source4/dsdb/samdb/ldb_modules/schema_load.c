@@ -161,8 +161,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 
 	tmp_ctx = talloc_new(module);
 	if (!tmp_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* we don't want to trace the schema load */
@@ -270,8 +269,7 @@ static int schema_load_init(struct ldb_module *module)
 
 	private_data = talloc_zero(module, struct schema_load_private_data);
 	if (private_data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ldb_module_set_private(module, private_data);

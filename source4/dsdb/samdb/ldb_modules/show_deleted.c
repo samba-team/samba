@@ -53,23 +53,20 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 		   in-situ */
 		new_tree = talloc(req, struct ldb_parse_tree);
 		if (!new_tree) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		new_tree->operation = LDB_OP_AND;
 		new_tree->u.list.num_elements = 2;
 		new_tree->u.list.elements = talloc_array(new_tree, struct ldb_parse_tree *, 2);
 		if (!new_tree->u.list.elements) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		new_tree->u.list.elements[0] = talloc(new_tree->u.list.elements, struct ldb_parse_tree);
 		new_tree->u.list.elements[0]->operation = LDB_OP_NOT;
 		new_tree->u.list.elements[0]->u.isnot.child =
 			talloc(new_tree->u.list.elements, struct ldb_parse_tree);
 		if (!new_tree->u.list.elements[0]->u.isnot.child) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		new_tree->u.list.elements[0]->u.isnot.child->operation = LDB_OP_EQUALITY;
 		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = "isDeleted";
@@ -109,7 +106,7 @@ static int show_deleted_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"show_deleted: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return ldb_next_init(module);

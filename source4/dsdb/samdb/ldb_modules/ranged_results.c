@@ -216,15 +216,14 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 					      (size_t)(p - new_attrs[i]));
 
 		if (!new_attrs[i]) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 	}
 
 	if (found_rr) {
 		ac = rr_init_context(module, req);
 		if (!ac) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		ret = ldb_build_search_req_ex(&down_req, ldb, ac,

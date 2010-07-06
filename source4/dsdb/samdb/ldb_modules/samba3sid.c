@@ -112,9 +112,8 @@ static int samba3sid_next_sid(struct ldb_module *module,
 
 	(*sid) = talloc_asprintf(tmp_ctx, "%s-%d", sambaSID, rid);
 	if (!*sid) {
-		ldb_module_oom(module);
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = dsdb_module_constrainted_update_integer(module, msg->dn,
@@ -166,8 +165,7 @@ static int samba3sid_add(struct ldb_module *module, struct ldb_request *req)
 
 	new_msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (!new_msg) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = samba3sid_next_sid(module, new_msg, &sid);

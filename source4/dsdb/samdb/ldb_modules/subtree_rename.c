@@ -122,7 +122,7 @@ static int subtree_rename_next_request(struct subtree_rename_context *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (ac->current == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_rename_req(&req, ldb, ac->current,
@@ -241,13 +241,13 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 
 	ac = subren_ctx_init(module, req);
 	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* add this entry as the first to do */
 	ac->current = talloc_zero(ac, struct subren_msg_store);
 	if (ac->current == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ac->current->olddn = req->op.rename.olddn;
 	ac->current->newdn = req->op.rename.newdn;

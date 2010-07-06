@@ -105,7 +105,7 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	if(!session_info) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res, dn,
 				    acl_attrs, DSDB_SEARCH_SHOW_DELETED);
@@ -113,7 +113,7 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 		DEBUG(10,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
 		return ret;
 	}
-	return dsdb_check_access_on_dn_internal(acl_res,
+	return dsdb_check_access_on_dn_internal(ldb, acl_res,
 						mem_ctx,
 						session_info->security_token,
 						dn,
@@ -139,13 +139,12 @@ static int acl_module_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "acl_module_init: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	data = talloc(module, struct acl_private);
 	if (data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	data->password_attrs = NULL;
@@ -154,8 +153,7 @@ static int acl_module_init(struct ldb_module *module)
 	ldb_module_set_private(module, data);
 
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = dsdb_module_search_dn(module, mem_ctx, &res,
@@ -182,8 +180,7 @@ static int acl_module_init(struct ldb_module *module)
 	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
 	if (!data->password_attrs) {
 		talloc_free(mem_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	for (i=0; i < password_attributes->num_values; i++) {
 		data->password_attrs[i] = (const char *)password_attributes->values[i].data;
@@ -263,7 +260,7 @@ static int acl_check_access_on_attribute(struct ldb_module *module,
 	return ret;
 fail:
 	talloc_free(tmp_ctx);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_operr(ldb_module_get_ctx(module));
 }
 
 static int acl_check_access_on_class(struct ldb_module *module,
@@ -309,7 +306,7 @@ static int acl_check_access_on_class(struct ldb_module *module,
 	}
 	return ret;
 fail:
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_operr(ldb_module_get_ctx(module));
 }
 
 static int acl_allowedAttributes(struct ldb_module *module,
@@ -337,8 +334,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 
 	mem_ctx = talloc_new(msg);
 	if (!mem_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	oc_el = ldb_msg_find_element(sd_msg, "objectClass");
@@ -371,7 +367,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 			return LDB_SUCCESS;
 		}
 
-		ret = dsdb_get_sd_from_ldb_message(mem_ctx, sd_msg, &sd);
+		ret = dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(module), mem_ctx, sd_msg, &sd);
 
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -382,7 +378,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 			const struct dsdb_attribute *attr = dsdb_attribute_by_lDAPDisplayName(schema,
 											attr_list[i]);
 			if (!attr) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_operr(ldb);
 			}
 			/* remove constructed attributes */
 			if (attr->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED
@@ -492,7 +488,7 @@ static int acl_childClassesEffective(struct ldb_module *module,
 	ldb_msg_remove_attr(msg, "allowedChildClassesEffective");
 
 	oc_el = ldb_msg_find_element(sd_msg, "objectClass");
-	ret = dsdb_get_sd_from_ldb_message(msg, sd_msg, &sd);
+	ret = dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(module), msg, sd_msg, &sd);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -567,7 +563,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	}
 	else {
 		/* Get the security descriptor from the message */
-		ret = dsdb_get_sd_from_ldb_message(msg, sd_msg, &sd);
+		ret = dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(module), msg, sd_msg, &sd);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -638,7 +634,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 
 	schema = dsdb_get_schema(ldb, req);
 	if (!schema) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	oc_el = ldb_msg_find_element(req->op.add.message, "objectClass");
@@ -724,7 +720,7 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 	}
 	member_el = ldb_msg_find_element(req->op.mod.message, "member");
 	if (!member_el) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	/* user can only remove oneself */
 	if (member_el->num_values == 0) {
@@ -766,7 +762,7 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 
 	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
 	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 	for (l = passwordAttrs; *l != NULL; l++) {
 		while ((el = ldb_msg_find_element(msg, *l)) != NULL) {
@@ -865,7 +861,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		goto fail;
 	}
 
-	ret = dsdb_get_sd_from_ldb_message(tmp_ctx, acl_res->msgs[0], &sd);
+	ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, acl_res->msgs[0], &sd);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10, ("acl_modify: cannot get descriptor\n"));
 		goto fail;
@@ -1095,37 +1091,37 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	schema = dsdb_get_schema(ldb, acl_res);
 	if (!schema) {
 		talloc_free(acl_res);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	};
 
 	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
 							  "name");
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &new_node, &new_node)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	};
 
 	rdn_name = ldb_dn_get_rdn_name(req->op.rename.olddn);
 	if (rdn_name == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
 							  rdn_name);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &new_node, &new_node)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	};
 
-	ret = dsdb_get_sd_from_ldb_message(req, acl_res->msgs[0], &sd);
+	ret = dsdb_get_sd_from_ldb_message(ldb, req, acl_res->msgs[0], &sd);
 
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	/* Theoretically we pass the check if the object has no sd */
 	if (!sd) {
@@ -1298,8 +1294,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc_zero(req, struct acl_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	data = talloc_get_type(ldb_module_get_private(module), struct acl_private);
 

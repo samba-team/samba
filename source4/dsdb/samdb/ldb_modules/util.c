@@ -48,7 +48,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	ret = ldb_build_search_req(&req, ldb_module_get_ctx(module), tmp_ctx,
@@ -121,7 +121,7 @@ int dsdb_module_search(struct ldb_module *module,
 
 		if (!expression) {
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb_module_get_ctx(module));
 		}
 	} else {
 		expression = NULL;
@@ -130,7 +130,7 @@ int dsdb_module_search(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	ret = ldb_build_search_req(&req, ldb_module_get_ctx(module), tmp_ctx,
@@ -237,7 +237,7 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
 	status = dsdb_get_extended_dn_guid(res->msgs[0]->dn, guid, "GUID");
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	talloc_free(tmp_ctx);
@@ -261,7 +261,7 @@ int dsdb_module_modify(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
@@ -318,7 +318,7 @@ int dsdb_module_rename(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	ret = ldb_build_rename_req(&req, ldb, tmp_ctx,
@@ -374,7 +374,7 @@ int dsdb_module_add(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	ret = ldb_build_add_req(&req, ldb, tmp_ctx,
@@ -429,7 +429,7 @@ int dsdb_module_del(struct ldb_module *module,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_del_req(&req, ldb, tmp_ctx,
@@ -648,9 +648,8 @@ int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ld
 	el->values = &v1;
 	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)old_val);
 	if (!vstring) {
-		ldb_module_oom(module);
 		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 	v1 = data_blob_string_const(vstring);
 
@@ -663,9 +662,8 @@ int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ld
 	el->values = &v2;
 	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)new_val);
 	if (!vstring) {
-		ldb_module_oom(module);
 		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 	v2 = data_blob_string_const(vstring);
 
@@ -727,7 +725,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
@@ -745,7 +743,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	p_ctrl = talloc(req, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	p_ctrl->dn = dn;
@@ -812,19 +810,19 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	msg->dn = ldb_dn_new(msg, ldb, "@REPLCHANGED");
 	if (msg->dn == NULL) {
 		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	res = talloc_zero(msg, struct ldb_result);
 	if (!res) {
 		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = ldb_msg_add_fmt(msg, "uSNHighest", "%llu", (unsigned long long)uSN);
@@ -848,7 +846,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 	p_ctrl = talloc(msg, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {
 		talloc_free(msg);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	p_ctrl->dn = dn;

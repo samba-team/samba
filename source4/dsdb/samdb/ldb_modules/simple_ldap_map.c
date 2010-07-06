@@ -878,12 +878,12 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 
 	ext = talloc_zero(req, struct ldb_extended);
 	if (!ext) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	seqr = talloc_zero(req, struct ldb_seqnum_result);
 	if (seqr == NULL) {
 		talloc_free(ext);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ext->oid = LDB_EXTENDED_SEQUENCE_NUMBER;
 	ext->data = seqr;

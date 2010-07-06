@@ -114,8 +114,7 @@ static int np_part_search_callback(struct ldb_request *req, struct ldb_reply *ar
 	/* Now that we know it does not exist, we can try and create the partition */
 	ex_op = talloc(ac, struct dsdb_create_partition_exop);
 	if (ex_op == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	
 	ex_op->new_dn = ac->req->op.add.message->dn;
@@ -174,7 +173,7 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 		 * record already exists */
 		ac = talloc(req, struct np_context);
 		if (ac == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		ac->module = module;
 		ac->req = req;

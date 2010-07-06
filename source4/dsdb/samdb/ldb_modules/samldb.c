@@ -103,7 +103,7 @@ static int samldb_add_step(struct samldb_ctx *ac, samldb_step_fn_t fn)
 
 	step = talloc_zero(ac, struct samldb_step);
 	if (step == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(ac->module));
 	}
 
 	step->fn = fn;
@@ -113,7 +113,7 @@ static int samldb_add_step(struct samldb_ctx *ac, samldb_step_fn_t fn)
 		ac->curstep = step;
 	} else {
 		if (ac->curstep == NULL)
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb_module_get_ctx(ac->module));
 		for (stepper = ac->curstep; stepper->next != NULL;
 			stepper = stepper->next);
 		stepper->next = step;
@@ -125,7 +125,7 @@ static int samldb_add_step(struct samldb_ctx *ac, samldb_step_fn_t fn)
 static int samldb_first_step(struct samldb_ctx *ac)
 {
 	if (ac->steps == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
 
 	ac->curstep = ac->steps;
@@ -149,7 +149,7 @@ static int samldb_next_step(struct samldb_ctx *ac)
 	}
 }
 
-static int samldb_generate_samAccountName(struct ldb_message *msg)
+static int samldb_generate_samAccountName(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	char *name;
 
@@ -160,7 +160,7 @@ static int samldb_generate_samAccountName(struct ldb_message *msg)
 				(unsigned int)generate_random(),
 				(unsigned int)generate_random());
 	if (name == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	return ldb_msg_add_steal_string(msg, "samAccountName", name);
 }
@@ -220,7 +220,7 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
         if (ldb_msg_find_element(ac->msg, "samAccountName") == NULL) {
-                ret = samldb_generate_samAccountName(ac->msg);
+                ret = samldb_generate_samAccountName(ldb, ac->msg);
                 if (ret != LDB_SUCCESS) {
                         return ret;
                 }
@@ -228,12 +228,12 @@ static int samldb_check_samAccountName(struct samldb_ctx *ac)
 
 	name = ldb_msg_find_attr_as_string(ac->msg, "samAccountName", NULL);
 	if (name == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	filter = talloc_asprintf(ac, "samAccountName=%s",
 				 ldb_binary_encode_string(ac, name));
 	if (filter == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_search_req(&req, ldb, ac,
@@ -337,12 +337,11 @@ static int samldb_allocate_sid(struct samldb_ctx *ac)
 
 	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (ac->sid == NULL) {
-		ldb_module_oom(ac->module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(ac->module);
 	}
 
 	if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return samldb_next_step(ac);
@@ -424,12 +423,12 @@ static int samldb_dn_from_sid(struct samldb_ctx *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	if (ac->sid == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 
 	filter = talloc_asprintf(ac, "(objectSid=%s)",
 		ldap_encode_ndr_dom_sid(ac, ac->sid));
 	if (filter == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 
 	ret = ldb_build_search_req(&req, ldb, ac,
 				ldb_get_default_basedn(ldb),
@@ -455,7 +454,7 @@ static int samldb_check_primaryGroupID_1(struct samldb_ctx *ac)
 	rid = samdb_result_uint(ac->msg, "primaryGroupID", ~0);
 	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (ac->sid == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	ac->res_dn = NULL;
 
 	return samldb_next_step(ac);
@@ -643,7 +642,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 				      __location__": Searching for msDS-IntId=%d failed - %s\n",
 				      msds_intid,
 				      ldb_errstring(ldb));
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 		id_exists = (ldb_res->count > 0);
 
@@ -985,7 +984,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 		}
 		if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
 			talloc_free(ac);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 	}
 
@@ -1018,7 +1017,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "samldb_schema_info_update: no dsdb_schema loaded");
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	werr = dsdb_module_schema_info_update(ac->module, schema, DSDB_FLAG_NEXT_MODULE);
@@ -1028,7 +1027,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 		              "dsdb_module_schema_info_update failed with %s",
 		              win_errstr(werr));
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return LDB_SUCCESS;
@@ -1069,13 +1068,13 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (sid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
 					     dom_sid_string(ac, sid));
 	if (prev_prim_group_dn == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Finds out the DN of the new primary group */
@@ -1088,7 +1087,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (sid == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
@@ -1166,7 +1165,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 		 * for them */
 		member_dn = ldb_dn_from_ldb_val(ac, ldb, &el->values[i]);
 		if (!ldb_dn_validate(member_dn)) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		prim_group_rid = samdb_search_uint(ldb, ac, (uint32_t) -1,
@@ -1181,13 +1180,13 @@ static int samldb_member_check(struct samldb_ctx *ac)
 		sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
 				      prim_group_rid);
 		if (sid == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
 					   dom_sid_string(ac, sid));
 		if (group_dn == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
@@ -1218,7 +1217,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 	status = dom_sid_split_rid(ac, sid, NULL, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	if (rid == 0) {
 		/* Special object (security principal?) */
@@ -1230,7 +1229,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 				   "(&(primaryGroupID=%u)(objectClass=user))",
 				   rid);
 	if (count < 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	if (count > 0) {
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
@@ -1257,7 +1256,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac = samldb_ctx_init(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* build the new msg */
@@ -1266,7 +1265,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(ac);
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "samldb_add: ldb_msg_copy failed!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
@@ -1347,7 +1346,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ac = samldb_ctx_init(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* TODO: do not modify original request, create a new one */
@@ -1459,7 +1458,7 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 
 	ac = samldb_ctx_init(module, req);
 	if (ac == NULL)
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 
 	ret = samldb_prim_group_users_check(ac);
 	if (ret != LDB_SUCCESS) {

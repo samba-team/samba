@@ -675,7 +675,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	schema = dsdb_get_schema(ldb, ac);
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	switch (ac->req->operation) {
 	case LDB_ADD:
@@ -692,7 +692,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
 		break;
 	default:
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 
@@ -791,7 +791,7 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 		}
 		break;
 	default:
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_change: %s\n", ldb_dn_get_linearized(dn));
 
@@ -801,7 +801,7 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 
 	ac = descriptor_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* If there isn't a parent, just go on to the add processing */
@@ -812,8 +812,7 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 	/* get copy of parent DN */
 	parent_dn = ldb_dn_get_parent(ac, dn);
 	if (parent_dn == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_search_req(&search_req, ldb,
@@ -848,7 +847,7 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	ldb = ldb_module_get_ctx(module);
 	ac = descriptor_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
@@ -884,7 +883,7 @@ static int descriptor_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"descriptor: Unable to register control with rootdse!\n");
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	return ldb_next_init(module);
 }

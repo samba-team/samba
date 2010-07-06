@@ -115,8 +115,7 @@ static int schema_data_init(struct ldb_module *module)
 
 	data = talloc(module, struct schema_data_private_data);
 	if (data == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	data->schema_dn = schema_dn;
@@ -186,8 +185,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (!oid) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	status = dsdb_schema_pfm_find_oid(schema->prefixmap, oid, NULL);
@@ -252,8 +250,7 @@ static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message 
 		if (sclass->auxiliaryClass || sclass->systemAuxiliaryClass) {
 			char *ditcontentrule = schema_class_to_dITContentRule(msg, sclass, schema);
 			if (!ditcontentrule) {
-				ldb_oom(ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			ret = ldb_msg_add_steal_string(msg, "dITContentRules", ditcontentrule);
 			if (ret != LDB_SUCCESS) {
@@ -274,8 +271,7 @@ static int generate_extendedAttributeInfo(struct ldb_context *ldb,
 	for (attribute = schema->attributes; attribute; attribute = attribute->next) {
 		char *val = schema_attribute_to_extendedInfo(msg, attribute);
 		if (!val) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		ret = ldb_msg_add_string(msg, "extendedAttributeInfo", val);
@@ -297,8 +293,7 @@ static int generate_extendedClassInfo(struct ldb_context *ldb,
 	for (sclass = schema->classes; sclass; sclass = sclass->next) {
 		char *val = schema_class_to_extendedInfo(msg, sclass);
 		if (!val) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 
 		ret = ldb_msg_add_string(msg, "extendedClassInfo", val);
@@ -454,16 +449,14 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 
 	search_context = talloc(req, struct schema_data_search_data);
 	if (!search_context) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	search_context->module = module;
 	search_context->req = req;
 	search_context->schema = talloc_reference(search_context, schema);
 	if (!search_context->schema) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, search_context,
@@ -475,7 +468,7 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 					search_context, schema_data_search_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return ldb_next_request(module, down_req);

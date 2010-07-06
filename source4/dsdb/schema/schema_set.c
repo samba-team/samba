@@ -65,7 +65,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 	mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	msg = ldb_msg_new(mem_ctx);
@@ -182,7 +182,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 op_error:
 	talloc_free(mem_ctx);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_operr(ldb);
 }
 
 static int uint32_cmp(uint32_t c1, uint32_t c2)
@@ -339,8 +339,7 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 
 failed:
 	dsdb_sorted_accessors_free(schema);
-	ldb_oom(ldb);
-	return LDB_ERR_OPERATIONS_ERROR;
+	return ldb_oom(ldb);
 }
 
 int dsdb_setup_schema_inversion(struct ldb_context *ldb, struct dsdb_schema *schema)
@@ -433,7 +432,7 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 	talloc_unlink(ldb, old_schema);
 
 	if (talloc_reference(ldb, schema) == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = dsdb_schema_set_attributes(ldb, schema, write_attributes);
@@ -464,7 +463,7 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	if (ret == LDB_SUCCESS) {
 		/* Keep a reference to this schema, just incase the original copy is replaced */
 		if (talloc_reference(ldb, global_schema) == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 	}
 
@@ -580,7 +579,7 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 		status = GUID_to_ndr_blob(&target_class->objectGUID, dn, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(dn);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 		ldb_dn_set_extended_component(dn, "GUID", &guid);
 

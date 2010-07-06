@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "events/events.h"
 #include "ldb.h"
+#include "ldb_module.h"
 #include "ldb_errors.h"
 #include "../lib/util/util_ldb.h"
 #include "../lib/crypto/crypto.h"
@@ -807,7 +808,7 @@ int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 	char *s = talloc_strdup(mem_ctx, str);
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (s == NULL || a == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 	return ldb_msg_add_string(msg, a, s);
 }
@@ -825,7 +826,7 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 				       sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(sam_ldb);
 	}
 	return ldb_msg_add_value(msg, attr_name, &v, NULL);
 }
@@ -859,7 +860,7 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 
 	v = talloc_strdup(mem_ctx, value);
 	if (v == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 
 	val.data = (uint8_t *) v;
@@ -889,7 +890,7 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	vals = talloc_realloc(msg, el->values, struct ldb_val,
 			      el->num_values + 1);
 	if (vals == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 	el->values = vals;
 	el->values[el->num_values] = val;
@@ -915,7 +916,7 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 
 	v = talloc_strdup(mem_ctx, value);
 	if (v == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 
 	val.data = (uint8_t *) v;
@@ -945,7 +946,7 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	vals = talloc_realloc(msg, el->values, struct ldb_val,
 			      el->num_values + 1);
 	if (vals == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 	el->values = vals;
 	el->values[el->num_values] = val;
@@ -1001,7 +1002,7 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 	struct ldb_val val;
 	val.data = talloc_memdup(mem_ctx, hash->hash, 16);
 	if (!val.data) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ldb);
 	}
 	val.length = 16;
 	return ldb_msg_add_value(msg, attr_name, &val, NULL);
@@ -1010,7 +1011,8 @@ int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 /*
   add a samr_Password array to a message
 */
-int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+int samdb_msg_add_hashes(struct ldb_context *ldb,
+			 TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, struct samr_Password *hashes,
 			 unsigned int count)
 {
@@ -1019,7 +1021,7 @@ int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 	val.data = talloc_array_size(mem_ctx, 16, count);
 	val.length = count*16;
 	if (!val.data) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	for (i=0;i<count;i++) {
 		memcpy(i*16 + (char *)val.data, hashes[i].hash, 16);
@@ -1905,7 +1907,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { NULL };
 
 	local_ctx = talloc_new(mem_ctx);
-	if (local_ctx == NULL) return LDB_ERR_OPERATIONS_ERROR;
+	if (local_ctx == NULL) return ldb_oom(ldb);
 
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
 		ret = ldb_search(ldb, local_ctx, &res, sdn, LDB_SCOPE_BASE, attrs,
@@ -2393,7 +2395,7 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	char *guid_str = GUID_string(mem_ctx, guid);
 
 	if (!guid_str) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
@@ -2533,7 +2535,7 @@ int dsdb_find_dn_by_sid(struct ldb_context *ldb,
 	char *sid_str = dom_sid_string(mem_ctx, sid);
 
 	if (!sid_str) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
@@ -2675,7 +2677,7 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
@@ -2693,7 +2695,7 @@ int dsdb_load_partition_usn(struct ldb_context *ldb, struct ldb_dn *dn,
 	p_ctrl = talloc(req, struct dsdb_control_current_partition);
 	if (p_ctrl == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	p_ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	p_ctrl->dn = dn;
@@ -2775,7 +2777,7 @@ int samdb_is_rodc(struct ldb_context *sam_ctx, const struct GUID *objectGUID, bo
 	config_dn = ldb_get_config_basedn(sam_ctx);
 	if (!config_dn) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(sam_ctx);
 	}
 
 	ret = dsdb_search(sam_ctx, tmp_ctx, &res, config_dn, LDB_SCOPE_SUBTREE, attrs,
@@ -2821,7 +2823,7 @@ int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 
 	objectGUID = samdb_ntds_objectGUID(sam_ctx);
 	if (!objectGUID) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(sam_ctx);
 	}
 
 	ret = samdb_is_rodc(sam_ctx, objectGUID, am_rodc);
@@ -2831,14 +2833,14 @@ int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 
 	cached = talloc(sam_ctx, bool);
 	if (cached == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(sam_ctx);
 	}
 	*cached = *am_rodc;
 
 	ret = ldb_set_opaque(sam_ctx, "cache.am_rodc", cached);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(cached);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(sam_ctx);
 	}
 
 	return LDB_SUCCESS;
@@ -3166,7 +3168,7 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 			    wk_guid, ldb_dn_get_linearized(nc_root));
 	if (!wkguid_dn) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(samdb);
 	}
 
 	ret = dsdb_search_dn(samdb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
@@ -3202,7 +3204,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 
 	tmp_ctx = talloc_new(samdb);
 	if (tmp_ctx == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(samdb);
 	}
 
 	ret = ldb_search(samdb, tmp_ctx, &root_res,
@@ -3224,14 +3226,14 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
        nc_dns = talloc_array(tmp_ctx, struct ldb_dn *, el->num_values);
        if (!nc_dns) {
 	       talloc_free(tmp_ctx);
-	       return LDB_ERR_OPERATIONS_ERROR;
+	       return ldb_oom(samdb);
        }
 
        for (i=0; i<el->num_values; i++) {
 	       nc_dns[i] = ldb_dn_from_ldb_val(nc_dns, samdb, &el->values[i]);
 	       if (nc_dns[i] == NULL) {
 		       talloc_free(tmp_ctx);
-		       return LDB_ERR_OPERATIONS_ERROR;
+		       return ldb_operr(samdb);
 	       }
        }
 
@@ -3283,13 +3285,13 @@ int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 	}
 	dn = ldb_dn_copy(ldb, dn);
 	if (!dn) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	/* see MS-ADTS section 7.1.1.2.4.1.1. There doesn't appear to
 	 be a wellknown GUID for this */
 	if (!ldb_dn_add_child_fmt(dn, "CN=Directory Service,CN=Windows NT,CN=Services")) {
 		talloc_free(dn);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	*lifetime = samdb_search_uint(ldb, dn, 180, dn, "tombstoneLifetime", "objectClass=nTDSService");
@@ -3366,7 +3368,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	if (!our_invocation_id) {
 		DEBUG(0,(__location__ ": No invocationID on samdb - %s\n", ldb_errstring(samdb)));
 		talloc_free(*cursors);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(samdb);
 	}
 
 	ret = dsdb_load_partition_usn(samdb, dn, &highest_usn, NULL);
@@ -3387,7 +3389,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 
 	(*cursors) = talloc_realloc(mem_ctx, *cursors, struct drsuapi_DsReplicaCursor2, (*count)+1);
 	if (! *cursors) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(samdb);
 	}
 
 	(*cursors)[*count].source_dsa_invocation_id = *our_invocation_id;
@@ -3425,7 +3427,7 @@ int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	*cursors = talloc_array(mem_ctx, struct drsuapi_DsReplicaCursor, *count);
 	if (*cursors == NULL) {
 		talloc_free(v2);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(samdb);
 	}
 
 	for (i=0; i<*count; i++) {
@@ -3588,7 +3590,7 @@ int dsdb_search_dn(struct ldb_context *ldb,
 
 	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (!res) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_search_req(&req, ldb, res,
@@ -3648,7 +3650,7 @@ int dsdb_search(struct ldb_context *ldb,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (exp_fmt) {
@@ -3658,7 +3660,7 @@ int dsdb_search(struct ldb_context *ldb,
 
 		if (!expression) {
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 	}
 
@@ -3734,7 +3736,7 @@ int dsdb_search_one(struct ldb_context *ldb,
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (exp_fmt) {
@@ -3744,7 +3746,7 @@ int dsdb_search_one(struct ldb_context *ldb,
 
 		if (!expression) {
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		ret = dsdb_search(ldb, tmp_ctx, &res, basedn, scope, attrs,
 				  dsdb_flags, "%s", expression);
@@ -3820,13 +3822,13 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 		DEBUG(1,(__location__ ": Failed to find DSA objectGUID %s for sid %s\n",
 			 GUID_string(tmp_ctx, dsa_guid), dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	dn = msg->dn;
 
 	if (!ldb_dn_remove_child_components(dn, 1)) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE,
@@ -3836,7 +3838,7 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 		DEBUG(1,(__location__ ": Failed to find server record for DSA with objectGUID %s, sid %s\n",
 			 GUID_string(tmp_ctx, dsa_guid), dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	account_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, msg, "serverReference");
@@ -3844,7 +3846,7 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 		DEBUG(1,(__location__ ": Failed to find account_dn for DSA with objectGUID %s, sid %s\n",
 			 GUID_string(tmp_ctx, dsa_guid), dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	status = dsdb_get_extended_dn_sid(account_dn, &sid2, "SID");
@@ -3852,7 +3854,7 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 		DEBUG(1,(__location__ ": Failed to find SID for DSA with objectGUID %s, sid %s\n",
 			 GUID_string(tmp_ctx, dsa_guid), dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (!dom_sid_equal(sid, &sid2)) {
@@ -3862,7 +3864,7 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 			 dom_sid_string(tmp_ctx, sid),
 			 dom_sid_string(tmp_ctx, &sid2)));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	talloc_free(tmp_ctx);

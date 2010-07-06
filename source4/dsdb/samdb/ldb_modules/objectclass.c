@@ -136,8 +136,7 @@ static int objectclass_sort(struct ldb_module *module,
 	for (i=0; i < objectclass_element->num_values; i++) {
 		current = talloc(mem_ctx, struct class_list);
 		if (!current) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		current->objectclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &objectclass_element->values[i]);
 		if (!current->objectclass) {
@@ -311,7 +310,8 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
     CN=Admins,CN=Users,DC=samba,DC=example,DC=com
    
  */
-static int fix_dn(TALLOC_CTX *mem_ctx, 
+static int fix_dn(struct ldb_context *ldb,
+		  TALLOC_CTX *mem_ctx,
 		  struct ldb_dn *newdn, struct ldb_dn *parent_dn, 
 		  struct ldb_dn **fixed_dn) 
 {
@@ -325,12 +325,12 @@ static int fix_dn(TALLOC_CTX *mem_ctx,
 	upper_rdn_attr = strupper_talloc(*fixed_dn, 
 					 ldb_dn_get_rdn_name(newdn));
 	if (!upper_rdn_attr) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Create a new child */
 	if (ldb_dn_add_child_fmt(*fixed_dn, "X=X") == false) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 
@@ -386,12 +386,12 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 			val = ldb_dn_get_component_val(req->op.add.message->dn,
 						       ldb_dn_get_comp_num(req->op.add.message->dn) - 1);
 			if (val == NULL) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_operr(ldb);
 			}
 			value = talloc_asprintf(req, "ldap://%s/%s", val->data,
 						ldb_dn_get_linearized(req->op.add.message->dn));
 			if (value == NULL) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 
 			return ldb_module_send_referral(req, value);
@@ -407,7 +407,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* If there isn't a parent, just go on to the add processing */
@@ -418,8 +418,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* get copy of parent DN */
 	parent_dn = ldb_dn_get_parent(ac, ac->req->op.add.message->dn);
 	if (parent_dn == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = ldb_build_search_req(&search_req, ldb,
@@ -470,7 +469,7 @@ static int objectclass_do_add(struct oc_context *ac)
 	} else {
 		/* Fix up the DN to be in the standard form, taking
 		 * particular care to match the parent DN */
-		ret = fix_dn(msg, 
+		ret = fix_dn(ldb, msg,
 			     ac->req->op.add.message->dn,
 			     ac->search_res->message->dn,
 			     &msg->dn);
@@ -483,8 +482,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (ac->schema != NULL) {
@@ -494,7 +492,7 @@ static int objectclass_do_add(struct oc_context *ac)
 		if (!objectclass_element) {
 			/* Where did it go?  bail now... */
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
 				       objectclass_element, &sorted);
@@ -518,9 +516,8 @@ static int objectclass_do_add(struct oc_context *ac)
 		for (current = sorted; current; current = current->next) {
 			value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
 			if (value == NULL) {
-				ldb_oom(ldb);
 				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
@@ -601,9 +598,8 @@ static int objectclass_do_add(struct oc_context *ac)
 				value = talloc_strdup(msg, objectclass->defaultObjectCategory);
 			}
 			if (value == NULL) {
-				ldb_oom(ldb);
 				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			ldb_msg_add_string(msg, "objectCategory", value);
 		}
@@ -699,7 +695,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* Without schema, there isn't much to do here */
@@ -710,7 +706,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* For now change everything except the objectclasses */
@@ -808,36 +804,34 @@ static int objectclass_do_mod(struct oc_context *ac)
 
 	/* we should always have a valid entry when we enter here */
 	if (ac->search_res == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	oc_el_entry = ldb_msg_find_element(ac->search_res->message,
 					   "objectClass");
 	if (oc_el_entry == NULL) {
 		/* existing entry without a valid object class? */
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	oc_el_change = ldb_msg_find_element(ac->req->op.mod.message,
 					    "objectClass");
 	if (oc_el_change == NULL) {
 		/* we should have an objectclass change operation */
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* use a new message structure */
 	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	msg->dn = ac->req->op.mod.message->dn;
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	switch (oc_el_change->flags & LDB_FLAG_MOD_MASK) {
@@ -858,9 +852,8 @@ static int objectclass_do_mod(struct oc_context *ac)
 					      struct ldb_val,
 					      oc_el_entry->num_values + 1);
 			if (vals == NULL) {
-				ldb_oom(ldb);
 				talloc_free(mem_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb);
 			}
 			oc_el_entry->values = vals;
 			oc_el_entry->values[oc_el_entry->num_values] =
@@ -906,7 +899,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 							oc_el_entry);
 		if (objectclass == NULL) {
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		/* Merge the two message elements */
@@ -974,9 +967,8 @@ static int objectclass_do_mod(struct oc_context *ac)
 		value = talloc_strdup(msg,
 				      current->objectclass->lDAPDisplayName);
 		if (value == NULL) {
-			ldb_oom(ldb);
 			talloc_free(mem_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb);
 		}
 		ret = ldb_msg_add_string(msg, "objectClass", value);
 		if (ret != LDB_SUCCESS) {
@@ -1049,7 +1041,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	parent_dn = ldb_dn_get_parent(ac, req->op.rename.newdn);
@@ -1155,12 +1147,12 @@ static int objectclass_do_rename2(struct oc_context *ac)
 						   "objectClass");
 		if (oc_el_entry == NULL) {
 			/* existing entry without a valid object class? */
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 		objectclass = get_last_structural_class(ac->schema, oc_el_entry);
 		if (objectclass == NULL) {
 			/* existing entry without a valid object class? */
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
@@ -1178,7 +1170,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 						    "objectClass");
 		if (oc_el_parent == NULL) {
 			/* existing entry without a valid object class? */
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 
 		for (i=0; allowed_class == false && i < oc_el_parent->num_values; i++) {
@@ -1218,7 +1210,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 
 	/* Fix up the DN to be in the standard form, taking
 	 * particular care to match the parent DN */
-	ret = fix_dn(ac,
+	ret = fix_dn(ldb, ac,
 		     ac->req->op.rename.newdn,
 		     ac->search_res2->message->dn,
 		     &fixed_dn);
@@ -1269,7 +1261,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* this looks up the entry object for fetching some important

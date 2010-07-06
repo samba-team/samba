@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "smbd/service.h"
 #include "dsdb/repl/drepl_service.h"
@@ -156,7 +157,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhauste
 	server_dn = ldb_dn_get_parent(tmp_ctx, samdb_ntds_settings_dn(ldb));
 	if (!server_dn) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = samdb_reference_dn(ldb, tmp_ctx, server_dn, "serverReference", &machine_dn);

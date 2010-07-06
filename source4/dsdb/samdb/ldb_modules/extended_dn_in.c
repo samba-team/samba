@@ -279,8 +279,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", 
 							 ldb_binary_encode(req, *sid_val));
 			if (!base_dn_filter) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
 			base_dn_attrs = no_attr;
@@ -292,8 +291,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", 
 							 ldb_binary_encode(req, *guid_val));
 			if (!base_dn_filter) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
 			base_dn_attrs = no_attr;
@@ -316,8 +314,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 			wellknown_object = talloc_asprintf(req, "B:32:%s:", wkguid_dup);
 			if (!wellknown_object) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 
 			tail_str = p;
@@ -325,13 +322,11 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn = ldb_dn_new(req, ldb_module_get_ctx(module), tail_str);
 			talloc_free(wkguid_dup);
 			if (!base_dn) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 			base_dn_filter = talloc_strdup(req, "(objectClass=*)");
 			if (!base_dn_filter) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 			base_dn_scope = LDB_SCOPE_BASE;
 			base_dn_attrs = wkattr;
@@ -341,8 +336,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 		ac = talloc_zero(req, struct extended_search_context);
 		if (ac == NULL) {
-			ldb_oom(ldb_module_get_ctx(module));
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_oom(ldb_module_get_ctx(module));
 		}
 		
 		ac->module = module;
@@ -363,7 +357,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 					   ac, extended_base_callback,
 					   req);
 		if (ret != LDB_SUCCESS) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb_module_get_ctx(module));
 		}
 
 		if (all_partitions) {

@@ -233,7 +233,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 
 	os = talloc_zero(ac, struct extended_dn_replace_list);
 	if (!os) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ac->ldb);
 	}
 
 	os->ac = ac;
@@ -307,7 +307,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 
 	ac = extended_dn_context_init(module, req);
 	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	if (!ac->schema) {
@@ -333,8 +333,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		if (!ac->new_req) {
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.add.message);
 			if (!msg) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ldb_module_get_ctx(module));
 			}
 		   
 			ret = ldb_build_add_req(&ac->new_req, ac->ldb, ac, msg, req->controls, ac, extended_final_callback, req);
@@ -382,7 +381,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 
 	ac = extended_dn_context_init(module, req);
 	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	if (!ac->schema) {
@@ -409,8 +408,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.mod.message);
 			if (!msg) {
 				talloc_free(ac);
-				ldb_oom(ac->ldb);
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_oom(ac->ldb);
 			}
 		   
 			ret = ldb_build_mod_req(&ac->new_req, ac->ldb, ac, msg, req->controls, ac, extended_final_callback, req);

@@ -426,13 +426,12 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	}
 
 	if (s == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;		
+		return ldb_operr(ldb);
 	}
 
 	attr->ldb_schema_attribute = a = talloc(attr, struct ldb_schema_attribute);
 	if (attr->ldb_schema_attribute == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	a->name = attr->lDAPDisplayName;
@@ -731,7 +730,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	schema = dsdb_new_schema(mem_ctx);
 	if (!schema) {
 		dsdb_oom(error_string, mem_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	schema->base_dn = talloc_steal(schema, schema_res->msgs[0]->dn);
@@ -751,7 +750,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			                                "schema_fsmo_init: dsdb_schema_info_blob_new() failed - %s",
 			                                win_errstr(status));
 			DEBUG(0,(__location__ ": %s\n", *error_string));
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 		info_val = &info_val_default;
 	}

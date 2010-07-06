@@ -27,6 +27,7 @@
 
 #include "includes.h"
 #include "ldb.h"
+#include "ldb_module.h"
 #include "ldb_errors.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -53,7 +54,8 @@ void dsdb_acl_debug(struct security_descriptor *sd,
 		     ndr_print_struct_string(0,(ndr_print_fn_t)ndr_print_security_descriptor,"", sd)));
 }
 
-int dsdb_get_sd_from_ldb_message(TALLOC_CTX *mem_ctx,
+int dsdb_get_sd_from_ldb_message(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx,
 				 struct ldb_message *acl_res,
 				 struct security_descriptor **sd)
 {
@@ -67,19 +69,20 @@ int dsdb_get_sd_from_ldb_message(TALLOC_CTX *mem_ctx,
 	}
 	*sd = talloc(mem_ctx, struct security_descriptor);
 	if(!*sd) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	ndr_err = ndr_pull_struct_blob(&sd_element->values[0], *sd, *sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	return LDB_SUCCESS;
 }
 
-int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
+int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
+				     struct ldb_result *acl_res,
 				     TALLOC_CTX *mem_ctx,
 				     struct security_token *token,
 				     struct ldb_dn *dn,
@@ -94,9 +97,9 @@ int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
 	uint32_t access_granted;
 	int ret;
 
-	ret = dsdb_get_sd_from_ldb_message(mem_ctx, acl_res->msgs[0], &sd);
+	ret = dsdb_get_sd_from_ldb_message(ldb, mem_ctx, acl_res->msgs[0], &sd);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 	/* Theoretically we pass the check if the object has no sd */
 	if (!sd) {
@@ -105,7 +108,7 @@ int dsdb_check_access_on_dn_internal(struct ldb_result *acl_res,
 	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
 	if (guid) {
 		if (!insert_in_object_tree(mem_ctx, guid, access, &root, &new_node)) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(ldb);
 		}
 	}
 	status = sec_access_check_ds(sd, token,
@@ -146,7 +149,7 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 	struct auth_session_info *session_info
 		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	if(!session_info) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_search(ldb, mem_ctx, &acl_res, dn, LDB_SCOPE_BASE, acl_attrs, NULL);
@@ -155,7 +158,7 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 		return ret;
 	}
 
-	return dsdb_check_access_on_dn_internal(acl_res,
+	return dsdb_check_access_on_dn_internal(ldb, acl_res,
 						mem_ctx,
 						session_info->security_token,
 						dn,

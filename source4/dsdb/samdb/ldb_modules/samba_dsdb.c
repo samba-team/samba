@@ -49,15 +49,13 @@ static int read_at_rootdse_record(struct ldb_context *ldb, struct ldb_module *mo
 	struct ldb_dn *rootdse_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	rootdse_dn = ldb_dn_new(tmp_ctx, ldb, "@ROOTDSE");
 	if (!rootdse_dn) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &rootdse_res, rootdse_dn, rootdse_attrs, 0);
@@ -87,8 +85,7 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	char *full_string;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	if (backend_attr) {
@@ -112,22 +109,19 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	}
 	if (!backend_full_list) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	backend_full_list = str_list_append_const(backend_full_list, backend_mod_list);
 	if (!backend_full_list) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	mod_list_string = str_list_join(tmp_ctx, backend_full_list, ',');
 	if (!mod_list_string) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	full_string = talloc_asprintf(tmp_ctx, "%s:%s", backend_dn, mod_list_string);
@@ -222,15 +216,13 @@ static int samba_dsdb_init(struct ldb_module *module)
 	const char *backendType, *serverRole;
 
 	if (!tmp_ctx) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	samba_dsdb_dn = ldb_dn_new(tmp_ctx, ldb, "@SAMBA_DSDB");
 	if (!samba_dsdb_dn) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 #define CHECK_LDB_RET(check_ret)				\
@@ -273,8 +265,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	do {							\
 		if (!final_module_list) {			\
 			talloc_free(tmp_ctx);			\
-			ldb_oom(ldb);				\
-			return LDB_ERR_OPERATIONS_ERROR;	\
+			return ldb_oom(ldb);			\
 		}						\
 	} while (0)
 
@@ -332,8 +323,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	reverse_module_list = talloc_array(tmp_ctx, const char *, len+1);
 	if (!reverse_module_list) {
 		talloc_free(tmp_ctx);
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 	for (i=0; i < len; i++) {
 		reverse_module_list[i] = final_module_list[(len - 1) - i];

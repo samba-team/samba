@@ -93,7 +93,7 @@ static int construct_canonical_name(struct ldb_module *module,
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
 	if (canonicalName == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 	return ldb_msg_add_steal_string(msg, "canonicalName", canonicalName);
 }
@@ -146,8 +146,7 @@ static int construct_token_groups(struct ldb_module *module,
 	status = auth_context_create_from_ldb(tmp_ctx, ldb, &auth_context);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		talloc_free(tmp_ctx);
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	} else if (!NT_STATUS_IS_OK(status)) {
 		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, could not create authContext");
 		talloc_free(tmp_ctx);
@@ -157,8 +156,7 @@ static int construct_token_groups(struct ldb_module *module,
 	status = auth_get_server_info_principal(tmp_ctx, auth_context, NULL, msg->dn, &server_info);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		talloc_free(tmp_ctx);
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		/* Not a user, we have no tokenGroups */
 		talloc_free(tmp_ctx);
@@ -172,8 +170,7 @@ static int construct_token_groups(struct ldb_module *module,
 	status = auth_generate_session_info(tmp_ctx, auth_context, server_info, 0, &session_info);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		talloc_free(tmp_ctx);
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		ldb_asprintf_errstring(ldb, "Cannot provide tokenGroups attribute: auth_generate_session_info failed: %s", nt_errstr(status));
@@ -236,7 +233,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	v = data_blob_dup_talloc(res, parent_guid);
 	if (!v.data) {
 		talloc_free(res);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb_module_get_ctx(module));
 	}
 	ret = ldb_msg_add_steal_value(msg, "parentGUID", &v);
 	talloc_free(res);
@@ -284,21 +281,21 @@ static int construct_msds_isrodc_with_dn(struct ldb_module *module,
 	ldb = ldb_module_get_ctx(module);
 	if (!ldb) {
 		DEBUG(4, (__location__ ": Failed to get ldb \n"));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	dn = ldb_dn_new(msg, ldb, (const char *)object_category->values[0].data);
 	if (!dn) {
 		DEBUG(4, (__location__ ": Failed to create dn from %s \n",
 			  (const char *)object_category->values[0].data));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	val = ldb_dn_get_rdn_val(dn);
 	if (!val) {
 		DEBUG(4, (__location__ ": Failed to get rdn val from %s \n",
 			  ldb_dn_get_linearized(dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (strequal((const char *)val->data, "NTDS-DSA")) {
@@ -323,7 +320,7 @@ static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 	if (!ldb_dn_add_child_fmt(server_dn, "CN=NTDS Settings")) {
 		DEBUG(4, (__location__ ": Failed to add child to %s \n",
 			  ldb_dn_get_linearized(server_dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	ret = dsdb_module_search_dn(module, msg, &res, server_dn, attr_obj_cat, 0);
@@ -390,7 +387,7 @@ static int construct_msds_isrodc(struct ldb_module *module,
 	if (!object_class) {
 		DEBUG(4,(__location__ ": Can't get objectClass for %s \n",
 			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	for (i=0; i<object_class->num_values; i++) {
@@ -460,7 +457,7 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s when trying to add msDS-KeyVersionNumber\n",
 			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	if (omd->version != 1) {
@@ -732,7 +729,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 
 	ac = talloc(req, struct operational_context);
 	if (ac == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	ac->module = module;
@@ -777,7 +774,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 									       : ac->attrs, 
 									       search_sub[i].extra_attr);
 					if (search_attrs2 == NULL) {
-						return LDB_ERR_OPERATIONS_ERROR;
+						return ldb_operr(ldb);
 					}
 					/* may be NULL, talloc_free() doesn't mind */
 					talloc_free(search_attrs);
@@ -787,7 +784,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 				if (!search_attrs) {
 					search_attrs = ldb_attr_list_copy(req, ac->attrs);
 					if (search_attrs == NULL) {
-						return LDB_ERR_OPERATIONS_ERROR;
+						return ldb_operr(ldb);
 					}
 				}
 				/* Despite the ldb_attr_list_copy_add, this is safe as that fn only adds to the end */
@@ -806,7 +803,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 					ac, operational_callback,
 					req);
 	if (ret != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	/* perform the search */
@@ -827,8 +824,7 @@ static int operational_init(struct ldb_module *ctx)
 
 	data = talloc_zero(ctx, struct operational_data);
 	if (!data) {
-		ldb_module_oom(ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(ctx);
 	}
 
 	ldb_module_set_private(ctx, data);
