@@ -136,7 +136,8 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	/* perform search for @PARTITION, looking for module, replicateEntries and ldapBackend */
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, 
 				    ldb_dn_new(mem_ctx, ldb, DSDB_PARTITION_DN),
-				    attrs, 0);
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -499,7 +500,8 @@ int partition_reload_if_required(struct ldb_module *module,
 
 		/* Get the 'correct' case of the partition DNs from the database */
 		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
-					    dn, no_attrs, 0);
+					    dn, no_attrs,
+					    DSDB_FLAG_NEXT_MODULE);
 		if (ret == LDB_SUCCESS) {
 			talloc_free(partition->ctrl->dn);
 			partition->ctrl->dn = talloc_steal(partition->ctrl, dn_res->msgs[0]->dn);
@@ -540,7 +542,8 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 		struct ldb_request *add_req;
 		ret = dsdb_module_search_dn(module, last_req, &replicate_res, 
 					    data->replicate[i],
-					    NULL, 0);
+					    NULL,
+					    DSDB_FLAG_NEXT_MODULE);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			continue;
 		}
