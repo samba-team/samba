@@ -1737,39 +1737,6 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!mods) {
-		DEBUG(5,("ldapsam_modify_entry: mods is empty: nothing to modify\n"));
-		/* may be password change below however */
-	} else {
-		switch(ldap_op) {
-			case LDAP_MOD_ADD:
-				if (ldap_state->is_nds_ldap) {
-					smbldap_set_mod(&mods, LDAP_MOD_ADD, 
-							"objectclass", 
-							"inetOrgPerson");
-				} else {
-					smbldap_set_mod(&mods, LDAP_MOD_ADD, 
-							"objectclass", 
-							LDAP_OBJ_ACCOUNT);
-				}
-				rc = smbldap_add(ldap_state->smbldap_state, 
-						 dn, mods);
-				break;
-			case LDAP_MOD_REPLACE: 
-				rc = smbldap_modify(ldap_state->smbldap_state, 
-						    dn ,mods);
-				break;
-			default: 	
-				DEBUG(0,("ldapsam_modify_entry: Wrong LDAP operation type: %d!\n", 
-					 ldap_op));
-				return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		if (rc!=LDAP_SUCCESS) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}  
-	}
-
 	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) &&
 			(lp_ldap_passwd_sync() != LDAP_PASSWD_SYNC_OFF) &&
 			need_update(newpwd, PDB_PLAINTEXT_PW) &&
@@ -1895,6 +1862,40 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 		ber_bvfree(bv);
 	}
+
+	if (!mods) {
+		DEBUG(5,("ldapsam_modify_entry: mods is empty: nothing to modify\n"));
+		/* may be password change below however */
+	} else {
+		switch(ldap_op) {
+			case LDAP_MOD_ADD:
+				if (ldap_state->is_nds_ldap) {
+					smbldap_set_mod(&mods, LDAP_MOD_ADD,
+							"objectclass",
+							"inetOrgPerson");
+				} else {
+					smbldap_set_mod(&mods, LDAP_MOD_ADD,
+							"objectclass",
+							LDAP_OBJ_ACCOUNT);
+				}
+				rc = smbldap_add(ldap_state->smbldap_state,
+						 dn, mods);
+				break;
+			case LDAP_MOD_REPLACE:
+				rc = smbldap_modify(ldap_state->smbldap_state,
+						    dn ,mods);
+				break;
+			default:
+				DEBUG(0,("ldapsam_modify_entry: Wrong LDAP operation type: %d!\n",
+					 ldap_op));
+				return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (rc!=LDAP_SUCCESS) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
