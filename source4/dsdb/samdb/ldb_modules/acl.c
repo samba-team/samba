@@ -108,7 +108,9 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 		return ldb_operr(ldb);
 	}
 	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res, dn,
-				    acl_attrs, DSDB_SEARCH_SHOW_DELETED);
+				    acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
 		return ret;
@@ -158,7 +160,8 @@ static int acl_module_init(struct ldb_module *module)
 
 	ret = dsdb_module_search_dn(module, mem_ctx, &res,
 				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
-				    attrs, 0);
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -849,7 +852,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
-				    acl_attrs, 0);
+				    acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE);
 
 	if (ret != LDB_SUCCESS) {
 		goto fail;
@@ -1080,7 +1084,9 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	ldb = ldb_module_get_ctx(module);
 
 	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.rename.olddn,
-				    acl_attrs, DSDB_SEARCH_SHOW_DELETED);
+				    acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
@@ -1230,7 +1236,8 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		    || ac->allowedAttributesEffective
 		    || ac->sDRightsEffective) {
 			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
-						    acl_attrs, 0);
+						    acl_attrs,
+						    DSDB_FLAG_NEXT_MODULE);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
