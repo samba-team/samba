@@ -135,7 +135,6 @@ static int np_part_search_callback(struct ldb_request *req, struct ldb_reply *ar
 static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	struct ldb_request *down_req;
 	struct np_context *ac;
 	int ret;
 
@@ -192,7 +191,7 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* go on with the call chain */
-	return ldb_next_request(module, down_req);
+	return ldb_next_request(module, req);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_new_partition_module_ops = {
