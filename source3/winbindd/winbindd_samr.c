@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -58,7 +59,7 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_internal(mem_ctx,
+	status = rpc_pipe_open_interface(mem_ctx,
 					&ndr_table_samr.syntax_id,
 					server_info,
 					NULL,
@@ -131,7 +132,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_internal(mem_ctx,
+	status = rpc_pipe_open_interface(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
 					server_info,
 					NULL,
