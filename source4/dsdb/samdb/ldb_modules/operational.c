@@ -212,7 +212,9 @@ static int construct_parent_guid(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs,
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED);
 	talloc_free(parent_dn);
 
 	/* if there is no parent for this object, then return */
@@ -323,7 +325,8 @@ static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
-	ret = dsdb_module_search_dn(module, msg, &res, server_dn, attr_obj_cat, 0);
+	ret = dsdb_module_search_dn(module, msg, &res, server_dn, attr_obj_cat,
+	                            DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Can't get objectCategory for %s \n",
 					 ldb_dn_get_linearized(server_dn)));
@@ -350,7 +353,8 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 	int ret;
 	struct ldb_dn *server_dn;
 
-	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attr, 0);
+	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attr,
+	                            DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Can't get serverReferenceBL for %s \n",
 			 ldb_dn_get_linearized(msg->dn)));
