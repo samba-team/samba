@@ -58,7 +58,8 @@ static int read_at_rootdse_record(struct ldb_context *ldb, struct ldb_module *mo
 		return ldb_oom(ldb);
 	}
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &rootdse_res, rootdse_dn, rootdse_attrs, 0);
+	ret = dsdb_module_search_dn(module, tmp_ctx, &rootdse_res, rootdse_dn,
+	                            rootdse_attrs, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -233,7 +234,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 		}						\
 	} while (0)
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &res, samba_dsdb_dn, samba_dsdb_attrs, 0);
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, samba_dsdb_dn,
+	                            samba_dsdb_attrs, DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		backendType = "ldb";
 		serverRole = "domain controller";
