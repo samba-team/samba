@@ -50,7 +50,7 @@ static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("rpc_query_user_list\n"));
+	DEBUG(3, ("msrpc_query_user_list\n"));
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -241,7 +241,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3,("rpc: name_to_sid name=%s\n", full_name));
+	DEBUG(3, ("msrpc_name_to_sid: name=%s\n", full_name));
 
 	name_map_status = normalize_name_unmap(mem_ctx, full_name,
 					       &mapped_name);
@@ -288,7 +288,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
 
-	DEBUG(3,("sid_to_name [rpc] %s for domain %s\n", sid_string_dbg(sid),
+	DEBUG(3, ("msrpc_sid_to_name: %s for domain %s\n", sid_string_dbg(sid),
 		 domain->name ));
 
 	result = winbindd_lookup_sids(mem_ctx,
@@ -338,7 +338,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	size_t i;
 	char **ret_names;
 
-	DEBUG(3, ("rids_to_names [rpc] for domain %s\n", domain->name ));
+	DEBUG(3, ("msrpc_rids_to_names: domain %s\n", domain->name ));
 
 	if (num_rids) {
 		sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_rids);
@@ -616,7 +616,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 	unsigned int orig_timeout;
 	struct samr_RidTypeArray *rids = NULL;
 
-	DEBUG(10,("rpc: lookup_groupmem %s sid=%s\n", domain->name,
+	DEBUG(3,("msrpc_lookup_groupmem: %s sid=%s\n", domain->name,
 		  sid_string_dbg(group_sid)));
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
@@ -819,7 +819,7 @@ static NTSTATUS msrpc_sequence_number(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(10,("rpc: fetch sequence_number for %s\n", domain->name));
+	DEBUG(3, ("msrpc_sequence_number: fetch sequence_number for %s\n", domain->name));
 
 	if (pseq) {
 		*pseq = DOM_SEQUENCE_NONE;
@@ -902,7 +902,7 @@ static NTSTATUS msrpc_trusted_domains(struct winbindd_domain *domain,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
-	DEBUG(3,("samr: trusted domains\n"));
+	DEBUG(3,("msrpc_trusted_domains\n"));
 
 	if (ptrust_list) {
 		ZERO_STRUCTP(ptrust_list);
@@ -946,7 +946,7 @@ static NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 	struct policy_handle dom_pol;
 	union samr_DomainInfo *info = NULL;
 
-	DEBUG(10,("rpc: fetch lockout policy for %s\n", domain->name));
+	DEBUG(3, ("msrpc_lockout_policy: fetch lockout policy for %s\n", domain->name));
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("msrpc_lockout_policy: No incoming trust for domain %s\n",
@@ -987,7 +987,8 @@ static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 	struct policy_handle dom_pol;
 	union samr_DomainInfo *info = NULL;
 
-	DEBUG(10,("rpc: fetch password policy for %s\n", domain->name));
+	DEBUG(3, ("msrpc_password_policy: fetch password policy for %s\n",
+		  domain->name));
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("msrpc_password_policy: No incoming trust for domain %s\n",
