@@ -3258,6 +3258,12 @@ selftest:: all torture timelimit
 selftest-%:
 	$(MAKE) selftest TESTS=$*
 
+SELFTEST_TESTENV = dc
+
+testenv:
+	$(MAKE) selftest SELFTEST_TESTENV=$(SELFTEST_TESTENV) TESTS="--testenv"
+
+
 # Check for Winbind struct 32/64bit padding
 test_wbpad:
 	@echo "Testing winbind request/response structure for 32/64bit padding"
