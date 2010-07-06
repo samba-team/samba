@@ -1574,6 +1574,10 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	if (conn->samr_pipe != NULL) {
+		if (is_valid_policy_hnd(&conn->sam_connect_handle)) {
+			rpccli_samr_Close(conn->samr_pipe, talloc_tos(),
+					  &conn->sam_connect_handle);
+		}
 		TALLOC_FREE(conn->samr_pipe);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
 		if (conn->cli) {
@@ -1582,6 +1586,10 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	if (conn->lsa_pipe != NULL) {
+		if (is_valid_policy_hnd(&conn->lsa_policy)) {
+			rpccli_lsa_Close(conn->lsa_pipe, talloc_tos(),
+					 &conn->lsa_policy);
+		}
 		TALLOC_FREE(conn->lsa_pipe);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
 		if (conn->cli) {
@@ -1590,6 +1598,10 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	}
 
 	if (conn->lsa_pipe_tcp != NULL) {
+		if (is_valid_policy_hnd(&conn->lsa_policy)) {
+			rpccli_lsa_Close(conn->lsa_pipe, talloc_tos(),
+					 &conn->lsa_policy);
+		}
 		TALLOC_FREE(conn->lsa_pipe_tcp);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
 		if (conn->cli) {
