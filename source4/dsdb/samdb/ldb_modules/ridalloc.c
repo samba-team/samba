@@ -107,7 +107,8 @@ static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_d
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const unsigned alloc_size = 500;
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_manager_dn, attrs, 0);
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_manager_dn,
+	                            attrs, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find rIDAvailablePool in %s - %s",
 				       ldb_dn_get_linearized(rid_manager_dn), ldb_errstring(ldb));
@@ -449,7 +450,8 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		return ret;
 	}
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn, attrs, 0);
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn,
+	                            attrs, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s",
 				       ldb_dn_get_linearized(rid_set_dn));
@@ -623,7 +625,8 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		struct ldb_result *res;
 		uint64_t alloc_pool;
 
-		ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn, attrs, 0);
+		ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn,
+		                            attrs, DSDB_FLAG_NEXT_MODULE);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s",
 					       ldb_dn_get_linearized(rid_set_dn));
