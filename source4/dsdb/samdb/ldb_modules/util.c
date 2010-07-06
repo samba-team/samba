@@ -71,7 +71,16 @@ int dsdb_module_search_dn(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ldb_next_request(module, req);
+	/* Run the new request */
+	if (dsdb_flags & DSDB_FLAG_OWN_MODULE) {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		ret = ops->modify(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
+	} else {
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_NEXT_MODULE);
+		ret = ldb_next_request(module, req);
+	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
