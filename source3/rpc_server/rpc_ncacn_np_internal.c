@@ -152,6 +152,8 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	p->msg_ctx = smbd_messaging_context();
+
 	DLIST_ADD(InternalPipes, p);
 
 	strlcpy(p->client_address, client_address, sizeof(p->client_address));

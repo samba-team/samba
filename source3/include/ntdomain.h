@@ -134,6 +134,7 @@ struct pipes_struct {
 	char client_address[INET6_ADDRSTRLEN];
 
 	struct auth_serversupplied_info *server_info;
+	struct messaging_context *msg_ctx;
 
 	struct ndr_syntax_id syntax;
 
