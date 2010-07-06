@@ -123,7 +123,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	if (server_info == NULL) {
 		status = make_server_info_system(mem_ctx, &server_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("open_samr_pipe: Could not create auth_serversupplied_info: %s\n",
+			DEBUG(0, ("open_lsa_pipe: Could not create auth_serversupplied_info: %s\n",
 				  nt_errstr(status)));
 			return status;
 		}
@@ -136,7 +136,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 					server_info,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("open_samr_pipe: Could not connect to samr_pipe: %s\n",
+		DEBUG(0, ("open_lsa_pipe: Could not connect to lsa_pipe: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
