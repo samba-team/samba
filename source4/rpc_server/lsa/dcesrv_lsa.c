@@ -4159,7 +4159,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 				tln_conflict = false;
 			}
 
-			if (nrec->type != FOREST_TRUST_DOMAIN_INFO) {
+			if (trec->type != FOREST_TRUST_DOMAIN_INFO) {
 				continue;
 			}
 
