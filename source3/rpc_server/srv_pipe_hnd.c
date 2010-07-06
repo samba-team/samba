@@ -858,15 +858,16 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		 * current_pdu_sent. */
 		p->out_data.current_pdu_sent = 0;
 		prs_mem_free(&p->out_data.frag);
-	}
 
-	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
-		/*
-		 * We're completely finished with both outgoing and
-		 * incoming data streams. It's safe to free all temporary
-		 * data from this request.
-		 */
-		free_pipe_context(p);
+		if (p->out_data.data_sent_length
+		    >= prs_offset(&p->out_data.rdata)) {
+			/*
+			 * We're completely finished with both outgoing and
+			 * incoming data streams. It's safe to free all
+			 * temporary data from this request.
+			 */
+			free_pipe_context(p);
+		}
 	}
 
 	return data_returned;
