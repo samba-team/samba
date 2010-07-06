@@ -33,6 +33,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+#include "../lib/util/util_ldb.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/samr/proto.h"
 #include "libcli/security/security.h"
@@ -170,9 +171,49 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	NTSTATUS status;
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo;
+	struct samr_Password *oldLmHash, *oldNtHash;
 	struct ldb_context *samdb;
+	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
+	struct ldb_message **res;
+	int ret;
 
-	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, system_session(kdc->task->lp_ctx));
+	/* Connect to a SAMDB with system privileges for fetching the old pw
+	 * hashes. */
+	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
+			      system_session(kdc->task->lp_ctx));
+	if (!samdb) {
+		return kpasswdd_make_error_reply(kdc, mem_ctx,
+						KRB5_KPASSWD_HARDERROR,
+						"Failed to open samdb",
+						reply);
+	}
+
+	/* Fetch the old hashes to get the old password in order to perform
+	 * the password change operation. Naturally it would be much better to
+	 * have a password hash from an authentication around but this doesn't
+	 * seem to be the case here. */
+	ret = gendb_search(samdb, mem_ctx, NULL, &res, attrs,
+			   "(&(objectClass=user)(sAMAccountName=%s))",
+			   session_info->server_info->account_name);
+	if (ret != 1) {
+		return kpasswdd_make_error_reply(kdc, mem_ctx,
+						KRB5_KPASSWD_ACCESSDENIED,
+						"No such user when changing password",
+						reply);
+	}
+
+	status = samdb_result_passwords(mem_ctx, kdc->task->lp_ctx, res[0],
+					&oldLmHash, &oldNtHash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return kpasswdd_make_error_reply(kdc, mem_ctx,
+						KRB5_KPASSWD_ACCESSDENIED,
+						"Not permitted to change password",
+						reply);
+	}
+
+	/* Start a SAM with user privileges for the password change */
+	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
+			      session_info);
 	if (!samdb) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_HARDERROR,
@@ -185,11 +226,11 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 		  session_info->server_info->account_name,
 		  dom_sid_string(mem_ctx, session_info->security_token->user_sid)));
 
-	/* User password change */
+	/* Performs the password change */
 	status = samdb_set_password_sid(samdb, mem_ctx,
 					session_info->security_token->user_sid,
 					password, NULL, NULL,
-					true, /* this is a user password change */
+					oldLmHash, oldNtHash, /* this is a user password change */
 					&reject_reason,
 					&dominfo);
 	return kpasswd_make_pwchange_reply(kdc, mem_ctx,
