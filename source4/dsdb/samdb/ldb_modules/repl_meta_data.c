@@ -1117,7 +1117,8 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	 * replmd_update_rpmd_element()
 	 */
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
-				    DSDB_SEARCH_SHOW_DELETED |
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED |
 				    DSDB_SEARCH_SHOW_EXTENDED_DN |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				    DSDB_SEARCH_REVEAL_INTERNALS);
@@ -1970,7 +1971,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	}
 
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, NULL,
-				    DSDB_SEARCH_SHOW_DELETED |
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED |
 				    DSDB_SEARCH_REVEAL_INTERNALS |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
@@ -2407,7 +2409,8 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	/* we need the complete msg off disk, so we can work out which
 	   attributes need to be removed */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, NULL,
-				    DSDB_SEARCH_SHOW_DELETED |
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED |
 				    DSDB_SEARCH_REVEAL_INTERNALS |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
@@ -2527,6 +2530,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	/* we need the storage form of the parent GUID */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &parent_res,
 				    ldb_dn_get_parent(tmp_ctx, old_dn), NULL,
+				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				    DSDB_SEARCH_REVEAL_INTERNALS|
 				    DSDB_SEARCH_SHOW_DELETED);
