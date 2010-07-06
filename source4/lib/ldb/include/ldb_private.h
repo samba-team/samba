@@ -171,4 +171,10 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module);
 
 struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str);
 
+
+/* The following definitions come from lib/ldb/common/ldb_options.c  */
+
+const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
+			     const char *option_name);
+
 #endif

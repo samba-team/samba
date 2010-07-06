@@ -70,7 +70,7 @@ def build(bld):
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_dn.c ldb_match.c ldb_modules.c
+                            ldb_debug.c ldb_dn.c ldb_match.c ldb_modules.c ldb_options.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
     if s4_build:

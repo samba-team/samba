@@ -15,7 +15,7 @@ LDB_MAP_OBJ=$(LDB_MAP_DIR)/ldb_map.o $(LDB_MAP_DIR)/ldb_map_inbound.o \
 COMDIR=common
 COMMON_OBJ=$(COMDIR)/ldb.o $(COMDIR)/ldb_ldif.o \
 	   $(COMDIR)/ldb_parse.o $(COMDIR)/ldb_msg.o $(COMDIR)/ldb_utf8.o \
-	   $(COMDIR)/ldb_debug.o $(COMDIR)/ldb_modules.o \
+	   $(COMDIR)/ldb_debug.o $(COMDIR)/ldb_modules.o $(COMDIR)/ldb_options.o \
 	   $(COMDIR)/ldb_dn.o $(COMDIR)/ldb_match.o $(COMDIR)/ldb_attributes.o \
 	   $(COMDIR)/attrib_handlers.o $(COMDIR)/ldb_controls.o $(COMDIR)/qsort.o
 

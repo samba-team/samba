@@ -397,6 +397,7 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
+	const char *modules_string;
 	const char **modules = NULL;
 	unsigned int i;
 	int ret;
@@ -409,10 +410,9 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	/* check if we have a custom module list passd as ldb option */
 	if (options) {
-		for (i = 0; options[i] != NULL; i++) {
-			if (strncmp(options[i], LDB_MODULE_PREFIX, LDB_MODULE_PREFIX_LEN) == 0) {
-				modules = ldb_modules_list_from_string(ldb, mem_ctx, &options[i][LDB_MODULE_PREFIX_LEN]);
-			}
+		modules_string = ldb_options_find(ldb, options, "modules");
+		if (modules_string) {
+			modules = ldb_modules_list_from_string(ldb, mem_ctx, modules_string);
 		}
 	}
 
