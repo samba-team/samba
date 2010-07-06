@@ -153,7 +153,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       uint32 *num_entries, 
-			       struct wbint_userinfo **info)
+			       struct wbint_userinfo **pinfo)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = { "*", NULL };
@@ -192,23 +192,18 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, count);
-	if (!*info) {
+	(*pinfo) = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, count);
+	if (!*pinfo) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	i = 0;
+	count = 0;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		const char *name;
-		const char *gecos = NULL;
-		const char *homedir = NULL;
-		const char *shell = NULL;
+		struct wbint_userinfo *info = &((*pinfo)[count]);
 		uint32 group;
 		uint32 atype;
-		struct dom_sid user_sid;
-		gid_t primary_gid = (gid_t)-1;
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
 		    ds_atype_map(atype) != SID_NAME_USER) {
@@ -216,46 +211,64 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		name = ads_pull_username(ads, mem_ctx, msg);
-
-		if ( ads_pull_sid( ads, msg, "objectSid", &user_sid ) ) {
-			status = nss_get_info_cached( domain, &user_sid, mem_ctx, 
-					       ads, msg, &homedir, &shell, &gecos,
-					       &primary_gid );
-		}
-
-		if (gecos == NULL) {
-			gecos = ads_pull_string(ads, mem_ctx, msg, "name");
-		}
+		info->acct_name = ads_pull_username(ads, mem_ctx, msg);
+		info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+		info->homedir = NULL;
+		info->shell = NULL;
+		info->primary_gid = (gid_t)-1;
 
 		if (!ads_pull_sid(ads, msg, "objectSid",
-				  &(*info)[i].user_sid)) {
-			DEBUG(1,("No sid for %s !?\n", name));
-			continue;
-		}
-		if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group)) {
-			DEBUG(1,("No primary group for %s !?\n", name));
+				  &info->user_sid)) {
+			DEBUG(1, ("No sid for %s !?\n", info->acct_name));
 			continue;
 		}
 
-		(*info)[i].acct_name = name;
-		(*info)[i].full_name = gecos;
-		(*info)[i].homedir = homedir;
-		(*info)[i].shell = shell;
-		(*info)[i].primary_gid = primary_gid;
-		sid_compose(&(*info)[i].group_sid, &domain->sid, group);
-		i++;
+		if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group)) {
+			DEBUG(1, ("No primary group for %s !?\n",
+				  info->acct_name));
+			continue;
+		}
+		sid_compose(&info->group_sid, &domain->sid, group);
+
+		count += 1;
 	}
 
-	(*num_entries) = i;
+	(*num_entries) = count;
+	ads_msgfree(ads, res);
+
+	for (i=0; i<count; i++) {
+		struct wbint_userinfo *info = &((*pinfo)[i]);
+		const char *gecos = NULL;
+		gid_t primary_gid = (gid_t)-1;
+
+		/*
+		 * Don't use our variable "ads" in this call here, every call
+		 * to nss_get_info_cached can destroy the connection inside
+		 * the domain.
+		 */
+		status = nss_get_info_cached(domain, &info->user_sid, mem_ctx,
+					     ads_cached_connection(domain),
+					     msg, &info->homedir, &info->shell,
+					     &gecos, &primary_gid);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Deliberately ignore this error, there might be more
+			 * users to fill
+			 */
+			continue;
+		}
+
+		if (gecos != NULL) {
+			info->full_name = gecos;
+		}
+		info->primary_gid = primary_gid;
+	}
+
 	status = NT_STATUS_OK;
 
 	DEBUG(3,("ads query_user_list gave %d entries\n", (*num_entries)));
 
 done:
-	if (res) 
-		ads_msgfree(ads, res);
-
 	return status;
 }
 
