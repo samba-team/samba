@@ -172,7 +172,8 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	 * setup the prefix mappings and schema info
 	 */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
-				    schema_dn, schema_attrs, 0);
+				    schema_dn, schema_attrs,
+				    DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
