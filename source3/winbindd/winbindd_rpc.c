@@ -670,7 +670,6 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 			     uint32_t **pname_types)
 {
 	struct policy_handle group_policy;
-	struct samr_RidTypeArray *rids = NULL;
 	uint32_t group_rid;
 	uint32_t *rid_mem = NULL;
 
@@ -690,41 +689,87 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = rpccli_samr_OpenGroup(samr_pipe,
-				       mem_ctx,
-				       samr_policy,
-				       SEC_FLAG_MAXIMUM_ALLOWED,
-				       group_rid,
-				       &group_policy);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	switch(type) {
+	case SID_NAME_DOM_GRP:
+	{
+		struct samr_RidTypeArray *rids = NULL;
+
+		status = rpccli_samr_OpenGroup(samr_pipe,
+					       mem_ctx,
+					       samr_policy,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       group_rid,
+					       &group_policy);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * Step #1: Get a list of user rids that are the members of the group.
+		 */
+		status = rpccli_samr_QueryGroupMember(samr_pipe,
+						      mem_ctx,
+						      &group_policy,
+						      &rids);
+
+		rpccli_samr_Close(samr_pipe, mem_ctx, &group_policy);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (rids == NULL || rids->count == 0) {
+			pnum_names = 0;
+			pnames = NULL;
+			pname_types = NULL;
+			psid_mem = NULL;
+
+			return NT_STATUS_OK;
+		}
+
+		num_names = rids->count;
+		rid_mem = rids->rids;
+
+		break;
 	}
+	case SID_NAME_WKN_GRP:
+	case SID_NAME_ALIAS:
+	{
+		struct lsa_SidArray sid_array;
+		struct lsa_SidPtr sid_ptr;
+		struct samr_Ids rids_query;
 
-	/*
-	 * Step #1: Get a list of user rids that are the members of the group.
-	 */
-	status = rpccli_samr_QueryGroupMember(samr_pipe,
-					      mem_ctx,
-					      &group_policy,
-					      &rids);
+		sid_ptr.sid = sid_dup_talloc(mem_ctx, group_sid);
+		if (sid_ptr.sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	rpccli_samr_Close(samr_pipe, mem_ctx, &group_policy);
+		sid_array.num_sids = 1;
+		sid_array.sids = &sid_ptr;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		status = rpccli_samr_GetAliasMembership(samr_pipe,
+							mem_ctx,
+							samr_policy,
+							&sid_array,
+							&rids_query);
+
+		if (rids_query.count == 0) {
+			pnum_names = 0;
+			pnames = NULL;
+			pname_types = NULL;
+			psid_mem = NULL;
+
+			return NT_STATUS_OK;
+		}
+
+		num_names = rids_query.count;
+		rid_mem = rids_query.ids;
+
+		break;
 	}
-
-	if (rids == NULL || rids->count == 0) {
-		pnum_names = 0;
-		pnames = NULL;
-		pname_types = NULL;
-		psid_mem = NULL;
-
-		return NT_STATUS_OK;
+	default:
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	num_names = rids->count;
-	rid_mem = rids->rids;
 
 	/*
 	 * Step #2: Convert list of rids into list of usernames.
