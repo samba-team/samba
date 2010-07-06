@@ -5294,7 +5294,12 @@ void reply_printqueue(struct smb_request *req)
 
 		ZERO_STRUCT(handle);
 
-		status = rpc_connect_spoolss_pipe(conn, &cli);
+		status = rpc_pipe_open_interface(conn,
+						 &ndr_table_spoolss.syntax_id,
+						 conn->server_info,
+						 &conn->sconn->client_id,
+						 conn->sconn->msg_ctx,
+						 &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("reply_printqueue: "
 				  "could not connect to spoolss: %s\n",

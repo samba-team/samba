@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "smbd/globals.h"
 
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);
@@ -120,10 +121,16 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	 * all printer verification, and eventually assigns
 	 * a job id */
 
-	status = rpc_connect_spoolss_pipe(fsp->conn, &cli);
+	status = rpc_pipe_open_interface(fsp->conn,
+					 &ndr_table_spoolss.syntax_id,
+					 fsp->conn->server_info,
+					 &fsp->conn->sconn->client_id,
+					 fsp->conn->sconn->msg_ctx,
+					 &fsp->conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	cli = fsp->conn->spoolss_pipe;
 
 	ZERO_STRUCT(devmode_ctr);
 
@@ -265,13 +272,19 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	NTSTATUS status;
 	WERROR werr;
 
-	status = rpc_connect_spoolss_pipe(fsp->conn, &cli);
+	status = rpc_pipe_open_interface(fsp->conn,
+					 &ndr_table_spoolss.syntax_id,
+					 fsp->conn->server_info,
+					 &fsp->conn->sconn->client_id,
+					 fsp->conn->sconn->msg_ctx,
+					 &fsp->conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("print_spool_end: "
 			  "Failed to get spoolss pipe [%s]\n",
 			  nt_errstr(status)));
 		return;
 	}
+	cli = fsp->conn->spoolss_pipe;
 
 	switch (close_type) {
 	case NORMAL_CLOSE:
@@ -302,13 +315,19 @@ void print_spool_terminate(struct connection_struct *conn,
 
 	rap_jobid_delete(print_file->svcname, print_file->jobid);
 
-	status = rpc_connect_spoolss_pipe(conn, &cli);
+	status = rpc_pipe_open_interface(conn,
+					 &ndr_table_spoolss.syntax_id,
+					 conn->server_info,
+					 &conn->sconn->client_id,
+					 conn->sconn->msg_ctx,
+					 &conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("print_spool_terminate: "
 			  "Failed to get spoolss pipe [%s]\n",
 			  nt_errstr(status)));
 		return;
 	}
+	cli = &conn->spoolss_pipe;
 
 	status = rpccli_spoolss_SetJob(cli, print_file,
 					&print_file->handle,

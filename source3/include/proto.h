@@ -4163,8 +4163,12 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				struct client_address *client_id,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult);
-NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
-				  struct rpc_pipe_client **spoolss_pipe);
+NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
+				 const struct ndr_syntax_id *syntax,
+				 struct auth_serversupplied_info *server_info,
+				 struct client_address *client_id,
+				 struct messaging_context *msg_ctx,
+				 struct rpc_pipe_client **cli_pipe);
 NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  const struct ndr_syntax_id *interface,
 				  struct rpc_pipe_client **presult);

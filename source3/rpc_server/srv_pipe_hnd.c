@@ -996,56 +996,78 @@ done:
 /**
  * @brief Create a new RPC client context which uses a local dispatch function.
  *
- * @param[in]  conn  The connection struct that will hold the pipe
+ * @param mem_ctx	The memory context on which thje pipe will ultimately
+ *			be allocated
+ * @param name		The pipe name to connect to.
+ * @param server_info	Credentials to use for the connection.
+ * @param pipe		[in|out] Checks if a pipe is connected, and connects it
+ *				 if not
  *
- * @param[out] spoolss_pipe  A pointer to the connected rpc client pipe.
- *
- * @return              NT_STATUS_OK on success, a corresponding NT status if an
- *                      error occured.
+ * @return              NT_STATUS_OK on success, a corresponding NT status if
+ *			an error occured.
  */
-NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
-				  struct rpc_pipe_client **spoolss_pipe)
+
+NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
+				 const struct ndr_syntax_id *syntax,
+				 struct auth_serversupplied_info *server_info,
+				 struct client_address *client_id,
+				 struct messaging_context *msg_ctx,
+				 struct rpc_pipe_client **cli_pipe)
 {
+	TALLOC_CTX *tmpctx;
 	const char *server_type;
+	const char *pipe_name;
 	NTSTATUS status;
 
-	DEBUG(10, ("Connecting to spoolss pipe.\n"));
-	*spoolss_pipe = NULL;
-
-	if (rpccli_is_connected(conn->spoolss_pipe)) {
-		*spoolss_pipe = conn->spoolss_pipe;
+	if (rpccli_is_connected(*cli_pipe)) {
 		return NT_STATUS_OK;
 	} else {
-		TALLOC_FREE(conn->spoolss_pipe);
+		TALLOC_FREE(*cli_pipe);
 	}
 
+	tmpctx = talloc_new(mem_ctx);
+	if (!tmpctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pipe_name = get_pipe_name_from_syntax(tmpctx, syntax);
+	if (!pipe_name) {
+		TALLOC_FREE(tmpctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DEBUG(10, ("Connecting to %s pipe.\n", pipe_name));
+
 	server_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "spoolss",
+					   "rpc_server", pipe_name,
 					   "embedded");
 	if (StrCaseCmp(server_type, "embedded") == 0) {
-		status = rpc_pipe_open_internal(conn,
-						&ndr_table_spoolss.syntax_id,
-						conn->server_info,
-						&conn->sconn->client_id,
-						conn->sconn->msg_ctx,
-						&conn->spoolss_pipe);
+		status = rpc_pipe_open_internal(tmpctx,
+						syntax, server_info,
+						client_id, msg_ctx,
+						cli_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	} else {
 		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
 		 * for now we need to use the special proxy setup to connect
 		 * to spoolssd. */
 
-		status = rpc_pipe_open_external(conn, "spoolss",
-						&ndr_table_spoolss.syntax_id,
-						conn->server_info,
-						&conn->spoolss_pipe);
+		status = rpc_pipe_open_external(tmpctx,
+						pipe_name, syntax,
+						server_info,
+						cli_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	}
 
-	*spoolss_pipe = conn->spoolss_pipe;
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+done:
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_steal(mem_ctx, *cli_pipe);
+	}
+	TALLOC_FREE(tmpctx);
+	return status;
 }
