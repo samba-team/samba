@@ -4484,16 +4484,16 @@ static bool ldapsam_search_next_entry(struct pdb_search *search,
 	bool result;
 
  retry:
-	if (state->current_entry == NULL) {
-		return false;
-	}
-
 	if ((state->entries == NULL) && (state->pagedresults_cookie == NULL))
 		return False;
 
 	if ((state->entries == NULL) &&
 	    !ldapsam_search_nextpage(search))
 		    return False;
+
+	if (state->current_entry == NULL) {
+		return false;
+	}
 
 	result = state->ldap2displayentry(state, search,
 					  state->connection->ldap_struct,
