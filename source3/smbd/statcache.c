@@ -336,10 +336,11 @@ bool stat_cache_lookup(connection_struct *conn,
  Tell all smbd's to delete an entry.
 **************************************************************************/
 
-void send_stat_cache_delete_message(const char *name)
+void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
+				    const char *name)
 {
 #ifdef DEVELOPER
-	message_send_all(smbd_messaging_context(),
+	message_send_all(msg_ctx,
 			MSG_SMB_STAT_CACHE_DELETE,
 			name,
 			strlen(name)+1,

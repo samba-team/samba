@@ -961,7 +961,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			become_user(fsp->conn, fsp->vuid);
 			became_user = True;
 		}
-		send_stat_cache_delete_message(fsp->fsp_name->base_name);
+		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
+					       fsp->fsp_name->base_name);
 		set_delete_on_close_lck(lck, True, get_current_utok(fsp->conn));
 		fsp->delete_on_close = true;
 		if (became_user) {

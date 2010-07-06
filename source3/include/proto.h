@@ -5838,7 +5838,8 @@ bool stat_cache_lookup(connection_struct *conn,
 			char **pp_dirpath,
 			char **pp_start,
 			SMB_STRUCT_STAT *pst);
-void send_stat_cache_delete_message(const char *name);
+void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
+				    const char *name);
 void stat_cache_delete(const char *name);
 unsigned int fast_string_hash(TDB_DATA *key);
 bool reset_stat_cache( void );

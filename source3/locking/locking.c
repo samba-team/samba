@@ -1457,7 +1457,8 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 
 	if (fsp->is_directory) {
 		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
-		send_stat_cache_delete_message(fsp->fsp_name->base_name);
+		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
+					       fsp->fsp_name->base_name);
 	}
 
 	TALLOC_FREE(lck);
