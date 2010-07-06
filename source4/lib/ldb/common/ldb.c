@@ -285,6 +285,22 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 	}
 }
 
+
+
+/*
+  set an ldb error based on file:line
+*/
+int ldb_error_at(struct ldb_context *ldb, int ecode,
+		 const char *reason, const char *file, int line)
+{
+	if (reason == NULL) {
+		reason = ldb_strerror(ecode);
+	}
+	ldb_asprintf_errstring(ldb, "%s at %s:%d", reason, file, line);
+	return ecode;
+}
+
+
 #define FIRST_OP_NOERR(ldb, op) do { \
 	module = ldb->modules;					\
 	while (module && module->ops->op == NULL) module = module->next; \
