@@ -451,11 +451,11 @@ static WERROR dcesrv_DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call
 }
 
 /* Obtain the site name from a server DN */
-static const char *result_site_name(struct ldb_dn *site_dn)
+static const char *result_site_name(struct ldb_dn *server_dn)
 {
 	/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
-	const struct ldb_val *val = ldb_dn_get_component_val(site_dn, 2);
-	const char *name = ldb_dn_get_component_name(site_dn, 2);
+	const struct ldb_val *val = ldb_dn_get_component_val(server_dn, 2);
+	const char *name = ldb_dn_get_component_name(server_dn, 2);
 
 	if (!name || (ldb_attr_cmp(name, "cn") != 0)) {
 		/* Ensure this matches the format.  This gives us a
