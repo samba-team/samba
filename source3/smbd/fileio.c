@@ -796,6 +796,26 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 			DO_PROFILE_INC(writecache_init_writes);
 		}
 #endif
+
+		if ((wcp->data_size == 0)
+		    && (pos > wcp->file_size)
+		    && (pos + n <= wcp->file_size + wcp->alloc_size)) {
+			/*
+			 * This is a write completely beyond the
+			 * current EOF, but within reach of the write
+			 * cache. We expect fill-up writes pretty
+			 * soon, so it does not make sense to start
+			 * the write cache at the current
+			 * offset. These fill-up writes would trigger
+			 * separate pwrites or even unnecessary cache
+			 * flushes because they overlap if this is a
+			 * one-byte allocating write.
+			 */
+			wcp->offset = wcp->file_size;
+			wcp->data_size = pos - wcp->file_size;
+			memset(wcp->data, 0, wcp->data_size);
+		}
+
 		memcpy(wcp->data+wcp->data_size, data, n);
 		if (wcp->data_size == 0) {
 			wcp->offset = pos;
