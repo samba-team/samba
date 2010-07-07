@@ -112,7 +112,7 @@ bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io)
 
 	if (size != 0) {
 		ps->buffer_size = size;
-		ps->data_p = talloc_zero_size(ps->mem_ctx, size);
+		ps->data_p = (char *)talloc_zero_size(ps->mem_ctx, size);
 		if(ps->data_p == NULL) {
 			DEBUG(0,("prs_init: talloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
