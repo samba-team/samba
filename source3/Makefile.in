@@ -322,8 +322,14 @@ LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
 LIBNDR_NETLOGON_OBJ = librpc/gen_ndr/ndr_netlogon.o \
 		  ../librpc/ndr/ndr_netlogon.o
 
+LIBNDR_SCHANNEL_OBJ = librpc/gen_ndr/ndr_schannel.o \
+		      ../librpc/ndr/ndr_schannel.o
+
 LIBNDR_SPOOLSS_OBJ = librpc/gen_ndr/ndr_spoolss.o \
 		  ../librpc/ndr/ndr_spoolss_buf.o
+
+LIBNDR_NTPRINTING_OBJ = librpc/gen_ndr/ndr_ntprinting.o \
+			../librpc/ndr/ndr_ntprinting.o \
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
@@ -510,8 +516,7 @@ TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 	       ../libcli/auth/schannel_sign.o \
 	       ../libcli/auth/schannel_state_tdb.o \
-	       librpc/gen_ndr/ndr_schannel.o \
-	       ../librpc/ndr/ndr_schannel.o
+	       $(LIBNDR_SCHANNEL_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o \
@@ -1033,8 +1038,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_serverid.o \
 	   utils/net_eventlog.o \
 	   utils/net_printing.o \
-	   librpc/gen_ndr/ndr_ntprinting.o \
-	   ../librpc/ndr/ndr_ntprinting.o
+	   $(LIBNDR_NTPRINTING_OBJ)
+
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
