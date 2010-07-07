@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
+#include "rpc_server/rpc_ncacn_np.h"
 #include "smbd/globals.h"
 
 void print_spool_terminate(struct connection_struct *conn,

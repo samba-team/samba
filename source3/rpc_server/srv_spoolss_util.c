@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/cli_winreg.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"

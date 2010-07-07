@@ -38,6 +38,7 @@
 #include "../lib/util/binsearch.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "rpc_client/init_lsa.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

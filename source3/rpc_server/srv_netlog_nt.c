@@ -35,6 +35,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/crypto/md4.h"
 #include "rpc_client/init_lsa.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 extern userdom_struct current_user_info;
 
