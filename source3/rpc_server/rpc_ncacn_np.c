@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Largely re-written : 2005
  *  Copyright (C) Jeremy Allison		1998 - 2005
+ *  Copyright (C) Simo Sorce			2010
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +23,9 @@
 #include "includes.h"
 #include "rpc_server/srv_pipe_internal.h"
 #include "rpc_dce.h"
+#include "../libcli/named_pipe_auth/npa_tstream.h"
+#include "rpc_server/rpc_ncacn_np.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -574,4 +578,297 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 
 	*presult = result;
 	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ * External pipes functions
+ ***************************************************************************/
+
+
+struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct tsocket_address *local_address,
+				const struct tsocket_address *remote_address,
+				struct auth_serversupplied_info *server_info)
+{
+	struct np_proxy_state *result;
+	char *socket_np_dir;
+	const char *socket_dir;
+	struct tevent_context *ev;
+	struct tevent_req *subreq;
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+	bool ok;
+	int ret;
+	int sys_errno;
+
+	result = talloc(mem_ctx, struct np_proxy_state);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->read_queue = tevent_queue_create(result, "np_read");
+	if (result->read_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
+		goto fail;
+	}
+
+	result->write_queue = tevent_queue_create(result, "np_write");
+	if (result->write_queue == NULL) {
+		DEBUG(0, ("tevent_queue_create failed\n"));
+		goto fail;
+	}
+
+	ev = s3_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		DEBUG(0, ("s3_tevent_context_init failed\n"));
+		goto fail;
+	}
+
+	socket_dir = lp_parm_const_string(
+		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
+		lp_ncalrpc_dir());
+	if (socket_dir == NULL) {
+		DEBUG(0, ("externan_rpc_pipe:socket_dir not set\n"));
+		goto fail;
+	}
+	socket_np_dir = talloc_asprintf(talloc_tos(), "%s/np", socket_dir);
+	if (socket_np_dir == NULL) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
+		goto fail;
+	}
+
+	info3 = talloc_zero(talloc_tos(), struct netr_SamInfo3);
+	if (info3 == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
+	}
+
+	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		DEBUG(0, ("serverinfo_to_SamInfo3 failed: %s\n",
+			  nt_errstr(status)));
+		goto fail;
+	}
+
+	become_root();
+	subreq = tstream_npa_connect_send(talloc_tos(), ev,
+					  socket_np_dir,
+					  pipe_name,
+					  remote_address, /* client_addr */
+					  NULL, /* client_name */
+					  local_address, /* server_addr */
+					  NULL, /* server_name */
+					  info3,
+					  server_info->user_session_key,
+					  data_blob_null /* delegated_creds */);
+	if (subreq == NULL) {
+		unbecome_root();
+		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and "
+			  "user %s\\%s failed\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string));
+		goto fail;
+	}
+	ok = tevent_req_poll(subreq, ev);
+	unbecome_root();
+	if (!ok) {
+		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s "
+			  "failed for tstream_npa_connect: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string,
+			  strerror(errno)));
+		goto fail;
+
+	}
+	ret = tstream_npa_connect_recv(subreq, &sys_errno,
+				       result,
+				       &result->npipe,
+				       &result->file_type,
+				       &result->device_state,
+				       &result->allocation_size);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and "
+			  "user %s\\%s failed: %s\n",
+			  socket_np_dir, pipe_name, info3->base.domain.string,
+			  info3->base.account_name.string,
+			  strerror(sys_errno)));
+		goto fail;
+	}
+
+	return result;
+
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct ndr_syntax_id *abstract_syntax,
+				struct auth_serversupplied_info *server_info,
+				struct rpc_pipe_client **_result)
+{
+	struct tsocket_address *local, *remote;
+	struct rpc_pipe_client *result = NULL;
+	struct np_proxy_state *proxy_state = NULL;
+	struct pipe_auth_data *auth;
+	NTSTATUS status;
+	int ret;
+
+	/* this is an internal connection, fake up ip addresses */
+	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+						NULL, 0, &local);
+	if (ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+						NULL, 0, &remote);
+	if (ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	proxy_state = make_external_rpc_pipe_p(mem_ctx, pipe_name,
+						local, remote, server_info);
+	if (!proxy_state) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+
+	result->desthost = get_myname(result);
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	status = rpc_transport_tstream_init(result,
+					    proxy_state->npipe,
+					    proxy_state->read_queue,
+					    proxy_state->write_queue,
+					    &result->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	result->auth = talloc_zero(result, struct pipe_auth_data);
+	if (!result->auth) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	result->auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+	result->auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to initialize anonymous bind.\n"));
+		goto done;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to bind spoolss pipe.\n"));
+		goto done;
+	}
+done:
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(result);
+	}
+	TALLOC_FREE(proxy_state);
+	*_result = result;
+	return status;
+}
+
+/**
+ * @brief Create a new RPC client context which uses a local dispatch function.
+ *
+ * @param mem_ctx	The memory context on which thje pipe will ultimately
+ *			be allocated
+ * @param name		The pipe name to connect to.
+ * @param server_info	Credentials to use for the connection.
+ * @param pipe		[in|out] Checks if a pipe is connected, and connects it
+ *				 if not
+ *
+ * @return              NT_STATUS_OK on success, a corresponding NT status if
+ *			an error occured.
+ */
+
+NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
+				 const struct ndr_syntax_id *syntax,
+				 struct auth_serversupplied_info *server_info,
+				 struct client_address *client_id,
+				 struct messaging_context *msg_ctx,
+				 struct rpc_pipe_client **cli_pipe)
+{
+	TALLOC_CTX *tmpctx;
+	const char *server_type;
+	const char *pipe_name;
+	NTSTATUS status;
+
+	if (rpccli_is_connected(*cli_pipe)) {
+		return NT_STATUS_OK;
+	} else {
+		TALLOC_FREE(*cli_pipe);
+	}
+
+	tmpctx = talloc_new(mem_ctx);
+	if (!tmpctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pipe_name = get_pipe_name_from_syntax(tmpctx, syntax);
+	if (!pipe_name) {
+		TALLOC_FREE(tmpctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	DEBUG(10, ("Connecting to %s pipe.\n", pipe_name));
+
+	server_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", pipe_name,
+					   "embedded");
+	if (StrCaseCmp(server_type, "embedded") == 0) {
+		status = rpc_pipe_open_internal(tmpctx,
+						syntax, server_info,
+						client_id, msg_ctx,
+						cli_pipe);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	} else {
+		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
+		 * for now we need to use the special proxy setup to connect
+		 * to spoolssd. */
+
+		status = rpc_pipe_open_external(tmpctx,
+						pipe_name, syntax,
+						server_info,
+						cli_pipe);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	status = NT_STATUS_OK;
+done:
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_steal(mem_ctx, *cli_pipe);
+	}
+	TALLOC_FREE(tmpctx);
+	return status;
 }
