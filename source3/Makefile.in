@@ -331,6 +331,9 @@ LIBNDR_SPOOLSS_OBJ = librpc/gen_ndr/ndr_spoolss.o \
 LIBNDR_NTPRINTING_OBJ = librpc/gen_ndr/ndr_ntprinting.o \
 			../librpc/ndr/ndr_ntprinting.o \
 
+LIBNDR_PREG_OBJ = librpc/gen_ndr/ndr_preg.o \
+		  librpc/ndr/ndr_preg.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -1038,7 +1041,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_serverid.o \
 	   utils/net_eventlog.o \
 	   utils/net_printing.o \
-	   $(LIBNDR_NTPRINTING_OBJ)
+	   $(LIBNDR_NTPRINTING_OBJ) \
+	   $(LIBNDR_PREG_OBJ)
 
 
 # these are not processed by make proto

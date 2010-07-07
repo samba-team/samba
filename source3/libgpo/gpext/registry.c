@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Support
- *  Copyright (C) Guenther Deschner 2007-2008
+ *  Copyright (C) Guenther Deschner 2007-2008,2010
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
+#include "../librpc/gen_ndr/ndr_preg.h"
 
 #define GP_EXT_NAME "registry"
 
@@ -35,164 +36,11 @@
 
 static TALLOC_CTX *ctx = NULL;
 
-struct gp_registry_file_header {
-	uint32_t signature;
-	uint32_t version;
-};
-
-struct gp_registry_file_entry {
-	UNISTR key;
-	UNISTR value;
-	enum winreg_Type type;
-	size_t size;
-	uint8_t *data;
-};
-
-struct gp_registry_file {
-	struct gp_registry_file_header header;
-	size_t num_entries;
-	struct gp_registry_entry *entries;
-};
-
-/****************************************************************
-****************************************************************/
-
-static bool reg_parse_header(const char *desc,
-			     struct gp_registry_file_header *header,
-			     prs_struct *ps,
-			     int depth)
-{
-	if (!header)
-		return false;
-
-	prs_debug(ps, depth, desc, "reg_parse_header");
-	depth++;
-
-	if (!prs_uint32("signature", ps, depth, &header->signature))
-		return false;
-
-	if (!prs_uint32("version", ps, depth, &header->version))
-		return false;
-
-	return true;
-}
-
-/****************************************************************
-****************************************************************/
-
-static bool reg_parse_and_verify_ucs2_char(const char *desc,
-					   char character,
-					   prs_struct *ps,
-					   int depth)
-{
-	uint16_t tmp;
-
-	if (!prs_uint16(desc, ps, depth, &tmp))
-		return false;
-
-	if (tmp != UCS2_CHAR(character))
-		return false;
-
-	return true;
-}
-
-/****************************************************************
-****************************************************************/
-
-static bool reg_parse_init(prs_struct *ps, int depth)
-{
-	return reg_parse_and_verify_ucs2_char("initiator '['", '[',
-					      ps, depth);
-}
-
-/****************************************************************
-****************************************************************/
-
-static bool reg_parse_sep(prs_struct *ps, int depth)
-{
-	return reg_parse_and_verify_ucs2_char("separator ';'", ';',
-					      ps, depth);
-}
-
-/****************************************************************
-****************************************************************/
-
-static bool reg_parse_term(prs_struct *ps, int depth)
-{
-	return reg_parse_and_verify_ucs2_char("terminator ']'", ']',
-					      ps, depth);
-}
-
-
-/****************************************************************
-* [key;value;type;size;data]
-****************************************************************/
-
-static bool reg_parse_entry(TALLOC_CTX *mem_ctx,
-			    const char *desc,
-			    struct gp_registry_file_entry *entry,
-			    prs_struct *ps,
-			    int depth)
-{
-	uint32_t size = 0;
-
-	if (!entry)
-		return false;
-
-	prs_debug(ps, depth, desc, "reg_parse_entry");
-	depth++;
-
-	ZERO_STRUCTP(entry);
-
-	if (!reg_parse_init(ps, depth))
-		return false;
-
-	if (!prs_unistr("key", ps, depth, &entry->key))
-		return false;
-
-	if (!reg_parse_sep(ps, depth))
-		return false;
-
-	if (!prs_unistr("value", ps, depth, &entry->value))
-		return false;
-
-	if (!reg_parse_sep(ps, depth))
-		return false;
-
-	if (!prs_uint32("type", ps, depth, &entry->type))
-		return false;
-
-	if (!reg_parse_sep(ps, depth))
-		return false;
-
-	if (!prs_uint32("size", ps, depth, &size))
-		return false;
-
-	entry->size = size;
-
-	if (!reg_parse_sep(ps, depth))
-		return false;
-
-	if (entry->size) {
-		entry->data = TALLOC_ZERO_ARRAY(mem_ctx, uint8, entry->size);
-		if (!entry->data)
-			return false;
-	}
-
-	if (!prs_uint8s(false, "data", ps, depth, entry->data, entry->size))
-		return false;
-
-	if (!reg_parse_term(ps, depth))
-		return false;
-
-	return true;
-}
-
 /****************************************************************
 ****************************************************************/
 
 static bool reg_parse_value(TALLOC_CTX *mem_ctx,
-			    char **value,
+			    const char **value,
 			    enum gp_reg_action *action)
 {
 	if (!*value) {
@@ -254,15 +102,12 @@ static bool reg_parse_value(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
-					 struct gp_registry_file_entry *file_entry,
+					 struct preg_entry *r,
 					 struct gp_registry_entry **reg_entry)
 {
 	struct registry_value *data = NULL;
 	struct gp_registry_entry *entry = NULL;
-	char *key = NULL;
-	char *value = NULL;
 	enum gp_reg_action action = GP_REG_ACTION_NONE;
-	size_t converted_size;
 
 	ZERO_STRUCTP(*reg_entry);
 
@@ -270,112 +115,22 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 	if (!data)
 		return false;
 
-	if (strlen_w((const smb_ucs2_t *)file_entry->key.buffer) <= 0)
-		return false;
-
-	if (!pull_ucs2_talloc(mem_ctx, &key, file_entry->key.buffer,
-			      &converted_size))
-	{
-		return false;
-	}
-
-	if (strlen_w((const smb_ucs2_t *)file_entry->value.buffer) > 0 &&
-	    !pull_ucs2_talloc(mem_ctx, &value, file_entry->value.buffer,
-			      &converted_size))
-	{
-			return false;
-	}
-
-	if (!reg_parse_value(mem_ctx, &value, &action))
-		return false;
-
-	data->type = file_entry->type;
-
-	switch (data->type) {
-		case REG_DWORD:
-			if (file_entry->size < 4) {
-				return false;
-			}
-			data->data = data_blob_talloc(mem_ctx, NULL, 4);
-			SIVAL(data->data.data, 0, atoi((char *)file_entry->data));
-			break;
-		case REG_BINARY:
-		case REG_SZ:
-			data->data.length = file_entry->size;
-			data->data.data = file_entry->data;
-			break;
-		case REG_NONE:
-			break;
-		case REG_DWORD_BIG_ENDIAN:
-		case REG_EXPAND_SZ:
-		case REG_LINK:
-		case REG_MULTI_SZ:
-		case REG_QWORD:
-/*		case REG_DWORD_LITTLE_ENDIAN: */
-/*		case REG_QWORD_LITTLE_ENDIAN: */
-			printf("not yet implemented: %d\n", data->type);
-			return false;
-		default:
-			printf("invalid reg type defined: %d\n", data->type);
-			return false;
-
-	}
+	data->type = r->type;
+	data->data = data_blob_talloc(data, r->data, r->size);
 
 	entry = TALLOC_ZERO_P(mem_ctx, struct gp_registry_entry);
 	if (!entry)
 		return false;
 
-	entry->key = key;
-	entry->value = value;
+	if (!reg_parse_value(mem_ctx, &r->valuename, &action))
+		return false;
+
+	entry->key = talloc_strdup(entry, r->keyname);
+	entry->value = talloc_strdup(entry, r->valuename);
 	entry->data = data;
 	entry->action = action;
 
 	*reg_entry = entry;
-
-	return true;
-}
-
-/****************************************************************
-* [key;value;type;size;data][key;value;type;size;data]...
-****************************************************************/
-
-static bool reg_parse_entries(TALLOC_CTX *mem_ctx,
-			      const char *desc,
-			      struct gp_registry_entry **entries,
-			      size_t *num_entries,
-			      prs_struct *ps,
-			      int depth)
-{
-
-	if (!entries || !num_entries)
-		return false;
-
-	prs_debug(ps, depth, desc, "reg_parse_entries");
-	depth++;
-
-	*entries = NULL;
-	*num_entries = 0;
-
-	while (ps->buffer_size > ps->data_offset) {
-
-		struct gp_registry_file_entry f_entry;
-		struct gp_registry_entry *r_entry = NULL;
-
-		if (!reg_parse_entry(mem_ctx, desc, &f_entry,
-				     ps, depth))
-			return false;
-
-		if (!gp_reg_entry_from_file_entry(mem_ctx,
-						  &f_entry,
-						  &r_entry))
-			return false;
-
-		if (!add_gp_registry_entry_to_array(mem_ctx,
-						    r_entry,
-						    entries,
-						    num_entries))
-			return false;
-	}
 
 	return true;
 }
@@ -386,18 +141,17 @@ static bool reg_parse_entries(TALLOC_CTX *mem_ctx,
 static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 				   uint32_t flags,
 				   const char *filename,
-				   struct gp_registry_entry **entries,
-				   size_t *num_entries)
+				   struct gp_registry_entry **entries_p,
+				   size_t *num_entries_p)
 {
-	uint16_t *buf = NULL;
-	size_t n = 0;
+	DATA_BLOB blob;
 	NTSTATUS status;
-	prs_struct ps;
-	struct gp_registry_file *reg_file;
+	enum ndr_err_code ndr_err;
 	const char *real_filename = NULL;
-
-	reg_file = TALLOC_ZERO_P(mem_ctx, struct gp_registry_file);
-	NT_STATUS_HAVE_NO_MEMORY(reg_file);
+	struct preg_file r;
+	struct gp_registry_entry *entries = NULL;
+	size_t num_entries = 0;
+	int i;
 
 	status = gp_find_file(mem_ctx,
 			      flags,
@@ -405,58 +159,58 @@ static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 			      GP_REGPOL_FILE,
 			      &real_filename);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(reg_file);
 		return status;
 	}
 
-	buf = (uint16 *)file_load(real_filename, &n, 0, NULL);
-	if (!buf) {
-		TALLOC_FREE(reg_file);
+	blob.data = (uint8_t *)file_load(real_filename, &blob.length, 0, NULL);
+	if (!blob.data) {
 		return NT_STATUS_CANNOT_LOAD_REGISTRY_FILE;
 	}
 
-	if (!prs_init(&ps, n, mem_ctx, UNMARSHALL)) {
-		status = NT_STATUS_NO_MEMORY;
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+			(ndr_pull_flags_fn_t)ndr_pull_preg_file);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
 		goto out;
 	}
 
-	if (!prs_copy_data_in(&ps, (char *)buf, n)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	prs_set_offset(&ps, 0);
-
-	if (!reg_parse_header("header", &reg_file->header, &ps, 0)) {
-		status = NT_STATUS_REGISTRY_IO_FAILED;
-		goto out;
-	}
-
-	if (reg_file->header.signature != GP_REGPOL_FILE_SIGNATURE) {
+	if (!strequal(r.header.signature, "PReg")) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
-	if (reg_file->header.version != GP_REGPOL_FILE_VERSION) {
+	if (r.header.version != GP_REGPOL_FILE_VERSION) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
-	if (!reg_parse_entries(mem_ctx, "entries", &reg_file->entries,
-			       &reg_file->num_entries, &ps, 0)) {
-		status = NT_STATUS_REGISTRY_IO_FAILED;
-		goto out;
+	for (i=0; i < r.num_entries; i++) {
+
+		struct gp_registry_entry *r_entry = NULL;
+
+		if (!gp_reg_entry_from_file_entry(mem_ctx,
+						  &r.entries[i],
+						  &r_entry)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		if (!add_gp_registry_entry_to_array(mem_ctx,
+						    r_entry,
+						    &entries,
+						    &num_entries)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 	}
 
-	*entries = reg_file->entries;
-	*num_entries = reg_file->num_entries;
+	*entries_p = entries;
+	*num_entries_p = num_entries;
 
 	status = NT_STATUS_OK;
 
  out:
-	TALLOC_FREE(buf);
-	prs_mem_free(&ps);
-
+	data_blob_free(&blob);
 	return status;
 }
 
