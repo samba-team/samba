@@ -438,6 +438,8 @@ static NTSTATUS msrpc_query_user(struct winbindd_domain *domain,
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(10,("query_user: No incoming trust for domain %s\n",
 			  domain->name));
+		/* Tell the cache manager not to remember this one */
+		status = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		goto done;
 	}
 
@@ -562,6 +564,8 @@ static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 	if (!winbindd_can_contact_domain(domain)) {
 		DEBUG(10,("msrpc_lookup_useraliases: No incoming trust for domain %s\n",
 			  domain->name));
+		/* Tell the cache manager not to remember this one */
+		status = NT_STATUS_SYNCHRONIZATION_REQUIRED;
 		goto done;
 	}
 
