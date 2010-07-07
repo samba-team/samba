@@ -129,7 +129,7 @@ static int acl_module_init(struct ldb_module *module)
 	struct ldb_context *ldb;
 	struct acl_private *data;
 	int ret, i;
-	TALLOC_CTX *mem_ctx = talloc_new(module);
+	TALLOC_CTX *mem_ctx;
 	static const char *attrs[] = { "passwordAttribute", NULL };
 	struct ldb_result *res;
 	struct ldb_message *msg;
@@ -154,6 +154,7 @@ static int acl_module_init(struct ldb_module *module)
 					 NULL, "acl", "perform", false);
 	ldb_module_set_private(module, data);
 
+	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
 		return ldb_oom(ldb);
 	}
