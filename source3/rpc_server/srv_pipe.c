@@ -1605,7 +1605,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
 	 */
-	id = hdr_rb.rpc_context[0].abstract;
+	id = hdr_rb.rpc_context[0].abstract_syntax;
 	if (rpc_srv_pipe_exists_by_id(&id)) {
 		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
 			rpc_srv_get_pipe_cli_name(&id),
@@ -1614,13 +1614,13 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
-				&hdr_rb.rpc_context[0].abstract));
+				&hdr_rb.rpc_context[0].abstract_syntax));
 
 		if (NT_STATUS_IS_ERR(status)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 get_pipe_name_from_syntax(
 					talloc_tos(),
-					&hdr_rb.rpc_context[0].abstract)));
+					&hdr_rb.rpc_context[0].abstract_syntax)));
 			prs_mem_free(&p->out_data.frag);
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
@@ -1664,15 +1664,17 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
-	if(check_bind_req(p, &hdr_rb.rpc_context[0].abstract, &hdr_rb.rpc_context[0].transfer[0],
-				hdr_rb.rpc_context[0].context_id )) {
+	if (check_bind_req(p,
+			&hdr_rb.rpc_context[0].abstract_syntax,
+			&hdr_rb.rpc_context[0].transfer_syntaxes[0],
+			hdr_rb.rpc_context[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.rpc_context[0].transfer[0]);
+	                &hdr_rb.rpc_context[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -1941,15 +1943,17 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
-	if(check_bind_req(p, &hdr_rb.rpc_context[0].abstract, &hdr_rb.rpc_context[0].transfer[0],
-				hdr_rb.rpc_context[0].context_id )) {
+	if (check_bind_req(p,
+			&hdr_rb.rpc_context[0].abstract_syntax,
+			&hdr_rb.rpc_context[0].transfer_syntaxes[0],
+			hdr_rb.rpc_context[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.rpc_context[0].transfer[0]);
+	                &hdr_rb.rpc_context[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,

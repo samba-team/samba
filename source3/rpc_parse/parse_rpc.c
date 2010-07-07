@@ -188,10 +188,10 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
 }
 
 /*******************************************************************
- Reads or writes an RPC_CONTEXT structure.
+ Reads or writes a struct dcerpc_ctx_list structure.
 ********************************************************************/
 
-bool smb_io_rpc_context(const char *desc, RPC_CONTEXT *rpc_ctx, prs_struct *ps, int depth)
+bool smb_io_rpc_context(const char *desc, struct dcerpc_ctx_list *rpc_ctx, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -209,17 +209,20 @@ bool smb_io_rpc_context(const char *desc, RPC_CONTEXT *rpc_ctx, prs_struct *ps, 
 	if (rpc_ctx->num_transfer_syntaxes == 0)
 		return False;
 
-	if(!smb_io_rpc_iface("", &rpc_ctx->abstract, ps, depth))
+	if(!smb_io_rpc_iface("", &rpc_ctx->abstract_syntax, ps, depth))
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (!(rpc_ctx->transfer = PRS_ALLOC_MEM(ps, struct ndr_syntax_id, rpc_ctx->num_transfer_syntaxes))) {
+		rpc_ctx->transfer_syntaxes =
+			PRS_ALLOC_MEM(ps, struct ndr_syntax_id,
+					rpc_ctx->num_transfer_syntaxes);
+		if (!rpc_ctx->transfer_syntaxes) {
 			return False;
 		}
 	}
 
 	for (i = 0; i < rpc_ctx->num_transfer_syntaxes; i++ ) {
-		if (!smb_io_rpc_iface("", &rpc_ctx->transfer[i], ps, depth))
+		if (!smb_io_rpc_iface("", &rpc_ctx->transfer_syntaxes[i], ps, depth))
 			return False;
 	}
 	return True;
@@ -252,7 +255,7 @@ bool smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int de
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (!(rpc->rpc_context = PRS_ALLOC_MEM(ps, RPC_CONTEXT, rpc->num_contexts))) {
+		if (!(rpc->rpc_context = PRS_ALLOC_MEM(ps, struct dcerpc_ctx_list, rpc->num_contexts))) {
 			return False;
 		}
 	}

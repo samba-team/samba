@@ -107,18 +107,11 @@ typedef struct rpc_hdr_auth_info {
 
 #define RPC_HDR_AUTH_LEN 8
 
-typedef struct rpc_context {
-	uint16 context_id;		/* presentation context identifier. */
-	uint8 num_transfer_syntaxes;	/* the number of syntaxes */
-	struct ndr_syntax_id abstract;	/* num and vers. of interface client is using */
-	struct ndr_syntax_id *transfer;	/* Array of transfer interfaces. */
-} RPC_CONTEXT;
-
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info {
 	RPC_HDR_BBA bba;
 	uint8 num_contexts;    /* the number of contexts */
-	RPC_CONTEXT *rpc_context;
+	struct dcerpc_ctx_list *rpc_context;
 } RPC_HDR_RB;
 
 /* 
