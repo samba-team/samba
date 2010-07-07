@@ -34,15 +34,4 @@
 		"OTHER")), ((unsigned int)IVAL((hnd)->uuid.node,2)),\
 		((unsigned int)sys_getpid() )
 
-
-/********************************************************************** 
- * UNICODE string variations
- **********************************************************************/
-
-
-typedef struct {		/* UNISTR - unicode string size and buffer */
-	uint16 *buffer;		/* unicode characters. ***MUST*** be 
-				   little-endian. ***MUST*** be null-terminated */
-} UNISTR;
-
 #endif /* _RPC_MISC_H */
