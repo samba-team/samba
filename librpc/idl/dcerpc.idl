@@ -19,7 +19,7 @@ interface dcerpc
 		ndr_syntax_id transfer_syntaxes[num_transfer_syntaxes];
 	} dcerpc_ctx_list;
 
-	typedef struct {
+	typedef [public] struct {
 		uint16 max_xmit_frag;
 		uint16 max_recv_frag;
 		uint32 assoc_group_id;

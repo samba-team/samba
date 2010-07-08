@@ -5080,6 +5080,9 @@ void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
 bool smb_io_rpc_context(const char *desc, struct dcerpc_ctx_list *rpc_ctx, prs_struct *ps, int depth);
 bool smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth);
+NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *blob,
+				 struct dcerpc_bind *r);
 void init_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				const char *pipe_addr,

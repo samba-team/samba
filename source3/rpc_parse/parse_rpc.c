@@ -5,6 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison                    1999.
+ *  Copyright (C) Simo Sorce                        2010
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
@@ -227,6 +229,21 @@ bool smb_io_rpc_context(const char *desc, struct dcerpc_ctx_list *rpc_ctx, prs_s
 	}
 	return True;
 } 
+
+NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *blob,
+				 struct dcerpc_bind *r)
+{
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
+		(ndr_pull_flags_fn_t)ndr_pull_dcerpc_bind);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*******************************************************************
  Reads or writes an RPC_HDR_RB structure.
