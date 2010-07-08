@@ -145,14 +145,27 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 /*
   see if we are on the last pool we have
  */
-static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhausted, uint64_t *alloc_pool)
+static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb,
+					 bool *exhausted,
+					 uint64_t *_alloc_pool)
 {
 	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	uint64_t prev_alloc_pool;
-	const char *attrs[] = { "rIDPreviousAllocationPool", "rIDAllocationPool", NULL };
+	uint64_t alloc_pool;
+	uint64_t prev_pool;
+	uint32_t prev_pool_lo, prev_pool_hi;
+	uint32_t next_rid;
+	static const char * const attrs[] = {
+		"rIDAllocationPool",
+		"rIDPreviousAllocationPool",
+		"rIDNextRid",
+		NULL
+	};
 	int ret;
 	struct ldb_result *res;
+
+	*exhausted = false;
+	*_alloc_pool = UINT64_MAX;
 
 	server_dn = ldb_dn_get_parent(tmp_ctx, samdb_ntds_settings_dn(ldb));
 	if (!server_dn) {
@@ -171,6 +184,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhauste
 	ret = samdb_reference_dn(ldb, tmp_ctx, machine_dn, "rIDSetReferences", &rid_set_dn);
 	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 		*exhausted = true;
+		*_alloc_pool = 0;
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
@@ -189,15 +203,24 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb, bool *exhauste
 		return ret;
 	}
 
-	*alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
-	prev_alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDPreviousAllocationPool", 0);
+	alloc_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDAllocationPool", 0);
+	prev_pool = ldb_msg_find_attr_as_uint64(res->msgs[0], "rIDPreviousAllocationPool", 0);
+	prev_pool_lo = prev_pool & 0xFFFFFFFF;
+	prev_pool_hi = prev_pool >> 32;
+	next_rid = ldb_msg_find_attr_as_uint(res->msgs[0], "rIDNextRid", 0);
 
-	if (*alloc_pool != prev_alloc_pool) {
-		*exhausted = false;
-	} else {
-		*exhausted = true;
+	if (alloc_pool != prev_pool) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
 	}
 
+	if (next_rid < (prev_pool_hi + prev_pool_lo)/2) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	*exhausted = true;
+	*_alloc_pool = alloc_pool;
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
@@ -263,6 +286,12 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	if (!exhausted) {
+		/* don't need a new pool */
+		talloc_free(tmp_ctx);
+		return WERR_OK;
 	}
 
 	DEBUG(2,(__location__ ": Requesting more RIDs from RID Manager\n"));
