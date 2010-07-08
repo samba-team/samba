@@ -68,7 +68,8 @@ static void ridalloc_poke_rid_manager(struct ldb_module *module)
 	struct messaging_context *msg;
 	struct server_id *server;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
+	struct loadparm_context *lp_ctx =
+		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 
 	msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, lp_ctx),
