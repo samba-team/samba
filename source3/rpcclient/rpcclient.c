@@ -402,6 +402,7 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
+			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
@@ -434,6 +435,7 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
+			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
