@@ -62,6 +62,8 @@ from samba.schema import Schema
 from samba.samdb import SamDB
 
 __docformat__ = "restructuredText"
+DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
+DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04fB984F9"
 
 def find_setup_dir():
     """Find the setup directory used by provision."""
@@ -1259,11 +1261,14 @@ def provision(setup_dir, logger, session_info,
       domainsid = security.dom_sid(domainsid)
 
     # create/adapt the group policy GUIDs
+    # Default GUID for default policy are described at
+    # "How Core Group Policy Works"
+    # http://technet.microsoft.com/en-us/library/cc784268%28WS.10%29.aspx
     if policyguid is None:
-        policyguid = str(uuid.uuid4())
+        policyguid = DEFAULT_POLICY_GUID
     policyguid = policyguid.upper()
     if policyguid_dc is None:
-        policyguid_dc = str(uuid.uuid4())
+        policyguid_dc = DEFAULT_DC_POLICY_GUID
     policyguid_dc = policyguid_dc.upper()
 
     if adminpass is None:
