@@ -3137,7 +3137,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 	DATA_BLOB server_spnego_response = data_blob_null;
 	DATA_BLOB tmp_blob = data_blob_null;
 	prs_struct reply_pdu;
-	struct rpc_hdr_info hdr;
+	struct ncacn_packet_header hdr;
 	struct rpc_hdr_auth_info hdr_auth;
 	NTSTATUS status;
 
@@ -3148,17 +3148,15 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* Get the auth blob from the reply. */
-	if (!smb_io_rpc_hdr("rpc_hdr   ", &hdr, &reply_pdu, 0)) {
-		DEBUG(0, ("rpc_finish_spnego_ntlmssp_bind: Failed to "
-			  "unmarshall RPC_HDR.\n"));
-		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+	status = parse_rpc_header(state->cli, &hdr, &reply_pdu);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (!prs_set_offset(
 		    &reply_pdu,
-		    hdr.frag_len - hdr.auth_len - RPC_HDR_AUTH_LEN)) {
+		    hdr.frag_length - hdr.auth_length - RPC_HDR_AUTH_LEN)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
@@ -3168,9 +3166,9 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 		return;
 	}
 
-	server_spnego_response = data_blob(NULL, hdr.auth_len);
+	server_spnego_response = data_blob(NULL, hdr.auth_length);
 	prs_copy_data_out((char *)server_spnego_response.data, &reply_pdu,
-			  hdr.auth_len);
+			  hdr.auth_length);
 
 	/* Check we got a valid auth response. */
 	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK,
