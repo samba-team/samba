@@ -246,9 +246,20 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
 	int ret;
-	uint64_t dc_pool;
 	struct ldb_message *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	static const struct ridalloc_ridset_values o = {
+		.alloc_pool	= UINT64_MAX,
+		.prev_pool	= UINT64_MAX,
+		.next_rid	= UINT32_MAX,
+		.used_pool	= UINT32_MAX,
+	};
+	struct ridalloc_ridset_values n = {
+		.alloc_pool	= 0,
+		.prev_pool	= 0,
+		.next_rid	= 0,
+		.used_pool	= 0,
+	};
 
 	/*
 	  steps:
@@ -287,7 +298,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	}
 
 	/* grab a pool from the RID Manager object */
-	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &dc_pool);
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &n.alloc_pool);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -302,24 +313,8 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	ret = ldb_msg_add_fmt(msg, "rIDAllocationPool", "%llu", (unsigned long long)dc_pool);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
 
-	/* w2k8-r2 sets these to zero when first created */
-	ret = ldb_msg_add_fmt(msg, "rIDPreviousAllocationPool", "0");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	ret = ldb_msg_add_fmt(msg, "rIDUsedPool", "0");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-	ret = ldb_msg_add_fmt(msg, "rIDNextRID", "0");
+	ret = ridalloc_set_ridset_values(module, msg, &o, &n);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
