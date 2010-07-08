@@ -107,13 +107,6 @@ typedef struct rpc_hdr_auth_info {
 
 #define RPC_HDR_AUTH_LEN 8
 
-/* RPC_BIND_REQ - ms req bind */
-typedef struct rpc_bind_req_info {
-	RPC_HDR_BBA bba;
-	uint8 num_contexts;    /* the number of contexts */
-	struct dcerpc_ctx_list *rpc_context;
-} RPC_HDR_RB;
-
 /* 
  * The following length is 8 bytes RPC_HDR_BBA_LEN + 
  * 4 bytes size of context count +

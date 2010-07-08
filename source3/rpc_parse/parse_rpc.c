@@ -189,47 +189,6 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
 	return True;
 }
 
-/*******************************************************************
- Reads or writes a struct dcerpc_ctx_list structure.
-********************************************************************/
-
-bool smb_io_rpc_context(const char *desc, struct dcerpc_ctx_list *rpc_ctx, prs_struct *ps, int depth)
-{
-	int i;
-
-	if (rpc_ctx == NULL)
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint16("context_id  ", ps, depth, &rpc_ctx->context_id ))
-		return False;
-	if(!prs_uint8 ("num_transfer_syntaxes", ps, depth, &rpc_ctx->num_transfer_syntaxes))
-		return False;
-
-	/* num_transfer_syntaxes must not be zero. */
-	if (rpc_ctx->num_transfer_syntaxes == 0)
-		return False;
-
-	if(!smb_io_rpc_iface("", &rpc_ctx->abstract_syntax, ps, depth))
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		rpc_ctx->transfer_syntaxes =
-			PRS_ALLOC_MEM(ps, struct ndr_syntax_id,
-					rpc_ctx->num_transfer_syntaxes);
-		if (!rpc_ctx->transfer_syntaxes) {
-			return False;
-		}
-	}
-
-	for (i = 0; i < rpc_ctx->num_transfer_syntaxes; i++ ) {
-		if (!smb_io_rpc_iface("", &rpc_ctx->transfer_syntaxes[i], ps, depth))
-			return False;
-	}
-	return True;
-} 
-
 NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
 				 struct dcerpc_bind *r)
@@ -243,46 +202,6 @@ NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
 	}
 
 	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- Reads or writes an RPC_HDR_RB structure.
-********************************************************************/
-
-bool smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth)
-{
-	int i;
-	
-	if (rpc == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_rb");
-	depth++;
-
-	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
-		return False;
-
-	if(!prs_uint8("num_contexts", ps, depth, &rpc->num_contexts))
-		return False;
-
-	/* 3 pad bytes following - will be mopped up by the prs_align in smb_io_rpc_context(). */
-
-	/* num_contexts must not be zero. */
-	if (rpc->num_contexts == 0)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (!(rpc->rpc_context = PRS_ALLOC_MEM(ps, struct dcerpc_ctx_list, rpc->num_contexts))) {
-			return False;
-		}
-	}
-
-	for (i = 0; i < rpc->num_contexts; i++ ) {
-		if (!smb_io_rpc_context("", &rpc->rpc_context[i], ps, depth))
-			return False;
-	}
-
-	return True;
 }
 
 /*******************************************************************
