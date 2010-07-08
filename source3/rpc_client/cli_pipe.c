@@ -3033,13 +3033,13 @@ static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 						    struct rpc_pipe_bind_state *state,
 						    struct ncacn_packet *r,
-						    prs_struct *reply_pdu)
+						    prs_struct *rpc_in)
 {
-	DATA_BLOB server_spnego_response = data_blob_null;
 	DATA_BLOB server_ntlm_response = data_blob_null;
 	DATA_BLOB client_reply = data_blob_null;
 	DATA_BLOB tmp_blob = data_blob_null;
-	RPC_HDR_AUTH hdr_auth;
+	struct dcerpc_auth auth_info;
+	DATA_BLOB auth_blob;
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
@@ -3050,33 +3050,32 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 
 	/* Process the returned NTLMSSP blob first. */
 	if (!prs_set_offset(
-		    reply_pdu,
+		    rpc_in,
 		    r->frag_length - r->auth_length - RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, reply_pdu, 0)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	auth_blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in),
+				    prs_data_size(rpc_in) - prs_offset(rpc_in));
 
-	server_spnego_response = data_blob(NULL, r->auth_length);
-	prs_copy_data_out((char *)server_spnego_response.data,
-			  reply_pdu, r->auth_length);
+	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
+		return status;
+	}
 
 	/*
 	 * The server might give us back two challenges - tmp_blob is for the
 	 * second.
 	 */
-	if (!spnego_parse_challenge(server_spnego_response,
+	if (!spnego_parse_challenge(auth_info.credentials,
 				    &server_ntlm_response, &tmp_blob)) {
-		data_blob_free(&server_spnego_response);
 		data_blob_free(&server_ntlm_response);
 		data_blob_free(&tmp_blob);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We're finished with the server spnego response and the tmp_blob. */
-	data_blob_free(&server_spnego_response);
 	data_blob_free(&tmp_blob);
 
 	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
