@@ -779,7 +779,21 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
-	if (rep_attr_cnt > 0 || (add_attr_cnt != del_attr_cnt)) {
+
+	if (ldb_request_get_control(req,
+				    DSDB_CONTROL_PASSWORD_CHANGE_OID) != NULL) {
+		/* The "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
+		 * have a user password change and not a set as the message
+		 * looks like. In it's value blob it contains the NT and/or LM
+		 * hash of the old password specified by the user.
+		 * This control is used by the SAMR and "kpasswd" password
+		 * change mechanisms. */
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_USER_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+	}
+	else if (rep_attr_cnt > 0 || (add_attr_cnt != del_attr_cnt)) {
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
