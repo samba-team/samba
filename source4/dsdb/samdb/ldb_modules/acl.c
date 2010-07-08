@@ -760,8 +760,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
-	const char *passwordAttrs[] = { "userPassword", "unicodePwd",
-					"clearTextPassword", NULL }, **l;
+	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
+					"unicodePwd", "dBCSPwd", NULL }, **l;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
