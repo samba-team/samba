@@ -2210,29 +2210,17 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 
 static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					uint32 ss_padding_len,
-					prs_struct *outgoing_pdu)
+					prs_struct *rpc_out)
 {
-	RPC_HDR_AUTH auth_info;
+	DATA_BLOB auth_info;
 	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
-	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
-	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	char *data_p = prs_data_p(rpc_out) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
+	size_t data_and_pad_len = prs_offset(rpc_out) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
 	if (!sas) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Init and marshall the auth header. */
-	init_rpc_hdr_auth(&auth_info,
-			map_pipe_auth_type_to_rpc_auth_type(cli->auth->auth_type),
-			cli->auth->auth_level,
-			ss_padding_len,
-			1 /* context id. */);
-
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, outgoing_pdu, 0)) {
-		DEBUG(0,("add_schannel_auth_footer: failed to marshall RPC_HDR_AUTH.\n"));
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%d\n",
@@ -2271,7 +2259,18 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 	}
 
 	/* Finally marshall the blob. */
-	if (!prs_copy_data_in(outgoing_pdu, (const char *)blob.data, blob.length)) {
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(rpc_out),
+					map_pipe_auth_type_to_rpc_auth_type(cli->auth->auth_type),
+					cli->auth->auth_level,
+					ss_padding_len,
+					1 /* context id. */,
+					&blob,
+					&auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!prs_copy_data_in(rpc_out, (const char *)auth_info.data, auth_info.length)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
