@@ -40,7 +40,7 @@
 static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 					struct rpc_pipe_client **samr_pipe)
 {
-	static struct rpc_pipe_client *cli = NULL;
+	struct rpc_pipe_client *cli = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	NTSTATUS status;
 
@@ -58,7 +58,7 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_internal(talloc_autofree_context(),
+	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_samr.syntax_id,
 					rpc_samr_dispatch,
 					server_info,
@@ -112,7 +112,7 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 				       struct rpc_pipe_client **lsa_pipe)
 {
-	static struct rpc_pipe_client *cli = NULL;
+	struct rpc_pipe_client *cli = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	NTSTATUS status;
 
@@ -130,7 +130,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_internal(talloc_autofree_context(),
+	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
 					rpc_lsarpc_dispatch,
 					server_info,
