@@ -609,15 +609,13 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 
 	status = samu_to_SamInfo3(result, sampass, global_myname(),
 				  &result->info3, &result->extra);
+	TALLOC_FREE(sampass);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to convert samu to info3: %s\n",
 			   nt_errstr(status)));
-		TALLOC_FREE(sampass);
 		TALLOC_FREE(result);
 		return status;
 	}
-
-	TALLOC_FREE(sampass);
 
 	result->unix_name = talloc_strdup(result, unix_username);
 	result->sanitized_username = sanitize_username(result, unix_username);
