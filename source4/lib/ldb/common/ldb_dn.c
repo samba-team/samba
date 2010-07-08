@@ -1698,12 +1698,6 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
 		return NULL;
 	}
 
-	/* Wipe the ext_linearized DN,
-	 * the GUID and SID are almost certainly no longer valid */
-	LDB_FREE(dn->ext_linearized);
-	LDB_FREE(dn->ext_components);
-	dn->ext_comp_num = 0;
-
 	return new_dn;
 }
 
