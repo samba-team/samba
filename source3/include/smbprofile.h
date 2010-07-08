@@ -965,15 +965,6 @@ static inline uint64_t profile_timestamp(void)
 		ADD_PROFILE_COUNT(x##_time, \
 		    profile_timestamp() - __profstamp_##x); \
 	}
-
-#define PROFILE_AND_RETURN(x,t,c) { \
-	t __return_value; \
-	START_PROFILE(x); \
-	__return_value = (c); \
-	END_PROFILE(x); \
-	return __return_value; \
-}
-
 #else /* WITH_PROFILE */
 
 #define DO_PROFILE_INC(x)
@@ -983,7 +974,6 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE(x)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
-#define PROFILE_AND_RETURN(x,t,c) return (c);
 #endif /* WITH_PROFILE */
 
 #endif

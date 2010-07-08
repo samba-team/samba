@@ -961,6 +961,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	NTSTATUS status;
 	NTSTATUS session_status;
 	uint32_t allowed_flags;
+	NTSTATUS return_value;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
@@ -1018,106 +1019,159 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
-		PROFILE_AND_RETURN(smb2_negprot,
-				   NTSTATUS,
-				   smbd_smb2_request_process_negprot(req));
+		{
+			START_PROFILE(smb2_negprot);
+			return_value = smbd_smb2_request_process_negprot(req);
+			END_PROFILE(smb2_negprot);
+		}
+		break;
 
 	case SMB2_OP_SESSSETUP:
-		PROFILE_AND_RETURN(smb2_sesssetup,
-				   NTSTATUS,
-				   smbd_smb2_request_process_sesssetup(req));
+		{
+			START_PROFILE(smb2_sesssetup);
+			return_value = smbd_smb2_request_process_sesssetup(req);
+			END_PROFILE(smb2_sesssetup);
+		}
+		break;
 
 	case SMB2_OP_LOGOFF:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_logoff,
-				   NTSTATUS,
-				   smbd_smb2_request_process_logoff(req));
+
+		{
+			START_PROFILE(smb2_logoff);
+			return_value = smbd_smb2_request_process_logoff(req);
+			END_PROFILE(smb2_logoff);
+		}
+		break;
 
 	case SMB2_OP_TCON:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_session(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_tcon,
-				   NTSTATUS,
-				   smbd_smb2_request_process_tcon(req));
+
+		{
+			START_PROFILE(smb2_tcon);
+			return_value = smbd_smb2_request_process_tcon(req);
+			END_PROFILE(smb2_tcon);
+		}
+		break;
 
 	case SMB2_OP_TDIS:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_tdis,
-				   NTSTATUS,
-				   smbd_smb2_request_process_tdis(req));
+
+		{
+			START_PROFILE(smb2_tdis);
+			return_value = smbd_smb2_request_process_tdis(req);
+			END_PROFILE(smb2_tdis);
+		}
+		break;
 
 	case SMB2_OP_CREATE:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_create,
-				   NTSTATUS,
-				   smbd_smb2_request_process_create(req));
+
+		{
+			START_PROFILE(smb2_create);
+			return_value = smbd_smb2_request_process_create(req);
+			END_PROFILE(smb2_create);
+		}
+		break;
 
 	case SMB2_OP_CLOSE:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_close,
-				   NTSTATUS,
-				   smbd_smb2_request_process_close(req));
+
+		{
+			START_PROFILE(smb2_close);
+			return_value = smbd_smb2_request_process_close(req);
+			END_PROFILE(smb2_close);
+		}
+		break;
 
 	case SMB2_OP_FLUSH:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_flush,
-				   NTSTATUS,
-				   smbd_smb2_request_process_flush(req));
+
+		{
+			START_PROFILE(smb2_flush);
+			return_value = smbd_smb2_request_process_flush(req);
+			END_PROFILE(smb2_flush);
+		}
+		break;
 
 	case SMB2_OP_READ:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_read,
-				   NTSTATUS,
-				   smbd_smb2_request_process_read(req));
+
+		{
+			START_PROFILE(smb2_read);
+			return_value = smbd_smb2_request_process_read(req);
+			END_PROFILE(smb2_read);
+		}
+		break;
 
 	case SMB2_OP_WRITE:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_write,
-				   NTSTATUS,
-				   smbd_smb2_request_process_write(req));
+
+		{
+			START_PROFILE(smb2_write);
+			return_value = smbd_smb2_request_process_write(req);
+			END_PROFILE(smb2_write);
+		}
+		break;
 
 	case SMB2_OP_LOCK:
 		if (!NT_STATUS_IS_OK(session_status)) {
@@ -1125,7 +1179,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			if (NT_STATUS_EQUAL(session_status,NT_STATUS_USER_SESSION_DELETED)) {
 				session_status = NT_STATUS_FILE_CLOSED;
 			}
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1133,97 +1188,144 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			if (NT_STATUS_EQUAL(status,NT_STATUS_NETWORK_NAME_DELETED)) {
 				status = NT_STATUS_FILE_CLOSED;
 			}
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_lock,
-				   NTSTATUS,
-				   smbd_smb2_request_process_lock(req));
+
+		{
+			START_PROFILE(smb2_lock);
+			return_value = smbd_smb2_request_process_lock(req);
+			END_PROFILE(smb2_lock);
+		}
+		break;
 
 	case SMB2_OP_IOCTL:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_ioctl,
-				   NTSTATUS,
-				   smbd_smb2_request_process_ioctl(req));
+
+		{
+			START_PROFILE(smb2_ioctl);
+			return_value = smbd_smb2_request_process_ioctl(req);
+			END_PROFILE(smb2_ioctl);
+		}
+		break;
 
 	case SMB2_OP_CANCEL:
-		PROFILE_AND_RETURN(smb2_cancel,
-				   NTSTATUS,
-				   smbd_smb2_request_process_cancel(req));
+		{
+			START_PROFILE(smb2_cancel);
+			return_value = smbd_smb2_request_process_cancel(req);
+			END_PROFILE(smb2_cancel);
+		}
+		break;
 
 	case SMB2_OP_KEEPALIVE:
-		PROFILE_AND_RETURN(smb2_keepalive,
-				   NTSTATUS,
-				   smbd_smb2_request_process_keepalive(req));
-
+		{START_PROFILE(smb2_keepalive);
+		return_value = smbd_smb2_request_process_keepalive(req);
+		END_PROFILE(smb2_keepalive);}
+		break;
 
 	case SMB2_OP_FIND:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_find,
-				   NTSTATUS,
-				   smbd_smb2_request_process_find(req));
+
+		{
+			START_PROFILE(smb2_find);
+			return_value = smbd_smb2_request_process_find(req);
+			END_PROFILE(smb2_find);
+		}
+		break;
 
 	case SMB2_OP_NOTIFY:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_notify,
-				   NTSTATUS,
-				   smbd_smb2_request_process_notify(req));
+
+		{
+			START_PROFILE(smb2_notify);
+			return_value = smbd_smb2_request_process_notify(req);
+			END_PROFILE(smb2_notify);
+		}
+		break;
 
 	case SMB2_OP_GETINFO:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_getinfo,
-				   NTSTATUS,
-				   smbd_smb2_request_process_getinfo(req));
+
+		{
+			START_PROFILE(smb2_getinfo);
+			return_value = smbd_smb2_request_process_getinfo(req);
+			END_PROFILE(smb2_getinfo);
+		}
+		break;
 
 	case SMB2_OP_SETINFO:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_setinfo,
-				   NTSTATUS,
-				   smbd_smb2_request_process_setinfo(req));
+
+		{
+			START_PROFILE(smb2_setinfo);
+			return_value = smbd_smb2_request_process_setinfo(req);
+			END_PROFILE(smb2_setinfo);
+		}
+		break;
 
 	case SMB2_OP_BREAK:
 		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
+			return_value = smbd_smb2_request_error(req, session_status);
+			break;
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+			return_value = smbd_smb2_request_error(req, status);
+			break;
 		}
-		PROFILE_AND_RETURN(smb2_break,
-				   NTSTATUS,
-				   smbd_smb2_request_process_break(req));
-	}
 
-	return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+		{
+			START_PROFILE(smb2_break);
+			return_value = smbd_smb2_request_process_break(req);
+			END_PROFILE(smb2_break);
+		}
+		break;
+
+	default:
+		return_value = smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+		break;
+	}
+	return return_value;
 }
 
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
