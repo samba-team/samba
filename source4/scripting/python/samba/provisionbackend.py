@@ -273,6 +273,8 @@ class LDAPBackend(ProvisionBackend):
             # and now wait for it to die
             self.slapd.communicate()
 
+    def post_setup(self):
+        pass
 
 class OpenLDAPBackend(LDAPBackend):
 
