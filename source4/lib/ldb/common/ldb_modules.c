@@ -399,7 +399,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	const char *modules_string;
 	const char **modules = NULL;
-	unsigned int i;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {
