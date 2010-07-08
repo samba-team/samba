@@ -365,7 +365,7 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq)
 	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
-
+	enum drsuapi_DsExtendedError extended_ret;
 	state->ndr_struct_ptr = NULL;
 
 	status = dcerpc_drsuapi_DsGetNCChanges_r_recv(subreq, r);
@@ -417,6 +417,19 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq)
 	if (ctr_level == 6) {
 		if (!W_ERROR_IS_OK(ctr6->drs_error)) {
 			status = werror_to_ntstatus(ctr6->drs_error);
+			tevent_req_nterror(req, status);
+			return;
+		}
+		extended_ret = ctr6->extended_ret;
+	}
+
+	if (ctr_level == 1) {
+		extended_ret = ctr1->extended_ret;
+	}
+
+	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		if (extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+			status = NT_STATUS_UNSUCCESSFUL;
 			tevent_req_nterror(req, status);
 			return;
 		}
