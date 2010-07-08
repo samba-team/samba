@@ -1054,8 +1054,11 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
  Handle a SPNEGO krb5 bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info,
-		DATA_BLOB *psecblob, prs_struct *pout_auth)
+static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p,
+					   prs_struct *rpc_in_p,
+					   struct dcerpc_auth *pauth_info,
+					   DATA_BLOB *psecblob,
+					   prs_struct *pout_auth)
 {
 	return False;
 }
@@ -1064,9 +1067,11 @@ static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p
  Handle the first part of a SPNEGO bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_p,
-					uint32_t ss_padding_len,
-					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
+					    prs_struct *rpc_in_p,
+					    uint32_t ss_padding_len,
+					    struct dcerpc_auth *pauth_info,
+					    prs_struct *pout_auth)
 {
 	DATA_BLOB blob;
 	DATA_BLOB secblob;
@@ -1077,27 +1082,17 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	NTSTATUS status;
         bool got_kerberos_mechanism = false;
 	struct auth_ntlmssp_state *a = NULL;
-	RPC_HDR_AUTH auth_info;
 
 	ZERO_STRUCT(secblob);
 	ZERO_STRUCT(chal);
 	ZERO_STRUCT(response);
 
-	/* Grab the SPNEGO blob. */
-	blob = data_blob(NULL,p->hdr.auth_len);
-
-	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
-		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to pull %u bytes - the SPNEGO auth header.\n",
-			(unsigned int)p->hdr.auth_len ));
-		goto err;
-	}
-
-	if (blob.data[0] != ASN1_APPLICATION(0)) {
+	if (pauth_info->credentials.data[0] != ASN1_APPLICATION(0)) {
 		goto err;
 	}
 
 	/* parse out the OIDs and the first sec blob */
-	if (!parse_negTokenTarg(blob, OIDs, &secblob)) {
+	if (!parse_negTokenTarg(pauth_info->credentials, OIDs, &secblob)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to parse the security blob.\n"));
 		goto err;
         }
@@ -1115,7 +1110,6 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || USE_KERBEROS_KEYTAB) ) {
 		bool ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
 		data_blob_free(&secblob);
-		data_blob_free(&blob);
 		return ret;
 	}
 
@@ -1169,15 +1163,20 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 
 	/* auth_pad_len will be handled by the caller */
 
-	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SPNEGO,
-			pauth_info->auth_level, ss_padding_len, 1);
-	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_spnego_auth_bind_negotiate: marshalling of RPC_HDR_AUTH failed.\n"));
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(pout_auth),
+					 DCERPC_AUTH_TYPE_SPNEGO,
+					 pauth_info->auth_level,
+					 ss_padding_len,
+					 1, /* auth_context_id */
+					 &response,
+					 &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Marshalling of dcerpc_auth failed.\n"));
 		goto err;
 	}
 
-	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
+	/* Copy the blob into the pout_auth parse struct */
+	if (!prs_copy_data_in(pout_auth, (char *)blob.data, blob.length)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: marshalling of data blob failed.\n"));
 		goto err;
 	}
@@ -1186,7 +1185,6 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 
-	data_blob_free(&blob);
 	data_blob_free(&secblob);
 	data_blob_free(&chal);
 	data_blob_free(&response);
@@ -1196,7 +1194,6 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 
  err:
 
-	data_blob_free(&blob);
 	data_blob_free(&secblob);
 	data_blob_free(&chal);
 	data_blob_free(&response);
@@ -1308,11 +1305,13 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
  Handle an schannel bind auth.
 *******************************************************************/
 
-static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_schannel_auth_bind(pipes_struct *p,
+					prs_struct *rpc_in_p,
 					uint32_t ss_padding_len,
-					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+					struct dcerpc_auth *auth_info,
+					prs_struct *pout_auth)
 {
-	RPC_HDR_AUTH auth_info;
+	DATA_BLOB auth_blob;
 	struct NL_AUTH_MESSAGE neg;
 	struct NL_AUTH_MESSAGE reply;
 	bool ret;
@@ -1322,11 +1321,10 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
-	blob = data_blob_const(prs_data_p(rpc_in_p) + prs_offset(rpc_in_p),
-			       prs_data_size(rpc_in_p));
-
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &neg,
-			       (ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
+	ndr_err = ndr_pull_struct_blob(
+			&auth_info->credentials,
+			prs_get_mem_context(pout_auth), &neg,
+			(ndr_pull_flags_fn_t)ndr_pull_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
 		return false;
@@ -1395,13 +1393,6 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		return false;
 	}
 
-	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SCHANNEL,
-			pauth_info->auth_level, ss_padding_len, 1);
-	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_schannel_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
-		return False;
-	}
-
 	/*** SCHANNEL verifier ***/
 
 	reply.MessageType			= NL_NEGOTIATE_RESPONSE;
@@ -1410,7 +1401,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 						      * this has any meaning
 						      * here - gd */
 
-	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &reply,
+	ndr_err = ndr_push_struct_blob(&auth_blob, talloc_tos(), &reply,
 		       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("Failed to marshall NL_AUTH_MESSAGE.\n"));
@@ -1419,6 +1410,18 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, &reply);
+	}
+
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(pout_auth),
+					 DCERPC_AUTH_TYPE_SCHANNEL,
+					 auth_info->auth_level,
+					 ss_padding_len,
+					 1, /* auth_context_id */
+					 &auth_blob,
+					 &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Marshalling of dcerpc_auth failed.\n"));
+		return False;
 	}
 
 	if (!prs_copy_data_in(pout_auth, (const char *)blob.data, blob.length)) {
@@ -1441,30 +1444,21 @@ static bool pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
  Handle an NTLMSSP bind auth.
 *******************************************************************/
 
-static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
+static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
+					prs_struct *rpc_in_p,
 					uint32_t ss_padding_len,
-					RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+					struct dcerpc_auth *auth_info,
+					prs_struct *pout_auth)
 {
-	RPC_HDR_AUTH auth_info;
         DATA_BLOB blob;
 	DATA_BLOB response;
         NTSTATUS status;
 	struct auth_ntlmssp_state *a = NULL;
 
-	ZERO_STRUCT(blob);
 	ZERO_STRUCT(response);
 
-	/* Grab the NTLMSSP blob. */
-	blob = data_blob(NULL,p->hdr.auth_len);
-
-	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
-		DEBUG(0,("pipe_ntlmssp_auth_bind: Failed to pull %u bytes - the NTLM auth header.\n",
-			(unsigned int)p->hdr.auth_len ));
-		goto err;
-	}
-
-	if (strncmp((char *)blob.data, "NTLMSSP", 7) != 0) {
-		DEBUG(0,("pipe_ntlmssp_auth_bind: Failed to read NTLMSSP in blob\n"));
+	if (strncmp((char *)auth_info->credentials.data, "NTLMSSP", 7) != 0) {
+		DEBUG(0, ("Failed to read NTLMSSP in blob\n"));
                 goto err;
         }
 
@@ -1476,7 +1470,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		goto err;
 	}
 
-	switch (pauth_info->auth_level) {
+	switch (auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		auth_ntlmssp_want_sign(a);
 		break;
@@ -1487,24 +1481,27 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 		break;
 	}
 
-	status = auth_ntlmssp_update(a, blob, &response);
+	status = auth_ntlmssp_update(a, auth_info->credentials, &response);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: auth_ntlmssp_update failed: %s\n",
 			nt_errstr(status) ));
 		goto err;
 	}
 
-	data_blob_free(&blob);
-
-	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_NTLMSSP,
-			pauth_info->auth_level, ss_padding_len, 1);
-	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(pout_auth),
+					 DCERPC_AUTH_TYPE_NTLMSSP,
+					 auth_info->auth_level,
+					 ss_padding_len,
+					 1, /* auth_context_id */
+					 &response,
+					 &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Marshalling of dcerpc_auth failed.\n"));
 		goto err;
 	}
 
-	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
+	/* Copy the blob into the pout_auth parse struct */
+	if (!prs_copy_data_in(pout_auth, (char *)blob.data, blob.length)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of data blob failed.\n"));
 		goto err;
 	}
@@ -1513,7 +1510,6 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
 	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
-	data_blob_free(&blob);
 	data_blob_free(&response);
 
 	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth started\n"));
@@ -1523,7 +1519,6 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 
   err:
 
-	data_blob_free(&blob);
 	data_blob_free(&response);
 
 	free_pipe_ntlmssp_auth_data(&p->auth);
@@ -1540,7 +1535,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	RPC_HDR_BA hdr_ba;
 	struct dcerpc_bind rpc_bind;
 	DATA_BLOB blob_rb;
-	RPC_HDR_AUTH auth_info;
+	struct dcerpc_auth auth_info;
+	DATA_BLOB auth_blob;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
@@ -1740,8 +1736,15 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			goto err_exit;
 		}
 
-		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
+		auth_blob = data_blob_const(prs_data_p(rpc_in_p)
+						+ prs_offset(rpc_in_p),
+					    prs_data_size(rpc_in_p)
+						- prs_offset(rpc_in_p));
+
+		status = dcerpc_pull_dcerpc_auth(prs_get_mem_context(rpc_in_p),
+						 &auth_blob, &auth_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
 		}
 
@@ -1749,16 +1752,16 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		/* Work out if we have to sign or seal etc. */
 		switch (auth_info.auth_level) {
-			case DCERPC_AUTH_LEVEL_INTEGRITY:
-				p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-				break;
-			case DCERPC_AUTH_LEVEL_PRIVACY:
-				p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-				break;
-			default:
-				DEBUG(0,("api_pipe_bind_req: unexpected auth level (%u).\n",
-					(unsigned int)auth_info.auth_level ));
-				goto err_exit;
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+			break;
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+			break;
+		default:
+			DEBUG(0, ("Unexpected auth level (%u).\n",
+				(unsigned int)auth_info.auth_level ));
+			goto err_exit;
 		}
 	} else {
 		ZERO_STRUCT(auth_info);
