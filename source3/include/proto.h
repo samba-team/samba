@@ -4854,6 +4854,9 @@ NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 uint32_t auth_context_id,
 				 const DATA_BLOB *credentials,
 				 DATA_BLOB *blob);
+NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *blob,
+				 struct dcerpc_auth *r);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,

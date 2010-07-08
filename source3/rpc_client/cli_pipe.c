@@ -404,9 +404,9 @@ static NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
 /*******************************************************************
  ********************************************************************/
 
-static NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
-					const DATA_BLOB *blob,
-					struct dcerpc_auth *r)
+NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *blob,
+				 struct dcerpc_auth *r)
 {
 	enum ndr_err_code ndr_err;
 
