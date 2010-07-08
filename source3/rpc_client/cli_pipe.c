@@ -2131,82 +2131,76 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 
 static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 					uint32 ss_padding_len,
-					prs_struct *outgoing_pdu)
+					prs_struct *rpc_out)
 {
-	RPC_HDR_AUTH auth_info;
+	DATA_BLOB auth_info;
 	NTSTATUS status;
 	DATA_BLOB auth_blob = data_blob_null;
-	uint16 data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
-	TALLOC_CTX *frame;
+	uint16_t data_and_pad_len =
+		prs_offset(rpc_out) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 
 	if (!cli->auth->a_u.ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	frame = talloc_stackframe();
-
-	/* Init and marshall the auth header. */
-	init_rpc_hdr_auth(&auth_info,
-			map_pipe_auth_type_to_rpc_auth_type(
-				cli->auth->auth_type),
-			cli->auth->auth_level,
-			ss_padding_len,
-			1 /* context id. */);
-
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, outgoing_pdu, 0)) {
-		DEBUG(0,("add_ntlmssp_auth_footer: failed to marshall RPC_HDR_AUTH.\n"));
-		talloc_free(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	switch (cli->auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			/* Data portion is encrypted. */
-			status = ntlmssp_seal_packet(cli->auth->a_u.ntlmssp_state,
-						     frame,
-					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		status = ntlmssp_seal_packet(cli->auth->a_u.ntlmssp_state,
+					prs_get_mem_context(rpc_out),
+					(unsigned char *)prs_data_p(rpc_out)
+						+ RPC_HEADER_LEN
+						+ RPC_HDR_RESP_LEN,
 					data_and_pad_len,
-					(unsigned char *)prs_data_p(outgoing_pdu),
-					(size_t)prs_offset(outgoing_pdu),
+					(unsigned char *)prs_data_p(rpc_out),
+					(size_t)prs_offset(rpc_out),
 					&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(frame);
-				return status;
-			}
-			break;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
 
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			/* Data is signed. */
-			status = ntlmssp_sign_packet(cli->auth->a_u.ntlmssp_state,
-						     frame,
-					(unsigned char *)prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		status = ntlmssp_sign_packet(cli->auth->a_u.ntlmssp_state,
+					prs_get_mem_context(rpc_out),
+					(unsigned char *)prs_data_p(rpc_out)
+						+ RPC_HEADER_LEN
+						+ RPC_HDR_RESP_LEN,
 					data_and_pad_len,
-					(unsigned char *)prs_data_p(outgoing_pdu),
-					(size_t)prs_offset(outgoing_pdu),
+					(unsigned char *)prs_data_p(rpc_out),
+					(size_t)prs_offset(rpc_out),
 					&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(frame);
-				return status;
-			}
-			break;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
 
-		default:
-			/* Can't happen. */
-			smb_panic("bad auth level");
-			/* Notreached. */
-			return NT_STATUS_INVALID_PARAMETER;
+	default:
+		/* Can't happen. */
+		smb_panic("bad auth level");
+		/* Notreached. */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Finally marshall the blob. */
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(rpc_out),
+					map_pipe_auth_type_to_rpc_auth_type(cli->auth->auth_type),
+					cli->auth->auth_level,
+					ss_padding_len,
+					1 /* context id. */,
+					&auth_blob,
+					&auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	if (!prs_copy_data_in(outgoing_pdu, (const char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
-		DEBUG(0,("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
-			(unsigned int)NTLMSSP_SIG_SIZE));
-		talloc_free(frame);
+	if (!prs_copy_data_in(rpc_out, (const char *)auth_info.data, auth_info.length)) {
+		DEBUG(0, ("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
+			(unsigned int)auth_info.length));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	talloc_free(frame);
 	return NT_STATUS_OK;
 }
 
