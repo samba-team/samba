@@ -601,6 +601,11 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 
 	struct wbcChangePasswordParams params;
 
+	if (oldpass == NULL) {
+		torture_skip(tctx,
+			"skipping wbcChangeUserPassword test as old password cannot be retrieved\n");
+	}
+
 	ZERO_STRUCT(params);
 
 	E_md4hash(oldpass, old_nt_hash);
