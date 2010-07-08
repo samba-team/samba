@@ -94,6 +94,89 @@ static void ridalloc_poke_rid_manager(struct ldb_module *module)
 }
 
 
+static const char * const ridalloc_ridset_attrs[] = {
+	"rIDAllocationPool",
+	"rIDPreviousAllocationPool",
+	"rIDNextRID",
+	"rIDUsedPool",
+	NULL
+};
+
+struct ridalloc_ridset_values {
+	uint64_t alloc_pool;
+	uint64_t prev_pool;
+	uint32_t next_rid;
+	uint32_t used_pool;
+};
+
+static void ridalloc_get_ridset_values(struct ldb_message *msg, struct ridalloc_ridset_values *v)
+{
+	v->alloc_pool = ldb_msg_find_attr_as_uint64(msg, "rIDAllocationPool", UINT64_MAX);
+	v->prev_pool = ldb_msg_find_attr_as_uint64(msg, "rIDPreviousAllocationPool", UINT64_MAX);
+	v->next_rid = ldb_msg_find_attr_as_uint(msg, "rIDNextRID", UINT32_MAX);
+	v->used_pool = ldb_msg_find_attr_as_uint(msg, "rIDUsedPool", UINT32_MAX);
+}
+
+static int ridalloc_set_ridset_values(struct ldb_module *module,
+				      struct ldb_message *msg,
+				      const struct ridalloc_ridset_values *o,
+				      const struct ridalloc_ridset_values *n)
+{
+	const uint32_t *o32, *n32;
+	const uint64_t *o64, *n64;
+	int ret;
+
+#define SETUP_PTRS(field, optr, nptr, max) do { \
+	optr = &o->field; \
+	nptr = &n->field; \
+	if (o->field == max) { \
+		optr = NULL; \
+	} \
+	if (n->field == max) { \
+		nptr = NULL; \
+	} \
+	if (o->field == n->field) { \
+		optr = NULL; \
+		nptr = NULL; \
+	} \
+} while(0)
+
+	SETUP_PTRS(alloc_pool, o64, n64, UINT64_MAX);
+	ret = dsdb_msg_constrainted_update_uint64(module, msg,
+						  "rIDAllocationPool",
+						  o64, n64);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	SETUP_PTRS(prev_pool, o64, n64, UINT64_MAX);
+	ret = dsdb_msg_constrainted_update_uint64(module, msg,
+						  "rIDPreviousAllocationPool",
+						  o64, n64);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	SETUP_PTRS(next_rid, o32, n32, UINT32_MAX);
+	ret = dsdb_msg_constrainted_update_uint32(module, msg,
+						  "rIDNextRID",
+						  o32, n32);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	SETUP_PTRS(used_pool, o32, n32, UINT32_MAX);
+	ret = dsdb_msg_constrainted_update_uint32(module, msg,
+						  "rIDUsedPool",
+						  o32, n32);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+#undef SETUP_PTRS
+
+	return LDB_SUCCESS;
+}
+
 /*
   allocate a new range of RIDs in the RID Manager object
  */
