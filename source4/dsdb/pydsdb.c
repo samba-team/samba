@@ -580,6 +580,32 @@ void initdsdb(void)
 	PyModule_AddObject(m, "DS_DOMAIN_FUNCTION_2008_R2",
 					   PyInt_FromLong(DS_DOMAIN_FUNCTION_2008_R2));
 
+	/* "systemFlags" */
+	PyModule_AddObject(m, "SYSTEM_FLAG_CR_NTDS_NC",
+					PyInt_FromLong(SYSTEM_FLAG_CR_NTDS_NC));
+	PyModule_AddObject(m, "SYSTEM_FLAG_CR_NTDS_DOMAIN",
+					PyInt_FromLong(SYSTEM_FLAG_CR_NTDS_DOMAIN));
+	PyModule_AddObject(m, "SYSTEM_FLAG_CR_NTDS_NOT_GC_REPLICATED",
+					PyInt_FromLong(SYSTEM_FLAG_CR_NTDS_NOT_GC_REPLICATED));
+	PyModule_AddObject(m, "SYSTEM_FLAG_SCHEMA_BASE_OBJECT",
+					PyInt_FromLong(SYSTEM_FLAG_SCHEMA_BASE_OBJECT));
+	PyModule_AddObject(m, "SYSTEM_FLAG_ATTR_IS_RDN",
+					PyInt_FromLong(SYSTEM_FLAG_ATTR_IS_RDN));
+	PyModule_AddObject(m, "SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE",
+					PyInt_FromLong(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE));
+	PyModule_AddObject(m, "SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE",
+					PyInt_FromLong(SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE));
+	PyModule_AddObject(m, "SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME",
+					PyInt_FromLong(SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME));
+	PyModule_AddObject(m, "SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE",
+					PyInt_FromLong(SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE));
+	PyModule_AddObject(m, "SYSTEM_FLAG_CONFIG_ALLOW_MOVE",
+					PyInt_FromLong(SYSTEM_FLAG_CONFIG_ALLOW_MOVE));
+	PyModule_AddObject(m, "SYSTEM_FLAG_CONFIG_ALLOW_RENAME",
+					PyInt_FromLong(SYSTEM_FLAG_CONFIG_ALLOW_RENAME));
+	PyModule_AddObject(m, "SYSTEM_FLAG_DISALLOW_DELETE",
+					PyInt_FromLong(SYSTEM_FLAG_DISALLOW_DELETE));
+
 	/* Kerberos encryption type constants */
 	PyModule_AddObject(m, "ENC_ALL_TYPES",
 			   PyInt_FromLong(ENC_ALL_TYPES));
