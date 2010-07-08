@@ -1094,6 +1094,17 @@ int dsdb_module_constrainted_update_int32(struct ldb_module *module,
 	return ret;
 }
 
+int dsdb_module_constrainted_update_uint32(struct ldb_module *module,
+					   struct ldb_dn *dn,
+					   const char *attr,
+					   const uint32_t *old_val,
+					   const uint32_t *new_val)
+{
+	return dsdb_module_constrainted_update_int32(module, dn, attr,
+						     (const int32_t *)old_val,
+						     (const int32_t *)new_val);
+}
+
 /*
   update an int64 attribute safely via a constrained delete/add
  */
@@ -1121,4 +1132,15 @@ int dsdb_module_constrainted_update_int64(struct ldb_module *module,
 	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	talloc_free(msg);
 	return ret;
+}
+
+int dsdb_module_constrainted_update_uint64(struct ldb_module *module,
+					   struct ldb_dn *dn,
+					   const char *attr,
+					   const uint64_t *old_val,
+					   const uint64_t *new_val)
+{
+	return dsdb_module_constrainted_update_int64(module, dn, attr,
+						     (const int64_t *)old_val,
+						     (const int64_t *)new_val);
 }
