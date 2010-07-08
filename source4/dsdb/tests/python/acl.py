@@ -1165,6 +1165,31 @@ userPassword: thatsAcomplPASS2
         else:
             self.fail()
 
+    def test_change_password7(self):
+        """Try a password change operation without any CARs given"""
+        #users have change password by default - remove for negative testing
+        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        sddl = desc.as_sddl(self.domain_sid)
+        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        #first change our own password
+        self.ldb_user2.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_pc) + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+""")
+        #then someone else's
+        self.ldb_user2.modify_ldif("""
+dn: """ + self.get_user_dn(self.user_with_wp) + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+""")
+
     def test_reset_password1(self):
         """Try a user password reset operation (unicodePwd) before and after granting CAR"""
         try:
