@@ -1754,15 +1754,16 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ Creates an auth_data blob.
  ********************************************************************/
 
-static NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
-					enum dcerpc_AuthType auth_type,
-					enum dcerpc_AuthLevel auth_level,
-					uint8_t auth_pad_length,
-					uint32_t auth_context_id,
-					const DATA_BLOB *credentials,
-					DATA_BLOB *blob)
+NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 enum dcerpc_AuthType auth_type,
+				 enum dcerpc_AuthLevel auth_level,
+				 uint8_t auth_pad_length,
+				 uint32_t auth_context_id,
+				 const DATA_BLOB *credentials,
+				 DATA_BLOB *blob)
 {
 	struct dcerpc_auth r;
 	enum ndr_err_code ndr_err;

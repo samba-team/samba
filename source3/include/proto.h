@@ -4847,6 +4847,13 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_pull_ncacn_packet_header(TALLOC_CTX *mem_ctx,
 					 const DATA_BLOB *blob,
 					 struct ncacn_packet_header *r);
+NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 enum dcerpc_AuthType auth_type,
+				 enum dcerpc_AuthLevel auth_level,
+				 uint8_t auth_pad_length,
+				 uint32_t auth_context_id,
+				 const DATA_BLOB *credentials,
+				 DATA_BLOB *blob);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
