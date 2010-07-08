@@ -870,8 +870,8 @@ static bool setup_bind_nak(pipes_struct *p)
 
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_BIND_NAK,
-					  DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
-					  RPC_HEADER_LEN + sizeof(uint16_t) /* FIXME - gd */,
+					  DCERPC_PFC_FLAG_FIRST |
+						DCERPC_PFC_FLAG_LAST,
 					  0,
 					  p->hdr.call_id,
 					  u,
@@ -932,8 +932,9 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_FAULT,
-					  DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
-					  RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_FAULT_LEN /* FIXME - gd */,
+					  DCERPC_PFC_FLAG_FIRST |
+					   DCERPC_PFC_FLAG_LAST |
+					   DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
 					  0,
 					  p->hdr.call_id,
 					  u,

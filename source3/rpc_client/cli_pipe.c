@@ -300,7 +300,6 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
 NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  enum dcerpc_pkt_type ptype,
 				  uint8_t pfc_flags,
-				  uint16_t frag_length,
 				  uint16_t auth_length,
 				  uint32_t call_id,
 				  union dcerpc_payload u,
@@ -317,7 +316,6 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 	r.drep[1]		= 0;
 	r.drep[2]		= 0;
 	r.drep[3]		= 0;
-	r.frag_length		= frag_length;
 	r.auth_length		= auth_length;
 	r.call_id		= call_id;
 	r.u			= u;
@@ -328,7 +326,12 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
+	dcerpc_set_frag_length(blob, blob->length);
+
+
 	if (DEBUGLEVEL >= 10) {
+		/* set frag len for print function */
+		r.frag_length = blob->length;
 		NDR_PRINT_DEBUG(ncacn_packet, &r);
 	}
 
@@ -2024,7 +2027,6 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 						const DATA_BLOB *auth_info)
 {
 	uint16 auth_len = auth_info->length;
-	uint16 frag_len = 0;
 	NTSTATUS status;
 	union dcerpc_payload u;
 	DATA_BLOB blob;
@@ -2043,14 +2045,10 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 	u.bind.ctx_list		= ctx_list;
 	u.bind.auth_info	= *auth_info;
 
-	/* Start building the frag length. */
-	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&u.bind) + auth_len;
-
 	status = dcerpc_push_ncacn_packet(rpc_out->mem_ctx,
 					  ptype,
 					  DCERPC_PFC_FLAG_FIRST |
 					  DCERPC_PFC_FLAG_LAST,
-					  frag_len,
 					  auth_len ? auth_len - RPC_HDR_AUTH_LEN : 0,
 					  rpc_call_id,
 					  u,
@@ -2493,7 +2491,6 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	status = dcerpc_push_ncacn_packet(prs_get_mem_context(&state->outgoing_frag),
 					  DCERPC_PKT_REQUEST,
 					  flags,
-					  frag_len,
 					  auth_len,
 					  state->call_id,
 					  u,
@@ -2501,6 +2498,10 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	/* explicitly set frag_len here as dcerpc_push_ncacn_packet() can't
+	 * compute it right for requests */
+	dcerpc_set_frag_length(&blob, frag_len);
 
 	if (!prs_copy_data_in(&state->outgoing_frag, (const char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
@@ -2729,7 +2730,6 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 				DATA_BLOB *pauth_blob,
 				prs_struct *rpc_out)
 {
-	uint16_t frag_len = 0;
 	NTSTATUS status;
 	union dcerpc_payload u;
 	DATA_BLOB blob;
@@ -2747,14 +2747,10 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	/* Start building the frag length. */
-	frag_len = RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + pauth_blob->length;
-
 	status = dcerpc_push_ncacn_packet(prs_get_mem_context(rpc_out),
 					  DCERPC_PKT_AUTH3,
 					  DCERPC_PFC_FLAG_FIRST |
 					  DCERPC_PFC_FLAG_LAST,
-					  frag_len,
 					  pauth_blob->length,
 					  rpc_call_id,
 					  u,
