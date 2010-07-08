@@ -1538,7 +1538,8 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
-	RPC_HDR_RB hdr_rb;
+	struct dcerpc_bind rpc_bind;
+	DATA_BLOB blob_rb;
 	RPC_HDR_AUTH auth_info;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
@@ -1586,17 +1587,15 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
 
-	ZERO_STRUCT(hdr_rb);
-
 	/* decode the bind request */
-
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
-		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB "
-			 "struct.\n"));
+	blob_rb = data_blob_const(prs_data_p(rpc_in_p),
+				  prs_data_size(rpc_in_p));
+	status = dcerpc_pull_dcerpc_bind(talloc_tos(), &blob_rb, &rpc_bind);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto err_exit;
 	}
 
-	if (hdr_rb.num_contexts == 0) {
+	if (rpc_bind.num_contexts == 0) {
 		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
 		goto err_exit;
 	}
@@ -1605,7 +1604,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
 	 */
-	id = hdr_rb.rpc_context[0].abstract_syntax;
+	id = rpc_bind.ctx_list[0].abstract_syntax;
 	if (rpc_srv_pipe_exists_by_id(&id)) {
 		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
 			rpc_srv_get_pipe_cli_name(&id),
@@ -1614,13 +1613,13 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
-				&hdr_rb.rpc_context[0].abstract_syntax));
+				&rpc_bind.ctx_list[0].abstract_syntax));
 
 		if (NT_STATUS_IS_ERR(status)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 get_pipe_name_from_syntax(
 					talloc_tos(),
-					&hdr_rb.rpc_context[0].abstract_syntax)));
+					&rpc_bind.ctx_list[0].abstract_syntax)));
 			prs_mem_free(&p->out_data.frag);
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
@@ -1652,7 +1651,12 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
-	assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
+	if (rpc_bind.assoc_group_id != 0) {
+		assoc_gid = rpc_bind.assoc_group_id;
+	} else {
+		assoc_gid = 0x53f0;
+	}
+
 
 	/*
 	 * Create the bind response struct.
@@ -1665,16 +1669,16 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&hdr_rb.rpc_context[0].abstract_syntax,
-			&hdr_rb.rpc_context[0].transfer_syntaxes[0],
-			hdr_rb.rpc_context[0].context_id)) {
+			&rpc_bind.ctx_list[0].abstract_syntax,
+			&rpc_bind.ctx_list[0].transfer_syntaxes[0],
+			rpc_bind.ctx_list[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.rpc_context[0].transfer_syntaxes[0]);
+	                &rpc_bind.ctx_list[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -1878,7 +1882,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
-	RPC_HDR_RB hdr_rb;
+	struct dcerpc_bind rpc_bind;
+	DATA_BLOB blob_rb;
 	RPC_HDR_AUTH auth_info;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
@@ -1886,6 +1891,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_struct out_auth;
 	int auth_len = 0;
 	uint32_t ss_padding_len = 0;
+	NTSTATUS status;
 
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
@@ -1913,13 +1919,13 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	ZERO_STRUCT(hdr_rb);
-
 	DEBUG(5,("api_pipe_alter_context: decode request. %d\n", __LINE__));
 
 	/* decode the alter context request */
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
-		DEBUG(0,("api_pipe_alter_context: unable to unmarshall RPC_HDR_RB struct.\n"));
+	blob_rb = data_blob_const(prs_data_p(rpc_in_p),
+				  prs_data_size(rpc_in_p));
+	status = dcerpc_pull_dcerpc_bind(talloc_tos(), &blob_rb, &rpc_bind);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto err_exit;
 	}
 
@@ -1931,7 +1937,11 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
-	assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
+	if (rpc_bind.assoc_group_id != 0) {
+		assoc_gid = rpc_bind.assoc_group_id;
+	} else {
+		assoc_gid = 0x53f0;
+	}
 
 	/*
 	 * Create the bind response struct.
@@ -1944,16 +1954,16 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&hdr_rb.rpc_context[0].abstract_syntax,
-			&hdr_rb.rpc_context[0].transfer_syntaxes[0],
-			hdr_rb.rpc_context[0].context_id)) {
+			&rpc_bind.ctx_list[0].abstract_syntax,
+			&rpc_bind.ctx_list[0].transfer_syntaxes[0],
+			rpc_bind.ctx_list[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.rpc_context[0].transfer_syntaxes[0]);
+	                &rpc_bind.ctx_list[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -2099,7 +2109,6 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
-
 	return True;
 
   err_exit:
