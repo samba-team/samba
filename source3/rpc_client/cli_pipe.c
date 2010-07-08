@@ -2713,48 +2713,43 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 				DATA_BLOB *pauth_blob,
 				prs_struct *rpc_out)
 {
-	RPC_HDR hdr;
-	RPC_HDR_AUTH hdr_auth;
-	uint32 pad = 0;
+	uint16_t auth_len = pauth_blob->length;
+	uint16_t frag_len = 0;
+	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB blob;
 
-	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, DCERPC_PKT_AUTH3, DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST, rpc_call_id,
-		     RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + pauth_blob->length,
-		     pauth_blob->length );
+	u.auth3._pad = 0;
 
-	/* Marshall it. */
-	if(!smb_io_rpc_hdr("hdr", &hdr, rpc_out, 0)) {
-		DEBUG(0,("create_rpc_bind_auth3: failed to marshall RPC_HDR.\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-		I'm puzzled about this - seems to violate the DCE RPC auth rules,
-		about padding - shouldn't this pad to length CLIENT_NDR_PADDING_SIZE ? JRA.
-	*/
-
-	/* 4 bytes padding. */
-	if (!prs_uint32("pad", rpc_out, 0, &pad)) {
-		DEBUG(0,("create_rpc_bind_auth3: failed to marshall 4 byte pad.\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Create the request RPC_HDR_AUTHA */
-	init_rpc_hdr_auth(&hdr_auth,
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(rpc_out),
 			map_pipe_auth_type_to_rpc_auth_type(auth_type),
-			auth_level, 0, 1);
-
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rpc_out, 0)) {
-		DEBUG(0,("create_rpc_bind_auth3: failed to marshall RPC_HDR_AUTHA.\n"));
-		return NT_STATUS_NO_MEMORY;
+					 auth_level,
+					 0, /* auth_pad_length */
+					 1, /* auth_context_id */
+					 pauth_blob,
+					 &u.auth3.auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/*
-	 * Append the auth data to the outgoing buffer.
-	 */
+	/* Start building the frag length. */
+	frag_len = RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + auth_len;
 
-	if(!prs_copy_data_in(rpc_out, (char *)pauth_blob->data, pauth_blob->length)) {
-		DEBUG(0,("create_rpc_bind_auth3: failed to marshall auth blob.\n"));
+	status = dcerpc_push_ncacn_packet(prs_get_mem_context(rpc_out),
+					  DCERPC_PKT_AUTH3,
+					  DCERPC_PFC_FLAG_FIRST |
+					  DCERPC_PFC_FLAG_LAST,
+					  frag_len,
+					  auth_len ? auth_len - RPC_HDR_AUTH_LEN : 0,
+					  rpc_call_id,
+					  u,
+					  &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));
+		return status;
+	}
+
+	if (!prs_copy_data_in(rpc_out, (char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
