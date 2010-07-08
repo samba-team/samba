@@ -995,6 +995,17 @@ int dsdb_msg_constrainted_update_int32(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+int dsdb_msg_constrainted_update_uint32(struct ldb_module *module,
+					struct ldb_message *msg,
+					const char *attr,
+					const uint32_t *old_val,
+					const uint32_t *new_val)
+{
+	return dsdb_msg_constrainted_update_int32(module, msg, attr,
+						  (const int32_t *)old_val,
+						  (const int32_t *)new_val);
+}
+
 int dsdb_msg_constrainted_update_int64(struct ldb_module *module,
 				       struct ldb_message *msg,
 				       const char *attr,
@@ -1041,6 +1052,17 @@ int dsdb_msg_constrainted_update_int64(struct ldb_module *module,
 	}
 
 	return LDB_SUCCESS;
+}
+
+int dsdb_msg_constrainted_update_uint64(struct ldb_module *module,
+					struct ldb_message *msg,
+					const char *attr,
+					const uint64_t *old_val,
+					const uint64_t *new_val)
+{
+	return dsdb_msg_constrainted_update_int64(module, msg, attr,
+						  (const int64_t *)old_val,
+						  (const int64_t *)new_val);
 }
 
 /*
