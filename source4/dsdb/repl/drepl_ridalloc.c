@@ -100,11 +100,13 @@ static WERROR drepl_create_rid_manager_source_dsa(struct dreplsrv_service *servi
 /*
   called when a rid allocation request has completed
  */
-static void drepl_new_rid_pool_callback(struct dreplsrv_service *service, WERROR werr)
+static void drepl_new_rid_pool_callback(struct dreplsrv_service *service,
+					WERROR werr,
+					enum drsuapi_DsExtendedError ext_err)
 {
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,(__location__ ": RID Manager failed RID allocation - %s\n",
-			 win_errstr(werr)));
+		DEBUG(0,(__location__ ": RID Manager failed RID allocation - %s - extended_ret[0x%X]\n",
+			 win_errstr(werr), ext_err));
 	} else {
 		DEBUG(3,(__location__ ": RID Manager completed RID allocation OK\n"));
 	}

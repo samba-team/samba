@@ -101,7 +101,9 @@ struct dreplsrv_partition {
 	struct dreplsrv_partition_source_dsa *sources;
 };
 
-typedef void (*dreplsrv_fsmo_callback_t)(struct dreplsrv_service *, WERROR );
+typedef void (*dreplsrv_fsmo_callback_t)(struct dreplsrv_service *,
+					 WERROR,
+					 enum drsuapi_DsExtendedError);
 
 struct dreplsrv_out_operation {
 	struct dreplsrv_out_operation *prev, *next;
@@ -113,6 +115,7 @@ struct dreplsrv_out_operation {
 	enum drsuapi_DsExtendedOperation extended_op;
 	uint64_t fsmo_info;
 	dreplsrv_fsmo_callback_t callback;
+	enum drsuapi_DsExtendedError extended_ret;
 };
 
 struct dreplsrv_notify_operation {

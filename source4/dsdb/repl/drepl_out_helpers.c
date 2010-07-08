@@ -428,6 +428,8 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq)
 	}
 
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		state->op->extended_ret = extended_ret;
+
 		if (extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			tevent_req_nterror(req, status);
