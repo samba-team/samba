@@ -139,8 +139,8 @@ static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_d
 	/* and new rIDAvailablePool value */
 	new_rid_pool = rid_pool_lo | (((uint64_t)rid_pool_hi)<<32);
 
-	ret = dsdb_module_constrainted_update_integer(module, rid_manager_dn, "rIDAvailablePool",
-						      rid_pool, new_rid_pool);
+	ret = dsdb_module_constrainted_update_uint64(module, rid_manager_dn, "rIDAvailablePool",
+						     &rid_pool, &new_rid_pool);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to update rIDAvailablePool - %s",
 				       ldb_errstring(ldb));
