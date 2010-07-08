@@ -339,10 +339,6 @@ member: %s
                     username=None):
         """Sets the password for a user
         
-        Note: This call uses the "userPassword" attribute to set the password.
-        This works correctly on SAMBA 4 and on Windows DCs with
-        "2003 Native" or higer domain function level.
-
         :param filter: LDAP filter to find the user (eg samccountname=name)
         :param password: Password for the user
         :param force_change_at_next_login: Force password change
@@ -359,9 +355,9 @@ member: %s
             setpw = """
 dn: %s
 changetype: modify
-replace: userPassword
-userPassword:: %s
-""" % (user_dn, base64.b64encode(password))
+replace: unicodePwd
+unicodePwd:: %s
+""" % (user_dn, base64.b64encode(("\"" + password + "\"").encode('utf-16-le')))
 
             self.modify_ldif(setpw)
 
