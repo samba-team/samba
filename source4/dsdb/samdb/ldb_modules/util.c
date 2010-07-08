@@ -1042,3 +1042,61 @@ int dsdb_msg_constrainted_update_int64(struct ldb_module *module,
 
 	return LDB_SUCCESS;
 }
+
+/*
+  update an int32 attribute safely via a constrained delete/add
+ */
+int dsdb_module_constrainted_update_int32(struct ldb_module *module,
+					  struct ldb_dn *dn,
+					  const char *attr,
+					  const int32_t *old_val,
+					  const int32_t *new_val)
+{
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(module);
+	msg->dn = dn;
+
+	ret = dsdb_msg_constrainted_update_int32(module,
+						 msg, attr,
+						 old_val,
+						 new_val);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	talloc_free(msg);
+	return ret;
+}
+
+/*
+  update an int64 attribute safely via a constrained delete/add
+ */
+int dsdb_module_constrainted_update_int64(struct ldb_module *module,
+					  struct ldb_dn *dn,
+					  const char *attr,
+					  const int64_t *old_val,
+					  const int64_t *new_val)
+{
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(module);
+	msg->dn = dn;
+
+	ret = dsdb_msg_constrainted_update_int64(module,
+						 msg, attr,
+						 old_val,
+						 new_val);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	talloc_free(msg);
+	return ret;
+}
