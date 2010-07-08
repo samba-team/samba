@@ -748,12 +748,11 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 {
-	RPC_HDR_AUTH auth_info;
+	struct dcerpc_auth auth_info;
 	uint32 pad = 0;
-	DATA_BLOB blob;
+	DATA_BLOB auth_blob;
 	uint32_t auth_len = p->hdr.auth_len;
-
-	ZERO_STRUCT(blob);
+	NTSTATUS status;
 
 	DEBUG(5,("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
 
@@ -796,9 +795,15 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err;
 	}
 
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, rpc_in_p, 0)) {
-		DEBUG(0,("api_pipe_bind_auth3: failed to "
-			"unmarshall RPC_HDR_AUTH.\n"));
+	auth_blob = data_blob_const(prs_data_p(rpc_in_p)
+					+ prs_offset(rpc_in_p),
+				    prs_data_size(rpc_in_p)
+					- prs_offset(rpc_in_p));
+
+	status = dcerpc_pull_dcerpc_auth(prs_get_mem_context(rpc_in_p),
+					 &auth_blob, &auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
 	}
 
@@ -813,24 +818,14 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	blob = data_blob(NULL,p->hdr.auth_len);
-
-	if (!prs_copy_data_out((char *)blob.data, rpc_in_p, p->hdr.auth_len)) {
-		DEBUG(0,("api_pipe_bind_auth3: Failed to pull %u bytes - the response blob.\n",
-			(unsigned int)p->hdr.auth_len ));
-		goto err;
-	}
-
 	/*
 	 * The following call actually checks the challenge/response data.
 	 * for correctness against the given DOMAIN\user name.
 	 */
 
-	if (!pipe_ntlmssp_verify_final(p, &blob)) {
+	if (!pipe_ntlmssp_verify_final(p, &auth_info.credentials)) {
 		goto err;
 	}
-
-	data_blob_free(&blob);
 
 	p->pipe_bound = True;
 
@@ -838,7 +833,6 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 
  err:
 
-	data_blob_free(&blob);
 	free_pipe_ntlmssp_auth_data(&p->auth);
 	p->auth.a_u.auth_ntlmssp_state = NULL;
 
