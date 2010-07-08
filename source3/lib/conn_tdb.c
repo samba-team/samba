@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 static struct db_context *connections_db_ctx(bool rw)
 {
@@ -55,7 +56,7 @@ struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 	TDB_DATA key;
 
 	ZERO_STRUCT(ckey);
-	ckey.pid = procid_self();
+	ckey.pid = sconn_server_id(conn->sconn);
 	ckey.cnum = conn->cnum;
 	strlcpy(ckey.name, name, sizeof(ckey.name));
 
