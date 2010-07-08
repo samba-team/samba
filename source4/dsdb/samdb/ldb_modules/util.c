@@ -946,3 +946,99 @@ bool is_attr_in_list(const char * const * attrs, const char *attr)
 
 	return false;
 }
+
+int dsdb_msg_constrainted_update_int32(struct ldb_module *module,
+				       struct ldb_message *msg,
+				       const char *attr,
+				       const int32_t *old_val,
+				       const int32_t *new_val)
+{
+	struct ldb_message_element *el;
+	struct ldb_val *v1, *v2;
+	int ret;
+	char *vstring;
+
+	if (old_val) {
+		ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el->num_values = 1;
+		el->values = talloc_array(msg, struct ldb_val, el->num_values);
+		if (!el->values) {
+			return ldb_module_oom(module);
+		}
+		vstring = talloc_asprintf(el->values, "%ld", (long)*old_val);
+		if (!vstring) {
+			return ldb_module_oom(module);
+		}
+		*el->values = data_blob_string_const(vstring);
+	}
+
+	if (new_val) {
+		ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_ADD, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el->num_values = 1;
+		el->values = talloc_array(msg, struct ldb_val, el->num_values);
+		if (!el->values) {
+			return ldb_module_oom(module);
+		}
+		vstring = talloc_asprintf(el->values, "%ld", (long)*new_val);
+		if (!vstring) {
+			return ldb_module_oom(module);
+		}
+		*el->values = data_blob_string_const(vstring);
+	}
+
+	return LDB_SUCCESS;
+}
+
+int dsdb_msg_constrainted_update_int64(struct ldb_module *module,
+				       struct ldb_message *msg,
+				       const char *attr,
+				       const int64_t *old_val,
+				       const int64_t *new_val)
+{
+	struct ldb_message_element *el;
+	struct ldb_val *v1, *v2;
+	int ret;
+	char *vstring;
+
+	if (old_val) {
+		ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el->num_values = 1;
+		el->values = talloc_array(msg, struct ldb_val, el->num_values);
+		if (!el->values) {
+			return ldb_module_oom(module);
+		}
+		vstring = talloc_asprintf(el->values, "%lld", (long long)*old_val);
+		if (!vstring) {
+			return ldb_module_oom(module);
+		}
+		*el->values = data_blob_string_const(vstring);
+	}
+
+	if (new_val) {
+		ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_ADD, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el->num_values = 1;
+		el->values = talloc_array(msg, struct ldb_val, el->num_values);
+		if (!el->values) {
+			return ldb_module_oom(module);
+		}
+		vstring = talloc_asprintf(el->values, "%lld", (long long)*new_val);
+		if (!vstring) {
+			return ldb_module_oom(module);
+		}
+		*el->values = data_blob_string_const(vstring);
+	}
+
+	return LDB_SUCCESS;
+}
