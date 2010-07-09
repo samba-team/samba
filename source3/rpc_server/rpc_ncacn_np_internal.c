@@ -301,8 +301,8 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* set opnum in fake rpc header */
-	cli->pipes_struct->hdr_req.opnum = opnum;
+	/* set opnum */
+	cli->pipes_struct->opnum = opnum;
 
 	for (i = 0; i < num_cmds; i++) {
 		if (cmds[i].opnum == opnum && cmds[i].fn != NULL) {

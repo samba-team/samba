@@ -304,6 +304,9 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
+	/* Save the operation number */
+	p->opnum = p->hdr_req.opnum;
+
 	switch(p->auth.auth_type) {
 		case PIPE_AUTH_TYPE_NONE:
 			break;

@@ -7352,7 +7352,7 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 	uint32_t version;
 	const char *fn;
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 		case NDR_SPOOLSS_ADDPRINTERDRIVER:
 			fn = "_spoolss_AddPrinterDriver";
 			break;

@@ -185,7 +185,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	const char *fn;
 	uint32_t acct_ctrl;
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 	case NDR_NETR_LOGONCONTROL:
 		fn = "_netr_LogonControl";
 		break;
@@ -836,7 +836,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE:
 			fn = "_netr_ServerAuthenticate";
 			break;
@@ -1226,7 +1226,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 	bool process_creds = true;
 	const char *fn;
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
 			process_creds = true;
 			fn = "_netr_LogonSamLogon";

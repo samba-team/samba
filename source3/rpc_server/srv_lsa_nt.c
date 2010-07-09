@@ -979,7 +979,7 @@ NTSTATUS _lsa_LookupSids2(pipes_struct *p,
 	struct lsa_TranslatedName2 *names = NULL;
 	bool check_policy = true;
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 		case NDR_LSA_LOOKUPSIDS3:
 			check_policy = false;
 			break;
@@ -1237,7 +1237,7 @@ NTSTATUS _lsa_LookupNames3(pipes_struct *p,
 	int flags = 0;
 	bool check_policy = true;
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 		case NDR_LSA_LOOKUPNAMES4:
 			check_policy = false;
 			break;

@@ -222,6 +222,9 @@ typedef struct pipes_struct {
 	/* handle database to use on this pipe. */
 	struct handle_list *pipe_handles;
 
+	/* operation number retrieved from the rpc header */
+	uint16_t opnum;
+
 	/* private data for the interface implementation */
 	void *private_data;
 

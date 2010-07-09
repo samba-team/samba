@@ -3999,7 +3999,7 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	size_t    sd_size;
 	const char *fn = "_samr_Connect2";
 
-	switch (p->hdr_req.opnum) {
+	switch (p->opnum) {
 	case NDR_SAMR_CONNECT2:
 		fn = "_samr_Connect2";
 		break;

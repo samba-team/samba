@@ -2515,17 +2515,17 @@ static bool api_rpcTNP(pipes_struct *p,
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
 		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
-		 p->hdr_req.opnum));
+		 p->opnum));
 
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
+		prs_dump(name, p->opnum, &p->in_data.data);
 	}
 
 	for (fn_num = 0; fn_num < n_cmds; fn_num++) {
-		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
+		if (api_rpc_cmds[fn_num].opnum == p->opnum && api_rpc_cmds[fn_num].fn != NULL) {
 			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
 			break;
 		}
@@ -2575,7 +2575,7 @@ static bool api_rpcTNP(pipes_struct *p,
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
+		prs_dump(name, p->opnum, &p->out_data.rdata);
 	}
 	prs_set_offset(&p->out_data.rdata, offset2);
 
