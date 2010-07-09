@@ -338,6 +338,42 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_push_ncacn_packet_header(TALLOC_CTX *mem_ctx,
+					 enum dcerpc_pkt_type ptype,
+					 uint8_t pfc_flags,
+					 uint16_t frag_length,
+					 uint16_t auth_length,
+					 uint32_t call_id,
+					 DATA_BLOB *blob)
+{
+	struct ncacn_packet_header r;
+	enum ndr_err_code ndr_err;
+
+	r.rpc_vers		= 5;
+	r.rpc_vers_minor	= 0;
+	r.ptype			= ptype;
+	r.pfc_flags		= pfc_flags;
+	r.drep[0]		= DCERPC_DREP_LE;
+	r.drep[1]		= 0;
+	r.drep[2]		= 0;
+	r.drep[3]		= 0;
+	r.frag_length		= frag_length;
+	r.auth_length		= auth_length;
+	r.call_id		= call_id;
+
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
+		(ndr_push_flags_fn_t)ndr_push_ncacn_packet_header);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ncacn_packet_header, &r);
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
 *******************************************************************/
 
