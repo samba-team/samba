@@ -890,6 +890,53 @@ objectClass: container
 
         self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
 
+        # Performs some "systemFlags" testing
+
+        # Move failing since no "SYSTEM_FLAG_CONFIG_ALLOW_MOVE"
+        try:
+            ldb.rename("CN=DisplaySpecifiers," + self.configuration_dn, "CN=DisplaySpecifiers,CN=Services," + self.configuration_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Limited move failing since no "SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE"
+        try:
+            ldb.rename("CN=Directory Service,CN=Windows NT,CN=Services," + self.configuration_dn, "CN=Directory Service,CN=RRAS,CN=Services," + self.configuration_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Rename failing since no "SYSTEM_FLAG_CONFIG_ALLOW_RENAME"
+        try:
+            ldb.rename("CN=DisplaySpecifiers," + self.configuration_dn, "CN=DisplaySpecifiers2," + self.configuration_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # It's not really possible to test moves on the schema partition since
+        # there don't exist subcontainers on it.
+
+        # Rename failing since "SYSTEM_FLAG_SCHEMA_BASE_OBJECT"
+        try:
+            ldb.rename("CN=Top," + self.schema_dn, "CN=Top2," + self.schema_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Move failing since "SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE"
+        try:
+            ldb.rename("CN=Users," + self.base_dn, "CN=Users,CN=Computers," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Rename failing since "SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME"
+        try:
+            ldb.rename("CN=Users," + self.base_dn, "CN=Users2," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
     def test_rename_twice(self):
         """Tests the rename operation twice - this corresponds to a past bug"""
         print "Tests the rename twice operation"""
@@ -1559,6 +1606,15 @@ objectClass: container
         self.delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+
+        # Performs some "systemFlags" testing
+
+        # Delete failing since "SYSTEM_FLAG_DISALLOW_DELETE"
+        try:
+            ldb.delete("CN=Users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_all(self):
         """Basic tests"""
