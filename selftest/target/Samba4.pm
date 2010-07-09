@@ -589,6 +589,7 @@ sub provision_raw_step1($$)
         dns update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file}
         spn update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_spnupdate
         resolv:host file = $ctx->{dns_host_file}
+	dreplsrv:periodic_startup_interval = 0
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
