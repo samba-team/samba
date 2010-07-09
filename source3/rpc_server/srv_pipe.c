@@ -297,6 +297,8 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 static bool create_next_pdu_schannel(pipes_struct *p)
 {
+	DATA_BLOB hdr;
+	uint8_t hdr_flags;
 	RPC_HDR_RESP hdr_resp;
 	uint32 ss_padding_len = 0;
 	uint32 data_len;
@@ -317,14 +319,11 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
 
-	/* Change the incoming request header to a response. */
-	p->hdr.pkt_type = DCERPC_PKT_RESPONSE;
-
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
-		p->hdr.flags = DCERPC_PFC_FLAG_FIRST;
+		hdr_flags = DCERPC_PFC_FLAG_FIRST;
 	} else {
-		p->hdr.flags = 0;
+		hdr_flags = 0;
 	}
 
 	/*
@@ -377,25 +376,38 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	/*
 	 * Work out if this PDU will be the last.
 	 */
-
-	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
-		p->hdr.flags |= DCERPC_PFC_FLAG_LAST;
+	if (p->out_data.data_sent_length + data_len >=
+					prs_offset(&p->out_data.rdata)) {
+		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
-
-	p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len + ss_padding_len +
-				RPC_HDR_AUTH_LEN + RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
-	p->hdr.auth_len = RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
 
 	/*
 	 * Init the parse struct to point at the outgoing
 	 * data.
 	 */
-
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
+	status = dcerpc_push_ncacn_packet_header(
+				prs_get_mem_context(&p->out_data.frag),
+				DCERPC_PKT_RESPONSE,
+				hdr_flags,
+				RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
+				  data_len + ss_padding_len +
+				  RPC_HDR_AUTH_LEN +
+				  RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
+				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
+				p->hdr.call_id,
+				&hdr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to marshall RPC Header.\n"));
+		prs_mem_free(&p->out_data.frag);
+		return False;
+	}
+
 	/* Store the header in the data stream. */
-	if(!smb_io_rpc_hdr("hdr", &p->hdr, &p->out_data.frag, 0)) {
-		DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR.\n"));
+	if (!prs_copy_data_in(&p->out_data.frag,
+				(char *)hdr.data, hdr.length)) {
+		DEBUG(0, ("Out of memory.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
