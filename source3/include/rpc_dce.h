@@ -66,14 +66,6 @@ typedef struct rpc_hdr_resp_info {
 
 #define RPC_HDR_RESP_LEN 8
 
-/* RPC_HDR_FAULT - fault rpc header */
-typedef struct rpc_hdr_fault_info {
-	NTSTATUS status;
-	uint32 reserved; /* 0x0000 0000 */
-} RPC_HDR_FAULT;
-
-#define RPC_HDR_FAULT_LEN 8
-
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
  * "srvsvc", "\\PIPE\\ntsvcs"
@@ -106,16 +98,6 @@ typedef struct rpc_hdr_auth_info {
 } RPC_HDR_AUTH;
 
 #define RPC_HDR_AUTH_LEN 8
-
-/* 
- * The following length is 8 bytes RPC_HDR_BBA_LEN + 
- * 4 bytes size of context count +
- * (context_count * (4 bytes of context_id, size of transfer syntax count + RPC_IFACE_LEN bytes +
- *                    (transfer_syntax_count * RPC_IFACE_LEN bytes)))
- */
-
-#define RPC_HDR_RB_LEN(rpc_hdr_rb) (RPC_HDR_BBA_LEN + 4 + \
-	((rpc_hdr_rb)->num_contexts) * (4 + RPC_IFACE_LEN + (((rpc_hdr_rb)->ctx_list->num_transfer_syntaxes)*RPC_IFACE_LEN)))
 
 /* RPC_RESULTS - can only cope with one reason, right now... */
 typedef struct rpc_results_info {
