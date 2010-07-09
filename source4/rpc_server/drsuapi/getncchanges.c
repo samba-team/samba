@@ -665,6 +665,8 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *last_dn;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
+	bool la_sorted;
+	uint32_t la_idx;
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 };
 
@@ -701,6 +703,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsGetNCChangesRequest8 *req8;
 	uint32_t options;
 	uint32_t max_objects;
+	uint32_t max_links;
+	uint32_t link_count = 0;
+	uint32_t link_total = 0;
+	uint32_t link_given = 0;
 	struct ldb_dn *search_dn = NULL;
 	bool am_rodc;
 	enum security_user_level security_level;
@@ -939,6 +945,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (req8->max_object_count < max_objects) {
 		max_objects = req8->max_object_count;
 	}
+	/*
+	 * TODO: work out how the maximum should be calculated
+	 */
+	max_links = lp_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
 	for(i=getnc_state->num_sent; 
 	    i<getnc_state->site_res->count && 
@@ -1026,14 +1036,46 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 	}
 
+	/*
+	 * TODO:
+	 * This is just a guess, how to calculate the
+	 * number of linked attributes to send, we need to
+	 * find out how to do this right.
+	 */
+	if (r->out.ctr->ctr6.object_count >= max_links) {
+		max_links = 0;
+	} else {
+		max_links -= r->out.ctr->ctr6.object_count;
+	}
+
+	link_total = getnc_state->la_count;
+
 	if (i < getnc_state->site_res->count) {
 		r->out.ctr->ctr6.more_data = true;
 	} else {
-		r->out.ctr->ctr6.linked_attributes_count = getnc_state->la_count;
-		r->out.ctr->ctr6.linked_attributes = talloc_steal(mem_ctx, getnc_state->la_list);
+		/* sort the whole array the first time */
+		if (!getnc_state->la_sorted) {
+			LDB_TYPESAFE_QSORT(getnc_state->la_list, getnc_state->la_count,
+					   b_state->sam_ctx, linked_attribute_compare);
+			getnc_state->la_sorted = true;
+		}
 
-		LDB_TYPESAFE_QSORT(r->out.ctr->ctr6.linked_attributes, r->out.ctr->ctr6.linked_attributes_count,
-				   b_state->sam_ctx, linked_attribute_compare);
+		link_count = getnc_state->la_count - getnc_state->la_idx;
+		link_count = MIN(max_links, link_count);
+
+		r->out.ctr->ctr6.linked_attributes_count = link_count;
+		r->out.ctr->ctr6.linked_attributes = getnc_state->la_list + getnc_state->la_idx;
+
+		getnc_state->la_idx += link_count;
+		link_given = getnc_state->la_idx;
+
+		if (getnc_state->la_idx < getnc_state->la_count) {
+			r->out.ctr->ctr6.more_data = true;
+		}
+	}
+
+	if (!r->out.ctr->ctr6.more_data) {
+		talloc_steal(mem_ctx, getnc_state->la_list);
 
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
@@ -1055,12 +1097,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	DEBUG(r->out.ctr->ctr6.more_data?2:1,
-	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %d/%d la=%d)\n",
+	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u)\n",
 	       (unsigned long long)(req8->highwatermark.highest_usn+1),
-	       req8->replica_flags,
-	       ncRoot->dn, r->out.ctr->ctr6.object_count,
+	       req8->replica_flags, ncRoot->dn,
+	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
-	       r->out.ctr->ctr6.linked_attributes_count));
+	       r->out.ctr->ctr6.linked_attributes_count,
+	       link_given, link_total));
 
 #if 0
 	if (!r->out.ctr->ctr6.more_data) {
