@@ -197,7 +197,18 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 		unsigned int msg_debug_level = 0;
 		werr = ntstatus_to_werror(status);
 		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
-			msg_debug_level = 1;
+			/*
+			 * TODO:
+			 *
+			 * we should better fix the bug regarding
+			 * non-linked attribute handling, instead
+			 * of just hiding the failures.
+			 *
+			 * we should also remove the dc from our repsTo
+			 * if it failed to often, instead of retrying
+			 * every few seconds
+			 */
+			msg_debug_level = 2;
 		}
 
 		DEBUG(msg_debug_level,
