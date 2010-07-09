@@ -3276,6 +3276,12 @@ SELFTEST_TESTENV = dc
 testenv:
 	$(MAKE) selftest SELFTEST_TESTENV=$(SELFTEST_TESTENV) TESTS="--testenv"
 
+gdbtestenv:
+	$(MAKE) selftest SELFTEST_TESTENV=$(SELFTEST_TESTENV) \
+		SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
+		WINBINDD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
+		TESTS="--testenv"
+
 
 # Check for Winbind struct 32/64bit padding
 test_wbpad:
