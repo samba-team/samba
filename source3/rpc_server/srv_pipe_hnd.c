@@ -102,24 +102,61 @@ static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 	return (ssize_t)len_needed_to_complete_hdr;
 }
 
+static bool get_pdu_size(pipes_struct *p)
+{
+	DATA_BLOB frag;
+	uint16_t frag_len;
+	/* the fill_rpc_header() call insures we copy only
+	 * RPC_HEADER_LEN bytes. If this doesn't match then
+	 * somethign is very wrong and we can only abort */
+	if (p->in_data.pdu_received_len != RPC_HEADER_LEN) {
+		DEBUG(0, ("Unexpected RPC Header size! "
+			  "got %d, expected %d)\n",
+			  p->in_data.pdu_received_len,
+			  RPC_HEADER_LEN));
+		set_incoming_fault(p);
+		return false;
+	}
+
+	frag = data_blob_const(p->in_data.current_in_pdu,
+				RPC_HEADER_LEN);
+	frag_len = dcerpc_get_frag_length(&frag);
+
+	/* verify it is a reasonable value */
+	if ((frag_len < RPC_HEADER_LEN) ||
+	    (frag_len > RPC_MAX_PDU_FRAG_LEN)) {
+		DEBUG(0, ("Unexpected RPC Fragment size! (%d)\n",
+			  frag_len));
+		set_incoming_fault(p);
+		return false;
+	}
+
+	p->in_data.pdu_needed_len = frag_len - RPC_HEADER_LEN;
+
+	/* allocate the space needed to fill the pdu */
+	p->in_data.current_in_pdu =
+				talloc_realloc(p, p->in_data.current_in_pdu,
+						  uint8_t, frag_len);
+	if (p->in_data.current_in_pdu == NULL) {
+		DEBUG(0, ("talloc_realloc failed\n"));
+		set_incoming_fault(p);
+		return false;
+	}
+
+	return true;
+}
+
 /****************************************************************************
  Unmarshalls a new PDU header. Assumes the raw header data is in current_in_pdu.
 ****************************************************************************/
 
-static ssize_t unmarshall_rpc_header(pipes_struct *p)
+static bool unmarshall_rpc_header(pipes_struct *p)
 {
 	/*
 	 * Unmarshall the header to determine the needed length.
 	 */
 
 	prs_struct rpc_in;
-
-	if(p->in_data.pdu_received_len != RPC_HEADER_LEN) {
-		DEBUG(0, ("unmarshall_rpc_header: "
-			  "assert on rpc header length failed.\n"));
-		set_incoming_fault(p);
-		return -1;
-	}
 
 	prs_init_empty( &rpc_in, p->mem_ctx, UNMARSHALL);
 	prs_set_endian_data( &rpc_in, p->endian);
@@ -128,8 +165,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 					p->in_data.pdu_received_len, False);
 
 	/*
-	 * Unmarshall the header as this will tell us how much
-	 * data we need to read to get the complete pdu.
+	 * Unmarshall the header.
 	 * This also sets the endian flag in rpc_in.
 	 */
 
@@ -138,7 +174,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 			  "failed to unmarshall RPC_HDR.\n"));
 		set_incoming_fault(p);
 		prs_mem_free(&rpc_in);
-		return -1;
+		return false;
 	}
 
 	/*
@@ -150,7 +186,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 			  "invalid major/minor numbers in RPC_HDR.\n"));
 		set_incoming_fault(p);
 		prs_mem_free(&rpc_in);
-		return -1;
+		return false;
 	}
 
 	/*
@@ -175,7 +211,7 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 				  "FIRST flag not set in first PDU !\n"));
 			set_incoming_fault(p);
 			prs_mem_free(&rpc_in);
-			return -1;
+			return false;
 		}
 
 		/*
@@ -202,38 +238,13 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 				  (int)p->endian));
 			set_incoming_fault(p);
 			prs_mem_free(&rpc_in);
-			return -1;
+			return false;
 		}
-	}
-
-	/*
-	 * Ensure that the pdu length is sane.
-	 */
-
-	if ((p->hdr.frag_len < RPC_HEADER_LEN) ||
-	    (p->hdr.frag_len > RPC_MAX_PDU_FRAG_LEN)) {
-		DEBUG(0,("unmarshall_rpc_header: assert on frag length failed.\n"));
-		set_incoming_fault(p);
-		prs_mem_free(&rpc_in);
-		return -1;
 	}
 
 	DEBUG(10, ("unmarshall_rpc_header: type = %u, flags = %u\n",
 		   (unsigned int)p->hdr.pkt_type, (unsigned int)p->hdr.flags));
-
-	p->in_data.pdu_needed_len = (uint32)p->hdr.frag_len - RPC_HEADER_LEN;
-
-	prs_mem_free(&rpc_in);
-
-	p->in_data.current_in_pdu = TALLOC_REALLOC_ARRAY(
-		p, p->in_data.current_in_pdu, uint8_t, p->hdr.frag_len);
-	if (p->in_data.current_in_pdu == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		set_incoming_fault(p);
-		return -1;
-	}
-
-	return 0; /* No extra data processed. */
+	return true;
 }
 
 /****************************************************************************
@@ -415,8 +426,7 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 }
 
 /****************************************************************************
- Processes a finished PDU stored in current_in_pdu. The RPC_HEADER has
- already been parsed and stored in p->hdr.
+ Processes a finished PDU stored in current_in_pdu.
 ****************************************************************************/
 
 static void process_complete_pdu(pipes_struct *p)
@@ -425,11 +435,19 @@ static void process_complete_pdu(pipes_struct *p)
 	size_t data_len = p->in_data.pdu_received_len - RPC_HEADER_LEN;
 	char *data_p = (char *)&p->in_data.current_in_pdu[RPC_HEADER_LEN];
 	bool reply = False;
+	bool hdr_ok;
 
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 		set_incoming_fault(p);
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		return;
+	}
+
+	/* parse the header now */
+	hdr_ok = unmarshall_rpc_header(p);
+	if (!hdr_ok) {
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return;
 	}
@@ -654,15 +672,18 @@ static ssize_t process_incoming_data(pipes_struct *p, char *data, size_t n)
 
 	/*
 	 * If pdu_needed_len is zero this is a new pdu.
-	 * Unmarshall the header so we know how much more
-	 * data we need, then loop again.
+	 * Check how much more data we need, then loop again.
 	 */
+	if (p->in_data.pdu_needed_len == 0) {
 
-	if(p->in_data.pdu_needed_len == 0) {
-		ssize_t rret = unmarshall_rpc_header(p);
-		if (rret == -1 || p->in_data.pdu_needed_len > 0) {
-			return rret;
+		bool ok = get_pdu_size(p);
+		if (!ok) {
+			return -1;
 		}
+		if (p->in_data.pdu_needed_len > 0) {
+			return 0;
+		}
+
 		/* If rret == 0 and pdu_needed_len == 0 here we have a PDU
 		 * that consists of an RPC_HEADER only. This is a
 		 * DCERPC_PKT_SHUTDOWN, DCERPC_PKT_CO_CANCEL or
@@ -671,7 +692,7 @@ static ssize_t process_incoming_data(pipes_struct *p, char *data, size_t n)
 	}
 
 	/*
-	 * Ok - at this point we have a valid RPC_HEADER in p->hdr.
+	 * Ok - at this point we have a valid RPC_HEADER.
 	 * Keep reading until we have a full pdu.
 	 */
 
