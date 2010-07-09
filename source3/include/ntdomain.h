@@ -88,8 +88,10 @@ typedef struct _input_data {
 	 * is collected via multiple writes until a complete
 	 * pdu is seen, then the data is copied into the in_data
 	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
+	 * If length is zero, then we are at the start of a new
+	 * pdu.
 	 */
-	uint8_t *current_in_pdu;
+	DATA_BLOB pdu;
 
 	/*
 	 * The amount of data needed to complete the in_pdu.
@@ -97,13 +99,6 @@ typedef struct _input_data {
 	 * pdu.
 	 */
 	uint32 pdu_needed_len;
-
-	/*
-	 * The amount of data received so far in the in_pdu.
-	 * If this is zero, then we are at the start of a new
-	 * pdu.
-	 */
-	uint32 pdu_received_len;
 
 	/*
 	 * This is the collection of input data with all

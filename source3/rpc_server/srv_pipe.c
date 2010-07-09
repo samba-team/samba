@@ -2188,7 +2188,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	data = (unsigned char *)(prs_data_p(rpc_in) + RPC_HDR_REQ_LEN);
 	data_len = (size_t)(p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN - RPC_HDR_AUTH_LEN - auth_len);
 
-	full_packet_data = p->in_data.current_in_pdu;
+	full_packet_data = p->in_data.pdu.data;
 	full_packet_data_len = p->hdr.frag_len - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
