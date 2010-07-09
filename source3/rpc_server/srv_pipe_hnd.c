@@ -23,6 +23,9 @@
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
+#include "../libcli/auth/schannel.h"
+#include "../libcli/auth/spnego.h"
+#include "../libcli/auth/ntlmssp.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -274,82 +277,169 @@ static void free_pipe_context(pipes_struct *p)
  appends the data into the complete stream if the LAST flag is not set.
 ****************************************************************************/
 
-static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
+static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
 {
-	uint32 ss_padding_len = 0;
-	size_t data_len = p->hdr.frag_len
-				- RPC_HEADER_LEN
-				- RPC_HDR_REQ_LEN
-				- (p->hdr.auth_len ? RPC_HDR_AUTH_LEN : 0)
-				- p->hdr.auth_len;
+	NTSTATUS status;
+	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+	struct dcerpc_auth auth;
+	uint32_t auth_length;
+	DATA_BLOB data;
+	DATA_BLOB full_pkt;
 
-	if(!p->pipe_bound) {
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		hdr_size += 16;
+	}
+
+	switch (p->auth.auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		if (pkt->auth_length != 0) {
+			break;
+		}
+		return true;
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (pkt->auth_length != 0) {
+			return false;
+		}
+		return true;
+
+	default:
+		return false;
+	}
+
+	status = dcerpc_pull_auth_trailer(pkt, pkt,
+					  &pkt->u.request.stub_and_verifier,
+					  &auth, &auth_length, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	pkt->u.request.stub_and_verifier.length -= auth_length;
+
+	data.data = p->in_data.pdu.data + hdr_size;
+	data.length = pkt->u.request.stub_and_verifier.length;
+	full_pkt.data = p->in_data.pdu.data;
+	full_pkt.length = p->in_data.pdu.length - auth.credentials.length;
+
+	switch (p->auth.auth_type) {
+	case PIPE_AUTH_TYPE_NONE:
+		return true;
+
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case PIPE_AUTH_TYPE_NTLMSSP:
+
+		if (!p->auth.a_u.auth_ntlmssp_state) {
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return false;
+		}
+
+		switch (p->auth.auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			status = auth_ntlmssp_unseal_packet(
+					p->auth.a_u.auth_ntlmssp_state,
+					data.data, data.length,
+					full_pkt.data, full_pkt.length,
+					&auth.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
+			memcpy(pkt->u.request.stub_and_verifier.data,
+				data.data, data.length);
+			break;
+
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			status = auth_ntlmssp_check_packet(
+					p->auth.a_u.auth_ntlmssp_state,
+					data.data, data.length,
+					full_pkt.data, full_pkt.length,
+					&auth.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
+			break;
+
+		default:
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return false;
+		}
+		break;
+
+	case PIPE_AUTH_TYPE_SCHANNEL:
+
+		switch (p->auth.auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			status = netsec_incoming_packet(
+					p->auth.a_u.schannel_auth,
+					pkt, true,
+					data.data, data.length,
+					&auth.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
+			memcpy(pkt->u.request.stub_and_verifier.data,
+				data.data, data.length);
+			break;
+
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			status = netsec_incoming_packet(
+					p->auth.a_u.schannel_auth,
+					pkt, false,
+					data.data, data.length,
+					&auth.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
+			break;
+
+		default:
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return false;
+		}
+		break;
+
+	default:
+		DEBUG(0, ("process_request_pdu: "
+			  "unknown auth type %u set.\n",
+			  (unsigned int)p->auth.auth_type));
+		set_incoming_fault(p);
+		return false;
+	}
+
+	/* remove the indicated amount of padding */
+	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
+		return false;
+	}
+	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
+
+	return true;
+}
+
+static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
+{
+	DATA_BLOB data;
+
+	if (!p->pipe_bound) {
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
 		set_incoming_fault(p);
 		return False;
 	}
 
-	/*
-	 * Check if we need to do authentication processing.
-	 * This is only done on requests, not binds.
-	 */
+	/* Store the opnum */
+	p->opnum = pkt->u.request.opnum;
 
-	/*
-	 * Read the RPC request header.
-	 */
-
-	if(!smb_io_rpc_hdr_req("req", &p->hdr_req, rpc_in_p, 0)) {
-		DEBUG(0,("process_request_pdu: failed to unmarshall RPC_HDR_REQ.\n"));
+	if (!dcesrv_auth_request(p, pkt)) {
+		DEBUG(0,("Failed to check packet auth.\n"));
 		set_incoming_fault(p);
-		return False;
+		return false;
 	}
 
-	/* Save the operation number */
-	p->opnum = p->hdr_req.opnum;
-
-	switch(p->auth.auth_type) {
-		case PIPE_AUTH_TYPE_NONE:
-			break;
-
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		case PIPE_AUTH_TYPE_NTLMSSP:
-		{
-			NTSTATUS status;
-			if (!api_pipe_ntlmssp_auth_process(p, rpc_in_p,
-							   &ss_padding_len,
-							   &status)) {
-				DEBUG(0, ("process_request_pdu: "
-					  "failed to do auth processing.\n"));
-				DEBUG(0, ("process_request_pdu: error is %s\n",
-					  nt_errstr(status)));
-				set_incoming_fault(p);
-				return False;
-			}
-			break;
-		}
-
-		case PIPE_AUTH_TYPE_SCHANNEL:
-			if (!api_pipe_schannel_process(p, rpc_in_p,
-							&ss_padding_len)) {
-				DEBUG(3, ("process_request_pdu: "
-					  "failed to do schannel processing.\n"));
-				set_incoming_fault(p);
-				return False;
-			}
-			break;
-
-		default:
-			DEBUG(0, ("process_request_pdu: "
-				  "unknown auth type %u set.\n",
-				  (unsigned int)p->auth.auth_type));
-			set_incoming_fault(p);
-			return False;
-	}
-
-	/* Now we've done the sign/seal we can remove any padding data. */
-	if (data_len > ss_padding_len) {
-		data_len -= ss_padding_len;
-	}
+	data = pkt->u.request.stub_and_verifier;
 
 	/*
 	 * Check the data length doesn't go over the 15Mb limit.
@@ -358,11 +448,11 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
 
-	if(prs_offset(&p->in_data.data) + data_len > MAX_RPC_DATA_SIZE) {
+	if (prs_offset(&p->in_data.data) + data.length > MAX_RPC_DATA_SIZE) {
 		DEBUG(0, ("process_request_pdu: "
 			  "rpc data buffer too large (%u) + (%u)\n",
 			  (unsigned int)prs_data_size(&p->in_data.data),
-			  (unsigned int)data_len ));
+			  (unsigned int)data.length));
 		set_incoming_fault(p);
 		return False;
 	}
@@ -371,17 +461,17 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Append the data portion into the buffer and return.
 	 */
 
-	if (!prs_append_some_prs_data(&p->in_data.data, rpc_in_p,
-				      prs_offset(rpc_in_p), data_len)) {
+	if (!prs_copy_data_in(&p->in_data.data,
+			      (char *)data.data, data.length)) {
 		DEBUG(0, ("process_request_pdu: Unable to append data size %u "
 			  "to parse buffer of size %u.\n",
-			  (unsigned int)data_len,
+			  (unsigned int)data.length,
 			  (unsigned int)prs_data_size(&p->in_data.data)));
 		set_incoming_fault(p);
 		return False;
 	}
 
-	if(p->hdr.flags & DCERPC_PFC_FLAG_LAST) {
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_LAST) {
 		bool ret = False;
 		/*
 		 * Ok - we finally have a complete RPC stream.
@@ -413,8 +503,8 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		 * Process the complete data stream here.
 		 */
 
-		if(pipe_init_outgoing_data(p)) {
-			ret = api_pipe_request(p);
+		if (pipe_init_outgoing_data(p)) {
+			ret = api_pipe_request(p, pkt);
 		}
 
 		return ret;
@@ -429,176 +519,181 @@ static bool process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 
 static void process_complete_pdu(pipes_struct *p)
 {
-	prs_struct rpc_in;
-	size_t data_len = p->in_data.pdu.length - RPC_HEADER_LEN;
-	char *data_p = (char *)&p->in_data.pdu.data[RPC_HEADER_LEN];
+	struct ncacn_packet *pkt;
+	NTSTATUS status;
 	bool reply = False;
-	bool hdr_ok;
 
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
-		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return;
+		goto done;
 	}
 
-	/* parse the header now */
-	hdr_ok = unmarshall_rpc_header(p);
-	if (!hdr_ok) {
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return;
+	pkt = talloc(p->mem_ctx, struct ncacn_packet);
+	if (!pkt) {
+		DEBUG(0, ("Out of memory!\n"));
+		goto done;
 	}
 
-	prs_init_empty( &rpc_in, p->mem_ctx, UNMARSHALL);
+	status = dcerpc_pull_ncacn_packet(pkt, &p->in_data.pdu, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to unmarshal rpc packet: %s!\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	/* Store the call_id */
+	p->call_id = pkt->call_id;
 
 	/*
 	 * Ensure we're using the corrent endianness for both the
 	 * RPC header flags and the raw data we will be reading from.
 	 */
+	if (pkt->drep[0] == DCERPC_DREP_LE) {
+		p->endian = RPC_LITTLE_ENDIAN;
+	} else {
+		p->endian = RPC_BIG_ENDIAN;
+	}
+	prs_set_endian_data(&p->in_data.data, p->endian);
 
-	prs_set_endian_data( &rpc_in, p->endian);
-	prs_set_endian_data( &p->in_data.data, p->endian);
+	DEBUG(10, ("Processing packet type %d\n", (int)pkt->ptype));
 
-	prs_give_memory( &rpc_in, data_p, (uint32)data_len, False);
+	switch (pkt->ptype) {
+	case DCERPC_PKT_REQUEST:
+		reply = process_request_pdu(p, pkt);
+		break;
 
-	DEBUG(10,("process_complete_pdu: processing packet type %u\n",
-			(unsigned int)p->hdr.pkt_type ));
+	case DCERPC_PKT_PING: /* CL request - ignore... */
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "Connectionless packet type %d received on "
+			  "pipe %s.\n", (int)pkt->ptype,
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
-	switch (p->hdr.pkt_type) {
-		case DCERPC_PKT_REQUEST:
-			reply = process_request_pdu(p, &rpc_in);
-			break;
+	case DCERPC_PKT_RESPONSE: /* No responses here. */
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "DCERPC_PKT_RESPONSE received from client "
+			  "on pipe %s.\n",
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
-		case DCERPC_PKT_PING: /* CL request - ignore... */
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "Connectionless packet type %u received on "
-				  "pipe %s.\n", (unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
+	case DCERPC_PKT_FAULT:
+	case DCERPC_PKT_WORKING:
+		/* CL request - reply to a ping when a call in process. */
+	case DCERPC_PKT_NOCALL:
+		/* CL - server reply to a ping call. */
+	case DCERPC_PKT_REJECT:
+	case DCERPC_PKT_ACK:
+	case DCERPC_PKT_CL_CANCEL:
+	case DCERPC_PKT_FACK:
+	case DCERPC_PKT_CANCEL_ACK:
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "Connectionless packet type %u received on "
+			  "pipe %s.\n", (unsigned int)pkt->ptype,
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
-		case DCERPC_PKT_RESPONSE: /* No responses here. */
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "DCERPC_PKT_RESPONSE received from client "
-				  "on pipe %s.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
+	case DCERPC_PKT_BIND:
+		/*
+		 * We assume that a pipe bind is only in one pdu.
+		 */
+		if (pipe_init_outgoing_data(p)) {
+			reply = api_pipe_bind_req(p, pkt);
+		}
+		break;
 
-		case DCERPC_PKT_FAULT:
-		case DCERPC_PKT_WORKING:
-			/* CL request - reply to a ping when a call in process. */
-		case DCERPC_PKT_NOCALL:
-			/* CL - server reply to a ping call. */
-		case DCERPC_PKT_REJECT:
-		case DCERPC_PKT_ACK:
-		case DCERPC_PKT_CL_CANCEL:
-		case DCERPC_PKT_FACK:
-		case DCERPC_PKT_CANCEL_ACK:
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "Connectionless packet type %u received on "
-				  "pipe %s.\n", (unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
-
-		case DCERPC_PKT_BIND:
-			/*
-			 * We assume that a pipe bind is only in one pdu.
-			 */
-			if(pipe_init_outgoing_data(p)) {
-				reply = api_pipe_bind_req(p, &rpc_in);
-			}
-			break;
-
-		case DCERPC_PKT_BIND_ACK:
-		case DCERPC_PKT_BIND_NAK:
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
-				  "packet type %u received on pipe %s.\n",
-				  (unsigned int)p->hdr.pkt_type,
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
+	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_BIND_NAK:
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
+			  "packet type %u received on pipe %s.\n",
+			  (unsigned int)pkt->ptype,
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
 
-		case DCERPC_PKT_ALTER:
-			/*
-			 * We assume that a pipe bind is only in one pdu.
-			 */
-			if(pipe_init_outgoing_data(p)) {
-				reply = api_pipe_alter_context(p, &rpc_in);
-			}
-			break;
+	case DCERPC_PKT_ALTER:
+		/*
+		 * We assume that a pipe bind is only in one pdu.
+		 */
+		if (pipe_init_outgoing_data(p)) {
+			reply = api_pipe_alter_context(p, pkt);
+		}
+		break;
 
-		case DCERPC_PKT_ALTER_RESP:
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "DCERPC_PKT_ALTER_RESP on pipe %s: "
-				  "Should only be server -> client.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
+	case DCERPC_PKT_ALTER_RESP:
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "DCERPC_PKT_ALTER_RESP on pipe %s: "
+			  "Should only be server -> client.\n",
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
-		case DCERPC_PKT_AUTH3:
-			/*
-			 * The third packet in an NTLMSSP auth exchange.
-			 */
-			if(pipe_init_outgoing_data(p)) {
-				reply = api_pipe_bind_auth3(p, &rpc_in);
-			}
-			break;
+	case DCERPC_PKT_AUTH3:
+		/*
+		 * The third packet in an NTLMSSP auth exchange.
+		 */
+		if (pipe_init_outgoing_data(p)) {
+			reply = api_pipe_bind_auth3(p, pkt);
+		}
+		break;
 
-		case DCERPC_PKT_SHUTDOWN:
-			DEBUG(0, ("process_complete_pdu: Error. "
-				  "DCERPC_PKT_SHUTDOWN on pipe %s: "
-				  "Should only be server -> client.\n",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   &p->syntax)));
-			break;
+	case DCERPC_PKT_SHUTDOWN:
+		DEBUG(0, ("process_complete_pdu: Error. "
+			  "DCERPC_PKT_SHUTDOWN on pipe %s: "
+			  "Should only be server -> client.\n",
+			 get_pipe_name_from_syntax(talloc_tos(),
+						   &p->syntax)));
+		break;
 
-		case DCERPC_PKT_CO_CANCEL:
-			/* For now just free all client data and continue
-			 * processing. */
-			DEBUG(3,("process_complete_pdu: DCERPC_PKT_CO_CANCEL."
-				 " Abandoning rpc call.\n"));
-			/* As we never do asynchronous RPC serving, we can
-			 * never cancel a call (as far as I know).
-			 * If we ever did we'd have to send a cancel_ack reply.
-			 * For now, just free all client data and continue
-			 * processing. */
-			reply = True;
-			break;
+	case DCERPC_PKT_CO_CANCEL:
+		/* For now just free all client data and continue
+		 * processing. */
+		DEBUG(3,("process_complete_pdu: DCERPC_PKT_CO_CANCEL."
+			 " Abandoning rpc call.\n"));
+		/* As we never do asynchronous RPC serving, we can
+		 * never cancel a call (as far as I know).
+		 * If we ever did we'd have to send a cancel_ack reply.
+		 * For now, just free all client data and continue
+		 * processing. */
+		reply = True;
+		break;
+
 #if 0
-			/* Enable this if we're doing async rpc. */
-			/* We must check the outstanding callid matches. */
-			if(pipe_init_outgoing_data(p)) {
-				/* Send a cancel_ack PDU reply. */
-				/* We should probably check the auth-verifier here. */
-				reply = setup_cancel_ack_reply(p, &rpc_in);
-			}
-			break;
+		/* Enable this if we're doing async rpc. */
+		/* We must check the outstanding callid matches. */
+		if (pipe_init_outgoing_data(p)) {
+			/* Send a cancel_ack PDU reply. */
+			/* We should probably check the auth-verifier here. */
+			reply = setup_cancel_ack_reply(p, pkt);
+		}
+		break;
 #endif
 
-		case DCERPC_PKT_ORPHANED:
-			/* We should probably check the auth-verifier here.
-			 * For now just free all client data and continue
-			 * processing. */
-			DEBUG(3, ("process_complete_pdu: DCERPC_PKT_ORPHANED."
-				  " Abandoning rpc call.\n"));
-			reply = True;
-			break;
+	case DCERPC_PKT_ORPHANED:
+		/* We should probably check the auth-verifier here.
+		 * For now just free all client data and continue
+		 * processing. */
+		DEBUG(3, ("process_complete_pdu: DCERPC_PKT_ORPHANED."
+			  " Abandoning rpc call.\n"));
+		reply = True;
+		break;
 
-		default:
-			DEBUG(0, ("process_complete_pdu: "
-				  "Unknown rpc type = %u received.\n",
-				  (unsigned int)p->hdr.pkt_type));
-			break;
+	default:
+		DEBUG(0, ("process_complete_pdu: "
+			  "Unknown rpc type = %u received.\n",
+			  (unsigned int)pkt->ptype));
+		break;
 	}
 
+done:
 	/* Reset to little endian.
 	 * Probably don't need this but it won't hurt. */
-	prs_set_endian_data( &p->in_data.data, RPC_LITTLE_ENDIAN);
+	prs_set_endian_data(&p->in_data.data, RPC_LITTLE_ENDIAN);
 
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
@@ -606,7 +701,7 @@ static void process_complete_pdu(pipes_struct *p)
 								&p->syntax)));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		prs_mem_free(&rpc_in);
+		TALLOC_FREE(pkt);
 	} else {
 		/*
 		 * Reset the lengths. We're ready for a new pdu.
@@ -616,7 +711,7 @@ static void process_complete_pdu(pipes_struct *p)
 		p->in_data.pdu.length = 0;
 	}
 
-	prs_mem_free(&rpc_in);
+	TALLOC_FREE(pkt);
 }
 
 /****************************************************************************

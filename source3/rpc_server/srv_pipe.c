@@ -160,7 +160,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				  data_len + ss_padding_len +
 				  RPC_HDR_AUTH_LEN + NTLMSSP_SIG_SIZE,
 				NTLMSSP_SIG_SIZE,
-				p->hdr.call_id,
+				p->call_id,
 				&hdr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
@@ -396,7 +396,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 				  RPC_HDR_AUTH_LEN +
 				  RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
 				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
-				p->hdr.call_id,
+				p->call_id,
 				&hdr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
@@ -603,7 +603,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 				hdr_flags,
 				RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len,
 				0,
-				p->hdr.call_id,
+				p->call_id,
 				&hdr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
@@ -769,12 +769,10 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
  This is the "stage3" NTLMSSP response after a bind request and reply.
 *******************************************************************/
 
-bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
-	uint32 pad = 0;
-	DATA_BLOB auth_blob;
-	uint32_t auth_len = p->hdr.auth_len;
+	uint32_t auth_len = pkt->auth_length;
 	NTSTATUS status;
 
 	DEBUG(5,("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
@@ -784,15 +782,9 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err;
 	}
 
-	/* 4 bytes padding. */
-	if (!prs_uint32("pad", rpc_in_p, 0, &pad)) {
-		DEBUG(0,("api_pipe_bind_auth3: unmarshall of 4 byte pad failed.\n"));
-		goto err;
-	}
-
 	/* Ensure there's enough data for an authenticated request. */
 	if (RPC_HEADER_LEN + RPC_HDR_AUTH_LEN + auth_len >
-				p->hdr.frag_len) {
+				pkt->frag_length) {
 			DEBUG(0,("api_pipe_ntlmssp_auth_process: auth_len "
 				"%u is too large.\n",
                         (unsigned int)auth_len ));
@@ -803,28 +795,9 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Decode the authentication verifier response.
 	 */
 
-	/* Pull the auth header and the following data into a blob. */
-	/* NB. The offset of the auth_header is relative to the *end*
-	 * of the packet, not the start. Also, the length of the
-	 * data in rpc_in_p is p->hdr.frag_len - RPC_HEADER_LEN,
-	 * as the RPC header isn't included in rpc_in_p. */
-	if(!prs_set_offset(rpc_in_p,
-			p->hdr.frag_len - RPC_HEADER_LEN -
-			RPC_HDR_AUTH_LEN - auth_len)) {
-		DEBUG(0,("api_pipe_bind_auth3: cannot move "
-			"offset to %u.\n",
-			(unsigned int)(p->hdr.frag_len -
-				RPC_HDR_AUTH_LEN - auth_len) ));
-		goto err;
-	}
-
-	auth_blob = data_blob_const(prs_data_p(rpc_in_p)
-					+ prs_offset(rpc_in_p),
-				    prs_data_size(rpc_in_p)
-					- prs_offset(rpc_in_p));
-
-	status = dcerpc_pull_dcerpc_auth(prs_get_mem_context(rpc_in_p),
-					 &auth_blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(pkt,
+					 &pkt->u.auth3.auth_info,
+					 &auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
@@ -896,7 +869,7 @@ static bool setup_bind_nak(pipes_struct *p)
 					  DCERPC_PFC_FLAG_FIRST |
 						DCERPC_PFC_FLAG_LAST,
 					  0,
-					  p->hdr.call_id,
+					  p->call_id,
 					  u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -959,7 +932,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 					   DCERPC_PFC_FLAG_LAST |
 					   DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
 					  0,
-					  p->hdr.call_id,
+					  p->call_id,
 					  u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1073,7 +1046,6 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 *******************************************************************/
 
 static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p,
-					   prs_struct *rpc_in_p,
 					   struct dcerpc_auth *pauth_info,
 					   DATA_BLOB *psecblob,
 					   prs_struct *pout_auth)
@@ -1086,7 +1058,6 @@ static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p,
 *******************************************************************/
 
 static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
-					    prs_struct *rpc_in_p,
 					    uint32_t ss_padding_len,
 					    struct dcerpc_auth *pauth_info,
 					    prs_struct *pout_auth)
@@ -1126,7 +1097,9 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
 	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || USE_KERBEROS_KEYTAB) ) {
-		bool ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
+		bool ret;
+		ret = pipe_spnego_auth_bind_kerberos(p, pauth_info,
+						     &secblob, pout_auth);
 		data_blob_free(&secblob);
 		return ret;
 	}
@@ -1225,18 +1198,17 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
  Handle the second part of a SPNEGO bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p,
-				uint32_t ss_padding_len,
-				RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
+					   uint32_t ss_padding_len,
+					   struct dcerpc_auth *pauth_info,
+					   prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
-	DATA_BLOB spnego_blob;
 	DATA_BLOB auth_blob;
 	DATA_BLOB auth_reply;
 	DATA_BLOB response;
 	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 
-	ZERO_STRUCT(spnego_blob);
 	ZERO_STRUCT(auth_blob);
 	ZERO_STRUCT(auth_reply);
 	ZERO_STRUCT(response);
@@ -1250,21 +1222,12 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 		goto err;
 	}
 
-	/* Grab the SPNEGO blob. */
-	spnego_blob = data_blob(NULL,p->hdr.auth_len);
-
-	if (!prs_copy_data_out((char *)spnego_blob.data, rpc_in_p, p->hdr.auth_len)) {
-		DEBUG(0,("pipe_spnego_auth_bind_continue: Failed to pull %u bytes - the SPNEGO auth header.\n",
-			(unsigned int)p->hdr.auth_len ));
-		goto err;
-	}
-
-	if (spnego_blob.data[0] != ASN1_CONTEXT(1)) {
+	if (pauth_info->credentials.data[0] != ASN1_CONTEXT(1)) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: invalid SPNEGO blob type.\n"));
 		goto err;
 	}
 
-	if (!spnego_parse_auth(spnego_blob, &auth_blob)) {
+	if (!spnego_parse_auth(pauth_info->credentials, &auth_blob)) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: invalid SPNEGO blob.\n"));
 		goto err;
 	}
@@ -1278,7 +1241,6 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 		goto err;
 	}
 
-	data_blob_free(&spnego_blob);
 	data_blob_free(&auth_blob);
 
 	/* Generate the spnego "accept completed" blob - no incoming data. */
@@ -1308,7 +1270,6 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 
  err:
 
-	data_blob_free(&spnego_blob);
 	data_blob_free(&auth_blob);
 	data_blob_free(&auth_reply);
 	data_blob_free(&response);
@@ -1324,7 +1285,6 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 *******************************************************************/
 
 static bool pipe_schannel_auth_bind(pipes_struct *p,
-					prs_struct *rpc_in_p,
 					uint32_t ss_padding_len,
 					struct dcerpc_auth *auth_info,
 					prs_struct *pout_auth)
@@ -1463,7 +1423,6 @@ static bool pipe_schannel_auth_bind(pipes_struct *p,
 *******************************************************************/
 
 static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
-					prs_struct *rpc_in_p,
 					uint32_t ss_padding_len,
 					struct dcerpc_auth *auth_info,
 					prs_struct *pout_auth)
@@ -1548,13 +1507,11 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
  Respond to a pipe bind request.
 *******************************************************************/
 
-bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 {
+	RPC_HDR hdr;
 	RPC_HDR_BA hdr_ba;
-	struct dcerpc_bind rpc_bind;
-	DATA_BLOB blob_rb;
 	struct dcerpc_auth auth_info;
-	DATA_BLOB auth_blob;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
@@ -1599,17 +1556,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
-
-	/* decode the bind request */
-	blob_rb = data_blob_const(prs_data_p(rpc_in_p),
-				  prs_data_size(rpc_in_p));
-	status = dcerpc_pull_dcerpc_bind(talloc_tos(), &blob_rb, &rpc_bind);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err_exit;
-	}
-
-	if (rpc_bind.num_contexts == 0) {
+	if (pkt->u.bind.num_contexts == 0) {
 		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
 		goto err_exit;
 	}
@@ -1618,7 +1565,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Try and find the correct pipe name to ensure
 	 * that this is a pipe name we support.
 	 */
-	id = rpc_bind.ctx_list[0].abstract_syntax;
+	id = pkt->u.bind.ctx_list[0].abstract_syntax;
 	if (rpc_srv_pipe_exists_by_id(&id)) {
 		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
 			rpc_srv_get_pipe_cli_name(&id),
@@ -1627,13 +1574,13 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
-				&rpc_bind.ctx_list[0].abstract_syntax));
+				&pkt->u.bind.ctx_list[0].abstract_syntax));
 
 		if (NT_STATUS_IS_ERR(status)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 get_pipe_name_from_syntax(
 					talloc_tos(),
-					&rpc_bind.ctx_list[0].abstract_syntax)));
+					&pkt->u.bind.ctx_list[0].abstract_syntax)));
 			prs_mem_free(&p->out_data.frag);
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
@@ -1665,8 +1612,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
-	if (rpc_bind.assoc_group_id != 0) {
-		assoc_gid = rpc_bind.assoc_group_id;
+	if (pkt->u.bind.assoc_group_id != 0) {
+		assoc_gid = pkt->u.bind.assoc_group_id;
 	} else {
 		assoc_gid = 0x53f0;
 	}
@@ -1683,16 +1630,16 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&rpc_bind.ctx_list[0].abstract_syntax,
-			&rpc_bind.ctx_list[0].transfer_syntaxes[0],
-			rpc_bind.ctx_list[0].context_id)) {
+			&pkt->u.bind.ctx_list[0].abstract_syntax,
+			&pkt->u.bind.ctx_list[0].transfer_syntaxes[0],
+			pkt->u.bind.ctx_list[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &rpc_bind.ctx_list[0].transfer_syntaxes[0]);
+	                &pkt->u.bind.ctx_list[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -1715,7 +1662,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Check if this is an authenticated bind request.
 	 */
 
-	if (p->hdr.auth_len) {
+	if (pkt->auth_length) {
 		/* 
 		 * Decode the authentication verifier.
 		 */
@@ -1731,36 +1678,19 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		/* Quick length check. Won't catch a bad auth footer,
 		 * prevents overrun. */
 
-		if (p->hdr.frag_len < RPC_HEADER_LEN + RPC_HDR_AUTH_LEN + p->hdr.auth_len) {
+		if (pkt->frag_length < RPC_HEADER_LEN +
+					RPC_HDR_AUTH_LEN +
+					pkt->auth_length) {
 			DEBUG(0,("api_pipe_bind_req: auth_len (%u) "
 				"too long for fragment %u.\n",
-				(unsigned int)p->hdr.auth_len,
-				(unsigned int)p->hdr.frag_len ));
+				(unsigned int)pkt->auth_length,
+				(unsigned int)pkt->frag_length));
 			goto err_exit;
 		}
 
-		/* Pull the auth header and the following data into a blob. */
-		/* NB. The offset of the auth_header is relative to the *end*
-		 * of the packet, not the start. Also, the length of the
-		 * data in rpc_in_p is p->hdr.frag_len - RPC_HEADER_LEN,
-		 * as the RPC header isn't included in rpc_in_p. */
-		if(!prs_set_offset(rpc_in_p,
-				p->hdr.frag_len - RPC_HEADER_LEN -
-				RPC_HDR_AUTH_LEN - p->hdr.auth_len)) {
-			DEBUG(0,("api_pipe_bind_req: cannot move "
-				"offset to %u.\n",
-				(unsigned int)(p->hdr.frag_len -
-				RPC_HDR_AUTH_LEN - p->hdr.auth_len) ));
-			goto err_exit;
-		}
-
-		auth_blob = data_blob_const(prs_data_p(rpc_in_p)
-						+ prs_offset(rpc_in_p),
-					    prs_data_size(rpc_in_p)
-						- prs_offset(rpc_in_p));
-
-		status = dcerpc_pull_dcerpc_auth(prs_get_mem_context(rpc_in_p),
-						 &auth_blob, &auth_info);
+		status = dcerpc_pull_dcerpc_auth(pkt,
+						 &pkt->u.bind.auth_info,
+						 &auth_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
@@ -1787,23 +1717,24 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	switch(auth_type) {
 		case DCERPC_AUTH_TYPE_NTLMSSP:
-			if (!pipe_ntlmssp_auth_bind(p, rpc_in_p,
-					ss_padding_len, &auth_info, &out_auth)) {
+			if (!pipe_ntlmssp_auth_bind(p, ss_padding_len,
+						    &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			assoc_gid = 0x7a77;
 			break;
 
 		case DCERPC_AUTH_TYPE_SCHANNEL:
-			if (!pipe_schannel_auth_bind(p, rpc_in_p,
-					ss_padding_len, &auth_info, &out_auth)) {
+			if (!pipe_schannel_auth_bind(p, ss_padding_len,
+						    &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			break;
 
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p,
-					ss_padding_len, &auth_info, &out_auth)) {
+			if (!pipe_spnego_auth_bind_negotiate(p,
+						    ss_padding_len,
+						    &auth_info, &out_auth)) {
 				goto err_exit;
 			}
 			break;
@@ -1832,8 +1763,10 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
 	}
 
-	init_rpc_hdr(&p->hdr, DCERPC_PKT_BIND_ACK, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
-			p->hdr.call_id,
+	init_rpc_hdr(&hdr,
+			DCERPC_PKT_BIND_ACK,
+			DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
+			pkt->call_id,
 			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) +
 				ss_padding_len + prs_offset(&out_auth),
 			auth_len);
@@ -1842,7 +1775,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &p->hdr, &p->out_data.frag, 0)) {
+	if (!smb_io_rpc_hdr("", &hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR failed.\n"));
 		goto err_exit;
 	}
@@ -1900,12 +1833,11 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
  SPNEGO calls.
 ****************************************************************************/
 
-bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
+bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 {
+	RPC_HDR hdr;
 	RPC_HDR_BA hdr_ba;
-	struct dcerpc_bind rpc_bind;
-	DATA_BLOB blob_rb;
-	RPC_HDR_AUTH auth_info;
+	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
@@ -1940,16 +1872,6 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	DEBUG(5,("api_pipe_alter_context: decode request. %d\n", __LINE__));
-
-	/* decode the alter context request */
-	blob_rb = data_blob_const(prs_data_p(rpc_in_p),
-				  prs_data_size(rpc_in_p));
-	status = dcerpc_pull_dcerpc_bind(talloc_tos(), &blob_rb, &rpc_bind);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err_exit;
-	}
-
 	/* secondary address CAN be NULL
 	 * as the specs say it's ignored.
 	 * It MUST be NULL to have the spoolss working.
@@ -1958,8 +1880,8 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
-	if (rpc_bind.assoc_group_id != 0) {
-		assoc_gid = rpc_bind.assoc_group_id;
+	if (pkt->u.bind.assoc_group_id != 0) {
+		assoc_gid = pkt->u.bind.assoc_group_id;
 	} else {
 		assoc_gid = 0x53f0;
 	}
@@ -1975,16 +1897,16 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&rpc_bind.ctx_list[0].abstract_syntax,
-			&rpc_bind.ctx_list[0].transfer_syntaxes[0],
-			rpc_bind.ctx_list[0].context_id)) {
+			&pkt->u.bind.ctx_list[0].abstract_syntax,
+			&pkt->u.bind.ctx_list[0].transfer_syntaxes[0],
+			pkt->u.bind.ctx_list[0].context_id)) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                RPC_MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &rpc_bind.ctx_list[0].transfer_syntaxes[0]);
+	                &pkt->u.bind.ctx_list[0].transfer_syntaxes[0]);
 	} else {
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -2008,7 +1930,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Check if this is an authenticated alter context request.
 	 */
 
-	if (p->hdr.auth_len != 0) {
+	if (pkt->auth_length != 0) {
 		/* 
 		 * Decode the authentication verifier.
 		 */
@@ -2024,33 +1946,24 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		/* Quick length check. Won't catch a bad auth footer,
 		 * prevents overrun. */
 
-		if (p->hdr.frag_len < RPC_HEADER_LEN + RPC_HDR_AUTH_LEN + p->hdr.auth_len) {
+		if (pkt->frag_length < RPC_HEADER_LEN +
+					RPC_HDR_AUTH_LEN +
+					pkt->auth_length) {
 			DEBUG(0,("api_pipe_alter_context: auth_len (%u) "
 				"too long for fragment %u.\n",
-				(unsigned int)p->hdr.auth_len,
-				(unsigned int)p->hdr.frag_len ));
+				(unsigned int)pkt->auth_length,
+				(unsigned int)pkt->frag_length ));
 			goto err_exit;
 		}
 
-		/* Pull the auth header and the following data into a blob. */
-		/* NB. The offset of the auth_header is relative to the *end*
-		 * of the packet, not the start. Also, the length of the
-		 * data in rpc_in_p is p->hdr.frag_len - RPC_HEADER_LEN,
-		 * as the RPC header isn't included in rpc_in_p. */
-		if(!prs_set_offset(rpc_in_p,
-				p->hdr.frag_len - RPC_HEADER_LEN -
-				RPC_HDR_AUTH_LEN - p->hdr.auth_len)) {
-			DEBUG(0,("api_alter_context: cannot move "
-				"offset to %u.\n",
-				(unsigned int)(p->hdr.frag_len -
-				RPC_HDR_AUTH_LEN - p->hdr.auth_len) ));
+		status = dcerpc_pull_dcerpc_auth(pkt,
+						 &pkt->u.bind.auth_info,
+						 &auth_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
 		}
 
-		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_alter_context: unable to unmarshall RPC_HDR_AUTH struct.\n"));
-			goto err_exit;
-		}
 
 		/*
 		 * Currently only the SPNEGO auth type uses the alter ctx
@@ -2060,8 +1973,9 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		if (auth_info.auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			/* We can only finish if the pipe is unbound. */
 			if (!p->pipe_bound) {
-				if (!pipe_spnego_auth_bind_continue(p, rpc_in_p,
-						ss_padding_len, &auth_info, &out_auth)) {
+				if (!pipe_spnego_auth_bind_continue(p,
+						    ss_padding_len,
+						    &auth_info, &out_auth)) {
 					goto err_exit;
 				}
 			} else {
@@ -2079,8 +1993,8 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
 	}
 
-	init_rpc_hdr(&p->hdr, DCERPC_PKT_ALTER_RESP, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
-			p->hdr.call_id,
+	init_rpc_hdr(&hdr, DCERPC_PKT_ALTER_RESP, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
+			pkt->call_id,
 			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + prs_offset(&out_auth),
 			auth_len);
 
@@ -2088,7 +2002,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &p->hdr, &p->out_data.frag, 0)) {
+	if(!smb_io_rpc_hdr("", &hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("api_pipe_alter_context: marshalling of RPC_HDR failed.\n"));
 		goto err_exit;
 	}
@@ -2452,7 +2366,7 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 	return;	
 }
 
-static bool api_rpcTNP(pipes_struct *p,
+static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds);
 
 /****************************************************************************
@@ -2461,7 +2375,7 @@ static bool api_rpcTNP(pipes_struct *p,
  before doing the call.
 ****************************************************************************/
 
-bool api_pipe_request(pipes_struct *p)
+bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt)
 {
 	bool ret = False;
 	bool changed_user = False;
@@ -2482,17 +2396,20 @@ bool api_pipe_request(pipes_struct *p)
 
 	/* get the set of RPC functions for this context */
 
-	pipe_fns = find_pipe_fns_by_context(p->contexts, p->hdr_req.context_id);
+	pipe_fns = find_pipe_fns_by_context(p->contexts,
+					    pkt->u.request.context_id);
 
 	if ( pipe_fns ) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		ret = api_rpcTNP(p, pipe_fns->cmds, pipe_fns->n_cmds);
+		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds);
 		TALLOC_FREE(frame);
 	}
 	else {
-		DEBUG(0,("api_pipe_request: No rpc function table associated with context [%d] on pipe [%s]\n",
-			p->hdr_req.context_id,
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(0, ("No rpc function table associated with context "
+			  "[%d] on pipe [%s]\n",
+			  pkt->u.request.context_id,
+			  get_pipe_name_from_syntax(talloc_tos(),
+						    &p->syntax)));
 	}
 
 	if (changed_user) {
@@ -2506,7 +2423,7 @@ bool api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-static bool api_rpcTNP(pipes_struct *p,
+static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
@@ -2515,18 +2432,20 @@ static bool api_rpcTNP(pipes_struct *p,
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
 		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
-		 p->opnum));
+		 pkt->u.request.opnum));
 
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, p->opnum, &p->in_data.data);
+		prs_dump(name, pkt->u.request.opnum, &p->in_data.data);
 	}
 
 	for (fn_num = 0; fn_num < n_cmds; fn_num++) {
-		if (api_rpc_cmds[fn_num].opnum == p->opnum && api_rpc_cmds[fn_num].fn != NULL) {
-			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
+		if (api_rpc_cmds[fn_num].opnum == pkt->u.request.opnum &&
+		    api_rpc_cmds[fn_num].fn != NULL) {
+			DEBUG(3, ("api_rpcTNP: rpc command: %s\n",
+				  api_rpc_cmds[fn_num].name));
 			break;
 		}
 	}
@@ -2575,7 +2494,7 @@ static bool api_rpcTNP(pipes_struct *p,
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, p->opnum, &p->out_data.rdata);
+		prs_dump(name, pkt->u.request.opnum, &p->out_data.rdata);
 	}
 	prs_set_offset(&p->out_data.rdata, offset2);
 
