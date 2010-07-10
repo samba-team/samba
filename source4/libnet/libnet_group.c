@@ -671,11 +671,11 @@ static void continue_groups_enumerated(struct tevent_req *subreq)
 			if (composite_nomem(group_sid, c)) return;
 
 			/* groupname */
-			s->groups[i].groupname = talloc_strdup(c, entry->name.string);
+			s->groups[i].groupname = talloc_strdup(s->groups, entry->name.string);
 			if (composite_nomem(s->groups[i].groupname, c)) return;
 
 			/* sid string */
-			s->groups[i].sid = dom_sid_string(c, group_sid);
+			s->groups[i].sid = dom_sid_string(s->groups, group_sid);
 			if (composite_nomem(s->groups[i].sid, c)) return;
 		}
 
