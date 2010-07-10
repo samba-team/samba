@@ -94,8 +94,79 @@ Comments
 --------
 
 Comments should always use the standard C syntax.  C++
-style comments are not currently allowed.
+style comments are not currently allowed. The lines before
+a comment should be empty. If the comment directly belongs
+to the following code, there should be no empty line after
+the comment. In case the comment contains a summary of
+mutliple following code blogs.
 
+This is good:
+
+	...
+	int i;
+
+	/*
+	 * This is a multi line comment,
+	 * which explains the logical steps we have to do:
+	 *
+	 * 1. We need to set i=5, because...
+	 * 2. We need to call complex_fn1
+	 */
+
+	/* This is a one line comment about i = 5. */
+	i = 5;
+
+	/*
+	 * This is a multi line comment,
+	 * explaining the call to complex_fn1()
+	 */
+	ret = complex_fn1();
+	if (ret != 0) {
+	...
+
+	/**
+	 * @brief This is a doxygen comment.
+	 *
+	 * This is a more detailed explanation of
+	 * this simple function.
+	 *
+	 * @param[in]   param1     The parameter value of the function.
+	 *
+	 * @param[out]  result1    The result value of the function.
+	 *
+	 * @return              0 on success and -1 on error.
+	 */
+	int example(int param1, int *result1);
+
+This is bad:
+
+	...
+	int i;
+	/*
+	 * This is a multi line comment,
+	 * which explains the logical steps we have to do:
+	 *
+	 * 1. We need to set i=5, because...
+	 * 2. We need to call complex_fn1
+	 */
+	/* This is a one line comment about i = 5. */
+	i = 5;
+	/*
+	 * This is a multi line comment,
+	 * explaining the call to complex_fn1()
+	 */
+	ret = complex_fn1();
+	if (ret != 0) {
+	...
+
+	/*This is a one line comment.*/
+
+	/* This is a multi line comment,
+	   with some more words...*/
+
+	/*
+	 * This is a multi line comment,
+	 * with some more words...*/
 
 Indention & Whitespace & 80 columns
 -----------------------------------
