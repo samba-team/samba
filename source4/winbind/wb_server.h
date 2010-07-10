@@ -104,6 +104,7 @@ struct wbsrv_connection {
 };
 
 #define WBSRV_SAMBA3_SET_STRING(dest, src) do { \
+	memset(dest, 0, sizeof(dest));\
 	safe_strcpy(dest, src, sizeof(dest)-1);\
 } while(0)
 
