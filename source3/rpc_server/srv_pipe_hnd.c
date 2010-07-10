@@ -185,13 +185,19 @@ static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
 	DATA_BLOB data;
 	DATA_BLOB full_pkt;
 
+	DEBUG(10, ("Checking request auth.\n"));
+
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		hdr_size += 16;
 	}
 
 	switch (p->auth.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
+		DEBUG(10, ("Requested Privacy.\n"));
+		break;
+
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		DEBUG(10, ("Requested Integrity.\n"));
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -229,6 +235,8 @@ static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
 
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 	case PIPE_AUTH_TYPE_NTLMSSP:
+
+		DEBUG(10, ("NTLMSSP auth\n"));
 
 		if (!p->auth.a_u.auth_ntlmssp_state) {
 			DEBUG(0, ("Invalid auth level, "
@@ -269,6 +277,8 @@ static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
 		break;
 
 	case PIPE_AUTH_TYPE_SCHANNEL:
+
+		DEBUG(10, ("SCHANNEL auth\n"));
 
 		switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
