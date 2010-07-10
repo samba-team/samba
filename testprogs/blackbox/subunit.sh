@@ -29,6 +29,9 @@ subunit_pass_test () {
   echo "success: $1"
 }
 
+# This is just a hack as we have some broken scripts
+# which use "exit $failed", without initializing failed.
+failed=0
 
 subunit_fail_test () {
   # emit the current protocol fail-marker for test $1, and emit stdin as
