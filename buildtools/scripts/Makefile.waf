@@ -12,13 +12,13 @@ uninstall:
 	$(WAF) uninstall
 
 test:
-	$(WAF) test
+	$(WAF) test $(TEST_OPTIONS)
 
 testenv:
-	$(WAF) test --testenv
+	$(WAF) test --testenv $(TEST_OPTIONS)
 
 quicktest:
-	$(WAF) test --quick
+	$(WAF) test --quick $(TEST_OPTIONS)
 
 dist:
 	$(WAF) dist
