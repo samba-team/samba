@@ -135,7 +135,8 @@ static void cmd_list_users_recv_user_list(struct composite_context *ctx)
 
 	/* If NTSTATUS is neither OK nor MORE_ENTRIES, something broke */
 	if (!NT_STATUS_IS_OK(status) &&
-	     !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
 		composite_error(state->ctx, status);
 		return;
 	}
