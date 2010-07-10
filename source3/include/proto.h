@@ -5169,9 +5169,6 @@ NTSTATUS rpc_srv_register(int version, const char *clnt,
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt);
 bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt);
-bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
-					uint32 *p_ss_padding_len, NTSTATUS *pstatus);
-bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len);
 void free_pipe_rpc_context( PIPE_RPC_FNS *list );
 bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt);
 
