@@ -153,6 +153,12 @@ static int attr_handler(struct oc_context *ac)
 	return ldb_next_request(ac->module, child_req);
 }
 
+/*
+  these are attributes which are left over from old ways of doing
+  things in ldb, and are harmless
+ */
+static const char *harmless_attrs[] = { "parentGUID", NULL };
+
 static int attr_handler2(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
@@ -217,6 +223,9 @@ static int attr_handler2(struct oc_context *ac)
 			str_list_remove(found_must_contain, attr->lDAPDisplayName);
 		} else {
 			found = str_list_check(may_contain, attr->lDAPDisplayName);
+		}
+		if (!found) {
+			found = str_list_check(harmless_attrs, attr->lDAPDisplayName);
 		}
 		if (!found) {
 			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' does not exist in the specified objectclasses!",
