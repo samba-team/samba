@@ -94,11 +94,12 @@ Comments
 --------
 
 Comments should always use the standard C syntax.  C++
-style comments are not currently allowed. The lines before
-a comment should be empty. If the comment directly belongs
-to the following code, there should be no empty line after
-the comment. In case the comment contains a summary of
-mutliple following code blogs.
+style comments are not currently allowed.
+
+The lines before a comment should be empty. If the comment directly
+belongs to the following code, there should be no empty line
+after the comment, except if the comment contains a summary
+of multiple following code blocks.
 
 This is good:
 
