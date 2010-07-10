@@ -168,9 +168,6 @@ typedef struct pipes_struct {
 
 	PIPE_RPC_FNS *contexts;
 
-	RPC_HDR hdr; /* Incoming RPC header. */
-	RPC_HDR_REQ hdr_req; /* Incoming request header. */
-
 	struct pipe_auth_data auth;
 
 	/*
