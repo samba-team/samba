@@ -35,6 +35,9 @@ distclean:
 reconfigure: configure
 	$(WAF) reconfigure
 
+show_waf_options:
+	$(WAF) --help
+
 # some compatibility make targets
 everything: all
 
