@@ -1138,11 +1138,11 @@ static void continue_users_enumerated(struct tevent_req *subreq)
 			if (composite_nomem(user_sid, c)) return;
 			
 			/* username */
-			s->users[i].username = talloc_strdup(c, entry->name.string);
+			s->users[i].username = talloc_strdup(s->users, entry->name.string);
 			if (composite_nomem(s->users[i].username, c)) return;
 
 			/* sid string */
-			s->users[i].sid = dom_sid_string(c, user_sid);
+			s->users[i].sid = dom_sid_string(s->users, user_sid);
 			if (composite_nomem(s->users[i].sid, c)) return;
 		}
 		
