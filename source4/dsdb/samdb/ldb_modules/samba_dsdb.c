@@ -260,6 +260,10 @@ static int samba_dsdb_init(struct ldb_module *module)
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
 		}
+		ret = ldb_set_opaque(ldb, "readOnlySchema", (void*)1);
+		if (ret != LDB_SUCCESS) {
+			ldb_set_errstring(ldb, "Failed to set readOnlySchema opaque");
+		}
 	}
 
 #define CHECK_MODULE_LIST \

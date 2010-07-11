@@ -225,9 +225,15 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	}
 
 	(*schema)->refresh_in_progress = true;
-	(*schema)->refresh_fn = dsdb_schema_refresh;
-	(*schema)->loaded_from_module = module;
-	(*schema)->loaded_usn = current_usn;
+
+	/* If we have the readOnlySchema opaque, then don't check for
+	 * runtime schema updates, as they are not permitted (we would
+	 * have to update the backend server schema too */
+	if (!ldb_get_opaque(ldb, "readOnlySchema")) {
+		(*schema)->refresh_fn = dsdb_schema_refresh;
+		(*schema)->loaded_from_module = module;
+		(*schema)->loaded_usn = current_usn;
+	}
 
 	/* "dsdb_set_schema()" steals schema into the ldb_context */
 	ret = dsdb_set_schema(ldb, (*schema));
