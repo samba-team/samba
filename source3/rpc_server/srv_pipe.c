@@ -1530,32 +1530,6 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 		return setup_bind_nak(p, pkt);
 	}
 
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
-
-	/* 
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	/*
-	 * Setup the memory to marshall the ba header, and the
-	 * auth footers.
-	 */
-
-	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("api_pipe_bind_req: malloc out_auth failed.\n"));
-		prs_mem_free(&p->out_data.frag);
-		prs_mem_free(&out_hdr_ba);
-		return False;
-	}
-
 	if (pkt->u.bind.num_contexts == 0) {
 		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
 		goto err_exit;
@@ -1581,9 +1555,6 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
                                 get_pipe_name_from_syntax(
 					talloc_tos(),
 					&pkt->u.bind.ctx_list[0].abstract_syntax)));
-			prs_mem_free(&p->out_data.frag);
-			prs_mem_free(&out_hdr_ba);
-			prs_mem_free(&out_auth);
 
 			return setup_bind_nak(p, pkt);
 		}
@@ -1602,7 +1573,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 							    &p->syntax),
 				  get_pipe_name_from_syntax(talloc_tos(),
 							    &p->syntax)));
-			goto err_exit;
+			return setup_bind_nak(p, pkt);
 		}
 	}
 
@@ -1616,6 +1587,32 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 		assoc_gid = pkt->u.bind.assoc_group_id;
 	} else {
 		assoc_gid = 0x53f0;
+	}
+
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
+
+	/*
+	 * Setup the memory to marshall the ba header, and the
+	 * auth footers.
+	 */
+
+	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
+		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
+		prs_mem_free(&p->out_data.frag);
+		return False;
+	}
+
+	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
+		DEBUG(0,("api_pipe_bind_req: malloc out_auth failed.\n"));
+		prs_mem_free(&p->out_data.frag);
+		prs_mem_free(&out_hdr_ba);
+		return False;
 	}
 
 
