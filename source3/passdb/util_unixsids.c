@@ -35,14 +35,22 @@ bool sid_check_is_in_unix_users(const struct dom_sid *sid)
 	return sid_check_is_unix_users(&dom_sid);
 }
 
-bool uid_to_unix_users_sid(uid_t uid, struct dom_sid *sid)
+void uid_to_unix_users_sid(uid_t uid, struct dom_sid *sid)
 {
-	return sid_compose(sid, &global_sid_Unix_Users, uid);
+	/*
+	 * This can never fail, we know that global_sid_Unix_Users is
+	 * short enough for a domain sid.
+	 */
+	sid_compose(sid, &global_sid_Unix_Users, uid);
 }
 
-bool gid_to_unix_groups_sid(gid_t gid, struct dom_sid *sid)
+void gid_to_unix_groups_sid(gid_t gid, struct dom_sid *sid)
 {
-	return sid_compose(sid, &global_sid_Unix_Groups, gid);
+	/*
+	 * This can never fail, we know that global_sid_Unix_Groups is
+	 * short enough for a domain sid.
+	 */
+	sid_compose(sid, &global_sid_Unix_Groups, gid);
 }
 
 const char *unix_users_domain_name(void)

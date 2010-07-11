@@ -498,20 +498,14 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 	 * the nt token.
 	 */
 
-	if (!uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid)) {
-		DEBUG(1,("create_local_token: Failed to create SID "
-			"for uid %u!\n", (unsigned int)server_info->utok.uid));
-	}
+	uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid);
+
 	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
 				&server_info->ptok->user_sids,
 				&server_info->ptok->num_sids);
 
 	for ( i=0; i<server_info->utok.ngroups; i++ ) {
-		if (!gid_to_unix_groups_sid( server_info->utok.groups[i], &tmp_sid ) ) {
-			DEBUG(1,("create_local_token: Failed to create SID "
-				"for gid %u!\n", (unsigned int)server_info->utok.groups[i]));
-			continue;
-		}
+		gid_to_unix_groups_sid(server_info->utok.groups[i], &tmp_sid);
 		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
 					&server_info->ptok->user_sids,
 					&server_info->ptok->num_sids);

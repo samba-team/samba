@@ -926,11 +926,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		if ( lp_idmap_gid(&low, &high) && (gids[i] >= low) && (gids[i] <= high) )
 			continue;
 
-		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
-			DEBUG(1,("create_token_from_username: Failed to create SID "
-				"for gid %u!\n", (unsigned int)gids[i]));
-			continue;
-		}
+		gid_to_unix_groups_sid(gids[i], &unix_group_sid);
+
 		result = add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
 						 &group_sids, &num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
