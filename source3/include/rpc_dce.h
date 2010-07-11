@@ -33,26 +33,7 @@
 
 #define RPC_IFACE_LEN (UUID_SIZE + 4)
 
-/* RPC_HDR - dce rpc header */
-typedef struct rpc_hdr_info {
-	uint8  major; /* 5 - RPC major version */
-	uint8  minor; /* 0 - RPC minor version */
-	uint8  pkt_type; /* dcerpc_pkt_type - RPC response packet */
-	uint8  flags; /* DCE/RPC flags */
-	uint8  pack_type[4]; /* 0x1000 0000 - little-endian packed data representation */
-	uint16 frag_len; /* fragment length - data size (bytes) inc header and tail. */
-	uint16 auth_len; /* 0 - authentication length  */
-	uint32 call_id; /* call identifier.  matches 12th uint32 of incoming RPC data. */
-} RPC_HDR;
-
 #define RPC_HEADER_LEN 16
-
-/* RPC_HDR_REQ - ms request rpc header */
-typedef struct rpc_hdr_req_info {
-	uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
-	uint16 context_id;   /* presentation context identifier */
-	uint16  opnum;       /* opnum */
-} RPC_HDR_REQ;
 
 #define RPC_HDR_REQ_LEN 8
 
@@ -66,28 +47,6 @@ typedef struct rpc_hdr_resp_info {
 
 #define RPC_HDR_RESP_LEN 8
 
-/* this seems to be the same string name depending on the name of the pipe,
- * but is more likely to be linked to the interface name
- * "srvsvc", "\\PIPE\\ntsvcs"
- * "samr", "\\PIPE\\lsass"
- * "wkssvc", "\\PIPE\\wksvcs"
- * "NETLOGON", "\\PIPE\\NETLOGON"
- */
-/* RPC_ADDR_STR */
-typedef struct rpc_addr_info {
-	uint16 len;   /* length of the string including null terminator */
-	fstring str; /* the string above in single byte, null terminated form */
-} RPC_ADDR_STR;
-
-/* RPC_HDR_BBA - bind acknowledge, and alter context response. */
-typedef struct rpc_hdr_bba_info {
-	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
-	uint16 max_rsize;       /* max receive fragment size (0x1630) */
-	uint32 assoc_gid;       /* associated group id (0x0) */
-} RPC_HDR_BBA;
-
-#define RPC_HDR_BBA_LEN 8
-
 /* RPC_HDR_AUTH */
 typedef struct rpc_hdr_auth_info {
 	uint8 auth_type; /* See XXX_AUTH_TYPE above. */
@@ -98,26 +57,5 @@ typedef struct rpc_hdr_auth_info {
 } RPC_HDR_AUTH;
 
 #define RPC_HDR_AUTH_LEN 8
-
-/* RPC_RESULTS - can only cope with one reason, right now... */
-typedef struct rpc_results_info {
-	/* uint8[] # 4-byte alignment padding, against SMB header */
-
-	uint8 num_results; /* the number of results (0x01) */
-
-	/* uint8[] # 4-byte alignment padding, against SMB header */
-
-	uint16 result; /* result (0x00 = accept) */
-	uint16 reason; /* reason (0x00 = no reason specified) */
-} RPC_RESULTS;
-
-/* RPC_HDR_BA */
-typedef struct rpc_hdr_ba_info {
-	RPC_HDR_BBA bba;
-
-	RPC_ADDR_STR addr    ;  /* the secondary address string, as described earlier */
-	RPC_RESULTS  res     ; /* results and reasons */
-	struct ndr_syntax_id transfer; /* the transfer syntax from the request */
-} RPC_HDR_BA;
 
 #endif /* _DCE_RPC_H */

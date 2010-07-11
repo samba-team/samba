@@ -5102,20 +5102,9 @@ const struct ndr_interface_table *get_iface_from_syntax(
         const struct ndr_syntax_id *syntax);
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 				      const struct ndr_syntax_id *syntax);
-void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
-				uint32 call_id, int data_len, int auth_len);
-bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
 NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
 				 struct dcerpc_bind *r);
-void init_rpc_hdr_ba(RPC_HDR_BA *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				const char *pipe_addr,
-				uint8 num_results, uint16 result, uint16 reason,
-				const struct ndr_syntax_id *transfer);
-bool smb_io_rpc_hdr_ba(const char *desc, RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-void init_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
-bool smb_io_rpc_hdr_req(const char *desc, RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 bool smb_io_rpc_hdr_resp(const char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
 void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
