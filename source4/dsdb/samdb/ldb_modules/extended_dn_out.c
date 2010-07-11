@@ -826,7 +826,7 @@ static int extended_dn_out_fds_init(struct ldb_module *module)
 {
 	static const char *attrs[] = {
 		"nsUniqueId",
-		"objectSID",
+		"sambaSID",
 		NULL
 	};
 
