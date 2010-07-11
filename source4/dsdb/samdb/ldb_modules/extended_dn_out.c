@@ -549,6 +549,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	const char * const *const_attrs;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
+	bool critical;
 
 	struct extended_dn_out_private *p = talloc_get_type(ldb_module_get_private(module), struct extended_dn_out_private);
 
@@ -646,6 +647,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 
 	/* mark extended DN and storage format controls as done */
 	if (control) {
+		critical = control->critical;
 		control->critical = 0;
 	}
 
@@ -659,7 +661,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	if (control && p && p->dereference && p->dereference_control) {
 		ret = ldb_request_add_control(down_req,
 					      DSDB_OPENLDAP_DEREFERENCE_CONTROL,
-					      false, p->dereference_control);
+					      critical, p->dereference_control);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
