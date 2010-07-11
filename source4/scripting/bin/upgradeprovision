@@ -36,12 +36,14 @@ sys.path.insert(0, "bin/python")
 import ldb
 import samba
 import samba.getopt as options
+
+from base64 import b64encode
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn)
-from samba import param
+from samba import param, dsdb
 from samba.provision import (find_setup_dir, get_domain_descriptor,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
@@ -932,6 +934,31 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
             samdb.modify(delta)
     return changed
 
+def reload_full_schema(samdb, names):
+    """Load the updated schema with all the new and existing classes
+       and attributes.
+
+    :param samdb: An LDB object connected to the sam.ldb of the update
+                  provision
+    :param names: List of key provision parameters
+    """
+
+    current = samdb.search(expression="objectClass=*", base=str(names.schemadn),
+                                scope=SCOPE_SUBTREE)
+    schema_ldif = ""
+    prefixmap_data = ""
+
+    for ent in current:
+        schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
+
+    prefixmap_data = open(setup_path("prefixMap.txt"), 'r').read()
+    prefixmap_data = b64encode(prefixmap_data)
+
+    # We don't actually add this ldif, just parse it
+    prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap_data
+
+    dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif)
+
 
 def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
     """Check differences between the reference provision and the upgraded one.
@@ -1000,6 +1027,9 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
         add_deletedobj_containers(ref_samdb, samdb, names)
 
         add_missing_entries(ref_samdb, samdb, names, basedn, listMissing)
+
+        reload_full_schema(samdb, names)
+
         changed = update_present(ref_samdb, samdb, basedn, listPresent,
                                     provisionUSNs, names.invocation)
         message(SIMPLE, "There are %d changed objects" % (changed))
