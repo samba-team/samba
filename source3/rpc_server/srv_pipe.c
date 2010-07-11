@@ -1740,42 +1740,15 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 
 bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 {
-	RPC_HDR hdr;
-	RPC_HDR_BA hdr_ba;
 	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
-	fstring ack_pipe_name;
-	prs_struct out_hdr_ba;
-	int auth_len = 0;
-	uint32_t ss_padding_len = 0;
 	NTSTATUS status;
+	union dcerpc_payload u;
+	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
-
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
-
-	/* 
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	/*
-	 * Setup the memory to marshall the ba header, and the
-	 * auth footers.
-	 */
-
-	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("api_pipe_alter_context: malloc out_hdr_ba failed.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* secondary address CAN be NULL
-	 * as the specs say it's ignored.
-	 * It MUST be NULL to have the spoolss working.
-	 */
-	fstrcpy(ack_pipe_name,"");
+	DATA_BLOB blob = data_blob_null;
+	int pad_len = 0;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
@@ -1784,6 +1757,14 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	} else {
 		assoc_gid = 0x53f0;
 	}
+
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Create the bind response struct.
@@ -1799,49 +1780,22 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 			&pkt->u.bind.ctx_list[0].abstract_syntax,
 			&pkt->u.bind.ctx_list[0].transfer_syntaxes[0],
 			pkt->u.bind.ctx_list[0].context_id)) {
-		init_rpc_hdr_ba(&hdr_ba,
-	                RPC_MAX_PDU_FRAG_LEN,
-	                RPC_MAX_PDU_FRAG_LEN,
-	                assoc_gid,
-	                ack_pipe_name,
-	                0x1, 0x0, 0x0,
-	                &pkt->u.bind.ctx_list[0].transfer_syntaxes[0]);
+
+		bind_ack_ctx.result = 0;
+		bind_ack_ctx.reason = 0;
+		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
-		/* Rejection reason: abstract syntax not supported */
-		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
-					RPC_MAX_PDU_FRAG_LEN, assoc_gid,
-					ack_pipe_name, 0x1, 0x2, 0x1,
-					&null_ndr_syntax_id);
 		p->pipe_bound = False;
+		/* Rejection reason: abstract syntax not supported */
+		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
+		bind_ack_ctx.reason = DCERPC_BIND_REASON_ASYNTAX;
+		bind_ack_ctx.syntax = null_ndr_syntax_id;
 	}
-
-	/*
-	 * and marshall it.
-	 */
-
-	if(!smb_io_rpc_hdr_ba("", &hdr_ba, &out_hdr_ba, 0)) {
-		DEBUG(0,("api_pipe_alter_context: marshalling of RPC_HDR_BA failed.\n"));
-		goto err_exit;
-	}
-
 
 	/*
 	 * Check if this is an authenticated alter context request.
 	 */
-
-	if (pkt->auth_length != 0) {
-		/* 
-		 * Decode the authentication verifier.
-		 */
-
-		/* Work out any padding needed before the auth footer. */
-		if ((RPC_HEADER_LEN + prs_offset(&out_hdr_ba)) % SERVER_NDR_PADDING_SIZE) {
-			ss_padding_len = SERVER_NDR_PADDING_SIZE -
-				((RPC_HEADER_LEN + prs_offset(&out_hdr_ba)) % SERVER_NDR_PADDING_SIZE);
-			DEBUG(10,("api_pipe_alter_context: auth pad_len = %u\n",
-				(unsigned int)ss_padding_len ));
-		}
-
+	if (pkt->auth_length) {
 		/* Quick length check. Won't catch a bad auth footer,
 		 * prevents overrun. */
 
@@ -1881,15 +1835,51 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 				goto err_exit;
 			}
 		}
-	} else {
-		ZERO_STRUCT(auth_info);
+	}
+
+	ZERO_STRUCT(u.alter_resp);
+	u.alter_resp.max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	u.alter_resp.max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+	u.alter_resp.assoc_group_id = assoc_gid;
+
+	/* secondary address CAN be NULL
+	 * as the specs say it's ignored.
+	 * It MUST be NULL to have the spoolss working.
+	 */
+	u.alter_resp.secondary_address = "";
+	u.alter_resp.secondary_address_size = 1;
+
+	u.alter_resp.num_results = 1;
+	u.alter_resp.ctx_list = &bind_ack_ctx;
+
+	/* NOTE: We leave the auth_info empty so we can calculate the padding
+	 * later and then append the auth_info --simo */
+
+	status = dcerpc_push_ncacn_packet(pkt, DCERPC_PKT_ALTER_RESP,
+					  DCERPC_PFC_FLAG_FIRST |
+						DCERPC_PFC_FLAG_LAST,
+					  auth_resp.length,
+					  pkt->call_id,
+					  &u, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
+			  nt_errstr(status)));
 	}
 
 	if (auth_resp.length) {
+
+		/* Work out any padding needed before the auth footer. */
+		pad_len = blob.length % SERVER_NDR_PADDING_SIZE;
+		if (pad_len) {
+			pad_len = SERVER_NDR_PADDING_SIZE - pad_len;
+			DEBUG(10, ("auth pad_len = %u\n",
+				   (unsigned int)pad_len));
+		}
+
 		status = dcerpc_push_dcerpc_auth(pkt,
 						 auth_info.auth_type,
 						 auth_info.auth_level,
-						 ss_padding_len,
+						 pad_len,
 						 1, /* auth_context_id */
 						 &auth_resp,
 						 &auth_blob);
@@ -1897,45 +1887,27 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 			DEBUG(0, ("Marshalling of dcerpc_auth failed.\n"));
 			goto err_exit;
 		}
-
-		auth_len = auth_resp.length;
 	}
-	/*
-	 * Create the header, now we know the length.
-	 */
 
-	init_rpc_hdr(&hdr, DCERPC_PKT_ALTER_RESP, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
-			pkt->call_id,
-			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + auth_blob.length,
-			auth_len);
+	/* Now that we have the auth len store it into the right place in
+	 * the dcerpc header */
+	dcerpc_set_frag_length(&blob, blob.length + pad_len + auth_blob.length);
 
-	/*
-	 * Marshall the header into the outgoing PDU.
-	 */
-
-	if(!smb_io_rpc_hdr("", &hdr, &p->out_data.frag, 0)) {
-		DEBUG(0,("api_pipe_alter_context: marshalling of RPC_HDR failed.\n"));
+	/* And finally copy all bits in the output pdu */
+	if (!prs_copy_data_in(&p->out_data.frag,
+					(char *)blob.data, blob.length)) {
+		DEBUG(0, ("Failed to copy data to output buffer.\n"));
 		goto err_exit;
 	}
 
-	/*
-	 * Now add the RPC_HDR_BA and any auth needed.
-	 */
-
-	if(!prs_append_prs_data(&p->out_data.frag, &out_hdr_ba)) {
-		DEBUG(0,("api_pipe_alter_context: append of RPC_HDR_BA failed.\n"));
-		goto err_exit;
-	}
-
-	if (auth_len) {
-		if (ss_padding_len) {
+	if (auth_resp.length) {
+		if (pad_len) {
 			char pad[SERVER_NDR_PADDING_SIZE];
 			memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-			if (!prs_copy_data_in(&p->out_data.frag, pad,
-					ss_padding_len)) {
-				DEBUG(0,("api_pipe_alter_context: failed to add %u "
-					"bytes of pad data.\n",
-					(unsigned int)ss_padding_len));
+			if (!prs_copy_data_in(&p->out_data.frag, pad, pad_len)) {
+				DEBUG(0, ("api_pipe_bind_req: failed to add "
+					  "%u bytes of pad data.\n",
+					  (unsigned int)pad_len));
 				goto err_exit;
 			}
 		}
@@ -1943,7 +1915,7 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 		if (!prs_copy_data_in(&p->out_data.frag,
 					(char *)auth_blob.data,
 					auth_blob.length)) {
-			DEBUG(0,("api_pipe_alter_context: append of auth info failed.\n"));
+			DEBUG(0, ("Append of auth info failed.\n"));
 			goto err_exit;
 		}
 	}
@@ -1955,15 +1927,15 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.data_sent_length = 0;
 	p->out_data.current_pdu_sent = 0;
 
-	prs_mem_free(&out_hdr_ba);
 	TALLOC_FREE(auth_blob.data);
+	TALLOC_FREE(blob.data);
 	return True;
 
   err_exit:
 
 	prs_mem_free(&p->out_data.frag);
-	prs_mem_free(&out_hdr_ba);
 	TALLOC_FREE(auth_blob.data);
+	TALLOC_FREE(blob.data);
 	return setup_bind_nak(p, pkt);
 }
 
