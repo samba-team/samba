@@ -839,7 +839,7 @@ bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
  Marshall a bind_nak pdu.
 *******************************************************************/
 
-static bool setup_bind_nak(pipes_struct *p)
+static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	union dcerpc_payload u;
@@ -869,7 +869,7 @@ static bool setup_bind_nak(pipes_struct *p)
 					  DCERPC_PFC_FLAG_FIRST |
 						DCERPC_PFC_FLAG_LAST,
 					  0,
-					  p->call_id,
+					  pkt->call_id,
 					  u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1527,7 +1527,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound "
 			 "pipe %s.\n",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
-		return setup_bind_nak(p);
+		return setup_bind_nak(p, pkt);
 	}
 
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
@@ -1585,7 +1585,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
 
-			return setup_bind_nak(p);
+			return setup_bind_nak(p, pkt);
 		}
 
 		if (rpc_srv_get_pipe_interface_by_cli_name(
@@ -1825,7 +1825,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
-	return setup_bind_nak(p);
+	return setup_bind_nak(p, pkt);
 }
 
 /****************************************************************************
@@ -2051,7 +2051,7 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
-	return setup_bind_nak(p);
+	return setup_bind_nak(p, pkt);
 }
 
 /****************************************************************************
