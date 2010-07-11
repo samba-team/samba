@@ -302,7 +302,7 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  uint8_t pfc_flags,
 				  uint16_t auth_length,
 				  uint32_t call_id,
-				  union dcerpc_payload u,
+				  union dcerpc_payload *u,
 				  DATA_BLOB *blob)
 {
 	struct ncacn_packet r;
@@ -318,7 +318,7 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 	r.drep[3]		= 0;
 	r.auth_length		= auth_length;
 	r.call_id		= call_id;
-	r.u			= u;
+	r.u			= *u;
 
 	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
 		(ndr_push_flags_fn_t)ndr_push_ncacn_packet);
@@ -2087,7 +2087,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 					  DCERPC_PFC_FLAG_LAST,
 					  auth_len ? auth_len - RPC_HDR_AUTH_LEN : 0,
 					  rpc_call_id,
-					  u,
+					  &u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));
@@ -2529,7 +2529,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 					  flags,
 					  auth_len,
 					  state->call_id,
-					  u,
+					  &u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2789,7 +2789,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 					  DCERPC_PFC_FLAG_LAST,
 					  pauth_blob->length,
 					  rpc_call_id,
-					  u,
+					  &u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));

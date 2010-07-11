@@ -870,7 +870,7 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 						DCERPC_PFC_FLAG_LAST,
 					  0,
 					  pkt->call_id,
-					  u,
+					  &u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&p->out_data.frag);
@@ -933,7 +933,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 					   DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
 					  0,
 					  p->call_id,
-					  u,
+					  &u,
 					  &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&p->out_data.frag);

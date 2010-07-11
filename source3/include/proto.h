@@ -4850,7 +4850,7 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  uint8_t pfc_flags,
 				  uint16_t auth_length,
 				  uint32_t call_id,
-				  union dcerpc_payload u,
+				  union dcerpc_payload *u,
 				  DATA_BLOB *blob);
 NTSTATUS dcerpc_push_ncacn_packet_header(TALLOC_CTX *mem_ctx,
 					 enum dcerpc_pkt_type ptype,
