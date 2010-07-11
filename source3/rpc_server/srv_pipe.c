@@ -1180,19 +1180,16 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
 *******************************************************************/
 
 static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
-					   uint32_t ss_padding_len,
+					   TALLOC_CTX *mem_ctx,
 					   struct dcerpc_auth *pauth_info,
-					   prs_struct *pout_auth)
+					   DATA_BLOB *response)
 {
-	RPC_HDR_AUTH auth_info;
 	DATA_BLOB auth_blob;
 	DATA_BLOB auth_reply;
-	DATA_BLOB response;
 	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
 
 	ZERO_STRUCT(auth_blob);
 	ZERO_STRUCT(auth_reply);
-	ZERO_STRUCT(response);
 
 	/*
 	 * NB. If we've negotiated down from krb5 to NTLMSSP we'll currently
@@ -1225,25 +1222,12 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
 	data_blob_free(&auth_blob);
 
 	/* Generate the spnego "accept completed" blob - no incoming data. */
-	response = spnego_gen_auth_response(&auth_reply, NT_STATUS_OK, OID_NTLMSSP);
+	*response = spnego_gen_auth_response(&auth_reply, NT_STATUS_OK, OID_NTLMSSP);
 
-	/* FIXME - add auth_pad_len here ! */
-
-	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, DCERPC_AUTH_TYPE_SPNEGO,
-			pauth_info->auth_level, ss_padding_len, 1);
-	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of RPC_HDR_AUTH failed.\n"));
-		goto err;
-	}
-
-	if (!prs_copy_data_in(pout_auth, (char *)response.data, response.length)) {
-		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of data blob failed.\n"));
-		goto err;
-	}
+	/* Make sure data is bound to the memctx, to be freed the caller */
+	talloc_steal(mem_ctx, response->data);
 
 	data_blob_free(&auth_reply);
-	data_blob_free(&response);
 
 	p->pipe_bound = True;
 
@@ -1253,7 +1237,6 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
 
 	data_blob_free(&auth_blob);
 	data_blob_free(&auth_reply);
-	data_blob_free(&response);
 
 	free_pipe_ntlmssp_auth_data(&p->auth);
 	p->auth.a_u.auth_ntlmssp_state = NULL;
@@ -1763,10 +1746,11 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
-	prs_struct out_auth;
 	int auth_len = 0;
 	uint32_t ss_padding_len = 0;
 	NTSTATUS status;
+	DATA_BLOB auth_resp = data_blob_null;
+	DATA_BLOB auth_blob = data_blob_null;
 
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
@@ -1784,13 +1768,6 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_alter_context: malloc out_hdr_ba failed.\n"));
 		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("api_pipe_alter_context: malloc out_auth failed.\n"));
-		prs_mem_free(&p->out_data.frag);
-		prs_mem_free(&out_hdr_ba);
 		return False;
 	}
 
@@ -1895,11 +1872,11 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 		if (auth_info.auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			/* We can only finish if the pipe is unbound. */
 			if (!p->pipe_bound) {
-				if (!pipe_spnego_auth_bind_continue(p,
-						    ss_padding_len,
-						    &auth_info, &out_auth)) {
+				if (!pipe_spnego_auth_bind_continue(p, pkt,
+						&auth_info, &auth_resp)) {
 					goto err_exit;
 				}
+
 			} else {
 				goto err_exit;
 			}
@@ -1907,17 +1884,29 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	} else {
 		ZERO_STRUCT(auth_info);
 	}
+
+	if (auth_resp.length) {
+		status = dcerpc_push_dcerpc_auth(pkt,
+						 auth_info.auth_type,
+						 auth_info.auth_level,
+						 ss_padding_len,
+						 1, /* auth_context_id */
+						 &auth_resp,
+						 &auth_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Marshalling of dcerpc_auth failed.\n"));
+			goto err_exit;
+		}
+
+		auth_len = auth_resp.length;
+	}
 	/*
 	 * Create the header, now we know the length.
 	 */
 
-	if (prs_offset(&out_auth)) {
-		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
-	}
-
 	init_rpc_hdr(&hdr, DCERPC_PKT_ALTER_RESP, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
 			pkt->call_id,
-			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + prs_offset(&out_auth),
+			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + auth_blob.length,
 			auth_len);
 
 	/*
@@ -1951,7 +1940,9 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 			}
 		}
 
-		if (!prs_append_prs_data( &p->out_data.frag, &out_auth)) {
+		if (!prs_copy_data_in(&p->out_data.frag,
+					(char *)auth_blob.data,
+					auth_blob.length)) {
 			DEBUG(0,("api_pipe_alter_context: append of auth info failed.\n"));
 			goto err_exit;
 		}
@@ -1965,14 +1956,14 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.current_pdu_sent = 0;
 
 	prs_mem_free(&out_hdr_ba);
-	prs_mem_free(&out_auth);
+	TALLOC_FREE(auth_blob.data);
 	return True;
 
   err_exit:
 
 	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&out_hdr_ba);
-	prs_mem_free(&out_auth);
+	TALLOC_FREE(auth_blob.data);
 	return setup_bind_nak(p, pkt);
 }
 
