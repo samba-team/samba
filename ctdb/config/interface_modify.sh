@@ -71,12 +71,12 @@ delete_ip_from_iface()
 			test -x "$_s_script" || {
 				continue
 			}
+			echo "call $_s_script '$_iface' '$_s_ip' '$_s_maskbits'"
 			$_s_script "$_iface" "$_s_ip" "$_s_maskbits" || {
 				ret=$?
 				echo "$_s_script '$_iface' '$_s_ip' '$_s_maskbits' - failed - $ret"
 				_failed=1
 			}
-			echo "call $_s_script '$_iface' '$_s_ip' '$_s_maskbits'"
 		done
 
 	    done
