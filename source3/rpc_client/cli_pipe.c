@@ -671,7 +671,7 @@ static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
 struct get_complete_frag_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
-	struct ncacn_packet_header *prhdr;
+	uint16_t frag_len;
 	prs_struct *pdu;
 };
 
@@ -681,11 +681,11 @@ static void get_complete_frag_got_rest(struct tevent_req *subreq);
 static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 						 struct event_context *ev,
 						 struct rpc_pipe_client *cli,
-						 struct ncacn_packet_header *prhdr,
 						 prs_struct *pdu)
 {
 	struct tevent_req *req, *subreq;
 	struct get_complete_frag_state *state;
+	DATA_BLOB blob;
 	uint32_t pdu_len;
 	NTSTATUS status;
 
@@ -696,7 +696,7 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->cli = cli;
-	state->prhdr = prhdr;
+	state->frag_len = RPC_HEADER_LEN;
 	state->pdu = pdu;
 
 	pdu_len = prs_data_size(pdu);
@@ -719,23 +719,21 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	status = parse_rpc_header(cli, prhdr, pdu);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
-	}
+	blob = data_blob_const(prs_data_p(state->pdu), pdu_len);
+	state->frag_len = dcerpc_get_frag_length(&blob);
 
 	/*
 	 * Ensure we have frag_len bytes of data.
 	 */
-	if (pdu_len < prhdr->frag_length) {
-		if (!rpc_grow_buffer(pdu, prhdr->frag_length)) {
+	if (pdu_len < state->frag_len) {
+		if (!rpc_grow_buffer(pdu, state->frag_len)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
 		subreq = rpc_read_send(state, state->ev,
 				       state->cli->transport,
 				       (uint8_t *)(prs_data_p(pdu) + pdu_len),
-				       prhdr->frag_length - pdu_len);
+				       state->frag_len - pdu_len);
 		if (subreq == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
@@ -762,6 +760,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	struct get_complete_frag_state *state = tevent_req_data(
 		req, struct get_complete_frag_state);
 	NTSTATUS status;
+	DATA_BLOB pdu;
 
 	status = rpc_read_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -770,13 +769,11 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 		return;
 	}
 
-	status = parse_rpc_header(state->cli, state->prhdr, state->pdu);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
+	pdu = data_blob_const(prs_data_p(state->pdu),
+			      prs_data_size(state->pdu));
+	state->frag_len = dcerpc_get_frag_length(&pdu);
 
-	if (!rpc_grow_buffer(state->pdu, state->prhdr->frag_length)) {
+	if (!rpc_grow_buffer(state->pdu, state->frag_len)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -789,7 +786,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	subreq = rpc_read_send(
 		state, state->ev, state->cli->transport,
 		(uint8_t *)(prs_data_p(state->pdu) + RPC_HEADER_LEN),
-		state->prhdr->frag_length - RPC_HEADER_LEN);
+		state->frag_len - RPC_HEADER_LEN);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1186,6 +1183,11 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 	NTSTATUS ret = NT_STATUS_OK;
 	uint32 current_pdu_len = prs_data_size(current_pdu);
+
+	ret = parse_rpc_header(cli, prhdr, current_pdu);
+	if (!NT_STATUS_IS_OK(ret)) {
+		return ret;
+	}
 
 	if (current_pdu_len != prhdr->frag_length) {
 		DEBUG(5,("cli_pipe_validate_current_pdu: incorrect pdu length %u, expected %u\n",
@@ -1672,7 +1674,7 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 
 	/* Ensure we have enough data for a pdu. */
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
-					&state->rhdr, &state->incoming_frag);
+					&state->incoming_frag);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1763,7 +1765,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	}
 
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
-					&state->rhdr, &state->incoming_frag);
+					&state->incoming_frag);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
