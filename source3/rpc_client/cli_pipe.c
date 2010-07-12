@@ -2146,6 +2146,29 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* marshall the dcerpc_auth with an actually empty auth_blob.
+	 * this is needed because the ntmlssp signature includes the
+	 * auth header */
+	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(rpc_out),
+					map_pipe_auth_type_to_rpc_auth_type(cli->auth->auth_type),
+					cli->auth->auth_level,
+					ss_padding_len,
+					1 /* context id. */,
+					&auth_blob,
+					&auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* append the header */
+	if (!prs_copy_data_in(rpc_out,
+				(char *)auth_info.data,
+				auth_info.length)) {
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)auth_info.length));
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
@@ -2186,21 +2209,12 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* Finally marshall the blob. */
-	status = dcerpc_push_dcerpc_auth(prs_get_mem_context(rpc_out),
-					map_pipe_auth_type_to_rpc_auth_type(cli->auth->auth_type),
-					cli->auth->auth_level,
-					ss_padding_len,
-					1 /* context id. */,
-					&auth_blob,
-					&auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!prs_copy_data_in(rpc_out, (const char *)auth_info.data, auth_info.length)) {
-		DEBUG(0, ("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
-			(unsigned int)auth_info.length));
+	/* Finally attach the blob. */
+	if (!prs_copy_data_in(rpc_out,
+				(char *)auth_blob.data,
+				auth_blob.length)) {
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)auth_info.length));
 		return NT_STATUS_NO_MEMORY;
 	}
 
