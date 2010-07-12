@@ -1004,7 +1004,9 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu), auth_len);
+	blob = data_blob_const(prs_data_p(current_pdu) +
+				prs_offset(current_pdu) +
+				RPC_HDR_AUTH_LEN, auth_len);
 
 	if (DEBUGLEVEL >= 10) {
 		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
