@@ -68,6 +68,9 @@ delete_ip_from_iface()
 
 		local _s_script=""
 		for _s_script in $_s_script_dir/*; do
+			test -x "$_s_script" || {
+				continue
+			}
 			$_s_script "$_iface" "$_s_ip" "$_s_maskbits" || {
 				ret=$?
 				echo "$_s_script '$_iface' '$_s_ip' '$_s_maskbits' - failed - $ret"
