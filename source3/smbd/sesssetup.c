@@ -561,6 +561,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	data_blob_free(&server_info->user_session_key);
 	server_info->user_session_key = session_key;
+	talloc_steal(server_info, session_key.data);
+
 	session_key = data_blob_null;
 
 	/* register_existing_vuid keeps the server info */
