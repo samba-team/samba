@@ -2715,7 +2715,6 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 				DATA_BLOB *pauth_blob,
 				prs_struct *rpc_out)
 {
-	uint16_t auth_len = pauth_blob->length;
 	uint16_t frag_len = 0;
 	NTSTATUS status;
 	union dcerpc_payload u;
@@ -2735,14 +2734,14 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 	}
 
 	/* Start building the frag length. */
-	frag_len = RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + auth_len;
+	frag_len = RPC_HEADER_LEN + 4 /* pad */ + RPC_HDR_AUTH_LEN + pauth_blob->length;
 
 	status = dcerpc_push_ncacn_packet(prs_get_mem_context(rpc_out),
 					  DCERPC_PKT_AUTH3,
 					  DCERPC_PFC_FLAG_FIRST |
 					  DCERPC_PFC_FLAG_LAST,
 					  frag_len,
-					  auth_len ? auth_len - RPC_HDR_AUTH_LEN : 0,
+					  pauth_blob->length,
 					  rpc_call_id,
 					  u,
 					  &blob);
