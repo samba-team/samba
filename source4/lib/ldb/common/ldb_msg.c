@@ -36,7 +36,7 @@
 /*
   create a new ldb_message in a given memory context (NULL for top level)
 */
-struct ldb_message *ldb_msg_new(void *mem_ctx)
+struct ldb_message *ldb_msg_new(TALLOC_CTX *mem_ctx)
 {
 	return talloc_zero(mem_ctx, struct ldb_message);
 }
@@ -92,7 +92,7 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 /*
   duplicate a ldb_val structure
 */
-struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
+struct ldb_val ldb_val_dup(TALLOC_CTX *mem_ctx, const struct ldb_val *v)
 {
 	struct ldb_val v2;
 	v2.length = v->length;
@@ -481,7 +481,7 @@ const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,
 }
 
 struct ldb_dn *ldb_msg_find_attr_as_dn(struct ldb_context *ldb,
-				       void *mem_ctx,
+				       TALLOC_CTX *mem_ctx,
 				       const struct ldb_message *msg,
 				       const char *attr_name)
 {

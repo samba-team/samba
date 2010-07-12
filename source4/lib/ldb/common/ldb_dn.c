@@ -86,7 +86,7 @@ static void ldb_dn_mark_invalid(struct ldb_dn *dn)
 }
 
 /* strdn may be NULL */
-struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx,
+struct ldb_dn *ldb_dn_from_ldb_val(TALLOC_CTX *mem_ctx,
                                    struct ldb_context *ldb,
                                    const struct ldb_val *strdn)
 {
@@ -154,7 +154,7 @@ failed:
 }
 
 /* strdn may be NULL */
-struct ldb_dn *ldb_dn_new(void *mem_ctx,
+struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx,
 			  struct ldb_context *ldb,
 			  const char *strdn)
 {
@@ -164,7 +164,7 @@ struct ldb_dn *ldb_dn_new(void *mem_ctx,
 	return ldb_dn_from_ldb_val(mem_ctx, ldb, &blob);
 }
 
-struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx,
+struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx,
 			      struct ldb_context *ldb,
 			      const char *new_fmt, ...)
 {
@@ -257,7 +257,7 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 	return (l + (d - dst));
 }
 
-char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
+char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value)
 {
 	char *dst;
 
@@ -804,7 +804,7 @@ static int ldb_dn_extended_component_compare(const void *p1, const void *p2)
 	return strcmp(ec1->name, ec2->name);
 }
 
-char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode)
+char *ldb_dn_get_extended_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int mode)
 {
 	const char *linearized = ldb_dn_get_linearized(dn);
 	char *p = NULL;
@@ -900,7 +900,7 @@ void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept)
 }
 
 
-char *ldb_dn_alloc_linearized(void *mem_ctx, struct ldb_dn *dn)
+char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	return talloc_strdup(mem_ctx, ldb_dn_get_linearized(dn));
 }
@@ -1016,7 +1016,7 @@ const char *ldb_dn_get_casefold(struct ldb_dn *dn)
 	return dn->casefold;
 }
 
-char *ldb_dn_alloc_casefold(void *mem_ctx, struct ldb_dn *dn)
+char *ldb_dn_alloc_casefold(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	return talloc_strdup(mem_ctx, ldb_dn_get_casefold(dn));
 }
@@ -1187,7 +1187,7 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 }
 
 static struct ldb_dn_component ldb_dn_copy_component(
-						void *mem_ctx,
+						TALLOC_CTX *mem_ctx,
 						struct ldb_dn_component *src)
 {
 	struct ldb_dn_component dst;
@@ -1233,7 +1233,7 @@ static struct ldb_dn_component ldb_dn_copy_component(
 }
 
 static struct ldb_dn_ext_component ldb_dn_ext_copy_component(
-						void *mem_ctx,
+						TALLOC_CTX *mem_ctx,
 						struct ldb_dn_ext_component *src)
 {
 	struct ldb_dn_ext_component dst;
@@ -1258,7 +1258,7 @@ static struct ldb_dn_ext_component ldb_dn_ext_copy_component(
 	return dst;
 }
 
-struct ldb_dn *ldb_dn_copy(void *mem_ctx, struct ldb_dn *dn)
+struct ldb_dn *ldb_dn_copy(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	struct ldb_dn *new_dn;
 
@@ -1684,7 +1684,7 @@ bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
 	return true;
 }
 
-struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
+struct ldb_dn *ldb_dn_get_parent(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 {
 	struct ldb_dn *new_dn;
 
@@ -1710,7 +1710,7 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, struct ldb_dn *dn)
    the EX format has the last '/' replaced with a newline (\n).
 
 */
-static char *ldb_dn_canonical(void *mem_ctx, struct ldb_dn *dn, int ex_format) {
+static char *ldb_dn_canonical(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int ex_format) {
 	long long int i;
 	TALLOC_CTX *tmpctx;
 	char *cracked = NULL;
@@ -1770,12 +1770,12 @@ done:
 }
 
 /* Wrapper functions for the above, for the two different string formats */
-char *ldb_dn_canonical_string(void *mem_ctx, struct ldb_dn *dn) {
+char *ldb_dn_canonical_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn) {
 	return ldb_dn_canonical(mem_ctx, dn, 0);
 
 }
 
-char *ldb_dn_canonical_ex_string(void *mem_ctx, struct ldb_dn *dn) {
+char *ldb_dn_canonical_ex_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn) {
 	return ldb_dn_canonical(mem_ctx, dn, 1);
 }
 

@@ -236,7 +236,7 @@ int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical
 
 /* Parse controls from the format used on the command line and in ejs */
 
-struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *mem_ctx, const char **control_strings)
+struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings)
 {
 	unsigned int i;
 	struct ldb_control **ctrl;

@@ -1641,7 +1641,7 @@ char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
   \param dn The DN to linearize
   \param mode Style of extended DN to return (0 is HEX representation of binary form, 1 is a string form)
 */
-char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode);
+char *ldb_dn_get_extended_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int mode);
 const struct ldb_val *ldb_dn_get_extended_component(struct ldb_dn *dn, const char *name);
 int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const struct ldb_val *val);
 void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept);
@@ -1681,7 +1681,7 @@ struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, cons
   \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
 */
 
-struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn);
+struct ldb_dn *ldb_dn_from_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn);
 
 /**
   Determine if this DN is syntactically valid 
@@ -2109,7 +2109,7 @@ unsigned int ldb_get_flags(struct ldb_context *ldb);
 void ldb_set_flags(struct ldb_context *ldb, unsigned flags);
 
 
-struct ldb_dn *ldb_dn_binary_from_ldb_val(void *mem_ctx,
+struct ldb_dn *ldb_dn_binary_from_ldb_val(TALLOC_CTX *mem_ctx,
 					  struct ldb_context *ldb,
 					  const struct ldb_val *strdn);
 

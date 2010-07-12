@@ -157,7 +157,7 @@ void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
 int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char *subclass);
 
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
-char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n);
+char *ldb_casefold_default(void *context, TALLOC_CTX *mem_ctx, const char *s, size_t n);
 
 void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
 
@@ -169,7 +169,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
 int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module);
 
-struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str);
+struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 
 
 /* The following definitions come from lib/ldb/common/ldb_options.c  */
