@@ -2977,9 +2977,8 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct ncacn_packet *r,
 					   prs_struct *reply_pdu)
 {
-	DATA_BLOB server_response = data_blob_null;
 	DATA_BLOB client_reply = data_blob_null;
-	struct rpc_hdr_auth_info hdr_auth;
+	struct dcerpc_auth auth;
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
@@ -2988,24 +2987,19 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!prs_set_offset(
-		    reply_pdu,
-		    r->frag_length - r->auth_length - RPC_HDR_AUTH_LEN)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, reply_pdu, 0)) {
-		return NT_STATUS_INVALID_PARAMETER;
+	status = dcerpc_pull_dcerpc_auth(talloc_tos(),
+					 &r->u.bind_ack.auth_info,
+					 &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* TODO - check auth_type/auth_level match. */
 
-	server_response = data_blob_talloc(talloc_tos(), NULL, r->auth_length);
-	prs_copy_data_out((char *)server_response.data, reply_pdu,
-			  r->auth_length);
-
 	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
-				server_response, &client_reply);
+				auth.credentials, &client_reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpc_finish_auth3_bind: NTLMSSP update using server "
