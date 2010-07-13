@@ -297,15 +297,16 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 static bool create_next_pdu_schannel(pipes_struct *p)
 {
-	DATA_BLOB hdr;
+	DATA_BLOB blob;
 	uint8_t hdr_flags;
-	RPC_HDR_RESP hdr_resp;
 	uint32 ss_padding_len = 0;
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
 	uint32 data_pos;
 	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB auth_blob = data_blob_null;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -317,7 +318,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		return True;
 	}
 
-	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
+	ZERO_STRUCT(u.response);
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
@@ -371,7 +372,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 * send.
 	 */
 
-	hdr_resp.alloc_hint = data_len_left;
+	u.response.alloc_hint = data_len_left;
 
 	/*
 	 * Work out if this PDU will be the last.
@@ -387,50 +388,43 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 */
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
-	status = dcerpc_push_ncacn_packet_header(
+	/* Set the data into the PDU. */
+	u.response.stub_and_verifier =
+		data_blob_const(prs_data_p(&p->out_data.rdata) +
+				p->out_data.data_sent_length, data_len);
+
+	status = dcerpc_push_ncacn_packet(
 				prs_get_mem_context(&p->out_data.frag),
 				DCERPC_PKT_RESPONSE,
 				hdr_flags,
-				RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
-				  data_len + ss_padding_len +
-				  RPC_HDR_AUTH_LEN +
-				  RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
 				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
 				p->call_id,
-				&hdr);
+				&u,
+				&blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	/* Store the header in the data stream. */
+	/* Store the data offset. */
+	data_pos = blob.length - data_len;
+
+	/* Set the proper length on the pdu */
+	dcerpc_set_frag_length(&blob, blob.length +
+				      ss_padding_len +
+				      RPC_HDR_AUTH_LEN +
+				      RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN);
+
+	/* Store the packet in the data stream. */
 	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)hdr.data, hdr.length)) {
+				(char *)blob.data, blob.length)) {
 		DEBUG(0, ("Out of memory.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
-		DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Store the current offset. */
-	data_pos = prs_offset(&p->out_data.frag);
-
-	/* Copy the data into the PDU. */
-
-	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
-				     p->out_data.data_sent_length, data_len)) {
-		DEBUG(0,("create_next_pdu_schannel: failed to copy %u bytes of data.\n", (unsigned int)data_len));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Copy the sign/seal padding data. */
+	/* Append the sign/seal padding data. */
 	if (ss_padding_len) {
 		char pad[SERVER_NDR_PADDING_SIZE];
 		memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
@@ -442,70 +436,70 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		}
 	}
 
-	{
-		/*
-		 * Schannel processing.
-		 */
-		RPC_HDR_AUTH auth_info;
-		DATA_BLOB blob;
-		uint8_t *data;
-
-		/* Check it's the type of reply we were expecting to decode */
-
-		init_rpc_hdr_auth(&auth_info,
+	/* auth_blob is intentionally null, it will be appended later */
+	status = dcerpc_push_dcerpc_auth(
+				prs_get_mem_context(&p->out_data.frag),
 				DCERPC_AUTH_TYPE_SCHANNEL,
-				p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY ?
-					DCERPC_AUTH_LEVEL_PRIVACY : DCERPC_AUTH_LEVEL_INTEGRITY,
-				ss_padding_len, 1);
+				p->auth.auth_level,
+				ss_padding_len,
+				1, /* context id. */
+				&auth_blob,
+				&blob);
 
-		if (!smb_io_rpc_hdr_auth("hdr_auth", &auth_info,
-					&p->out_data.frag, 0)) {
-			DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR_AUTH.\n"));
-			prs_mem_free(&p->out_data.frag);
-			return False;
-		}
+	/* Store auth header in the data stream. */
+	if (!prs_copy_data_in(&p->out_data.frag,
+				(char *)blob.data, blob.length)) {
+		DEBUG(0, ("Out of memory.\n"));
+		prs_mem_free(&p->out_data.frag);
+		return False;
+	}
 
-		data = (uint8_t *)prs_data_p(&p->out_data.frag) + data_pos;
+	/*
+	 * Schannel processing.
+	 */
 
-		switch (p->auth.auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
-							talloc_tos(),
-							true,
-							data,
-							data_len + ss_padding_len,
-							&blob);
-			break;
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
-							talloc_tos(),
-							false,
-							data,
-							data_len + ss_padding_len,
-							&blob);
-			break;
-		default:
-			status = NT_STATUS_INTERNAL_ERROR;
-			break;
-		}
+	blob = data_blob_const(prs_data_p(&p->out_data.frag) + data_pos,
+				data_len + ss_padding_len);
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("create_next_pdu_schannel: failed to process packet: %s\n",
-				nt_errstr(status)));
-			prs_mem_free(&p->out_data.frag);
-			return false;
-		}
+	switch (p->auth.auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
+						talloc_tos(),
+						true,
+						blob.data,
+						blob.length,
+						&auth_blob);
+		break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
+						talloc_tos(),
+						false,
+						blob.data,
+						blob.length,
+						&auth_blob);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
 
-		/* Finally marshall the blob. */
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("create_next_pdu_schannel: failed to process packet: %s\n",
+			nt_errstr(status)));
+		prs_mem_free(&p->out_data.frag);
+		return false;
+	}
 
-		if (DEBUGLEVEL >= 10) {
-			dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
-		}
+	/* Finally marshall the blob. */
 
-		if (!prs_copy_data_in(&p->out_data.frag, (const char *)blob.data, blob.length)) {
-			prs_mem_free(&p->out_data.frag);
-			return false;
-		}
+	if (DEBUGLEVEL >= 10) {
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_blob);
+	}
+
+	if (!prs_copy_data_in(&p->out_data.frag,
+				(char *)auth_blob.data, auth_blob.length)) {
+		prs_mem_free(&p->out_data.frag);
+		return false;
 	}
 
 	/*
