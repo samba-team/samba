@@ -669,6 +669,26 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 	return centry;
 }
 
+static bool is_my_own_sam_domain(struct winbindd_domain *domain)
+{
+	if (strequal(domain->name, get_global_sam_name()) &&
+	     sid_equal(&domain->sid, get_global_sam_sid())) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool is_builtin_domain(struct winbindd_domain *domain)
+{
+	if (strequal(domain->name, "BUILTIN") &&
+	    sid_equal(&domain->sid, &global_sid_Builtin)) {
+		return true;
+	}
+
+	return false;
+}
+
 /*
   fetch an entry from the cache, with a varargs key. auto-fetch the sequence
   number and return status
@@ -684,7 +704,9 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	char *kstr;
 	struct cache_entry *centry;
 
-	if (!winbindd_use_cache()) {
+	if (!winbindd_use_cache() ||
+	    is_my_own_sam_domain(domain) ||
+	    is_builtin_domain(domain)) {
 		return NULL;
 	}
 
@@ -4681,7 +4703,9 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	TDB_DATA key, data;
 	bool ret = false;
 
-	if (!wcache_opnum_cacheable(opnum)) {
+	if (!wcache_opnum_cacheable(opnum) ||
+	    is_my_own_sam_domain(domain) ||
+	    is_builtin_domain(domain)) {
 		return false;
 	}
 
@@ -4737,7 +4761,9 @@ void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
 	TDB_DATA key, data;
 	uint32_t dom_seqnum, last_check;
 
-	if (!wcache_opnum_cacheable(opnum)) {
+	if (!wcache_opnum_cacheable(opnum) ||
+	    is_my_own_sam_domain(domain) ||
+	    is_builtin_domain(domain)) {
 		return;
 	}
 
