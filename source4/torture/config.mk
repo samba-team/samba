@@ -128,7 +128,7 @@ torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		unixinfo.o samr.o samr_accessmask.o wkssvc.o srvsvc.o svcctl.o atsvc.o \
 		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
 		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o remote_pac.o samlogon.o \
-		samsync.o bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
+		samsync.o multi_bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
 		handles.o frsapi.o object_uuid.o ntsvcs.o browser.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_OBJ_FILES:.o=.c)))
