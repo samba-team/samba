@@ -2910,11 +2910,10 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
 	prs_struct reply_pdu;
-	DATA_BLOB blob;
-	struct ncacn_packet r;
+	struct ncacn_packet *pkt;
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), NULL, &reply_pdu);
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
@@ -2924,23 +2923,14 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 	}
 
-	blob = data_blob_const(prs_data_p(&reply_pdu),
-			       prs_data_size(&reply_pdu));
-
-	status = dcerpc_pull_ncacn_packet(talloc_tos(), &blob, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
- 		return;
- 	}
-
-	if (!check_bind_response(&r.u.bind_ack, &state->cli->transfer_syntax)) {
+	if (!check_bind_response(&pkt->u.bind_ack, &state->cli->transfer_syntax)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
-	state->cli->max_xmit_frag = r.u.bind_ack.max_xmit_frag;
-	state->cli->max_recv_frag = r.u.bind_ack.max_recv_frag;
+	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
+	state->cli->max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
 	/*
 	 * For authenticated binds we may need to do 3 or 4 leg binds.
@@ -2956,7 +2946,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case PIPE_AUTH_TYPE_NTLMSSP:
 		/* Need to send AUTH3 packet - no reply. */
-		status = rpc_finish_auth3_bind_send(req, state, &r,
+		status = rpc_finish_auth3_bind_send(req, state, pkt,
 						    &reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
@@ -2965,7 +2955,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 		/* Need to send alter context request and reply. */
-		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &r,
+		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, pkt,
 							     &reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
