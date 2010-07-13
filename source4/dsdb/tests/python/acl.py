@@ -79,6 +79,9 @@ class AclTests(samba.tests.TestCase):
         self.base_dn = self.find_basedn(self.ldb_admin)
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
         self.user_pass = "samba123@"
+        res = self.ldb_admin.search(base="", expression="", scope=SCOPE_BASE,
+                 attrs=["configurationNamingContext"])
+        self.configuration_dn = res[0]["configurationNamingContext"][0]
         print "baseDN: %s" % self.base_dn
 
     def get_user_dn(self, name):
@@ -219,6 +222,23 @@ url: www.example.com
     def create_enable_user(self, username):
         self.create_active_user(self.ldb_admin, self.get_user_dn(username))
         self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
+
+    def set_dsheuristics(self, dsheuristics):
+        m = Message()
+        m.dn = Dn(self.ldb_admin, "CN=Directory Service, CN=Windows NT, CN=Services, "
+                  + self.configuration_dn)
+        if dsheuristics is not None:
+            m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
+                                               "dSHeuristics")
+        else:
+            m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
+        self.ldb_admin.modify(m)
+
+    def set_minPwdAge(self, value):
+        m = Message()
+        m.dn = Dn(self.ldb_admin, self.base_dn)
+        m["minPwdAge"] = MessageElement(value, FLAG_MOD_REPLACE, "minPwdAge")
+        self.ldb_admin.modify(m)
 
 #tests on ldap add operations
 class AclAddTests(AclTests):
@@ -1038,8 +1058,26 @@ class AclCARTests(AclTests):
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_pc, self.user_pass)
 
+        res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
+                 + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
+        if "dSHeuristics" in res[0]:
+            self.dsheuristics = res[0]["dSHeuristics"][0]
+        else:
+            self.dsheuristics = None
+
+        res = self.ldb_admin.search(self.base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
+        self.minPwdAge = res[0]["minPwdAge"][0]
+
+        # Set the "dSHeuristics" to have the tests run against Windows Server
+        self.set_dsheuristics("000000001")
+# Set minPwdAge to 0
+        self.set_minPwdAge("0")
+
     def tearDown(self):
         super(AclCARTests, self).tearDown()
+        #restore original values
+        self.set_dsheuristics(self.dsheuristics)
+        self.set_minPwdAge(self.minPwdAge)
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
 
@@ -1294,42 +1332,6 @@ if not "://" in host:
     host = "ldap://%s" % host
 ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
 
-# Gets back the configuration basedn
-res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                 attrs=["configurationNamingContext"])
-configuration_dn = res[0]["configurationNamingContext"][0]
-
-# Gets back the cbasedn
-res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                 attrs=["defaultNamingContext"])
-base_dn = res[0]["defaultNamingContext"][0]
-
-# Get the old "dSHeuristics" if it was set
-res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                 + configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-if "dSHeuristics" in res[0]:
-  dsheuristics = res[0]["dSHeuristics"][0]
-else:
-  dsheuristics = None
-
-# Set the "dSHeuristics" to have the tests run against Windows Server
-m = Message()
-m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-  + configuration_dn)
-m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
-  "dSHeuristics")
-ldb.modify(m)
-
-# Get the current minPwdAge
-res = ldb.search(base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
-minPwdAge = res[0]["minPwdAge"][0]
-
-#set minPwdAge to 0 so password tests can against Windows server
-m = Message()
-m.dn = Dn(ldb, base_dn)
-m["minPwdAge"] = MessageElement("0", FLAG_MOD_REPLACE, "minPwdAge")
-ldb.modify(m)
-
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(AclAddTests)).wasSuccessful():
@@ -1342,22 +1344,5 @@ if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclCARTests)).wasSuccessful():
     rc = 1
-
-# Reset the "dSHeuristics" as they were before
-m = Message()
-m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-  + configuration_dn)
-if dsheuristics is not None:
-    m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
-      "dSHeuristics")
-else:
-    m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
-ldb.modify(m)
-
-# Reset minPwdAge as before
-m = Message()
-m.dn = Dn(ldb, base_dn)
-m["minPwdAge"] = MessageElement(minPwdAge, FLAG_MOD_REPLACE, "minPwdAge")
-ldb.modify(m)
 
 sys.exit(rc)
