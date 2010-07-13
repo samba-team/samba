@@ -145,54 +145,41 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
-	/*
-	 * Init the parse struct to point at the outgoing
-	 * data.
-	 */
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
-
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
 		data_blob_const(p->out_data.rdata.data, data_len);
 
-	status = dcerpc_push_ncacn_packet(
-				prs_get_mem_context(&p->out_data.frag),
-				DCERPC_PKT_RESPONSE,
-				hdr_flags,
-				NTLMSSP_SIG_SIZE,
-				p->call_id,
-				&u,
-				&blob);
+	/* Store the packet in the data stream. */
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_RESPONSE,
+					  hdr_flags,
+					  NTLMSSP_SIG_SIZE,
+					  p->call_id,
+					  &u,
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Set the proper length on the pdu */
-	dcerpc_set_frag_length(&blob, blob.length +
-					ss_padding_len +
-					RPC_HDR_AUTH_LEN +
-					NTLMSSP_SIG_SIZE);
-
-	/* Store the packet in the data stream. */
-	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
+	dcerpc_set_frag_length(&p->out_data.frag,
+				p->out_data.frag.length +
+				ss_padding_len +
+				RPC_HDR_AUTH_LEN +
+				NTLMSSP_SIG_SIZE);
 
 	/* Append the sign/seal padding data. */
 	if (ss_padding_len) {
 		char pad[SERVER_NDR_PADDING_SIZE];
 
 		memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-		if (!prs_copy_data_in(&p->out_data.frag, pad,
+		if (!data_blob_append(p->mem_ctx,
+				      &p->out_data.frag, pad,
 				      ss_padding_len)) {
 			DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes of pad data.\n",
 					(unsigned int)ss_padding_len));
-			prs_mem_free(&p->out_data.frag);
+			data_blob_free(&p->out_data.frag);
 			return False;
 		}
 	}
@@ -209,9 +196,10 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
+	frame = talloc_stackframe();
+
 	/* auth_blob is intentionally null, it will be appended later */
-	status = dcerpc_push_dcerpc_auth(
-				prs_get_mem_context(&p->out_data.frag),
+	status = dcerpc_push_dcerpc_auth(frame,
 				auth_type,
 				auth_level,
 				ss_padding_len,
@@ -220,30 +208,30 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 				&blob);
 
 	/* Store auth header in the data stream. */
-	if (!prs_copy_data_in(&p->out_data.frag,
+	if (!data_blob_append(p->mem_ctx,
+				&p->out_data.frag,
 				(char *)blob.data, blob.length)) {
 		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Generate the sign blob. */
 
-	frame = talloc_stackframe();
 	switch (p->auth.auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = auth_ntlmssp_seal_packet(
 				a, frame,
-				(uint8_t *)prs_data_p(&p->out_data.frag)
+				p->out_data.frag.data
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
-				(unsigned char *)prs_data_p(&p->out_data.frag),
-				(size_t)prs_offset(&p->out_data.frag),
+				p->out_data.frag.data,
+				p->out_data.frag.length,
 				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(frame);
-				prs_mem_free(&p->out_data.frag);
+				data_blob_free(&p->out_data.frag);
 				return False;
 			}
 			break;
@@ -251,31 +239,31 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 			/* Data is signed. */
 			status = auth_ntlmssp_sign_packet(
 				a, frame,
-				(unsigned char *)prs_data_p(&p->out_data.frag)
+				p->out_data.frag.data
 				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
 				data_len + ss_padding_len,
-				(unsigned char *)prs_data_p(&p->out_data.frag),
-				(size_t)prs_offset(&p->out_data.frag),
+				p->out_data.frag.data,
+				p->out_data.frag.length,
 				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(frame);
-				prs_mem_free(&p->out_data.frag);
+				data_blob_free(&p->out_data.frag);
 				return False;
 			}
 			break;
 		default:
 			talloc_free(frame);
-			prs_mem_free(&p->out_data.frag);
+			data_blob_free(&p->out_data.frag);
 			return False;
 	}
 
 	/* Finally append the auth blob. */
-	if (!prs_copy_data_in(&p->out_data.frag, (char *)auth_blob.data,
-			      NTLMSSP_SIG_SIZE)) {
+	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+				auth_blob.data, NTLMSSP_SIG_SIZE)) {
 		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
 			  (unsigned int)NTLMSSP_SIG_SIZE));
 		talloc_free(frame);
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 		return False;
 	}
 	talloc_free(frame);
@@ -382,75 +370,61 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
-	/*
-	 * Init the parse struct to point at the outgoing
-	 * data.
-	 */
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
-
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
 		data_blob_const(p->out_data.rdata.data +
 				p->out_data.data_sent_length, data_len);
 
-	status = dcerpc_push_ncacn_packet(
-				prs_get_mem_context(&p->out_data.frag),
+	/* Store the packet in the data stream. */
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 				DCERPC_PKT_RESPONSE,
 				hdr_flags,
 				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
 				p->call_id,
 				&u,
-				&blob);
+				&p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Store the data offset. */
-	data_pos = blob.length - data_len;
+	data_pos = p->out_data.frag.length - data_len;
 
 	/* Set the proper length on the pdu */
-	dcerpc_set_frag_length(&blob, blob.length +
-				      ss_padding_len +
-				      RPC_HDR_AUTH_LEN +
-				      RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN);
-
-	/* Store the packet in the data stream. */
-	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
+	dcerpc_set_frag_length(&p->out_data.frag,
+				p->out_data.frag.length +
+				ss_padding_len +
+				RPC_HDR_AUTH_LEN +
+				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN);
 
 	/* Append the sign/seal padding data. */
 	if (ss_padding_len) {
 		char pad[SERVER_NDR_PADDING_SIZE];
 		memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-		if (!prs_copy_data_in(&p->out_data.frag, pad,
+		if (!data_blob_append(p->mem_ctx,
+				      &p->out_data.frag, pad,
 				      ss_padding_len)) {
 			DEBUG(0,("create_next_pdu_schannel: failed to add %u bytes of pad data.\n", (unsigned int)ss_padding_len));
-			prs_mem_free(&p->out_data.frag);
+			data_blob_free(&p->out_data.frag);
 			return False;
 		}
 	}
 
 	/* auth_blob is intentionally null, it will be appended later */
-	status = dcerpc_push_dcerpc_auth(
-				prs_get_mem_context(&p->out_data.frag),
-				DCERPC_AUTH_TYPE_SCHANNEL,
-				p->auth.auth_level,
-				ss_padding_len,
-				1, /* context id. */
-				&auth_blob,
-				&blob);
+	status = dcerpc_push_dcerpc_auth(talloc_tos(),
+					 DCERPC_AUTH_TYPE_SCHANNEL,
+					 p->auth.auth_level,
+					 ss_padding_len,
+					 1, /* context id. */
+					 &auth_blob,
+					 &blob);
 
 	/* Store auth header in the data stream. */
-	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)blob.data, blob.length)) {
+	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+				blob.data, blob.length)) {
 		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -458,7 +432,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 * Schannel processing.
 	 */
 
-	blob = data_blob_const(prs_data_p(&p->out_data.frag) + data_pos,
+	blob = data_blob_const(p->out_data.frag.data + data_pos,
 				data_len + ss_padding_len);
 
 	switch (p->auth.auth_level) {
@@ -486,7 +460,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("create_next_pdu_schannel: failed to process packet: %s\n",
 			nt_errstr(status)));
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 		return false;
 	}
 
@@ -496,9 +470,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_blob);
 	}
 
-	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)auth_blob.data, auth_blob.length)) {
-		prs_mem_free(&p->out_data.frag);
+	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+				auth_blob.data, auth_blob.length)) {
+		data_blob_free(&p->out_data.frag);
 		return false;
 	}
 
@@ -519,7 +493,6 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 static bool create_next_pdu_noauth(pipes_struct *p)
 {
-	DATA_BLOB blob;
 	uint8_t hdr_flags;
 	NTSTATUS status;
 	uint32 data_len;
@@ -585,36 +558,21 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
-	/*
-	 * Init the parse struct to point at the outgoing
-	 * data.
-	 */
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
-
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
 		data_blob_const(p->out_data.rdata.data +
 				p->out_data.data_sent_length, data_len);
 
-	status = dcerpc_push_ncacn_packet(
-				prs_get_mem_context(&p->out_data.frag),
-				DCERPC_PKT_RESPONSE,
-				hdr_flags,
-				0,
-				p->call_id,
-				&u,
-				&blob);
+	/* Store the packet in the data stream. */
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_RESPONSE,
+					  hdr_flags,
+					  0,
+					  p->call_id,
+					  &u,
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Store the packet in the data stream. */
-	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -828,18 +786,9 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	union dcerpc_payload u;
-	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
 	data_blob_free(&p->out_data.rdata);
-
-	/*
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Initialize a bind_nak header.
@@ -849,6 +798,12 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 
 	u.bind_nak.reject_reason  = 0;
 
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_BIND_NAK,
 					  DCERPC_PFC_FLAG_FIRST |
@@ -856,15 +811,8 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 					  0,
 					  pkt->call_id,
 					  &u,
-					  &blob);
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if (!prs_copy_data_in(&p->out_data.frag,
-			      (char *)blob.data, blob.length)) {
-		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -889,18 +837,9 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 {
 	NTSTATUS status;
 	union dcerpc_payload u;
-	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
 	data_blob_free(&p->out_data.rdata);
-
-	/*
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Initialize a fault header.
@@ -911,6 +850,12 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 	u.fault.status		= NT_STATUS_V(fault_status);
 	u.fault._pad		= data_blob_talloc_zero(p->mem_ctx, 4);
 
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_FAULT,
 					  DCERPC_PFC_FLAG_FIRST |
@@ -919,15 +864,8 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 					  0,
 					  p->call_id,
 					  &u,
-					  &blob);
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if (!prs_copy_data_in(&p->out_data.frag,
-			      (char *)blob.data, blob.length)) {
-		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -1425,7 +1363,6 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
-	DATA_BLOB blob = data_blob_null;
 	int pad_len = 0;
 
 	/* No rebinds on a bound pipe - use alter context. */
@@ -1490,14 +1427,6 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	} else {
 		assoc_gid = 0x53f0;
 	}
-
-	/*
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Create the bind response struct.
@@ -1634,12 +1563,20 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	/* NOTE: We leave the auth_info empty so we can calculate the padding
 	 * later and then append the auth_info --simo */
 
-	status = dcerpc_push_ncacn_packet(pkt, DCERPC_PKT_BIND_ACK,
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_BIND_ACK,
 					  DCERPC_PFC_FLAG_FIRST |
 						DCERPC_PFC_FLAG_LAST,
 					  auth_resp.length,
 					  pkt->call_id,
-					  &u, &blob);
+					  &u,
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
 			  nt_errstr(status)));
@@ -1648,7 +1585,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	if (auth_resp.length) {
 
 		/* Work out any padding needed before the auth footer. */
-		pad_len = blob.length % SERVER_NDR_PADDING_SIZE;
+		pad_len = p->out_data.frag.length % SERVER_NDR_PADDING_SIZE;
 		if (pad_len) {
 			pad_len = SERVER_NDR_PADDING_SIZE - pad_len;
 			DEBUG(10, ("auth pad_len = %u\n",
@@ -1670,20 +1607,17 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 
 	/* Now that we have the auth len store it into the right place in
 	 * the dcerpc header */
-	dcerpc_set_frag_length(&blob, blob.length + pad_len + auth_blob.length);
-
-	/* And finally copy all bits in the output pdu */
-	if (!prs_copy_data_in(&p->out_data.frag,
-					(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Failed to copy data to output buffer.\n"));
-		goto err_exit;
-	}
+	dcerpc_set_frag_length(&p->out_data.frag,
+				p->out_data.frag.length +
+					pad_len +
+					auth_blob.length);
 
 	if (auth_blob.length) {
 		if (pad_len) {
 			char pad[SERVER_NDR_PADDING_SIZE];
 			memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-			if (!prs_copy_data_in(&p->out_data.frag, pad, pad_len)) {
+			if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+						pad, pad_len)) {
 				DEBUG(0, ("api_pipe_bind_req: failed to add "
 					  "%u bytes of pad data.\n",
 				  (unsigned int)pad_len));
@@ -1691,9 +1625,8 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 			}
 		}
 
-		if (!prs_copy_data_in(&p->out_data.frag,
-					(char *)auth_blob.data,
-					auth_blob.length)) {
+		if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+					auth_blob.data, auth_blob.length)) {
 			DEBUG(0, ("Append of auth info failed.\n"));
 			goto err_exit;
 		}
@@ -1707,14 +1640,12 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.current_pdu_sent = 0;
 
 	TALLOC_FREE(auth_blob.data);
-	TALLOC_FREE(blob.data);
 	return True;
 
   err_exit:
 
-	prs_mem_free(&p->out_data.frag);
+	data_blob_free(&p->out_data.frag);
 	TALLOC_FREE(auth_blob.data);
-	TALLOC_FREE(blob.data);
 	return setup_bind_nak(p, pkt);
 }
 
@@ -1732,7 +1663,6 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
-	DATA_BLOB blob = data_blob_null;
 	int pad_len = 0;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
@@ -1742,14 +1672,6 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	} else {
 		assoc_gid = 0x53f0;
 	}
-
-	/*
-	 * Marshall directly into the outgoing PDU space. We
-	 * must do this as we need to set to the bind response
-	 * header and are never sending more than one PDU here.
-	 */
-
-	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Create the bind response struct.
@@ -1840,12 +1762,20 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	/* NOTE: We leave the auth_info empty so we can calculate the padding
 	 * later and then append the auth_info --simo */
 
-	status = dcerpc_push_ncacn_packet(pkt, DCERPC_PKT_ALTER_RESP,
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_ALTER_RESP,
 					  DCERPC_PFC_FLAG_FIRST |
 						DCERPC_PFC_FLAG_LAST,
 					  auth_resp.length,
 					  pkt->call_id,
-					  &u, &blob);
+					  &u,
+					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
 			  nt_errstr(status)));
@@ -1854,7 +1784,7 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	if (auth_resp.length) {
 
 		/* Work out any padding needed before the auth footer. */
-		pad_len = blob.length % SERVER_NDR_PADDING_SIZE;
+		pad_len = p->out_data.frag.length % SERVER_NDR_PADDING_SIZE;
 		if (pad_len) {
 			pad_len = SERVER_NDR_PADDING_SIZE - pad_len;
 			DEBUG(10, ("auth pad_len = %u\n",
@@ -1876,20 +1806,17 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 
 	/* Now that we have the auth len store it into the right place in
 	 * the dcerpc header */
-	dcerpc_set_frag_length(&blob, blob.length + pad_len + auth_blob.length);
-
-	/* And finally copy all bits in the output pdu */
-	if (!prs_copy_data_in(&p->out_data.frag,
-					(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Failed to copy data to output buffer.\n"));
-		goto err_exit;
-	}
+	dcerpc_set_frag_length(&p->out_data.frag,
+				p->out_data.frag.length +
+					pad_len + auth_blob.length);
 
 	if (auth_resp.length) {
 		if (pad_len) {
 			char pad[SERVER_NDR_PADDING_SIZE];
 			memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-			if (!prs_copy_data_in(&p->out_data.frag, pad, pad_len)) {
+			if (!data_blob_append(p->mem_ctx,
+						&p->out_data.frag,
+						pad, pad_len)) {
 				DEBUG(0, ("api_pipe_bind_req: failed to add "
 					  "%u bytes of pad data.\n",
 					  (unsigned int)pad_len));
@@ -1897,9 +1824,8 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 			}
 		}
 
-		if (!prs_copy_data_in(&p->out_data.frag,
-					(char *)auth_blob.data,
-					auth_blob.length)) {
+		if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+					auth_blob.data, auth_blob.length)) {
 			DEBUG(0, ("Append of auth info failed.\n"));
 			goto err_exit;
 		}
@@ -1913,14 +1839,12 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.current_pdu_sent = 0;
 
 	TALLOC_FREE(auth_blob.data);
-	TALLOC_FREE(blob.data);
 	return True;
 
   err_exit:
 
-	prs_mem_free(&p->out_data.frag);
+	data_blob_free(&p->out_data.frag);
 	TALLOC_FREE(auth_blob.data);
-	TALLOC_FREE(blob.data);
 	return setup_bind_nak(p, pkt);
 }
 

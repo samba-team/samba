@@ -42,7 +42,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	o_data->data_sent_length = 0;
 	o_data->current_pdu_sent = 0;
 
-	prs_mem_free(&o_data->frag);
+	data_blob_free(&o_data->frag);
 
 	/* Free any memory in the current return data buffer. */
 	data_blob_free(&o_data->rdata);
@@ -143,7 +143,7 @@ static bool get_pdu_size(pipes_struct *p)
 
 static void free_pipe_context(pipes_struct *p)
 {
-	prs_mem_free(&p->out_data.frag);
+	data_blob_free(&p->out_data.frag);
 	data_blob_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
@@ -803,7 +803,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 	 * PDU.
 	 */
 
-	pdu_remaining = prs_offset(&p->out_data.frag)
+	pdu_remaining = p->out_data.frag.length
 		- p->out_data.current_pdu_sent;
 
 	if (pdu_remaining > 0) {
@@ -812,12 +812,12 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
-			  (unsigned int)prs_offset(&p->out_data.frag),
+			  (unsigned int)p->out_data.frag.length,
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
 
 		memcpy(data,
-		       prs_data_p(&p->out_data.frag)
+		       p->out_data.frag.data
 		       + p->out_data.current_pdu_sent,
 		       data_returned);
 
@@ -858,20 +858,20 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		return -1;
 	}
 
-	data_returned = MIN(n, prs_offset(&p->out_data.frag));
+	data_returned = MIN(n, p->out_data.frag.length);
 
-	memcpy( data, prs_data_p(&p->out_data.frag), (size_t)data_returned);
+	memcpy(data, p->out_data.frag.data, (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
 
   out:
-	(*is_data_outstanding) = prs_offset(&p->out_data.frag) > n;
+	(*is_data_outstanding) = p->out_data.frag.length > n;
 
-	if (p->out_data.current_pdu_sent == prs_offset(&p->out_data.frag)) {
+	if (p->out_data.current_pdu_sent == p->out_data.frag.length) {
 		/* We've returned everything in the out_data.frag
 		 * so we're done with this pdu. Free it and reset
 		 * current_pdu_sent. */
 		p->out_data.current_pdu_sent = 0;
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 
 		if (p->out_data.data_sent_length >= p->out_data.rdata.length) {
 			/*

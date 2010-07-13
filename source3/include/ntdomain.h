@@ -76,7 +76,7 @@ typedef struct _output_data {
 	 * The current fragment being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	prs_struct frag;
+	DATA_BLOB frag;
 
 	/* The amount of data sent from the current PDU. */
 	uint32 current_pdu_sent;
