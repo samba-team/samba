@@ -301,6 +301,7 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ../librpc/gen_ndr/cli_drsuapi.c
                    ../librpc/gen_ndr/cli_spoolss.c
+                   ../librpc/rpc/dcerpc_util.c
                    ${LIBNDR_GEN_SRC}
                    ${RPCCLIENT_NDR_SRC}'''
 
