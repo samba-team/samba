@@ -627,42 +627,6 @@ static NTSTATUS rpc_write_recv(struct tevent_req *req)
 }
 
 
-static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
-				 struct ncacn_packet_header *prhdr,
-				 prs_struct *pdu)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = data_blob_const(prs_data_p(pdu), prs_data_size(pdu));
-
-	/*
-	 * This next call sets the endian bit correctly in current_pdu. We
-	 * will propagate this to rbuf later.
-	 */
-
-	status = dcerpc_pull_ncacn_packet_header(cli, &blob, prhdr);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (!prs_set_offset(pdu, prs_offset(pdu) + RPC_HEADER_LEN)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	if (UNMARSHALLING(pdu) && prhdr->drep[0] == 0) {
-		DEBUG(10,("parse_rpc_header: PDU data format is big-endian. Setting flag.\n"));
-		prs_set_endian_data(pdu, RPC_BIG_ENDIAN);
-	}
-
-	if (prhdr->frag_length > cli->max_recv_frag) {
-		DEBUG(0, ("cli_pipe_get_current_pdu: Server sent fraglen %d,"
-			  " we only allow %d\n", (int)prhdr->frag_length,
-			  (int)cli->max_recv_frag));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  Try and get a PDU's worth of data from current_pdu. If not, then read more
  from the wire.
