@@ -519,13 +519,13 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 static bool create_next_pdu_noauth(pipes_struct *p)
 {
-	DATA_BLOB hdr;
+	DATA_BLOB blob;
 	uint8_t hdr_flags;
 	NTSTATUS status;
-	RPC_HDR_RESP hdr_resp;
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
+	union dcerpc_payload u;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -537,7 +537,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 		return True;
 	}
 
-	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
+	ZERO_STRUCT(u.response);
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
@@ -576,7 +576,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 * send.
 	 */
 
-	hdr_resp.alloc_hint = data_len_left;
+	u.response.alloc_hint = data_len_left;
 
 	/*
 	 * Work out if this PDU will be the last.
@@ -591,39 +591,29 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 */
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
-	status = dcerpc_push_ncacn_packet_header(
+	/* Set the data into the PDU. */
+	u.response.stub_and_verifier =
+		data_blob_const(prs_data_p(&p->out_data.rdata) +
+				p->out_data.data_sent_length, data_len);
+
+	status = dcerpc_push_ncacn_packet(
 				prs_get_mem_context(&p->out_data.frag),
 				DCERPC_PKT_RESPONSE,
 				hdr_flags,
-				RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len,
 				0,
 				p->call_id,
-				&hdr);
+				&u,
+				&blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	/* Store the header in the data stream. */
+	/* Store the packet in the data stream. */
 	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)hdr.data, hdr.length)) {
+				(char *)blob.data, blob.length)) {
 		DEBUG(0, ("Out of memory.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
-		DEBUG(0,("create_next_pdu_noath: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Copy the data into the PDU. */
-
-	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
-				     p->out_data.data_sent_length, data_len)) {
-		DEBUG(0,("create_next_pdu_noauth: failed to copy %u bytes of data.\n", (unsigned int)data_len));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
