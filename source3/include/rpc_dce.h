@@ -37,24 +37,8 @@
 
 #define RPC_HDR_REQ_LEN 8
 
-/* RPC_HDR_RESP - ms response rpc header */
-typedef struct rpc_hdr_resp_info {
-	uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
-	uint16 context_id;   /* 0 - presentation context identifier */
-	uint8  cancel_count; /* 0 - cancel count */
-	uint8  reserved;     /* 0 - reserved. */
-} RPC_HDR_RESP;
-
 #define RPC_HDR_RESP_LEN 8
 
-/* RPC_HDR_AUTH */
-typedef struct rpc_hdr_auth_info {
-	uint8 auth_type; /* See XXX_AUTH_TYPE above. */
-	uint8 auth_level; /* See RPC_PIPE_AUTH_XXX_LEVEL above. */
-	uint8 auth_pad_len;
-	uint8 auth_reserved;
-	uint32 auth_context_id;
-} RPC_HDR_AUTH;
 
 #define RPC_HDR_AUTH_LEN 8
 

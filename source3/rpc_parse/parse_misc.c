@@ -57,31 +57,3 @@ bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 
 	return True;
 }
-
-/*******************************************************************
- Reads or writes a struct GUID
-********************************************************************/
-
-bool smb_io_uuid(const char *desc, struct GUID *uuid, 
-		 prs_struct *ps, int depth)
-{
-	if (uuid == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_uuid");
-	depth++;
-
-	if(!prs_uint32 ("data   ", ps, depth, &uuid->time_low))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_mid))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_hi_and_version))
-		return False;
-
-	if(!prs_uint8s (False, "data   ", ps, depth, uuid->clock_seq, sizeof(uuid->clock_seq)))
-		return False;
-	if(!prs_uint8s (False, "data   ", ps, depth, uuid->node, sizeof(uuid->node)))
-		return False;
-
-	return True;
-}
