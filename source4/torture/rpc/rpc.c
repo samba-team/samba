@@ -489,6 +489,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
 	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
+	torture_suite_add_suite(suite, torture_rpc_bind(suite));
 
 	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 
