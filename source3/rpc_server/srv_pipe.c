@@ -59,18 +59,17 @@ static DATA_BLOB generic_session_key(void)
 
 static bool create_next_pdu_ntlmssp(pipes_struct *p)
 {
-	DATA_BLOB hdr;
+	DATA_BLOB blob;
 	uint8_t hdr_flags;
-	RPC_HDR_RESP hdr_resp;
 	uint32 ss_padding_len = 0;
 	uint32 data_space_available;
 	uint32 data_len_left;
 	uint32 data_len;
 	NTSTATUS status;
-	DATA_BLOB auth_blob;
-	RPC_HDR_AUTH auth_info;
+	DATA_BLOB auth_blob = data_blob_null;
 	uint8 auth_type, auth_level;
 	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
+	union dcerpc_payload u;
 	TALLOC_CTX *frame;
 
 	/*
@@ -83,7 +82,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		return True;
 	}
 
-	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
+	ZERO_STRUCT(u.response);
 
 	/* Set up rpc header flags. */
 	if (p->out_data.data_sent_length == 0) {
@@ -136,7 +135,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 * send.
 	 */
 
-	hdr_resp.alloc_hint = data_len_left;
+	u.response.alloc_hint = data_len_left;
 
 	/*
 	 * Work out if this PDU will be the last.
@@ -152,46 +151,39 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
-	status = dcerpc_push_ncacn_packet_header(
+	/* Set the data into the PDU. */
+	u.response.stub_and_verifier =
+		data_blob_const(prs_data_p(&p->out_data.rdata), data_len);
+
+	status = dcerpc_push_ncacn_packet(
 				prs_get_mem_context(&p->out_data.frag),
 				DCERPC_PKT_RESPONSE,
 				hdr_flags,
-				RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
-				  data_len + ss_padding_len +
-				  RPC_HDR_AUTH_LEN + NTLMSSP_SIG_SIZE,
 				NTLMSSP_SIG_SIZE,
 				p->call_id,
-				&hdr);
+				&u,
+				&blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall RPC Header.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	/* Store the header in the data stream. */
+	/* Set the proper length on the pdu */
+	dcerpc_set_frag_length(&blob, blob.length +
+					ss_padding_len +
+					RPC_HDR_AUTH_LEN +
+					NTLMSSP_SIG_SIZE);
+
+	/* Store the packet in the data stream. */
 	if (!prs_copy_data_in(&p->out_data.frag,
-				(char *)hdr.data, hdr.length)) {
+				(char *)blob.data, blob.length)) {
 		DEBUG(0, ("Out of memory.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
-		DEBUG(0,("create_next_pdu_ntlmssp: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Copy the data into the PDU. */
-
-	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
-				     p->out_data.data_sent_length, data_len)) {
-		DEBUG(0,("create_next_pdu_ntlmssp: failed to copy %u bytes of data.\n", (unsigned int)data_len));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	/* Copy the sign/seal padding data. */
+	/* Append the sign/seal padding data. */
 	if (ss_padding_len) {
 		char pad[SERVER_NDR_PADDING_SIZE];
 
@@ -205,7 +197,6 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		}
 	}
 
-
 	/* Now write out the auth header and null blob. */
 	if (p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
 		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
@@ -218,11 +209,20 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
-	init_rpc_hdr_auth(&auth_info, auth_type, auth_level, ss_padding_len, 1 /* context id. */);
+	/* auth_blob is intentionally null, it will be appended later */
+	status = dcerpc_push_dcerpc_auth(
+				prs_get_mem_context(&p->out_data.frag),
+				auth_type,
+				auth_level,
+				ss_padding_len,
+				1, /* context id. */
+				&auth_blob,
+				&blob);
 
-	if (!smb_io_rpc_hdr_auth("hdr_auth", &auth_info,
-				&p->out_data.frag, 0)) {
-		DEBUG(0,("create_next_pdu_ntlmssp: failed to marshall RPC_HDR_AUTH.\n"));
+	/* Store auth header in the data stream. */
+	if (!prs_copy_data_in(&p->out_data.frag,
+				(char *)blob.data, blob.length)) {
+		DEBUG(0, ("Out of memory.\n"));
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
@@ -269,11 +269,11 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 			return False;
 	}
 
-	/* Append the auth blob. */
+	/* Finally append the auth blob. */
 	if (!prs_copy_data_in(&p->out_data.frag, (char *)auth_blob.data,
 			      NTLMSSP_SIG_SIZE)) {
-		DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes auth blob.\n",
-				(unsigned int)NTLMSSP_SIG_SIZE));
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)NTLMSSP_SIG_SIZE));
 		talloc_free(frame);
 		prs_mem_free(&p->out_data.frag);
 		return False;
