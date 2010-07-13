@@ -1784,6 +1784,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 }
 
 static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				  struct ncacn_packet **pkt,
 				  prs_struct *reply_pdu)
 {
 	struct rpc_api_pipe_state *state = tevent_req_data(
@@ -1803,6 +1804,10 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	 */
 	talloc_steal(mem_ctx, prs_data_p(reply_pdu));
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
+
+	if (pkt) {
+		*pkt = talloc_steal(mem_ctx, state->pkt);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -2645,7 +2650,7 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 		req, struct rpc_api_pipe_req_state);
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, state, &state->reply_pdu);
+	status = rpc_api_pipe_recv(subreq, state, NULL, &state->reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -2945,7 +2950,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct ncacn_packet r;
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), NULL, &reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
@@ -3188,52 +3193,36 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
-	DATA_BLOB server_spnego_response = data_blob_null;
 	DATA_BLOB tmp_blob = data_blob_null;
+	struct ncacn_packet *pkt;
+	struct dcerpc_auth auth;
 	prs_struct reply_pdu;
-	struct ncacn_packet_header hdr;
-	struct rpc_hdr_auth_info hdr_auth;
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	status = parse_rpc_header(state->cli, &hdr, &reply_pdu);
+	status = dcerpc_pull_dcerpc_auth(pkt,
+					 &pkt->u.alter_resp.auth_info,
+					 &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	if (!prs_set_offset(
-		    &reply_pdu,
-		    hdr.frag_length - hdr.auth_length - RPC_HDR_AUTH_LEN)) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &reply_pdu, 0)) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	server_spnego_response = data_blob(NULL, hdr.auth_length);
-	prs_copy_data_out((char *)server_spnego_response.data, &reply_pdu,
-			  hdr.auth_length);
-
 	/* Check we got a valid auth response. */
-	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK,
+	if (!spnego_parse_auth_response(auth.credentials,
+					NT_STATUS_OK,
 					OID_NTLMSSP, &tmp_blob)) {
-		data_blob_free(&server_spnego_response);
 		data_blob_free(&tmp_blob);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
-	data_blob_free(&server_spnego_response);
 	data_blob_free(&tmp_blob);
 
 	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
