@@ -31,7 +31,9 @@
  **/
 void prs_dump(const char *name, int v, prs_struct *ps)
 {
-	prs_dump_region(name, v, ps, ps->data_offset, ps->buffer_size);
+	prs_dump_region(name, v,
+			(uint8_t *)ps->data_p,
+			ps->data_offset, ps->buffer_size);
 }
 
 /**
@@ -39,13 +41,15 @@ void prs_dump(const char *name, int v, prs_struct *ps)
  **/
 void prs_dump_before(const char *name, int v, prs_struct *ps)
 {
-	prs_dump_region(name, v, ps, 0, ps->data_offset);
+	prs_dump_region(name, v,
+			(uint8_t *)ps->data_p,
+			0, ps->data_offset);
 }
 
 /**
  * Dump everything from the start of the prs up to the current location.
  **/
-void prs_dump_region(const char *name, int v, prs_struct *ps,
+void prs_dump_region(const char *name, int v, uint8_t *data_p,
 		     int from_off, int to_off)
 {
 	int fd, i;
@@ -66,7 +70,7 @@ void prs_dump_region(const char *name, int v, prs_struct *ps,
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		sz = write(fd, ps->data_p + from_off, to_off - from_off);
+		sz = write(fd, data_p + from_off, to_off - from_off);
 		i = close(fd);
 		if ( (sz != to_off-from_off) || (i != 0) ) {
 			DEBUG(0,("Error writing/closing %s: %ld!=%ld %d\n", fname, (unsigned long)sz, (unsigned long)to_off-from_off, i ));

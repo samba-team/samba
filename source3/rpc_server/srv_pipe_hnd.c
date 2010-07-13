@@ -45,16 +45,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	prs_mem_free(&o_data->frag);
 
 	/* Free any memory in the current return data buffer. */
-	prs_mem_free(&o_data->rdata);
-
-	/*
-	 * Initialize the outgoing RPC data buffer.
-	 * we will use this as the raw data area for replying to rpc requests.
-	 */
-	if(!prs_init(&o_data->rdata, 128, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
-		return False;
-	}
+	data_blob_free(&o_data->rdata);
 
 	return True;
 }
@@ -153,7 +144,7 @@ static bool get_pdu_size(pipes_struct *p)
 static void free_pipe_context(pipes_struct *p)
 {
 	prs_mem_free(&p->out_data.frag);
-	prs_mem_free(&p->out_data.rdata);
+	data_blob_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
 	DEBUG(3, ("free_pipe_context: "
@@ -840,13 +831,13 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 	 */
 
 	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length "
-		  "= %u, prs_offset(&p->out_data.rdata) = %u.\n",
+		  "= %u, p->out_data.rdata.length = %u.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
 		  (int)p->fault_state,
 		  (unsigned int)p->out_data.data_sent_length,
-		  (unsigned int)prs_offset(&p->out_data.rdata) ));
+		  (unsigned int)p->out_data.rdata.length));
 
-	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
+	if (p->out_data.data_sent_length >= p->out_data.rdata.length) {
 		/*
 		 * We have sent all possible data, return 0.
 		 */
@@ -882,8 +873,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		p->out_data.current_pdu_sent = 0;
 		prs_mem_free(&p->out_data.frag);
 
-		if (p->out_data.data_sent_length
-		    >= prs_offset(&p->out_data.rdata)) {
+		if (p->out_data.data_sent_length >= p->out_data.rdata.length) {
 			/*
 			 * We're completely finished with both outgoing and
 			 * incoming data streams. It's safe to free all

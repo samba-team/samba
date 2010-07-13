@@ -67,7 +67,7 @@ typedef struct _output_data {
 	/*
 	 * Raw RPC output data. This does not include RPC headers or footers.
 	 */
-	prs_struct rdata;
+	DATA_BLOB rdata;
 
 	/* The amount of data sent from the current rdata struct. */
 	uint32 data_sent_length;

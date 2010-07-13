@@ -172,11 +172,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
-	/*
-	 * Initialize the outgoing RPC data buffer with no memory.
-	 */
-	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
-
 	p->syntax = *syntax;
 
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
@@ -247,8 +242,6 @@ static NTSTATUS internal_ndr_pull(TALLOC_CTX *mem_ctx,
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
-	bool ret;
 
 	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax) ||
 	    (opnum >= table->num_calls)) {
@@ -257,12 +250,8 @@ static NTSTATUS internal_ndr_pull(TALLOC_CTX *mem_ctx,
 
 	call = &table->calls[opnum];
 
-	ret = prs_data_blob(&cli->pipes_struct->out_data.rdata, &blob, mem_ctx);
-	if (!ret) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_blob(&cli->pipes_struct->out_data.rdata,
+				  mem_ctx);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -314,8 +303,6 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_init_empty(&cli->pipes_struct->out_data.rdata, cli->pipes_struct->mem_ctx, MARSHALL);
-
 	status = internal_ndr_push(mem_ctx, cli, table, opnum, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -331,7 +318,7 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 	}
 
 	prs_mem_free(&cli->pipes_struct->in_data.data);
-	prs_mem_free(&cli->pipes_struct->out_data.rdata);
+	data_blob_free(&cli->pipes_struct->out_data.rdata);
 
 	return NT_STATUS_OK;
 }

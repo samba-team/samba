@@ -95,7 +95,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 * Work out how much we can fit in a single PDU.
 	 */
 
-	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
+	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
 
 	/*
 	 * Ensure there really is data left to send.
@@ -141,7 +141,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 * Work out if this PDU will be the last.
 	 */
 	if (p->out_data.data_sent_length + data_len >=
-					prs_offset(&p->out_data.rdata)) {
+					p->out_data.rdata.length) {
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
@@ -153,7 +153,7 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
-		data_blob_const(prs_data_p(&p->out_data.rdata), data_len);
+		data_blob_const(p->out_data.rdata.data, data_len);
 
 	status = dcerpc_push_ncacn_packet(
 				prs_get_mem_context(&p->out_data.frag),
@@ -331,7 +331,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 * Work out how much we can fit in a single PDU.
 	 */
 
-	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
+	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
 
 	/*
 	 * Ensure there really is data left to send.
@@ -378,7 +378,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 * Work out if this PDU will be the last.
 	 */
 	if (p->out_data.data_sent_length + data_len >=
-					prs_offset(&p->out_data.rdata)) {
+					p->out_data.rdata.length) {
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
@@ -390,7 +390,7 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
-		data_blob_const(prs_data_p(&p->out_data.rdata) +
+		data_blob_const(p->out_data.rdata.data +
 				p->out_data.data_sent_length, data_len);
 
 	status = dcerpc_push_ncacn_packet(
@@ -550,7 +550,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 * Work out how much we can fit in a single PDU.
 	 */
 
-	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
+	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
 
 	/*
 	 * Ensure there really is data left to send.
@@ -581,7 +581,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	/*
 	 * Work out if this PDU will be the last.
 	 */
-	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
+	if(p->out_data.data_sent_length + data_len >= p->out_data.rdata.length) {
 		hdr_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
@@ -593,7 +593,7 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 
 	/* Set the data into the PDU. */
 	u.response.stub_and_verifier =
-		data_blob_const(prs_data_p(&p->out_data.rdata) +
+		data_blob_const(p->out_data.rdata.data +
 				p->out_data.data_sent_length, data_len);
 
 	status = dcerpc_push_ncacn_packet(
@@ -831,7 +831,7 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
-	prs_mem_free(&p->out_data.rdata);
+	data_blob_free(&p->out_data.rdata);
 
 	/*
 	 * Marshall directly into the outgoing PDU space. We
@@ -892,7 +892,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
-	prs_mem_free(&p->out_data.rdata);
+	data_blob_free(&p->out_data.rdata);
 
 	/*
 	 * Marshall directly into the outgoing PDU space. We
@@ -1981,7 +1981,7 @@ bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt)
 			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
 			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
 		if(!become_authenticated_pipe_user(p)) {
-			prs_mem_free(&p->out_data.rdata);
+			data_blob_free(&p->out_data.rdata);
 			return False;
 		}
 		changed_user = True;
@@ -2023,7 +2023,7 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
-	uint32 offset1, offset2;
+	uint32_t offset1;
 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
@@ -2057,7 +2057,7 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		return True;
 	}
 
-	offset1 = prs_offset(&p->out_data.rdata);
+	offset1 = p->out_data.rdata.length;
 
         DEBUG(6, ("api_rpc_cmds[%d].fn == %p\n", 
                 fn_num, api_rpc_cmds[fn_num].fn));
@@ -2066,7 +2066,7 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
 			 api_rpc_cmds[fn_num].name));
-		prs_mem_free(&p->out_data.rdata);
+		data_blob_free(&p->out_data.rdata);
 		return False;
 	}
 
@@ -2084,15 +2084,15 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		return True;
 	}
 
-	offset2 = prs_offset(&p->out_data.rdata);
-	prs_set_offset(&p->out_data.rdata, offset1);
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, pkt->u.request.opnum, &p->out_data.rdata);
+		prs_dump_region(name, pkt->u.request.opnum,
+				p->out_data.rdata.data,
+				offset1,
+				p->out_data.rdata.length);
 	}
-	prs_set_offset(&p->out_data.rdata, offset2);
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n",
 		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));

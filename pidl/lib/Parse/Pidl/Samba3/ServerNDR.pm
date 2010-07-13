@@ -211,11 +211,8 @@ sub ParseFunction($$)
 	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "blob = ndr_push_blob(push);";
-	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {";
-	pidl "\ttalloc_free(r);";
-	pidl "\treturn false;";
-	pidl "}";
+	pidl "p->out_data.rdata = ndr_push_blob(push);";
+	pidl "talloc_steal(p->mem_ctx, p->out_data.rdata.data);";
 	pidl "";
 	pidl "talloc_free(r);";
 	pidl "";

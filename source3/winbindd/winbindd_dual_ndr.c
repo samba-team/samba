@@ -266,19 +266,20 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 	p.mem_ctx = talloc_stackframe();
 	p.in_data.data.buffer_size = state->request->extra_len;
 	p.in_data.data.data_p = state->request->extra_data.data;
-	prs_init(&p.out_data.rdata, 0, state->mem_ctx, MARSHALL);
 
 	ret = fns[state->request->data.ndrcmd].fn(&p);
-	TALLOC_FREE(p.mem_ctx);
 	if (!ret) {
+		TALLOC_FREE(p.mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
 	state->response->extra_data.data =
-		talloc_memdup(state->mem_ctx, p.out_data.rdata.data_p,
-			      p.out_data.rdata.data_offset);
-	state->response->length += p.out_data.rdata.data_offset;
-	prs_mem_free(&p.out_data.rdata);
+		talloc_move(state->mem_ctx, &p.out_data.rdata.data);
+	state->response->length += p.out_data.rdata.length;
+	p.out_data.rdata.length = 0;
+
+	TALLOC_FREE(p.mem_ctx);
+
 	if (state->response->extra_data.data == NULL) {
 		return WINBINDD_ERROR;
 	}
