@@ -950,6 +950,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 	uint32 current_pdu_len = prs_data_size(current_pdu);
 	DATA_BLOB blob = data_blob_const(prs_data_p(current_pdu),
 					 prs_data_size(current_pdu));
+	uint8 ss_padding_len = 0;
 
 	ret = dcerpc_pull_ncacn_packet(cli, &blob, pkt);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -983,97 +984,96 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 	/* Ensure we have the correct type. */
 	switch (pkt->ptype) {
-		case DCERPC_PKT_ALTER_RESP:
-		case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_ALTER_RESP:
+	case DCERPC_PKT_BIND_ACK:
 
-			/* Alter context and bind ack share the same packet definitions. */
-			break;
+		/* Alter context and bind ack share the same packet definitions. */
+		break;
 
 
-		case DCERPC_PKT_RESPONSE:
-		{
-			uint8 ss_padding_len = 0;
+	case DCERPC_PKT_RESPONSE:
 
-			if (!prs_set_offset(current_pdu, prs_offset(current_pdu) + RPC_HDR_RESP_LEN)) {
-				return NT_STATUS_BUFFER_TOO_SMALL;
-			}
-
-			/* Here's where we deal with incoming sign/seal. */
-			ret = cli_pipe_validate_rpc_response(cli, pkt,
-					current_pdu, &ss_padding_len);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-
-			/* Point the return values at the NDR data. Remember to remove any ss padding. */
-			*ppdata = prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
-
-			if (current_pdu_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN + ss_padding_len) {
-				return NT_STATUS_BUFFER_TOO_SMALL;
-			}
-
-			*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
-
-			/* Remember to remove the auth footer. */
-			if (pkt->auth_length) {
-				/* We've already done integer wrap tests on auth_len in
-					cli_pipe_validate_rpc_response(). */
-				if (*pdata_len < RPC_HDR_AUTH_LEN + pkt->auth_length) {
-					return NT_STATUS_BUFFER_TOO_SMALL;
-				}
-				*pdata_len -= (RPC_HDR_AUTH_LEN + pkt->auth_length);
-			}
-
-			DEBUG(10,("cli_pipe_validate_current_pdu: got pdu len %u, data_len %u, ss_len %u\n",
-				current_pdu_len, *pdata_len, ss_padding_len ));
-
-			/*
-			 * If this is the first reply, and the allocation hint is reasonably, try and
-			 * set up the return_data parse_struct to the correct size.
-			 */
-
-			if ((prs_data_size(return_data) == 0) &&
-			    pkt->u.response.alloc_hint &&
-			    (pkt->u.response.alloc_hint < 15*1024*1024)) {
-				if (!prs_set_buffer_size(return_data,
-						pkt->u.response.alloc_hint)) {
-					DEBUG(0, ("reply alloc hint %d too "
-						  "large to allocate\n",
-					    (int)pkt->u.response.alloc_hint));
-					return NT_STATUS_NO_MEMORY;
-				}
-			}
-
-			break;
+		if (!prs_set_offset(current_pdu,
+				prs_offset(current_pdu) + RPC_HDR_RESP_LEN)) {
+			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
 
-		case DCERPC_PKT_BIND_NAK:
-			DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK "
-				  "received from %s!\n",
-				  rpccli_pipe_txt(talloc_tos(), cli)));
-			/* Use this for now... */
-			return NT_STATUS_NETWORK_ACCESS_DENIED;
+		/* Here's where we deal with incoming sign/seal. */
+		ret = cli_pipe_validate_rpc_response(cli, pkt,
+				current_pdu, &ss_padding_len);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
 
-		case DCERPC_PKT_FAULT:
+		/* Point the return values at the NDR data.
+		 * Remember to remove any ss padding. */
+		*ppdata = prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
 
-			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
-				  "code %s received from %s!\n",
-				  dcerpc_errstr(talloc_tos(),
-				  pkt->u.fault.status),
-				rpccli_pipe_txt(talloc_tos(), cli)));
+		if (current_pdu_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN + ss_padding_len) {
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
 
-			if (NT_STATUS_IS_OK(NT_STATUS(pkt->u.fault.status))) {
-				return NT_STATUS_UNSUCCESSFUL;
-			} else {
-				return NT_STATUS(pkt->u.fault.status);
+		*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
+
+		/* Remember to remove the auth footer. */
+		if (pkt->auth_length) {
+			/* We've already done integer wrap tests on auth_len in
+				cli_pipe_validate_rpc_response(). */
+			if (*pdata_len < RPC_HDR_AUTH_LEN + pkt->auth_length) {
+				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
+			*pdata_len -= (RPC_HDR_AUTH_LEN + pkt->auth_length);
+		}
 
-		default:
-			DEBUG(0, ("cli_pipe_validate_current_pdu: unknown packet type %u received "
-				"from %s!\n",
-				(unsigned int)pkt->ptype,
-				rpccli_pipe_txt(talloc_tos(), cli)));
-			return NT_STATUS_INVALID_INFO_CLASS;
+		DEBUG(10, ("Got pdu len %u, data_len %u, ss_len %u\n",
+			   current_pdu_len, *pdata_len, ss_padding_len));
+
+		/*
+		 * If this is the first reply, and the allocation hint is
+		 * reasonable, try and set up the return_data parse_struct to
+		 * the correct size.
+		 */
+
+		if ((prs_data_size(return_data) == 0) &&
+		    pkt->u.response.alloc_hint &&
+		    (pkt->u.response.alloc_hint < 15*1024*1024)) {
+			if (!prs_set_buffer_size(return_data,
+					pkt->u.response.alloc_hint)) {
+				DEBUG(0, ("reply alloc hint %d too "
+					  "large to allocate\n",
+				    (int)pkt->u.response.alloc_hint));
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		break;
+
+	case DCERPC_PKT_BIND_NAK:
+		DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK "
+			  "received from %s!\n",
+			  rpccli_pipe_txt(talloc_tos(), cli)));
+		/* Use this for now... */
+		return NT_STATUS_NETWORK_ACCESS_DENIED;
+
+	case DCERPC_PKT_FAULT:
+
+		DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
+			  "code %s received from %s!\n",
+			  dcerpc_errstr(talloc_tos(),
+			  pkt->u.fault.status),
+			rpccli_pipe_txt(talloc_tos(), cli)));
+
+		if (NT_STATUS_IS_OK(NT_STATUS(pkt->u.fault.status))) {
+			return NT_STATUS_UNSUCCESSFUL;
+		} else {
+			return NT_STATUS(pkt->u.fault.status);
+		}
+
+	default:
+		DEBUG(0, ("Unknown packet type %u received from %s!\n",
+			(unsigned int)pkt->ptype,
+			rpccli_pipe_txt(talloc_tos(), cli)));
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (pkt->ptype != expected_pkt_type) {
