@@ -333,9 +333,10 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	struct dsdb_extended_replicated_objects *objs;
 	struct ldb_extended_dn_control *extended_dn_ctrl;
 	const char *err_msg;
-	
-	if (!dsdb_get_schema(ldb, NULL)) {
-		struct dsdb_schema *ldap_schema;
+	struct dsdb_schema *ldap_schema;
+
+	ldap_schema = dsdb_get_schema(ldb, NULL);
+	if (!ldap_schema) {
 		struct ldb_result *a_res;
 		struct ldb_result *c_res;
 		struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
@@ -515,6 +516,10 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		torture_assert(tctx, ret == LDB_SUCCESS, "ldb_msg_difference() has failed");
 		if (new_msg->num_elements != 0) {
 			char *s;
+			bool is_warning = true;
+			unsigned int idx;
+			struct ldb_message_element *el;
+			const struct dsdb_attribute * a;
 			struct ldb_ldif ldif;
 			ldif.changetype = LDB_CHANGETYPE_MODIFY;
 			ldif.msg = new_msg;
@@ -531,7 +536,31 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			s = talloc_asprintf_append(s,
 						   "# Should have no objects in 'difference' message. Diff elements: %d",
 						   new_msg->num_elements);
-			torture_fail(tctx, s);
+
+			/*
+			 * In case differences in messages are:
+			 * 1. Attributes with different values, i.e. 'replace'
+			 * 2. Those attributes are forward-link attributes
+			 * then we just warn about those differences.
+			 * It turns out windows doesn't send all of those values
+			 * in replicated_object but in linked_attributes.
+			 */
+			for (idx = 0; idx < new_msg->num_elements && is_warning; idx++) {
+				el = &new_msg->elements[idx];
+				a = dsdb_attribute_by_lDAPDisplayName(ldap_schema,
+				                                      el->name);
+				if (!(el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE))) {
+					/* DRS only value */
+					is_warning = false;
+				} else if (a->linkID & 1) {
+					is_warning = false;
+				}
+			}
+			if (is_warning) {
+				torture_warning(tctx, "%s", s);
+			} else {
+				torture_fail(tctx, s);
+			}
 		}
 
 		/* search_req is used as a tmp talloc context in the above */
