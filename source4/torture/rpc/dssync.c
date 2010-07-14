@@ -54,9 +54,10 @@ struct DsSyncTest {
 	struct dcerpc_binding *drsuapi_binding;
 	
 	const char *ldap_url;
-	const char *site_name;
 	const char *dest_address;
 	const char *domain_dn;
+	const char *config_dn;
+	const char *schema_dn;
 
 	/* what we need to do as 'Administrator' */
 	struct {
@@ -297,89 +298,21 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 
 static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 {
-	NTSTATUS status;
-	struct drsuapi_DsCrackNames r;
-	union drsuapi_DsNameRequest req;
-	union drsuapi_DsNameCtr ctr;
-	uint32_t level_out = 0;
-	struct drsuapi_DsNameString names[1];
-	bool ret = true;
-	struct cldap_socket *cldap;
-	struct cldap_netlogon search;
-	struct tsocket_address *dest_addr;
-	int ret2;
+	struct ldb_context *ldb = ctx->admin.ldap.ldb;
 
-	ret2 = tsocket_address_inet_from_strings(tctx, "ip",
-						 ctx->dest_address,
-						 lpcfg_cldap_port(tctx->lp_ctx),
-						 &dest_addr);
-	if (ret2 != 0) {
-		printf("failed to create tsocket_address for '%s' port %u - %s\n",
-			ctx->drsuapi_binding->host, lpcfg_cldap_port(tctx->lp_ctx),
-			strerror(errno));
-		return false;
-	}
+	/* We must have LDB connection ready by this time */
+	SMB_ASSERT(ldb != NULL);
 
-	status = cldap_socket_init(ctx, NULL, NULL, dest_addr, &cldap);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to setup cldap socket - %s\n",
-			nt_errstr(status));
-		return false;
-	}
+	ctx->domain_dn = ldb_dn_get_linearized(ldb_get_default_basedn(ldb));
+	torture_assert(tctx, ctx->domain_dn != NULL, "Failed to get Domain DN");
 
-	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
-	r.in.level			= 1;
-	r.in.req			= &req;
-	r.in.req->req1.codepage		= 1252; /* western european */
-	r.in.req->req1.language		= 0x00000407; /* german */
-	r.in.req->req1.count		= 1;
-	r.in.req->req1.names		= names;
-	r.in.req->req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
-	r.in.req->req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
-	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(ctx, "%s\\", lpcfg_workgroup(tctx->lp_ctx));
+	ctx->config_dn = ldb_dn_get_linearized(ldb_get_config_basedn(ldb));
+	torture_assert(tctx, ctx->config_dn != NULL, "Failed to get Domain DN");
 
-	r.out.level_out			= &level_out;
-	r.out.ctr			= &ctr;
+	ctx->schema_dn = ldb_dn_get_linearized(ldb_get_schema_basedn(ldb));
+	torture_assert(tctx, ctx->schema_dn != NULL, "Failed to get Domain DN");
 
-	status = dcerpc_drsuapi_DsCrackNames_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		return false;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		return false;
-	}
-
-	ctx->domain_dn = r.out.ctr->ctr1->array[0].result_name;
-	
-	ZERO_STRUCT(search);
-	search.in.dest_address = NULL;
-	search.in.dest_port = 0;
-	search.in.acct_control = -1;
-	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	search.in.map_response = true;
-	status = cldap_netlogon(cldap, ctx, &search);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");
-		printf("cldap_netlogon() returned %s. Defaulting to Site-Name: %s\n", errstr, ctx->site_name);		
-	} else {
-		ctx->site_name = talloc_steal(ctx, search.out.netlogon.data.nt5_ex.client_site);
-		printf("cldap_netlogon() returned Client Site-Name: %s.\n",ctx->site_name);
-		printf("cldap_netlogon() returned Server Site-Name: %s.\n",search.out.netlogon.data.nt5_ex.server_site);
-	}
-
-	if (!ctx->domain_dn) {
-		struct ldb_context *ldb = ldb_init(ctx, tctx->ev);
-		struct ldb_dn *dn = samdb_dns_domain_to_dn(ldb, ctx, search.out.netlogon.data.nt5_ex.dns_domain);
-		ctx->domain_dn = ldb_dn_alloc_linearized(ctx, dn);
-		talloc_free(dn);
-		talloc_free(ldb);
-	}
-
-	return ret;
+	return true;
 }
 
 static bool test_analyse_objects(struct torture_context *tctx, 
