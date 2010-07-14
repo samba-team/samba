@@ -24,7 +24,8 @@
 
 struct cli_do_rpc_ndr_state {
 	const struct ndr_interface_call *call;
-	prs_struct q_ps, r_ps;
+	prs_struct q_ps;
+	DATA_BLOB r_pdu;
 	void *r;
 };
 
@@ -101,7 +102,7 @@ static void cli_do_rpc_ndr_done(struct tevent_req *subreq)
 		req, struct cli_do_rpc_ndr_state);
 	NTSTATUS status;
 
-	status = rpc_api_pipe_req_recv(subreq, state, &state->r_ps);
+	status = rpc_api_pipe_req_recv(subreq, state, &state->r_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -117,19 +118,12 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	struct ndr_pull *pull;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	DATA_BLOB blob;
-	bool ret;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	ret = prs_data_blob(&state->r_ps, &blob, talloc_tos());
-	if (!ret) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_blob(&state->r_pdu, mem_ctx);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

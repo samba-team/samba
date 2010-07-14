@@ -904,12 +904,13 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
  Do basic authentication checks on an incoming pdu.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
-			struct ncacn_packet *pkt,
-			DATA_BLOB *pdu,
-			uint8 expected_pkt_type,
-			DATA_BLOB *rdata,
-			prs_struct *return_data)
+static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
+						struct rpc_pipe_client *cli,
+						struct ncacn_packet *pkt,
+						DATA_BLOB *pdu,
+						uint8_t expected_pkt_type,
+						DATA_BLOB *rdata,
+						DATA_BLOB *reply_pdu)
 {
 	NTSTATUS ret = NT_STATUS_OK;
 	uint8 ss_padding_len = 0;
@@ -979,15 +980,15 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 		/*
 		 * If this is the first reply, and the allocation hint is
-		 * reasonable, try and set up the return_data parse_struct to
-		 * the correct size.
+		 * reasonable, try and set up the reply_pdu DATA_BLOB to the
+		 * correct size.
 		 */
 
-		if ((prs_data_size(return_data) == 0) &&
+		if ((reply_pdu->length == 0) &&
 		    pkt->u.response.alloc_hint &&
 		    (pkt->u.response.alloc_hint < 15*1024*1024)) {
-			if (!prs_set_buffer_size(return_data,
-					pkt->u.response.alloc_hint)) {
+			if (!data_blob_realloc(mem_ctx, reply_pdu,
+						pkt->u.response.alloc_hint)) {
 				DEBUG(0, ("reply alloc hint %d too "
 					  "large to allocate\n",
 				    (int)pkt->u.response.alloc_hint));
@@ -1242,8 +1243,10 @@ struct rpc_api_pipe_state {
 	DATA_BLOB incoming_frag;
 	struct ncacn_packet *pkt;
 
-	prs_struct incoming_pdu;	/* Incoming reply */
-	uint32_t incoming_pdu_offset;
+	/* Incoming reply */
+	DATA_BLOB reply_pdu;
+	size_t reply_pdu_offset;
+	uint8_t endianess;
 };
 
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq);
@@ -1267,12 +1270,10 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
-	state->incoming_pdu_offset = 0;
 	state->incoming_frag = data_blob_null;
-
-	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
-	/* Make incoming_pdu dynamic with no memory. */
-	prs_give_memory(&state->incoming_pdu, NULL, 0, true);
+	state->reply_pdu = data_blob_null;
+	state->reply_pdu_offset = 0;
+	state->endianess = DCERPC_DREP_LE;
 
 	/*
 	 * Ensure we're not sending too much.
@@ -1373,15 +1374,16 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	status = cli_pipe_validate_current_pdu(state->cli, state->pkt,
+	status = cli_pipe_validate_current_pdu(state,
+						state->cli, state->pkt,
 						&state->incoming_frag,
 						state->expected_pkt_type,
 						&rdata,
-						&state->incoming_pdu);
+						&state->reply_pdu);
 
 	DEBUG(10,("rpc_api_pipe: got frag len of %u at offset %u: %s\n",
 		  (unsigned)state->incoming_frag.length,
-		  (unsigned)state->incoming_pdu_offset,
+		  (unsigned)state->reply_pdu_offset,
 		  nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1398,30 +1400,32 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		DEBUG(10,("rpc_api_pipe: On %s PDU data format is "
 			  "big-endian.\n",
 			  rpccli_pipe_txt(talloc_tos(), state->cli)));
-		prs_set_endian_data(&state->incoming_pdu, RPC_BIG_ENDIAN);
+		state->endianess = 0x00; /* BIG ENDIAN */
 	}
 	/*
 	 * Check endianness on subsequent packets.
 	 */
-	if (state->incoming_pdu.bigendian_data &&
-	    (state->pkt->drep[0] == DCERPC_DREP_LE)) {
+	if (state->endianess != state->pkt->drep[0]) {
 		DEBUG(0,("rpc_api_pipe: Error : Endianness changed from %s to "
 			 "%s\n",
-			 state->incoming_pdu.bigendian_data?"big":"little",
-			 (state->pkt->drep[0] != DCERPC_DREP_LE)?"big":"little"));
+			 state->endianess?"little":"big",
+			 state->pkt->drep[0]?"little":"big"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	/* Now copy the data portion out of the pdu into rbuf. */
-	if (!prs_force_grow(&state->incoming_pdu, rdata.length)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+	if (state->reply_pdu.length < state->reply_pdu_offset + rdata.length) {
+		if (!data_blob_realloc(NULL, &state->reply_pdu,
+				state->reply_pdu_offset + rdata.length)) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 	}
 
-	memcpy(prs_data_p(&state->incoming_pdu) + state->incoming_pdu_offset,
-	       rdata.data, rdata.length);
-	state->incoming_pdu_offset += rdata.length;
+	memcpy(state->reply_pdu.data + state->reply_pdu_offset,
+		rdata.data, rdata.length);
+	state->reply_pdu_offset += rdata.length;
 
 	/* reset state->incoming_frag, there is no need to free it,
 	 * it will be reallocated to the right size the next time
@@ -1429,9 +1433,13 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	state->incoming_frag.length = 0;
 
 	if (state->pkt->pfc_flags & DCERPC_PFC_FLAG_LAST) {
+		/* make sure the pdu length is right now that we
+		 * have all the data available (alloc hint may
+		 * have allocated more than was actually used) */
+		state->reply_pdu.length = state->reply_pdu_offset;
 		DEBUG(10,("rpc_api_pipe: %s returned %u bytes.\n",
 			  rpccli_pipe_txt(talloc_tos(), state->cli),
-			  (unsigned)prs_data_size(&state->incoming_pdu)));
+			  (unsigned)state->reply_pdu.length));
 		tevent_req_done(req);
 		return;
 	}
@@ -1446,7 +1454,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				  struct ncacn_packet **pkt,
-				  prs_struct *reply_pdu)
+				  DATA_BLOB *reply_pdu)
 {
 	struct rpc_api_pipe_state *state = tevent_req_data(
 		req, struct rpc_api_pipe_state);
@@ -1456,15 +1464,14 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	*reply_pdu = state->incoming_pdu;
-	reply_pdu->mem_ctx = mem_ctx;
-
-	/*
-	 * Prevent state->incoming_pdu from being freed
-	 * when state is freed.
-	 */
-	talloc_steal(mem_ctx, prs_data_p(reply_pdu));
-	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
+	/* return data to caller and assign it ownership of memory */
+	if (reply_pdu) {
+		reply_pdu->data = talloc_move(mem_ctx, &state->reply_pdu.data);
+		reply_pdu->length = state->reply_pdu.length;
+		state->reply_pdu.length = 0;
+	} else {
+		data_blob_free(&state->reply_pdu);
+	}
 
 	if (pkt) {
 		*pkt = talloc_steal(mem_ctx, state->pkt);
@@ -2058,7 +2065,7 @@ struct rpc_api_pipe_req_state {
 	prs_struct *req_data;
 	uint32_t req_data_sent;
 	prs_struct outgoing_frag;
-	prs_struct reply_pdu;
+	DATA_BLOB reply_pdu;
 };
 
 static void rpc_api_pipe_req_write_done(struct tevent_req *subreq);
@@ -2088,6 +2095,7 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	state->req_data = req_data;
 	state->req_data_sent = 0;
 	state->call_id = get_rpc_call_id();
+	state->reply_pdu = data_blob_null;
 
 	if (cli->max_xmit_frag < DCERPC_REQUEST_LENGTH
 					+ RPC_MAX_SIGN_SIZE) {
@@ -2095,8 +2103,6 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto post_status;
 	}
-
-	prs_init_empty(&state->reply_pdu, state, UNMARSHALL);
 
 	if (!prs_init(&state->outgoing_frag, cli->max_xmit_frag,
 		      state, MARSHALL)) {
@@ -2292,7 +2298,7 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 }
 
 NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			       prs_struct *reply_pdu)
+			       DATA_BLOB *reply_pdu)
 {
 	struct rpc_api_pipe_req_state *state = tevent_req_data(
 		req, struct rpc_api_pipe_req_state);
@@ -2303,19 +2309,14 @@ NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		 * We always have to initialize to reply pdu, even if there is
 		 * none. The rpccli_* caller routines expect this.
 		 */
-		prs_init_empty(reply_pdu, mem_ctx, UNMARSHALL);
+		*reply_pdu = data_blob_null;
 		return status;
 	}
 
-	*reply_pdu = state->reply_pdu;
-	reply_pdu->mem_ctx = mem_ctx;
-
-	/*
-	 * Prevent state->req_pdu from being freed
-	 * when state is freed.
-	 */
-	talloc_steal(mem_ctx, prs_data_p(reply_pdu));
-	prs_init_empty(&state->reply_pdu, state, UNMARSHALL);
+	/* return data to caller and assign it ownership of memory */
+	reply_pdu->data = talloc_move(mem_ctx, &state->reply_pdu.data);
+	reply_pdu->length = state->reply_pdu.length;
+	state->reply_pdu.length = 0;
 
 	return NT_STATUS_OK;
 }
@@ -2507,13 +2508,12 @@ struct rpc_pipe_bind_state {
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct ncacn_packet *r,
-					   prs_struct *reply_pdu);
+					   struct ncacn_packet *r);
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 						    struct rpc_pipe_bind_state *state,
 						    struct ncacn_packet *r,
-						    prs_struct *reply_pdu);
+						    DATA_BLOB *reply_pdu);
 static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
 
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
@@ -2577,7 +2577,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
-	prs_struct reply_pdu;
+	DATA_BLOB reply_pdu;
 	struct ncacn_packet *pkt;
 	NTSTATUS status;
 
@@ -2614,8 +2614,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case PIPE_AUTH_TYPE_NTLMSSP:
 		/* Need to send AUTH3 packet - no reply. */
-		status = rpc_finish_auth3_bind_send(req, state, pkt,
-						    &reply_pdu);
+		status = rpc_finish_auth3_bind_send(req, state, pkt);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 		}
@@ -2642,8 +2641,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct ncacn_packet *r,
-					   prs_struct *reply_pdu)
+					   struct ncacn_packet *r)
 {
 	DATA_BLOB client_reply = data_blob_null;
 	struct dcerpc_auth auth;
@@ -2716,7 +2714,7 @@ static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 						    struct rpc_pipe_bind_state *state,
 						    struct ncacn_packet *r,
-						    prs_struct *rpc_in)
+						    DATA_BLOB *reply_pdu)
 {
 	DATA_BLOB server_ntlm_response = data_blob_null;
 	DATA_BLOB client_reply = data_blob_null;
@@ -2733,14 +2731,12 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	}
 
 	/* Process the returned NTLMSSP blob first. */
-	if (!prs_set_offset(rpc_in, r->frag_length
+	auth_blob = data_blob_const(reply_pdu->data
+					+ r->frag_length
 					- DCERPC_AUTH_TRAILER_LENGTH
-					- r->auth_length)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	auth_blob = data_blob_const(prs_data_p(rpc_in) + prs_offset(rpc_in),
-				    prs_data_size(rpc_in) - prs_offset(rpc_in));
+					- r->auth_length,
+				    DCERPC_AUTH_TRAILER_LENGTH
+					+ r->auth_length);
 
 	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2814,10 +2810,9 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 	DATA_BLOB tmp_blob = data_blob_null;
 	struct ncacn_packet *pkt;
 	struct dcerpc_auth auth;
-	prs_struct reply_pdu;
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
