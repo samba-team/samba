@@ -225,7 +225,7 @@ _PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, stru
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = _auth_system_session_info(mem_ctx, lp_ctx, false, &session_info);
+	nt_status = _auth_system_session_info(mem_ctx, lp_ctx, true, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
