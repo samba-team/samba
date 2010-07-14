@@ -784,19 +784,12 @@ static NTSTATUS get_complete_frag_recv(struct tevent_req *req)
  ****************************************************************************/
 
 static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
-				struct ncacn_packet_header *prhdr,
-				prs_struct *current_pdu,
-				uint8 *p_ss_padding_len)
+					struct ncacn_packet *pkt,
+					prs_struct *current_pdu,
+					uint8 *p_ss_padding_len)
 {
+	uint8_t *frag_data = (uint8_t *)prs_data_p(current_pdu);
 	struct dcerpc_auth auth_info;
-	uint32 save_offset = prs_offset(current_pdu);
-	uint32_t auth_len = prhdr->auth_length;
-	struct ntlmssp_state *ntlmssp_state = cli->auth->a_u.ntlmssp_state;
-	unsigned char *data = NULL;
-	size_t data_len;
-	unsigned char *full_packet_data = NULL;
-	size_t full_packet_data_len;
-	DATA_BLOB auth_blob;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -805,17 +798,43 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (!ntlmssp_state) {
+	if (!cli->auth->a_u.ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Ensure there's enough data for an authenticated response. */
-	if (auth_len > RPC_MAX_PDU_FRAG_LEN ||
-			prhdr->frag_length < RPC_HEADER_LEN +
-					     RPC_HDR_RESP_LEN +
-					     RPC_HDR_AUTH_LEN + auth_len) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_len %u is too large.\n",
-			(unsigned int)auth_len ));
+	if ((pkt->auth_length > RPC_MAX_PDU_FRAG_LEN) ||
+	    (pkt->frag_length < DCERPC_RESPONSE_LENGTH
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length)) {
+		DEBUG(0, ("auth_len %u is too long.\n",
+			  (unsigned int)pkt->auth_length));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	/* get the auth blob at the end of the packet */
+	blob = data_blob_const(frag_data + pkt->frag_length
+				- DCERPC_AUTH_TRAILER_LENGTH
+				- pkt->auth_length,
+			       DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length);
+
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
+		return status;
+	}
+
+	/* Ensure auth_pad_len fits into the packet. */
+	if (pkt->frag_length < DCERPC_RESPONSE_LENGTH
+				+ auth_info.auth_pad_length
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length) {
+		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
+			"too large (%u), auth_len (%u), frag_len = (%u).\n",
+			(unsigned int)auth_info.auth_pad_length,
+			(unsigned int)pkt->auth_length,
+			(unsigned int)pkt->frag_length));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -826,89 +845,53 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 	 * functions as NTLMv2 checks the rpc headers also.
 	 */
 
-	data = (unsigned char *)(prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN);
-	data_len = (size_t)(prhdr->frag_length - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len);
-
-	full_packet_data = (unsigned char *)prs_data_p(current_pdu);
-	full_packet_data_len = prhdr->frag_length - auth_len;
-
-	/* Pull the auth header and the following data into a blob. */
-        /* NB. The offset of the auth_header is relative to the *end*
-	 * of the packet, not the start. */
-	if(!prs_set_offset(current_pdu, prhdr->frag_length - RPC_HDR_AUTH_LEN - auth_len)) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: cannot move offset to %u.\n",
-			(unsigned int)RPC_HEADER_LEN + (unsigned int)RPC_HDR_RESP_LEN + (unsigned int)data_len ));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-        }
-
-	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu),
-			       prs_data_size(current_pdu) - prs_offset(current_pdu));
-
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
-		return status;
-	}
-
-	/* Ensure auth_pad_len fits into the packet. */
-	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_length +
-			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
-			"too large (%u), auth_len (%u), frag_len = (%u).\n",
-			(unsigned int)auth_info.auth_pad_length,
-			(unsigned int)auth_len,
-			(unsigned int)prhdr->frag_length));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-
-	auth_blob = auth_info.credentials;
-
 	switch (cli->auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			/* Data is encrypted. */
-			status = ntlmssp_unseal_packet(ntlmssp_state,
-							data, data_len,
-							full_packet_data,
-							full_packet_data_len,
-							&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unseal "
-					"packet from %s. Error was %s.\n",
-					rpccli_pipe_txt(talloc_tos(), cli),
-					nt_errstr(status) ));
-				return status;
-			}
-			break;
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			/* Data is signed. */
-			status = ntlmssp_check_packet(ntlmssp_state,
-							data, data_len,
-							full_packet_data,
-							full_packet_data_len,
-							&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0,("cli_pipe_verify_ntlmssp: check signing failed on "
-					"packet from %s. Error was %s.\n",
-					rpccli_pipe_txt(talloc_tos(), cli),
-					nt_errstr(status) ));
-				return status;
-			}
-			break;
-		default:
-			DEBUG(0, ("cli_pipe_verify_ntlmssp: unknown internal "
-				  "auth level %d\n", cli->auth->auth_level));
-			return NT_STATUS_INVALID_INFO_CLASS;
-	}
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data is encrypted. */
+		status = ntlmssp_unseal_packet(
+					cli->auth->a_u.ntlmssp_state,
+					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pkt->frag_length
+						- DCERPC_RESPONSE_LENGTH
+						- DCERPC_AUTH_TRAILER_LENGTH
+						- pkt->auth_length,
+					frag_data,
+					pkt->frag_length - pkt->auth_length,
+					&auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("failed to unseal packet from %s."
+				  " Error was %s.\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  nt_errstr(status)));
+			return status;
+		}
+		break;
 
-	/*
-	 * Return the current pointer to the data offset.
-	 */
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		status = ntlmssp_check_packet(
+					cli->auth->a_u.ntlmssp_state,
+					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pkt->frag_length
+						- DCERPC_RESPONSE_LENGTH
+						- DCERPC_AUTH_TRAILER_LENGTH
+						- pkt->auth_length,
+					frag_data,
+					pkt->frag_length - pkt->auth_length,
+					&auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("check signing failed on packet from %s."
+				  " Error was %s.\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  nt_errstr(status)));
+			return status;
+		}
+		break;
 
-	if(!prs_set_offset(current_pdu, save_offset)) {
-		DEBUG(0,("api_pipe_auth_process: failed to set offset back to %u\n",
-			(unsigned int)save_offset ));
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	default:
+		DEBUG(0, ("cli_pipe_verify_ntlmssp: unknown internal "
+			  "auth level %d\n", cli->auth->auth_level));
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/*
@@ -926,17 +909,12 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
  ****************************************************************************/
 
 static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
-				struct ncacn_packet_header *prhdr,
-				prs_struct *current_pdu,
-				uint8 *p_ss_padding_len)
+					 struct ncacn_packet *pkt,
+					 prs_struct *current_pdu,
+					 uint8 *p_ss_padding_len)
 {
+	uint8_t *frag_data = (uint8_t *)prs_data_p(current_pdu);
 	struct dcerpc_auth auth_info;
-	uint32_t auth_len = prhdr->auth_length;
-	uint32 save_offset = prs_offset(current_pdu);
-	struct schannel_state *schannel_auth =
-		cli->auth->a_u.schannel_auth;
-	uint8_t *data;
-	uint32 data_len;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -945,41 +923,32 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (auth_len < SCHANNEL_SIG_SIZE) {
-		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u.\n", (unsigned int)auth_len ));
+	if (pkt->auth_length < SCHANNEL_SIG_SIZE) {
+		DEBUG(0, ("auth_len %u.\n", (unsigned int)pkt->auth_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!schannel_auth) {
+	if (!cli->auth->a_u.schannel_auth) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Ensure there's enough data for an authenticated response. */
-	if ((auth_len > RPC_MAX_PDU_FRAG_LEN) ||
-			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length)) {
-		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u is too large.\n",
-			(unsigned int)auth_len ));
+	if ((pkt->auth_length > RPC_MAX_PDU_FRAG_LEN) ||
+	    (pkt->frag_length < DCERPC_RESPONSE_LENGTH
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length)) {
+		DEBUG(0, ("auth_len %u is too long.\n",
+			  (unsigned int)pkt->auth_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	data_len = prhdr->frag_length - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len;
+	/* get the auth blob at the end of the packet */
+	blob = data_blob_const(frag_data + pkt->frag_length
+				- DCERPC_AUTH_TRAILER_LENGTH
+				- pkt->auth_length,
+			       DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length);
 
-        /* Pull the auth header and the following data into a blob. */
-	/* NB. The offset of the auth_header is relative to the *end*
-	 * of the packet, not the start. */
-	if(!prs_set_offset(current_pdu,
-			prhdr->frag_length - RPC_HDR_AUTH_LEN - auth_len)) {
-		DEBUG(0,("cli_pipe_verify_schannel: cannot move "
-			"offset to %u.\n",
-			(unsigned int)(prhdr->frag_length -
-				RPC_HDR_AUTH_LEN - auth_len) ));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	blob = data_blob_const(prs_data_p(current_pdu)
-					+ prs_offset(current_pdu),
-			       prs_data_size(current_pdu)
-					- prs_offset(current_pdu));
 
 	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -988,48 +957,52 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 	}
 
 	/* Ensure auth_pad_len fits into the packet. */
-	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_length +
-			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length) {
+	if (pkt->frag_length < DCERPC_RESPONSE_LENGTH
+				+ auth_info.auth_pad_length
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_info.auth_pad_len "
 			"too large (%u), auth_len (%u), frag_len = (%u).\n",
 			(unsigned int)auth_info.auth_pad_length,
-			(unsigned int)auth_len,
-			(unsigned int)prhdr->frag_length));
+			(unsigned int)pkt->auth_length,
+			(unsigned int)pkt->frag_length));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	if (auth_info.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("cli_pipe_verify_schannel: Invalid auth info %d on schannel\n",
-			auth_info.auth_type));
+		DEBUG(0, ("Invalid auth info %d on schannel\n",
+			  auth_info.auth_type));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	blob = data_blob_const(prs_data_p(current_pdu) +
-				prs_offset(current_pdu) +
-				RPC_HDR_AUTH_LEN, auth_len);
-
 	if (DEBUGLEVEL >= 10) {
-		dump_NL_AUTH_SIGNATURE(talloc_tos(), &blob);
+		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_info.credentials);
 	}
-
-	data = (uint8_t *)prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN;
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = netsec_incoming_packet(schannel_auth,
-						talloc_tos(),
-						true,
-						data,
-						data_len,
-						&blob);
+		status = netsec_incoming_packet(
+					cli->auth->a_u.schannel_auth,
+					talloc_tos(),
+					true,
+					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pkt->frag_length
+						- DCERPC_RESPONSE_LENGTH
+						- DCERPC_AUTH_TRAILER_LENGTH
+						- pkt->auth_length,
+					&auth_info.credentials);
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = netsec_incoming_packet(schannel_auth,
-						talloc_tos(),
-						false,
-						data,
-						data_len,
-						&blob);
+		status = netsec_incoming_packet(
+					cli->auth->a_u.schannel_auth,
+					talloc_tos(),
+					false,
+					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pkt->frag_length
+						- DCERPC_RESPONSE_LENGTH
+						- DCERPC_AUTH_TRAILER_LENGTH
+						- pkt->auth_length,
+					&auth_info.credentials);
 		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -1042,16 +1015,6 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 				rpccli_pipe_txt(talloc_tos(), cli),
 				nt_errstr(status)));
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/*
-	 * Return the current pointer to the data offset.
-	 */
-
-	if(!prs_set_offset(current_pdu, save_offset)) {
-		DEBUG(0,("api_pipe_auth_process: failed to set offset back to %u\n",
-			(unsigned int)save_offset ));
-		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	/*
@@ -1069,20 +1032,24 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
  ****************************************************************************/
 
 static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
-				struct ncacn_packet_header *prhdr,
+				struct ncacn_packet *pkt,
 				prs_struct *current_pdu,
 				uint8 *p_ss_padding_len)
 {
 	NTSTATUS ret = NT_STATUS_OK;
 
 	/* Paranioa checks for auth_len. */
-	if (prhdr->auth_length) {
-		if (prhdr->auth_length > prhdr->frag_length) {
+	if (pkt->auth_length) {
+		if (pkt->auth_length > pkt->frag_length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (prhdr->auth_length + (unsigned int)RPC_HDR_AUTH_LEN < prhdr->auth_length ||
-				prhdr->auth_length + (unsigned int)RPC_HDR_AUTH_LEN < (unsigned int)RPC_HDR_AUTH_LEN) {
+		if ((pkt->auth_length
+		     + (unsigned int)DCERPC_AUTH_TRAILER_LENGTH
+						< pkt->auth_length) ||
+		    (pkt->auth_length
+		     + (unsigned int)DCERPC_AUTH_TRAILER_LENGTH
+			< (unsigned int)DCERPC_AUTH_TRAILER_LENGTH)) {
 			/* Integer wrap attempt. */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1093,40 +1060,42 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
 	 */
 
 	switch(cli->auth->auth_type) {
-		case PIPE_AUTH_TYPE_NONE:
-			if (prhdr->auth_length) {
-				DEBUG(3, ("cli_pipe_validate_rpc_response: "
-					  "Connection to %s - got non-zero "
-					  "auth len %u.\n",
-					rpccli_pipe_txt(talloc_tos(), cli),
-					(unsigned int)prhdr->auth_length));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			break;
+	case PIPE_AUTH_TYPE_NONE:
+		if (pkt->auth_length) {
+			DEBUG(3, ("cli_pipe_validate_rpc_response: "
+				  "Connection to %s - got non-zero "
+				  "auth len %u.\n",
+				rpccli_pipe_txt(talloc_tos(), cli),
+				(unsigned int)pkt->auth_length));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_NTLMSSP:
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			ret = cli_pipe_verify_ntlmssp(cli, prhdr, current_pdu, p_ss_padding_len);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	case PIPE_AUTH_TYPE_NTLMSSP:
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		ret = cli_pipe_verify_ntlmssp(cli, pkt, current_pdu,
+						   p_ss_padding_len);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_SCHANNEL:
-			ret = cli_pipe_verify_schannel(cli, prhdr, current_pdu, p_ss_padding_len);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		ret = cli_pipe_verify_schannel(cli, pkt, current_pdu,
+						    p_ss_padding_len);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_KRB5:
-		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-		default:
-			DEBUG(3, ("cli_pipe_validate_rpc_response: Connection "
-				  "to %s - unknown internal auth type %u.\n",
-				  rpccli_pipe_txt(talloc_tos(), cli),
-				  cli->auth->auth_type ));
-			return NT_STATUS_INVALID_INFO_CLASS;
+	case PIPE_AUTH_TYPE_KRB5:
+	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+	default:
+		DEBUG(3, ("cli_pipe_validate_rpc_response: Connection "
+			  "to %s - unknown internal auth type %u.\n",
+			  rpccli_pipe_txt(talloc_tos(), cli),
+			  cli->auth->auth_type ));
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	return NT_STATUS_OK;
@@ -1144,7 +1113,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 			uint32 *pdata_len,
 			prs_struct *return_data)
 {
-	struct ncacn_packet_header prhdr;
 	NTSTATUS ret = NT_STATUS_OK;
 	uint32 current_pdu_len = prs_data_size(current_pdu);
 	DATA_BLOB blob = data_blob_const(prs_data_p(current_pdu),
@@ -1165,12 +1133,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 			    prs_offset(current_pdu) + RPC_HEADER_LEN)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
-
-	/* FIXME: until all functions are converted to take in
-	 *	  a fully decoded packet
-	 */
-	memcpy(&prhdr, pkt, sizeof(prhdr));
-
 
 	if (current_pdu_len != pkt->frag_length) {
 		DEBUG(5, ("Incorrect pdu length %u, expected %u\n",
@@ -1204,7 +1166,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 			}
 
 			/* Here's where we deal with incoming sign/seal. */
-			ret = cli_pipe_validate_rpc_response(cli, &prhdr,
+			ret = cli_pipe_validate_rpc_response(cli, pkt,
 					current_pdu, &ss_padding_len);
 			if (!NT_STATUS_IS_OK(ret)) {
 				return ret;
