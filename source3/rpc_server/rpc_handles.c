@@ -103,7 +103,7 @@ bool init_pipe_handles(pipes_struct *p, const struct ndr_syntax_id *syntax)
 		/*
 		 * First open, we have to create the handle list
 		 */
-		hl = talloc_zero(p, struct handle_list);
+		hl = talloc_zero(NULL, struct handle_list);
 		if (hl == NULL) {
 			return false;
 		}
