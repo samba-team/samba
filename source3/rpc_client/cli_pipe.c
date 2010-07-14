@@ -270,31 +270,6 @@ static uint32 get_rpc_call_id(void)
 	return ++call_id;
 }
 
-/*
- * Realloc pdu to have a least "size" bytes
- */
-
-static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
-{
-	size_t extra_size;
-
-	if (prs_data_size(pdu) >= size) {
-		return true;
-	}
-
-	extra_size = size - prs_data_size(pdu);
-
-	if (!prs_force_grow(pdu, extra_size)) {
-		DEBUG(0, ("rpc_grow_buffer: Failed to grow parse struct by "
-			  "%d bytes.\n", (int)extra_size));
-		return false;
-	}
-
-	DEBUG(5, ("rpc_grow_buffer: grew buffer by %d bytes to %u\n",
-		  (int)extra_size, prs_data_size(pdu)));
-	return true;
-}
-
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
  Reads the whole size or give an error message
@@ -469,7 +444,7 @@ struct get_complete_frag_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
 	uint16_t frag_len;
-	prs_struct *pdu;
+	DATA_BLOB *pdu;
 };
 
 static void get_complete_frag_got_header(struct tevent_req *subreq);
@@ -478,12 +453,11 @@ static void get_complete_frag_got_rest(struct tevent_req *subreq);
 static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 						 struct event_context *ev,
 						 struct rpc_pipe_client *cli,
-						 prs_struct *pdu)
+						 DATA_BLOB *pdu)
 {
 	struct tevent_req *req, *subreq;
 	struct get_complete_frag_state *state;
-	DATA_BLOB blob;
-	uint32_t pdu_len;
+	size_t received;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -496,17 +470,16 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	state->frag_len = RPC_HEADER_LEN;
 	state->pdu = pdu;
 
-	pdu_len = prs_data_size(pdu);
-	if (pdu_len < RPC_HEADER_LEN) {
-		if (!rpc_grow_buffer(pdu, RPC_HEADER_LEN)) {
+	received = pdu->length;
+	if (received < RPC_HEADER_LEN) {
+		if (!data_blob_realloc(mem_ctx, pdu, RPC_HEADER_LEN)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
-		subreq = rpc_read_send(
-			state, state->ev,
-			state->cli->transport,
-			(uint8_t *)(prs_data_p(state->pdu) + pdu_len),
-			RPC_HEADER_LEN - pdu_len);
+		subreq = rpc_read_send(state, state->ev,
+					state->cli->transport,
+					pdu->data + received,
+					RPC_HEADER_LEN - received);
 		if (subreq == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
@@ -516,21 +489,20 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	blob = data_blob_const(prs_data_p(state->pdu), pdu_len);
-	state->frag_len = dcerpc_get_frag_length(&blob);
+	state->frag_len = dcerpc_get_frag_length(pdu);
 
 	/*
 	 * Ensure we have frag_len bytes of data.
 	 */
-	if (pdu_len < state->frag_len) {
-		if (!rpc_grow_buffer(pdu, state->frag_len)) {
+	if (received < state->frag_len) {
+		if (!data_blob_realloc(NULL, pdu, state->frag_len)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
 		subreq = rpc_read_send(state, state->ev,
-				       state->cli->transport,
-				       (uint8_t *)(prs_data_p(pdu) + pdu_len),
-				       state->frag_len - pdu_len);
+					state->cli->transport,
+					pdu->data + received,
+					state->frag_len - received);
 		if (subreq == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
@@ -557,7 +529,6 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	struct get_complete_frag_state *state = tevent_req_data(
 		req, struct get_complete_frag_state);
 	NTSTATUS status;
-	DATA_BLOB pdu;
 
 	status = rpc_read_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -566,11 +537,9 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 		return;
 	}
 
-	pdu = data_blob_const(prs_data_p(state->pdu),
-			      prs_data_size(state->pdu));
-	state->frag_len = dcerpc_get_frag_length(&pdu);
+	state->frag_len = dcerpc_get_frag_length(state->pdu);
 
-	if (!rpc_grow_buffer(state->pdu, state->frag_len)) {
+	if (!data_blob_realloc(NULL, state->pdu, state->frag_len)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -580,10 +549,9 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	 * RPC_HEADER_LEN bytes into state->pdu.
 	 */
 
-	subreq = rpc_read_send(
-		state, state->ev, state->cli->transport,
-		(uint8_t *)(prs_data_p(state->pdu) + RPC_HEADER_LEN),
-		state->frag_len - RPC_HEADER_LEN);
+	subreq = rpc_read_send(state, state->ev, state->cli->transport,
+				state->pdu->data + RPC_HEADER_LEN,
+				state->frag_len - RPC_HEADER_LEN);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -618,10 +586,9 @@ static NTSTATUS get_complete_frag_recv(struct tevent_req *req)
 
 static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 					struct ncacn_packet *pkt,
-					prs_struct *current_pdu,
+					DATA_BLOB *pdu,
 					uint8 *p_ss_padding_len)
 {
-	uint8_t *frag_data = (uint8_t *)prs_data_p(current_pdu);
 	struct dcerpc_auth auth_info;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -646,7 +613,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 	}
 
 	/* get the auth blob at the end of the packet */
-	blob = data_blob_const(frag_data + pkt->frag_length
+	blob = data_blob_const(pdu->data + pkt->frag_length
 				- DCERPC_AUTH_TRAILER_LENGTH
 				- pkt->auth_length,
 			       DCERPC_AUTH_TRAILER_LENGTH
@@ -683,12 +650,12 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 		/* Data is encrypted. */
 		status = ntlmssp_unseal_packet(
 					cli->auth->a_u.ntlmssp_state,
-					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
 						- DCERPC_AUTH_TRAILER_LENGTH
 						- pkt->auth_length,
-					frag_data,
+					pdu->data,
 					pkt->frag_length - pkt->auth_length,
 					&auth_info.credentials);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -704,12 +671,12 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 		/* Data is signed. */
 		status = ntlmssp_check_packet(
 					cli->auth->a_u.ntlmssp_state,
-					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
 						- DCERPC_AUTH_TRAILER_LENGTH
 						- pkt->auth_length,
-					frag_data,
+					pdu->data,
 					pkt->frag_length - pkt->auth_length,
 					&auth_info.credentials);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -743,10 +710,9 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 
 static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 					 struct ncacn_packet *pkt,
-					 prs_struct *current_pdu,
+					 DATA_BLOB *pdu,
 					 uint8 *p_ss_padding_len)
 {
-	uint8_t *frag_data = (uint8_t *)prs_data_p(current_pdu);
 	struct dcerpc_auth auth_info;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -776,7 +742,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 	}
 
 	/* get the auth blob at the end of the packet */
-	blob = data_blob_const(frag_data + pkt->frag_length
+	blob = data_blob_const(pdu->data + pkt->frag_length
 				- DCERPC_AUTH_TRAILER_LENGTH
 				- pkt->auth_length,
 			       DCERPC_AUTH_TRAILER_LENGTH
@@ -818,7 +784,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 					cli->auth->a_u.schannel_auth,
 					talloc_tos(),
 					true,
-					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
 						- DCERPC_AUTH_TRAILER_LENGTH
@@ -830,7 +796,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 					cli->auth->a_u.schannel_auth,
 					talloc_tos(),
 					false,
-					&frag_data[DCERPC_RESPONSE_LENGTH],
+					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
 						- DCERPC_AUTH_TRAILER_LENGTH
@@ -865,9 +831,9 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
  ****************************************************************************/
 
 static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
-				struct ncacn_packet *pkt,
-				prs_struct *current_pdu,
-				uint8 *p_ss_padding_len)
+						struct ncacn_packet *pkt,
+						DATA_BLOB *pdu,
+						uint8 *p_ss_padding_len)
 {
 	NTSTATUS ret = NT_STATUS_OK;
 
@@ -906,16 +872,16 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
 
 	case PIPE_AUTH_TYPE_NTLMSSP:
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		ret = cli_pipe_verify_ntlmssp(cli, pkt, current_pdu,
-						   p_ss_padding_len);
+		ret = cli_pipe_verify_ntlmssp(cli, pkt, pdu,
+						p_ss_padding_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 		break;
 
 	case PIPE_AUTH_TYPE_SCHANNEL:
-		ret = cli_pipe_verify_schannel(cli, pkt, current_pdu,
-						    p_ss_padding_len);
+		ret = cli_pipe_verify_schannel(cli, pkt, pdu,
+						p_ss_padding_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -940,37 +906,22 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
 
 static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 			struct ncacn_packet *pkt,
-			prs_struct *current_pdu,
+			DATA_BLOB *pdu,
 			uint8 expected_pkt_type,
-			char **ppdata,
-			uint32 *pdata_len,
+			DATA_BLOB *rdata,
 			prs_struct *return_data)
 {
 	NTSTATUS ret = NT_STATUS_OK;
-	uint32 current_pdu_len = prs_data_size(current_pdu);
-	DATA_BLOB blob = data_blob_const(prs_data_p(current_pdu),
-					 prs_data_size(current_pdu));
 	uint8 ss_padding_len = 0;
 
-	ret = dcerpc_pull_ncacn_packet(cli, &blob, pkt);
+	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
 
-	/* FIXME: although we already unmarshalled the whole packet,
-	 *	  set the offset of the pdu to right after the header
-	 *	  until the rest of the code downstream is changed
-	 *	  to always use the already decoded packet and not try
-	 *	  to unmarshall bits of the packet.
-	 */
-	if (!prs_set_offset(current_pdu,
-			    prs_offset(current_pdu) + RPC_HEADER_LEN)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	if (current_pdu_len != pkt->frag_length) {
+	if (pdu->length != pkt->frag_length) {
 		DEBUG(5, ("Incorrect pdu length %u, expected %u\n",
-			  (unsigned int)current_pdu_len,
+			  (unsigned int)pdu->length,
 			  (unsigned int)pkt->frag_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -979,8 +930,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 	 * Point the return values at the real data including the RPC
 	 * header. Just in case the caller wants it.
 	 */
-	*ppdata = prs_data_p(current_pdu);
-	*pdata_len = current_pdu_len;
+	*rdata = *pdu;
 
 	/* Ensure we have the correct type. */
 	switch (pkt->ptype) {
@@ -994,36 +944,38 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 	case DCERPC_PKT_RESPONSE:
 
 		/* Here's where we deal with incoming sign/seal. */
-		ret = cli_pipe_validate_rpc_response(cli, pkt,
-				current_pdu, &ss_padding_len);
+		ret = cli_pipe_validate_rpc_response(cli, pkt, pdu,
+						     &ss_padding_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 
 		/* Point the return values at the NDR data.
 		 * Remember to remove any ss padding. */
-		*ppdata = prs_data_p(current_pdu) + DCERPC_RESPONSE_LENGTH;
+		rdata->data = pdu->data + DCERPC_RESPONSE_LENGTH;
 
-		if (current_pdu_len < DCERPC_RESPONSE_LENGTH + ss_padding_len) {
+		if (pdu->length < DCERPC_RESPONSE_LENGTH + ss_padding_len) {
 			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
 
-		*pdata_len = current_pdu_len - DCERPC_RESPONSE_LENGTH - ss_padding_len;
+		rdata->length = pdu->length
+					- DCERPC_RESPONSE_LENGTH
+					- ss_padding_len;
 
 		/* Remember to remove the auth footer. */
 		if (pkt->auth_length) {
 			/* We've already done integer wrap tests on auth_len in
 				cli_pipe_validate_rpc_response(). */
-			if (*pdata_len < DCERPC_AUTH_TRAILER_LENGTH
-						+ pkt->auth_length) {
+			if (rdata->length < DCERPC_AUTH_TRAILER_LENGTH
+							+ pkt->auth_length) {
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
-			*pdata_len -= (DCERPC_AUTH_TRAILER_LENGTH
-						+ pkt->auth_length);
+			rdata->length -= (DCERPC_AUTH_TRAILER_LENGTH
+							+ pkt->auth_length);
 		}
 
-		DEBUG(10, ("Got pdu len %u, data_len %u, ss_len %u\n",
-			   current_pdu_len, *pdata_len, ss_padding_len));
+		DEBUG(10, ("Got pdu len %lu, data_len %lu, ss_len %u\n",
+			   pdu->length, rdata->length, ss_padding_len));
 
 		/*
 		 * If this is the first reply, and the allocation hint is
@@ -1095,43 +1047,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 	}
 
 	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Ensure we eat the just processed pdu from the current_pdu prs_struct.
- Normally the frag_len and buffer size will match, but on the first trans
- reply there is a theoretical chance that buffer size > frag_len, so we must
- deal with that.
- ****************************************************************************/
-
-static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli,
-					   struct ncacn_packet *pkt,
-					   prs_struct *current_pdu)
-{
-	uint32 current_pdu_len = prs_data_size(current_pdu);
-
-	if (current_pdu_len < pkt->frag_length) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	/* Common case. */
-	if (current_pdu_len == (uint32)pkt->frag_length) {
-		prs_mem_free(current_pdu);
-		prs_init_empty(current_pdu, prs_get_mem_context(current_pdu), UNMARSHALL);
-		/* Make current_pdu dynamic with no memory. */
-		prs_give_memory(current_pdu, 0, 0, True);
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * Oh no ! More data in buffer than we processed in current pdu.
-	 * This shouldn't happen, we only read exactly pkt->frag_length.
-	 * Something is wrong here, throw an error.
-	 */
-
-	DEBUG(0, ("Data buffer size (%u) and pkt->frag_length (%u) differ\n!",
-		  (unsigned)current_pdu_len, (unsigned)pkt->frag_length));
-	return NT_STATUS_INVALID_BUFFER_SIZE;
 }
 
 /****************************************************************************
@@ -1324,7 +1239,7 @@ struct rpc_api_pipe_state {
 	struct rpc_pipe_client *cli;
 	uint8_t expected_pkt_type;
 
-	prs_struct incoming_frag;
+	DATA_BLOB incoming_frag;
 	struct ncacn_packet *pkt;
 
 	prs_struct incoming_pdu;	/* Incoming reply */
@@ -1353,8 +1268,7 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
 	state->incoming_pdu_offset = 0;
-
-	prs_init_empty(&state->incoming_frag, state, UNMARSHALL);
+	state->incoming_frag = data_blob_null;
 
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
 	/* Make incoming_pdu dynamic with no memory. */
@@ -1417,11 +1331,14 @@ static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
 	}
 
 	/*
-	 * This is equivalent to a talloc_steal - gives rdata to
-	 * the prs_struct state->incoming_frag.
+	 * Move data on state->incoming_frag.
 	 */
-	prs_give_memory(&state->incoming_frag, (char *)rdata, rdata_len, true);
-	rdata = NULL;
+	state->incoming_frag.data = talloc_move(state, &rdata);
+	state->incoming_frag.length = rdata_len;
+	if (!state->incoming_frag.data) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	/* Ensure we have enough data for a pdu. */
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
@@ -1439,8 +1356,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	struct rpc_api_pipe_state *state = tevent_req_data(
 		req, struct rpc_api_pipe_state);
 	NTSTATUS status;
-	char *rdata = NULL;
-	uint32_t rdata_len = 0;
+	DATA_BLOB rdata = data_blob_null;
 
 	status = get_complete_frag_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -1457,13 +1373,14 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	status = cli_pipe_validate_current_pdu(
-		state->cli, state->pkt, &state->incoming_frag,
-		state->expected_pkt_type, &rdata, &rdata_len,
-		&state->incoming_pdu);
+	status = cli_pipe_validate_current_pdu(state->cli, state->pkt,
+						&state->incoming_frag,
+						state->expected_pkt_type,
+						&rdata,
+						&state->incoming_pdu);
 
 	DEBUG(10,("rpc_api_pipe: got frag len of %u at offset %u: %s\n",
-		  (unsigned)prs_data_size(&state->incoming_frag),
+		  (unsigned)state->incoming_frag.length,
 		  (unsigned)state->incoming_pdu_offset,
 		  nt_errstr(status)));
 
@@ -1473,7 +1390,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	}
 
 	if ((state->pkt->pfc_flags & DCERPC_PFC_FLAG_FIRST)
-	    && (state->pkt->drep[0] == 0)) {
+	    && (state->pkt->drep[0] != DCERPC_DREP_LE)) {
 		/*
 		 * Set the data type correctly for big-endian data on the
 		 * first packet.
@@ -1486,32 +1403,30 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	/*
 	 * Check endianness on subsequent packets.
 	 */
-	if (state->incoming_frag.bigendian_data
-	    != state->incoming_pdu.bigendian_data) {
+	if (state->incoming_pdu.bigendian_data &&
+	    (state->pkt->drep[0] == DCERPC_DREP_LE)) {
 		DEBUG(0,("rpc_api_pipe: Error : Endianness changed from %s to "
 			 "%s\n",
 			 state->incoming_pdu.bigendian_data?"big":"little",
-			 state->incoming_frag.bigendian_data?"big":"little"));
+			 (state->pkt->drep[0] != DCERPC_DREP_LE)?"big":"little"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	/* Now copy the data portion out of the pdu into rbuf. */
-	if (!prs_force_grow(&state->incoming_pdu, rdata_len)) {
+	if (!prs_force_grow(&state->incoming_pdu, rdata.length)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
 	memcpy(prs_data_p(&state->incoming_pdu) + state->incoming_pdu_offset,
-	       rdata, (size_t)rdata_len);
-	state->incoming_pdu_offset += rdata_len;
+	       rdata.data, rdata.length);
+	state->incoming_pdu_offset += rdata.length;
 
-	status = cli_pipe_reset_current_pdu(state->cli, state->pkt,
-					    &state->incoming_frag);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
+	/* reset state->incoming_frag, there is no need to free it,
+	 * it will be reallocated to the right size the next time
+	 * it is used */
+	state->incoming_frag.length = 0;
 
 	if (state->pkt->pfc_flags & DCERPC_PFC_FLAG_LAST) {
 		DEBUG(10,("rpc_api_pipe: %s returned %u bytes.\n",
