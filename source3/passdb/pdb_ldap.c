@@ -6722,5 +6722,7 @@ NTSTATUS pdb_ldap_init(void)
 	/* Let pdb_nds register backends */
 	pdb_nds_init();
 
+	pdb_ipa_init();
+
 	return NT_STATUS_OK;
 }

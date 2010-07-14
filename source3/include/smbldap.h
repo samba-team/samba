@@ -194,6 +194,9 @@ struct ldapsam_privates {
 	/* Is this NDS ldap? */
 	int is_nds_ldap;
 
+	/* Is this IPA ldap? */
+	int is_ipa_ldap;
+
 	/* ldap server location parameter */
 	char *location;
 

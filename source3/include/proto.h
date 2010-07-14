@@ -3899,6 +3899,10 @@ int pdb_nds_set_password(
 	const char *pwd );
 NTSTATUS pdb_nds_init(void);
 
+/* The following definitions come from passdb/pdb_nds.c  */
+
+NTSTATUS pdb_ipa_init(void);
+
 /* The following definitions come from passdb/pdb_smbpasswd.c  */
 
 NTSTATUS pdb_smbpasswd_init(void) ;
