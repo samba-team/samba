@@ -993,11 +993,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 	case DCERPC_PKT_RESPONSE:
 
-		if (!prs_set_offset(current_pdu,
-				prs_offset(current_pdu) + RPC_HDR_RESP_LEN)) {
-			return NT_STATUS_BUFFER_TOO_SMALL;
-		}
-
 		/* Here's where we deal with incoming sign/seal. */
 		ret = cli_pipe_validate_rpc_response(cli, pkt,
 				current_pdu, &ss_padding_len);
@@ -1007,22 +1002,24 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 		/* Point the return values at the NDR data.
 		 * Remember to remove any ss padding. */
-		*ppdata = prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
+		*ppdata = prs_data_p(current_pdu) + DCERPC_RESPONSE_LENGTH;
 
-		if (current_pdu_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN + ss_padding_len) {
+		if (current_pdu_len < DCERPC_RESPONSE_LENGTH + ss_padding_len) {
 			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
 
-		*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
+		*pdata_len = current_pdu_len - DCERPC_RESPONSE_LENGTH - ss_padding_len;
 
 		/* Remember to remove the auth footer. */
 		if (pkt->auth_length) {
 			/* We've already done integer wrap tests on auth_len in
 				cli_pipe_validate_rpc_response(). */
-			if (*pdata_len < RPC_HDR_AUTH_LEN + pkt->auth_length) {
+			if (*pdata_len < DCERPC_AUTH_TRAILER_LENGTH
+						+ pkt->auth_length) {
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
-			*pdata_len -= (RPC_HDR_AUTH_LEN + pkt->auth_length);
+			*pdata_len -= (DCERPC_AUTH_TRAILER_LENGTH
+						+ pkt->auth_length);
 		}
 
 		DEBUG(10, ("Got pdu len %u, data_len %u, ss_len %u\n",
@@ -1816,6 +1813,10 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 		return status;
 	}
 
+	if (auth_len) {
+		auth_len -= DCERPC_AUTH_TRAILER_LENGTH;
+	}
+
 	u.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN;
 	u.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN;
 	u.bind.assoc_group_id	= 0x0;
@@ -1827,7 +1828,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 					  ptype,
 					  DCERPC_PFC_FLAG_FIRST |
 					  DCERPC_PFC_FLAG_LAST,
-					  auth_len ? auth_len - RPC_HDR_AUTH_LEN : 0,
+					  auth_len,
 					  rpc_call_id,
 					  &u,
 					  &blob);
@@ -1915,8 +1916,8 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	DATA_BLOB auth_info;
 	NTSTATUS status;
 	DATA_BLOB auth_blob = data_blob_null;
-	uint16_t data_and_pad_len =
-		prs_offset(rpc_out) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	uint16_t data_and_pad_len = prs_offset(rpc_out)
+						- DCERPC_RESPONSE_LENGTH;
 
 	if (!cli->auth->a_u.ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1951,8 +1952,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		status = ntlmssp_seal_packet(cli->auth->a_u.ntlmssp_state,
 					prs_get_mem_context(rpc_out),
 					(unsigned char *)prs_data_p(rpc_out)
-						+ RPC_HEADER_LEN
-						+ RPC_HDR_RESP_LEN,
+						+ DCERPC_RESPONSE_LENGTH,
 					data_and_pad_len,
 					(unsigned char *)prs_data_p(rpc_out),
 					(size_t)prs_offset(rpc_out),
@@ -1967,8 +1967,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 		status = ntlmssp_sign_packet(cli->auth->a_u.ntlmssp_state,
 					prs_get_mem_context(rpc_out),
 					(unsigned char *)prs_data_p(rpc_out)
-						+ RPC_HEADER_LEN
-						+ RPC_HDR_RESP_LEN,
+						+ DCERPC_RESPONSE_LENGTH,
 					data_and_pad_len,
 					(unsigned char *)prs_data_p(rpc_out),
 					(size_t)prs_offset(rpc_out),
@@ -2007,8 +2006,9 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 {
 	DATA_BLOB auth_info;
 	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
-	char *data_p = prs_data_p(rpc_out) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
-	size_t data_and_pad_len = prs_offset(rpc_out) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	char *data_p = prs_data_p(rpc_out) + DCERPC_RESPONSE_LENGTH;
+	size_t data_and_pad_len = prs_offset(rpc_out)
+					- DCERPC_RESPONSE_LENGTH;
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -2092,11 +2092,11 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 	switch (cli->auth->auth_level) {
 		case DCERPC_AUTH_LEVEL_NONE:
 		case DCERPC_AUTH_LEVEL_CONNECT:
-			data_space = cli->max_xmit_frag - RPC_HEADER_LEN - RPC_HDR_REQ_LEN;
+			data_space = cli->max_xmit_frag - DCERPC_REQUEST_LENGTH;
 			data_len = MIN(data_space, data_left);
 			*p_ss_padding = 0;
 			*p_auth_len = 0;
-			*p_frag_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + data_len;
+			*p_frag_len = DCERPC_REQUEST_LENGTH + data_len;
 			return data_len;
 
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -2115,17 +2115,20 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					break;
 			}
 
-			data_space = cli->max_xmit_frag - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
-						RPC_HDR_AUTH_LEN - *p_auth_len;
+			data_space = cli->max_xmit_frag
+					- DCERPC_REQUEST_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH
+					- *p_auth_len;
 
 			data_len = MIN(data_space, data_left);
 			*p_ss_padding = 0;
 			if (data_len % CLIENT_NDR_PADDING_SIZE) {
 				*p_ss_padding = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
 			}
-			*p_frag_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + 		/* Normal headers. */
-					data_len + *p_ss_padding + 		/* data plus padding. */
-					RPC_HDR_AUTH_LEN + *p_auth_len;		/* Auth header and auth data. */
+			*p_frag_len = DCERPC_REQUEST_LENGTH
+					+ data_len + *p_ss_padding
+					+ DCERPC_AUTH_TRAILER_LENGTH
+					+ *p_auth_len;
 			return data_len;
 
 		default:
@@ -2181,8 +2184,8 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	state->req_data_sent = 0;
 	state->call_id = get_rpc_call_id();
 
-	if (cli->max_xmit_frag
-	    < RPC_HEADER_LEN + RPC_HDR_REQ_LEN + RPC_MAX_SIGN_SIZE) {
+	if (cli->max_xmit_frag < DCERPC_REQUEST_LENGTH
+					+ RPC_MAX_SIGN_SIZE) {
 		/* Server is screwed up ! */
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto post_status;
@@ -2743,7 +2746,8 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 	NTSTATUS status;
 
 	if ((r->auth_length == 0)
-	    || (r->frag_length < r->auth_length + RPC_HDR_AUTH_LEN)) {
+	    || (r->frag_length < DCERPC_AUTH_TRAILER_LENGTH
+					+ r->auth_length)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2818,14 +2822,15 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	NTSTATUS status;
 
 	if ((r->auth_length == 0)
-	    || (r->frag_length < r->auth_length + RPC_HDR_AUTH_LEN)) {
+	    || (r->frag_length < DCERPC_AUTH_TRAILER_LENGTH
+					+ r->auth_length)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Process the returned NTLMSSP blob first. */
-	if (!prs_set_offset(
-		    rpc_in,
-		    r->frag_length - r->auth_length - RPC_HDR_AUTH_LEN)) {
+	if (!prs_set_offset(rpc_in, r->frag_length
+					- DCERPC_AUTH_TRAILER_LENGTH
+					- r->auth_length)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

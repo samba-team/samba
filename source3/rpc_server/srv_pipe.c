@@ -498,22 +498,22 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
-	uint32_t auth_len = pkt->auth_length;
 	NTSTATUS status;
 
-	DEBUG(5,("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
+	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
 
-	if (auth_len == 0) {
-		DEBUG(0,("api_pipe_bind_auth3: No auth field sent !\n"));
+	if (pkt->auth_length == 0) {
+		DEBUG(0, ("No auth field sent for bind request!\n"));
 		goto err;
 	}
 
 	/* Ensure there's enough data for an authenticated request. */
-	if (RPC_HEADER_LEN + RPC_HDR_AUTH_LEN + auth_len >
-				pkt->frag_length) {
+	if (pkt->frag_length < RPC_HEADER_LEN
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ pkt->auth_length) {
 			DEBUG(0,("api_pipe_ntlmssp_auth_process: auth_len "
 				"%u is too large.\n",
-                        (unsigned int)auth_len ));
+                        (unsigned int)pkt->auth_length));
 		goto err;
 	}
 
@@ -1244,7 +1244,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 		 * prevents overrun. */
 
 		if (pkt->frag_length < RPC_HEADER_LEN +
-					RPC_HDR_AUTH_LEN +
+					DCERPC_AUTH_TRAILER_LENGTH +
 					pkt->auth_length) {
 			DEBUG(0,("api_pipe_bind_req: auth_len (%u) "
 				"too long for fragment %u.\n",
@@ -1468,7 +1468,7 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 		 * prevents overrun. */
 
 		if (pkt->frag_length < RPC_HEADER_LEN +
-					RPC_HDR_AUTH_LEN +
+					DCERPC_AUTH_TRAILER_LENGTH +
 					pkt->auth_length) {
 			DEBUG(0,("api_pipe_alter_context: auth_len (%u) "
 				"too long for fragment %u.\n",

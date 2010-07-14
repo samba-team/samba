@@ -31,15 +31,6 @@
 /* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
 #define RPC_MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
-#define RPC_IFACE_LEN (UUID_SIZE + 4)
-
 #define RPC_HEADER_LEN 16
-
-#define RPC_HDR_REQ_LEN 8
-
-#define RPC_HDR_RESP_LEN 8
-
-
-#define RPC_HDR_AUTH_LEN 8
 
 #endif /* _DCE_RPC_H */
