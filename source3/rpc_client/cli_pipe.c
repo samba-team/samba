@@ -1676,33 +1676,6 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 }
 
 /*******************************************************************
- ********************************************************************/
-
-static NTSTATUS init_dcerpc_ctx_list(TALLOC_CTX *mem_ctx,
-				     const struct ndr_syntax_id *abstract_syntax,
-				     const struct ndr_syntax_id *transfer_syntax,
-				     struct dcerpc_ctx_list **ctx_list_p)
-{
-	struct dcerpc_ctx_list *ctx_list;
-
-	ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
-	NT_STATUS_HAVE_NO_MEMORY(ctx_list);
-
-	ctx_list[0].context_id			= 0;
-	ctx_list[0].num_transfer_syntaxes	= 1;
-	ctx_list[0].abstract_syntax		= *abstract_syntax;
-	ctx_list[0].transfer_syntaxes		= talloc_array(ctx_list,
-							       struct ndr_syntax_id,
-							       ctx_list[0].num_transfer_syntaxes);
-	NT_STATUS_HAVE_NO_MEMORY(ctx_list[0].transfer_syntaxes);
-	ctx_list[0].transfer_syntaxes[0]	= *transfer_syntax;
-
-	*ctx_list_p = ctx_list;
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
  Creates the internals of a DCE/RPC bind request or alter context PDU.
  ********************************************************************/
 
@@ -1717,23 +1690,22 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 	NTSTATUS status;
 	union dcerpc_payload u;
 	DATA_BLOB blob;
-	struct dcerpc_ctx_list *ctx_list;
-
-	status = init_dcerpc_ctx_list(rpc_out->mem_ctx, abstract, transfer,
-				      &ctx_list);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	struct dcerpc_ctx_list ctx_list;
 
 	if (auth_len) {
 		auth_len -= DCERPC_AUTH_TRAILER_LENGTH;
 	}
 
+	ctx_list.context_id = 0;
+	ctx_list.num_transfer_syntaxes = 1;
+	ctx_list.abstract_syntax = *abstract;
+	ctx_list.transfer_syntaxes = discard_const(transfer);
+
 	u.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN;
 	u.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN;
 	u.bind.assoc_group_id	= 0x0;
 	u.bind.num_contexts	= 1;
-	u.bind.ctx_list		= ctx_list;
+	u.bind.ctx_list		= &ctx_list;
 	u.bind.auth_info	= *auth_info;
 
 	status = dcerpc_push_ncacn_packet(rpc_out->mem_ctx,
