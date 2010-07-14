@@ -1125,21 +1125,13 @@ static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli,
 
 	/*
 	 * Oh no ! More data in buffer than we processed in current pdu.
-	 * Cheat. Move the data down and shrink the buffer.
+	 * This shouldn't happen, we only read exactly pkt->frag_length.
+	 * Something is wrong here, throw an error.
 	 */
 
-	memcpy(prs_data_p(current_pdu), prs_data_p(current_pdu) + pkt->frag_length,
-			current_pdu_len - pkt->frag_length);
-
-	/* Remember to set the read offset back to zero. */
-	prs_set_offset(current_pdu, 0);
-
-	/* Shrink the buffer. */
-	if (!prs_set_buffer_size(current_pdu, current_pdu_len - pkt->frag_length)) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	return NT_STATUS_OK;
+	DEBUG(0, ("Data buffer size (%u) and pkt->frag_length (%u) differ\n!",
+		  (unsigned)current_pdu_len, (unsigned)pkt->frag_length));
+	return NT_STATUS_INVALID_BUFFER_SIZE;
 }
 
 /****************************************************************************
@@ -1378,11 +1370,9 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(talloc_tos(), cli)));
 
-	max_recv_frag = cli->max_recv_frag;
-
-#if 0
-	max_recv_frag = RPC_HEADER_LEN + 10 + (sys_random() % 32);
-#endif
+	/* get the header first, then fetch the rest once we have
+	 * the frag_length available */
+	max_recv_frag = RPC_HEADER_LEN;
 
 	subreq = cli_api_pipe_send(state, ev, cli->transport,
 				   (uint8_t *)prs_data_p(data),
