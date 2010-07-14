@@ -42,6 +42,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "rpc_client/cli_netlogon.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "librpc/rpc/dcerpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -292,116 +293,6 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
 	DEBUG(5, ("rpc_grow_buffer: grew buffer by %d bytes to %u\n",
 		  (int)extra_size, prs_data_size(pdu)));
 	return true;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
-				  enum dcerpc_pkt_type ptype,
-				  uint8_t pfc_flags,
-				  uint16_t auth_length,
-				  uint32_t call_id,
-				  union dcerpc_payload *u,
-				  DATA_BLOB *blob)
-{
-	struct ncacn_packet r;
-	enum ndr_err_code ndr_err;
-
-	r.rpc_vers		= 5;
-	r.rpc_vers_minor	= 0;
-	r.ptype			= ptype;
-	r.pfc_flags		= pfc_flags;
-	r.drep[0]		= DCERPC_DREP_LE;
-	r.drep[1]		= 0;
-	r.drep[2]		= 0;
-	r.drep[3]		= 0;
-	r.auth_length		= auth_length;
-	r.call_id		= call_id;
-	r.u			= *u;
-
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
-		(ndr_push_flags_fn_t)ndr_push_ncacn_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	dcerpc_set_frag_length(blob, blob->length);
-
-
-	if (DEBUGLEVEL >= 10) {
-		/* set frag len for print function */
-		r.frag_length = blob->length;
-		NDR_PRINT_DEBUG(ncacn_packet, &r);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
-				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r)
-{
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
-		(ndr_pull_flags_fn_t)ndr_pull_ncacn_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(ncacn_packet, r);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-static NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
-					  struct NL_AUTH_MESSAGE *r,
-					  DATA_BLOB *blob)
-{
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, r,
-		(ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(NL_AUTH_MESSAGE, r);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *blob,
-				 struct dcerpc_auth *r)
-{
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
-		(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(dcerpc_auth, r);
-	}
-
-	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1675,41 +1566,6 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	if (pkt) {
 		*pkt = talloc_steal(mem_ctx, state->pkt);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- Creates an auth_data blob.
- ********************************************************************/
-
-NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
-				 enum dcerpc_AuthType auth_type,
-				 enum dcerpc_AuthLevel auth_level,
-				 uint8_t auth_pad_length,
-				 uint32_t auth_context_id,
-				 const DATA_BLOB *credentials,
-				 DATA_BLOB *blob)
-{
-	struct dcerpc_auth r;
-	enum ndr_err_code ndr_err;
-
-	r.auth_type		= auth_type;
-	r.auth_level		= auth_level;
-	r.auth_pad_length	= auth_pad_length;
-	r.auth_reserved		= 0;
-	r.auth_context_id	= auth_context_id;
-	r.credentials		= *credentials;
-
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
-		(ndr_push_flags_fn_t)ndr_push_dcerpc_auth);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(dcerpc_auth, &r);
 	}
 
 	return NT_STATUS_OK;

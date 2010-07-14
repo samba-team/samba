@@ -111,4 +111,31 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 					     const struct dcerpc_binding *binding,
 					     struct epm_tower *tower);
 
+struct NL_AUTH_MESSAGE;
+
+/* The following definitions come from librpc/rpc/dcerpc_helpers.c  */
+NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
+				  enum dcerpc_pkt_type ptype,
+				  uint8_t pfc_flags,
+				  uint16_t auth_length,
+				  uint32_t call_id,
+				  union dcerpc_payload *u,
+				  DATA_BLOB *blob);
+NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
+				  const DATA_BLOB *blob,
+				  struct ncacn_packet *r);
+NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
+				   struct NL_AUTH_MESSAGE *r,
+				   DATA_BLOB *blob);
+NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 enum dcerpc_AuthType auth_type,
+				 enum dcerpc_AuthLevel auth_level,
+				 uint8_t auth_pad_length,
+				 uint32_t auth_context_id,
+				 const DATA_BLOB *credentials,
+				 DATA_BLOB *blob);
+NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
+				 const DATA_BLOB *blob,
+				 struct dcerpc_auth *r);
+
 #endif /* __DCERPC_H__ */

@@ -564,6 +564,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_drsuapi.o \
 		   librpc/gen_ndr/cli_spoolss.o \
 		   ../librpc/rpc/dcerpc_util.o \
+		   librpc/rpc/dcerpc_helpers.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
