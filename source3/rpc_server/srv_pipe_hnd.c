@@ -428,7 +428,7 @@ static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
 
 static void process_complete_pdu(pipes_struct *p)
 {
-	struct ncacn_packet *pkt;
+	struct ncacn_packet *pkt = NULL;
 	NTSTATUS status;
 	bool reply = False;
 
