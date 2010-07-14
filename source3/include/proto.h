@@ -4843,6 +4843,7 @@ const struct ndr_interface_table *get_iface_from_syntax(
 	const struct ndr_syntax_id *syntax);
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
                                      const struct ndr_syntax_id *syntax);
+enum dcerpc_AuthType map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type);
 
 struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,

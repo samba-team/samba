@@ -217,7 +217,7 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
  Map internal value to wire value.
  ********************************************************************/
 
-static int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
+enum dcerpc_AuthType map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 {
 	switch (auth_type) {
 
@@ -945,7 +945,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (auth_len < RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) {
+	if (auth_len < SCHANNEL_SIG_SIZE) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u.\n", (unsigned int)auth_len ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -2348,7 +2348,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					*p_auth_len = NTLMSSP_SIG_SIZE;
 					break;
 				case PIPE_AUTH_TYPE_SCHANNEL:
-					*p_auth_len = RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
+					*p_auth_len = SCHANNEL_SIG_SIZE;
 					break;
 				default:
 					smb_panic("bad auth type");

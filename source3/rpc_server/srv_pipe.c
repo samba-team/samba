@@ -53,418 +53,124 @@ static DATA_BLOB generic_session_key(void)
 }
 
 /*******************************************************************
- Generate the next PDU to be returned from the data in p->rdata. 
  Handle NTLMSSP.
  ********************************************************************/
 
-static bool create_next_pdu_ntlmssp(pipes_struct *p)
+static bool add_ntlmssp_auth(pipes_struct *p)
 {
-	DATA_BLOB blob;
-	uint8_t hdr_flags;
-	uint32 ss_padding_len = 0;
-	uint32 data_space_available;
-	uint32 data_len_left;
-	uint32 data_len;
-	NTSTATUS status;
+	enum dcerpc_AuthLevel auth_level = p->auth.auth_level;
 	DATA_BLOB auth_blob = data_blob_null;
-	uint8 auth_type, auth_level;
-	struct auth_ntlmssp_state *a = p->auth.a_u.auth_ntlmssp_state;
-	union dcerpc_payload u;
-	TALLOC_CTX *frame;
+	NTSTATUS status;
 
-	/*
-	 * If we're in the fault state, keep returning fault PDU's until
-	 * the pipe gets closed. JRA.
+	/* FIXME: Is this right ?
+	 * Keeping only to avoid changing semantics during refactoring
+	 * --simo
 	 */
-
-	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return True;
-	}
-
-	ZERO_STRUCT(u.response);
-
-	/* Set up rpc header flags. */
-	if (p->out_data.data_sent_length == 0) {
-		hdr_flags = DCERPC_PFC_FLAG_FIRST;
-	} else {
-		hdr_flags = 0;
-	}
-
-	/*
-	 * Work out how much we can fit in a single PDU.
-	 */
-
-	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
-
-	/*
-	 * Ensure there really is data left to send.
-	 */
-
-	if(!data_len_left) {
-		DEBUG(0,("create_next_pdu_ntlmssp: no data left to send !\n"));
-		return False;
-	}
-
-	/* Space available - not including padding. */
-	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN -
-		RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - NTLMSSP_SIG_SIZE;
-
-	/*
-	 * The amount we send is the minimum of the available
-	 * space and the amount left to send.
-	 */
-
-	data_len = MIN(data_len_left, data_space_available);
-
-	/* Work out any padding alignment requirements. */
-	if ((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE -
-			((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_ntlmssp: adding sign/seal padding of %u\n",
-			ss_padding_len ));
-		/* If we're over filling the packet, we need to make space
- 		 * for the padding at the end of the data. */
-		if (data_len + ss_padding_len > data_space_available) {
-			data_len -= SERVER_NDR_PADDING_SIZE;
-		}
-	}
-
-	/*
-	 * Set up the alloc hint. This should be the data left to
-	 * send.
-	 */
-
-	u.response.alloc_hint = data_len_left;
-
-	/*
-	 * Work out if this PDU will be the last.
-	 */
-	if (p->out_data.data_sent_length + data_len >=
-					p->out_data.rdata.length) {
-		hdr_flags |= DCERPC_PFC_FLAG_LAST;
-	}
-
-	/* Set the data into the PDU. */
-	u.response.stub_and_verifier =
-		data_blob_const(p->out_data.rdata.data, data_len);
-
-	/* Store the packet in the data stream. */
-	status = dcerpc_push_ncacn_packet(p->mem_ctx,
-					  DCERPC_PKT_RESPONSE,
-					  hdr_flags,
-					  NTLMSSP_SIG_SIZE,
-					  p->call_id,
-					  &u,
-					  &p->out_data.frag);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		return False;
-	}
-
-	/* Set the proper length on the pdu */
-	dcerpc_set_frag_length(&p->out_data.frag,
-				p->out_data.frag.length +
-				ss_padding_len +
-				RPC_HDR_AUTH_LEN +
-				NTLMSSP_SIG_SIZE);
-
-	/* Append the sign/seal padding data. */
-	if (ss_padding_len) {
-		char pad[SERVER_NDR_PADDING_SIZE];
-
-		memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-		if (!data_blob_append(p->mem_ctx,
-				      &p->out_data.frag, pad,
-				      ss_padding_len)) {
-			DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes of pad data.\n",
-					(unsigned int)ss_padding_len));
-			data_blob_free(&p->out_data.frag);
-			return False;
-		}
-	}
-
-	/* Now write out the auth header and null blob. */
-	if (p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
-		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-	} else {
-		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-	}
-	if (p->auth.auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	} else {
+	if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
-	frame = talloc_stackframe();
+	/* Generate the auth blob. */
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		status = auth_ntlmssp_seal_packet(
+				p->auth.a_u.auth_ntlmssp_state,
+				(TALLOC_CTX *)p->out_data.frag.data,
+				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
+				p->out_data.frag.length
+					- DCERPC_RESPONSE_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH,
+				p->out_data.frag.data,
+				p->out_data.frag.length,
+				&auth_blob);
+		break;
 
-	/* auth_blob is intentionally null, it will be appended later */
-	status = dcerpc_push_dcerpc_auth(frame,
-				auth_type,
-				auth_level,
-				ss_padding_len,
-				1, /* context id. */
-				&auth_blob,
-				&blob);
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		status = auth_ntlmssp_sign_packet(
+				p->auth.a_u.auth_ntlmssp_state,
+				(TALLOC_CTX *)p->out_data.frag.data,
+				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
+				p->out_data.frag.length
+					- DCERPC_RESPONSE_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH,
+				p->out_data.frag.data,
+				p->out_data.frag.length,
+				&auth_blob);
+		break;
 
-	/* Store auth header in the data stream. */
-	if (!data_blob_append(p->mem_ctx,
-				&p->out_data.frag,
-				(char *)blob.data, blob.length)) {
-		DEBUG(0, ("Out of memory.\n"));
-		data_blob_free(&p->out_data.frag);
-		return False;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		return false;
 	}
 
-	/* Generate the sign blob. */
-
-	switch (p->auth.auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			/* Data portion is encrypted. */
-			status = auth_ntlmssp_seal_packet(
-				a, frame,
-				p->out_data.frag.data
-				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
-				data_len + ss_padding_len,
-				p->out_data.frag.data,
-				p->out_data.frag.length,
-				&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(frame);
-				data_blob_free(&p->out_data.frag);
-				return False;
-			}
-			break;
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			/* Data is signed. */
-			status = auth_ntlmssp_sign_packet(
-				a, frame,
-				p->out_data.frag.data
-				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
-				data_len + ss_padding_len,
-				p->out_data.frag.data,
-				p->out_data.frag.length,
-				&auth_blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				talloc_free(frame);
-				data_blob_free(&p->out_data.frag);
-				return False;
-			}
-			break;
-		default:
-			talloc_free(frame);
-			data_blob_free(&p->out_data.frag);
-			return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to add NTLMSSP auth blob: %s\n",
+			nt_errstr(status)));
+		data_blob_free(&p->out_data.frag);
+		return false;
 	}
 
 	/* Finally append the auth blob. */
 	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
-				auth_blob.data, NTLMSSP_SIG_SIZE)) {
+				auth_blob.data, auth_blob.length)) {
 		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
-			  (unsigned int)NTLMSSP_SIG_SIZE));
-		talloc_free(frame);
+			  (unsigned int)auth_blob.length));
 		data_blob_free(&p->out_data.frag);
 		return False;
 	}
-	talloc_free(frame);
+	data_blob_free(&auth_blob);
 
-	/*
-	 * Setup the counts for this PDU.
-	 */
-
-	p->out_data.data_sent_length += data_len;
-	p->out_data.current_pdu_sent = 0;
-
-	return True;
+	return true;
 }
 
 /*******************************************************************
- Generate the next PDU to be returned from the data in p->rdata. 
- Return an schannel authenticated fragment.
+ Append a schannel authenticated fragment.
  ********************************************************************/
 
-static bool create_next_pdu_schannel(pipes_struct *p)
+static bool add_schannel_auth(pipes_struct *p)
 {
-	DATA_BLOB blob;
-	uint8_t hdr_flags;
-	uint32 ss_padding_len = 0;
-	uint32 data_len;
-	uint32 data_space_available;
-	uint32 data_len_left;
-	uint32 data_pos;
-	NTSTATUS status;
-	union dcerpc_payload u;
 	DATA_BLOB auth_blob = data_blob_null;
+	NTSTATUS status;
 
-	/*
-	 * If we're in the fault state, keep returning fault PDU's until
-	 * the pipe gets closed. JRA.
-	 */
-
-	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return True;
-	}
-
-	ZERO_STRUCT(u.response);
-
-	/* Set up rpc header flags. */
-	if (p->out_data.data_sent_length == 0) {
-		hdr_flags = DCERPC_PFC_FLAG_FIRST;
-	} else {
-		hdr_flags = 0;
-	}
-
-	/*
-	 * Work out how much we can fit in a single PDU.
-	 */
-
-	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
-
-	/*
-	 * Ensure there really is data left to send.
-	 */
-
-	if(!data_len_left) {
-		DEBUG(0,("create_next_pdu_schannel: no data left to send !\n"));
-		return False;
-	}
-
-	/* Space available - not including padding. */
-	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
-		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN
-		- RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
-
-	/*
-	 * The amount we send is the minimum of the available
-	 * space and the amount left to send.
-	 */
-
-	data_len = MIN(data_len_left, data_space_available);
-
-	/* Work out any padding alignment requirements. */
-	if ((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE) {
-		ss_padding_len = SERVER_NDR_PADDING_SIZE -
-			((RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len) % SERVER_NDR_PADDING_SIZE);
-		DEBUG(10,("create_next_pdu_schannel: adding sign/seal padding of %u\n",
-			ss_padding_len ));
-		/* If we're over filling the packet, we need to make space
- 		 * for the padding at the end of the data. */
-		if (data_len + ss_padding_len > data_space_available) {
-			data_len -= SERVER_NDR_PADDING_SIZE;
-		}
-	}
-
-	/*
-	 * Set up the alloc hint. This should be the data left to
-	 * send.
-	 */
-
-	u.response.alloc_hint = data_len_left;
-
-	/*
-	 * Work out if this PDU will be the last.
-	 */
-	if (p->out_data.data_sent_length + data_len >=
-					p->out_data.rdata.length) {
-		hdr_flags |= DCERPC_PFC_FLAG_LAST;
-	}
-
-	/* Set the data into the PDU. */
-	u.response.stub_and_verifier =
-		data_blob_const(p->out_data.rdata.data +
-				p->out_data.data_sent_length, data_len);
-
-	/* Store the packet in the data stream. */
-	status = dcerpc_push_ncacn_packet(p->mem_ctx,
-				DCERPC_PKT_RESPONSE,
-				hdr_flags,
-				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
-				p->call_id,
-				&u,
-				&p->out_data.frag);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		return False;
-	}
-
-	/* Store the data offset. */
-	data_pos = p->out_data.frag.length - data_len;
-
-	/* Set the proper length on the pdu */
-	dcerpc_set_frag_length(&p->out_data.frag,
-				p->out_data.frag.length +
-				ss_padding_len +
-				RPC_HDR_AUTH_LEN +
-				RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN);
-
-	/* Append the sign/seal padding data. */
-	if (ss_padding_len) {
-		char pad[SERVER_NDR_PADDING_SIZE];
-		memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-		if (!data_blob_append(p->mem_ctx,
-				      &p->out_data.frag, pad,
-				      ss_padding_len)) {
-			DEBUG(0,("create_next_pdu_schannel: failed to add %u bytes of pad data.\n", (unsigned int)ss_padding_len));
-			data_blob_free(&p->out_data.frag);
-			return False;
-		}
-	}
-
-	/* auth_blob is intentionally null, it will be appended later */
-	status = dcerpc_push_dcerpc_auth(talloc_tos(),
-					 DCERPC_AUTH_TYPE_SCHANNEL,
-					 p->auth.auth_level,
-					 ss_padding_len,
-					 1, /* context id. */
-					 &auth_blob,
-					 &blob);
-
-	/* Store auth header in the data stream. */
-	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
-				blob.data, blob.length)) {
-		DEBUG(0, ("Out of memory.\n"));
-		data_blob_free(&p->out_data.frag);
-		return False;
-	}
-
-	/*
-	 * Schannel processing.
-	 */
-
-	blob = data_blob_const(p->out_data.frag.data + data_pos,
-				data_len + ss_padding_len);
-
+	/* Schannel processing. */
 	switch (p->auth.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
-						talloc_tos(),
-						true,
-						blob.data,
-						blob.length,
-						&auth_blob);
+		status = netsec_outgoing_packet(
+				p->auth.a_u.schannel_auth,
+				(TALLOC_CTX *)p->out_data.frag.data,
+				true,
+				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
+				p->out_data.frag.length
+					- DCERPC_RESPONSE_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH,
+				&auth_blob);
 		break;
+
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = netsec_outgoing_packet(p->auth.a_u.schannel_auth,
-						talloc_tos(),
-						false,
-						blob.data,
-						blob.length,
-						&auth_blob);
+		status = netsec_outgoing_packet(
+				p->auth.a_u.schannel_auth,
+				(TALLOC_CTX *)p->out_data.frag.data,
+				false,
+				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
+				p->out_data.frag.length
+					- DCERPC_RESPONSE_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH,
+				&auth_blob);
 		break;
+
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("create_next_pdu_schannel: failed to process packet: %s\n",
+		DEBUG(0, ("Failed to add SCHANNEL auth blob: %s\n",
 			nt_errstr(status)));
 		data_blob_free(&p->out_data.frag);
 		return false;
 	}
-
-	/* Finally marshall the blob. */
 
 	if (DEBUGLEVEL >= 10) {
 		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_blob);
@@ -472,93 +178,93 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 
 	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
 				auth_blob.data, auth_blob.length)) {
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)auth_blob.length));
 		data_blob_free(&p->out_data.frag);
 		return false;
 	}
+	data_blob_free(&auth_blob);
 
-	/*
-	 * Setup the counts for this PDU.
-	 */
-
-	p->out_data.data_sent_length += data_len;
-	p->out_data.current_pdu_sent = 0;
-
-	return True;
+	return true;
 }
 
 /*******************************************************************
- Generate the next PDU to be returned from the data in p->rdata. 
- No authentication done.
+ Generate the next PDU to be returned from the data.
 ********************************************************************/
 
-static bool create_next_pdu_noauth(pipes_struct *p)
+static bool create_next_packet(pipes_struct *p,
+				enum dcerpc_AuthType auth_type,
+				enum dcerpc_AuthLevel auth_level,
+				size_t auth_length)
 {
-	uint8_t hdr_flags;
-	NTSTATUS status;
-	uint32 data_len;
-	uint32 data_space_available;
-	uint32 data_len_left;
 	union dcerpc_payload u;
-
-	/*
-	 * If we're in the fault state, keep returning fault PDU's until
-	 * the pipe gets closed. JRA.
-	 */
-
-	if(p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return True;
-	}
+	uint8_t pfc_flags;
+	size_t data_len_left;
+	size_t data_len;
+	size_t max_len;
+	size_t pad_len = 0;
+	NTSTATUS status;
 
 	ZERO_STRUCT(u.response);
 
-	/* Set up rpc header flags. */
+	/* Set up rpc packet pfc flags. */
 	if (p->out_data.data_sent_length == 0) {
-		hdr_flags = DCERPC_PFC_FLAG_FIRST;
+		pfc_flags = DCERPC_PFC_FLAG_FIRST;
 	} else {
-		hdr_flags = 0;
+		pfc_flags = 0;
+	}
+
+	/* Work out how much we can fit in a single PDU. */
+	data_len_left = p->out_data.rdata.length -
+				p->out_data.data_sent_length;
+
+	/* Ensure there really is data left to send. */
+	if (!data_len_left) {
+		DEBUG(0, ("No data left to send !\n"));
+		return false;
+	}
+
+	/* Max space available - not including padding. */
+	if (auth_length) {
+		max_len = RPC_MAX_PDU_FRAG_LEN
+				- DCERPC_RESPONSE_LENGTH
+				- DCERPC_AUTH_TRAILER_LENGTH
+				- auth_length;
+	} else {
+		max_len = RPC_MAX_PDU_FRAG_LEN - DCERPC_RESPONSE_LENGTH;
 	}
 
 	/*
-	 * Work out how much we can fit in a single PDU.
+	 * The amount we send is the minimum of the max_len
+	 * and the amount left to send.
 	 */
+	data_len = MIN(data_len_left, max_len);
 
-	data_len_left = p->out_data.rdata.length - p->out_data.data_sent_length;
-
-	/*
-	 * Ensure there really is data left to send.
-	 */
-
-	if(!data_len_left) {
-		DEBUG(0,("create_next_pdu_noath: no data left to send !\n"));
-		return False;
+	if (auth_length) {
+		/* Work out any padding alignment requirements. */
+		pad_len = (DCERPC_RESPONSE_LENGTH + data_len) %
+						SERVER_NDR_PADDING_SIZE;
+		if (pad_len) {
+			pad_len = SERVER_NDR_PADDING_SIZE - pad_len;
+			DEBUG(10, ("Padding size is: %d\n", (int)pad_len));
+			/* If we're over filling the packet, we need to make
+			 * space for the padding at the end of the data. */
+			if (data_len + pad_len > max_len) {
+				data_len -= SERVER_NDR_PADDING_SIZE;
+			}
+		}
 	}
 
-	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
-		- RPC_HDR_RESP_LEN;
-
-	/*
-	 * The amount we send is the minimum of the available
-	 * space and the amount left to send.
-	 */
-
-	data_len = MIN(data_len_left, data_space_available);
-
-	/*
-	 * Set up the alloc hint. This should be the data left to
-	 * send.
-	 */
-
+	/* Set up the alloc hint. This should be the data left to send. */
 	u.response.alloc_hint = data_len_left;
 
-	/*
-	 * Work out if this PDU will be the last.
-	 */
-	if(p->out_data.data_sent_length + data_len >= p->out_data.rdata.length) {
-		hdr_flags |= DCERPC_PFC_FLAG_LAST;
+	/* Work out if this PDU will be the last. */
+	if (p->out_data.data_sent_length
+				+ data_len >= p->out_data.rdata.length) {
+		pfc_flags |= DCERPC_PFC_FLAG_LAST;
 	}
 
-	/* Set the data into the PDU. */
+	/* Prepare data to be NDR encoded. */
 	u.response.stub_and_verifier =
 		data_blob_const(p->out_data.rdata.data +
 				p->out_data.data_sent_length, data_len);
@@ -566,24 +272,69 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	/* Store the packet in the data stream. */
 	status = dcerpc_push_ncacn_packet(p->mem_ctx,
 					  DCERPC_PKT_RESPONSE,
-					  hdr_flags,
-					  0,
+					  pfc_flags,
+					  auth_length,
 					  p->call_id,
 					  &u,
 					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to marshall RPC Header.\n"));
-		return False;
+		DEBUG(0, ("Failed to marshall RPC Packet.\n"));
+		return false;
 	}
 
-	/*
-	 * Setup the counts for this PDU.
-	 */
+	if (auth_length) {
+		DATA_BLOB empty = data_blob_null;
+		DATA_BLOB auth_hdr;
 
+		/* Set the proper length on the pdu, including padding.
+		 * Only needed if an auth trailer will be appended. */
+		dcerpc_set_frag_length(&p->out_data.frag,
+					p->out_data.frag.length
+						+ pad_len
+						+ DCERPC_AUTH_TRAILER_LENGTH
+						+ auth_length);
+
+		if (pad_len) {
+			size_t offset = p->out_data.frag.length;
+
+			if (!data_blob_realloc(p->mem_ctx,
+						&p->out_data.frag,
+						offset + pad_len)) {
+				DEBUG(0, ("Failed to add padding!\n"));
+				data_blob_free(&p->out_data.frag);
+				return false;
+			}
+			memset(&p->out_data.frag.data[offset], '\0', pad_len);
+		}
+
+		/* auth blob is intentionally empty,
+		 * it will be appended later */
+		status = dcerpc_push_dcerpc_auth(p->out_data.frag.data,
+						 auth_type,
+						 auth_level,
+						 pad_len,
+						 1, /* context id. */
+						 &empty,
+						 &auth_hdr);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to marshall RPC Auth.\n"));
+			return false;
+		}
+
+		/* Store auth header in the data stream. */
+		if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
+					auth_hdr.data, auth_hdr.length)) {
+			DEBUG(0, ("Out of memory.\n"));
+			data_blob_free(&p->out_data.frag);
+			return false;
+		}
+		data_blob_free(&auth_hdr);
+	}
+
+	/* Setup the counts for this PDU. */
 	p->out_data.data_sent_length += data_len;
 	p->out_data.current_pdu_sent = 0;
-
-	return True;
+	return true;
 }
 
 /*******************************************************************
@@ -592,28 +343,60 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 
 bool create_next_pdu(pipes_struct *p)
 {
-	switch(p->auth.auth_level) {
-		case DCERPC_AUTH_LEVEL_NONE:
-		case DCERPC_AUTH_LEVEL_CONNECT:
-			/* This is incorrect for auth level connect. Fixme. JRA */
-			return create_next_pdu_noauth(p);
+	enum dcerpc_AuthType auth_type =
+		map_pipe_auth_type_to_rpc_auth_type(p->auth.auth_type);
 
-		default:
-			switch(p->auth.auth_type) {
-				case PIPE_AUTH_TYPE_NTLMSSP:
-				case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-					return create_next_pdu_ntlmssp(p);
-				case PIPE_AUTH_TYPE_SCHANNEL:
-					return create_next_pdu_schannel(p);
-				default:
-					break;
-			}
+	/*
+	 * If we're in the fault state, keep returning fault PDU's until
+	 * the pipe gets closed. JRA.
+	 */
+	if (p->fault_state) {
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		return true;
 	}
 
-	DEBUG(0,("create_next_pdu: invalid internal auth level %u / type %u",
-			(unsigned int)p->auth.auth_level,
-			(unsigned int)p->auth.auth_type));
-	return False;
+	switch (p->auth.auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		/* This is incorrect for auth level connect. Fixme. JRA */
+
+		/* No authentication done. */
+		return create_next_packet(p, auth_type,
+					  p->auth.auth_level, 0);
+
+	case DCERPC_AUTH_LEVEL_CALL:
+	case DCERPC_AUTH_LEVEL_PACKET:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+
+		switch(p->auth.auth_type) {
+		case PIPE_AUTH_TYPE_NTLMSSP:
+		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+			if (!create_next_packet(p, auth_type,
+						p->auth.auth_level,
+						NTLMSSP_SIG_SIZE)) {
+				return false;
+			}
+			return add_ntlmssp_auth(p);
+
+		case PIPE_AUTH_TYPE_SCHANNEL:
+			if (!create_next_packet(p, auth_type,
+						p->auth.auth_level,
+						SCHANNEL_SIG_SIZE)) {
+				return false;
+			}
+			return add_schannel_auth(p);
+		default:
+			break;
+		}
+	default:
+		break;
+	}
+
+	DEBUG(0, ("Invalid internal auth level %u / type %u\n",
+		  (unsigned int)p->auth.auth_level,
+		  (unsigned int)p->auth.auth_type));
+	return false;
 }
 
 /*******************************************************************
