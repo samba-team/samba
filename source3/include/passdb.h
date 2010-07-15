@@ -225,6 +225,17 @@ struct pdb_domain_info {
 	struct GUID guid;
 };
 
+struct pdb_trusted_domain {
+	char *domain_name;
+	char *netbios_name;
+	struct dom_sid security_identifier;
+	DATA_BLOB trust_auth_incoming;
+	DATA_BLOB trust_auth_outgoing;
+	uint32_t trust_direction;
+	uint32_t trust_type;
+	uint32_t trust_attributes;
+};
+
 /*
  * trusted domain entry/entries returned by secrets_get_trusted_domains
  * (used in _lsa_enum_trust_dom call)
@@ -437,6 +448,21 @@ struct pdb_methods
 	NTSTATUS (*enum_trusteddoms)(struct pdb_methods *methods,
 				     TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				     struct trustdom_info ***domains);
+
+
+	NTSTATUS (*get_trusted_domain)(struct pdb_methods *methods,
+				       TALLOC_CTX *mem_ctx,
+				       const char *domain,
+				       struct pdb_trusted_domain **td);
+	NTSTATUS (*set_trusted_domain)(struct pdb_methods *methods,
+				       const char* domain,
+				       const struct pdb_trusted_domain *td);
+	NTSTATUS (*del_trusted_domain)(struct pdb_methods *methods,
+				       const char *domain);
+	NTSTATUS (*enum_trusted_domains)(struct pdb_methods *methods,
+					 TALLOC_CTX *mem_ctx,
+					 uint32_t *num_domains,
+					 struct pdb_trusted_domain ***domains);
 
 	void *private_data;  /* Private data of some kind */
 

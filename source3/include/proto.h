@@ -3873,6 +3873,13 @@ bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
 bool pdb_del_trusteddom_pw(const char *domain);
 NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 			      struct trustdom_info ***domains);
+NTSTATUS pdb_get_trusted_domain(TALLOC_CTX *mem_ctx, const char *domain,
+				struct pdb_trusted_domain **td);
+NTSTATUS pdb_set_trusted_domain(const char* domain,
+				const struct pdb_trusted_domain *td);
+NTSTATUS pdb_del_trusted_domain(const char *domain);
+NTSTATUS pdb_enum_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
+				  struct pdb_trusted_domain ***domains);
 NTSTATUS make_pdb_method( struct pdb_methods **methods ) ;
 
 /* The following definitions come from passdb/pdb_ldap.c  */
