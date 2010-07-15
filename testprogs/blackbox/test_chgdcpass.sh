@@ -49,11 +49,13 @@ KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 rm -f $KRB5CCNAME
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+
+#This is important because it puts the ticket for the old KVNO and password into a local ccache
+test_smbclient "Test login with kerberos ccache before password change" 'ls' -k yes || failed=`expr $failed + 1`
 testit "change dc password" ./scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+
+#This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC password is changed
 test_smbclient "Test login with kerberos ccache after password change" 'ls' -k yes || failed=`expr $failed + 1`
-
-
-#This is important because it shows that the old password remains valid (as it must) for incoming connections after the DC password is changed
 
 #This confirms that the DC password is valid for a kinit too
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
