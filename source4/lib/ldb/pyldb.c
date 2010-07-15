@@ -1658,9 +1658,14 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_message_element *me;
 
-	if (PyLdbMessageElement_Check(set_obj))
-		return talloc_reference(mem_ctx, 
-								PyLdbMessageElement_AsMessageElement(set_obj));
+	if (PyLdbMessageElement_Check(set_obj)) {
+		PyLdbMessageElementObject *set_obj_as_me = (PyLdbMessageElementObject *)set_obj;
+		/* We have to talloc_reference() the memory context, not the pointer which may not actually be it's own context */
+		if (talloc_reference(mem_ctx, set_obj_as_me->mem_ctx)) {
+			return PyLdbMessageElement_AsMessageElement(set_obj);
+		}
+		return NULL;
+	}
 
 	me = talloc(mem_ctx, struct ldb_message_element);
 
@@ -1964,7 +1969,7 @@ static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *p
 	if (el == NULL) {
 		return NULL;
 	}
-	return (PyObject *)PyLdbMessageElement_FromMessageElement(el, msg);
+	return (PyObject *)PyLdbMessageElement_FromMessageElement(el, msg->elements);
 }
 
 static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
@@ -2003,7 +2008,7 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
-		PyList_SetItem(l, j, Py_BuildValue("(sO)", msg->elements[i].name, PyLdbMessageElement_FromMessageElement(&msg->elements[i], self->msg)));
+		PyList_SetItem(l, j, Py_BuildValue("(sO)", msg->elements[i].name, PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements)));
 	}
 	return l;
 }
