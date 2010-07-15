@@ -87,7 +87,7 @@
  Simple helper function to make stuff better readable
  **********************************************************************/
 
-static LDAP *priv2ld(struct ldapsam_privates *priv)
+LDAP *priv2ld(struct ldapsam_privates *priv)
 {
 	return priv->smbldap_state->ldap_struct;
 }
