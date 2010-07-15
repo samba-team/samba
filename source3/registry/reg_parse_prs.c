@@ -1,26 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba memory buffer functions
    Copyright (C) Andrew Tridgell              1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Jeremy Allison               1999
    Copyright (C) Andrew Bartlett              2003.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
+#include "reg_parse_prs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
@@ -207,7 +208,7 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 				(unsigned int)extra_space));
 		return False;
 	}
-	
+
 	/*
 	 * Decide how much extra space we really need.
 	 */
@@ -455,7 +456,7 @@ bool prs_align(prs_struct *ps)
 /******************************************************************
  Align on a 2 byte boundary
  *****************************************************************/
- 
+
 bool prs_align_uint16(prs_struct *ps)
 {
 	bool ret;
@@ -464,14 +465,14 @@ bool prs_align_uint16(prs_struct *ps)
 	ps->align = 2;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
 /******************************************************************
  Align on a 8 byte boundary
  *****************************************************************/
- 
+
 bool prs_align_uint64(prs_struct *ps)
 {
 	bool ret;
@@ -480,14 +481,14 @@ bool prs_align_uint64(prs_struct *ps)
 	ps->align = 8;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
 /******************************************************************
  Align on a specific byte boundary
  *****************************************************************/
- 
+
 bool prs_align_custom(prs_struct *ps, uint8 boundary)
 {
 	bool ret;
@@ -496,7 +497,7 @@ bool prs_align_custom(prs_struct *ps, uint8 boundary)
 	ps->align = boundary;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
@@ -855,12 +856,12 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	blob->length = prs_data_size(prs);
 	blob->data = (uint8 *)TALLOC_ZERO_SIZE(mem_ctx, blob->length);
-	
+
 	/* set the pointer at the end of the buffer */
 	prs_set_offset( prs, prs_data_size(prs) );
 
 	if (!prs_copy_all_data_out((char *)blob->data, prs))
 		return False;
-	
+
 	return True;
 }

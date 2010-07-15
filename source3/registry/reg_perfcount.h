@@ -22,6 +22,8 @@
 #ifndef _REG_PERFCOUNT_H
 #define _REG_PERFCOUNT_H
 
+#include "reg_parse_prs.h"
+
 void perfcount_init_keys( void );
 uint32 reg_perfcount_get_base_index(void);
 uint32 reg_perfcount_get_last_counter(uint32 base_index);

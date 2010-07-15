@@ -354,7 +354,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
-RPC_PARSE_OBJ1 = rpc_parse/parse_prs.o
+REG_PARSE_PRS_OBJ = registry/reg_parse_prs.o
 
 RPC_PARSE_OBJ2 = rpc_client/init_netlogon.o \
 		 rpc_client/init_lsa.o
@@ -487,7 +487,7 @@ LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ)
 LIBSMB_ERR_OBJ1 = ../libcli/auth/smbdes.o ../libcli/auth/smbencrypt.o ../libcli/auth/msrpc_parse.o ../libcli/auth/session.o
 
 LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
-		 $(RPC_PARSE_OBJ1) \
+		 $(REG_PARSE_PRS_OBJ) \
 		 $(SECRETS_OBJ)
 
 LIBSMB_OBJ0 = \

@@ -33,4 +33,7 @@
 
 #define RPC_HEADER_LEN 16
 
+#define RPC_BIG_ENDIAN 		1
+#define RPC_LITTLE_ENDIAN	0
+
 #endif /* _DCE_RPC_H */
