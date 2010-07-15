@@ -166,12 +166,10 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	/* TODO:
-	 *
-	 * we still need to make sure that don't register the same commands twice!!!
-	 *
-	 * --metze
-	 */
+	/* Don't register the same command twice */
+	if (rpc_srv_pipe_exists_by_id(&iface->syntax_id)) {
+		return NT_STATUS_OK;
+	}
 
 	/*
 	 * We use a temporary variable because this call can fail and
