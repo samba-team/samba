@@ -24,7 +24,7 @@
 
 struct cli_do_rpc_ndr_state {
 	const struct ndr_interface_call *call;
-	prs_struct q_ps;
+	DATA_BLOB q_pdu;
 	DATA_BLOB r_pdu;
 	void *r;
 };
@@ -41,9 +41,7 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_do_rpc_ndr_state *state;
 	struct ndr_push *push;
-	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	bool ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_do_rpc_ndr_state);
@@ -65,7 +63,7 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 					 state->call->name, NDR_IN, r);
 	}
 
-	push = ndr_push_init_ctx(talloc_tos());
+	push = ndr_push_init_ctx(state);
 	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -77,16 +75,11 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	blob = ndr_push_blob(push);
-	ret = prs_init_data_blob(&state->q_ps, &blob, state);
+	state->q_pdu = ndr_push_blob(push);
+	talloc_steal(mem_ctx, state->q_pdu.data);
 	TALLOC_FREE(push);
 
-	if (!ret) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = rpc_api_pipe_req_send(state, ev, cli, opnum, &state->q_ps);
+	subreq = rpc_api_pipe_req_send(state, ev, cli, opnum, &state->q_pdu);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

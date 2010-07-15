@@ -2033,7 +2033,7 @@ struct rpc_api_pipe_req_state {
 	struct rpc_pipe_client *cli;
 	uint8_t op_num;
 	uint32_t call_id;
-	prs_struct *req_data;
+	DATA_BLOB *req_data;
 	uint32_t req_data_sent;
 	DATA_BLOB rpc_out;
 	DATA_BLOB reply_pdu;
@@ -2048,7 +2048,7 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
-					 prs_struct *req_data)
+					 DATA_BLOB *req_data)
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_api_pipe_req_state *state;
@@ -2122,7 +2122,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	NTSTATUS status;
 	union dcerpc_payload u;
 
-	data_left = prs_offset(state->req_data) - state->req_data_sent;
+	data_left = state->req_data->length - state->req_data_sent;
 
 	data_sent_thistime = calculate_data_len_tosend(
 		state->cli, data_left, &frag_len, &auth_len, &ss_padding);
@@ -2139,7 +2139,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 
 	ZERO_STRUCT(u.request);
 
-	u.request.alloc_hint	= prs_offset(state->req_data);
+	u.request.alloc_hint	= state->req_data->length;
 	u.request.context_id	= 0;
 	u.request.opnum		= state->op_num;
 
@@ -2160,8 +2160,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 
 	/* Copy in the data, plus any ss padding. */
 	if (!data_blob_append(NULL, &state->rpc_out,
-				prs_data_p(state->req_data)
-					+ state->req_data_sent,
+				state->req_data->data + state->req_data_sent,
 				data_sent_thistime)) {
 		return NT_STATUS_NO_MEMORY;
 	}
