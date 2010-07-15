@@ -25,61 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
-/**
- * Dump a prs to a file: from the current location through to the end.
- **/
-void prs_dump(const char *name, int v, prs_struct *ps)
-{
-	prs_dump_region(name, v,
-			(uint8_t *)ps->data_p,
-			ps->data_offset, ps->buffer_size);
-}
-
-/**
- * Dump from the start of the prs to the current location.
- **/
-void prs_dump_before(const char *name, int v, prs_struct *ps)
-{
-	prs_dump_region(name, v,
-			(uint8_t *)ps->data_p,
-			0, ps->data_offset);
-}
-
-/**
- * Dump everything from the start of the prs up to the current location.
- **/
-void prs_dump_region(const char *name, int v, uint8_t *data_p,
-		     int from_off, int to_off)
-{
-	int fd, i;
-	char *fname = NULL;
-	ssize_t sz;
-	if (DEBUGLEVEL < 50) return;
-	for (i=1;i<100;i++) {
-		if (v != -1) {
-			if (asprintf(&fname,"/tmp/%s_%d.%d.prs", name, v, i) < 0) {
-				return;
-			}
-		} else {
-			if (asprintf(&fname,"/tmp/%s.%d.prs", name, i) < 0) {
-				return;
-			}
-		}
-		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
-		if (fd != -1 || errno != EEXIST) break;
-	}
-	if (fd != -1) {
-		sz = write(fd, data_p + from_off, to_off - from_off);
-		i = close(fd);
-		if ( (sz != to_off-from_off) || (i != 0) ) {
-			DEBUG(0,("Error writing/closing %s: %ld!=%ld %d\n", fname, (unsigned long)sz, (unsigned long)to_off-from_off, i ));
-		} else {
-			DEBUG(0,("created %s\n", fname));
-		}
-	}
-	SAFE_FREE(fname);
-}
-
 /*******************************************************************
  Debug output for parsing info
 

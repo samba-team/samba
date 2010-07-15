@@ -5020,10 +5020,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
-void prs_dump(const char *name, int v, prs_struct *ps);
-void prs_dump_before(const char *name, int v, prs_struct *ps);
-void prs_dump_region(const char *name, int v, uint8_t *data_p,
-		     int from_off, int to_off);
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
 bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io);
 void prs_mem_free(prs_struct *ps);
