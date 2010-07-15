@@ -5018,10 +5018,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			const struct ndr_interface_table *table,
 			uint32 opnum, void *r);
 
-/* The following definitions come from rpc_parse/parse_misc.c  */
-
-bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
-
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
 void prs_dump(const char *name, int v, prs_struct *ps);
