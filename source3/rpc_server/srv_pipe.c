@@ -37,6 +37,51 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/**
+ * Dump everything from the start of the end up of the provided data
+ * into a file, but only at debug level >= 50
+ **/
+static void dump_pdu_region(const char *name, int v,
+			    DATA_BLOB *data, size_t start, size_t end)
+{
+	int fd, i;
+	char *fname = NULL;
+	ssize_t sz;
+
+	if (DEBUGLEVEL < 50) return;
+
+	if (start > data->length || end > data->length || start > end) return;
+
+	for (i = 1; i < 100; i++) {
+		if (v != -1) {
+			fname = talloc_asprintf(talloc_tos(),
+						"/tmp/%s_%d.%d.prs",
+						name, v, i);
+		} else {
+			fname = talloc_asprintf(talloc_tos(),
+						"/tmp/%s_%d.prs",
+						name, i);
+		}
+		if (!fname) {
+			return;
+		}
+		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+		if (fd != -1 || errno != EEXIST) break;
+	}
+	if (fd != -1) {
+		sz = write(fd, data->data + start, end - start);
+		i = close(fd);
+		if ((sz != end - start) || (i != 0) ) {
+			DEBUG(0, ("Error writing/closing %s: %ld!=%ld %d\n",
+				  fname, (unsigned long)sz,
+				  (unsigned long)end - start, i));
+		} else {
+			DEBUG(0,("created %s\n", fname));
+		}
+	}
+	TALLOC_FREE(fname);
+}
+
 static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 {
 	struct auth_ntlmssp_state *a = auth->a_u.auth_ntlmssp_state;
@@ -1719,8 +1764,8 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump_region(name, pkt->u.request.opnum,
-				p->in_data.data.data, 0,
+		dump_pdu_region(name, pkt->u.request.opnum,
+				&p->in_data.data, 0,
 				p->in_data.data.length);
 	}
 
@@ -1775,9 +1820,8 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump_region(name, pkt->u.request.opnum,
-				p->out_data.rdata.data,
-				offset1,
+		dump_pdu_region(name, pkt->u.request.opnum,
+				&p->out_data.rdata, offset1,
 				p->out_data.rdata.length);
 	}
 

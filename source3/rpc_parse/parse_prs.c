@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/ndr_schannel.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
