@@ -1719,7 +1719,9 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
 			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
-		prs_dump(name, pkt->u.request.opnum, &p->in_data.data);
+		prs_dump_region(name, pkt->u.request.opnum,
+				p->in_data.data.data, 0,
+				p->in_data.data.length);
 	}
 
 	for (fn_num = 0; fn_num < n_cmds; fn_num++) {
@@ -1783,18 +1785,11 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
 		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 
 	/* Check for buffer underflow in rpc parsing */
-
-	if ((DEBUGLEVEL >= 10) && 
-	    (prs_offset(&p->in_data.data) != prs_data_size(&p->in_data.data))) {
-		size_t data_len = prs_data_size(&p->in_data.data) - prs_offset(&p->in_data.data);
-		char *data = (char *)SMB_MALLOC(data_len);
-
+	if ((DEBUGLEVEL >= 10) &&
+	    (pkt->frag_length < p->in_data.data.length)) {
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
-		if (data) {
-			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data, (uint32)data_len);
-			SAFE_FREE(data);
-		}
-
+		dump_data(10, p->in_data.data.data + pkt->frag_length,
+			      p->in_data.data.length - pkt->frag_length);
 	}
 
 	return True;

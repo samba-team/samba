@@ -144,20 +144,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	/*
-	 * Initialize the incoming RPC data buffer with one PDU worth of memory.
-	 * We cheat here and say we're marshalling, as we intend to add incoming
-	 * data directly into the prs_struct and we want it to auto grow. We will
-	 * change the type to UNMARSALLING before processing the stream.
-	 */
-
-	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
-		close_policy_by_pipe(p);
-		TALLOC_FREE(p);
-		return NULL;
-	}
-
 	p->server_info = copy_serverinfo(p, server_info);
 	if (p->server_info == NULL) {
 		DEBUG(0, ("open_rpc_pipe_p: copy_serverinfo failed\n"));
@@ -194,8 +180,6 @@ static NTSTATUS internal_ndr_push(TALLOC_CTX *mem_ctx,
 	const struct ndr_interface_call *call;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
-	bool ret;
 
 	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax) ||
 	    (opnum >= table->num_calls)) {
@@ -220,12 +204,10 @@ static NTSTATUS internal_ndr_push(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	blob = ndr_push_blob(push);
-	ret = prs_init_data_blob(&cli->pipes_struct->in_data.data, &blob, mem_ctx);
+	cli->pipes_struct->in_data.data = ndr_push_blob(push);
+	talloc_steal(cli->pipes_struct->mem_ctx,
+		     cli->pipes_struct->in_data.data.data);
 	TALLOC_FREE(push);
-	if (!ret) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	return NT_STATUS_OK;
 }
@@ -317,7 +299,7 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	prs_mem_free(&cli->pipes_struct->in_data.data);
+	data_blob_free(&cli->pipes_struct->in_data.data);
 	data_blob_free(&cli->pipes_struct->out_data.rdata);
 
 	return NT_STATUS_OK;

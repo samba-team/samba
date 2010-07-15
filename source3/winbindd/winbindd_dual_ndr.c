@@ -264,8 +264,8 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 
 	ZERO_STRUCT(p);
 	p.mem_ctx = talloc_stackframe();
-	p.in_data.data.buffer_size = state->request->extra_len;
-	p.in_data.data.data_p = state->request->extra_data.data;
+	p.in_data.data = data_blob_const(state->request->extra_data.data,
+					 state->request->extra_len);
 
 	ret = fns[state->request->data.ndrcmd].fn(&p);
 	if (!ret) {

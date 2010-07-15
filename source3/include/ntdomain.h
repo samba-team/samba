@@ -105,7 +105,8 @@ typedef struct _input_data {
 	 * the rpc headers and auth footers removed.
 	 * The maximum length of this (1Mb) is strictly enforced.
 	 */
-	prs_struct data;
+	DATA_BLOB data;
+
 } input_data;
 
 struct handle_list;
