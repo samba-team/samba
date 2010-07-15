@@ -22,6 +22,37 @@
 
 #include "smbldap.h"
 
+static bool ipasam_get_trusteddom_pw(struct pdb_methods *methods,
+				     const char *domain,
+				     char** pwd,
+				     struct dom_sid *sid,
+				     time_t *pass_last_set_time)
+{
+	return false;
+}
+
+static bool ipasam_set_trusteddom_pw(struct pdb_methods *methods,
+				     const char* domain,
+				     const char* pwd,
+				     const struct dom_sid *sid)
+{
+	return false;
+}
+
+static bool ipasam_del_trusteddom_pw(struct pdb_methods *methods,
+				     const char *domain)
+{
+	return false;
+}
+
+static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
+					TALLOC_CTX *mem_ctx,
+					uint32_t *num_domains,
+					struct trustdom_info ***domains)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	struct ldapsam_privates *ldap_state;
@@ -32,6 +63,11 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 
 	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
 	ldap_state->is_ipa_ldap = true;
+
+	(*pdb_method)->get_trusteddom_pw = ipasam_get_trusteddom_pw;
+	(*pdb_method)->set_trusteddom_pw = ipasam_set_trusteddom_pw;
+	(*pdb_method)->del_trusteddom_pw = ipasam_del_trusteddom_pw;
+	(*pdb_method)->enum_trusteddoms = ipasam_enum_trusteddoms;
 
 	return nt_status;
 }
