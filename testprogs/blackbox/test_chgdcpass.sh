@@ -21,9 +21,27 @@ shift 7
 failed=0
 
 samba4bindir="$BUILDDIR/bin"
+smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
+machineaccountccache="$BUILDDIR/scripting/bin/machineaccountccache"
 
 . `dirname $0`/subunit.sh
+
+test_smbclient() {
+	name="$1"
+	cmd="$2"
+	shift
+	shift
+	echo "test: $name"
+	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" $@
+	status=$?
+	if [ x$status = x0 ]; then
+		echo "success: $name"
+	else
+		echo "failure: $name"
+	fi
+	return $status
+}
 
 enctype="-e $ENCTYPE"
 
@@ -32,7 +50,14 @@ export KRB5CCNAME
 rm -f $KRB5CCNAME
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
 testit "change dc password" ./scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+test_smbclient "Test login with kerberos ccache after password change" 'ls' -k yes || failed=`expr $failed + 1`
+
+
+#This is important because it shows that the old password remains valid (as it must) for incoming connections after the DC password is changed
+
+#This confirms that the DC password is valid for a kinit too
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+test_smbclient "Test login with kerberos ccache with fresh kinit" 'ls' -k yes || failed=`expr $failed + 1`
 rm -f $KRB5CCNAME
 
 rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
