@@ -1698,7 +1698,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 	ctx_list.context_id = 0;
 	ctx_list.num_transfer_syntaxes = 1;
 	ctx_list.abstract_syntax = *abstract;
-	ctx_list.transfer_syntaxes = discard_const(transfer);
+	ctx_list.transfer_syntaxes = (struct ndr_syntax_id *)discard_const(transfer);
 
 	u.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN;
 	u.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN;
