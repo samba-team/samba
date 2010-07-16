@@ -538,8 +538,10 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			}
 		}
 
-		drs_msg = ldb_msg_canonicalize(ldb, objs->objects[i].msg);
-		talloc_steal(search_req, drs_msg);
+		ret = ldb_msg_normalize(ldb, search_req,
+		                        objs->objects[i].msg, &drs_msg);
+		torture_assert(tctx, ret == LDB_SUCCESS,
+			       "ldb_msg_normalize() has failed");
 
 		for (j=0; j < drs_msg->num_elements; j++) {
 			if (drs_msg->elements[j].num_values == 0) {
