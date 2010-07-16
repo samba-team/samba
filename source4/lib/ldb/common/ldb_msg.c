@@ -150,9 +150,14 @@ int ldb_msg_add_empty(	struct ldb_message *msg,
 	return LDB_SUCCESS;
 }
 
-/*
-  add an empty element to a message
-*/
+/**
+ * Adds an element to a message.
+ *
+ * NOTE: Ownership of ldb_message_element fields
+ *       is NOT transferred. Thus, if *el pointer
+ *       is invalidated for some reason, this will
+ *       corrupt *msg contents also
+ */
 int ldb_msg_add(struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags)
