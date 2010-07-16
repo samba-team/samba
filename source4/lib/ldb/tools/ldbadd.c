@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -40,7 +40,7 @@ static struct ldb_cmdline *options;
 
 static void usage(void)
 {
-	printf("Usage: ldbadd <options> <ldif...>\n");	
+	printf("Usage: ldbadd <options> <ldif...>\n");
 	printf("Adds records to a ldb, reading ldif the specified list of files\n\n");
 	ldb_cmdline_help("ldbadd", stdout);
 	exit(1);
@@ -142,6 +142,6 @@ int main(int argc, const char **argv)
 	talloc_free(mem_ctx);
 
 	printf("Added %d records with %d failures\n", count, failures);
-	
+
 	return ret;
 }
