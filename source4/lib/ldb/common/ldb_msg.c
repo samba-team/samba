@@ -114,6 +114,36 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 	return v2;
 }
 
+/**
+ * Adds new empty element to msg->elements
+ */
+static int _ldb_msg_add_el(struct ldb_message *msg,
+			   struct ldb_message_element **return_el)
+{
+	struct ldb_message_element *els;
+
+	/*
+	 * TODO: Find out a way to assert on input parameters.
+	 * msg and return_el must be valid
+	 */
+
+	els = talloc_realloc(msg, msg->elements,
+			     struct ldb_message_element, msg->num_elements + 1);
+	if (!els) {
+		errno = ENOMEM;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ZERO_STRUCT(els[msg->num_elements]);
+
+	msg->elements = els;
+	msg->num_elements++;
+
+	*return_el = &els[msg->num_elements-1];
+
+	return LDB_SUCCESS;
+}
+
 /*
   add an empty element to a message
 */
