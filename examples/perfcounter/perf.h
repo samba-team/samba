@@ -21,6 +21,21 @@
 #ifndef __PERF_H__
 #define __PERF_H__
 
+#define _PUBLIC_
+
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif
+
+#if !defined(HAVE_BOOL)
+#ifdef HAVE__Bool
+#define bool _Bool
+#else
+typedef int bool;
+#endif
+#endif
+
+
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
