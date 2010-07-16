@@ -137,7 +137,11 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res->msgs[0], "distinguishedName");
 		
-		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
+		ret = ldb_msg_difference(ldb, mem_ctx,
+		                         res->msgs[0], msg, &mod_msg);
+		if (ret != LDB_SUCCESS) {
+			goto op_error;
+		}
 		if (mod_msg->num_elements > 0) {
 			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
@@ -167,7 +171,11 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res_idx->msgs[0], "distinguishedName");
 
-		mod_msg = ldb_msg_diff(ldb, res_idx->msgs[0], msg_idx);
+		ret = ldb_msg_difference(ldb, mem_ctx,
+		                         res_idx->msgs[0], msg_idx, &mod_msg);
+		if (ret != LDB_SUCCESS) {
+			goto op_error;
+		}
 		if (mod_msg->num_elements > 0) {
 			ret = dsdb_replace(ldb, mod_msg, 0);
 		}
