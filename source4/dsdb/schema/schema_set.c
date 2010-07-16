@@ -667,11 +667,10 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	}
 	talloc_steal(mem_ctx, ldif);
 
-	msg = ldb_msg_canonicalize(ldb, ldif->msg);
-	if (!msg) {
+	ret = ldb_msg_normalize(ldb, mem_ctx, ldif->msg, &msg);
+	if (ret != LDB_SUCCESS) {
 		goto nomem;
 	}
-	talloc_steal(mem_ctx, msg);
 	talloc_free(ldif);
 
 	prefix_val = ldb_msg_find_ldb_val(msg, "prefixMap");
@@ -697,8 +696,8 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
 		talloc_steal(mem_ctx, ldif);
 
-		msg = ldb_msg_canonicalize(ldb, ldif->msg);
-		if (!msg) {
+		ret = ldb_msg_normalize(ldb, ldif, ldif->msg, &msg);
+		if (ret != LDB_SUCCESS) {
 			goto nomem;
 		}
 
