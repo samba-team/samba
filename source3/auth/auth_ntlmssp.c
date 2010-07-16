@@ -264,6 +264,7 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	const char *netbios_domain;
 	const char *dns_name;
 	char *dns_domain;
+	struct auth_ntlmssp_state *ans;
 
 	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
 		is_standalone = true;
@@ -281,17 +282,15 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	dns_name = get_mydnsfullname();
 
 	mem_ctx = talloc_init("AUTH NTLMSSP context");
-	
-	*auth_ntlmssp_state = TALLOC_ZERO_P(mem_ctx, struct auth_ntlmssp_state);
-	if (!*auth_ntlmssp_state) {
+
+	ans = talloc_zero(mem_ctx, struct auth_ntlmssp_state);
+	if (!ans) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(*auth_ntlmssp_state);
-
-	(*auth_ntlmssp_state)->mem_ctx = mem_ctx;
+	ans->mem_ctx = mem_ctx;
 
 	nt_status = ntlmssp_server_start(NULL,
 					 is_standalone,
@@ -299,41 +298,44 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 					 netbios_domain,
 					 dns_name,
 					 dns_domain,
-					 &(*auth_ntlmssp_state)->ntlmssp_state);
+					 &ans->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&(*auth_ntlmssp_state)->auth_context))) {
+	nt_status = make_auth_context_subsystem(&ans->auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	(*auth_ntlmssp_state)->ntlmssp_state->callback_private = (*auth_ntlmssp_state);
-	(*auth_ntlmssp_state)->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
-	(*auth_ntlmssp_state)->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
-	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
-	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
+	ans->ntlmssp_state->callback_private = ans;
+	ans->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
+	ans->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
+	ans->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
+	ans->ntlmssp_state->check_password = auth_ntlmssp_check_password;
 
+	*auth_ntlmssp_state = ans;
 	return NT_STATUS_OK;
 }
 
 void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
 {
+	struct auth_ntlmssp_state *ans = *auth_ntlmssp_state;
 	TALLOC_CTX *mem_ctx;
 
-	if (*auth_ntlmssp_state == NULL) {
+	if (ans == NULL) {
 		return;
 	}
 
-	mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
-	if ((*auth_ntlmssp_state)->ntlmssp_state) {
-		TALLOC_FREE((*auth_ntlmssp_state)->ntlmssp_state);
+	mem_ctx = ans->mem_ctx;
+	if (ans->ntlmssp_state) {
+		TALLOC_FREE(ans->ntlmssp_state);
 	}
-	if ((*auth_ntlmssp_state)->auth_context) {
-		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
+	if (ans->auth_context) {
+		ans->auth_context->free(&ans->auth_context);
 	}
-	if ((*auth_ntlmssp_state)->server_info) {
-		TALLOC_FREE((*auth_ntlmssp_state)->server_info);
+	if (ans->server_info) {
+		TALLOC_FREE(ans->server_info);
 	}
 	talloc_destroy(mem_ctx);
 	*auth_ntlmssp_state = NULL;
