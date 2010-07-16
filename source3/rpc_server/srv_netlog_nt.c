@@ -1380,7 +1380,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
 			user_info, &server_info);
 	}
 
-	(auth_context->free)(&auth_context);
+	TALLOC_FREE(auth_context);
 	free_user_info(&user_info);
 
 	DEBUG(5,("%s: check_password returned status %s\n",

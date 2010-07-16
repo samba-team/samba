@@ -33,8 +33,7 @@ static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 	if (sconn->smb1.negprot.auth_context) {
 		DEBUG(3, ("get challenge: is this a secondary negprot? "
 			  "sconn->negprot.auth_context is non-NULL!\n"));
-			sconn->smb1.negprot.auth_context->free(
-				&sconn->smb1.negprot.auth_context);
+			TALLOC_FREE(sconn->smb1.negprot.auth_context);
 	}
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));

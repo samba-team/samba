@@ -59,7 +59,7 @@ NTSTATUS check_plaintext_password(const char *smb_name,
 	nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
 								user_info, server_info); 
 
-	(plaintext_auth_context->free)(&plaintext_auth_context);
+	TALLOC_FREE(plaintext_auth_context);
 	free_user_info(&user_info);
 	return nt_status;
 }

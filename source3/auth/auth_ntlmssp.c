@@ -332,7 +332,7 @@ void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
 		TALLOC_FREE(ans->ntlmssp_state);
 	}
 	if (ans->auth_context) {
-		ans->auth_context->free(&ans->auth_context);
+		TALLOC_FREE(ans->auth_context);
 	}
 	if (ans->server_info) {
 		TALLOC_FREE(ans->server_info);

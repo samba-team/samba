@@ -115,7 +115,6 @@ struct auth_context {
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);
 	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
-	void (*free)(struct auth_context **auth_context);
 };
 
 typedef struct auth_methods
