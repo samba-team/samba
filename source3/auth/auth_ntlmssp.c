@@ -83,23 +83,25 @@ void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
 
 }
 
-NTSTATUS auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
-				  struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  struct auth_serversupplied_info **_server_info)
+NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
+				struct auth_ntlmssp_state *auth_ntlmssp_state,
+				struct auth_serversupplied_info **server_info)
 {
-	struct auth_serversupplied_info *server_info = auth_ntlmssp_state->server_info;
-	data_blob_free(&server_info->user_session_key);
-	server_info->user_session_key =
+	/* Free the current server_info user_session_key and reset it from the
+	 * current ntlmssp_state session_key */
+	data_blob_free(&auth_ntlmssp_state->server_info->user_session_key);
+	auth_ntlmssp_state->server_info->user_session_key =
 		data_blob_talloc(
-			server_info,
+			auth_ntlmssp_state->server_info,
 			auth_ntlmssp_state->ntlmssp_state->session_key.data,
 			auth_ntlmssp_state->ntlmssp_state->session_key.length);
-	if (auth_ntlmssp_state->ntlmssp_state->session_key.length && !server_info->user_session_key.data) {
-		*_server_info = NULL;
+	if (auth_ntlmssp_state->ntlmssp_state->session_key.length &&
+	    !auth_ntlmssp_state->server_info->user_session_key.data) {
+		*server_info = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
-	auth_ntlmssp_state->server_info = NULL;
-	*_server_info = talloc_steal(mem_ctx, server_info);
+	/* Steal server_info away from auth_ntlmssp_state */
+	*server_info = talloc_move(mem_ctx, &auth_ntlmssp_state->server_info);
 	return NT_STATUS_OK;
 }
 

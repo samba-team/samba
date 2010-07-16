@@ -640,7 +640,8 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = auth_ntlmssp_server_info(talloc_tos(), (*auth_ntlmssp_state), &server_info);
+		nt_status = auth_ntlmssp_steal_server_info(talloc_tos(),
+					(*auth_ntlmssp_state), &server_info);
 	} else {
 		/* Note that this server_info won't have a session
 		 * key.  But for map to guest, that's exactly the right

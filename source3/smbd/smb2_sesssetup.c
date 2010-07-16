@@ -147,7 +147,7 @@ static NTSTATUS setup_ntlmssp_server_info(struct smbd_smb2_session *session,
 				NTSTATUS status)
 {
 	if (NT_STATUS_IS_OK(status)) {
-		status = auth_ntlmssp_server_info(session,
+		status = auth_ntlmssp_steal_server_info(session,
 				session->auth_ntlmssp_state,
 				&session->server_info);
 	} else {

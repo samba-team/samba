@@ -54,9 +54,9 @@ NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
-NTSTATUS auth_ntlmssp_server_info(TALLOC_CTX *mem_ctx,
-				  struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  struct auth_serversupplied_info **_server_info);
+NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
+				struct auth_ntlmssp_state *auth_ntlmssp_state,
+				struct auth_serversupplied_info **server_info);
 struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(struct auth_ntlmssp_state *auth_ntlmssp_state);
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *auth_ntlmssp_state);
 const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *auth_ntlmssp_state);
