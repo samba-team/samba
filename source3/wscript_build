@@ -68,6 +68,9 @@ LIBNDR_SCHANNEL_SRC = '''../librpc/gen_ndr/ndr_schannel.c
 LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
                   ../librpc/ndr/ndr_spoolss_buf.c'''
 
+LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
+                  ../librpc/ndr/ndr_xattr.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -79,8 +82,7 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
                  librpc/gen_ndr/ndr_notify.c
-                 ../librpc/gen_ndr/ndr_xattr.c
-                 ../librpc/ndr/ndr_xattr.c
+                 ${LIBNDR_XATTR_SRC}
                  ../librpc/gen_ndr/ndr_epmapper.c
                  ../librpc/gen_ndr/ndr_named_pipe_auth.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c

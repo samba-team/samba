@@ -334,6 +334,9 @@ LIBNDR_NTPRINTING_OBJ = librpc/gen_ndr/ndr_ntprinting.o \
 LIBNDR_PREG_OBJ = librpc/gen_ndr/ndr_preg.o \
 		  librpc/ndr/ndr_preg.o
 
+LIBNDR_XATTR_OBJ = librpc/gen_ndr/ndr_xattr.o \
+		   ../librpc/ndr/ndr_xattr.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -345,8 +348,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_NETLOGON_OBJ) \
 		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
-		 librpc/gen_ndr/ndr_xattr.o \
-		 ../librpc/ndr/ndr_xattr.o \
+		 $(LIBNDR_XATTR_OBJ) \
 		 librpc/gen_ndr/ndr_epmapper.o \
 		 librpc/gen_ndr/ndr_named_pipe_auth.o \
 		 librpc/gen_ndr/ndr_ntsvcs.o \
