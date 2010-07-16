@@ -59,13 +59,6 @@ static bool forest_trust_info_check_out(struct torture_context *tctx,
 	return true;
 }
 
-static bool trust_domain_passwords_check_in(struct torture_context *tctx,
-					    struct trustDomainPasswords *r)
-{
-	/* FIXME: fill in, once we have working and correct IDL - gd */
-	return true;
-}
-
 static const uint8_t trust_domain_passwords_in[] = {
 	0x34, 0x1f, 0x6e, 0xcd, 0x5f, 0x14, 0x99, 0xf9, 0xd8, 0x34, 0x9f, 0x1d,
 	0x1c, 0xcf, 0x1f, 0x02, 0xb8, 0x30, 0xcc, 0x77, 0x21, 0xc1, 0xf3, 0xe2,
@@ -121,6 +114,41 @@ static const uint8_t trust_domain_passwords_in[] = {
 	0x4d, 0xc1, 0x58, 0xaf, 0x5f, 0x06, 0x5c, 0xe9, 0x4c, 0x5a, 0x02, 0xfd,
 	0x38, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x00
 };
+
+static bool trust_domain_passwords_check_in(struct torture_context *tctx,
+					    struct trustDomainPasswords *r)
+{
+	/* torture_assert_mem_equal(tctx, r->confounder, trust_domain_passwords_in, 512, "confounder mismatch"); */
+
+	torture_assert_int_equal(tctx, r->outgoing.count, 1, "outgoing count mismatch");
+	torture_assert_int_equal(tctx, r->outgoing.current_offset, 0x0000000c, "outgoing current offset mismatch");
+	torture_assert_int_equal(tctx, r->outgoing.previous_offset, 0x00000038, "outgoing previous offset mismatch");
+
+	torture_assert_int_equal(tctx, r->outgoing.current.count, 1, "outgoing current count mismatch");
+	torture_assert_int_equal(tctx, r->outgoing.current.array[0].LastUpdateTime, 0xB6416B4C, "outgoing current last update time mismatch");
+	torture_assert_int_equal(tctx, r->outgoing.current.array[0].AuthType, TRUST_AUTH_TYPE_CLEAR, "outgoing current auth type mismatch");
+	torture_assert_int_equal(tctx, r->outgoing.current.array[0].AuthInfo.clear.size, 0x0000001c, "outgoing current auth info size mismatch");
+	/* torture_assert_mem_equal(tctx, r->outgoing.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4, 0x0000001c, "outgoing current auth info password mismatch"); */
+
+	torture_assert_int_equal(tctx, r->outgoing.previous.count, 0, "outgoing previous count mismatch");
+
+	torture_assert_int_equal(tctx, r->incoming.count, 1, "incoming count mismatch");
+	torture_assert_int_equal(tctx, r->incoming.current_offset, 0x0000000c, "incoming current offset mismatch");
+	torture_assert_int_equal(tctx, r->incoming.previous_offset, 0x00000038, "incoming previous offset mismatch");
+
+	torture_assert_int_equal(tctx, r->incoming.current.count, 1, "incoming current count mismatch");
+	torture_assert_int_equal(tctx, r->incoming.current.array[0].LastUpdateTime, 0xB6416B4C, "incoming current last update time mismatch");
+	torture_assert_int_equal(tctx, r->incoming.current.array[0].AuthType, TRUST_AUTH_TYPE_CLEAR, "incoming current auth type mismatch");
+	torture_assert_int_equal(tctx, r->incoming.current.array[0].AuthInfo.clear.size, 0x0000001c, "incoming current auth info size mismatch");
+/*	torture_assert_mem_equal(tctx, r->incoming.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4+0x0000001c+12+8+4+4, 0x0000001c, "incoming current auth info password mismatch"); */
+
+	torture_assert_int_equal(tctx, r->incoming.previous.count, 0, "incoming previous count mismatch");
+
+	torture_assert_int_equal(tctx, r->outgoing_size, 0x00000038, "outgoing size mismatch");
+	torture_assert_int_equal(tctx, r->incoming_size, 0x00000038, "incoming size mismatch");
+
+	return true;
+}
 
 struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 {
