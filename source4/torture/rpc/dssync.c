@@ -575,8 +575,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		}
 		
 		
-		new_msg = ldb_msg_diff(ldb, drs_msg, ldap_msg);
-		talloc_steal(search_req, new_msg);
+		ret = ldb_msg_difference(ldb, search_req,
+		                         drs_msg, ldap_msg, &new_msg);
+		torture_assert(tctx, ret == LDB_SUCCESS, "ldb_msg_difference() has failed");
 		if (new_msg->num_elements != 0) {
 			char *s;
 			struct ldb_ldif ldif;
@@ -585,7 +586,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
 			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: \n%s\n", s);
 
-			ldif.msg = ldb_msg_diff(ldb, ldap_msg, drs_msg);
+			ret = ldb_msg_difference(ldb, search_req,
+			                         ldap_msg, drs_msg, &ldif.msg);
+			torture_assert(tctx, ret == LDB_SUCCESS, "ldb_msg_difference() has failed");
 			s = talloc_asprintf_append(s,
 						   "\n# Difference in between LDAP and DRS objects: \n%s\n",
 						   ldb_ldif_write_string(ldb, new_msg, &ldif));
