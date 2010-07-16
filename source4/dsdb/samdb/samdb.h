@@ -92,6 +92,12 @@ struct dsdb_control_password_change_status {
  */
 #define DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID "1.3.6.1.4.1.7165.4.3.12"
 
+/**
+  OID used to allow the replacement of replPropertyMetaData.
+  It is used when the current replmetadata needs to be edited.
+*/
+#define DSDB_CONTROL_CHANGEREPLMETADATA_OID "1.3.6.1.4.1.7165.4.3.14"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;

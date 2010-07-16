@@ -22,13 +22,6 @@
 #include "includes.h"
 #include "../libcli/netlogon.h"
 
-#undef DEBUG
-#define DEBUG(x, y)
-#undef DEBUGLVL
-#define DEBUGLVL(x) false
-#undef DEBUGLEVEL
-#define DEBUGLEVEL 0
-
 NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct netlogon_samlogon_response *response)
 {

@@ -317,18 +317,6 @@ interface dcerpc
 	/* little-endian flag */
 	const uint8 DCERPC_DREP_LE  = 0x10;
 
-	/* header only version of ncacn_packet */
-	typedef [public] struct {
-		uint8 rpc_vers;	        /* RPC version */
-		uint8 rpc_vers_minor;   /* Minor version */
-		dcerpc_pkt_type ptype;  /* Packet type */
-		uint8 pfc_flags;        /* Fragmentation flags */
-		uint8 drep[4];	        /* NDR data representation */
-		uint16 frag_length;     /* Total length of fragment */
-		uint16 auth_length;     /* authenticator length */
-		uint32 call_id;	        /* Call identifier */
-	} ncacn_packet_header;
-
 	typedef [public] struct {
 		uint8 rpc_vers;	        /* RPC version */
 		uint8 rpc_vers_minor;   /* Minor version */

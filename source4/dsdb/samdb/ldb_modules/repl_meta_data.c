@@ -5,6 +5,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
+   Copyright (C) Matthieu Patou <mat@samba.org> 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1073,6 +1074,20 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+static uint64_t find_max_local_usn(struct replPropertyMetaDataBlob omd)
+{
+	uint32_t count = omd.ctr.ctr1.count;
+	uint64_t max = 0;
+	uint32_t i;
+	for (i=0; i < count; i++) {
+		struct replPropertyMetaData1 m = omd.ctr.ctr1.array[i];
+		if (max < m.local_usn) {
+			max = m.local_usn;
+		}
+	}
+	return max;
+}
+
 /*
  * update the replPropertyMetaData object each time we modify an
  * object. This is needed for DRS replication, as the merge on the
@@ -1093,11 +1108,12 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	const struct GUID *our_invocation_id;
 	int ret;
 	const char *attrs[] = { "replPropertyMetaData", "*", NULL };
+	const char *attrs2[] = { "uSNChanged", "objectClass", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
 	enum urgent_situation situation;
-	bool rodc;
+	bool rodc, rmd_is_provided;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1111,21 +1127,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	unix_to_nt_time(&now, t);
 
-	/* search for the existing replPropertyMetaDataBlob. We need
-	 * to use REVEAL and ask for DNs in storage format to support
-	 * the check for values being the same in
-	 * replmd_update_rpmd_element()
-	 */
-	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
-	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_DELETED |
-				    DSDB_SEARCH_SHOW_EXTENDED_DN |
-				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
-				    DSDB_SEARCH_REVEAL_INTERNALS);
-	if (ret != LDB_SUCCESS || res->count != 1) {
-		DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (ldb_request_get_control(req, DSDB_CONTROL_CHANGEREPLMETADATA_OID)) {
+		rmd_is_provided = true;
+	} else {
+		rmd_is_provided = false;
 	}
 
 	/* if isDeleted is present and is TRUE, then we consider we are deleting,
@@ -1136,62 +1141,140 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		situation = REPL_URGENT_ON_UPDATE;
 	}
 
-	objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
-	if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
-							situation)) {
-		*is_urgent = true;
-	}
+	if (rmd_is_provided) {
+		/* In this case the change_replmetadata control was supplied */
+		/* We check that it's the only attribute that is provided
+		 * (it's a rare case so it's better to keep the code simplier)
+		 * We also check that the highest local_usn is bigger than
+		 * uSNChanged. */
+		uint64_t db_seq;
+		if( msg->num_elements != 1 ||
+			strncmp(msg->elements[0].name,
+				"replPropertyMetaData", 20) ) {
+			DEBUG(0,(__location__ ": changereplmetada control called without "\
+				"a specified replPropertyMetaData attribute or with others\n"));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		if (situation == REPL_URGENT_ON_DELETE) {
+			DEBUG(0,(__location__ ": changereplmetada control can't be called when deleting an object\n"));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		omd_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
+		if (!omd_value) {
+			DEBUG(0,(__location__ ": replPropertyMetaData was not specified for Object %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ndr_err = ndr_pull_struct_blob(omd_value, msg, &omd,
+					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*seq_num = find_max_local_usn(omd);
 
-	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
-	if (!omd_value) {
-		DEBUG(0,(__location__ ": Object %s does not have a replPropertyMetaData attribute\n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs2,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_SEARCH_SHOW_DELETED |
+					    DSDB_SEARCH_SHOW_EXTENDED_DN |
+					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+					    DSDB_SEARCH_REVEAL_INTERNALS);
 
-	ndr_err = ndr_pull_struct_blob(omd_value, msg, &omd,
-				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		if (ret != LDB_SUCCESS || res->count != 1) {
+			DEBUG(0,(__location__ ": Object %s failed to find uSNChanged\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 
-	if (omd.version != 1) {
-		DEBUG(0,(__location__ ": bad version %u in replPropertyMetaData for %s\n",
-			 omd.version, ldb_dn_get_linearized(msg->dn)));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
+		if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
+								situation)) {
+			*is_urgent = true;
+		}
 
-	/*we have elements that will be modified*/
-	if (msg->num_elements > 0) {
-		/*if we are RODC and this is a DRSR update then its ok*/
-		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
-			ret = samdb_rodc(ldb, &rodc);
-			if (ret != LDB_SUCCESS) {
-				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
-			} else if (rodc) {
-				ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
-				return LDB_ERR_REFERRAL;
+		db_seq = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNChanged", 0);
+		if (*seq_num <= db_seq) {
+			DEBUG(0,(__location__ ": changereplmetada control provided but max(local_usn)"\
+					      " is less or equal to uSNChanged (max = %lld uSNChanged = %lld)\n",
+					      *seq_num, db_seq));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+	} else {
+		/* search for the existing replPropertyMetaDataBlob. We need
+		 * to use REVEAL and ask for DNs in storage format to support
+		 * the check for values being the same in
+		 * replmd_update_rpmd_element()
+		 */
+		ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_SEARCH_SHOW_DELETED |
+					    DSDB_SEARCH_SHOW_EXTENDED_DN |
+					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+					    DSDB_SEARCH_REVEAL_INTERNALS);
+		if (ret != LDB_SUCCESS || res->count != 1) {
+			DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
+		if (is_urgent && replmd_check_urgent_objectclass(objectclass_el,
+								situation)) {
+			*is_urgent = true;
+		}
+
+		omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
+		if (!omd_value) {
+			DEBUG(0,(__location__ ": Object %s does not have a replPropertyMetaData attribute\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ndr_err = ndr_pull_struct_blob(omd_value, msg, &omd,
+					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0,(__location__ ": Failed to parse replPropertyMetaData for %s\n",
+				 ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (omd.version != 1) {
+			DEBUG(0,(__location__ ": bad version %u in replPropertyMetaData for %s\n",
+				 omd.version, ldb_dn_get_linearized(msg->dn)));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		/*we have elements that will be modified*/
+		if (msg->num_elements > 0) {
+			/*if we are RODC and this is a DRSR update then its ok*/
+			if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+				ret = samdb_rodc(ldb, &rodc);
+				if (ret != LDB_SUCCESS) {
+					DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
+				} else if (rodc) {
+					ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
+					return LDB_ERR_REFERRAL;
+				}
 			}
 		}
-	}
 
-	for (i=0; i<msg->num_elements; i++) {
-		struct ldb_message_element *old_el;
-		old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
-		ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], old_el, &omd, schema, seq_num,
-						 our_invocation_id, now);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		for (i=0; i<msg->num_elements; i++) {
+			struct ldb_message_element *old_el;
+			old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
+			ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], old_el, &omd, schema, seq_num,
+							 our_invocation_id, now);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			if (is_urgent && !*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
+				*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
+			}
+
 		}
-
-		if (is_urgent && !*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
-			*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
-		}
-
 	}
-
 	/*
 	 * replmd_update_rpmd_element has done an update if the
 	 * seq_num is set

@@ -145,7 +145,6 @@ sub ParseFunction($$)
 	pidl "struct ndr_pull *pull;";
 	pidl "struct ndr_push *push;";
 	pidl "enum ndr_err_code ndr_err;";
-	pidl "DATA_BLOB blob;";
 	pidl "struct $fn->{NAME} *r;";
 	pidl "";
 	pidl "call = &ndr_table_$if->{NAME}.calls[$op];";
@@ -155,12 +154,7 @@ sub ParseFunction($$)
 	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "if (!prs_data_blob(&p->in_data.data, &blob, r)) {";
-	pidl "\ttalloc_free(r);";
-	pidl "\treturn false;";
-	pidl "}";
-	pidl "";
-	pidl "pull = ndr_pull_init_blob(&blob, r);";
+	pidl "pull = ndr_pull_init_blob(&p->in_data.data, r);";
 	pidl "if (pull == NULL) {";
 	pidl "\ttalloc_free(r);";
 	pidl "\treturn false;";
@@ -211,11 +205,8 @@ sub ParseFunction($$)
 	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "blob = ndr_push_blob(push);";
-	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {";
-	pidl "\ttalloc_free(r);";
-	pidl "\treturn false;";
-	pidl "}";
+	pidl "p->out_data.rdata = ndr_push_blob(push);";
+	pidl "talloc_steal(p->mem_ctx, p->out_data.rdata.data);";
 	pidl "";
 	pidl "talloc_free(r);";
 	pidl "";

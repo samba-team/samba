@@ -35,8 +35,9 @@ import ldb
 from samba.provision import (ProvisionNames, provision_paths_from_lp,
                             getpolicypath, set_gpo_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
-                            setsysvolacl)
+                            setsysvolacl, secretsdb_self_join)
 from samba.dcerpc import misc, security, xattr
+from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
 
@@ -703,14 +704,48 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
         set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
             names.domaindn, samdb, lp)
     except TypeError, e:
-        message(ERROR, "Unable to set ACLs on policies related objects, if not using posix:eadb, you must be root to do it")
+        message(ERROR, "Unable to set ACLs on policies related objects,"
+                       " if not using posix:eadb, you must be root to do it")
 
     if resetacls:
        try:
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
                         names.domainsid, names.dnsdomain, names.domaindn, lp)
        except TypeError, e:
-            message(ERROR, "Unable to set ACLs on sysvol share, if not using posix:eadb, you must be root to do it")
+            message(ERROR, "Unable to set ACLs on sysvol share, if not using"
+                           "posix:eadb, you must be root to do it")
+
+def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
+    """For a given hash associating dn and a number, this function will
+    update the replPropertyMetaData of each dn in the hash, so that the
+    calculated value of the msDs-KeyVersionNumber is equal or superior to the
+    one associated to the given dn.
+
+    :param samdb: An SamDB object pointing to the sam
+    :param rootdn: The base DN where we want to start
+    :param hashDns: A hash with dn as key and number representing the
+                 minimum value of msDs-KeyVersionNumber that we want to
+                 have
+    """
+    entry = samdb.search(expression='(objectClass=user)',
+                         base=ldb.Dn(samdb,str(rootdn)),
+                         scope=SCOPE_SUBTREE, attrs=["msDs-KeyVersionNumber"],
+                         controls=["search_options:1:2"])
+    done = 0
+    if len(entry) == 0:
+        raise ProvisioningError("Unable to find msDs-KeyVersionNumber")
+    else:
+        for e in entry:
+            if hashDns.has_key(str(e.dn).lower()):
+                done = done + 1
+                val = e.get("msDs-KeyVersionNumber")
+                if not val:
+                    continue
+                version = int(str(hashDns[str(e.dn).lower()]))
+                if int(str(val)) < version:
+                    samdb.set_attribute_replmetadata_version(str(e.dn),
+                                                              "unicodePwd",
+                                                              version)
 
 def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
     """Update the provision container db: sam.ldb
@@ -770,6 +805,48 @@ def construct_existor_expr(attrs):
         expr = "%s)"%expr
     return expr
 
+def update_machine_account_password(samdb, secrets_ldb, names):
+    """Update (change) the password of the current DC both in the SAM db and in
+       secret one
+
+    :param samdb: An LDB object related to the sam.ldb file of a given provision
+    :param secrets_ldb: An LDB object related to the secrets.ldb file of a given
+                        provision
+    :param names: List of key provision parameters"""
+
+    expression = "samAccountName=%s$" % names.netbiosname
+    secrets_msg = secrets_ldb.search(expression=expression,
+                                        attrs=["secureChannelType"])
+    if int(secrets_msg[0]["secureChannelType"][0]) == SEC_CHAN_BDC:
+        res = samdb.search(expression=expression, attrs=[])
+        assert(len(res) == 1)
+
+        msg = ldb.Message(res[0].dn)
+        machinepass = samba.generate_random_password(128, 255)
+        msg["userPassword"] = ldb.MessageElement(machinepass,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "userPassword")
+        samdb.modify(msg)
+
+        res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
+                     attrs=["msDs-keyVersionNumber"])
+        assert(len(res) == 1)
+        kvno = int(str(res[0]["msDs-keyVersionNumber"]))
+        secChanType = int(secrets_msg[0]["secureChannelType"][0])
+
+        secretsdb_self_join(secrets_ldb, domain=names.domain,
+                    realm=names.realm,
+                    domainsid=names.domainsid,
+                    dnsdomain=names.dnsdomain,
+                    netbiosname=names.netbiosname,
+                    machinepass=machinepass,
+                    key_version_number=kvno,
+                    secure_channel_type=secChanType)
+    else:
+        raise ProvisioningError("Unable to find a Secure Channel"
+                                "of type SEC_CHAN_BDC")
+
+
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are
     still stored in the db.
@@ -786,7 +863,7 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
     expr = construct_existor_expr(attrs)
     if expr == "":
         return hashAtt
-    entry = samdb.search(expression=expr, base=ldb.Dn(samdb,str(rootdn)),
+    entry = samdb.search(expression=expr, base=ldb.Dn(samdb, str(rootdn)),
                          scope=SCOPE_SUBTREE, attrs=attrs,
                          controls=["search_options:1:2","bypassoperational:0"])
     if len(entry) == 0:

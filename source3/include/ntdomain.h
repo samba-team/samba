@@ -28,46 +28,11 @@
  * in the NTDOM branch - it didn't belong there.
  */
 
-#define prs_init_empty( _ps_, _ctx_, _io_ ) (void) prs_init((_ps_), 0, (_ctx_), (_io_))
-
-typedef struct _prs_struct {
-	bool io; /* parsing in or out of data stream */
-	/* 
-	 * If the (incoming) data is big-endian. On output we are
-	 * always little-endian.
-	 */ 
-	bool bigendian_data;
-	uint8 align; /* data alignment */
-	bool is_dynamic; /* Do we own this memory or not ? */
-	uint32 data_offset; /* Current working offset into data. */
-	uint32 buffer_size; /* Current allocated size of the buffer. */
-	uint32 grow_size; /* size requested via prs_grow() calls */
-	/* The buffer itself. If "is_dynamic" is true this
-	 * MUST BE TALLOC'ed off mem_ctx. */
-	char *data_p;
-	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
-} prs_struct;
-
-/*
- * Defines for io member of prs_struct.
- */
-
-#define MARSHALL 0
-#define UNMARSHALL 1
-
-#define MARSHALLING(ps) (!(ps)->io)
-#define UNMARSHALLING(ps) ((ps)->io)
-
-#define RPC_BIG_ENDIAN 		1
-#define RPC_LITTLE_ENDIAN	0
-
-#define RPC_PARSE_ALIGN 4
-
 typedef struct _output_data {
 	/*
 	 * Raw RPC output data. This does not include RPC headers or footers.
 	 */
-	prs_struct rdata;
+	DATA_BLOB rdata;
 
 	/* The amount of data sent from the current rdata struct. */
 	uint32 data_sent_length;
@@ -76,7 +41,7 @@ typedef struct _output_data {
 	 * The current fragment being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	prs_struct frag;
+	DATA_BLOB frag;
 
 	/* The amount of data sent from the current PDU. */
 	uint32 current_pdu_sent;
@@ -105,7 +70,8 @@ typedef struct _input_data {
 	 * the rpc headers and auth footers removed.
 	 * The maximum length of this (1Mb) is strictly enforced.
 	 */
-	prs_struct data;
+	DATA_BLOB data;
+
 } input_data;
 
 struct handle_list;

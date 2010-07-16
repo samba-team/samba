@@ -42,19 +42,10 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	o_data->data_sent_length = 0;
 	o_data->current_pdu_sent = 0;
 
-	prs_mem_free(&o_data->frag);
+	data_blob_free(&o_data->frag);
 
 	/* Free any memory in the current return data buffer. */
-	prs_mem_free(&o_data->rdata);
-
-	/*
-	 * Initialize the outgoing RPC data buffer.
-	 * we will use this as the raw data area for replying to rpc requests.
-	 */
-	if(!prs_init(&o_data->rdata, 128, p->mem_ctx, MARSHALL)) {
-		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
-		return False;
-	}
+	data_blob_free(&o_data->rdata);
 
 	return True;
 }
@@ -65,7 +56,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 
 static void set_incoming_fault(pipes_struct *p)
 {
-	prs_mem_free(&p->in_data.data);
+	data_blob_free(&p->in_data.data);
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
 	p->fault_state = True;
@@ -152,23 +143,14 @@ static bool get_pdu_size(pipes_struct *p)
 
 static void free_pipe_context(pipes_struct *p)
 {
-	prs_mem_free(&p->out_data.frag);
-	prs_mem_free(&p->out_data.rdata);
-	prs_mem_free(&p->in_data.data);
+	data_blob_free(&p->out_data.frag);
+	data_blob_free(&p->out_data.rdata);
+	data_blob_free(&p->in_data.data);
 
 	DEBUG(3, ("free_pipe_context: "
 		"destroying talloc pool of size %lu\n",
 		(unsigned long)talloc_total_size(p->mem_ctx)));
 	talloc_free_children(p->mem_ctx);
-	/*
-	 * Re-initialize to set back to marshalling and set the
-	 * offset back to the start of the buffer.
-	 */
-	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
-		DEBUG(0, ("free_pipe_context: "
-			  "rps_init failed!\n"));
-		p->fault_state = True;
-	}
 }
 
 /****************************************************************************
@@ -357,10 +339,10 @@ static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
 	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
 
-	if (prs_offset(&p->in_data.data) + data.length > MAX_RPC_DATA_SIZE) {
+	if (p->in_data.data.length + data.length > MAX_RPC_DATA_SIZE) {
 		DEBUG(0, ("process_request_pdu: "
 			  "rpc data buffer too large (%u) + (%u)\n",
-			  (unsigned int)prs_data_size(&p->in_data.data),
+			  (unsigned int)p->in_data.data.length,
 			  (unsigned int)data.length));
 		set_incoming_fault(p);
 		return False;
@@ -370,14 +352,16 @@ static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
 	 * Append the data portion into the buffer and return.
 	 */
 
-	if (!prs_copy_data_in(&p->in_data.data,
-			      (char *)data.data, data.length)) {
-		DEBUG(0, ("process_request_pdu: Unable to append data size %u "
-			  "to parse buffer of size %u.\n",
-			  (unsigned int)data.length,
-			  (unsigned int)prs_data_size(&p->in_data.data)));
-		set_incoming_fault(p);
-		return False;
+	if (data.length) {
+		if (!data_blob_append(p->mem_ctx, &p->in_data.data,
+					  data.data, data.length)) {
+			DEBUG(0, ("Unable to append data size %u "
+				  "to parse buffer of size %u.\n",
+				  (unsigned int)data.length,
+				  (unsigned int)p->in_data.data.length));
+			set_incoming_fault(p);
+			return False;
+		}
 	}
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_LAST) {
@@ -388,30 +372,8 @@ static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
 		 */
 
 		/*
-		 * Ensure the internal prs buffer size is *exactly* the same
-		 * size as the current offset.
-		 */
-
- 		if (!prs_set_buffer_size(&p->in_data.data,
-					 prs_offset(&p->in_data.data))) {
-			DEBUG(0, ("process_request_pdu: "
-				  "Call to prs_set_buffer_size failed!\n"));
-			set_incoming_fault(p);
-			return False;
-		}
-
-		/*
-		 * Set the parse offset to the start of the data and set the
-		 * prs_struct to UNMARSHALL.
-		 */
-
-		prs_set_offset(&p->in_data.data, 0);
-		prs_switch_type(&p->in_data.data, UNMARSHALL);
-
-		/*
 		 * Process the complete data stream here.
 		 */
-
 		if (pipe_init_outgoing_data(p)) {
 			ret = api_pipe_request(p, pkt);
 		}
@@ -463,7 +425,6 @@ static void process_complete_pdu(pipes_struct *p)
 	} else {
 		p->endian = RPC_BIG_ENDIAN;
 	}
-	prs_set_endian_data(&p->in_data.data, p->endian);
 
 	DEBUG(10, ("Processing packet type %d\n", (int)pkt->ptype));
 
@@ -600,10 +561,6 @@ static void process_complete_pdu(pipes_struct *p)
 	}
 
 done:
-	/* Reset to little endian.
-	 * Probably don't need this but it won't hurt. */
-	prs_set_endian_data(&p->in_data.data, RPC_LITTLE_ENDIAN);
-
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
 			 "pipe %s\n", get_pipe_name_from_syntax(talloc_tos(),
@@ -812,7 +769,7 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 	 * PDU.
 	 */
 
-	pdu_remaining = prs_offset(&p->out_data.frag)
+	pdu_remaining = p->out_data.frag.length
 		- p->out_data.current_pdu_sent;
 
 	if (pdu_remaining > 0) {
@@ -821,12 +778,12 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
-			  (unsigned int)prs_offset(&p->out_data.frag),
+			  (unsigned int)p->out_data.frag.length,
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
 
 		memcpy(data,
-		       prs_data_p(&p->out_data.frag)
+		       p->out_data.frag.data
 		       + p->out_data.current_pdu_sent,
 		       data_returned);
 
@@ -840,13 +797,13 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 	 */
 
 	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length "
-		  "= %u, prs_offset(&p->out_data.rdata) = %u.\n",
+		  "= %u, p->out_data.rdata.length = %u.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
 		  (int)p->fault_state,
 		  (unsigned int)p->out_data.data_sent_length,
-		  (unsigned int)prs_offset(&p->out_data.rdata) ));
+		  (unsigned int)p->out_data.rdata.length));
 
-	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
+	if (p->out_data.data_sent_length >= p->out_data.rdata.length) {
 		/*
 		 * We have sent all possible data, return 0.
 		 */
@@ -867,23 +824,22 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data,
 		return -1;
 	}
 
-	data_returned = MIN(n, prs_offset(&p->out_data.frag));
+	data_returned = MIN(n, p->out_data.frag.length);
 
-	memcpy( data, prs_data_p(&p->out_data.frag), (size_t)data_returned);
+	memcpy(data, p->out_data.frag.data, (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
 
   out:
-	(*is_data_outstanding) = prs_offset(&p->out_data.frag) > n;
+	(*is_data_outstanding) = p->out_data.frag.length > n;
 
-	if (p->out_data.current_pdu_sent == prs_offset(&p->out_data.frag)) {
+	if (p->out_data.current_pdu_sent == p->out_data.frag.length) {
 		/* We've returned everything in the out_data.frag
 		 * so we're done with this pdu. Free it and reset
 		 * current_pdu_sent. */
 		p->out_data.current_pdu_sent = 0;
-		prs_mem_free(&p->out_data.frag);
+		data_blob_free(&p->out_data.frag);
 
-		if (p->out_data.data_sent_length
-		    >= prs_offset(&p->out_data.rdata)) {
+		if (p->out_data.data_sent_length >= p->out_data.rdata.length) {
 			/*
 			 * We're completely finished with both outgoing and
 			 * incoming data streams. It's safe to free all

@@ -88,10 +88,9 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
-RPC_PARSE_SRC1 = '''rpc_parse/parse_prs.c rpc_parse/parse_misc.c'''
+REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
-RPC_PARSE_SRC2 = '''rpc_parse/parse_rpc.c
-                 rpc_client/init_netlogon.c
+RPC_PARSE_SRC2 = '''rpc_client/init_netlogon.c
                  rpc_client/init_lsa.c'''
 
 LIBREPLACE_SRC = '''${LIBREPLACE_SRCS}'''
@@ -233,7 +232,7 @@ LIBSMB_ERR_SRC0 = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SR
 
 LIBSMB_ERR_SRC1 = '''../libcli/auth/smbdes.c ../libcli/auth/smbencrypt.c ../libcli/auth/msrpc_parse.c ../libcli/auth/session.c'''
 
-LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1} ${RPC_PARSE_SRC1}'
+LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1} ${REG_PARSE_PRS_SRC}'
 
 LIBSMB_SRC0 = '''
                ../libcli/auth/ntlm_check.c
@@ -302,6 +301,7 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_drsuapi.c
                    ../librpc/gen_ndr/cli_spoolss.c
                    ../librpc/rpc/dcerpc_util.c
+                   librpc/rpc/dcerpc_helpers.c
                    ${LIBNDR_GEN_SRC}
                    ${RPCCLIENT_NDR_SRC}'''
 

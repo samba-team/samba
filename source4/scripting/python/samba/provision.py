@@ -680,17 +680,16 @@ def secretsdb_self_join(secretsdb, domain,
            "krb5Keytab",
            "privateKeytab"]
     
-
+    #We don't need to set msg["flatname"] here, because rdn_name will handle it, and it causes problems for modifies anyway
     msg = ldb.Message(ldb.Dn(secretsdb, "flatname=%s,cn=Primary Domains" % domain))
-    msg["secureChannelType"] = str(secure_channel_type)
-    msg["flatname"] = [domain]
+    msg["secureChannelType"] = [str(secure_channel_type)]
     msg["objectClass"] = ["top", "primaryDomain"]
     if realm is not None:
       if dnsdomain is None:
         dnsdomain = realm.lower()
       msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
-      msg["realm"] = realm
-      msg["saltPrincipal"] = "host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())
+      msg["realm"] = [realm]
+      msg["saltPrincipal"] = ["host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())]
       msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
       msg["privateKeytab"] = ["secrets.keytab"]
 
@@ -701,30 +700,39 @@ def secretsdb_self_join(secretsdb, domain,
     if domainsid is not None:
         msg["objectSid"] = [ndr_pack(domainsid)]
     
+    # This complex expression tries to ensure that we don't have more
+    # than one record for this SID, realm or netbios domain at a time,
+    # but we don't delete the old record that we are about to modify,
+    # because that would delete the keytab and previous password.
     res = secretsdb.search(base="cn=Primary Domains", 
                            attrs=attrs, 
-                           expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain))" % (domain, realm, str(domainsid))), 
+                           expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(dn=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
                            scope=ldb.SCOPE_ONELEVEL)
     
     for del_msg in res:
-      if del_msg.dn is not msg.dn:
         secretsdb.delete(del_msg.dn)
 
     res = secretsdb.search(base=msg.dn, attrs=attrs, scope=ldb.SCOPE_BASE)
 
     if len(res) == 1:
-      msg["priorSecret"] = res[0]["secret"]
-      msg["priorWhenChanged"] = res[0]["whenChanged"]
+      msg["priorSecret"] = [res[0]["secret"][0]]
+      msg["priorWhenChanged"] = [res[0]["whenChanged"][0]]
 
-      if res["privateKeytab"] is not None:
-        msg["privateKeytab"] = res[0]["privateKeytab"]
+      try:
+        msg["privateKeytab"] = [res[0]["privateKeytab"][0]]
+      except KeyError:
+        pass
 
-      if res["krb5Keytab"] is not None:
-        msg["krb5Keytab"] = res[0]["krb5Keytab"]
+      try:
+        msg["krb5Keytab"] = [res[0]["krb5Keytab"][0]]
+      except KeyError:
+        pass
 
       for el in msg:
-        el.set_flags(ldb.FLAG_MOD_REPLACE)
-        secretsdb.modify(msg)
+          if el != 'dn':
+              msg[el].set_flags(ldb.FLAG_MOD_REPLACE)
+      secretsdb.modify(msg)
+      secretsdb.rename(res[0].dn, msg.dn)
     else:
       secretsdb.add(msg)
 

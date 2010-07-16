@@ -1,81 +1,30 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba memory buffer functions
    Copyright (C) Andrew Tridgell              1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Jeremy Allison               1999
    Copyright (C) Andrew Bartlett              2003.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/ndr_schannel.h"
+#include "reg_parse_prs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
-
-/**
- * Dump a prs to a file: from the current location through to the end.
- **/
-void prs_dump(const char *name, int v, prs_struct *ps)
-{
-	prs_dump_region(name, v, ps, ps->data_offset, ps->buffer_size);
-}
-
-/**
- * Dump from the start of the prs to the current location.
- **/
-void prs_dump_before(const char *name, int v, prs_struct *ps)
-{
-	prs_dump_region(name, v, ps, 0, ps->data_offset);
-}
-
-/**
- * Dump everything from the start of the prs up to the current location.
- **/
-void prs_dump_region(const char *name, int v, prs_struct *ps,
-		     int from_off, int to_off)
-{
-	int fd, i;
-	char *fname = NULL;
-	ssize_t sz;
-	if (DEBUGLEVEL < 50) return;
-	for (i=1;i<100;i++) {
-		if (v != -1) {
-			if (asprintf(&fname,"/tmp/%s_%d.%d.prs", name, v, i) < 0) {
-				return;
-			}
-		} else {
-			if (asprintf(&fname,"/tmp/%s.%d.prs", name, i) < 0) {
-				return;
-			}
-		}
-		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
-		if (fd != -1 || errno != EEXIST) break;
-	}
-	if (fd != -1) {
-		sz = write(fd, ps->data_p + from_off, to_off - from_off);
-		i = close(fd);
-		if ( (sz != to_off-from_off) || (i != 0) ) {
-			DEBUG(0,("Error writing/closing %s: %ld!=%ld %d\n", fname, (unsigned long)sz, (unsigned long)to_off-from_off, i ));
-		} else {
-			DEBUG(0,("created %s\n", fname));
-		}
-	}
-	SAFE_FREE(fname);
-}
 
 /*******************************************************************
  Debug output for parsing info
@@ -259,7 +208,7 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 				(unsigned int)extra_space));
 		return False;
 	}
-	
+
 	/*
 	 * Decide how much extra space we really need.
 	 */
@@ -507,7 +456,7 @@ bool prs_align(prs_struct *ps)
 /******************************************************************
  Align on a 2 byte boundary
  *****************************************************************/
- 
+
 bool prs_align_uint16(prs_struct *ps)
 {
 	bool ret;
@@ -516,14 +465,14 @@ bool prs_align_uint16(prs_struct *ps)
 	ps->align = 2;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
 /******************************************************************
  Align on a 8 byte boundary
  *****************************************************************/
- 
+
 bool prs_align_uint64(prs_struct *ps)
 {
 	bool ret;
@@ -532,14 +481,14 @@ bool prs_align_uint64(prs_struct *ps)
 	ps->align = 8;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
 /******************************************************************
  Align on a specific byte boundary
  *****************************************************************/
- 
+
 bool prs_align_custom(prs_struct *ps, uint8 boundary)
 {
 	bool ret;
@@ -548,7 +497,7 @@ bool prs_align_custom(prs_struct *ps, uint8 boundary)
 	ps->align = boundary;
 	ret = prs_align(ps);
 	ps->align = old_align;
-	
+
 	return ret;
 }
 
@@ -907,12 +856,12 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	blob->length = prs_data_size(prs);
 	blob->data = (uint8 *)TALLOC_ZERO_SIZE(mem_ctx, blob->length);
-	
+
 	/* set the pointer at the end of the buffer */
 	prs_set_offset( prs, prs_data_size(prs) );
 
 	if (!prs_copy_all_data_out((char *)blob->data, prs))
 		return False;
-	
+
 	return True;
 }

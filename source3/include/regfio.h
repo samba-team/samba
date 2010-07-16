@@ -23,6 +23,7 @@
  * Thanks Nigel!
  ***********************************************************/
 
+#include "registry/reg_parse_prs.h"
 
 #ifndef _REGFIO_H
 #define _REGFIO_H

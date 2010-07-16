@@ -24,7 +24,8 @@
 
 struct cli_do_rpc_ndr_state {
 	const struct ndr_interface_call *call;
-	prs_struct q_ps, r_ps;
+	DATA_BLOB q_pdu;
+	DATA_BLOB r_pdu;
 	void *r;
 };
 
@@ -40,9 +41,7 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_do_rpc_ndr_state *state;
 	struct ndr_push *push;
-	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	bool ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_do_rpc_ndr_state);
@@ -64,7 +63,7 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 					 state->call->name, NDR_IN, r);
 	}
 
-	push = ndr_push_init_ctx(talloc_tos());
+	push = ndr_push_init_ctx(state);
 	if (tevent_req_nomem(push, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -76,16 +75,11 @@ struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	blob = ndr_push_blob(push);
-	ret = prs_init_data_blob(&state->q_ps, &blob, state);
+	state->q_pdu = ndr_push_blob(push);
+	talloc_steal(mem_ctx, state->q_pdu.data);
 	TALLOC_FREE(push);
 
-	if (!ret) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = rpc_api_pipe_req_send(state, ev, cli, opnum, &state->q_ps);
+	subreq = rpc_api_pipe_req_send(state, ev, cli, opnum, &state->q_pdu);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -101,7 +95,7 @@ static void cli_do_rpc_ndr_done(struct tevent_req *subreq)
 		req, struct cli_do_rpc_ndr_state);
 	NTSTATUS status;
 
-	status = rpc_api_pipe_req_recv(subreq, state, &state->r_ps);
+	status = rpc_api_pipe_req_recv(subreq, state, &state->r_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -117,19 +111,12 @@ NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	struct ndr_pull *pull;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	DATA_BLOB blob;
-	bool ret;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	ret = prs_data_blob(&state->r_ps, &blob, talloc_tos());
-	if (!ret) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	pull = ndr_pull_init_blob(&state->r_pdu, mem_ctx);
 	if (pull == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -4838,44 +4838,20 @@ void set_profile_level(int level, struct server_id src);
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
+bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
+const struct ndr_interface_table *get_iface_from_syntax(
+	const struct ndr_syntax_id *syntax);
+const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
+                                     const struct ndr_syntax_id *syntax);
+enum dcerpc_AuthType map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type);
 
 struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
-					 prs_struct *req_data);
+					 DATA_BLOB *req_data);
 NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			       prs_struct *reply_pdu);
-NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
-				  enum dcerpc_pkt_type ptype,
-				  uint8_t pfc_flags,
-				  uint16_t auth_length,
-				  uint32_t call_id,
-				  union dcerpc_payload *u,
-				  DATA_BLOB *blob);
-NTSTATUS dcerpc_push_ncacn_packet_header(TALLOC_CTX *mem_ctx,
-					 enum dcerpc_pkt_type ptype,
-					 uint8_t pfc_flags,
-					 uint16_t frag_length,
-					 uint16_t auth_length,
-					 uint32_t call_id,
-					 DATA_BLOB *blob);
-NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
-				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r);
-NTSTATUS dcerpc_pull_ncacn_packet_header(TALLOC_CTX *mem_ctx,
-					 const DATA_BLOB *blob,
-					 struct ncacn_packet_header *r);
-NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
-				 enum dcerpc_AuthType auth_type,
-				 enum dcerpc_AuthLevel auth_level,
-				 uint8_t auth_pad_length,
-				 uint32_t auth_context_id,
-				 const DATA_BLOB *credentials,
-				 DATA_BLOB *blob);
-NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *blob,
-				 struct dcerpc_auth *r);
+			       DATA_BLOB *reply_pdu);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
@@ -5041,77 +5017,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
 			const struct ndr_interface_table *table,
 			uint32 opnum, void *r);
-
-/* The following definitions come from rpc_parse/parse_misc.c  */
-
-bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
-bool smb_io_uuid(const char *desc, struct GUID *uuid, 
-		 prs_struct *ps, int depth);
-
-/* The following definitions come from rpc_parse/parse_prs.c  */
-
-void prs_dump(const char *name, int v, prs_struct *ps);
-void prs_dump_before(const char *name, int v, prs_struct *ps);
-void prs_dump_region(const char *name, int v, prs_struct *ps,
-		     int from_off, int to_off);
-void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
-bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io);
-void prs_mem_free(prs_struct *ps);
-void prs_mem_clear(prs_struct *ps);
-char *prs_alloc_mem_(prs_struct *ps, size_t size, unsigned int count);
-char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count);
-TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
-void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic);
-bool prs_set_buffer_size(prs_struct *ps, uint32 newsize);
-bool prs_grow(prs_struct *ps, uint32 extra_space);
-bool prs_force_grow(prs_struct *ps, uint32 extra_space);
-char *prs_data_p(prs_struct *ps);
-uint32 prs_data_size(prs_struct *ps);
-uint32 prs_offset(prs_struct *ps);
-bool prs_set_offset(prs_struct *ps, uint32 offset);
-bool prs_append_prs_data(prs_struct *dst, prs_struct *src);
-bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
-			  uint32_t len);
-bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len);
-bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len);
-bool prs_copy_data_out(char *dst, prs_struct *src, uint32 len);
-bool prs_copy_all_data_out(char *dst, prs_struct *src);
-void prs_set_endian_data(prs_struct *ps, bool endian);
-bool prs_align(prs_struct *ps);
-bool prs_align_uint16(prs_struct *ps);
-bool prs_align_uint64(prs_struct *ps);
-bool prs_align_custom(prs_struct *ps, uint8 boundary);
-bool prs_align_needed(prs_struct *ps, uint32 needed);
-char *prs_mem_get(prs_struct *ps, uint32 extra_size);
-void prs_switch_type(prs_struct *ps, bool io);
-bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
-bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
-bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
-bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32);
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
-bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
-bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
-bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
-
-/* The following definitions come from rpc_parse/parse_rpc.c  */
-
-bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
-const struct ndr_interface_table *get_iface_from_syntax(
-        const struct ndr_syntax_id *syntax);
-const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
-				      const struct ndr_syntax_id *syntax);
-NTSTATUS dcerpc_pull_dcerpc_bind(TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *blob,
-				 struct dcerpc_bind *r);
-bool smb_io_rpc_hdr_resp(const char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
-void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
-				uint8 auth_type, uint8 auth_level,
-				uint8 auth_pad_len,
-				uint32 auth_context_id);
-bool smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
