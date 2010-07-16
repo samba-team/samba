@@ -1,7 +1,7 @@
-/* 
-   Unix SMB/CIFS mplementation.
+/*
+   Unix SMB/CIFS implementation.
    DSDB schema header
-   
+
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2006-2007
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006-2008
 
@@ -9,15 +9,15 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -32,7 +32,7 @@
 /*
   override the name to attribute handler function
  */
-const struct ldb_schema_attribute *dsdb_attribute_handler_override(struct ldb_context *ldb, 
+const struct ldb_schema_attribute *dsdb_attribute_handler_override(struct ldb_context *ldb,
 								   void *private_data,
 								   const char *name)
 {
@@ -96,17 +96,20 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 	for (attr = schema->attributes; attr; attr = attr->next) {
 		const char *syntax = attr->syntax->ldb_syntax;
-		
+
 		if (!syntax) {
 			syntax = attr->syntax->ldap_oid;
 		}
 
-		/* Write out a rough approximation of the schema as an @ATTRIBUTES value, for bootstrapping */
+		/*
+		 * Write out a rough approximation of the schema
+		 * as an @ATTRIBUTES value, for bootstrapping
+		 */
 		if (strcmp(syntax, LDB_SYNTAX_INTEGER) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "INTEGER");
 		} else if (strcmp(syntax, LDB_SYNTAX_DIRECTORY_STRING) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
-		} 
+		}
 		if (ret != LDB_SUCCESS) {
 			break;
 		}
@@ -124,7 +127,10 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		return ret;
 	}
 
-	/* Try to avoid churning the attributes too much - we only want to do this if they have changed */
+	/*
+	 * Try to avoid churning the attributes too much,
+	 * we only want to do this if they have changed
+	 */
 	ret = ldb_search(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL,
 			 NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -136,7 +142,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		ret = LDB_SUCCESS;
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res->msgs[0], "distinguishedName");
-		
+
 		ret = ldb_msg_difference(ldb, mem_ctx,
 		                         res->msgs[0], msg, &mod_msg);
 		if (ret != LDB_SUCCESS) {
@@ -157,7 +163,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		return ret;
 	}
 
-	/* Now write out the indexs, as found in the schema (if they have changed) */
+	/* Now write out the indexes, as found in the schema (if they have changed) */
 
 	ret = ldb_search(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE,
 			 NULL, NULL);
@@ -362,17 +368,16 @@ int dsdb_setup_schema_inversion(struct ldb_context *ldb, struct dsdb_schema *sch
 	 * order as an integer in the dsdb_class (for sorting
 	 * objectClass lists efficiently) */
 
-	/* Walk the list of scheam classes */
-	
+	/* Walk the list of schema classes */
+
 	/*  Create a 'total possible superiors' on each class */
 	return LDB_SUCCESS;
 }
 
 /**
- * Attach the schema to an opaque pointer on the ldb, so ldb modules
- * can find it 
+ * Attach the schema to an opaque pointer on the ldb,
+ * so ldb modules can find it
  */
-
 int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
 	struct dsdb_schema *old_schema;
@@ -469,7 +474,7 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	/* Set the new attributes based on the new schema */
 	ret = dsdb_schema_set_attributes(ldb, global_schema, false /* Don't write attributes, it's expensive */);
 	if (ret == LDB_SUCCESS) {
-		/* Keep a reference to this schema, just incase the original copy is replaced */
+		/* Keep a reference to this schema, just in case the original copy is replaced */
 		if (talloc_reference(ldb, global_schema) == NULL) {
 			return ldb_oom(ldb);
 		}
@@ -511,7 +516,10 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 
 	if (schema_in->refresh_fn && !schema_in->refresh_in_progress) {
 		if (!talloc_reference(tmp_ctx, schema_in)) {
-			/* ensure that the schema_in->refresh_in_progress remains valid for the right amount of time */
+			/*
+			 * ensure that the schema_in->refresh_in_progress
+			 * remains valid for the right amount of time
+			 */
 			talloc_free(tmp_ctx);
 			return NULL;
 		}
@@ -556,9 +564,11 @@ void dsdb_make_schema_global(struct ldb_context *ldb, struct dsdb_schema *schema
 	dsdb_set_global_schema(ldb);
 }
 
-/* When loading the schema from LDIF files, we don't get the extended DNs. 
-   
-   We need to set these up, so that from the moment we start the provision, the defaultObjectCategory links are set up correctly. 
+/**
+ * When loading the schema from LDIF files, we don't get the extended DNs.
+ *
+ * We need to set these up, so that from the moment we start the provision,
+ * the defaultObjectCategory links are set up correctly.
  */
 int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *schema)
 {
@@ -583,7 +593,7 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 			talloc_free(dn);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		
+
 		status = GUID_to_ndr_blob(&target_class->objectGUID, dn, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(dn);
@@ -597,11 +607,11 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 	return LDB_SUCCESS;
 }
 
-/** 
+/**
  * Add an element to the schema (attribute or class) from an LDB message
  */
-WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema, 
-				       struct ldb_message *msg) 
+WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema,
+				       struct ldb_message *msg)
 {
 	if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "attributeSchema") != NULL) {
@@ -683,9 +693,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 		goto failed;
 	}
 
-	/*
-	 * load the attribute and class definitions outof df
-	 */
+	/* load the attribute and class definitions out of df */
 	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
 		talloc_steal(mem_ctx, ldif);
 
