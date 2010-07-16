@@ -85,12 +85,7 @@ static void dump_pdu_region(const char *name, int v,
 
 static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 {
-	struct auth_ntlmssp_state *a = auth->a_u.auth_ntlmssp_state;
-
-	if (a) {
-		auth_ntlmssp_end(&a);
-	}
-	auth->a_u.auth_ntlmssp_state = NULL;
+	TALLOC_FREE(auth->a_u.auth_ntlmssp_state);
 }
 
 static DATA_BLOB generic_session_key(void)

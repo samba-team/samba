@@ -550,7 +550,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	NTSTATUS status;
 
 	/* Ensure we have no old NTLM state around. */
-	auth_ntlmssp_end(&session->auth_ntlmssp_state);
+	TALLOC_FREE(session->auth_ntlmssp_state);
 
 	status = parse_spnego_mechanisms(in_security_buffer,
 			&secblob_in, &kerb_mech);
@@ -621,7 +621,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	if (!NT_STATUS_IS_OK(status) &&
 			!NT_STATUS_EQUAL(status,
 				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 	}
 	return status;
@@ -653,7 +653,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 
 	session->compat_vuser = talloc_zero(session, user_struct);
 	if (session->compat_vuser == NULL) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -682,7 +682,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%d\n",
 			session->compat_vuser->vuid));
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -793,7 +793,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 
 	if (!NT_STATUS_IS_OK(status) &&
 			!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		data_blob_free(&auth);
 		TALLOC_FREE(session);
 		return status;
@@ -808,7 +808,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 						secblob_out.data,
 						secblob_out.length);
 	if (secblob_out.data && out_security_buffer->data == NULL) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -858,7 +858,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 						secblob_out.data,
 						secblob_out.length);
 		if (secblob_out.data && out_security_buffer->data == NULL) {
-			auth_ntlmssp_end(&session->auth_ntlmssp_state);
+			TALLOC_FREE(session->auth_ntlmssp_state);
 			TALLOC_FREE(session);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -872,7 +872,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 	status = setup_ntlmssp_server_info(session, status);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
+		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 		return status;
 	}
@@ -971,7 +971,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 	/* Unknown packet type. */
 	DEBUG(1,("Unknown packet type %u in smb2 sessionsetup\n",
 		(unsigned int)in_security_buffer.data[0] ));
-	auth_ntlmssp_end(&session->auth_ntlmssp_state);
+	TALLOC_FREE(session->auth_ntlmssp_state);
 	TALLOC_FREE(session);
 	return NT_STATUS_LOGON_FAILURE;
 }

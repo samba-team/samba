@@ -254,6 +254,8 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
+static int auth_ntlmssp_state_destructor(void *ptr);
+
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 {
 	NTSTATUS nt_status;
@@ -311,17 +313,21 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	ans->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ans->ntlmssp_state->check_password = auth_ntlmssp_check_password;
 
+	talloc_set_destructor((TALLOC_CTX *)ans, auth_ntlmssp_state_destructor);
+
 	*auth_ntlmssp_state = ans;
 	return NT_STATUS_OK;
 }
 
-void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
+static int auth_ntlmssp_state_destructor(void *ptr)
 {
-	if (*auth_ntlmssp_state == NULL) {
-		return;
-	}
-	TALLOC_FREE((*auth_ntlmssp_state)->server_info);
-	TALLOC_FREE(*auth_ntlmssp_state);
+	struct auth_ntlmssp_state *ans;
+
+	ans = talloc_get_type(ptr, struct auth_ntlmssp_state);
+
+	TALLOC_FREE(ans->server_info);
+	TALLOC_FREE(ans->ntlmssp_state);
+	return 0;
 }
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,

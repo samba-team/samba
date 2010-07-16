@@ -66,7 +66,6 @@ bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
 void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state);
 void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state);
-void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
 			     const DATA_BLOB request, DATA_BLOB *reply) ;
 NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,

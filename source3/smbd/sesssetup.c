@@ -708,7 +708,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		/* NB. This is *NOT* an error case. JRA */
 		if (do_invalidate) {
-			auth_ntlmssp_end(auth_ntlmssp_state);
+			TALLOC_FREE(*auth_ntlmssp_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
@@ -828,7 +828,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 #endif
 
 	if (*auth_ntlmssp_state) {
-		auth_ntlmssp_end(auth_ntlmssp_state);
+		TALLOC_FREE(*auth_ntlmssp_state);
 	}
 
 	if (kerb_mech) {
