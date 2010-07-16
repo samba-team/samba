@@ -144,37 +144,32 @@ static int _ldb_msg_add_el(struct ldb_message *msg,
 	return LDB_SUCCESS;
 }
 
-/*
-  add an empty element to a message
-*/
-int ldb_msg_add_empty(	struct ldb_message *msg,
-			const char *attr_name,
-			int flags,
-			struct ldb_message_element **return_el)
+/**
+ * Add an empty element with a given name to a message
+ */
+int ldb_msg_add_empty(struct ldb_message *msg,
+		      const char *attr_name,
+		      int flags,
+		      struct ldb_message_element **return_el)
 {
-	struct ldb_message_element *els;
+	int ret;
+	struct ldb_message_element *el;
 
-	els = talloc_realloc(msg, msg->elements, 
-			     struct ldb_message_element, msg->num_elements+1);
-	if (!els) {
+	ret = _ldb_msg_add_el(msg, &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* initialize newly added element */
+	el->flags = flags;
+	el->name = talloc_strdup(msg->elements, attr_name);
+	if (!el->name) {
 		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	els[msg->num_elements].values = NULL;
-	els[msg->num_elements].num_values = 0;
-	els[msg->num_elements].flags = flags;
-	els[msg->num_elements].name = talloc_strdup(els, attr_name);
-	if (!els[msg->num_elements].name) {
-		errno = ENOMEM;
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	msg->elements = els;
-	msg->num_elements++;
 
 	if (return_el) {
-		*return_el = &els[msg->num_elements-1];
+		*return_el = el;
 	}
 
 	return LDB_SUCCESS;
