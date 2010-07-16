@@ -52,6 +52,7 @@ static bool test_bind(struct torture_context *tctx,
 		torture_rpc_binding(tctx, &binding),
 		"failed to parse binding string");
 
+	binding->flags &= ~DCERPC_AUTH_OPTIONS;
 	binding->flags |= *flags;
 
 	torture_assert_ntstatus_ok(tctx,
