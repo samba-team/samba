@@ -68,7 +68,15 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			break;
 		}
 
-		ldif->msg = ldb_msg_canonicalize(ldb, ldif->msg);
+		ret = ldb_msg_normalize(ldb, ldif, ldif->msg, &ldif->msg);
+		if (ret != LDB_SUCCESS) {
+			fprintf(stderr,
+			        "ERR: Message canonicalize failed - %s\n",
+			        ldb_strerror(ret));
+			failures++;
+			ldb_ldif_read_free(ldb, ldif);
+			continue;
+		}
 
 		ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls);
 		if (ret != LDB_SUCCESS) {
