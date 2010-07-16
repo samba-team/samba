@@ -468,39 +468,37 @@ interface drsblobs {
 	typedef [public] struct {
 		NTTIME LastUpdateTime;
 		lsa_TrustAuthType AuthType;
-		
 		[switch_is(AuthType)] AuthInfo AuthInfo;
 		[flag(NDR_ALIGN4)] DATA_BLOB _pad;
 	} AuthenticationInformation;
 
-	typedef [nopull,nopush,noprint] struct {
-		/* sizeis here is bogus, but this is here just for the structure */
-		[size_is(1)] AuthenticationInformation array[];
+	/* count is not on the wire */
+	typedef [public,nopull,nopush,gensize] struct {
+		uint32 count;
+		AuthenticationInformation array[count];
 	} AuthenticationInformationArray;
 
-	/* This is nopull,nopush because we pass count down to the
-	 * manual parser of AuthenticationInformationArray */
-	typedef [public,nopull,nopush,noprint,gensize] struct {
+	/* we cannot use [relative] pointers here because Windows expects the
+	 * previous_offset to match the total size of the struct in case
+	 * the previous array is empty, see MS-LSAD 2.2.7.16 - gd */
+	typedef [public,gensize,nopush] struct {
 		uint32 count;
-		[relative] AuthenticationInformationArray *current;
-		[relative] AuthenticationInformationArray *previous;
+		[value((count > 0) ? 12 : 0)] uint32 current_offset;
+		[value((count > 0) ? 12 + ndr_size_AuthenticationInformationArray(&current, ndr->flags) : 0)] uint32 previous_offset;
+		[subcontext(0),subcontext_size((previous_offset)-(current_offset))] AuthenticationInformationArray current;
+		[subcontext(0)] [flag(NDR_REMAINING)] AuthenticationInformationArray previous;
 	} trustAuthInOutBlob;
 
 	[nopython] void decode_trustAuthInOut(
 		[in] trustAuthInOutBlob blob
 		);
 
-	typedef [public,gensize] struct {
-		uint32 count;
-		[relative] AuthenticationInformation *current[count];
-	} trustCurrentPasswords;
-
 	typedef [public,nopull] struct {
 		uint8 confounder[512];
-		[subcontext(0),subcontext_size(outgoing_size)] trustCurrentPasswords outgoing;
-		[subcontext(0),subcontext_size(incoming_size)] trustCurrentPasswords incoming;
-		[value(ndr_size_trustCurrentPasswords(&outgoing, ndr->flags))] uint32 outgoing_size;
-		[value(ndr_size_trustCurrentPasswords(&incoming, ndr->flags))] uint32 incoming_size;
+		[subcontext(0),subcontext_size(outgoing_size)] trustAuthInOutBlob outgoing;
+		[subcontext(0),subcontext_size(incoming_size)] trustAuthInOutBlob incoming;
+		[value(ndr_size_trustAuthInOutBlob(&outgoing, ndr->flags))] uint32 outgoing_size;
+		[value(ndr_size_trustAuthInOutBlob(&incoming, ndr->flags))] uint32 incoming_size;
 	} trustDomainPasswords;
 
 	[nopython] void decode_trustDomainPasswords(
