@@ -1,0 +1,3 @@
+# Simple connect, disconnect
+connect
+disconnect
