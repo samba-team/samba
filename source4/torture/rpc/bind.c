@@ -110,6 +110,9 @@ struct torture_suite *torture_rpc_bind(TALLOC_CTX *mem_ctx)
 	for (i=0; i < ARRAY_SIZE(tests); i++) {
 		test_bind_op(suite, tests[i].test_name, tests[i].flags);
 	}
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		test_bind_op(suite, talloc_asprintf(suite, "bigendian,%s", tests[i].test_name), tests[i].flags | DCERPC_PUSH_BIGENDIAN);
+	}
 
 	return suite;
 }
