@@ -524,13 +524,13 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			ldif.changetype = LDB_CHANGETYPE_MODIFY;
 			ldif.msg = new_msg;
 			s = ldb_ldif_write_string(ldb, new_msg, &ldif);
-			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: \n%s\n", s);
+			s = talloc_asprintf(tctx, "\n# Difference in between DRS and LDAP objects: \n%s", s);
 
 			ret = ldb_msg_difference(ldb, search_req,
 			                         ldap_msg, drs_msg, &ldif.msg);
 			torture_assert(tctx, ret == LDB_SUCCESS, "ldb_msg_difference() has failed");
 			s = talloc_asprintf_append(s,
-						   "\n# Difference in between LDAP and DRS objects: \n%s\n",
+						   "\n# Difference in between LDAP and DRS objects: \n%s",
 						   ldb_ldif_write_string(ldb, new_msg, &ldif));
 
 			s = talloc_asprintf_append(s,
@@ -710,13 +710,14 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
+static bool test_GetNCChanges(struct torture_context *tctx,
+			      struct DsSyncTest *ctx,
+			      const char *nc_dn_str)
 {
 	NTSTATUS status;
 	bool ret = true;
 	int i, y = 0;
 	uint64_t highest_usn = 0;
-	const char *partition = NULL;
 	struct drsuapi_DsGetNCChanges r;
 	union drsuapi_DsGetNCChangesRequest req;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
@@ -739,12 +740,6 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
-
-	partition = lpcfg_parm_string(tctx->lp_ctx, NULL, "dssync", "partition");
-	if (partition == NULL) {
-		partition = ctx->domain_dn;
-		printf("dssync:partition not specified, defaulting to %s.\n", ctx->domain_dn);
-	}
 
 	highest_usn = lpcfg_parm_int(tctx->lp_ctx, NULL, "dssync", "highest_usn", 0);
 
@@ -775,7 +770,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 		case 5:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
-			nc.dn	= partition; 
+			nc.dn	= nc_dn_str;
 
 			r.in.req					= &req;
 			r.in.req->req5.destination_dsa_guid		= ctx->new_dc.invocation_id;
@@ -806,7 +801,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 		case 8:
 			nc.guid	= null_guid;
 			nc.sid	= null_sid;
-			nc.dn	= partition; 
+			nc.dn	= nc_dn_str;
 			/* nc.dn can be set to any other ad partition */
 
 			r.in.req					= &req;
@@ -841,8 +836,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 			break;
 		}
-		
-		printf("Dumping AD partition: %s\n", nc.dn);
+
 		for (y=0; ;y++) {
 			uint32_t _level = 0;
 			union drsuapi_DsGetNCChangesCtr ctr;
@@ -888,7 +882,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 						ctr1->new_highwatermark.tmp_highest_usn,
 						ctr1->new_highwatermark.highest_usn);
 
-				if (!test_analyse_objects(tctx, ctx, partition, &ctr1->mapping_ctr,  ctr1->object_count, 
+				if (!test_analyse_objects(tctx, ctx, nc_dn_str, &ctr1->mapping_ctr,  ctr1->object_count,
 							  ctr1->first_object, &gensec_skey)) {
 					return false;
 				}
@@ -923,7 +917,7 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 						ctr6->new_highwatermark.tmp_highest_usn,
 						ctr6->new_highwatermark.highest_usn);
 
-				if (!test_analyse_objects(tctx, ctx, partition, &ctr6->mapping_ctr,  ctr6->object_count, 
+				if (!test_analyse_objects(tctx, ctx, nc_dn_str, &ctr6->mapping_ctr,  ctr6->object_count,
 							  ctr6->first_object, &gensec_skey)) {
 					return false;
 				}
@@ -941,7 +935,45 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 	return ret;
 }
 
-static bool test_FetchNT4Data(struct torture_context *tctx, 
+/**
+ * Test DsGetNCChanges() DRSUAPI call against one
+ * or more Naming Contexts.
+ * Specific NC to test with may be supplied
+ * in lp_ctx configuration. If no NC is specified,
+ * it will test DsGetNCChanges() on all NCs on remote DC
+ */
+static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
+{
+	bool ret = true;
+	size_t i, count;
+	const char *nc_dn_str;
+	const char **nc_list;
+
+	nc_list = const_str_list(str_list_make_empty(ctx));
+	torture_assert(tctx, nc_list, "Not enough memory!");
+
+	/* make a list of partitions to test with */
+	nc_dn_str = lpcfg_parm_string(tctx->lp_ctx, NULL, "dssync", "partition");
+	if (nc_dn_str == NULL) {
+		nc_list = str_list_add_const(nc_list, ctx->domain_dn);
+		nc_list = str_list_add_const(nc_list, ctx->config_dn);
+		nc_list = str_list_add_const(nc_list, ctx->schema_dn);
+	} else {
+		nc_list = str_list_add_const(nc_list, nc_dn_str);
+	}
+
+	count = str_list_length(nc_list);
+	for (i = 0; i < count && ret; i++) {
+		torture_comment(tctx, "\nNaming Context: %s\n", nc_list[i]);
+		ret = test_GetNCChanges(tctx, ctx, nc_list[i]);
+	}
+
+	talloc_free(nc_list);
+	return ret;
+}
+
+
+static bool test_FetchNT4Data(struct torture_context *tctx,
 			      struct DsSyncTest *ctx)
 {
 	NTSTATUS status;
