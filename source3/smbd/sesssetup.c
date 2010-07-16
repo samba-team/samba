@@ -41,10 +41,13 @@ struct pending_auth_data {
   on a logon error possibly map the error to success if "map to guest"
   is set approriately
 */
-static NTSTATUS do_map_to_guest(NTSTATUS status,
-				struct auth_serversupplied_info **server_info,
-				const char *user, const char *domain)
+NTSTATUS do_map_to_guest(NTSTATUS status,
+			struct auth_serversupplied_info **server_info,
+			const char *user, const char *domain)
 {
+	user = user ? user : "";
+	domain = domain ? domain : "";
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) ||
 		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {

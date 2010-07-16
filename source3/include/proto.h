@@ -6166,6 +6166,10 @@ int sessionid_traverse_read(int (*fn)(const char *key,
 
 /* The following definitions come from smbd/sesssetup.c  */
 
+NTSTATUS do_map_to_guest(NTSTATUS status,
+		struct auth_serversupplied_info **server_info,
+		const char *user, const char *domain);
+
 NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 		DATA_BLOB *pblob_out,
 		char **kerb_mechOID);
