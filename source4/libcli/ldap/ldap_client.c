@@ -339,8 +339,8 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		 * local host name as the target for gensec's
 		 * DIGEST-MD5 mechanism */
 		conn->host = talloc_asprintf(conn, "%s.%s",
-					     lp_netbios_name(conn->lp_ctx),
-					     lp_dnsdomain(conn->lp_ctx));
+					     lpcfg_netbios_name(conn->lp_ctx),
+					     lpcfg_dnsdomain(conn->lp_ctx));
 		if (composite_nomem(conn->host, state->ctx)) {
 			return result;
 		}
@@ -375,7 +375,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		}
 		
 		ctx = socket_connect_multi_send(state, conn->host, 1, &conn->port,
-						lp_resolve_context(conn->lp_ctx), conn->event.event_ctx);
+						lpcfg_resolve_context(conn->lp_ctx), conn->event.event_ctx);
 		if (ctx == NULL) goto failed;
 
 		ctx->async.fn = ldap_connect_recv_tcp_conn;
@@ -405,7 +405,7 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	talloc_steal(conn, conn->sock);
 	if (conn->ldaps) {
 		struct socket_context *tls_socket;
-		char *cafile = lp_tls_cafile(conn->sock, conn->lp_ctx);
+		char *cafile = lpcfg_tls_cafile(conn->sock, conn->lp_ctx);
 
 		if (!cafile || !*cafile) {
 			talloc_free(conn->sock);

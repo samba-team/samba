@@ -140,8 +140,8 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, p->kdc_db_ctx->samdb,
-					     lp_netbios_name(p->kdc_db_ctx->lp_ctx),
-					     lp_sam_name(p->kdc_db_ctx->lp_ctx),
+					     lpcfg_netbios_name(p->kdc_db_ctx->lp_ctx),
+					     lpcfg_sam_name(p->kdc_db_ctx->lp_ctx),
 					     p->realm_dn,
 					     p->msg,
 					     data_blob(NULL, 0),

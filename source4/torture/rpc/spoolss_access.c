@@ -449,7 +449,7 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 
 	test_credentials = cli_credentials_init(tctx);
 	cli_credentials_set_workstation(test_credentials, "localhost", CRED_SPECIFIED);
-	cli_credentials_set_domain(test_credentials, lp_workgroup(tctx->lp_ctx),
+	cli_credentials_set_domain(test_credentials, lpcfg_workgroup(tctx->lp_ctx),
 				   CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials, t->user.username, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);

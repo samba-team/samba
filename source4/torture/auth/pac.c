@@ -90,7 +90,7 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	}
 
 	/* We need an input, and this one requires no underlying database */
-	nt_status = auth_anonymous_server_info(mem_ctx, lp_netbios_name(tctx->lp_ctx), &server_info);
+	nt_status = auth_anonymous_server_info(mem_ctx, lpcfg_netbios_name(tctx->lp_ctx), &server_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 

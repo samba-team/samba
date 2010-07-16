@@ -595,7 +595,7 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 	return count;
 }
 
-NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct ldb_message *msg, 
+NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct ldb_message *msg,
 				struct samr_Password **lm_pwd, struct samr_Password **nt_pwd) 
 {
 	struct samr_Password *lmPwdHash, *ntPwdHash;
@@ -614,7 +614,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct loadparm_context *lp
 		/* Ensure that if we have turned off LM
 		 * authentication, that we never use the LM hash, even
 		 * if we store it */
-		if (lp_lanman_auth(lp_ctx)) {
+		if (lpcfg_lanman_auth(lp_ctx)) {
 			unsigned int num_lm;
 			num_lm = samdb_result_hashes(mem_ctx, msg, "dBCSPwd", &lmPwdHash);
 			if (num_lm == 0) {

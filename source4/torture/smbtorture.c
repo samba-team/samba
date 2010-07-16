@@ -135,14 +135,14 @@ bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", target);
 			return false;
 		}
-		lp_set_cmdline(lp_ctx, "torture:host", binding_struct->host);
-		if (lp_parm_string(lp_ctx, NULL, "torture", "share") == NULL)
-			lp_set_cmdline(lp_ctx, "torture:share", "IPC$");
-		lp_set_cmdline(lp_ctx, "torture:binding", target);
+		lpcfg_set_cmdline(lp_ctx, "torture:host", binding_struct->host);
+		if (lpcfg_parm_string(lp_ctx, NULL, "torture", "share") == NULL)
+			lpcfg_set_cmdline(lp_ctx, "torture:share", "IPC$");
+		lpcfg_set_cmdline(lp_ctx, "torture:binding", target);
 	} else {
-		lp_set_cmdline(lp_ctx, "torture:host", host);
-		lp_set_cmdline(lp_ctx, "torture:share", share);
-		lp_set_cmdline(lp_ctx, "torture:binding", host);
+		lpcfg_set_cmdline(lp_ctx, "torture:host", host);
+		lpcfg_set_cmdline(lp_ctx, "torture:share", share);
+		lpcfg_set_cmdline(lp_ctx, "torture:binding", host);
 	}
 
 	return true;
@@ -156,33 +156,33 @@ static void parse_dns(struct loadparm_context *lp_ctx, const char *dns)
 	/* retrievieng the userdn */
 	p = strchr_m(dns, '#');
 	if (!p) {
-		lp_set_cmdline(lp_ctx, "torture:ldap_userdn", "");
-		lp_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
-		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_userdn", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	userdn = strndup(dns, p - dns);
-	lp_set_cmdline(lp_ctx, "torture:ldap_userdn", userdn);
+	lpcfg_set_cmdline(lp_ctx, "torture:ldap_userdn", userdn);
 
 	/* retrieve the basedn */
 	d = p + 1;
 	p = strchr_m(d, '#');
 	if (!p) {
-		lp_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
-		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_basedn", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	basedn = strndup(d, p - d);
-	lp_set_cmdline(lp_ctx, "torture:ldap_basedn", basedn);
+	lpcfg_set_cmdline(lp_ctx, "torture:ldap_basedn", basedn);
 
 	/* retrieve the secret */
 	p = p + 1;
 	if (!p) {
-		lp_set_cmdline(lp_ctx, "torture:ldap_secret", "");
+		lpcfg_set_cmdline(lp_ctx, "torture:ldap_secret", "");
 		return;
 	}
 	secret = strdup(p);
-	lp_set_cmdline(lp_ctx, "torture:ldap_secret", secret);
+	lpcfg_set_cmdline(lp_ctx, "torture:ldap_secret", secret);
 
 	printf ("%s - %s - %s\n", userdn, basedn, secret);
 
@@ -465,35 +465,35 @@ int main(int argc,char *argv[])
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_LOADFILE:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:loadfile", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:loadfile", poptGetOptArg(pc));
 			break;
 		case OPT_UNCLIST:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case OPT_TIMELIMIT:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:timelimit", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:timelimit", poptGetOptArg(pc));
 			break;
 		case OPT_NUMPROGS:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:nprocs", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:nprocs", poptGetOptArg(pc));
 			break;
 		case OPT_DNS:
 			parse_dns(cmdline_lp_ctx, poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:dangerous", "Yes");
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:dangerous", "Yes");
 			break;
 		case OPT_ASYNC:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:async", "Yes");
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
-			lp_set_cmdline(cmdline_lp_ctx, "smb ports", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "smb ports", poptGetOptArg(pc));
 			break;
 		case OPT_EXTRA_USER:
 			{
 				char *option = talloc_asprintf(NULL, "torture:extra_user%u",
 							       ++num_extra_users);
 				const char *value = poptGetOptArg(pc);
-				lp_set_cmdline(cmdline_lp_ctx, option, value);
+				lpcfg_set_cmdline(cmdline_lp_ctx, option, value);
 				talloc_free(option);
 			}
 			break;
@@ -515,51 +515,51 @@ int main(int argc,char *argv[])
 	}
 
 	if (strcmp(target, "samba3") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
 	} else if (strcmp(target, "samba4") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
 	} else if (strcmp(target, "winxp") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:winxp", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:winxp", "true");
 	} else if (strcmp(target, "w2k3") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:w2k3", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k3", "true");
 	} else if (strcmp(target, "w2k8") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
-		lp_set_cmdline(cmdline_lp_ctx,
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k8", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx,
 		    "torture:invalid_lock_range_support", "false");
 	} else if (strcmp(target, "win7") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:cn_max_buffer_size",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:cn_max_buffer_size",
 		    "0x00010000");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
 
 		/* RAW-SEARCH for fails for inexplicable reasons against win7 */
-		lp_set_cmdline(cmdline_lp_ctx, "torture:search_ea_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:search_ea_support", "false");
 
-		lp_set_cmdline(cmdline_lp_ctx, "torture:hide_on_access_denied",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:hide_on_access_denied",
 		    "true");
 	} else if (strcmp(target, "onefs") == 0) {
-		lp_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:onefs", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:openx_deny_dos_support",
 		    "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:range_not_locked_on_file_close", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:ea_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:smbexit_pdu_support",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:range_not_locked_on_file_close", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:sacl_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:ea_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:smbexit_pdu_support",
 		    "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:smblock_pdu_support",
 		    "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:2_step_break_to_none",
 		    "true");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:deny_dos_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:deny_fcb_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:read_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:writeclose_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:raw_search_search", "false");
-		lp_set_cmdline(cmdline_lp_ctx, "torture:search_ea_size", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:deny_dos_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:deny_fcb_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:read_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:writeclose_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:raw_search_search", "false");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:search_ea_size", "false");
 	}
 
 	if (max_runtime) {

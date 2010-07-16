@@ -101,9 +101,9 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	int fd;
 	unsigned int i;
 	const char *attrs[] = { "sAMAccountName", NULL };
-	const char *realm = lp_realm(service->task->lp_ctx);
+	const char *realm = lpcfg_realm(service->task->lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	const char * const *rndc_command = lp_rndc_command(service->task->lp_ctx);
+	const char * const *rndc_command = lpcfg_rndc_command(service->task->lp_ctx);
 
 	/* abort any pending script run */
 	TALLOC_FREE(service->confupdate.subreq);
@@ -117,12 +117,12 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		return;
 	}
 
-	path = lp_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
+	path = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
 	if (path == NULL) {
 		path = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
 	}
 
-	path_static = lp_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
+	path_static = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
 	if (path_static == NULL) {
 		path_static = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
 	}
@@ -286,8 +286,8 @@ static void dnsupdate_spnupdate_done(struct tevent_req *subreq)
  */
 static void dnsupdate_check_names(struct dnsupdate_service *service)
 {
-	const char * const *dns_update_command = lp_dns_update_command(service->task->lp_ctx);
-	const char * const *spn_update_command = lp_spn_update_command(service->task->lp_ctx);
+	const char * const *dns_update_command = lpcfg_dns_update_command(service->task->lp_ctx);
+	const char * const *spn_update_command = lpcfg_spn_update_command(service->task->lp_ctx);
 
 	/* kill any existing child */
 	TALLOC_FREE(service->nameupdate.subreq);
@@ -355,7 +355,7 @@ static void dnsupdate_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct dnsupdate_service *service;
 
-	if (lp_server_role(task->lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(task->lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
 		/* not useful for non-DC */
 		return;
 	}
@@ -386,10 +386,10 @@ static void dnsupdate_task_init(struct task_server *task)
 		return;
 	}
 
-	service->confupdate.interval	= lp_parm_int(task->lp_ctx, NULL,
+	service->confupdate.interval	= lpcfg_parm_int(task->lp_ctx, NULL,
 						      "dnsupdate", "config interval", 60); /* in seconds */
 
-	service->nameupdate.interval	= lp_parm_int(task->lp_ctx, NULL,
+	service->nameupdate.interval	= lpcfg_parm_int(task->lp_ctx, NULL,
 						      "dnsupdate", "name interval", 600); /* in seconds */
 
 	dnsupdate_rebuild(service);

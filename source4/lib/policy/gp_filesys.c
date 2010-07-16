@@ -161,23 +161,23 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 
 	gp_ctx->cli = smbcli_state_init(gp_ctx);
 
-	lp_smbcli_options(gp_ctx->lp_ctx, &options);
-	lp_smbcli_session_options(gp_ctx->lp_ctx, &session_options);
+	lpcfg_smbcli_options(gp_ctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(gp_ctx->lp_ctx, &session_options);
 
 
 	return smbcli_full_connection(gp_ctx,
 			&gp_ctx->cli,
 			gp_ctx->active_dc.name,
-			lp_smb_ports(gp_ctx->lp_ctx),
+			lpcfg_smb_ports(gp_ctx->lp_ctx),
 			"sysvol",
 			NULL,
-			lp_socket_options(gp_ctx->lp_ctx),
+			lpcfg_socket_options(gp_ctx->lp_ctx),
 			gp_ctx->credentials,
-			lp_resolve_context(gp_ctx->lp_ctx),
+			lpcfg_resolve_context(gp_ctx->lp_ctx),
 			gp_ctx->ev_ctx,
 			&options,
 			&session_options,
-			lp_gensec_settings(gp_ctx, gp_ctx->lp_ctx));
+			lpcfg_gensec_settings(gp_ctx, gp_ctx->lp_ctx));
 
 	return NT_STATUS_OK;
 }

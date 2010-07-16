@@ -317,7 +317,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		return NULL;
 	}
 
-	lp_ctx = lp_from_py_object(mem_ctx, py_lp_ctx);
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		talloc_free(mem_ctx);
@@ -411,7 +411,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 		return NULL;
 	}
 
-	lp_ctx = lp_from_py_object(mem_ctx, py_lp_ctx);
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		talloc_free(mem_ctx);

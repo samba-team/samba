@@ -156,7 +156,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 static void standard_new_task(struct tevent_context *ev, 
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
-			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
+			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *),
 			      void *private_data)
 {
 	pid_t pid;
@@ -202,7 +202,7 @@ static void standard_new_task(struct tevent_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void standard_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, 
+_NORETURN_ static void standard_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx,
 					  const char *reason) 
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));

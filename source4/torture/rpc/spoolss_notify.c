@@ -453,9 +453,9 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, dcerpc_register_ep_server(&ep_server),
 				  "unable to register spoolss server");
 
-	lp_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
+	lpcfg_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 	address = iface_n_ip(ifaces, 0);
 
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);

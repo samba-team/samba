@@ -215,19 +215,19 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 
 	*_data = data = talloc(tctx, struct irpc_test_data);
 
-	lp_set_cmdline(tctx->lp_ctx, "pid directory", "piddir.tmp");
+	lpcfg_set_cmdline(tctx->lp_ctx, "pid directory", "piddir.tmp");
 
 	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
 		       messaging_init(tctx, 
-				      lp_messaging_path(tctx, tctx->lp_ctx), 
+				      lpcfg_messaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID1),
 				      data->ev),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
 		       messaging_init(tctx, 
-				      lp_messaging_path(tctx, tctx->lp_ctx),
+				      lpcfg_messaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID2), 
 				      data->ev),
 		       "Failed to init second messaging context");

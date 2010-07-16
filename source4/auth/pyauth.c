@@ -46,7 +46,7 @@ static PyObject *py_system_session(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: Leaks memory */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: Leaks memory */
 	if (lp_ctx == NULL)
 		return NULL;
 
@@ -65,7 +65,7 @@ static PyObject *py_system_session_anon(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaks memory */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaks memory */
 	if (lp_ctx == NULL)
 		return NULL;
 
@@ -84,7 +84,7 @@ static PyObject *py_admin_session(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_lp_ctx, &py_sid))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL)
 		return NULL;
 

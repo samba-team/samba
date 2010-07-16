@@ -827,7 +827,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		if (spnego.negTokenInit.targetPrincipal) {
 			DEBUG(5, ("Server claims it's principal name is %s\n", spnego.negTokenInit.targetPrincipal));
-			if (lp_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
+			if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
 				gensec_set_target_principal(gensec_security, spnego.negTokenInit.targetPrincipal);
 			}
 		}

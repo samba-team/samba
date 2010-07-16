@@ -59,7 +59,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, torture_temp_dir(torture, "libnet_BecomeDC", &location), 
 				   "torture_temp_dir should return NT_STATUS_OK" );
 
-	netbios_name = lp_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
+	netbios_name = lpcfg_parm_string(torture->lp_ctx, NULL, "become dc", "smbtorture dc");
 	if (!netbios_name || !netbios_name[0]) {
 		netbios_name = "smbtorturedc";
 	}
@@ -67,7 +67,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lp_resolve_context(torture->lp_ctx),
+	status = resolve_name(lpcfg_resolve_context(torture->lp_ctx),
 			      &name, torture, &address, torture->ev);
 	torture_assert_ntstatus_ok(torture, status, talloc_asprintf(torture,
 				   "Failed to resolve %s - %s\n",
@@ -157,7 +157,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 				      "Failed to get loaded dsdb_schema\n");
 
 	/* Make sure we get this from the command line */
-	if (lp_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
+	if (lpcfg_parm_bool(torture->lp_ctx, NULL, "become dc", "do not unjoin", false)) {
 		talloc_free(s);
 		return ret;
 	}

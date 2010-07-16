@@ -225,7 +225,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	status = gensec_client_start(conn, &conn->gensec,
 				     conn->event.event_ctx, 
-				     lp_gensec_settings(conn, lp_ctx));
+				     lpcfg_gensec_settings(conn, lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		goto failed;

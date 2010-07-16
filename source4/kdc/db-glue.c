@@ -517,7 +517,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
-	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
+	char *realm = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
 
 	struct samba_kdc_entry *p;
 	NTTIME acct_expiry;
@@ -604,7 +604,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * their probably patheticly insecure password) */
 
 	if (entry_ex->entry.flags.server
-	    && lp_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
+	    && lpcfg_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
 		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
 			entry_ex->entry.flags.server = 0;
 		}
@@ -663,7 +663,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		    && principal->name.name_string.len == 2
 		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
 		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
-		    && lp_is_my_domain_or_realm(lp_ctx, principal->realm)) {
+		    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
 		entry_ex->entry.flags.client = 0;
@@ -769,7 +769,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *dnsdomain;
-	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
+	char *realm = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
 	DATA_BLOB password_utf16;
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
@@ -1052,8 +1052,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 	/* krbtgt case.  Either us or a trusted realm */
 
-	if (lp_is_my_domain_or_realm(lp_ctx, principal->realm)
-	    && lp_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
+	if (lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)
+	    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
 		/* us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
@@ -1077,7 +1077,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			return HDB_ERR_NOENTRY;
 		}
 
- 		realm_fixed = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
+		realm_fixed = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
  		if (!realm_fixed) {
 			ret = ENOMEM;
  			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
@@ -1112,13 +1112,13 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		/* Either an inbound or outbound trust */
 
-		if (strcasecmp(lp_realm(lp_ctx), principal->realm) == 0) {
+		if (strcasecmp(lpcfg_realm(lp_ctx), principal->realm) == 0) {
 			/* look for inbound trust */
 			direction = INBOUND;
 			realm = principal->name.name_string.val[1];
 		}
 
-		if (strcasecmp(lp_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
+		if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
 			realm = principal->realm;

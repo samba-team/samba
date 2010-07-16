@@ -62,7 +62,7 @@ static bool bench_namequery(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
-	io.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	io.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	io.in.broadcast = false;
 	io.in.wins_lookup = false;
 	io.in.timeout = 1;

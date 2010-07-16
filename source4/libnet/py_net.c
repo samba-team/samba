@@ -281,7 +281,7 @@ static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	r.in.netbios_name  = lp_netbios_name(self->libnet_ctx->lp_ctx);
+	r.in.netbios_name  = lpcfg_netbios_name(self->libnet_ctx->lp_ctx);
 	r.out.error_string = NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -346,7 +346,7 @@ static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 	ret->ev = s4_event_context_init(NULL);
 	ret->mem_ctx = talloc_new(ret->ev);
 
-	lp = lp_from_py_object(ret->mem_ctx, py_lp);
+	lp = lpcfg_from_py_object(ret->mem_ctx, py_lp);
 	if (lp == NULL) {
 		Py_DECREF(ret);
 		return NULL;

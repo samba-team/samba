@@ -62,7 +62,7 @@ static void *thread_connection_fn(void *thread_parm)
   called when a listening socket becomes readable
 */
 static void thread_accept_connection(struct tevent_context *ev, 
-				     struct loadparm_context *lp_ctx, 
+				     struct loadparm_context *lp_ctx,
 				     struct socket_context *sock,
 				     void (*new_conn)(struct tevent_context *, 
 						      struct loadparm_context *,
@@ -132,7 +132,7 @@ static void *thread_task_fn(void *thread_parm)
 {
 	struct new_task_state *new_task = talloc_get_type(thread_parm, struct new_task_state);
 
-	new_task->new_task(new_task->ev, new_task->lp_ctx, pthread_self(), 
+	new_task->new_task(new_task->ev, new_task->lp_ctx, pthread_self(),
 			   new_task->private_data);
 
 	/* run this connection from here */
@@ -188,7 +188,7 @@ static void thread_new_task(struct tevent_context *ev,
 }
 
 /* called when a task goes down */
-static void thread_terminate(struct tevent_context *event_ctx, struct loadparm_context *lp_ctx, const char *reason) 
+static void thread_terminate(struct tevent_context *event_ctx, struct loadparm_context *lp_ctx, const char *reason)
 {
 	DEBUG(10,("thread_terminate: reason[%s]\n",reason));
 

@@ -55,13 +55,13 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 	samctx = iface->nbtsrv->sam_ctx;
 
-	if (lp_server_role(iface->nbtsrv->task->lp_ctx) != ROLE_DOMAIN_CONTROLLER
+	if (lpcfg_server_role(iface->nbtsrv->task->lp_ctx) != ROLE_DOMAIN_CONTROLLER
 	    || !samdb_is_pdc(samctx)) {
 		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
 		return;		
 	}
 
-	if (strcasecmp_m(name->name, lp_workgroup(iface->nbtsrv->task->lp_ctx)) != 0) {
+	if (strcasecmp_m(name->name, lpcfg_workgroup(iface->nbtsrv->task->lp_ctx)) != 0) {
 		DEBUG(5,("GetDC requested for a domian %s that we don't host\n", name->name));
 		return;
 	}
@@ -72,16 +72,16 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	pdc = &netlogon_response.data.get_pdc;
 
 	pdc->command = NETLOGON_RESPONSE_FROM_PDC;
-	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
+	pdc->pdc_name         = lpcfg_netbios_name(iface->nbtsrv->task->lp_ctx);
 	pdc->unicode_pdc_name = pdc->pdc_name;
-	pdc->domain_name      = lp_workgroup(iface->nbtsrv->task->lp_ctx);
+	pdc->domain_name      = lpcfg_workgroup(iface->nbtsrv->task->lp_ctx);
 	pdc->nt_version       = 1;
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
-				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
+				      lpcfg_netbios_name(iface->nbtsrv->task->lp_ctx),
 				      netlogon->req.pdc.mailslot_name,
 				      &netlogon_response);
 }
@@ -137,7 +137,7 @@ static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
 
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
-				      lp_netbios_name(iface->nbtsrv->task->lp_ctx),
+				      lpcfg_netbios_name(iface->nbtsrv->task->lp_ctx),
 				      netlogon->req.logon.mailslot_name,
 				      &netlogon_response);
 }

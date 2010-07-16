@@ -50,7 +50,7 @@ static void samba3_smb_accept(struct stream_connection *conn)
 		close(i);
 	}
 
-	prog = lp_parm_string(conn->lp_ctx, NULL, "samba3", "smbd");
+	prog = lpcfg_parm_string(conn->lp_ctx, NULL, "samba3", "smbd");
 
 	if (prog == NULL) {
 		argv[0] = talloc_asprintf(conn, "%s/%s", dyn_BINDIR, "smbd3");
@@ -92,7 +92,7 @@ static NTSTATUS samba3_add_socket(struct tevent_context *event_context,
 				  const struct model_ops *model_ops,
 				  const char *address)
 {
-	const char **ports = lp_smb_ports(lp_ctx);
+	const char **ports = lpcfg_smb_ports(lp_ctx);
 	int i;
 	NTSTATUS status;
 
@@ -102,7 +102,7 @@ static NTSTATUS samba3_add_socket(struct tevent_context *event_context,
 		status = stream_setup_socket(event_context, lp_ctx,
 					     model_ops, &samba3_smb_stream_ops,
 					     "ip", address, &port,
-					     lp_socket_options(lp_ctx),
+					     lpcfg_socket_options(lp_ctx),
 					     NULL);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -127,13 +127,13 @@ static void samba3_smb_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[samba3_smb]");
 
-	if (lp_interfaces(task->lp_ctx)
-	    && lp_bind_interfaces_only(task->lp_ctx)) {
+	if (lpcfg_interfaces(task->lp_ctx)
+	    && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces;
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 
@@ -149,10 +149,10 @@ static void samba3_smb_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
+		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
 		status = samba3_add_socket(task->event_ctx, task->lp_ctx,
 					   model_ops,
-					   lp_socket_address(task->lp_ctx));
+					   lpcfg_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

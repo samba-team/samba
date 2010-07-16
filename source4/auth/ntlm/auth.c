@@ -255,7 +255,7 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	state->method		= NULL;
 
 	if (!user_info->mapped_state) {
-		nt_status = map_user_info(req, lp_workgroup(auth_ctx->lp_ctx),
+		nt_status = map_user_info(req, lpcfg_workgroup(auth_ctx->lp_ctx),
 					  user_info, &user_info_tmp);
 		if (tevent_req_nterror(req, nt_status)) {
 			return tevent_req_post(req, ev);
@@ -478,15 +478,15 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 static const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	const char **auth_methods = NULL;
-	switch (lp_server_role(lp_ctx)) {
+	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
-		auth_methods = lp_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "standalone", NULL);
+		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "standalone", NULL);
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		auth_methods = lp_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "member server", NULL);
+		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "member server", NULL);
 		break;
 	case ROLE_DOMAIN_CONTROLLER:
-		auth_methods = lp_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "domain controller", NULL);
+		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "domain controller", NULL);
 		break;
 	}
 	return auth_methods;

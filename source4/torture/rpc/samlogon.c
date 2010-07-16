@@ -1362,8 +1362,8 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.account_name = account_name;
 	samlogon_state.account_domain = account_domain;
 	samlogon_state.password = plain_pass;
-	samlogon_state.workgroup = lp_workgroup(tctx->lp_ctx);
-	samlogon_state.netbios_name = lp_netbios_name(tctx->lp_ctx);
+	samlogon_state.workgroup = lpcfg_workgroup(tctx->lp_ctx);
+	samlogon_state.netbios_name = lpcfg_netbios_name(tctx->lp_ctx);
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
 	samlogon_state.expected_error = expected_error;
@@ -1568,7 +1568,7 @@ static bool handle_minPwdAge(struct torture_context *torture,
 
 	ld_r.in.connect_handle = &connect_handle;
 	ld_r.in.domain_name = &domName;
-	ld_r.in.domain_name->string = lp_workgroup(torture->lp_ctx);
+	ld_r.in.domain_name->string = lpcfg_workgroup(torture->lp_ctx);
 	ld_r.out.sid = &domSid;
 
 	torture_assert_ntstatus_ok(torture,
@@ -1670,7 +1670,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		return false;
 	}
 
-	userdomain = torture_setting_string(torture, "userdomain", lp_workgroup(torture->lp_ctx));
+	userdomain = torture_setting_string(torture, "userdomain", lpcfg_workgroup(torture->lp_ctx));
 
 	user_ctx = torture_create_testuser(torture,
 					   TEST_USER_NAME,
@@ -1906,7 +1906,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.username      = talloc_asprintf(mem_ctx,
 								 "%s@%s",
 								 TEST_USER_NAME,
-								 lp_realm(torture->lp_ctx)),
+								 lpcfg_realm(torture->lp_ctx)),
 				.password      = user_password,
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,

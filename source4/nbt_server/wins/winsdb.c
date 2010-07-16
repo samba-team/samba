@@ -971,11 +971,11 @@ static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx,
 	talloc_free(h->ldb);
 	h->ldb = NULL;
 
-	if (lp_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
+	if (lpcfg_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
+	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
 				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;
 
@@ -1007,16 +1007,16 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	h = talloc_zero(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
 
-	if (lp_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
+	if (lpcfg_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lp_wins_url(lp_ctx)),
+	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
 				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;	
 
 	h->caller = caller;
-	h->hook_script = lp_wins_hook(lp_ctx);
+	h->hook_script = lpcfg_wins_hook(lp_ctx);
 
 	h->local_owner = talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;

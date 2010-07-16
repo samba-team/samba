@@ -79,7 +79,7 @@ static WERROR drepl_create_rid_manager_source_dsa(struct dreplsrv_service *servi
 	sdsa->repsFrom1->other_info->dns_name =
 		talloc_asprintf(sdsa->repsFrom1->other_info, "%s._msdcs.%s",
 				GUID_string(sdsa->repsFrom1->other_info, &sdsa->repsFrom1->source_dsa_obj_guid),
-				lp_dnsdomain(service->task->lp_ctx));
+				lpcfg_dnsdomain(service->task->lp_ctx));
 	if (!sdsa->repsFrom1->other_info->dns_name) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;

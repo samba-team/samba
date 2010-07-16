@@ -86,7 +86,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "torture_temp_dir failed");
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, 
-				     lp_gensec_settings(tctx, tctx->lp_ctx));
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
@@ -98,7 +98,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
 	status = gensec_server_start(tctx, tctx->ev, 
-				     lp_gensec_settings(tctx, tctx->lp_ctx), 
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
@@ -395,7 +395,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "torture_temp_dir failed");
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
-				     lp_gensec_settings(tctx, tctx->lp_ctx));
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
@@ -407,7 +407,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
 	status = gensec_server_start(tctx, tctx->ev,
-				     lp_gensec_settings(tctx, tctx->lp_ctx),
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
@@ -450,7 +450,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	cli_credentials_set_impersonate_principal(credentials, cli_credentials_get_principal(cmdline_credentials, tmp_ctx));
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
-				     lp_gensec_settings(tctx, tctx->lp_ctx));
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
@@ -463,7 +463,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
 	status = gensec_server_start(tctx, tctx->ev,
-				     lp_gensec_settings(tctx, tctx->lp_ctx),
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 

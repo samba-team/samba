@@ -361,7 +361,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL,
 					   SECRETS_PRIMARY_DOMAIN_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -391,7 +391,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL,
 					     SECRETS_PRINCIPALS_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -423,7 +423,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, 
+	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL,
 					     SECRETS_PRINCIPALS_DN, filter,
 					     &error_string);
 	if (!NT_STATUS_IS_OK(status)) {

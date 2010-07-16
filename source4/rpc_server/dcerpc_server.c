@@ -386,7 +386,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->endpoint = ep;
 	p->contexts = NULL;
 	p->call_list = NULL;
-	p->packet_log_dir = lp_lockdir(dce_ctx->lp_ctx);
+	p->packet_log_dir = lpcfg_lockdir(dce_ctx->lp_ctx);
 	p->incoming_fragmented_call_list = NULL;
 	p->pending_call_list = NULL;
 	p->cli_max_recv_frag = 0;
@@ -468,7 +468,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	NTSTATUS status;
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
@@ -516,7 +516,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	NTSTATUS status;
 
 	/* setup a bind_nak */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
@@ -580,7 +580,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	  if provided, check the assoc_group is valid
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0 &&
-	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
 	    dcesrv_assoc_group_find(call->conn->dce_ctx, call->pkt.u.bind.assoc_group_id) == NULL) {
 		return dcesrv_bind_nak(call, 0);	
 	}
@@ -667,7 +667,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) &&
-	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", false)) {
+	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","header signing", false)) {
 		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_HEADER_SIGNING;
 		extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
@@ -680,7 +680,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
@@ -875,7 +875,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 
 	if (result == 0 &&
 	    call->pkt.u.alter.assoc_group_id != 0 &&
-	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
 	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group->id) {
 		DEBUG(0,(__location__ ": Failed attempt to use new assoc_group in alter context (0x%08x 0x%08x)\n",
 			 call->context->assoc_group->id, call->pkt.u.alter.assoc_group_id));
@@ -885,7 +885,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 
 	/* setup a alter_resp */
-	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;
@@ -1031,7 +1031,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   pointers */
 	push->ptr_count = call->ndr_pull->ptr_count;
 
-	if (lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx)) {
+	if (lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx)) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -1070,7 +1070,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		length = MIN(chunk_size, stub.length);
 
 		/* form the dcerpc response packet */
-		dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+		dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 		pkt.auth_length = 0;
 		pkt.call_id = call->pkt.call_id;
 		pkt.ptype = DCERPC_PKT_RESPONSE;

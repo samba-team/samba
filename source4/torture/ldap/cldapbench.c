@@ -67,7 +67,7 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						address,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
@@ -150,7 +150,7 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						address,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
@@ -215,7 +215,7 @@ bool torture_bench_cldap(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lp_resolve_context(torture->lp_ctx), &name, torture, &address, torture->ev);
+	status = resolve_name(lpcfg_resolve_context(torture->lp_ctx), &name, torture, &address, torture->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

@@ -179,14 +179,14 @@ static void shell_set(const struct shell_command *command,
 
 	switch (argc) {
 	case 0:
-	    lp_dump(tctx->lp_ctx, stdout,
+	    lpcfg_dump(tctx->lp_ctx, stdout,
 		    false /* show_defaults */,
 		    0 /* skip services */);
 	    break;
 
 	case 2:
 	    name = talloc_asprintf(NULL, "torture:%s", argv[0]);
-	    lp_set_cmdline(tctx->lp_ctx, name, argv[1]);
+	    lpcfg_set_cmdline(tctx->lp_ctx, name, argv[1]);
 	    talloc_free(name);
 	    break;
 

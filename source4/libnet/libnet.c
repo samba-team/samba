@@ -46,7 +46,7 @@ struct libnet_context *libnet_context_init(struct tevent_context *ev,
 	dcerpc_init(lp_ctx);
 
 	/* name resolution methods */
-	ctx->resolve_ctx = lp_resolve_context(lp_ctx);
+	ctx->resolve_ctx = lpcfg_resolve_context(lp_ctx);
 
 	/* connected services' params */
 	ZERO_STRUCT(ctx->samr);

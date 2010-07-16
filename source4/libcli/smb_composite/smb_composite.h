@@ -178,7 +178,7 @@ struct smb_composite_connectmulti {
 		int num_dests;
 		const char **hostnames;
 		const char **addresses;
-		int *ports; 	/* Either NULL for lp_smb_ports() per
+		int *ports; 	/* Either NULL for lpcfg_smb_ports() per
 				 * destination or a list of explicit ports */
 	} in;
 	struct {

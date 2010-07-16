@@ -249,7 +249,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
 
 	nt_status = schannel_save_creds_state(mem_ctx,
-					      lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					      lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
 					      creds);
 
 	return nt_status;
@@ -349,7 +349,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 {
 	NTSTATUS nt_status;
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
-	bool schannel_global_required = false; /* Should be lp_schannel_server() == true */
+	bool schannel_global_required = false; /* Should be lpcfg_schannel_server() == true */
 
 	if (schannel_global_required) {
 		nt_status = schannel_check_required(auth_info,
@@ -361,7 +361,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	}
 
 	nt_status = schannel_check_creds_state(mem_ctx,
-					       lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					       lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
@@ -657,7 +657,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6->sidcount = sam3->sidcount;
 		sam6->sids = sam3->sids;
 
-		sam6->dns_domainname.string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+		sam6->dns_domainname.string = lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s",
 							 sam->account_name.string, sam6->dns_domainname.string);
 		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
@@ -712,7 +712,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	struct netlogon_creds_CredentialState *creds;
 
 	nt_status = schannel_get_creds_state(mem_ctx,
-					     lp_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					     lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
 					     r->in.computer_name, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -916,7 +916,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
 	 */
 	dcname = talloc_asprintf(mem_ctx, "\\\\%s",
-				 lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx));
+				 lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx));
 	W_ERROR_HAVE_NO_MEMORY(dcname);
 
 	*r->out.dcname = dcname;
@@ -1006,7 +1006,7 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 
 	if ((r->in.domainname == NULL) || (r->in.domainname[0] == '\0')) {
 		/* if the domainname parameter wasn't set assume our domain */
-		r->in.domainname = lp_workgroup(lp_ctx);
+		r->in.domainname = lpcfg_workgroup(lp_ctx);
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
@@ -1015,7 +1015,7 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 		return WERR_DS_UNAVAILABLE;
 	}
 
-	if (strcasecmp(r->in.domainname, lp_workgroup(lp_ctx)) == 0) {
+	if (strcasecmp(r->in.domainname, lpcfg_workgroup(lp_ctx)) == 0) {
 		/* well we asked for a DC of our own domain */
 		if (samdb_is_pdc(sam_ctx)) {
 			/* we are the PDC of the specified domain */
@@ -1023,7 +1023,7 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 		}
 
 		*r->out.dcname = talloc_asprintf(mem_ctx, "\\%s",
-						lp_netbios_name(lp_ctx));
+						lpcfg_netbios_name(lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(*r->out.dcname);
 
 		return WERR_OK;
@@ -1188,8 +1188,8 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_local) {
-		info->domainname.string = lp_workgroup(lp_ctx);
-		info->dns_domainname.string = lp_dnsdomain(lp_ctx);
+		info->domainname.string = lpcfg_workgroup(lp_ctx);
+		info->dns_domainname.string = lpcfg_dnsdomain(lp_ctx);
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
@@ -1931,7 +1931,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	struct ldb_message **dom_res;
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	const char *dnsdomain = lp_dnsdomain(lp_ctx);
+	const char *dnsdomain = lpcfg_dnsdomain(lp_ctx);
 	const char *p;
 	WERROR werr;
 
@@ -1996,8 +1996,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 					       trusts->count);
 		W_ERROR_HAVE_NO_MEMORY(trusts->array);
 
-		trusts->array[n].netbios_name = lp_workgroup(lp_ctx);
-		trusts->array[n].dns_name = lp_dnsdomain(lp_ctx);
+		trusts->array[n].netbios_name = lpcfg_workgroup(lp_ctx);
+		trusts->array[n].dns_name = lpcfg_dnsdomain(lp_ctx);
 		trusts->array[n].trust_flags =
 			NETR_TRUST_FLAG_NATIVE |
 			NETR_TRUST_FLAG_TREEROOT |
@@ -2090,8 +2090,8 @@ static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 	domain_info = &e->forest_trust_data.domain_info;
 	domain_info->domain_sid = samdb_result_dom_sid(info, dom_res[0],
 						       "objectSid");
-	domain_info->dns_domain_name.string = lp_dnsdomain(lp_ctx);
-	domain_info->netbios_domain_name.string = lp_workgroup(lp_ctx);
+	domain_info->dns_domain_name.string = lpcfg_dnsdomain(lp_ctx);
+	domain_info->netbios_domain_name.string = lpcfg_workgroup(lp_ctx);
 
 	info->entries[1] = e;
 

@@ -99,7 +99,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		*lm_sess_key = data_blob(NULL, 0);
 		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
-					     lp_lanman_auth(auth_context->lp_ctx),
+					     lpcfg_lanman_auth(auth_context->lp_ctx),
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
@@ -109,8 +109,8 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		
 	case AUTH_PASSWORD_RESPONSE:
 		status = ntlm_password_check(mem_ctx, 
-					     lp_lanman_auth(auth_context->lp_ctx),
-						 lp_ntlm_auth(auth_context->lp_ctx),
+					     lpcfg_lanman_auth(auth_context->lp_ctx),
+						 lpcfg_ntlm_auth(auth_context->lp_ctx),
 					     user_info->logon_parameters, 
 					     &auth_context->challenge.data, 
 					     &user_info->password.response.lanman, 
@@ -229,8 +229,8 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(tmp_ctx, ctx->auth_ctx->sam_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx),
- 					     lp_sam_name(ctx->auth_ctx->lp_ctx),
+	nt_status = authsam_make_server_info(tmp_ctx, ctx->auth_ctx->sam_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+					     lpcfg_sam_name(ctx->auth_ctx->lp_ctx),
 					     domain_dn,
 					     msg,
 					     user_sess_key, lm_sess_key,
@@ -270,13 +270,13 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	is_local_name = lp_is_myname(ctx->auth_ctx->lp_ctx, 
+	is_local_name = lpcfg_is_myname(ctx->auth_ctx->lp_ctx,
 				  user_info->mapped.domain_name);
-	is_my_domain  = lp_is_mydomain(ctx->auth_ctx->lp_ctx, 
+	is_my_domain  = lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx,
 				       user_info->mapped.domain_name); 
 
 	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role(ctx->auth_ctx->lp_ctx)) {
+	switch (lpcfg_server_role(ctx->auth_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
 			return NT_STATUS_OK;
 
@@ -297,7 +297,7 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 			return NT_STATUS_OK;
 	}
 
-	DEBUG(6,("authsam_check_password: lp_server_role() has an undefined value\n"));
+	DEBUG(6,("authsam_check_password: lpcfg_server_role() has an undefined value\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -366,8 +366,8 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = authsam_make_server_info(tmp_ctx, auth_context->sam_ctx,
-					     lp_netbios_name(auth_context->lp_ctx),
- 					     lp_workgroup(auth_context->lp_ctx),
+					     lpcfg_netbios_name(auth_context->lp_ctx),
+					     lpcfg_workgroup(auth_context->lp_ctx),
 					     domain_dn, 
 					     msg,
 					     user_sess_key, lm_sess_key,

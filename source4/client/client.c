@@ -3261,8 +3261,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 
 	poptFreeContext(pc);
 
-	lp_smbcli_options(cmdline_lp_ctx, &smb_options);
-	lp_smbcli_session_options(cmdline_lp_ctx, &smb_session_options);
+	lpcfg_smbcli_options(cmdline_lp_ctx, &smb_options);
+	lpcfg_smbcli_session_options(cmdline_lp_ctx, &smb_session_options);
 
 	ev_ctx = s4_event_context_init(talloc_autofree_context());
 
@@ -3276,25 +3276,25 @@ static int do_message_op(const char *netbios_name, const char *desthost,
   
 	if (query_host) {
 		rc = do_host_query(cmdline_lp_ctx, ev_ctx, query_host,
-				   lp_workgroup(cmdline_lp_ctx));
+				   lpcfg_workgroup(cmdline_lp_ctx));
 		return rc;
 	}
 
 	if (message) {
-		rc = do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost,
-				   lp_smb_ports(cmdline_lp_ctx), dest_ip,
+		rc = do_message_op(lpcfg_netbios_name(cmdline_lp_ctx), desthost,
+				   lpcfg_smb_ports(cmdline_lp_ctx), dest_ip,
 				   name_type, ev_ctx,
-				   lp_resolve_context(cmdline_lp_ctx),
+				   lpcfg_resolve_context(cmdline_lp_ctx),
 				   &smb_options, 
-                   lp_socket_options(cmdline_lp_ctx));
+                   lpcfg_socket_options(cmdline_lp_ctx));
 		return rc;
 	}
 	
-	if (!do_connect(ctx, ev_ctx, lp_resolve_context(cmdline_lp_ctx),
-			desthost, lp_smb_ports(cmdline_lp_ctx), service,
-			lp_socket_options(cmdline_lp_ctx),
+	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(cmdline_lp_ctx),
+			desthost, lpcfg_smb_ports(cmdline_lp_ctx), service,
+			lpcfg_socket_options(cmdline_lp_ctx),
 			cmdline_credentials, &smb_options, &smb_session_options,
-			lp_gensec_settings(ctx, cmdline_lp_ctx)))
+			lpcfg_gensec_settings(ctx, cmdline_lp_ctx)))
 		return 1;
 
 	if (base_directory) {

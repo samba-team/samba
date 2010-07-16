@@ -215,8 +215,8 @@ static bool connect_servers(struct tevent_context *ev,
 			NTSTATUS status;
 			struct smbcli_options smb_options;
 			struct smbcli_session_options smb_session_options;
-			lp_smbcli_options(lp_ctx, &smb_options);
-			lp_smbcli_session_options(lp_ctx, &smb_session_options);
+			lpcfg_smbcli_options(lp_ctx, &smb_options);
+			lpcfg_smbcli_session_options(lp_ctx, &smb_session_options);
 
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
@@ -227,27 +227,27 @@ static bool connect_servers(struct tevent_context *ev,
 
 			if (options.smb2) {
 				status = smb2_connect(NULL, servers[i].server_name, 
-									  lp_smb_ports(lp_ctx),
+									  lpcfg_smb_ports(lp_ctx),
 						      servers[i].share_name,
-						      lp_resolve_context(lp_ctx),
+						      lpcfg_resolve_context(lp_ctx),
 						      servers[i].credentials,
 						      &servers[i].smb2_tree[j],
 						      ev, &smb_options,
-							  lp_socket_options(lp_ctx),
-							  lp_gensec_settings(lp_ctx, lp_ctx)
+							  lpcfg_socket_options(lp_ctx),
+							  lpcfg_gensec_settings(lp_ctx, lp_ctx)
 							  );
 			} else {
 				status = smbcli_tree_full_connection(NULL,
 								     &servers[i].smb_tree[j], 
 								     servers[i].server_name, 
-								     lp_smb_ports(lp_ctx),
+								     lpcfg_smb_ports(lp_ctx),
 								     servers[i].share_name, "A:",
-									 lp_socket_options(lp_ctx),
+									 lpcfg_socket_options(lp_ctx),
 								     servers[i].credentials,
-								     lp_resolve_context(lp_ctx), ev,
+								     lpcfg_resolve_context(lp_ctx), ev,
 								     &smb_options,
 								     &smb_session_options,
-									 lp_gensec_settings(lp_ctx, lp_ctx));
+									 lpcfg_gensec_settings(lp_ctx, lp_ctx));
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
@@ -3185,7 +3185,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_UNCLIST:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case 'U':
 			if (username_count == 2) {

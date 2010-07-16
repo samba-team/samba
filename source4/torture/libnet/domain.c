@@ -91,7 +91,7 @@ bool torture_domainopen(struct torture_context *torture)
 		return false;
 	}
 
-	name.string = lp_workgroup(torture->lp_ctx);
+	name.string = lpcfg_workgroup(torture->lp_ctx);
 
 	/*
 	 * Testing synchronous version

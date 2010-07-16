@@ -219,7 +219,7 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 	NTSTATUS status;
 
 	msg = messaging_init(talloc_autofree_context(), 
-			     lp_messaging_path(event_ctx, lp_ctx),
+			     lpcfg_messaging_path(event_ctx, lp_ctx),
 			     cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
@@ -388,11 +388,11 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	cleanup_tmp_files(cmdline_lp_ctx);
 
-	if (!directory_exist(lp_lockdir(cmdline_lp_ctx))) {
-		mkdir(lp_lockdir(cmdline_lp_ctx), 0755);
+	if (!directory_exist(lpcfg_lockdir(cmdline_lp_ctx))) {
+		mkdir(lpcfg_lockdir(cmdline_lp_ctx), 0755);
 	}
 
-	pidfile_create(lp_piddir(cmdline_lp_ctx), binary_name);
+	pidfile_create(lpcfg_piddir(cmdline_lp_ctx), binary_name);
 
 	/* Do *not* remove this, until you have removed
 	 * passdb/secrets.c, and proved that Samba still builds... */
@@ -401,8 +401,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		return 1;
 	}
 
-	if (lp_server_role(cmdline_lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
-		if (!open_schannel_session_store(talloc_autofree_context(), lp_private_dir(cmdline_lp_ctx))) {
+	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
+		if (!open_schannel_session_store(talloc_autofree_context(), lpcfg_private_dir(cmdline_lp_ctx))) {
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);
 		}
@@ -471,7 +471,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 
 	status = server_service_startup(event_ctx, cmdline_lp_ctx, model, 
-					lp_server_services(cmdline_lp_ctx));
+					lpcfg_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Starting Services failed - %s\n", nt_errstr(status)));
 		return 1;

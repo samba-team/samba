@@ -93,7 +93,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev_ctx,
 					struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lp_secrets_url(lp_ctx),
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lpcfg_secrets_url(lp_ctx),
 			       NULL, NULL, 0);
 }
 

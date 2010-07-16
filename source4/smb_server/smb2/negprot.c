@@ -119,7 +119,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	boot_time = timeval_current(); /* TODO: fix me */
 
 	ZERO_STRUCT(io->out);
-	switch (lp_server_signing(req->smb_conn->lp_ctx)) {
+	switch (lpcfg_server_signing(req->smb_conn->lp_ctx)) {
 	case SMB_SIGNING_OFF:
 		io->out.security_mode = 0;
 		break;
@@ -135,11 +135,11 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	}
 	io->out.dialect_revision   = dialect;
 	io->out.capabilities       = 0;
-	io->out.max_transact_size  = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+	io->out.max_transact_size  = lpcfg_parm_ulong(req->smb_conn->lp_ctx, NULL,
 						   "smb2", "max transaction size", 0x10000);
-	io->out.max_read_size      = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+	io->out.max_read_size      = lpcfg_parm_ulong(req->smb_conn->lp_ctx, NULL,
 						   "smb2", "max read size", 0x10000);
-	io->out.max_write_size     = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
+	io->out.max_write_size     = lpcfg_parm_ulong(req->smb_conn->lp_ctx, NULL,
 						   "smb2", "max write size", 0x10000);
 	io->out.system_time	   = timeval_to_nttime(&current_time);
 	io->out.server_start_time  = timeval_to_nttime(&boot_time);

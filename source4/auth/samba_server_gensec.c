@@ -52,7 +52,7 @@ NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 
 	nt_status = gensec_server_start(mem_ctx, 
 					event_ctx,
-					lp_gensec_settings(mem_ctx, lp_ctx),
+					lpcfg_gensec_settings(mem_ctx, lp_ctx),
 					auth_context,
 					&gensec_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {

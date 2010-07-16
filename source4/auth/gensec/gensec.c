@@ -47,7 +47,7 @@ _PUBLIC_ struct gensec_security_ops **gensec_security_all(void)
 
 bool gensec_security_ops_enabled(struct gensec_security_ops *ops, struct gensec_security *security)
 {
-	return lp_parm_bool(security->settings->lp_ctx, NULL, "gensec", ops->name, ops->enabled);
+	return lpcfg_parm_bool(security->settings->lp_ctx, NULL, "gensec", ops->name, ops->enabled);
 }
 
 /* Sometimes we want to force only kerberos, sometimes we want to
@@ -1397,12 +1397,12 @@ static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_
 
 int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value)
 {
-	return lp_parm_int(settings->lp_ctx, NULL, mechanism, name, default_value);
+	return lpcfg_parm_int(settings->lp_ctx, NULL, mechanism, name, default_value);
 }
 
 bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value)
 {
-	return lp_parm_bool(settings->lp_ctx, NULL, mechanism, name, default_value);
+	return lpcfg_parm_bool(settings->lp_ctx, NULL, mechanism, name, default_value);
 }
 
 /*

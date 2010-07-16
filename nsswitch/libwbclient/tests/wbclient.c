@@ -611,7 +611,7 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
 
-	if (lp_client_lanman_auth(tctx->lp_ctx) &&
+	if (lpcfg_client_lanman_auth(tctx->lp_ctx) &&
 	    E_deshash(newpass, new_lanman_hash) &&
 	    E_deshash(oldpass, old_lanman_hash)) {
 

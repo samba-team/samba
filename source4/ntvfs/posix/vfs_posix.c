@@ -266,7 +266,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	pvfs->notify_context = notify_init(pvfs, 
 					   pvfs->ntvfs->ctx->server_id,  
 					   pvfs->ntvfs->ctx->msg_ctx, 
-					   pvfs->ntvfs->ctx->lp_ctx, 
+					   pvfs->ntvfs->ctx->lp_ctx,
 					   pvfs->ntvfs->ctx->event_ctx,
 					   pvfs->ntvfs->ctx->config);
 

@@ -193,7 +193,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		}
 
 		bcast_address = socket_address_from_strings(bcast_nbtsock, bcast_nbtsock->sock->backend_name, 
-							    bcast, lp_nbt_port(lp_ctx));
+							    bcast, lpcfg_nbt_port(lp_ctx));
 		if (!bcast_address) {
 			talloc_free(iface);
 			return NT_STATUS_NO_MEMORY;
@@ -202,7 +202,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		status = socket_listen(bcast_nbtsock->sock, bcast_address, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-				 bcast, lp_nbt_port(lp_ctx), nt_errstr(status)));
+				 bcast, lpcfg_nbt_port(lp_ctx), nt_errstr(status)));
 			talloc_free(iface);
 			return status;
 		}
@@ -220,12 +220,12 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 
 	unicast_address = socket_address_from_strings(iface->nbtsock, 
 						      iface->nbtsock->sock->backend_name, 
-						      bind_address, lp_nbt_port(lp_ctx));
+						      bind_address, lpcfg_nbt_port(lp_ctx));
 
 	status = socket_listen(iface->nbtsock->sock, unicast_address, 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 bind_address, lp_nbt_port(lp_ctx), nt_errstr(status)));
+			 bind_address, lpcfg_nbt_port(lp_ctx), nt_errstr(status)));
 		talloc_free(iface);
 		return status;
 	}
@@ -283,7 +283,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 
 	/* if we are allowing incoming packets from any address, then
 	   we also need to bind to the wildcard address */
-	if (!lp_bind_interfaces_only(lp_ctx)) {
+	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
 		const char *primary_address;
 
 		/* the primary address is the address we will return
@@ -293,7 +293,7 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 			primary_address = iface_n_ip(ifaces, 0);
 		} else {
 			primary_address = inet_ntoa(interpret_addr2(
-							lp_netbios_name(lp_ctx)));
+							lpcfg_netbios_name(lp_ctx)));
 		}
 		primary_address = talloc_strdup(tmp_ctx, primary_address);
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
@@ -318,12 +318,12 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 		bcast   = talloc_strdup(tmp_ctx, bcast);
 		netmask = talloc_strdup(tmp_ctx, iface_n_netmask(ifaces, i));
 
-		status = nbtd_add_socket(nbtsrv, lp_ctx, 
+		status = nbtd_add_socket(nbtsrv, lp_ctx,
 					 address, address, bcast, netmask);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	if (lp_wins_server_list(lp_ctx)) {
+	if (lpcfg_wins_server_list(lp_ctx)) {
 		status = nbtd_add_wins_socket(nbtsrv);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

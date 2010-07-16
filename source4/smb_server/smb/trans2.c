@@ -1215,8 +1215,8 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
 	DATA_BLOB outblob;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
-	const char *dns_domain = lp_dnsdomain(lp_ctx);
-	const char *netbios_domain = lp_workgroup(lp_ctx);
+	const char *dns_domain = lpcfg_dnsdomain(lp_ctx);
+	const char *netbios_domain = lpcfg_workgroup(lp_ctx);
 	struct dfs_referral_resp resp;
 	struct dfs_referral_type *tab;
 	struct dfs_referral_type *referral;
@@ -1226,7 +1226,7 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
 	uint32_t current_pos = 0;
 	TALLOC_CTX *context;
 
-	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
 		DEBUG(10 ,("Received a domain referral request on a non DC\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1372,8 +1372,8 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 	unsigned int num_domain = 1;
 	enum ndr_err_code ndr_err;
 	const char *requesteddomain;
-	const char *realm = lp_realm(lp_ctx);
-	const char *domain = lp_workgroup(lp_ctx);
+	const char *realm = lpcfg_realm(lp_ctx);
+	const char *domain = lpcfg_workgroup(lp_ctx);
 	const char *site_name = NULL; /* Name of the site where the client is */
 	char *share = NULL;
 	bool found = false;
@@ -1387,7 +1387,7 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 	char *client_addr = NULL;
 	TALLOC_CTX *context;
 
-	if (lp_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1613,7 +1613,7 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 	NTSTATUS status;
 
 	lp_ctx = req->tcon->ntvfs->lp_ctx;
-	if (!lp_host_msdfs(lp_ctx)) {
+	if (!lpcfg_host_msdfs(lp_ctx)) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
@@ -1651,8 +1651,8 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 		return dodomain_referral(op, &dfsreq, ldb, trans, lp_ctx);
 	}
 
-	realm = lp_realm(lp_ctx);
-	nbname = lp_netbios_name(lp_ctx);
+	realm = lpcfg_realm(lp_ctx);
+	nbname = lpcfg_netbios_name(lp_ctx);
 	fqdn = talloc_asprintf(context, "%s.%s", nbname, realm);
 
 	if ((strncasecmp(requestedname+1, nbname, strlen(nbname)) == 0) ||

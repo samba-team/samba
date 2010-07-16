@@ -502,20 +502,20 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	struct smbcli_options options;
 	struct smbcli_session_options session_options;
 
-	lp_smbcli_options(tctx->lp_ctx, &options);
-	lp_smbcli_session_options(tctx->lp_ctx, &session_options);
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &session_options);
 
 	options.use_oplocks = torture_setting_bool(tctx, "use_oplocks", true);
 	options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", true);
 
 	status = smbcli_full_connection(mem_ctx, c, hostname, 
-					lp_smb_ports(tctx->lp_ctx),
+					lpcfg_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
-					lp_socket_options(tctx->lp_ctx),
+					lpcfg_socket_options(tctx->lp_ctx),
 					cmdline_credentials, 
-					lp_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx),
 					ev, &options, &session_options,
-					lp_gensec_settings(tctx, tctx->lp_ctx));
+					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;
@@ -687,7 +687,7 @@ double torture_create_procs(struct torture_context *tctx,
 				printf("asprintf failed\n");
 				return -1;
 			}
-			lp_set_cmdline(tctx->lp_ctx, "netbios name", myname);
+			lpcfg_set_cmdline(tctx->lp_ctx, "netbios name", myname);
 			free(myname);
 
 

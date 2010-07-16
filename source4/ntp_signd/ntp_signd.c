@@ -491,9 +491,9 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	const char *address;
 
-	if (!directory_create_or_exist(lp_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lpcfg_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
 		char *error = talloc_asprintf(task, "Cannot create NTP signd pipe directory: %s", 
-					      lp_ntp_signd_socket_directory(task->lp_ctx));
+					      lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 		task_server_terminate(task,
 				      error, true);
 		return;
@@ -525,14 +525,14 @@ static void ntp_signd_task_init(struct task_server *task)
 		return;
 	}
 
-	address = talloc_asprintf(ntp_signd, "%s/socket", lp_ntp_signd_socket_directory(task->lp_ctx));
+	address = talloc_asprintf(ntp_signd, "%s/socket", lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 
 	status = stream_setup_socket(ntp_signd->task->event_ctx, 
 				     ntp_signd->task->lp_ctx,
 				     model_ops, 
 				     &ntp_signd_stream_ops, 
 				     "unix", address, NULL,
-				     lp_socket_options(ntp_signd->task->lp_ctx), 
+				     lpcfg_socket_options(ntp_signd->task->lp_ctx),
 				     ntp_signd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s - %s\n",

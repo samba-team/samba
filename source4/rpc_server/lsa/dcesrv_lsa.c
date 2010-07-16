@@ -410,7 +410,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 
 		ZERO_STRUCT(domain_guid);
 
-		switch (lp_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
+		switch (lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
 			role		= DS_ROLE_STANDALONE_SERVER;
 			break;
@@ -426,13 +426,13 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 			break;
 		}
 
-		switch (lp_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
+		switch (lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx)) {
 		case ROLE_STANDALONE:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx));
+			domain		= talloc_strdup(mem_ctx, lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			break;
 		case ROLE_DOMAIN_MEMBER:
-			domain		= talloc_strdup(mem_ctx, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx));
+			domain		= talloc_strdup(mem_ctx, lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx));
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			/* TODO: what is with dns_domain and forest and guid? */
 			break;
@@ -2901,7 +2901,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		name = &r->in.name.string[2];
 			/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
 		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx))); 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx)));
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {
@@ -3038,7 +3038,7 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		name = &r->in.name.string[2];
 		/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
 		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx))); 
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx)));
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {

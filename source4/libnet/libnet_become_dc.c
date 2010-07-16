@@ -740,7 +740,7 @@ struct libnet_BecomeDC_state {
 static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
 {
 	/* per default we are (Windows) 2008 R2 compatible */
-	return lp_parm_int(lp_ctx, NULL, "ads", "dc function level",
+	return lpcfg_parm_int(lp_ctx, NULL, "ads", "dc function level",
 			   DS_DOMAIN_FUNCTION_2008_R2);
 }
 
@@ -766,7 +766,7 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 
 	ret = tsocket_address_inet_from_strings(s, "ip",
 						s->source_dsa.address,
-						lp_cldap_port(s->libnet->lp_ctx),
+						lpcfg_cldap_port(s->libnet->lp_ctx),
 						&dest_address);
 	if (ret != 0) {
 		c->status = map_nt_error_from_unix(errno);
@@ -1549,12 +1549,12 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 		 *       configuration partition works fine, but it fails for
 		 *       the domain partition.
 		 */
-		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+		if (lpcfg_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
 				 "force krb5", true))
 		{
 			krb5_str = "krb5,";
 		}
-		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
+		if (lpcfg_parm_bool(s->libnet->lp_ctx, NULL, "become_dc",
 				 "print", false))
 		{
 			print_str = "print,";
@@ -2905,7 +2905,7 @@ static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 	r->in.req.req1.options		= DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_DEL_REF;
 
 	/* I think this is how we mark ourselves as a RODC */
-	if (!lp_parm_bool(s->libnet->lp_ctx, NULL, "repl", "RODC", false)) {
+	if (!lpcfg_parm_bool(s->libnet->lp_ctx, NULL, "repl", "RODC", false)) {
 		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 

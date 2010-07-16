@@ -173,7 +173,7 @@ static NTSTATUS dcesrv_samr_Connect(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* make sure the sam database is accessible */
-	c_state->sam_ctx = samdb_connect(c_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
+	c_state->sam_ctx = samdb_connect(c_state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (c_state->sam_ctx == NULL) {
 		talloc_free(c_state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -293,7 +293,7 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, NULL, &dom_msgs, dom_attrs,
 				   "(objectClass=builtinDomain)");
-	} else if (strcasecmp_m(r->in.domain_name->string, lp_sam_name(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
+	} else if (strcasecmp_m(r->in.domain_name->string, lpcfg_sam_name(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
 		ret = gendb_search_dn(c_state->sam_ctx,
 				      mem_ctx, ldb_get_default_basedn(c_state->sam_ctx), 
 				      &dom_msgs, dom_attrs);
@@ -363,7 +363,7 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	for (i=0;i<2-start_i;i++) {
 		array->entries[i].idx = start_i + i;
 		if (i == 0) {
-			array->entries[i].name.string = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
+			array->entries[i].name.string = lpcfg_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 		} else {
 			array->entries[i].name.string = "BUILTIN";
 		}
@@ -412,7 +412,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 		d_state->domain_name = "BUILTIN";
 	} else {
 		d_state->builtin = false;
-		d_state->domain_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
+		d_state->domain_name = lpcfg_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 	}
 
 	ret = gendb_search(c_state->sam_ctx,
@@ -433,7 +433,7 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	d_state->domain_dn = talloc_steal(d_state, dom_msgs[0]->dn);
-	d_state->role = lp_server_role(dce_call->conn->dce_ctx->lp_ctx);
+	d_state->role = lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx);
 	d_state->connect_state = talloc_reference(d_state, c_state);
 	d_state->sam_ctx = c_state->sam_ctx;
 	d_state->access_mask = r->in.access_mask;
@@ -489,7 +489,7 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, dom_msgs[0], "fSMORoleOwner");
 
 	if (!info->primary.string) {
-		info->primary.string = lp_netbios_name(state->lp_ctx);
+		info->primary.string = lpcfg_netbios_name(state->lp_ctx);
 	}
 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
@@ -587,7 +587,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
 						      dom_msgs[0], "fSMORoleOwner");
 
 	if (!info->primary.string) {
-		info->primary.string = lp_netbios_name(state->lp_ctx);
+		info->primary.string = lpcfg_netbios_name(state->lp_ctx);
 	}
 
 	return NT_STATUS_OK;

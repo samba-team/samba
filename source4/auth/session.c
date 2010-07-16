@@ -29,7 +29,7 @@
 #include "auth/session_proto.h"
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
-					    struct loadparm_context *lp_ctx) 
+					    struct loadparm_context *lp_ctx)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;

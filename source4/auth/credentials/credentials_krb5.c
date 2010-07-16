@@ -41,7 +41,7 @@ _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = smb_krb5_init_context(cred, event_ctx, lp_ctx, 
+	ret = smb_krb5_init_context(cred, event_ctx, lp_ctx,
 				    &cred->smb_krb5_context);
 	if (ret) {
 		cred->smb_krb5_context = NULL;
@@ -144,7 +144,7 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx, 
+	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx,
 					       &ccc->smb_krb5_context);
 	if (ret) {
 		(*error_string) = error_message(ret);
@@ -216,7 +216,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx, 
+	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx,
 					       &ccc->smb_krb5_context);
 	if (ret) {
 		talloc_free(ccc);
@@ -417,7 +417,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return 0;
 	}
 
-	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx, 
+	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx,
 					 &ccache, error_string);
 	if (ret) {
 		DEBUG(1, ("Failed to get CCACHE for GSSAPI client: %s\n", error_message(ret)));
@@ -607,7 +607,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx, 
+	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx,
 					       &smb_krb5_context);
 	if (ret) {
 		return ret;
@@ -683,7 +683,7 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 
 _PUBLIC_ int cli_credentials_update_keytab(struct cli_credentials *cred, 
 					   struct tevent_context *event_ctx,
-				  struct loadparm_context *lp_ctx) 
+				  struct loadparm_context *lp_ctx)
 {
 	krb5_error_code ret;
 	struct keytab_container *ktc;

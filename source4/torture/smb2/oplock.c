@@ -284,15 +284,15 @@ static bool open_smb2_connection_no_level2_oplocks(struct torture_context *tctx,
 	struct cli_credentials *credentials = cmdline_credentials;
 	struct smbcli_options options;
 
-	lp_smbcli_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 	options.use_level2_oplocks = false;
 
 	status = smb2_connect(tctx, host,
-			      lp_smb_ports(tctx->lp_ctx), share,
-			      lp_resolve_context(tctx->lp_ctx),
+			      lpcfg_smb_ports(tctx->lp_ctx), share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
 			      credentials, tree, tctx->ev, &options,
-			      lp_socket_options(tctx->lp_ctx),
-			      lp_gensec_settings(tctx, tctx->lp_ctx));
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to connect to SMB2 share "
 				"\\\\%s\\%s - %s\n", host, share,

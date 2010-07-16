@@ -177,7 +177,7 @@ static bool test_ldb_speed(struct torture_context *torture, const void *_data)
 
 	torture_comment(torture, "Testing ldb speed for sidmap\n");
 
-	ldb = ldb_wrap_connect(tmp_ctx, torture->ev, torture->lp_ctx, "tdb://test.ldb", 
+	ldb = ldb_wrap_connect(tmp_ctx, torture->ev, torture->lp_ctx, "tdb://test.ldb",
 				NULL, NULL, LDB_FLG_NOSYNC);
 	if (!ldb) {
 		torture_result(torture, TORTURE_FAIL, "Failed to open test.ldb");

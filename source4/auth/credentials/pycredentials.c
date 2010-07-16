@@ -204,8 +204,8 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
-	if (lp_ctx == NULL) 
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	if (lp_ctx == NULL)
 		return NULL;
 
 	cli_credentials_guess(creds, lp_ctx);
@@ -225,8 +225,8 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
-	if (lp_ctx == NULL) 
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	if (lp_ctx == NULL)
 		return NULL;
 
 	status = cli_credentials_set_machine_account(creds, lp_ctx);
@@ -270,8 +270,8 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	if (!PyArg_ParseTuple(args, "|Os", &py_lp_ctx, &ccache_name))
 		return NULL;
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
-	if (lp_ctx == NULL) 
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	if (lp_ctx == NULL)
 		return NULL;
 
 	event_ctx = tevent_context_init(NULL);

@@ -274,7 +274,7 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 
 	ret = tsocket_address_inet_from_strings(s, "ip",
 						s->source_dsa.address,
-						lp_cldap_port(s->libnet->lp_ctx),
+						lpcfg_cldap_port(s->libnet->lp_ctx),
 						&dest_address);
 	if (ret != 0) {
 		c->status = map_nt_error_from_unix(errno);

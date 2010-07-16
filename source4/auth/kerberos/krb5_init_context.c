@@ -398,7 +398,7 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
-	realm = lp_realm(lp_ctx);
+	realm = lpcfg_realm(lp_ctx);
 	if (realm != NULL) {
 		ret = krb5_set_default_realm(krb5_ctx, realm);
 		if (ret) {
@@ -480,7 +480,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	/* Set options in kerberos */
 
 	krb5_set_dns_canonicalize_hostname((*smb_krb5_context)->krb5_context,
-					   lp_parm_bool(lp_ctx, NULL, "krb5", "set_dns_canonicalize", false));
+					   lpcfg_parm_bool(lp_ctx, NULL, "krb5", "set_dns_canonicalize", false));
 
 	return 0;
 }

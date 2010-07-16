@@ -331,7 +331,7 @@ static void usage(poptContext pc)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_UNCLIST:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		}
 	}
@@ -364,13 +364,13 @@ static void usage(poptContext pc)
 
 	gensec_init(lp_ctx);
 
-	lp_smbcli_options(lp_ctx, &options);
-	lp_smbcli_session_options(lp_ctx, &session_options);
+	lpcfg_smbcli_options(lp_ctx, &options);
+	lpcfg_smbcli_session_options(lp_ctx, &session_options);
 
-	cli = connect_one(lp_resolve_context(lp_ctx), ev, mem_ctx, share, 
-			  lp_smb_ports(lp_ctx), lp_socket_options(lp_ctx), 
+	cli = connect_one(lpcfg_resolve_context(lp_ctx), ev, mem_ctx, share,
+			  lpcfg_smb_ports(lp_ctx), lpcfg_socket_options(lp_ctx),
 			  &options, &session_options,
-			  lp_gensec_settings(mem_ctx, lp_ctx));
+			  lpcfg_gensec_settings(mem_ctx, lp_ctx));
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

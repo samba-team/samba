@@ -950,7 +950,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	}
 
 	if ( ! ac->sid) {
-		sid_generator = lp_sid_generator(lp_ctx);
+		sid_generator = lpcfg_sid_generator(lp_ctx);
 		if (sid_generator == SID_GENERATOR_INTERNAL) {
 			ret = samldb_add_step(ac, samldb_allocate_sid);
 			if (ret != LDB_SUCCESS) return ret;

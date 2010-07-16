@@ -126,7 +126,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		 settings->targetdir));
 	parameters = PyDict_New();
 
-	configfile = lp_configfile(lp_ctx);
+	configfile = lpcfg_configfile(lp_ctx);
 	if (configfile != NULL) {
 		PyDict_SetItemString(parameters, "smbconf", 
 				     PyString_FromString(configfile));
@@ -193,7 +193,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
 
 	/* FIXME paths */
-	result->lp_ctx = lp_from_py_object(result, PyObject_GetAttrString(py_result, "lp"));
+	result->lp_ctx = lpcfg_from_py_object(result, PyObject_GetAttrString(py_result, "lp"));
 	result->samdb = PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;
@@ -373,7 +373,7 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	
 	parameters = PyDict_New();
 
-	setupdir = lp_setupdir(lp_ctx);
+	setupdir = lpcfg_setupdir(lp_ctx);
 	PyDict_SetItemString(parameters, "setup_dir", 
 			     PyString_FromString(setupdir));
 	if (override_prefixmap) {

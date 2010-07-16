@@ -206,7 +206,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (ntlmssp_state->use_nt_response) {
 		flags |= CLI_CRED_NTLM_AUTH;
 	}
-	if (lp_client_lanman_auth(gensec_security->settings->lp_ctx)) {
+	if (lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
@@ -231,7 +231,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	
 	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
-	    && lp_client_lanman_auth(gensec_security->settings->lp_ctx) && lm_session_key.length == 16) {
+	    && lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx) && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
@@ -325,17 +325,17 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->role = NTLMSSP_CLIENT;
 
-	ntlmssp_state->domain = lp_workgroup(gensec_security->settings->lp_ctx);
+	ntlmssp_state->domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
 	ntlmssp_state->unicode = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "unicode", true);
 
 	ntlmssp_state->use_nt_response = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "send_nt_reponse", true);
 
-	ntlmssp_state->allow_lm_key = (lp_client_lanman_auth(gensec_security->settings->lp_ctx)
+	ntlmssp_state->allow_lm_key = (lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx)
 					      && (gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "allow_lm_key", false)
 						  || gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "lm_key", false)));
 
-	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth(gensec_security->settings->lp_ctx);
+	ntlmssp_state->use_ntlmv2 = lpcfg_client_ntlmv2_auth(gensec_security->settings->lp_ctx);
 
 	ntlmssp_state->expected_state = NTLMSSP_INITIAL;
 

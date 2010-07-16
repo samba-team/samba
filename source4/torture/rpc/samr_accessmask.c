@@ -446,7 +446,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
 			ld.out.sid           = &sid;
-			dn.string            = lp_workgroup(tctx->lp_ctx);
+			dn.string            = lpcfg_workgroup(tctx->lp_ctx);
 
 			torture_assert_ntstatus_ok(tctx, dcerpc_samr_LookupDomain_r(b, tctx, &ld),
 				"LookupDomain failed");
@@ -472,7 +472,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
 			ld.out.sid           = &sid;
-			dn.string            = lp_workgroup(tctx->lp_ctx);
+			dn.string            = lpcfg_workgroup(tctx->lp_ctx);
 
 			torture_assert_ntstatus_ok(tctx, dcerpc_samr_LookupDomain_r(b, tctx, &ld),
 				"LookupDomain failed");
@@ -528,7 +528,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 	ld.in.connect_handle = &ch;
 	ld.in.domain_name    = &dn;
 	ld.out.sid           = &sid;
-	dn.string            = lp_workgroup(tctx->lp_ctx);
+	dn.string            = lpcfg_workgroup(tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_LookupDomain_r(b, tctx, &ld),
 		"LookupDomain failed");
 	if (!NT_STATUS_IS_OK(ld.out.result)) {
@@ -616,7 +616,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 	}
 
 	/* create a test user */
-	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(tctx->lp_ctx),
+	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lpcfg_workgroup(tctx->lp_ctx),
 					   ACB_NORMAL, &testuser_passwd);
 	if (!testuser) {
 		printf("Failed to create test user\n");
@@ -624,7 +624,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 	}
 	test_credentials = cli_credentials_init(tctx);
 	cli_credentials_set_workstation(test_credentials, "localhost", CRED_SPECIFIED);
-	cli_credentials_set_domain(test_credentials, lp_workgroup(tctx->lp_ctx),
+	cli_credentials_set_domain(test_credentials, lpcfg_workgroup(tctx->lp_ctx),
 				   CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials, TEST_USER_NAME, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
@@ -1145,7 +1145,7 @@ static bool torture_rpc_samr_workstation_query(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		test_samr_domain(tctx, b, SEC_FLAG_MAXIMUM_ALLOWED,
-				 lp_workgroup(tctx->lp_ctx),
+				 lpcfg_workgroup(tctx->lp_ctx),
 				 &connect_handle, &domain_handle),
 		"failed to test domain");
 

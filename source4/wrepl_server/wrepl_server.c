@@ -38,8 +38,8 @@ static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev_ctx,
 						  struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, private_path(mem_ctx, 
-			        lp_ctx, lp_wins_config_url(lp_ctx)),
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, private_path(mem_ctx,
+			        lp_ctx, lpcfg_wins_config_url(lp_ctx)),
 				system_session(lp_ctx), NULL, 0);
 }
 
@@ -74,11 +74,11 @@ failed:
 static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service, 
 				     struct loadparm_context *lp_ctx)
 {
-	const char *owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
+	const char *owner = lpcfg_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 
 	if (owner == NULL) {
 		struct interface *ifaces;
-		load_interfaces(service, lp_interfaces(lp_ctx), &ifaces);
+		load_interfaces(service, lpcfg_interfaces(lp_ctx), &ifaces);
 		owner = iface_n_ip(ifaces, 0);
 	}
 
@@ -93,26 +93,26 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service,
 	}
 
 	/* the default renew interval is 6 days */
-	service->config.renew_interval	  = lp_parm_int(lp_ctx, NULL,"wreplsrv","renew_interval", 6*24*60*60);
+	service->config.renew_interval	  = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","renew_interval", 6*24*60*60);
 
 	/* the default tombstone (extinction) interval is 6 days */
-	service->config.tombstone_interval= lp_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_interval", 6*24*60*60);
+	service->config.tombstone_interval= lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_interval", 6*24*60*60);
 
 	/* the default tombstone (extinction) timeout is 1 day */
-	service->config.tombstone_timeout = lp_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_timeout", 1*24*60*60);
+	service->config.tombstone_timeout = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_timeout", 1*24*60*60);
 
 	/* the default tombstone extra timeout is 3 days */
-	service->config.tombstone_extra_timeout = lp_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_extra_timeout", 3*24*60*60);
+	service->config.tombstone_extra_timeout = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","tombstone_extra_timeout", 3*24*60*60);
 
 	/* the default verify interval is 24 days */
-	service->config.verify_interval   = lp_parm_int(lp_ctx, NULL,"wreplsrv","verify_interval", 24*24*60*60);
+	service->config.verify_interval   = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","verify_interval", 24*24*60*60);
 
 	/* the default scavenging interval is 'renew_interval/2' */
-	service->config.scavenging_interval=lp_parm_int(lp_ctx, NULL,"wreplsrv","scavenging_interval",
+	service->config.scavenging_interval=lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","scavenging_interval",
 							service->config.renew_interval/2);
 
 	/* the maximun interval to the next periodic processing event */
-	service->config.periodic_interval = lp_parm_int(lp_ctx, NULL,"wreplsrv","periodic_interval", 15);
+	service->config.periodic_interval = lpcfg_parm_int(lp_ctx, NULL,"wreplsrv","periodic_interval", 15);
 
 	return NT_STATUS_OK;
 }
@@ -451,7 +451,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct wreplsrv_service *service;
 
-	if (!lp_wins_support(task->lp_ctx)) {
+	if (!lpcfg_wins_support(task->lp_ctx)) {
 		return;
 	}
 

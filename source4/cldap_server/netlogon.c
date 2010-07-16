@@ -58,7 +58,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	const char *none_attrs[] = {NULL};
 	struct ldb_result *dom_res = NULL, *user_res = NULL;
 	int ret;
-	const char **services = lp_server_services(lp_ctx);
+	const char **services = lpcfg_server_services(lp_ctx);
 	uint32_t server_type;
 	const char *pdc_name;
 	struct GUID domain_uuid;
@@ -81,10 +81,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 
 	/* Lookup using long or short domainname */
-	if (domain && (strcasecmp_m(domain, lp_dnsdomain(lp_ctx)) == 0)) {
+	if (domain && (strcasecmp_m(domain, lpcfg_dnsdomain(lp_ctx)) == 0)) {
 		domain_dn = ldb_get_default_basedn(sam_ctx);
 	}
-	if (netbios_domain && (strcasecmp_m(netbios_domain, lp_sam_name(lp_ctx)) == 0)) {
+	if (netbios_domain && (strcasecmp_m(netbios_domain, lpcfg_sam_name(lp_ctx)) == 0)) {
 		domain_dn = ldb_get_default_basedn(sam_ctx);
 	}
 	if (domain_dn) {
@@ -180,7 +180,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 				 "objectClass=domain");
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Error finding domain '%s'/'%s' in sam: %s\n",
-				 lp_dnsdomain(lp_ctx),
+				 lpcfg_dnsdomain(lp_ctx),
 				 ldb_dn_get_linearized(domain_dn),
 				 ldb_errstring(sam_ctx)));
 			return NT_STATUS_NO_SUCH_DOMAIN;
@@ -269,24 +269,24 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 #endif
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s",
-					   lp_netbios_name(lp_ctx));
+					   lpcfg_netbios_name(lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(pdc_name);
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
-	dns_domain       = lp_dnsdomain(lp_ctx);
+	dns_domain       = lpcfg_dnsdomain(lp_ctx);
 	forest_domain    = samdb_forest_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(forest_domain);
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, 
-							   lp_netbios_name(lp_ctx)), 
+							   lpcfg_netbios_name(lp_ctx)),
 					   dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY(pdc_dns_name);
-	flatname         = lp_workgroup(lp_ctx);
+	flatname         = lpcfg_workgroup(lp_ctx);
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(server_site);
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
 						  src_address, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
-	load_interfaces(mem_ctx, lp_interfaces(lp_ctx), &ifaces);
+	load_interfaces(mem_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 	/*
 	 * TODO: the caller should pass the address which the client
 	 * used to trigger this call, as the client is able to reach
@@ -450,7 +450,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	}
 
 	if ((domain == NULL) && (domain_guid == NULL) && (domain_sid == NULL)) {
-		domain = lp_dnsdomain(cldapd->task->lp_ctx);
+		domain = lpcfg_dnsdomain(cldapd->task->lp_ctx);
 	}
 
 	if (version == -1) {

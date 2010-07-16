@@ -156,9 +156,9 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b;
 
-	lp_set_cmdline(torture->lp_ctx, "ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
-	lp_set_cmdline(torture->lp_ctx, "ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
-	lp_set_cmdline(torture->lp_ctx, "ntlmssp_client:lm_key", settings->lm_key?"True":"False");
+	lpcfg_set_cmdline(torture->lp_ctx, "ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
+	lpcfg_set_cmdline(torture->lp_ctx, "ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
+	lpcfg_set_cmdline(torture->lp_ctx, "ntlmssp_client:lm_key", settings->lm_key?"True":"False");
 
 	torture_assert_ntstatus_ok(torture, torture_rpc_binding(torture, &binding), 
 				   "Getting bindoptions");

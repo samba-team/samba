@@ -35,7 +35,7 @@ bool torture_nbt_browse(struct torture_context *torture)
 	NTSTATUS status;
 	bool ret = true;
 	
-	name.name = lp_workgroup();
+	name.name = lpcfg_workgroup();
 	name.type = NBT_NAME_BROWSER;
 	name.scope = NULL;
 

@@ -65,7 +65,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 	bool delete_tombstones;
 	struct timeval tombstone_extra_time;
 	const char *local_owner = service->wins_db->local_owner;
-	bool propagate = lp_parm_bool(service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
+	bool propagate = lpcfg_parm_bool(service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
 
 	now_timestr = ldb_timestring(tmp_mem, now);
 	NT_STATUS_HAVE_NO_MEMORY(now_timestr);

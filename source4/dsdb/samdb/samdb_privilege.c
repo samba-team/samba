@@ -33,7 +33,7 @@ struct ldb_context *privilege_connect(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev_ctx,
 				      struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, "privilege.ldb", 
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, "privilege.ldb",
 				NULL, NULL, 0);
 }
 

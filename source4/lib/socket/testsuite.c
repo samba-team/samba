@@ -42,7 +42,7 @@ static bool test_udp(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx = tctx;
 	struct interface *ifaces;
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock1, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating DGRAM IP socket 1");
@@ -135,7 +135,7 @@ static bool test_tcp(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "creating IP stream socket 1");
 	talloc_steal(mem_ctx, sock2);
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
 						iface_best_ip(ifaces, "127.0.0.1"), 0);
 	torture_assert(tctx, localhost, "Localhost not found");

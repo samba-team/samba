@@ -1193,7 +1193,7 @@ static NTSTATUS r_do_sgroup_merge(struct wreplsrv_partner *partner,
 	bool changed_old_addrs = false;
 	bool skip_replica_owned_by_us = false;
 	bool become_owner = true;
-	bool propagate = lp_parm_bool(partner->service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
+	bool propagate = lpcfg_parm_bool(partner->service->task->lp_ctx, NULL, "wreplsrv", "propagate name releases", false);
 	const char *local_owner = partner->service->wins_db->local_owner;
 
 	merge = talloc(mem_ctx, struct winsdb_record);

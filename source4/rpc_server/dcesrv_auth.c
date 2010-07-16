@@ -74,7 +74,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 
 	status = samba_server_gensec_start(dce_conn, call->event_ctx, 
 					   call->msg_ctx,
-					   call->conn->dce_ctx->lp_ctx, 
+					   call->conn->dce_ctx->lp_ctx,
 					   server_credentials,
 					   NULL,
 					   &auth->gensec_security);

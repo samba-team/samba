@@ -193,11 +193,11 @@ struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct messaging_context *msg_ctx = 
 		messaging_client_init(mem_ctx,
-							  lp_messaging_path(mem_ctx, ctx->lp_ctx), 
+							  lpcfg_messaging_path(mem_ctx, ctx->lp_ctx),
 							  ctx->event_ctx);
 
-	c = finddcs_send(mem_ctx, lp_netbios_name(ctx->lp_ctx),
-					 lp_nbt_port(ctx->lp_ctx), io->in.domain_name,
+	c = finddcs_send(mem_ctx, lpcfg_netbios_name(ctx->lp_ctx),
+					 lpcfg_nbt_port(ctx->lp_ctx), io->in.domain_name,
 					 io->in.name_type, NULL, ctx->resolve_ctx,
 					 ctx->event_ctx, msg_ctx);
 	return c;

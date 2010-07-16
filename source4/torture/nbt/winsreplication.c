@@ -615,7 +615,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->nbtsock = nbt_name_socket_init(ctx, tctx->ev);
 	if (!ctx->nbtsock) return NULL;
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
 	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_best_ip(ifaces, address), 0);
 	if (!ctx->myaddr) return NULL;
@@ -634,7 +634,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	if (!ctx->nbtsock_srv) return NULL;
 
 	/* Make a port 137 version of ctx->myaddr */
-	nbt_srv_addr = socket_address_from_strings(tctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lp_nbt_port(tctx->lp_ctx));
+	nbt_srv_addr = socket_address_from_strings(tctx, ctx->nbtsock_srv->sock->backend_name, ctx->myaddr->addr, lpcfg_nbt_port(tctx->lp_ctx));
 	if (!nbt_srv_addr) return NULL;
 
 	/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
@@ -660,7 +660,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 		nbt_srv_addr = socket_address_from_strings(tctx, 
 							   ctx->nbtsock_srv->sock->backend_name, 
 							   ctx->myaddr2->addr, 
-							   lp_nbt_port(tctx->lp_ctx));
+							   lpcfg_nbt_port(tctx->lp_ctx));
 		if (!nbt_srv_addr) return NULL;
 
 		/* And if possible, bind to it.  This won't work unless we are root or in sockewrapper */
@@ -6587,7 +6587,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 		 */
 		name_register->in.name		= records[i].name;
 		name_register->in.dest_addr	= ctx->address;
-		name_register->in.dest_port	= lp_nbt_port(tctx->lp_ctx);
+		name_register->in.dest_port	= lpcfg_nbt_port(tctx->lp_ctx);
 		name_register->in.address	= records[i].wins.ips[0].ip;
 		name_register->in.nb_flags	= records[i].wins.nb_flags;
 		name_register->in.register_demand= false;
@@ -6616,7 +6616,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 
 		/* release the record */
 		release->in.name	= records[i].name;
-		release->in.dest_port   = lp_nbt_port(tctx->lp_ctx);
+		release->in.dest_port   = lpcfg_nbt_port(tctx->lp_ctx);
 		release->in.dest_addr	= ctx->address;
 		release->in.address	= records[i].wins.ips[0].ip;
 		release->in.nb_flags	= records[i].wins.nb_flags;
@@ -6672,7 +6672,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 		} else {
 			release->in.name	= records[i].name;
 			release->in.dest_addr	= ctx->address;
-			release->in.dest_port	= lp_nbt_port(tctx->lp_ctx);
+			release->in.dest_port	= lpcfg_nbt_port(tctx->lp_ctx);
 			release->in.address	= records[i].wins.ips[0].ip;
 			release->in.nb_flags	= records[i].wins.nb_flags;
 			release->in.broadcast	= false;
@@ -9213,7 +9213,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 	if (!ctx->nbtsock_srv) {
 		torture_comment(tctx, "SKIP: Test Replica records vs. owned active records: not bound to port[%d]\n",
-			lp_nbt_port(tctx->lp_ctx));
+			lpcfg_nbt_port(tctx->lp_ctx));
 		return true;
 	}
 
@@ -9275,7 +9275,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 			name_register->in.name		= records[i].name;
 			name_register->in.dest_addr	= ctx->address;
-			name_register->in.dest_port     = lp_nbt_port(tctx->lp_ctx);
+			name_register->in.dest_port     = lpcfg_nbt_port(tctx->lp_ctx);
 			name_register->in.address	= records[i].wins.ips[j].ip;
 			name_register->in.nb_flags	= records[i].wins.nb_flags;
 			name_register->in.register_demand= false;
@@ -9422,7 +9422,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 
 				release->in.name	= records[i].name;
 				release->in.dest_addr	= ctx->address;
-				release->in.dest_port   = lp_nbt_port(tctx->lp_ctx);
+				release->in.dest_port   = lpcfg_nbt_port(tctx->lp_ctx);
 				release->in.address	= records[i].wins.ips[j].ip;
 				release->in.nb_flags	= records[i].wins.nb_flags;
 				release->in.broadcast	= false;

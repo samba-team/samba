@@ -425,8 +425,8 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 	obs = check_arg_numeric("obs");
 	count = check_arg_numeric("count");
 
-	lp_smbcli_options(lp_ctx, &options);
-	lp_smbcli_session_options(lp_ctx, &session_options);
+	lpcfg_smbcli_options(lp_ctx, &options);
+	lpcfg_smbcli_session_options(lp_ctx, &session_options);
 
 	/* Allocate IO buffer. We need more than the max IO size because we
 	 * could accumulate a remainder if ibs and obs don't match.
@@ -444,19 +444,19 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, options.max_xmit));
 
-	if (!(ifile = open_file(lp_resolve_context(lp_ctx), ev, "if",
-				lp_smb_ports(lp_ctx), &options,
-				lp_socket_options(lp_ctx),
+	if (!(ifile = open_file(lpcfg_resolve_context(lp_ctx), ev, "if",
+				lpcfg_smb_ports(lp_ctx), &options,
+				lpcfg_socket_options(lp_ctx),
 				&session_options, 
-				lp_gensec_settings(lp_ctx, lp_ctx)))) {
+				lpcfg_gensec_settings(lp_ctx, lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
-	if (!(ofile = open_file(lp_resolve_context(lp_ctx), ev, "of",
-				lp_smb_ports(lp_ctx), &options,
-				lp_socket_options(lp_ctx),
+	if (!(ofile = open_file(lpcfg_resolve_context(lp_ctx), ev, "of",
+				lpcfg_smb_ports(lp_ctx), &options,
+				lpcfg_socket_options(lp_ctx),
 				&session_options,
-				lp_gensec_settings(lp_ctx, lp_ctx)))) {
+				lpcfg_gensec_settings(lp_ctx, lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 

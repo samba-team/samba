@@ -65,13 +65,13 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct interface *ifaces;
 	bool low_port = try_low_port;
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
 	myaddress = talloc_strdup(tctx, iface_best_ip(ifaces, address));
 
 	socket_address = socket_address_from_strings(tctx, 
 						     nbtsock->sock->backend_name,
-						     myaddress, lp_nbt_port(tctx->lp_ctx));
+						     myaddress, lpcfg_nbt_port(tctx->lp_ctx));
 	torture_assert(tctx, socket_address != NULL, 
 				   "Error getting address");
 
@@ -98,7 +98,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "release the name\n");
 	release.in.name = *name;
-	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	release.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
@@ -117,7 +117,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	} else {
 		torture_comment(tctx, "register the name with a wrong address (makes the next request slow!)\n");
 		io.in.name = *name;
-		io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+		io.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
 		io.in.wins_servers = const_str_list(
 			str_list_make_single(tctx, address));
 		io.in.addresses = const_str_list(
@@ -140,7 +140,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 		torture_comment(tctx, "register the name correct address\n");
 		name_register.in.name		= *name;
-		name_register.in.dest_port	= lp_nbt_port(tctx->lp_ctx);
+		name_register.in.dest_port	= lpcfg_nbt_port(tctx->lp_ctx);
 		name_register.in.dest_addr	= address;
 		name_register.in.address	= myaddress;
 		name_register.in.nb_flags	= nb_flags;
@@ -191,7 +191,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "register the name correct address\n");
 	io.in.name = *name;
-	io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+	io.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
 	io.in.wins_servers = (const char **)str_list_make_single(tctx, address);
 	io.in.addresses = (const char **)str_list_make_single(tctx, myaddress);
 	io.in.nb_flags = nb_flags;
@@ -222,7 +222,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_comment(tctx, "query the name to make sure its there\n");
 	query.in.name = *name;
 	query.in.dest_addr = address;
-	query.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	query.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	query.in.broadcast = false;
 	query.in.wins_lookup = true;
 	query.in.timeout = 3;
@@ -268,7 +268,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "refresh the name\n");
 	refresh.in.name = *name;
-	refresh.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+	refresh.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
 	refresh.in.wins_servers = (const char **)str_list_make_single(tctx, address);
 	refresh.in.addresses = (const char **)str_list_make_single(tctx, myaddress);
 	refresh.in.nb_flags = nb_flags;
@@ -289,7 +289,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	printf("release the name\n");
 	release.in.name = *name;
-	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	release.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
@@ -317,7 +317,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	} else {
 		torture_comment(tctx, "register the name with a wrong address (makes the next request slow!)\n");
 		io.in.name = *name;
-		io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+		io.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
 		io.in.wins_servers = const_str_list(
 			str_list_make_single(tctx, address));
 		io.in.addresses = const_str_list(
@@ -341,7 +341,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "refresh the name with the correct address\n");
 	refresh.in.name = *name;
-	refresh.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+	refresh.in.wins_port = lpcfg_nbt_port(tctx->lp_ctx);
 	refresh.in.wins_servers = const_str_list(
 			str_list_make_single(tctx, address));
 	refresh.in.addresses = const_str_list(
@@ -364,7 +364,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "release the name\n");
 	release.in.name = *name;
-	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	release.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;

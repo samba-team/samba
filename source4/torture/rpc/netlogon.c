@@ -698,11 +698,11 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	int flags = CLI_CRED_NTLM_AUTH;
-	if (lp_client_lanman_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_ntlmv2_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -1602,7 +1602,7 @@ static bool test_GetDcName(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domainname = lp_workgroup(tctx->lp_ctx);
+	r.in.domainname = lpcfg_workgroup(tctx->lp_ctx);
 	r.out.dcname = &dcname;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_GetDcName_r(b, tctx, &r),
@@ -1787,7 +1787,7 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 	const char *dcname = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	r.in.domainname = lp_workgroup(tctx->lp_ctx);
+	r.in.domainname = lpcfg_workgroup(tctx->lp_ctx);
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.out.dcname = &dcname;
 
@@ -1839,7 +1839,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -1857,7 +1857,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
 	r.in.data = &data;
@@ -1872,7 +1872,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
 	r.in.data = &data;
@@ -1991,7 +1991,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -2009,7 +2009,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
 	r.in.data = &data;
@@ -2024,7 +2024,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
-	data.domain = lp_workgroup(tctx->lp_ctx);
+	data.domain = lpcfg_workgroup(tctx->lp_ctx);
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
 	r.in.data = &data;
@@ -2249,7 +2249,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_guid	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2259,7 +2259,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
 
-	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
 
 	status = dcerpc_netr_DsRGetDCName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
@@ -2282,7 +2282,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name	        = NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2292,7 +2292,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
 
-	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
 
 	status = dcerpc_netr_DsRGetDCNameEx_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
@@ -2325,7 +2325,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
-	r.in.domain_name	= lp_dnsdomain(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_dnsdomain(tctx->lp_ctx);
 	r.in.domain_guid	= NULL;
 	r.in.site_name		= NULL;
 	r.in.flags		= DS_RETURN_DNS_NAME;
@@ -2337,7 +2337,7 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
-	r.in.domain_name	= lp_workgroup(tctx->lp_ctx);
+	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
 
 	status = dcerpc_netr_DsRGetDCNameEx2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
@@ -2875,7 +2875,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 	ZERO_STRUCT(q1);
 	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
-		lp_dnsdomain(tctx->lp_ctx));
+		lpcfg_dnsdomain(tctx->lp_ctx));
 	q1.sitename = "Default-First-Site-Name";
 	q1.os_version.os = &os;
 	q1.os_name.string = talloc_asprintf(tctx,
@@ -2988,7 +2988,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	/* Change also the DNS hostname to test differences in behaviour */
 	talloc_free(discard_const_p(char, q1.dns_hostname));
 	q1.dns_hostname = talloc_asprintf(tctx, "%s2.%s", TEST_MACHINE_NAME,
-		lp_dnsdomain(tctx->lp_ctx));
+		lpcfg_dnsdomain(tctx->lp_ctx));
 
 	/* The workstation handles the "servicePrincipalName" and DNS hostname
 	   updates */
@@ -3062,7 +3062,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	/* Change also the DNS hostname to test differences in behaviour */
 	talloc_free(discard_const_p(char, q1.dns_hostname));
 	q1.dns_hostname = talloc_asprintf(tctx, "%s2.%s", TEST_MACHINE_NAME,
-		lp_dnsdomain(tctx->lp_ctx));
+		lpcfg_dnsdomain(tctx->lp_ctx));
 
 	/* Wipe out the osVersion, and prove which values still 'stick' */
 	q1.os_version.os = NULL;
@@ -3136,7 +3136,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	/* Put the DNS hostname back */
 	talloc_free(discard_const_p(char, q1.dns_hostname));
 	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
-		lp_dnsdomain(tctx->lp_ctx));
+		lpcfg_dnsdomain(tctx->lp_ctx));
 
 	/* The workstation handles the "servicePrincipalName" and DNS hostname
 	   updates */
@@ -3251,7 +3251,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 
 	ZERO_STRUCT(q1);
 	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
-		lp_dnsdomain(tctx->lp_ctx));
+		lpcfg_dnsdomain(tctx->lp_ctx));
 	q1.sitename = "Default-First-Site-Name";
 	q1.os_name.string = "UNIX/Linux or similar";
 

@@ -49,13 +49,13 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 
 	/* Make a connection to the target server, found by 'password server' in smb.conf */
 	
-	lp_smbcli_options(ctx->auth_ctx->lp_ctx, &smb_options);
+	lpcfg_smbcli_options(ctx->auth_ctx->lp_ctx, &smb_options);
 
 	/* Make a negprot, WITHOUT SPNEGO, so we get a challenge nice an easy */
 	io.in.options.use_spnego = false;
 
 	/* Hope we don't get * (the default), as this won't work... */
-	host_list = lp_passwordserver(ctx->auth_ctx->lp_ctx); 
+	host_list = lpcfg_passwordserver(ctx->auth_ctx->lp_ctx);
 	if (!host_list) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -63,16 +63,16 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	if (strequal(io.in.dest_host, "*")) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	io.in.dest_ports = lp_smb_ports(ctx->auth_ctx->lp_ctx); 
-	io.in.socket_options = lp_socket_options(ctx->auth_ctx->lp_ctx);
-	io.in.gensec_settings = lp_gensec_settings(mem_ctx, ctx->auth_ctx->lp_ctx);
+	io.in.dest_ports = lpcfg_smb_ports(ctx->auth_ctx->lp_ctx);
+	io.in.socket_options = lpcfg_socket_options(ctx->auth_ctx->lp_ctx);
+	io.in.gensec_settings = lpcfg_gensec_settings(mem_ctx, ctx->auth_ctx->lp_ctx);
 
 	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
 
 	/* We don't want to get as far as the session setup */
 	io.in.credentials = cli_credentials_init_anon(mem_ctx);
 	cli_credentials_set_workstation(io.in.credentials,
-					lp_netbios_name(ctx->auth_ctx->lp_ctx),
+					lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
 					CRED_SPECIFIED);
 
 	io.in.service = NULL;
@@ -81,9 +81,9 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 
 	io.in.options = smb_options;
 	
-	lp_smbcli_session_options(ctx->auth_ctx->lp_ctx, &io.in.session_options);
+	lpcfg_smbcli_session_options(ctx->auth_ctx->lp_ctx, &io.in.session_options);
 
-	status = smb_composite_connect(&io, mem_ctx, lp_resolve_context(ctx->auth_ctx->lp_ctx),
+	status = smb_composite_connect(&io, mem_ctx, lpcfg_resolve_context(ctx->auth_ctx->lp_ctx),
 				       ctx->auth_ctx->event_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -147,7 +147,7 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 
 	session_setup.in.credentials = creds;
 	session_setup.in.workgroup = ""; /* Only used with SPNEGO, which we are not doing */
-	session_setup.in.gensec_settings = lp_gensec_settings(session, ctx->auth_ctx->lp_ctx);
+	session_setup.in.gensec_settings = lpcfg_gensec_settings(session, ctx->auth_ctx->lp_ctx);
 
 	/* Check password with remove server - this should be async some day */
 	nt_status = smb_composite_sesssetup(session, &session_setup);

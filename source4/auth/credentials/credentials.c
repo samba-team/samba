@@ -669,9 +669,9 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 			      struct loadparm_context *lp_ctx)
 {
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
-	cli_credentials_set_domain(cred, lp_workgroup(lp_ctx), CRED_UNINITIALISED);
-	cli_credentials_set_workstation(cred, lp_netbios_name(lp_ctx), CRED_UNINITIALISED);
-	cli_credentials_set_realm(cred, lp_realm(lp_ctx), CRED_UNINITIALISED);
+	cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_UNINITIALISED);
+	cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_UNINITIALISED);
+	cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_UNINITIALISED);
 }
 
 /**

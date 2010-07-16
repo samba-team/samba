@@ -126,15 +126,15 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		workstation = bind_schannel.oem_netbios_computer.a;
 		domain = bind_schannel.oem_netbios_domain.a;
 
-		if (strcasecmp_m(domain, lp_workgroup(gensec_security->settings->lp_ctx)) != 0) {
+		if (strcasecmp_m(domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)) != 0) {
 			DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
-				  domain, lp_workgroup(gensec_security->settings->lp_ctx)));
+				  domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)));
 
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
 		status = schannel_get_creds_state(out_mem_ctx,
-						  lp_private_dir(gensec_security->settings->lp_ctx),
+						  lpcfg_private_dir(gensec_security->settings->lp_ctx),
 						  workstation, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",

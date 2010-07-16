@@ -82,7 +82,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		return false;
 	}
 	
-	switch (lp_server_signing(smb_conn->lp_ctx)) {
+	switch (lpcfg_server_signing(smb_conn->lp_ctx)) {
 	case SMB_SIGNING_OFF:
 		smb_conn->signing.allow_smb_signing = false;
 		break;
@@ -99,7 +99,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 		 * attacks on communications between us and the
 		 * clients */
 
-		if (lp_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
+		if (lpcfg_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
 			smb_conn->signing.allow_smb_signing = true;
 			smb_conn->signing.mandatory_signing = true;
 		} else {

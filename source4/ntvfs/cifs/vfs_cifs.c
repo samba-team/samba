@@ -231,24 +231,24 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	/* connect to the server, using the smbd event context */
 	io.in.dest_host = host;
-	io.in.dest_ports = lp_smb_ports(ntvfs->ctx->lp_ctx);
-	io.in.socket_options = lp_socket_options(ntvfs->ctx->lp_ctx);
+	io.in.dest_ports = lpcfg_smb_ports(ntvfs->ctx->lp_ctx);
+	io.in.socket_options = lpcfg_socket_options(ntvfs->ctx->lp_ctx);
 	io.in.called_name = host;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = false;
-	io.in.workgroup = lp_workgroup(ntvfs->ctx->lp_ctx);
+	io.in.workgroup = lpcfg_workgroup(ntvfs->ctx->lp_ctx);
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
-	io.in.gensec_settings = lp_gensec_settings(p, ntvfs->ctx->lp_ctx);
-	lp_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
-	lp_smbcli_session_options(ntvfs->ctx->lp_ctx, &io.in.session_options);
+	io.in.gensec_settings = lpcfg_gensec_settings(p, ntvfs->ctx->lp_ctx);
+	lpcfg_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
+	lpcfg_smbcli_session_options(ntvfs->ctx->lp_ctx, &io.in.session_options);
 
 	if (!(ntvfs->ctx->client_caps & NTVFS_CLIENT_CAP_LEVEL_II_OPLOCKS)) {
 		io.in.options.use_level2_oplocks = false;
 	}
 
 	creq = smb_composite_connect_send(&io, p,
-					  lp_resolve_context(ntvfs->ctx->lp_ctx),
+					  lpcfg_resolve_context(ntvfs->ctx->lp_ctx),
 					  ntvfs->ctx->event_ctx);
 	status = smb_composite_connect_recv(creq, p);
 	NT_STATUS_NOT_OK_RETURN(status);

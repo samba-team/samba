@@ -2180,7 +2180,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 		referral = talloc_asprintf(req,
 					   "ldap://%s/%s",
-					   lp_dnsdomain(lp_ctx),
+					   lpcfg_dnsdomain(lp_ctx),
 					   ldb_dn_get_linearized(msg->dn));
 		ret = ldb_module_send_referral(req, referral);
 		return ldb_module_done(req, NULL, NULL, ret);

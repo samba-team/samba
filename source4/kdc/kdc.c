@@ -483,7 +483,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 				     model_ops,
 				     &kdc_tcp_stream_ops,
 				     "ip", address, &port,
-				     lp_socket_options(kdc->task->lp_ctx),
+				     lpcfg_socket_options(kdc->task->lp_ctx),
 				     kdc_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
@@ -547,8 +547,8 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 
 	for (i=0; i<num_interfaces; i++) {
 		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
-		uint16_t kdc_port = lp_krb5_port(lp_ctx);
-		uint16_t kpasswd_port = lp_kpasswd_port(lp_ctx);
+		uint16_t kdc_port = lpcfg_krb5_port(lp_ctx);
+		uint16_t kpasswd_port = lpcfg_kpasswd_port(lp_ctx);
 
 		if (kdc_port) {
 			status = kdc_add_socket(kdc, model_ops,
@@ -620,8 +620,8 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	}
 
 	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal,
-				  lp_realm(kdc->task->lp_ctx),
-				  "krbtgt", lp_realm(kdc->task->lp_ctx),
+				  lpcfg_realm(kdc->task->lp_ctx),
+				  "krbtgt", lpcfg_realm(kdc->task->lp_ctx),
 				  NULL);
 
 	if (ret != 0) {
@@ -678,7 +678,7 @@ static void kdc_task_init(struct task_server *task)
 	krb5_error_code ret;
 	struct interface *ifaces;
 
-	switch (lp_server_role(task->lp_ctx)) {
+	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "kdc: no KDC required in standalone configuration", false);
 		return;
@@ -690,7 +690,7 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
+	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
 	if (iface_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured", false);

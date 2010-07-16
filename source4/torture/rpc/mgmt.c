@@ -230,7 +230,7 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 			continue;
 		}
 
-		lp_set_cmdline(torture->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
+		lpcfg_set_cmdline(torture->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
 
 		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {

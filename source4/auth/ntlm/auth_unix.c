@@ -430,7 +430,7 @@ static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, const char * user)
 	return pam_to_nt_status(pam_error);
 }
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx, 
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 				    const struct auth_usersupplied_info *user_info, struct passwd **pws)
 {
 	struct smb_pam_user_info *info;
@@ -465,7 +465,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 		return nt_status;
 	}
 
-	nt_status = smb_pam_auth(pamh, lp_null_passwords(lp_ctx), user_info->mapped.account_name);
+	nt_status = smb_pam_auth(pamh, lpcfg_null_passwords(lp_ctx), user_info->mapped.account_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		smb_pam_end(pamh);
 		return nt_status;
@@ -605,7 +605,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 	char *crypted;
 	struct passwd *pws;
 	NTSTATUS nt_status;
-	int level = lp_passwordlevel(lp_ctx);
+	int level = lpcfg_passwordlevel(lp_ctx);
 
 	*ret_passwd = NULL;
 
@@ -708,7 +708,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 #endif
 
 	if (crypted[0] == '\0') {
-		if (!lp_null_passwords(lp_ctx)) {
+		if (!lpcfg_null_passwords(lp_ctx)) {
 			DEBUG(2, ("Disallowing %s with null password\n", username));
 			return NT_STATUS_LOGON_FAILURE;
 		}
@@ -814,7 +814,7 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(mem_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx),
+	nt_status = authunix_make_server_info(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
 					      user_info, pwd, server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);

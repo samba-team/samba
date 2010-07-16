@@ -35,7 +35,7 @@ static bool iconv_untestable(struct torture_context *tctx)
 {
 	iconv_t cd;
 
-	if (!lp_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true))
+	if (!lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true))
 		torture_skip(tctx, "system iconv disabled - skipping test");
 
 	cd = iconv_open("UTF-16LE", "UCS-4LE");
@@ -158,8 +158,8 @@ static bool test_buffer(struct torture_context *test,
 						     "failed to open %s to UTF-16LE",
 						     charset));
 		}
-		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
-		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lp_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
 		last_charset = charset;
 	}
 
@@ -289,7 +289,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	size_t size, size2;
 	codepoint_t c;
 
-	size = push_codepoint_convenience(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, codepoint);
+	size = push_codepoint_convenience(lpcfg_iconv_convenience(tctx->lp_ctx), (char *)buf, codepoint);
 	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), 
 		       "Invalid Codepoint range");
 
@@ -300,7 +300,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	buf[size+2] = random();
 	buf[size+3] = random();
 
-	c = next_codepoint_convenience(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, &size2);
+	c = next_codepoint_convenience(lpcfg_iconv_convenience(tctx->lp_ctx), (char *)buf, &size2);
 
 	torture_assert(tctx, c == codepoint, 
 		       talloc_asprintf(tctx, 

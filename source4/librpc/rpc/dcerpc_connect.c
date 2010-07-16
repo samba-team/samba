@@ -111,19 +111,19 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
-	conn->in.dest_ports                  = lp_smb_ports(lp_ctx);
+	conn->in.dest_ports                  = lpcfg_smb_ports(lp_ctx);
 	if (s->io.binding->target_hostname == NULL)
 		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
 	else
 		conn->in.called_name            = s->io.binding->target_hostname;
-	conn->in.socket_options         = lp_socket_options(lp_ctx);
+	conn->in.socket_options         = lpcfg_socket_options(lp_ctx);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
-	conn->in.workgroup		= lp_workgroup(lp_ctx);
-	conn->in.gensec_settings = lp_gensec_settings(conn, lp_ctx);
+	conn->in.workgroup		= lpcfg_workgroup(lp_ctx);
+	conn->in.gensec_settings = lpcfg_gensec_settings(conn, lp_ctx);
 
-	lp_smbcli_options(lp_ctx, &conn->in.options);
-	lp_smbcli_session_options(lp_ctx, &conn->in.session_options);
+	lpcfg_smbcli_options(lp_ctx, &conn->in.options);
+	lpcfg_smbcli_session_options(lp_ctx, &conn->in.session_options);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a
@@ -244,18 +244,18 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 		cli_credentials_guess(s->io.creds, lp_ctx);
 	}
 
-	lp_smbcli_options(lp_ctx, &options);
+	lpcfg_smbcli_options(lp_ctx, &options);
 
 	/* send smb2 connect request */
 	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, 
-			lp_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
+			lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
 					"IPC$", 
 				     s->io.resolve_ctx,
 				     s->io.creds,
 				     c->event_ctx,
 				     &options,
-					 lp_socket_options(lp_ctx),
-					 lp_gensec_settings(mem_ctx, lp_ctx)
+					 lpcfg_socket_options(lp_ctx),
+					 lpcfg_gensec_settings(mem_ctx, lp_ctx)
 					 );
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 	return c;
@@ -462,7 +462,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	s->io  = *io;
 
 	/* send pipe open request */
-	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lp_ncalrpc_dir(lp_ctx), 
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lpcfg_ncalrpc_dir(lp_ctx),
 					      s->io.binding->endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
 	return c;
@@ -539,7 +539,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.binding      = s->binding;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
-	pc.resolve_ctx  = lp_resolve_context(s->lp_ctx);
+	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
 
 	/* connect dcerpc pipe depending on required transport */
 	switch (s->binding->transport) {
@@ -746,7 +746,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	if (composite_nomem(s->pipe, c)) return c;
 
 	if (DEBUGLEVEL >= 10)
-		s->pipe->conn->packet_log_dir = lp_lockdir(lp_ctx);
+		s->pipe->conn->packet_log_dir = lpcfg_lockdir(lp_ctx);
 
 	/* store parameters in state structure */
 	s->binding      = binding;

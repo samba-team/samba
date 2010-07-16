@@ -226,7 +226,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	remote_ldb = ldb_wrap_connect(tmp_ctx, ctx->event_ctx, ctx->lp_ctx, 
+	remote_ldb = ldb_wrap_connect(tmp_ctx, ctx->event_ctx, ctx->lp_ctx,
 				      remote_ldb_url, 
 				      NULL, ctx->cred, 0);
 	if (!remote_ldb) {
@@ -560,8 +560,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, r->in.domain_name);
 		} else {
 			/* Bugger, we just lost our way to automatically find the domain name */
-			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lp_workgroup(ctx->lp_ctx));
-			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lp_realm(ctx->lp_ctx));
+			connect_with_info->out.domain_name = talloc_strdup(tmp_ctx, lpcfg_workgroup(ctx->lp_ctx));
+			connect_with_info->out.realm = talloc_strdup(tmp_ctx, lpcfg_realm(ctx->lp_ctx));
 		}
 	}
 
@@ -934,7 +934,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_strdup(tmp_mem, lp_netbios_name(ctx->lp_ctx));
+		netbios_name = talloc_strdup(tmp_mem, lpcfg_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);

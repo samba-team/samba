@@ -213,14 +213,14 @@ static void winbind_task_init(struct task_server *task)
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
-	if (!directory_create_or_exist(lp_winbindd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lpcfg_winbindd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
 		task_server_terminate(task,
 				      "Cannot create winbindd pipe directory", true);
 		return;
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
-	if (!directory_create_or_exist(lp_winbindd_privileged_socket_directory(task->lp_ctx), geteuid(), 0750)) {
+	if (!directory_create_or_exist(lpcfg_winbindd_privileged_socket_directory(task->lp_ctx), geteuid(), 0750)) {
 		task_server_terminate(task,
 				      "Cannot create winbindd privileged pipe directory", true);
 		return;
@@ -234,17 +234,17 @@ static void winbind_task_init(struct task_server *task)
 	/* Find the primary SID, depending if we are a standalone
 	 * server (what good is winbind in this case, but anyway...),
 	 * or are in a domain as a member or a DC */
-	switch (lp_server_role(service->task->lp_ctx)) {
+	switch (lpcfg_server_role(service->task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lp_netbios_name(service->task->lp_ctx), &errstring);
+						     lpcfg_netbios_name(service->task->lp_ctx), &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, 
 							"Cannot start Winbind (standalone configuration): %s: "
 							"Have you provisioned this server (%s) or changed it's name?", 
-							errstring, lp_netbios_name(service->task->lp_ctx));
+							errstring, lpcfg_netbios_name(service->task->lp_ctx));
 			task_server_terminate(task, message, true);
 			return;
 		}
@@ -253,11 +253,11 @@ static void winbind_task_init(struct task_server *task)
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lp_workgroup(service->task->lp_ctx), &errstring);
+						     lpcfg_workgroup(service->task->lp_ctx), &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, "Cannot start Winbind (domain member): %s: "
 							"Have you joined the %s domain?", 
-							errstring, lp_workgroup(service->task->lp_ctx));
+							errstring, lpcfg_workgroup(service->task->lp_ctx));
 			task_server_terminate(task, message, true);
 			return;
 		}
@@ -266,11 +266,11 @@ static void winbind_task_init(struct task_server *task)
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lp_workgroup(service->task->lp_ctx), &errstring);
+						     lpcfg_workgroup(service->task->lp_ctx), &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, "Cannot start Winbind (domain controller): %s: "
 							"Have you provisioned the %s domain?", 
-							errstring, lp_workgroup(service->task->lp_ctx));
+							errstring, lpcfg_workgroup(service->task->lp_ctx));
 			task_server_terminate(task, message, true);
 			return;
 		}
@@ -284,8 +284,8 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
-	service->priv_pipe_dir = lp_winbindd_privileged_socket_directory(task->lp_ctx);
-	service->pipe_dir = lp_winbindd_socket_directory(task->lp_ctx);
+	service->priv_pipe_dir = lpcfg_winbindd_privileged_socket_directory(task->lp_ctx);
+	service->pipe_dir = lpcfg_winbindd_socket_directory(task->lp_ctx);
 
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
@@ -299,7 +299,7 @@ static void winbind_task_init(struct task_server *task)
 	status = stream_setup_socket(task->event_ctx, task->lp_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
-				     lp_socket_options(task->lp_ctx), 
+				     lpcfg_socket_options(task->lp_ctx),
 				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
@@ -316,7 +316,7 @@ static void winbind_task_init(struct task_server *task)
 	status = stream_setup_socket(task->event_ctx, task->lp_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
-				     lp_socket_options(task->lp_ctx), 
+				     lpcfg_socket_options(task->lp_ctx),
 				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 

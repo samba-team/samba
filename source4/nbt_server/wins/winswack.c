@@ -163,7 +163,7 @@ static void wins_release_demand_handler(struct nbt_name_request *req)
 		if (state->current_address < state->io->in.num_addresses) {
 			struct nbtd_interface *iface;
 
-			state->release.in.dest_port = lp_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
+			state->release.in.dest_port = lpcfg_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
 			state->release.in.dest_addr = state->io->in.addresses[state->current_address];
 			state->release.in.address   = state->release.in.dest_addr;
 			state->release.in.timeout   = (state->addresses_left > 1 ? 2 : 1);
@@ -223,7 +223,7 @@ static struct composite_context *wins_release_demand_send(TALLOC_CTX *mem_ctx, s
 	 *   with 2 retries
 	 */
 	state->release.in.name        = *state->io->in.name;
-	state->release.in.dest_port   = lp_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
+	state->release.in.dest_port   = lpcfg_nbt_port(state->io->in.nbtd_server->task->lp_ctx);
 	state->release.in.dest_addr   = state->io->in.addresses[state->current_address];
 	state->release.in.address     = state->release.in.dest_addr;
 	state->release.in.broadcast   = false;
@@ -306,7 +306,7 @@ NTSTATUS nbtd_proxy_wins_challenge(struct irpc_message *msg,
 	s->req = req;
 
 	s->io.in.nbtd_server	= nbtd_server;
-	s->io.in.nbt_port       = lp_nbt_port(nbtd_server->task->lp_ctx);
+	s->io.in.nbt_port       = lpcfg_nbt_port(nbtd_server->task->lp_ctx);
 	s->io.in.event_ctx	= msg->ev;
 	s->io.in.name		= &req->in.name;
 	s->io.in.num_addresses	= req->in.num_addrs;
