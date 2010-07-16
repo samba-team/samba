@@ -705,14 +705,16 @@ int ldb_msg_difference(struct ldb_context *ldb,
 	mod->num_elements = 0;
 	mod->elements = NULL;
 
-	/* canonicalize msg2 so we have no repeated elements */
-	msg2 = ldb_msg_canonicalize(ldb, msg2);
-	if (msg2 == NULL) {
+	/*
+	 * Canonicalize *msg2 so we have no repeated elements
+	 * Resulting message is allocated in *mod's mem context,
+	 * as we are going to move some elements from *msg2 to
+	 * *mod object later
+	 */
+	ldb_res = ldb_msg_normalize(ldb, mod, msg2, &msg2);
+	if (ldb_res != LDB_SUCCESS) {
 		goto failed;
 	}
-
-	/* steal msg2 into mod context as it is allocated in ldb's context */
-	talloc_steal(mod, msg2);
 
 	/* look in msg2 to find elements that need to be added or modified */
 	for (i=0;i<msg2->num_elements;i++) {
