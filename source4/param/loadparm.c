@@ -534,7 +534,7 @@ struct loadparm_context {
 };
 
 
-struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx)
+struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->sDefault;
 }
@@ -542,7 +542,7 @@ struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx)
 /*
   return the parameter table
 */
-struct parm_struct *lp_parm_table(void)
+struct parm_struct *lpcfg_parm_table(void)
 {
 	return parm_table;
 }
@@ -601,161 +601,177 @@ static const char *lp_string(const char *s)
    parameters from the rest of the program are defined
 */
 
+/*
+ * the creation of separate lpcfg_*() and lp_*() functions is to allow
+ * for code compatibility between existing Samba4 and Samba3 code.
+ */
+
+/* this global context supports the lp_*() function varients */
+static struct loadparm_context *global_loadparm_context;
+
+#define lpcfg_default_service global_loadparm_context->sDefault
+#define lpcfg_global_service(i) global_loadparm_context->services[i]
+
 #define FN_GLOBAL_STRING(fn_name,var_name) \
- const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : "";}
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : "";} \
+ _PUBLIC_ const char *lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name) \
- const char *fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_ctx->globals->var_name : "";}
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_ctx->globals->var_name : "";} \
+ _PUBLIC_ const char *lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+
 #define FN_GLOBAL_LIST(fn_name,var_name) \
- const char **fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name;}
+ _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name;} \
+ _PUBLIC_ const char **lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+
 #define FN_GLOBAL_BOOL(fn_name,var_name) \
- bool fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->globals->var_name;}
-#if 0 /* unused */
-#define FN_GLOBAL_CHAR(fn_name,ptr) \
- char fn_name(void) {return(*(char *)(ptr));}
-#endif
+ _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->globals->var_name;} \
+ _PUBLIC_ bool lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+
 #define FN_GLOBAL_INTEGER(fn_name,var_name) \
- int fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;}
+ _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;} \
+ _PUBLIC_ int lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
 
 #define FN_LOCAL_STRING(fn_name,val) \
- const char *fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)));}
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)));} \
+ _PUBLIC_ const char *lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val);}
+ _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val);} \
+ _PUBLIC_ const char **lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+
 #define FN_LOCAL_BOOL(fn_name,val) \
- bool fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
+ _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);} \
+ _PUBLIC_ bool lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
+ _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);} \
+ _PUBLIC_ int lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
 
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, server_role)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_sid_generator, sid_generator)
-_PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, smb_ports)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_nbt_port, nbt_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_dgram_port, dgram_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cldap_port, cldap_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_krb5_port, krb5_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_kpasswd_port, kpasswd_port)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_web_port, web_port)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_tls_enabled, tls_enabled)
-_PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, szShareBackend)
-_PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, szSAM_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_idmap_url, szIDMAP_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, szSECRETS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, szSPOOLSS_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, szWINS_CONFIG_URL)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_url, szWINS_URL)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbind_separator, szWinbindSeparator)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, szWinbinddSocketDirectory)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_privileged_socket_directory, szWinbinddPrivilegedSocketDirectory)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, szTemplateShell)
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, szTemplateHomedir)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, bWinbindSealedPipes)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_idmap_trusted_only, bIdmapTrustedOnly)
-_PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, szPrivateDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, szServerString)
-_PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, szLockDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_modulesdir, szModulesDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_setupdir, szSetupDir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ncalrpc_dir, ncalrpc_dir)
-_PUBLIC_ FN_GLOBAL_STRING(lp_dos_charset, dos_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_unix_charset, unix_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_display_charset, display_charset)
-_PUBLIC_ FN_GLOBAL_STRING(lp_piddir, szPidDir)
-_PUBLIC_ FN_GLOBAL_LIST(lp_rndc_command, szRNDCCommand)
-_PUBLIC_ FN_GLOBAL_LIST(lp_dns_update_command, szDNSUpdateCommand)
-_PUBLIC_ FN_GLOBAL_LIST(lp_spn_update_command, szSPNUpdateCommand)
-_PUBLIC_ FN_GLOBAL_STRING(lp_nsupdate_command, szNSUpdateCommand)
-_PUBLIC_ FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, dcerpc_ep_servers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_server_services, server_services)
-_PUBLIC_ FN_GLOBAL_STRING(lp_ntptr_providor, ntptr_providor)
-_PUBLIC_ FN_GLOBAL_STRING(lp_auto_services, szAutoServices)
-_PUBLIC_ FN_GLOBAL_STRING(lp_passwd_chat, szPasswdChat)
-_PUBLIC_ FN_GLOBAL_LIST(lp_passwordserver, szPasswordServers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_name_resolve_order, szNameResolveOrder)
-_PUBLIC_ FN_GLOBAL_STRING(lp_realm, szRealm_upper)
-_PUBLIC_ FN_GLOBAL_STRING(lp_dnsdomain, szRealm_lower)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_options, socket_options)
-_PUBLIC_ FN_GLOBAL_STRING(lp_workgroup, szWorkgroup)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_name, szNetbiosName)
-_PUBLIC_ FN_GLOBAL_STRING(lp_netbios_scope, szNetbiosScope)
-_PUBLIC_ FN_GLOBAL_LIST(lp_wins_server_list, szWINSservers)
-_PUBLIC_ FN_GLOBAL_LIST(lp_interfaces, szInterfaces)
-_PUBLIC_ FN_GLOBAL_STRING(lp_socket_address, szSocketAddress)
-_PUBLIC_ FN_GLOBAL_LIST(lp_netbios_aliases, szNetbiosAliases)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_disable_netbios, bDisableNetbios)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_support, bWINSsupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_wins_dns_proxy, bWINSdnsProxy)
-_PUBLIC_ FN_GLOBAL_STRING(lp_wins_hook, szWINSHook)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_local_master, bLocalMaster)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_readraw, bReadRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_large_readwrite, bLargeReadwrite)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_writeraw, bWriteRaw)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_null_passwords, bNullPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, bObeyPamRestrictions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_encrypted_passwords, bEncryptPasswords)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_time_server, bTimeServer)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_bind_interfaces_only, bBindInterfacesOnly)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unicode, bUnicode)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_nt_status_support, bNTStatusSupport)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_lanman_auth, bLanmanAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_ntlm_auth, bNTLMAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_plaintext_auth, bClientPlaintextAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_lanman_auth, bClientLanManAuth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, bClientNTLMv2Auth)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_client_use_spnego_principal, client_use_spnego_principal)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_host_msdfs, bHostMSDfs)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_unix_extensions, bUnixExtensions)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_use_spnego, bUseSpnego)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_rpc_big_endian, bRpcBigEndian)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_wins_ttl, max_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_min_wins_ttl, min_wins_ttl)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_maxmux, max_mux)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_max_xmit, max_xmit)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_passwordlevel, pwordlevel)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_maxprotocol, srv_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_srv_minprotocol, srv_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_maxprotocol, cli_maxprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_cli_minprotocol, cli_minprotocol)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_security, security)
-_PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
+FN_GLOBAL_INTEGER(server_role, server_role)
+FN_GLOBAL_INTEGER(sid_generator, sid_generator)
+FN_GLOBAL_LIST(smb_ports, smb_ports)
+FN_GLOBAL_INTEGER(nbt_port, nbt_port)
+FN_GLOBAL_INTEGER(dgram_port, dgram_port)
+FN_GLOBAL_INTEGER(cldap_port, cldap_port)
+FN_GLOBAL_INTEGER(krb5_port, krb5_port)
+FN_GLOBAL_INTEGER(kpasswd_port, kpasswd_port)
+FN_GLOBAL_INTEGER(web_port, web_port)
+FN_GLOBAL_BOOL(tls_enabled, tls_enabled)
+FN_GLOBAL_STRING(share_backend, szShareBackend)
+FN_GLOBAL_STRING(sam_url, szSAM_URL)
+FN_GLOBAL_STRING(idmap_url, szIDMAP_URL)
+FN_GLOBAL_STRING(secrets_url, szSECRETS_URL)
+FN_GLOBAL_STRING(spoolss_url, szSPOOLSS_URL)
+FN_GLOBAL_STRING(wins_config_url, szWINS_CONFIG_URL)
+FN_GLOBAL_STRING(wins_url, szWINS_URL)
+FN_GLOBAL_CONST_STRING(winbind_separator, szWinbindSeparator)
+FN_GLOBAL_CONST_STRING(winbindd_socket_directory, szWinbinddSocketDirectory)
+FN_GLOBAL_CONST_STRING(winbindd_privileged_socket_directory, szWinbinddPrivilegedSocketDirectory)
+FN_GLOBAL_CONST_STRING(template_shell, szTemplateShell)
+FN_GLOBAL_CONST_STRING(template_homedir, szTemplateHomedir)
+FN_GLOBAL_BOOL(winbind_sealed_pipes, bWinbindSealedPipes)
+FN_GLOBAL_BOOL(idmap_trusted_only, bIdmapTrustedOnly)
+FN_GLOBAL_STRING(private_dir, szPrivateDir)
+FN_GLOBAL_STRING(serverstring, szServerString)
+FN_GLOBAL_STRING(lockdir, szLockDir)
+FN_GLOBAL_STRING(modulesdir, szModulesDir)
+FN_GLOBAL_STRING(setupdir, szSetupDir)
+FN_GLOBAL_STRING(ncalrpc_dir, ncalrpc_dir)
+FN_GLOBAL_STRING(dos_charset, dos_charset)
+FN_GLOBAL_STRING(unix_charset, unix_charset)
+FN_GLOBAL_STRING(display_charset, display_charset)
+FN_GLOBAL_STRING(piddir, szPidDir)
+FN_GLOBAL_LIST(rndc_command, szRNDCCommand)
+FN_GLOBAL_LIST(dns_update_command, szDNSUpdateCommand)
+FN_GLOBAL_LIST(spn_update_command, szSPNUpdateCommand)
+FN_GLOBAL_STRING(nsupdate_command, szNSUpdateCommand)
+FN_GLOBAL_LIST(dcerpc_endpoint_servers, dcerpc_ep_servers)
+FN_GLOBAL_LIST(server_services, server_services)
+FN_GLOBAL_STRING(ntptr_providor, ntptr_providor)
+FN_GLOBAL_STRING(auto_services, szAutoServices)
+FN_GLOBAL_STRING(passwd_chat, szPasswdChat)
+FN_GLOBAL_LIST(passwordserver, szPasswordServers)
+FN_GLOBAL_LIST(name_resolve_order, szNameResolveOrder)
+FN_GLOBAL_STRING(realm, szRealm_upper)
+FN_GLOBAL_STRING(dnsdomain, szRealm_lower)
+FN_GLOBAL_STRING(socket_options, socket_options)
+FN_GLOBAL_STRING(workgroup, szWorkgroup)
+FN_GLOBAL_STRING(netbios_name, szNetbiosName)
+FN_GLOBAL_STRING(netbios_scope, szNetbiosScope)
+FN_GLOBAL_LIST(wins_server_list, szWINSservers)
+FN_GLOBAL_LIST(interfaces, szInterfaces)
+FN_GLOBAL_STRING(socket_address, szSocketAddress)
+FN_GLOBAL_LIST(netbios_aliases, szNetbiosAliases)
+FN_GLOBAL_BOOL(disable_netbios, bDisableNetbios)
+FN_GLOBAL_BOOL(wins_support, bWINSsupport)
+FN_GLOBAL_BOOL(wins_dns_proxy, bWINSdnsProxy)
+FN_GLOBAL_STRING(wins_hook, szWINSHook)
+FN_GLOBAL_BOOL(local_master, bLocalMaster)
+FN_GLOBAL_BOOL(readraw, bReadRaw)
+FN_GLOBAL_BOOL(large_readwrite, bLargeReadwrite)
+FN_GLOBAL_BOOL(writeraw, bWriteRaw)
+FN_GLOBAL_BOOL(null_passwords, bNullPasswords)
+FN_GLOBAL_BOOL(obey_pam_restrictions, bObeyPamRestrictions)
+FN_GLOBAL_BOOL(encrypted_passwords, bEncryptPasswords)
+FN_GLOBAL_BOOL(time_server, bTimeServer)
+FN_GLOBAL_BOOL(bind_interfaces_only, bBindInterfacesOnly)
+FN_GLOBAL_BOOL(unicode, bUnicode)
+FN_GLOBAL_BOOL(nt_status_support, bNTStatusSupport)
+FN_GLOBAL_BOOL(lanman_auth, bLanmanAuth)
+FN_GLOBAL_BOOL(ntlm_auth, bNTLMAuth)
+FN_GLOBAL_BOOL(client_plaintext_auth, bClientPlaintextAuth)
+FN_GLOBAL_BOOL(client_lanman_auth, bClientLanManAuth)
+FN_GLOBAL_BOOL(client_ntlmv2_auth, bClientNTLMv2Auth)
+FN_GLOBAL_BOOL(client_use_spnego_principal, client_use_spnego_principal)
+FN_GLOBAL_BOOL(host_msdfs, bHostMSDfs)
+FN_GLOBAL_BOOL(unix_extensions, bUnixExtensions)
+FN_GLOBAL_BOOL(use_spnego, bUseSpnego)
+FN_GLOBAL_BOOL(rpc_big_endian, bRpcBigEndian)
+FN_GLOBAL_INTEGER(max_wins_ttl, max_wins_ttl)
+FN_GLOBAL_INTEGER(min_wins_ttl, min_wins_ttl)
+FN_GLOBAL_INTEGER(maxmux, max_mux)
+FN_GLOBAL_INTEGER(max_xmit, max_xmit)
+FN_GLOBAL_INTEGER(passwordlevel, pwordlevel)
+FN_GLOBAL_INTEGER(srv_maxprotocol, srv_maxprotocol)
+FN_GLOBAL_INTEGER(srv_minprotocol, srv_minprotocol)
+FN_GLOBAL_INTEGER(cli_maxprotocol, cli_maxprotocol)
+FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
+FN_GLOBAL_INTEGER(security, security)
+FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
+FN_GLOBAL_INTEGER(announce_as, announce_as)
 
-const char *lp_servicename(const struct loadparm_service *service)
-{
-	return lp_string((const char *)service->szService);
-}
+FN_LOCAL_STRING(pathname, szPath)
+FN_LOCAL_LIST(hostsallow, szHostsallow)
+FN_LOCAL_LIST(hostsdeny, szHostsdeny)
+FN_LOCAL_STRING(comment, comment)
+FN_LOCAL_STRING(fstype, fstype)
+FN_LOCAL_LIST(ntvfs_handler, ntvfs_handler)
+FN_LOCAL_BOOL(msdfs_root, bMSDfsRoot)
+FN_LOCAL_BOOL(browseable, bBrowseable)
+FN_LOCAL_BOOL(readonly, bRead_only)
+FN_LOCAL_BOOL(print_ok, bPrint_ok)
+FN_LOCAL_BOOL(map_hidden, bMap_hidden)
+FN_LOCAL_BOOL(map_archive, bMap_archive)
+FN_LOCAL_BOOL(strict_locking, bStrictLocking)
+FN_LOCAL_BOOL(oplocks, bOplocks)
+FN_LOCAL_BOOL(strict_sync, bStrictSync)
+FN_LOCAL_BOOL(ci_filesystem, bCIFileSystem)
+FN_LOCAL_BOOL(map_system, bMap_system)
+FN_LOCAL_INTEGER(max_connections, iMaxConnections)
+FN_LOCAL_INTEGER(csc_policy, iCSCPolicy)
+FN_LOCAL_INTEGER(create_mask, iCreate_mask)
+FN_LOCAL_INTEGER(force_create_mode, iCreate_force_mode)
+FN_LOCAL_INTEGER(dir_mask, iDir_mask)
+FN_LOCAL_INTEGER(force_dir_mode, iDir_force_mode)
+FN_GLOBAL_INTEGER(server_signing, server_signing)
+FN_GLOBAL_INTEGER(client_signing, client_signing)
 
-_PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
-static FN_LOCAL_STRING(_lp_printername, szPrintername)
-_PUBLIC_ FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
-_PUBLIC_ FN_LOCAL_LIST(lp_hostsdeny, szHostsdeny)
-_PUBLIC_ FN_LOCAL_STRING(lp_comment, comment)
-_PUBLIC_ FN_LOCAL_STRING(lp_fstype, fstype)
-static FN_LOCAL_STRING(lp_volume, volume)
-_PUBLIC_ FN_LOCAL_LIST(lp_ntvfs_handler, ntvfs_handler)
-_PUBLIC_ FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
-_PUBLIC_ FN_LOCAL_BOOL(lp_browseable, bBrowseable)
-_PUBLIC_ FN_LOCAL_BOOL(lp_readonly, bRead_only)
-_PUBLIC_ FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
-_PUBLIC_ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
-_PUBLIC_ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
-_PUBLIC_ FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
-_PUBLIC_ FN_LOCAL_BOOL(lp_oplocks, bOplocks)
-_PUBLIC_ FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
-_PUBLIC_ FN_LOCAL_BOOL(lp_ci_filesystem, bCIFileSystem)
-_PUBLIC_ FN_LOCAL_BOOL(lp_map_system, bMap_system)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
-_PUBLIC_ FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_server_signing, server_signing)
-_PUBLIC_ FN_GLOBAL_INTEGER(lp_client_signing, client_signing)
-
-_PUBLIC_ FN_GLOBAL_CONST_STRING(lp_ntp_signd_socket_directory, szNTPSignDSocketDirectory)
+FN_GLOBAL_CONST_STRING(ntp_signd_socket_directory, szNTPSignDSocketDirectory)
 
 /* local prototypes */
 static int map_parameter(const char *pszParmName);
-static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
+static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName);
 static void copy_service(struct loadparm_service *pserviceDest,
 			 struct loadparm_service *pserviceSource,
@@ -767,7 +783,7 @@ static void init_copymap(struct loadparm_service *pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(struct loadparm_context *lp_ctx,
+const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
@@ -878,11 +894,11 @@ static bool lp_bool(const char *s)
  * Returned value is allocated in 'lp_talloc' context
  */
 
-const char *lp_parm_string(struct loadparm_context *lp_ctx,
-			   struct loadparm_service *service, const char *type,
-			   const char *option)
+const char *lpcfg_parm_string(struct loadparm_context *lp_ctx,
+			      struct loadparm_service *service, const char *type,
+			      const char *option)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value)
 		return lp_string(value);
@@ -896,13 +912,13 @@ const char *lp_parm_string(struct loadparm_context *lp_ctx,
  * Returned value is allocated in 'lp_talloc' context
  */
 
-const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
-				 struct loadparm_context *lp_ctx,
-				 struct loadparm_service *service,
-				 const char *type,
-				 const char *option, const char *separator)
+const char **lpcfg_parm_string_list(TALLOC_CTX *mem_ctx,
+				    struct loadparm_context *lp_ctx,
+				    struct loadparm_service *service,
+				    const char *type,
+				    const char *option, const char *separator)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value != NULL)
 		return (const char **)str_list_make(mem_ctx, value, separator);
@@ -915,11 +931,11 @@ const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
  * Parametric option has following syntax: 'Type: option = value'
  */
 
-int lp_parm_int(struct loadparm_context *lp_ctx,
-		struct loadparm_service *service, const char *type,
-		const char *option, int default_v)
+int lpcfg_parm_int(struct loadparm_context *lp_ctx,
+		   struct loadparm_service *service, const char *type,
+		   const char *option, int default_v)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value)
 		return lp_int(value);
@@ -933,13 +949,13 @@ int lp_parm_int(struct loadparm_context *lp_ctx,
  * Parametric option has following syntax: 'Type: option = value'.
  */
 
-int lp_parm_bytes(struct loadparm_context *lp_ctx,
+int lpcfg_parm_bytes(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, const char *type,
 		  const char *option, int default_v)
 {
 	uint64_t bval;
 
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value && conv_str_size(value, &bval)) {
 		if (bval <= INT_MAX) {
@@ -955,11 +971,11 @@ int lp_parm_bytes(struct loadparm_context *lp_ctx,
  * Type is a part of option before ':'
  * Parametric option has following syntax: 'Type: option = value'
  */
-unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx,
+unsigned long lpcfg_parm_ulong(struct loadparm_context *lp_ctx,
 			    struct loadparm_service *service, const char *type,
 			    const char *option, unsigned long default_v)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value)
 		return lp_ulong(value);
@@ -968,11 +984,11 @@ unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx,
 }
 
 
-double lp_parm_double(struct loadparm_context *lp_ctx,
+double lpcfg_parm_double(struct loadparm_context *lp_ctx,
 		      struct loadparm_service *service, const char *type,
 		      const char *option, double default_v)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value != NULL)
 		return lp_double(value);
@@ -985,11 +1001,11 @@ double lp_parm_double(struct loadparm_context *lp_ctx,
  * Parametric option has following syntax: 'Type: option = value'
  */
 
-bool lp_parm_bool(struct loadparm_context *lp_ctx,
-		  struct loadparm_service *service, const char *type,
-		  const char *option, bool default_v)
+bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
+		     struct loadparm_service *service, const char *type,
+		     const char *option, bool default_v)
 {
-	const char *value = lp_get_parametric(lp_ctx, service, type, option);
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
 	if (value != NULL)
 		return lp_bool(value);
@@ -1037,9 +1053,9 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
  * service.
  */
 
-struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
-				     const struct loadparm_service *pservice,
-				     const char *name)
+struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
+					   const struct loadparm_service *pservice,
+					   const char *name)
 {
 	int i;
 	struct loadparm_service tservice;
@@ -1078,7 +1094,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 		tsp = talloc_realloc(lp_ctx, lp_ctx->services, struct loadparm_service *, num_to_alloc);
 
 		if (!tsp) {
-			DEBUG(0,("lp_add_service: failed to enlarge services!\n"));
+			DEBUG(0,("lpcfg_add_service: failed to enlarge services!\n"));
 			return NULL;
 		} else {
 			lp_ctx->services = tsp;
@@ -1090,7 +1106,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 
 	lp_ctx->services[i] = init_service(lp_ctx->services, lp_ctx->sDefault);
 	if (lp_ctx->services[i] == NULL) {
-		DEBUG(0,("lp_add_service: out of memory!\n"));
+		DEBUG(0,("lpcfg_add_service: out of memory!\n"));
 		return NULL;
 	}
 	copy_service(lp_ctx->services[i], &tservice, NULL);
@@ -1104,14 +1120,14 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
  * from service ifrom.
  */
 
-bool lp_add_home(struct loadparm_context *lp_ctx,
+bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 		 const char *pszHomename,
 		 struct loadparm_service *default_service,
 		 const char *user, const char *pszHomedir)
 {
 	struct loadparm_service *service;
 
-	service = lp_add_service(lp_ctx, default_service, pszHomename);
+	service = lpcfg_add_service(lp_ctx, default_service, pszHomename);
 
 	if (service == NULL)
 		return false;
@@ -1120,7 +1136,7 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 	    || strequal(default_service->szPath, lp_ctx->sDefault->szPath)) {
 		service->szPath = talloc_strdup(service, pszHomedir);
 	} else {
-		service->szPath = string_sub_talloc(service, lp_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir); 
+		service->szPath = string_sub_talloc(service, lpcfg_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir);
 	}
 
 	if (!(*(service->comment))) {
@@ -1139,10 +1155,10 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
  * Add the IPC service.
  */
 
-static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
-			  const char *fstype)
+static bool lpcfg_add_hidden(struct loadparm_context *lp_ctx, const char *name,
+			     const char *fstype)
 {
-	struct loadparm_service *service = lp_add_service(lp_ctx, lp_ctx->sDefault, name);
+	struct loadparm_service *service = lpcfg_add_service(lp_ctx, lp_ctx->sDefault, name);
 
 	if (service == NULL)
 		return false;
@@ -1159,7 +1175,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	service->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
-		lp_do_service_parameter(lp_ctx, service, "ntvfs handler",
+		lpcfg_do_service_parameter(lp_ctx, service, "ntvfs handler",
 					"default");
 	}
 
@@ -1178,7 +1194,7 @@ bool lp_add_printer(struct loadparm_context *lp_ctx,
 {
 	const char *comment = "From Printcap";
 	struct loadparm_service *service;
-	service = lp_add_service(lp_ctx, default_service, pszPrintername);
+	service = lpcfg_add_service(lp_ctx, default_service, pszPrintername);
 
 	if (service == NULL)
 		return false;
@@ -1231,7 +1247,7 @@ static int map_parameter(const char *pszParmName)
 /**
   return the parameter structure for a parameter
 */
-struct parm_struct *lp_parm_struct(const char *name)
+struct parm_struct *lpcfg_parm_struct(const char *name)
 {
 	int parmnum = map_parameter(name);
 	if (parmnum == -1) return NULL;
@@ -1241,7 +1257,7 @@ struct parm_struct *lp_parm_struct(const char *name)
 /**
   return the parameter pointer for a parameter
 */
-void *lp_parm_ptr(struct loadparm_context *lp_ctx,
+void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm)
 {
 	if (service == NULL) {
@@ -1259,7 +1275,7 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
  * Find a service by name. Otherwise works like get_service.
  */
 
-static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
+static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx,
 					const char *pszServiceName)
 {
 	int iService;
@@ -1737,8 +1753,8 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 }
 
 
-bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
-			    const char *pszParmName, const char *pszParmValue)
+bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
+			       const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
 	void *parm_ptr;
@@ -1757,15 +1773,15 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	parm_ptr = lp_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
+	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
 	return set_variable(lp_ctx, parmnum, parm_ptr,
 			    pszParmName, pszParmValue, lp_ctx);
 }
 
-bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
-			     struct loadparm_service *service,
-			     const char *pszParmName, const char *pszParmValue)
+bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
+				struct loadparm_service *service,
+				const char *pszParmName, const char *pszParmValue)
 {
 	void *parm_ptr;
 	int i;
@@ -1817,18 +1833,18 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
 
 	if (lp_ctx->bInGlobalSection)
-		return lp_do_global_parameter(lp_ctx, pszParmName,
+		return lpcfg_do_global_parameter(lp_ctx, pszParmName,
 					      pszParmValue);
 	else
-		return lp_do_service_parameter(lp_ctx, lp_ctx->currentService,
-					       pszParmName, pszParmValue);
+		return lpcfg_do_service_parameter(lp_ctx, lp_ctx->currentService,
+						  pszParmName, pszParmValue);
 }
 
 /*
   variable argument do parameter
 */
-bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx, const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
-bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
+bool lpcfg_do_global_parameter_var(struct loadparm_context *lp_ctx, const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
+bool lpcfg_do_global_parameter_var(struct loadparm_context *lp_ctx,
 				const char *pszParmName, const char *fmt, ...)
 {
 	char *s;
@@ -1838,7 +1854,7 @@ bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
 	va_start(ap, fmt);
 	s = talloc_vasprintf(NULL, fmt, ap);
 	va_end(ap);
-	ret = lp_do_global_parameter(lp_ctx, pszParmName, s);
+	ret = lpcfg_do_global_parameter(lp_ctx, pszParmName, s);
 	talloc_free(s);
 	return ret;
 }
@@ -1849,8 +1865,8 @@ bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
   parsing code. It sets the parameter then marks the parameter as unable to be modified
   by smb.conf processing
 */
-bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
-		    const char *pszParmValue)
+bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
+		       const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
 	int i;
@@ -1872,7 +1888,7 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 	/* reset the CMDLINE flag in case this has been called before */
 	lp_ctx->flags[parmnum] &= ~FLAG_CMDLINE;
 
-	if (!lp_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
+	if (!lpcfg_do_global_parameter(lp_ctx, pszParmName, pszParmValue)) {
 		return false;
 	}
 
@@ -1892,7 +1908,7 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 /*
   set a option from the commandline in 'a=b' format. Use to support --option
 */
-bool lp_set_option(struct loadparm_context *lp_ctx, const char *option)
+bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
 {
 	char *p, *s;
 	bool ret;
@@ -1910,7 +1926,7 @@ bool lp_set_option(struct loadparm_context *lp_ctx, const char *option)
 
 	*p = 0;
 
-	ret = lp_set_cmdline(lp_ctx, s, p+1);
+	ret = lpcfg_set_cmdline(lp_ctx, s, p+1);
 	free(s);
 	return ret;
 }
@@ -2040,8 +2056,8 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((lp_ctx->currentService = lp_add_service(lp_ctx, lp_ctx->sDefault,
-							     pszSectionName))
+		if ((lp_ctx->currentService = lpcfg_add_service(lp_ctx, lp_ctx->sDefault,
+								   pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return false;
@@ -2098,10 +2114,10 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 		if (parm_table[i].pclass == P_GLOBAL &&
 		    parm_table[i].offset != -1 &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT)) 
+			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], lp_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
+			print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
 			fprintf(f, "\n");
 	}
 	if (lp_ctx->globals->param_opt != NULL) {
@@ -2156,19 +2172,19 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
         }
 }
 
-bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
-			 struct loadparm_service *service,
-			 const char *parm_name, FILE * f)
+bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
+			    struct loadparm_service *service,
+			    const char *parm_name, FILE * f)
 {
 	struct parm_struct *parm;
 	void *ptr;
 
-	parm = lp_parm_struct(parm_name);
+	parm = lpcfg_parm_struct(parm_name);
 	if (!parm) {
 		return false;
 	}
 
-	ptr = lp_parm_ptr(lp_ctx, service,parm);
+	ptr = lpcfg_parm_ptr(lp_ctx, service,parm);
 
 	print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
@@ -2181,8 +2197,9 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
  * Return NULL when out of parameters.
  */
 
-struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i, 
-				      int allparameters)
+
+struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int snum, int *i,
+					 int allparameters)
 {
 	if (snum == -1) {
 		/* do the globals */
@@ -2229,8 +2246,8 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 /**
  * Auto-load some home services.
  */
-static void lp_add_auto_services(struct loadparm_context *lp_ctx,
-				 const char *str)
+static void lpcfg_add_auto_services(struct loadparm_context *lp_ctx,
+				    const char *str)
 {
 	return;
 }
@@ -2321,145 +2338,145 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	lp_do_global_parameter(lp_ctx, "share backend", "classic");
+	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
-	lp_do_global_parameter(lp_ctx, "server role", "standalone");
+	lpcfg_do_global_parameter(lp_ctx, "server role", "standalone");
 
 	/* options that can be set on the command line must be initialised via
-	   the slower lp_do_global_parameter() to ensure that FLAG_CMDLINE is obeyed */
+	   the slower lpcfg_do_global_parameter() to ensure that FLAG_CMDLINE is obeyed */
 #ifdef TCP_NODELAY
-	lp_do_global_parameter(lp_ctx, "socket options", "TCP_NODELAY");
+	lpcfg_do_global_parameter(lp_ctx, "socket options", "TCP_NODELAY");
 #endif
-	lp_do_global_parameter(lp_ctx, "workgroup", DEFAULT_WORKGROUP);
+	lpcfg_do_global_parameter(lp_ctx, "workgroup", DEFAULT_WORKGROUP);
 	myname = get_myname(lp_ctx);
-	lp_do_global_parameter(lp_ctx, "netbios name", myname);
+	lpcfg_do_global_parameter(lp_ctx, "netbios name", myname);
 	talloc_free(myname);
-	lp_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
+	lpcfg_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
 
-	lp_do_global_parameter(lp_ctx, "fstype", "NTFS");
+	lpcfg_do_global_parameter(lp_ctx, "fstype", "NTFS");
 
-	lp_do_global_parameter(lp_ctx, "ntvfs handler", "unixuid default");
-	lp_do_global_parameter(lp_ctx, "max connections", "-1");
+	lpcfg_do_global_parameter(lp_ctx, "ntvfs handler", "unixuid default");
+	lpcfg_do_global_parameter(lp_ctx, "max connections", "-1");
 
-	lp_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo browser");
-	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate");
-	lp_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
-	lp_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
-	lp_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
-	lp_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
-	lp_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
-	lp_do_global_parameter(lp_ctx, "sam database", "sam.ldb");
-	lp_do_global_parameter(lp_ctx, "idmap database", "idmap.ldb");
-	lp_do_global_parameter(lp_ctx, "secrets database", "secrets.ldb");
-	lp_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");
-	lp_do_global_parameter(lp_ctx, "wins config database", "wins_config.ldb");
-	lp_do_global_parameter(lp_ctx, "wins database", "wins.ldb");
-	lp_do_global_parameter(lp_ctx, "registry:HKEY_LOCAL_MACHINE", "hklm.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo browser");
+	lpcfg_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate");
+	lpcfg_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
+	lpcfg_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
+	lpcfg_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
+	lpcfg_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
+	lpcfg_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
+	lpcfg_do_global_parameter(lp_ctx, "sam database", "sam.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "idmap database", "idmap.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "secrets database", "secrets.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "wins config database", "wins_config.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "wins database", "wins.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "registry:HKEY_LOCAL_MACHINE", "hklm.ldb");
 
 	/* This hive should be dynamically generated by Samba using
 	   data from the sam, but for the moment leave it in a tdb to
 	   keep regedt32 from popping up an annoying dialog. */
-	lp_do_global_parameter(lp_ctx, "registry:HKEY_USERS", "hku.ldb");
+	lpcfg_do_global_parameter(lp_ctx, "registry:HKEY_USERS", "hku.ldb");
 
 	/* using UTF8 by default allows us to support all chars */
-	lp_do_global_parameter(lp_ctx, "unix charset", "UTF8");
+	lpcfg_do_global_parameter(lp_ctx, "unix charset", "UTF8");
 
 	/* Use codepage 850 as a default for the dos character set */
-	lp_do_global_parameter(lp_ctx, "dos charset", "CP850");
+	lpcfg_do_global_parameter(lp_ctx, "dos charset", "CP850");
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	lp_do_global_parameter(lp_ctx, "passwd chat", DEFAULT_PASSWD_CHAT);
+	lpcfg_do_global_parameter(lp_ctx, "passwd chat", DEFAULT_PASSWD_CHAT);
 
-	lp_do_global_parameter(lp_ctx, "pid directory", dyn_PIDDIR);
-	lp_do_global_parameter(lp_ctx, "lock dir", dyn_LOCKDIR);
-	lp_do_global_parameter(lp_ctx, "modules dir", dyn_MODULESDIR);
-	lp_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
+	lpcfg_do_global_parameter(lp_ctx, "pid directory", dyn_PIDDIR);
+	lpcfg_do_global_parameter(lp_ctx, "lock dir", dyn_LOCKDIR);
+	lpcfg_do_global_parameter(lp_ctx, "modules dir", dyn_MODULESDIR);
+	lpcfg_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
-	lp_do_global_parameter(lp_ctx, "socket address", "0.0.0.0");
-	lp_do_global_parameter_var(lp_ctx, "server string",
+	lpcfg_do_global_parameter(lp_ctx, "socket address", "0.0.0.0");
+	lpcfg_do_global_parameter_var(lp_ctx, "server string",
 				   "Samba %s", SAMBA_VERSION_STRING);
 
-	lp_do_global_parameter_var(lp_ctx, "announce version", "%d.%d",
+	lpcfg_do_global_parameter_var(lp_ctx, "announce version", "%d.%d",
 			 DEFAULT_MAJOR_VERSION,
 			 DEFAULT_MINOR_VERSION);
 
-	lp_do_global_parameter(lp_ctx, "password server", "*");
+	lpcfg_do_global_parameter(lp_ctx, "password server", "*");
 
-	lp_do_global_parameter(lp_ctx, "max mux", "50");
-	lp_do_global_parameter(lp_ctx, "max xmit", "12288");
-	lp_do_global_parameter(lp_ctx, "password level", "0");
-	lp_do_global_parameter(lp_ctx, "LargeReadwrite", "True");
-	lp_do_global_parameter(lp_ctx, "server min protocol", "CORE");
-	lp_do_global_parameter(lp_ctx, "server max protocol", "NT1");
-	lp_do_global_parameter(lp_ctx, "client min protocol", "CORE");
-	lp_do_global_parameter(lp_ctx, "client max protocol", "NT1");
-	lp_do_global_parameter(lp_ctx, "security", "USER");
-	lp_do_global_parameter(lp_ctx, "paranoid server security", "True");
-	lp_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
-	lp_do_global_parameter(lp_ctx, "ReadRaw", "True");
-	lp_do_global_parameter(lp_ctx, "WriteRaw", "True");
-	lp_do_global_parameter(lp_ctx, "NullPasswords", "False");
-	lp_do_global_parameter(lp_ctx, "ObeyPamRestrictions", "False");
-	lp_do_global_parameter(lp_ctx, "announce as", "NT SERVER");
+	lpcfg_do_global_parameter(lp_ctx, "max mux", "50");
+	lpcfg_do_global_parameter(lp_ctx, "max xmit", "12288");
+	lpcfg_do_global_parameter(lp_ctx, "password level", "0");
+	lpcfg_do_global_parameter(lp_ctx, "LargeReadwrite", "True");
+	lpcfg_do_global_parameter(lp_ctx, "server min protocol", "CORE");
+	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "NT1");
+	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
+	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "NT1");
+	lpcfg_do_global_parameter(lp_ctx, "security", "USER");
+	lpcfg_do_global_parameter(lp_ctx, "paranoid server security", "True");
+	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
+	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
+	lpcfg_do_global_parameter(lp_ctx, "WriteRaw", "True");
+	lpcfg_do_global_parameter(lp_ctx, "NullPasswords", "False");
+	lpcfg_do_global_parameter(lp_ctx, "ObeyPamRestrictions", "False");
+	lpcfg_do_global_parameter(lp_ctx, "announce as", "NT SERVER");
 
-	lp_do_global_parameter(lp_ctx, "TimeServer", "False");
-	lp_do_global_parameter(lp_ctx, "BindInterfacesOnly", "False");
-	lp_do_global_parameter(lp_ctx, "Unicode", "True");
-	lp_do_global_parameter(lp_ctx, "ClientLanManAuth", "False");
-	lp_do_global_parameter(lp_ctx, "LanmanAuth", "False");
-	lp_do_global_parameter(lp_ctx, "NTLMAuth", "True");
-	lp_do_global_parameter(lp_ctx, "client use spnego principal", "False");
+	lpcfg_do_global_parameter(lp_ctx, "TimeServer", "False");
+	lpcfg_do_global_parameter(lp_ctx, "BindInterfacesOnly", "False");
+	lpcfg_do_global_parameter(lp_ctx, "Unicode", "True");
+	lpcfg_do_global_parameter(lp_ctx, "ClientLanManAuth", "False");
+	lpcfg_do_global_parameter(lp_ctx, "LanmanAuth", "False");
+	lpcfg_do_global_parameter(lp_ctx, "NTLMAuth", "True");
+	lpcfg_do_global_parameter(lp_ctx, "client use spnego principal", "False");
 
-	lp_do_global_parameter(lp_ctx, "UnixExtensions", "False");
+	lpcfg_do_global_parameter(lp_ctx, "UnixExtensions", "False");
 
-	lp_do_global_parameter(lp_ctx, "PreferredMaster", "Auto");
-	lp_do_global_parameter(lp_ctx, "LocalMaster", "True");
+	lpcfg_do_global_parameter(lp_ctx, "PreferredMaster", "Auto");
+	lpcfg_do_global_parameter(lp_ctx, "LocalMaster", "True");
 
-	lp_do_global_parameter(lp_ctx, "wins support", "False");
-	lp_do_global_parameter(lp_ctx, "dns proxy", "True");
+	lpcfg_do_global_parameter(lp_ctx, "wins support", "False");
+	lpcfg_do_global_parameter(lp_ctx, "dns proxy", "True");
 
-	lp_do_global_parameter(lp_ctx, "winbind separator", "\\");
-	lp_do_global_parameter(lp_ctx, "winbind sealed pipes", "True");
-	lp_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
-	lp_do_global_parameter(lp_ctx, "winbindd privileged socket directory", dyn_WINBINDD_PRIVILEGED_SOCKET_DIR);
-	lp_do_global_parameter(lp_ctx, "template shell", "/bin/false");
-	lp_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
-	lp_do_global_parameter(lp_ctx, "idmap trusted only", "False");
+	lpcfg_do_global_parameter(lp_ctx, "winbind separator", "\\");
+	lpcfg_do_global_parameter(lp_ctx, "winbind sealed pipes", "True");
+	lpcfg_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
+	lpcfg_do_global_parameter(lp_ctx, "winbindd privileged socket directory", dyn_WINBINDD_PRIVILEGED_SOCKET_DIR);
+	lpcfg_do_global_parameter(lp_ctx, "template shell", "/bin/false");
+	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
+	lpcfg_do_global_parameter(lp_ctx, "idmap trusted only", "False");
 
-	lp_do_global_parameter(lp_ctx, "client signing", "Yes");
-	lp_do_global_parameter(lp_ctx, "server signing", "auto");
+	lpcfg_do_global_parameter(lp_ctx, "client signing", "Yes");
+	lpcfg_do_global_parameter(lp_ctx, "server signing", "auto");
 
-	lp_do_global_parameter(lp_ctx, "use spnego", "True");
+	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
 
-	lp_do_global_parameter(lp_ctx, "smb ports", "445 139");
-	lp_do_global_parameter(lp_ctx, "nbt port", "137");
-	lp_do_global_parameter(lp_ctx, "dgram port", "138");
-	lp_do_global_parameter(lp_ctx, "cldap port", "389");
-	lp_do_global_parameter(lp_ctx, "krb5 port", "88");
-	lp_do_global_parameter(lp_ctx, "kpasswd port", "464");
-	lp_do_global_parameter(lp_ctx, "web port", "901");
+	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
+	lpcfg_do_global_parameter(lp_ctx, "nbt port", "137");
+	lpcfg_do_global_parameter(lp_ctx, "dgram port", "138");
+	lpcfg_do_global_parameter(lp_ctx, "cldap port", "389");
+	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");
+	lpcfg_do_global_parameter(lp_ctx, "kpasswd port", "464");
+	lpcfg_do_global_parameter(lp_ctx, "web port", "901");
 
-	lp_do_global_parameter(lp_ctx, "nt status support", "True");
+	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");
 
-	lp_do_global_parameter(lp_ctx, "max wins ttl", "518400"); /* 6 days */
-	lp_do_global_parameter(lp_ctx, "min wins ttl", "10");
+	lpcfg_do_global_parameter(lp_ctx, "max wins ttl", "518400"); /* 6 days */
+	lpcfg_do_global_parameter(lp_ctx, "min wins ttl", "10");
 
-	lp_do_global_parameter(lp_ctx, "tls enabled", "True");
-	lp_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
-	lp_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
-	lp_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
-	lp_do_global_parameter_var(lp_ctx, "setup directory", "%s",
+	lpcfg_do_global_parameter(lp_ctx, "tls enabled", "True");
+	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
+	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
+	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
+	lpcfg_do_global_parameter_var(lp_ctx, "setup directory", "%s",
 				   dyn_SETUPDIR);
 
-	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
+	lpcfg_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
-	lp_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
-	lp_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
-	lp_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SBINDIR);
-	lp_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SBINDIR);
-	lp_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
+	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
+	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
+	lpcfg_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SBINDIR);
+	lpcfg_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SBINDIR);
+	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
@@ -2470,7 +2487,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	return lp_ctx;
 }
 
-const char *lp_configfile(struct loadparm_context *lp_ctx)
+const char *lpcfg_configfile(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->szConfigFile;
 }
@@ -2487,41 +2504,41 @@ const char *lp_default_path(void)
  * Update the internal state of a loadparm context after settings 
  * have changed.
  */
-static bool lp_update(struct loadparm_context *lp_ctx)
+static bool lpcfg_update(struct loadparm_context *lp_ctx)
 {
-	lp_add_auto_services(lp_ctx, lp_auto_services(lp_ctx));
+	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx));
 
-	lp_add_hidden(lp_ctx, "IPC$", "IPC");
-	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
+	lpcfg_add_hidden(lp_ctx, "IPC$", "IPC");
+	lpcfg_add_hidden(lp_ctx, "ADMIN$", "DISK");
 
 	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
-		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
+		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
 	}
 
 	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv(lp_ctx);
 
-	/* FIXME: ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx); */
+	/* FIXME: ntstatus_check_dos_mapping = lpcfg_nt_status_support(lp_ctx); */
 
 	/* FIXME: This is a bit of a hack, but we can't use a global, since 
 	 * not everything that uses lp also uses the socket library */
-	if (lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
+	if (lpcfg_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
 		setenv("SOCKET_TESTNONBLOCK", "1", 1);
 	} else {
 		unsetenv("SOCKET_TESTNONBLOCK");
 	}
 
 	/* FIXME: Check locale in environment for this: */
-	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
-		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)));
+	if (strcmp(lpcfg_display_charset(lp_ctx), lpcfg_unix_charset(lp_ctx)) != 0)
+		d_set_iconv(smb_iconv_open(lpcfg_display_charset(lp_ctx), lpcfg_unix_charset(lp_ctx)));
 	else
 		d_set_iconv((smb_iconv_t)-1);
 
 	return true;
 }
 
-bool lp_load_default(struct loadparm_context *lp_ctx)
+bool lpcfg_load_default(struct loadparm_context *lp_ctx)
 {
     const char *path;
 
@@ -2530,10 +2547,10 @@ bool lp_load_default(struct loadparm_context *lp_ctx)
     if (!file_exist(path)) {
 	    /* We allow the default smb.conf file to not exist, 
 	     * basically the equivalent of an empty file. */
-	    return lp_update(lp_ctx);
+	    return lpcfg_update(lp_ctx);
     }
 
-    return lp_load(lp_ctx, path);
+    return lpcfg_load(lp_ctx, path);
 }
 
 /**
@@ -2541,7 +2558,7 @@ bool lp_load_default(struct loadparm_context *lp_ctx)
  *
  * Return True on success, False on failure.
  */
-bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
+bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 {
 	char *n2;
 	bool bRetval;
@@ -2552,7 +2569,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	lp_ctx->bInGlobalSection = true;
 	n2 = standard_sub_basic(lp_ctx, lp_ctx->szConfigFile);
-	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
+	DEBUG(2, ("lpcfg_load: refreshing parameters from %s\n", n2));
 
 	add_to_file_list(lp_ctx, lp_ctx->szConfigFile, n2);
 
@@ -2566,7 +2583,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 		if (lp_ctx->currentService != NULL)
 			bRetval = service_ok(lp_ctx->currentService);
 
-	bRetval = bRetval && lp_update(lp_ctx);
+	bRetval = bRetval && lpcfg_update(lp_ctx);
 
 	/* we do this unconditionally, so that it happens even
 	   for a missing smb.conf */
@@ -2576,6 +2593,10 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 		/* set this up so that any child python tasks will
 		   find the right smb.conf */
 		setenv("SMB_CONF_PATH", filename, 1);
+
+		/* set the context used by the lp_*() function
+		   varients */
+		global_loadparm_context = lp_ctx;
 	}
 
 	return bRetval;
@@ -2585,7 +2606,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
  * Return the max number of services.
  */
 
-int lp_numservices(struct loadparm_context *lp_ctx)
+int lpcfg_numservices(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->iNumServices;
 }
@@ -2594,7 +2615,7 @@ int lp_numservices(struct loadparm_context *lp_ctx)
  * Display the contents of the services array in human-readable form.
  */
 
-void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
+void lpcfg_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 	     int maxtoprint)
 {
 	int iService;
@@ -2607,13 +2628,13 @@ void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 	dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, lp_ctx->services[iService], lp_ctx->sDefault);
+		lpcfg_dump_one(f, show_defaults, lp_ctx->services[iService], lp_ctx->sDefault);
 }
 
 /**
  * Display the contents of one service in human-readable form.
  */
-void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service, struct loadparm_service *sDefault)
+void lpcfg_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	if (service != NULL) {
 		if (service->szService[0] == '\0')
@@ -2622,13 +2643,13 @@ void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service, 
 	}
 }
 
-struct loadparm_service *lp_servicebynum(struct loadparm_context *lp_ctx,
+struct loadparm_service *lpcfg_servicebynum(struct loadparm_context *lp_ctx,
 					 int snum)
 {
 	return lp_ctx->services[snum];
 }
 
-struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
+struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 				    const char *service_name)
 {
 	int iService;
@@ -2652,31 +2673,38 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 		}
 	}
 
-	DEBUG(7,("lp_servicenumber: couldn't find %s\n", service_name));
+	DEBUG(7,("lpcfg_servicenumber: couldn't find %s\n", service_name));
 	return NULL;
 }
 
+const char *lpcfg_servicename(const struct loadparm_service *service)
+{
+	return lp_string((const char *)service->szService);
+}
 
 /**
  * A useful volume label function.
  */
 const char *volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	const char *ret = lp_volume(service, sDefault);
+	const char *ret;
+	ret = lp_string((const char *)((service != NULL && service->volume != NULL) ?
+				       service->volume : sDefault->volume));
 	if (!*ret)
-		return lp_servicename(service);
+		return lpcfg_servicename(service);
 	return ret;
 }
-
 
 /**
  * If we are PDC then prefer us as DMB
  */
-const char *lp_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
+const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	const char *ret = _lp_printername(service, sDefault);
+	const char *ret;
+	ret = lp_string((const char *)((service != NULL && service->szPrintername != NULL) ?
+				       service->szPrintername : sDefault->szPrintername));
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lp_servicename(service);
+		ret = lpcfg_servicename(service);
 
 	return ret;
 }
@@ -2685,7 +2713,7 @@ const char *lp_printername(struct loadparm_service *service, struct loadparm_ser
 /**
  * Return the max print jobs per queue.
  */
-int lp_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
+int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault->iMaxPrintJobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
@@ -2694,7 +2722,7 @@ int lp_maxprintjobs(struct loadparm_service *service, struct loadparm_service *s
 	return maxjobs;
 }
 
-struct smb_iconv_convenience *lp_iconv_convenience(struct loadparm_context *lp_ctx)
+struct smb_iconv_convenience *lpcfg_iconv_convenience(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx == NULL) {
 		static struct smb_iconv_convenience *fallback_ic = NULL;
@@ -2716,74 +2744,74 @@ _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 	global_iconv_convenience = lp_ctx->iconv_convenience;
 }
 
-void lp_smbcli_options(struct loadparm_context *lp_ctx,
+void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options)
 {
-	options->max_xmit = lp_max_xmit(lp_ctx);
-	options->max_mux = lp_maxmux(lp_ctx);
-	options->use_spnego = lp_nt_status_support(lp_ctx) && lp_use_spnego(lp_ctx); 
-	options->signing = lp_client_signing(lp_ctx);
+	options->max_xmit = lpcfg_max_xmit(lp_ctx);
+	options->max_mux = lpcfg_maxmux(lp_ctx);
+	options->use_spnego = lpcfg_nt_status_support(lp_ctx) && lpcfg_use_spnego(lp_ctx);
+	options->signing = lpcfg_client_signing(lp_ctx);
 	options->request_timeout = SMB_REQUEST_TIMEOUT;
-	options->ntstatus_support = lp_nt_status_support(lp_ctx);
-	options->max_protocol = lp_cli_maxprotocol(lp_ctx);
-	options->unicode = lp_unicode(lp_ctx);
+	options->ntstatus_support = lpcfg_nt_status_support(lp_ctx);
+	options->max_protocol = lpcfg_cli_maxprotocol(lp_ctx);
+	options->unicode = lpcfg_unicode(lp_ctx);
 	options->use_oplocks = true;
 	options->use_level2_oplocks = true;
 }
 
-void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
+void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,
 				 struct smbcli_session_options *options)
 {
-	options->lanman_auth = lp_client_lanman_auth(lp_ctx);
-	options->ntlmv2_auth = lp_client_ntlmv2_auth(lp_ctx);
-	options->plaintext_auth = lp_client_plaintext_auth(lp_ctx);
+	options->lanman_auth = lpcfg_client_lanman_auth(lp_ctx);
+	options->ntlmv2_auth = lpcfg_client_ntlmv2_auth(lp_ctx);
+	options->plaintext_auth = lpcfg_client_plaintext_auth(lp_ctx);
 }
 
-_PUBLIC_ char *lp_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
 }
 
-_PUBLIC_ char *lp_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lpcfg_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
 }
 
-_PUBLIC_ char *lp_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lpcfg_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
 }
 
-_PUBLIC_ char *lp_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lpcfg_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
 }
 
-_PUBLIC_ char *lp_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ char *lpcfg_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
 }
 
-_PUBLIC_ struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+_PUBLIC_ struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct dcerpc_server_info *ret = talloc_zero(mem_ctx, struct dcerpc_server_info);
 
-	ret->domain_name = talloc_reference(mem_ctx, lp_workgroup(lp_ctx));
-	ret->version_major = lp_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
-	ret->version_minor = lp_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
-	ret->version_build = lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
+	ret->domain_name = talloc_reference(mem_ctx, lpcfg_workgroup(lp_ctx));
+	ret->version_major = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
+	ret->version_minor = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
+	ret->version_build = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
 
 	return ret;
 }
 
-struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct gensec_settings *settings = talloc(mem_ctx, struct gensec_settings);
 	if (settings == NULL)
 		return NULL;
 	SMB_ASSERT(lp_ctx != NULL);
 	settings->lp_ctx = talloc_reference(settings, lp_ctx);
-	settings->target_hostname = lp_parm_string(lp_ctx, NULL, "gensec", "target_hostname");
+	settings->target_hostname = lpcfg_parm_string(lp_ctx, NULL, "gensec", "target_hostname");
 	return settings;
 }
 
