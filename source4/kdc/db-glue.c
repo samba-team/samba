@@ -834,15 +834,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	entry_ex->entry.kvno = -1;
 	for (i=0; i < password_blob.count; i++) {
-		if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
-			entry_ex->entry.kvno = password_blob.current->array[i].AuthInfo.version.version;
+		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
+			entry_ex->entry.kvno = password_blob.current.array[i].AuthInfo.version.version;
 		}
 	}
 
 	for (i=0; i < password_blob.count; i++) {
-		if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-			password_utf16 = data_blob_const(password_blob.current->array[i].AuthInfo.clear.password,
-							 password_blob.current->array[i].AuthInfo.clear.size);
+		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			password_utf16 = data_blob_const(password_blob.current.array[i].AuthInfo.clear.password,
+							 password_blob.current.array[i].AuthInfo.clear.size);
 			/* In the future, generate all sorts of
 			 * hashes, but for now we can't safely convert
 			 * the random strings windows uses into
@@ -851,8 +851,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			/* but as it is utf16 already, we can get the NT password/arcfour-hmac-md5 key */
 			mdfour(password_hash.hash, password_utf16.data, password_utf16.length);
 			break;
-		} else if (password_blob.current->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			password_hash = password_blob.current->array[i].AuthInfo.nt4owf.password;
+		} else if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+			password_hash = password_blob.current.array[i].AuthInfo.nt4owf.password;
 			break;
 		}
 	}

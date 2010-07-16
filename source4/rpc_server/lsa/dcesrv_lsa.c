@@ -761,43 +761,13 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 
 static NTSTATUS get_trustauth_inout_blob(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
-					 struct trustCurrentPasswords *iopw,
+					 struct trustAuthInOutBlob *iopw,
 					 DATA_BLOB *trustauth_blob)
 {
-	uint32_t i;
-	struct trustAuthInOutBlob ioblob;
 	enum ndr_err_code ndr_err;
 
-	ioblob.count = iopw->count;
-	ioblob.current = talloc(mem_ctx,
-				struct AuthenticationInformationArray);
-	if (!ioblob.current) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ioblob.current->array = *iopw->current;
-	if (!ioblob.current->array) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ioblob.previous = talloc(mem_ctx,
-				 struct AuthenticationInformationArray);
-	if (!ioblob.previous) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ioblob.previous->array = talloc_array(mem_ctx,
-					struct AuthenticationInformation,
-					ioblob.count);
-	if (!ioblob.previous->array) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i = 0; i < ioblob.count; i++) {
-		ioblob.previous->array[i].LastUpdateTime = 0;
-		ioblob.previous->array[i].AuthType = 0;
-	}
 	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
-				       &ioblob,
+				       iopw,
 				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -810,7 +780,7 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *sam_ldb,
 			       struct ldb_dn *base_dn,
 			       const char *netbios_name,
-			       struct trustCurrentPasswords *in,
+			       struct trustAuthInOutBlob *in,
 			       struct ldb_dn **user_dn)
 {
 	struct ldb_message *msg;
@@ -851,16 +821,16 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < in->count; i++) {
 		const char *attribute;
 		struct ldb_val v;
-		switch (in->current[i]->AuthType) {
+		switch (in->current.array[i].AuthType) {
 		case TRUST_AUTH_TYPE_NT4OWF:
 			attribute = "unicodePwd";
-			v.data = (uint8_t *)&in->current[i]->AuthInfo.nt4owf.password;
+			v.data = (uint8_t *)&in->current.array[i].AuthInfo.nt4owf.password;
 			v.length = 16;
 			break;
 		case TRUST_AUTH_TYPE_CLEAR:
 			attribute = "clearTextPassword";
-			v.data = in->current[i]->AuthInfo.clear.password;
-			v.length = in->current[i]->AuthInfo.clear.size;
+			v.data = in->current.array[i].AuthInfo.clear.password;
+			v.length = in->current.array[i].AuthInfo.clear.size;
 			break;
 		default:
 			continue;
@@ -1504,7 +1474,7 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 				  struct ldb_dn *base_dn,
 				  bool delete_user,
 				  const char *netbios_name,
-				  struct trustCurrentPasswords *in)
+				  struct trustAuthInOutBlob *in)
 {
 	const char *attrs[] = { "userAccountControl", NULL };
 	struct ldb_message **msgs;
@@ -1563,16 +1533,16 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < in->count; i++) {
 		const char *attribute;
 		struct ldb_val v;
-		switch (in->current[i]->AuthType) {
+		switch (in->current.array[i].AuthType) {
 		case TRUST_AUTH_TYPE_NT4OWF:
 			attribute = "unicodePwd";
-			v.data = (uint8_t *)&in->current[i]->AuthInfo.nt4owf.password;
+			v.data = (uint8_t *)&in->current.array[i].AuthInfo.nt4owf.password;
 			v.length = 16;
 			break;
 		case TRUST_AUTH_TYPE_CLEAR:
 			attribute = "clearTextPassword";
-			v.data = in->current[i]->AuthInfo.clear.password;
-			v.length = in->current[i]->AuthInfo.clear.size;
+			v.data = in->current.array[i].AuthInfo.clear.password;
+			v.length = in->current.array[i].AuthInfo.clear.size;
 			break;
 		default:
 			continue;
