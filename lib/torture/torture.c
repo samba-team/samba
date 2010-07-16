@@ -450,27 +450,27 @@ bool torture_run_test(struct torture_context *context,
 int torture_setting_int(struct torture_context *test, const char *name, 
 							int default_value)
 {
-	return lp_parm_int(test->lp_ctx, NULL, "torture", name, default_value);
+	return lpcfg_parm_int(test->lp_ctx, NULL, "torture", name, default_value);
 }
 
 unsigned long torture_setting_ulong(struct torture_context *test,
 				    const char *name,
 				    unsigned long default_value)
 {
-	return lp_parm_ulong(test->lp_ctx, NULL, "torture", name,
+	return lpcfg_parm_ulong(test->lp_ctx, NULL, "torture", name,
 			     default_value);
 }
 
 double torture_setting_double(struct torture_context *test, const char *name, 
 							double default_value)
 {
-	return lp_parm_double(test->lp_ctx, NULL, "torture", name, default_value);
+	return lpcfg_parm_double(test->lp_ctx, NULL, "torture", name, default_value);
 }
 
 bool torture_setting_bool(struct torture_context *test, const char *name, 
 							bool default_value)
 {
-	return lp_parm_bool(test->lp_ctx, NULL, "torture", name, default_value);
+	return lpcfg_parm_bool(test->lp_ctx, NULL, "torture", name, default_value);
 }
 
 const char *torture_setting_string(struct torture_context *test, 
@@ -482,7 +482,7 @@ const char *torture_setting_string(struct torture_context *test,
 	SMB_ASSERT(test != NULL);
 	SMB_ASSERT(test->lp_ctx != NULL);
 	
-	ret = lp_parm_string(test->lp_ctx, NULL, "torture", name);
+	ret = lpcfg_parm_string(test->lp_ctx, NULL, "torture", name);
 
 	if (ret == NULL)
 		return default_value;

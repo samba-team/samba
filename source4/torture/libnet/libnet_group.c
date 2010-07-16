@@ -53,7 +53,7 @@ bool torture_groupinfo_api(struct torture_context *torture)
 		return false;
 	}
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, p->binding_handle, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
@@ -116,7 +116,7 @@ bool torture_grouplist(struct torture_context *torture)
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	mem_ctx = talloc_init("torture group list");
 
 	ZERO_STRUCT(req);
@@ -180,7 +180,7 @@ bool torture_creategroup(struct torture_context *torture)
 	ctx->cred = cmdline_credentials;
 
 	req.in.group_name = TEST_GROUPNAME;
-	req.in.domain_name = lp_workgroup(torture->lp_ctx);
+	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 	req.out.error_string = NULL;
 
 	status = libnet_CreateGroup(ctx, mem_ctx, &req);

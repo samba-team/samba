@@ -55,7 +55,7 @@ struct model_ops {
 
 	/* function to create a task */
 	void (*new_task)(struct tevent_context *, 
-			 struct loadparm_context *lp_ctx, 
+			 struct loadparm_context *lp_ctx,
 			 const char *service_name,
 			 void (*)(struct tevent_context *, 
 				  struct loadparm_context *, struct server_id, 
@@ -63,7 +63,7 @@ struct model_ops {
 			 void *);
 
 	/* function to terminate a connection or task */
-	void (*terminate)(struct tevent_context *, struct loadparm_context *lp_ctx, 
+	void (*terminate)(struct tevent_context *, struct loadparm_context *lp_ctx,
 			  const char *reason);
 
 	/* function to set a title for the connection or task */

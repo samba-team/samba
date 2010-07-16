@@ -833,7 +833,7 @@ static NTSTATUS svfs_fsattr(struct ntvfs_module_context *ntvfs,
 	fs->generic.out.serial_number = 1;
 	fs->generic.out.fs_type = talloc_strdup(req, "NTFS");
 	fs->generic.out.volume_name = talloc_strdup(req, 
-						    lp_servicename(req->tcon->service));
+						    lpcfg_servicename(req->tcon->service));
 
 	return NT_STATUS_OK;
 }

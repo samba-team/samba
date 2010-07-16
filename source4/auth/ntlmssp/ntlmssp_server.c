@@ -724,7 +724,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->settings->lp_ctx)
+	ntlmssp_state->allow_lm_key = (lpcfg_lanman_auth(gensec_security->settings->lp_ctx)
 					  && gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "allow_lm_key", false));
 
 	ntlmssp_state->neg_flags =
@@ -766,22 +766,22 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	if (lp_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
+	if (lpcfg_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
 		ntlmssp_state->server.is_standalone = true;
 	} else {
 		ntlmssp_state->server.is_standalone = false;
 	}
 
-	ntlmssp_state->server.netbios_name = lp_netbios_name(gensec_security->settings->lp_ctx);
+	ntlmssp_state->server.netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
 
-	ntlmssp_state->server.netbios_domain = lp_workgroup(gensec_security->settings->lp_ctx);
+	ntlmssp_state->server.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
 	{
 		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
 
 		/* Find out the DNS domain name */
 		dnsdomname[0] = '\0';
-		safe_strcpy(dnsdomname, lp_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
+		safe_strcpy(dnsdomname, lpcfg_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
 
 		/* Find out the DNS host name */
 		safe_strcpy(dnsname, ntlmssp_state->server.netbios_name, sizeof(dnsname) - 1);

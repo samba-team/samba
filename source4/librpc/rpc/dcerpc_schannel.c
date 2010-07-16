@@ -327,7 +327,7 @@ static void continue_schannel_key(struct composite_context *ctx)
 
 	/* send bind auth request with received creds */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table, s->credentials, 
-					 lp_gensec_settings(c, s->lp_ctx),
+					 lpcfg_gensec_settings(c, s->lp_ctx),
 					 DCERPC_AUTH_TYPE_SCHANNEL, s->auth_level,
 					 NULL);
 	if (composite_nomem(auth_req, c)) return;

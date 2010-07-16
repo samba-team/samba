@@ -582,7 +582,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 					    data->partitions[i]->ctrl->dn) != 0)) {
 				char *ref = talloc_asprintf(ac,
 							    "ldap://%s/%s%s",
-							    lp_dnsdomain(lp_ctx),
+							    lpcfg_dnsdomain(lp_ctx),
 							    ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
 							    req->op.search.scope == LDB_SCOPE_ONELEVEL ? "??base" : "");
 

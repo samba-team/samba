@@ -54,7 +54,7 @@ static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
 					 const struct auth_usersupplied_info *user_info, 
 					 struct auth_serversupplied_info **_server_info)
 {
-	return auth_anonymous_server_info(mem_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx), _server_info);
+	return auth_anonymous_server_info(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx), _server_info);
 }
 
 static const struct auth_operations anonymous_auth_ops = {

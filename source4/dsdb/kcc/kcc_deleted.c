@@ -46,7 +46,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	uint32_t tombstoneLifetime;
 
 	time_t t = time(NULL);
-	if (t - s->last_deleted_check < lp_parm_int(s->task->lp_ctx, NULL, "kccsrv",
+	if (t - s->last_deleted_check < lpcfg_parm_int(s->task->lp_ctx, NULL, "kccsrv",
 						    "check_deleted_interval", 600)) {
 		return NT_STATUS_OK;
 	}

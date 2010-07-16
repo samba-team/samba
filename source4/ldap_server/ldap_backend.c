@@ -184,9 +184,9 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 	conn->ldb = ldb_wrap_connect(conn, 
 				     conn->connection->event.ctx,
 				     conn->lp_ctx,
-				     lp_sam_url(conn->lp_ctx), 
+				     lpcfg_sam_url(conn->lp_ctx),
 				     conn->session_info,
-				     samdb_credentials(conn->connection->event.ctx, conn->lp_ctx), 
+				     samdb_credentials(conn->connection->event.ctx, conn->lp_ctx),
 				     conn->global_catalog ? LDB_FLG_RDONLY : 0);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -199,7 +199,7 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 			= gensec_use_kerberos_mechs(conn, backends, conn->server_credentials);
 		unsigned int i, j = 0;
 		for (i = 0; ops && ops[i]; i++) {
-			if (!lp_parm_bool(conn->lp_ctx,  NULL, "gensec", ops[i]->name, ops[i]->enabled))
+			if (!lpcfg_parm_bool(conn->lp_ctx,  NULL, "gensec", ops[i]->name, ops[i]->enabled))
 				continue;
 
 			if (ops[i]->sasl_name && ops[i]->server_start) {

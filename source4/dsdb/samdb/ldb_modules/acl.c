@@ -150,7 +150,7 @@ static int acl_module_init(struct ldb_module *module)
 	}
 
 	data->password_attrs = NULL;
-	data->acl_perform = lp_parm_bool(ldb_get_opaque(ldb, "loadparm"),
+	data->acl_perform = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"),
 					 NULL, "acl", "perform", false);
 	ldb_module_set_private(module, data);
 

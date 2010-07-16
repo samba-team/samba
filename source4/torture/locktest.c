@@ -118,8 +118,8 @@ static struct smbcli_state *connect_one(struct tevent_context *ev,
 	struct smbcli_options options;
 	struct smbcli_session_options session_options;
 
-	lp_smbcli_options(lp_ctx, &options);
-	lp_smbcli_session_options(lp_ctx, &session_options);
+	lpcfg_smbcli_options(lp_ctx, &options);
+	lpcfg_smbcli_session_options(lp_ctx, &session_options);
 
 	printf("connect_one(%s, %d, %d)\n", share, snum, conn);
 
@@ -133,7 +133,7 @@ static struct smbcli_state *connect_one(struct tevent_context *ev,
 		char **unc_list = NULL;
 		int num_unc_names;
 		const char *p;
-		p = lp_parm_string(lp_ctx, NULL, "torture", "unclist");
+		p = lpcfg_parm_string(lp_ctx, NULL, "torture", "unclist");
 		if (p) {
 			char *h, *s;
 			unc_list = file_lines_load(p, &num_unc_names, 0, NULL);
@@ -161,13 +161,13 @@ static struct smbcli_state *connect_one(struct tevent_context *ev,
 		printf("\\\\%s\\%s\n", server, share);
 		status = smbcli_full_connection(NULL, &c, 
 						server, 
-						lp_smb_ports(lp_ctx),
+						lpcfg_smb_ports(lp_ctx),
 						share, NULL,
-						lp_socket_options(lp_ctx),
+						lpcfg_socket_options(lp_ctx),
 						servers[snum], 
-						lp_resolve_context(lp_ctx),
+						lpcfg_resolve_context(lp_ctx),
 						ev, &options, &session_options,
-						lp_gensec_settings(mem_ctx, lp_ctx));
+						lpcfg_gensec_settings(mem_ctx, lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}
@@ -200,7 +200,7 @@ static void reconnect(struct tevent_context *ev,
 			}
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(ev, lp_ctx, mem_ctx, share[server], 
+		cli[server][conn] = connect_one(ev, lp_ctx, mem_ctx, share[server],
 						server, conn);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
@@ -598,7 +598,7 @@ static void usage(poptContext pc)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_UNCLIST:
-			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			lpcfg_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
 		case 'U':
 			if (username_count == 2) {

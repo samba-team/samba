@@ -513,7 +513,7 @@ static bool test_async(struct torture_context *tctx,
 		return false;
 	}
 
-	lp_smbcli_session_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
 	torture_comment(tctx, "Testing LOCKING_ANDX_CANCEL_LOCK\n");
 	io.generic.level = RAW_LOCK_LOCKX;
@@ -802,9 +802,9 @@ static bool test_async(struct torture_context *tctx,
 	session = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
-	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session->vuid = setup.out.vuid;

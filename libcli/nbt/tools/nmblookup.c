@@ -357,14 +357,14 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	load_interfaces(NULL, lp_interfaces(cmdline_lp_ctx), &ifaces);
+	load_interfaces(NULL, lpcfg_interfaces(cmdline_lp_ctx), &ifaces);
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
 
-		ret &= process_one(cmdline_lp_ctx, ev, ifaces, name, lp_nbt_port(cmdline_lp_ctx));
+		ret &= process_one(cmdline_lp_ctx, ev, ifaces, name, lpcfg_nbt_port(cmdline_lp_ctx));
 	}
 
 	talloc_free(ev);

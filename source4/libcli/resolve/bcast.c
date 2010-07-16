@@ -101,6 +101,6 @@ bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interf
 bool resolve_context_add_bcast_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	struct interface *ifaces;
-	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
-	return resolve_context_add_bcast_method(ctx, ifaces, lp_nbt_port(lp_ctx), lp_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
+	load_interfaces(ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	return resolve_context_add_bcast_method(ctx, ifaces, lpcfg_nbt_port(lp_ctx), lpcfg_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
 }

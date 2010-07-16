@@ -169,7 +169,7 @@ static void kccsrv_task_init(struct task_server *task)
 	struct kccsrv_service *service;
 	uint32_t periodic_startup_interval;
 
-	switch (lp_server_role(task->lp_ctx)) {
+	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "kccsrv: no KCC required in standalone configuration", false);
 		return;
@@ -217,9 +217,9 @@ static void kccsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	periodic_startup_interval	= lp_parm_int(task->lp_ctx, NULL, "kccsrv", 
+	periodic_startup_interval	= lpcfg_parm_int(task->lp_ctx, NULL, "kccsrv",
 						      "periodic_startup_interval", 15); /* in seconds */
-	service->periodic.interval	= lp_parm_int(task->lp_ctx, NULL, "kccsrv", 
+	service->periodic.interval	= lpcfg_parm_int(task->lp_ctx, NULL, "kccsrv",
 						      "periodic_interval", 300); /* in seconds */
 
 	status = kccsrv_periodic_schedule(service, periodic_startup_interval);

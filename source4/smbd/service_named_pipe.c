@@ -312,7 +312,7 @@ NTSTATUS tstream_setup_named_pipe(struct tevent_context *event_context,
 		goto fail;
 	}
 
-	dirname = talloc_asprintf(pipe_sock, "%s/np", lp_ncalrpc_dir(lp_ctx));
+	dirname = talloc_asprintf(pipe_sock, "%s/np", lpcfg_ncalrpc_dir(lp_ctx));
 	if (dirname == NULL) {
 		goto fail;
 	}

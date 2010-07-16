@@ -368,7 +368,7 @@ again:
 	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
-					 lp_netbios_name(torture->lp_ctx), 
+					 lpcfg_netbios_name(torture->lp_ctx),
 					 timestring(join, time(NULL)));
 
 	printf("Resetting ACB flags, force pw change time\n");
@@ -425,7 +425,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		return NULL;
 	}
 	
-	libnet_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);	
+	libnet_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);
 	if (!libnet_ctx) {
 		talloc_free(tj);
 		return NULL;
@@ -489,7 +489,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	
 	u.info21.description.string = talloc_asprintf(tj, 
 						      "Samba4 torture account created by host %s: %s", 
-						      lp_netbios_name(tctx->lp_ctx), timestring(tj, time(NULL)));
+						      lpcfg_netbios_name(tctx->lp_ctx), timestring(tj, time(NULL)));
 
 	status = dcerpc_samr_SetUserInfo_r(tj->p->binding_handle, tj, &s);
 	if (!NT_STATUS_IS_OK(status)) {

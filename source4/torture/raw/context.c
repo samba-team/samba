@@ -89,14 +89,14 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 
 	printf("create a second security context on the same transport\n");
 
-	lp_smbcli_session_options(tctx->lp_ctx, &options);
-	gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
+	gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	session = smbcli_session_init(cli->transport, tctx, false, options);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 	setup.in.gensec_settings = gensec_settings;
@@ -112,7 +112,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 
@@ -139,7 +139,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	
 		setup.in.credentials = cmdline_credentials;
 
@@ -152,7 +152,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
-		setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 		
 		anon_creds = cli_credentials_init(tctx);
 		cli_credentials_set_conf(anon_creds, tctx->lp_ctx);
@@ -229,7 +229,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	for (i=0; i <ARRAY_SIZE(sessions); i++) {
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-		setups[i].in.workgroup = lp_workgroup(tctx->lp_ctx);
+		setups[i].in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 		
 		setups[i].in.credentials = cmdline_credentials;
 		setups[i].in.gensec_settings = gensec_settings;
@@ -394,15 +394,15 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
 
-	lp_smbcli_session_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
 	printf("create the first new sessions\n");
 	session1 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
-	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session1->vuid = setup.out.vuid;
@@ -457,9 +457,9 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
-	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session2->vuid = setup.out.vuid;
@@ -651,16 +651,16 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 		return false;
 	}
 
-	lp_smbcli_session_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
 	printf("create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport, tctx, false, options);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
-	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);	
@@ -903,9 +903,9 @@ bool torture_raw_context(struct torture_context *torture,
 			 struct smbcli_state *cli)
 {
 	bool ret = true;
-	if (lp_use_spnego(torture->lp_ctx)) {
+	if (lpcfg_use_spnego(torture->lp_ctx)) {
 		ret &= torture_raw_context_int(torture, cli);
-		lp_set_cmdline(torture->lp_ctx, "use spnego", "False");
+		lpcfg_set_cmdline(torture->lp_ctx, "use spnego", "False");
 	}
 
 	ret &= torture_raw_context_int(torture, cli);

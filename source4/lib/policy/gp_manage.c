@@ -156,7 +156,7 @@ NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, str
 	gpo->display_name = talloc_strdup(gpo, display_name);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->display_name, mem_ctx);
 
-	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lp_dnsdomain(gp_ctx->lp_ctx), lp_dnsdomain(gp_ctx->lp_ctx), name);
+	gpo->file_sys_path = talloc_asprintf(gpo, "\\\\%s\\sysvol\\%s\\Policies\\%s", lpcfg_dnsdomain(gp_ctx->lp_ctx), lpcfg_dnsdomain(gp_ctx->lp_ctx), name);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(gpo->file_sys_path, mem_ctx);
 
 	/* Create the GPT */

@@ -54,7 +54,7 @@ static bool nbt_register_own(struct torture_context *tctx)
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
 	myaddress = iface_best_ip(ifaces, address);
 
@@ -70,7 +70,7 @@ static bool nbt_register_own(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
-	io.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	io.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
 	io.in.register_demand = false;
@@ -123,7 +123,7 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 	
-	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
+	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
 	myaddress = iface_best_ip(ifaces, address);
 
@@ -140,7 +140,7 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 
 	io.in.name = name;
 	io.in.dest_addr = address;
-	io.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	io.in.dest_port = lpcfg_nbt_port(tctx->lp_ctx);
 	io.in.address = myaddress;
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
 	io.in.broadcast = false;

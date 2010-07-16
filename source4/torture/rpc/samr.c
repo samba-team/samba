@@ -2859,11 +2859,11 @@ static bool test_SamLogon(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_schannel_creds(p->conn->security_state.generic_state, tctx, &creds), "");
 
-	if (lp_client_lanman_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_ntlmv2_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 

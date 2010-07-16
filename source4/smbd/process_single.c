@@ -71,7 +71,7 @@ static void single_accept_connection(struct tevent_context *ev,
 
 	/* The cluster_id(0, fd) cannot collide with the incrementing
 	 * task below, as the first component is 0, not 1 */
-	new_conn(ev, lp_ctx, connected_socket, 
+	new_conn(ev, lp_ctx, connected_socket,
 		 cluster_id(0, socket_get_fd(connected_socket)), private_data);
 }
 
@@ -79,7 +79,7 @@ static void single_accept_connection(struct tevent_context *ev,
   called to startup a new task
 */
 static void single_new_task(struct tevent_context *ev, 
-			    struct loadparm_context *lp_ctx, 
+			    struct loadparm_context *lp_ctx,
 			    const char *service_name,
 			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private_data)
@@ -97,7 +97,7 @@ static void single_new_task(struct tevent_context *ev,
 
 
 /* called when a task goes down */
-static void single_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
+static void single_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason)
 {
 	DEBUG(3,("single_terminate: reason[%s]\n",reason));
 }

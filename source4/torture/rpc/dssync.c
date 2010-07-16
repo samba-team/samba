@@ -104,7 +104,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	make_nbt_name_server(&name, ctx->drsuapi_binding->host);
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lp_resolve_context(tctx->lp_ctx), &name, tctx,
+	status = resolve_name(lpcfg_resolve_context(tctx->lp_ctx), &name, tctx,
 			      &ctx->dest_address, tctx->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
@@ -164,7 +164,7 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
 	our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-	if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "xpress", false)) {
+	if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "xpress", false)) {
 		our_bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 	}
 	our_bind_info28->site_guid		= GUID_zero();
@@ -272,7 +272,7 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 	ldb_set_modules_dir(ldb,
 			    talloc_asprintf(ldb,
 					    "%s/ldb",
-					    lp_modulesdir(tctx->lp_ctx)));
+					    lpcfg_modulesdir(tctx->lp_ctx)));
 
 	if (ldb_set_opaque(ldb, "credentials", credentials)) {
 		talloc_free(ldb);
@@ -311,11 +311,11 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 
 	ret2 = tsocket_address_inet_from_strings(tctx, "ip",
 						 ctx->dest_address,
-						 lp_cldap_port(tctx->lp_ctx),
+						 lpcfg_cldap_port(tctx->lp_ctx),
 						 &dest_addr);
 	if (ret2 != 0) {
 		printf("failed to create tsocket_address for '%s' port %u - %s\n",
-			ctx->drsuapi_binding->host, lp_cldap_port(tctx->lp_ctx),
+			ctx->drsuapi_binding->host, lpcfg_cldap_port(tctx->lp_ctx),
 			strerror(errno));
 		return false;
 	}
@@ -337,7 +337,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	r.in.req->req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
 	r.in.req->req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req->req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(ctx, "%s\\", lp_workgroup(tctx->lp_ctx));
+	names[0].str = talloc_asprintf(ctx, "%s\\", lpcfg_workgroup(tctx->lp_ctx));
 
 	r.out.level_out			= &level_out;
 	r.out.ctr			= &ctr;
@@ -600,12 +600,12 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		talloc_free(search_req);
 	}
 
-	if (!lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
+	if (!lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
 		talloc_free(objs);
 		return true;	
 	}
 
-	save_values_dir = lp_parm_string(tctx->lp_ctx, NULL, "dssync", "save_pwd_blobs_dir");
+	save_values_dir = lpcfg_parm_string(tctx->lp_ctx, NULL, "dssync", "save_pwd_blobs_dir");
 
 	for (cur = first_object; cur; cur = cur->next_object) {
 		const char *dn;
@@ -773,17 +773,17 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
-	partition = lp_parm_string(tctx->lp_ctx, NULL, "dssync", "partition");
+	partition = lpcfg_parm_string(tctx->lp_ctx, NULL, "dssync", "partition");
 	if (partition == NULL) {
 		partition = ctx->domain_dn;
 		printf("dssync:partition not specified, defaulting to %s.\n", ctx->domain_dn);
 	}
 
-	highest_usn = lp_parm_int(tctx->lp_ctx, NULL, "dssync", "highest_usn", 0);
+	highest_usn = lpcfg_parm_int(tctx->lp_ctx, NULL, "dssync", "highest_usn", 0);
 
-	array[0].level = lp_parm_int(tctx->lp_ctx, NULL, "dssync", "get_nc_changes_level", array[0].level);
+	array[0].level = lpcfg_parm_int(tctx->lp_ctx, NULL, "dssync", "get_nc_changes_level", array[0].level);
 
-	if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
+	if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
 		const struct samr_Password *nthash;
 		nthash = cli_credentials_get_nt_hash(ctx->new_dc.credentials, ctx);
 		if (nthash) {
@@ -819,10 +819,10 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			r.in.req->req5.highwatermark.highest_usn	= highest_usn;
 			r.in.req->req5.uptodateness_vector		= NULL;
 			r.in.req->req5.replica_flags			= 0;
-			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
+			if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
 				r.in.req->req5.replica_flags		|= DRSUAPI_DRS_USE_COMPRESSION;
 			}
-			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
+			if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req->req5.replica_flags		|= DRSUAPI_DRS_WRIT_REP;
 			}
 			r.in.req->req5.replica_flags			|= DRSUAPI_DRS_INIT_SYNC
@@ -851,10 +851,10 @@ static bool test_FetchData(struct torture_context *tctx, struct DsSyncTest *ctx)
 			r.in.req->req8.highwatermark.highest_usn	= highest_usn;
 			r.in.req->req8.uptodateness_vector		= NULL;
 			r.in.req->req8.replica_flags			= 0;
-			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
+			if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "compression", false)) {
 				r.in.req->req8.replica_flags		|= DRSUAPI_DRS_USE_COMPRESSION;
 			}
-			if (lp_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
+			if (lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "neighbour_writeable", true)) {
 				r.in.req->req8.replica_flags		|= DRSUAPI_DRS_WRIT_REP;
 			}
 			r.in.req->req8.replica_flags			|= DRSUAPI_DRS_INIT_SYNC
@@ -996,11 +996,11 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	r.out.info		= &info;
 	r.out.level_out		= &level_out;
 
-	req.req1.flags = lp_parm_int(tctx->lp_ctx, NULL,
+	req.req1.flags = lpcfg_parm_int(tctx->lp_ctx, NULL,
 				     "dssync", "nt4changelog_flags",
 				     DRSUAPI_NT4_CHANGELOG_GET_CHANGELOG |
 				     DRSUAPI_NT4_CHANGELOG_GET_SERIAL_NUMBERS);
-	req.req1.preferred_maximum_length = lp_parm_int(tctx->lp_ctx, NULL,
+	req.req1.preferred_maximum_length = lpcfg_parm_int(tctx->lp_ctx, NULL,
 					"dssync", "nt4changelog_preferred_len",
 					0x00004000);
 

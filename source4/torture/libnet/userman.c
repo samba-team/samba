@@ -325,7 +325,7 @@ bool torture_useradd(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "RPC connect failed");
 	b = p->binding_handle;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, b, &domain_name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;
@@ -386,7 +386,7 @@ bool torture_userdel(struct torture_context *torture)
 	}
 	b = p->binding_handle;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, b, &domain_name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;
@@ -431,7 +431,7 @@ bool torture_usermod(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "RPC connect");
 	b = p->binding_handle;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	name = talloc_strdup(mem_ctx, TEST_USERNAME);
 
 	if (!test_domain_open(torture, b, &domain_name, mem_ctx, &h, &sid)) {

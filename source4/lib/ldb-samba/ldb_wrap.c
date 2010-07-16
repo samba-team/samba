@@ -166,7 +166,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	ldb_set_modules_dir(ldb,
 			    talloc_asprintf(ldb,
 					    "%s/ldb",
-					    lp_modulesdir(lp_ctx)));
+					    lpcfg_modulesdir(lp_ctx)));
 
 	if (session_info) {
 		if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
@@ -197,7 +197,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 		return NULL;
 	}
 
-	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
+	if (lp_ctx != NULL && strcmp(lpcfg_sam_url(lp_ctx), url) == 0) {
 		dsdb_set_global_schema(ldb);
 	}
 
@@ -212,7 +212,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	}
 
 	/* allow admins to force non-sync ldb for all databases */
-	if (lp_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
+	if (lpcfg_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
@@ -253,7 +253,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	DLIST_ADD(ldb_wrap_list, w);
 
 	/* make the resulting schema global */
-	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
+	if (lp_ctx != NULL && strcmp(lpcfg_sam_url(lp_ctx), url) == 0) {
 		struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 		if (schema) {
 			dsdb_make_schema_global(ldb, schema);

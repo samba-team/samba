@@ -270,16 +270,16 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 	struct cli_credentials *credentials = cmdline_credentials;
 	struct smbcli_options options;
 
-	lp_smbcli_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
 	status = smb2_connect(tctx, host, 
-						  lp_smb_ports(tctx->lp_ctx),
+						  lpcfg_smb_ports(tctx->lp_ctx),
 						  share, 
-			      lp_resolve_context(tctx->lp_ctx),
+			      lpcfg_resolve_context(tctx->lp_ctx),
 			      credentials, tree, 
 			      tctx->ev, &options,
-				  lp_socket_options(tctx->lp_ctx),
-				  lp_gensec_settings(tctx, tctx->lp_ctx)
+				  lpcfg_socket_options(tctx->lp_ctx),
+				  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
 				  );
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",

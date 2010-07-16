@@ -1186,7 +1186,7 @@ static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx,
 		
 		state->remote_ldb = ldb_wrap_connect(mem_ctx, 
 						     state->samsync_state->machine_net_ctx->event_ctx,
-						     state->samsync_state->machine_net_ctx->lp_ctx, 
+						     state->samsync_state->machine_net_ctx->lp_ctx,
 						     ldap_url, 
 						     NULL, state->samsync_state->machine_net_ctx->cred,
 						     0);
@@ -1215,7 +1215,7 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 
 	state->sam_ldb         = samdb_connect(mem_ctx, 
 					       ctx->event_ctx,
-					       ctx->lp_ctx, 
+					       ctx->lp_ctx,
 					       r->in.session_info);
 	if (!state->sam_ldb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;

@@ -71,7 +71,7 @@ bool torture_groupadd(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "RPC connection");
 	b = p->binding_handle;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, b, &domain_name, mem_ctx, &h, &sid)) {
 		ret = false;
 		goto done;

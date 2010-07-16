@@ -58,7 +58,7 @@ static void nbtd_wins_register_retry(struct tevent_context *ev, struct tevent_ti
 static void nbtd_wins_start_refresh_timer(struct nbtd_iface_name *iname)
 {
 	uint32_t refresh_time;
-	uint32_t max_refresh_time = lp_parm_int(iname->iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "max_refresh_time", 7200);
+	uint32_t max_refresh_time = lpcfg_parm_int(iname->iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "max_refresh_time", 7200);
 
 	refresh_time = MIN(max_refresh_time, iname->ttl/2);
 	
@@ -141,7 +141,7 @@ static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te
 	/* setup a wins name refresh request */
 	io.in.name            = iname->name;
 	io.in.wins_servers    = (const char **)str_list_make_single(tmp_ctx, iname->wins_server);
-	io.in.wins_port       = lp_nbt_port(iface->nbtsrv->task->lp_ctx);
+	io.in.wins_port       = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);
 	io.in.addresses       = nbtd_address_list(iface, tmp_ctx);
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
@@ -180,7 +180,7 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* none of the WINS servers responded - try again 
 		   periodically */
-		int wins_retry_time = lp_parm_int(iname->iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "wins_retry", 300);
+		int wins_retry_time = lpcfg_parm_int(iname->iface->nbtsrv->task->lp_ctx, NULL, "nbtd", "wins_retry", 300);
 		event_add_timed(iname->iface->nbtsrv->task->event_ctx, 
 				iname,
 				timeval_current_ofs(wins_retry_time, 0),
@@ -237,8 +237,8 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 
 	/* setup a wins name register request */
 	io.in.name            = iname->name;
-	io.in.wins_port       = lp_nbt_port(iname->iface->nbtsrv->task->lp_ctx);
-	io.in.wins_servers    = lp_wins_server_list(iname->iface->nbtsrv->task->lp_ctx);
+	io.in.wins_port       = lpcfg_nbt_port(iname->iface->nbtsrv->task->lp_ctx);
+	io.in.wins_servers    = lpcfg_wins_server_list(iname->iface->nbtsrv->task->lp_ctx);
 	io.in.addresses       = nbtd_address_list(iface, iname);
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;

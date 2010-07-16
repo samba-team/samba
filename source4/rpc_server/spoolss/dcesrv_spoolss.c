@@ -174,10 +174,10 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 	server_name += 2;
 
 	/* NETBIOS NAME is ok */
-	ret = strequal(lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), server_name);
+	ret = strequal(lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx), server_name);
 	if (ret) return WERR_OK;
 
-	aliases = lp_netbios_aliases(dce_call->conn->dce_ctx->lp_ctx);
+	aliases = lpcfg_netbios_aliases(dce_call->conn->dce_ctx->lp_ctx);
 
 	for (i=0; aliases && aliases[i]; i++) {
 		if (strequal(aliases[i], server_name)) {
@@ -188,12 +188,12 @@ static WERROR dcesrv_spoolss_check_server_name(struct dcesrv_call_state *dce_cal
 	/* DNS NAME is ok
 	 * TODO: we need to check if aliases are also ok
 	 */
-	dnsdomain = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+	dnsdomain = lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 	if (dnsdomain != NULL) {
 		char *str;
 
 		str = talloc_asprintf(mem_ctx, "%s.%s",
-						lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx),
+						lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx),
 						dnsdomain);
 		W_ERROR_HAVE_NO_MEMORY(str);
 
@@ -220,7 +220,7 @@ static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const st
 	struct ntptr_context *ntptr;
 
 	status = ntptr_init_context(dce_call->context, dce_call->conn->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
-				    lp_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
+				    lpcfg_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	dce_call->context->private_data = ntptr;
@@ -1191,7 +1191,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	}
 
 	ZERO_STRUCT(rop);
-	rop.in.server_name = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+	rop.in.server_name = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
 	W_ERROR_HAVE_NO_MEMORY(rop.in.server_name);
 	rop.in.printer_local = 0;
 	rop.in.type = REG_NONE;

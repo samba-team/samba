@@ -83,7 +83,7 @@ static int samdb_credentials_destructor(struct cli_credentials *creds)
   that we always get the same pointer in ldb_wrap_connect()
  */
 struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx, 
-					  struct loadparm_context *lp_ctx) 
+					  struct loadparm_context *lp_ctx)
 {
 	static struct cli_credentials *static_credentials;
 	struct cli_credentials *cred;
@@ -126,9 +126,9 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct auth_session_info *session_info)
 {
 	struct ldb_context *ldb;
-	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, 
-			       lp_sam_url(lp_ctx), session_info,
-			       samdb_credentials(ev_ctx, lp_ctx), 
+	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
+			       lpcfg_sam_url(lp_ctx), session_info,
+			       samdb_credentials(ev_ctx, lp_ctx),
 			       0);
 	if (!ldb) {
 		return NULL;

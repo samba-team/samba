@@ -808,7 +808,7 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].flags       = 0;
 
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name, 
+		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name,
 						 &authority_name, &sid, &rtype, &rid);
 		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
 			continue;
@@ -953,7 +953,7 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, state, mem_ctx, name, 
+		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, state, mem_ctx, name,
 						 &authority_name, &sid, &rtype, &rid);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;

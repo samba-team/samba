@@ -378,7 +378,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+	if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < schema_objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -652,7 +652,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		return werror_to_ntstatus(status);
 	}
 
-	if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+	if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
 		for (i=0; i < objs->num_objects; i++) {
 			struct ldb_ldif ldif;
 			fprintf(stdout, "#\n");
@@ -689,7 +689,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 			return NT_STATUS_FOOBAR;
 		}
 
-		if (lp_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
+		if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
 			DEBUG(0,("# %s\n", sa->lDAPDisplayName));
 			NDR_PRINT_DEBUG(drsuapi_DsReplicaLinkedAttribute, &linked_attributes[i]);
 			dump_data(0,
@@ -727,7 +727,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_reference(join, lp_netbios_name(ctx->lp_ctx));
+		netbios_name = talloc_reference(join, lpcfg_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
 			talloc_free(join);
 			r->out.error_string = NULL;
@@ -780,8 +780,8 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	/* Now set these values into the smb.conf - we probably had
 	 * empty or useless defaults here from whatever smb.conf we
 	 * started with */
-	lp_set_cmdline(s->lp_ctx, "realm", join->out.realm);
-	lp_set_cmdline(s->lp_ctx, "workgroup", join->out.domain_name);
+	lpcfg_set_cmdline(s->lp_ctx, "realm", join->out.realm);
+	lpcfg_set_cmdline(s->lp_ctx, "workgroup", join->out.domain_name);
 
 	b.in.domain_dns_name		= join->out.realm;
 	b.in.domain_netbios_name	= join->out.domain_name;
@@ -796,7 +796,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	b.in.callbacks.config_chunk	= libnet_vampire_cb_store_chunk;
 	b.in.callbacks.domain_chunk	= libnet_vampire_cb_store_chunk;
 
-	b.in.rodc_join = lp_parm_bool(s->lp_ctx, NULL, "repl", "RODC", false);
+	b.in.rodc_join = lpcfg_parm_bool(s->lp_ctx, NULL, "repl", "RODC", false);
 
 	status = libnet_BecomeDC(ctx, s, &b);
 	if (!NT_STATUS_IS_OK(status)) {

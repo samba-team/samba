@@ -50,7 +50,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						dest,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
@@ -283,7 +283,7 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						dest,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
@@ -403,7 +403,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						dest,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
@@ -440,7 +440,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 		   "rootDomainNamingContext" */
 		ZERO_STRUCT(search2);
 		search2.in.dest_address = dest;
-		search2.in.dest_port = lp_cldap_port(tctx->lp_ctx);
+		search2.in.dest_port = lpcfg_cldap_port(tctx->lp_ctx);
 		search2.in.timeout = 10;
 		search2.in.retries = 3;
 		search2.in.filter = "(objectclass=*)";
@@ -485,7 +485,7 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
 						dest,
-						lp_cldap_port(tctx->lp_ctx),
+						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 

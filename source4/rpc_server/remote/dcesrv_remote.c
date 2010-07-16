@@ -42,7 +42,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
         NTSTATUS status;
 	const struct ndr_interface_table *table;
 	struct dcesrv_remote_private *priv;
-	const char *binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
+	const char *binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
 	bool must_free_credentials = true;
@@ -50,7 +50,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	struct dcerpc_binding		*b;
 	struct composite_context	*pipe_conn_req;
 
-	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
+	machine_account = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
 
 	priv = talloc(dce_call->conn, struct dcesrv_remote_private);
 	if (!priv) {
@@ -65,9 +65,9 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	user = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "user");
-	pass = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
-	domain = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
+	user = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "user");
+	pass = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "password");
+	domain = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dceprc_remote", "domain");
 
 	table = ndr_table_by_uuid(&iface->syntax_id.uuid); /* FIXME: What about if_version ? */
 	if (!table) {
@@ -294,7 +294,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	unsigned int i;
-	const char **ifaces = (const char **)str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_remote", "interfaces"),NULL);
+	const char **ifaces = (const char **)str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_remote", "interfaces"),NULL);
 
 	if (!ifaces) {
 		DEBUG(3,("remote_op_init_server: no interfaces configured\n"));

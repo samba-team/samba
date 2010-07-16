@@ -168,7 +168,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(lp_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, ctx->event_ctx);
+	status = resolve_name(lpcfg_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
@@ -179,7 +179,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	r->in.dest_address = dest_addr;
 	r->in.netbios_name = libnet_r->in.netbios_name;
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
-	r->in.cldap_port = lp_cldap_port(ctx->lp_ctx);
+	r->in.cldap_port = lpcfg_cldap_port(ctx->lp_ctx);
 
 	status = libnet_FindSite(tmp_ctx, ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {

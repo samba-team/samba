@@ -56,7 +56,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 				 "(&(objectClass=sambaDomain)(sambaDomainName=%s))",
-				 lp_sam_name(ldb_get_opaque(ldb, "loadparm")));
+				 lpcfg_sam_name(ldb_get_opaque(ldb, "loadparm")));
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       __location__

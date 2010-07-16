@@ -171,7 +171,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx,
 	if (server == NULL) { 
 		return dcerpc_pipe_connect(ctx->event_ctx, p, "ncalrpc", 
 								   &ndr_table_IRemoteActivation,
-					   			   dcom_get_server_credentials(ctx, NULL), ctx->event_ctx, ctx->lp_ctx);
+								   dcom_get_server_credentials(ctx, NULL), ctx->event_ctx, ctx->lp_ctx);
 	}
 	loc_ctx = talloc_new(ctx);
 
@@ -182,7 +182,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx,
 			bd->flags |= DCERPC_DEBUG_PRINT_BOTH;
 		status = dcerpc_pipe_connect_b(ctx->event_ctx, p, bd, 
 									   &ndr_table_IRemoteActivation,
-					       			   dcom_get_server_credentials(ctx, bd->host), ctx->event_ctx, ctx->lp_ctx);
+								   dcom_get_server_credentials(ctx, bd->host), ctx->event_ctx, ctx->lp_ctx);
 		goto end;
 	}
 

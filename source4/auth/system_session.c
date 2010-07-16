@@ -157,7 +157,7 @@ static int system_session_destructor(struct auth_session_info *info)
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials
  */ 
-_PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ctx) 
+_PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ctx)
 {
 	static struct auth_session_info *static_session;
 	NTSTATUS nt_status;
@@ -188,7 +188,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	
-	nt_status = auth_system_server_info(mem_ctx, lp_netbios_name(lp_ctx),
+	nt_status = auth_system_server_info(mem_ctx, lpcfg_netbios_name(lp_ctx),
 					    &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -221,7 +221,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 /*
   Create a system session, but with anonymous credentials (so we do not need to open secrets.ldb)
 */
-_PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx) 
+_PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
@@ -240,7 +240,7 @@ _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 {
 	return _auth_system_session_info(parent_ctx, 
 			lp_ctx,
-			lp_parm_bool(lp_ctx, NULL, "system", "anonymous", false), 
+			lpcfg_parm_bool(lp_ctx, NULL, "system", "anonymous", false),
 			_session_info);
 }
 
@@ -458,8 +458,8 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
-	nt_status = auth_domain_admin_server_info(mem_ctx, lp_netbios_name(lp_ctx),
-						  lp_workgroup(lp_ctx), domain_sid,
+	nt_status = auth_domain_admin_server_info(mem_ctx, lpcfg_netbios_name(lp_ctx),
+						  lpcfg_workgroup(lp_ctx), domain_sid,
 						  &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
@@ -519,7 +519,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	
 	nt_status = auth_anonymous_server_info(mem_ctx,
-					       lp_netbios_name(lp_ctx),
+					       lpcfg_netbios_name(lp_ctx),
 					       &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

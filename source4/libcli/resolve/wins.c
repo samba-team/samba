@@ -77,6 +77,6 @@ bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **a
 bool resolve_context_add_wins_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	struct interface *ifaces;
-	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
-	return resolve_context_add_wins_method(ctx, lp_wins_server_list(lp_ctx), ifaces, lp_nbt_port(lp_ctx), lp_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
+	load_interfaces(ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	return resolve_context_add_wins_method(ctx, lpcfg_wins_server_list(lp_ctx), ifaces, lpcfg_nbt_port(lp_ctx), lpcfg_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
 }

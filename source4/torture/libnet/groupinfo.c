@@ -94,7 +94,7 @@ bool torture_groupinfo(struct torture_context *torture)
 	}
 	b = p->binding_handle;
 
-	name.string = lp_workgroup(torture->lp_ctx);
+	name.string = lpcfg_workgroup(torture->lp_ctx);
 
 	/*
 	 * Testing synchronous version

@@ -300,7 +300,7 @@ static const struct stream_server_ops web_stream_ops = {
 static void websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
-	uint16_t port = lp_web_port(task->lp_ctx);
+	uint16_t port = lpcfg_web_port(task->lp_ctx);
 	const struct model_ops *model_ops;
 	struct web_server_data *wdata;
 
@@ -310,21 +310,21 @@ static void websrv_task_init(struct task_server *task)
 	model_ops = process_model_startup(task->event_ctx, "single");
 	if (!model_ops) goto failed;
 
-	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
+	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces;
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(NULL, lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(NULL, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
 			status = stream_setup_socket(task->event_ctx, 
-						     task->lp_ctx, model_ops, 
+						     task->lp_ctx, model_ops,
 						     &web_stream_ops, 
 						     "ipv4", address, 
-						     &port, lp_socket_options(task->lp_ctx), 
+						     &port, lpcfg_socket_options(task->lp_ctx),
 						     task);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
@@ -333,8 +333,8 @@ static void websrv_task_init(struct task_server *task)
 	} else {
 		status = stream_setup_socket(task->event_ctx, task->lp_ctx,
 					     model_ops, &web_stream_ops, 
-					     "ipv4", lp_socket_address(task->lp_ctx), 
-					     &port, lp_socket_options(task->lp_ctx), task);
+					     "ipv4", lpcfg_socket_address(task->lp_ctx),
+					     &port, lpcfg_socket_options(task->lp_ctx), task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

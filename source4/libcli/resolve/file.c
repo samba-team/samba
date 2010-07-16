@@ -146,5 +146,5 @@ bool resolve_context_add_file_method(struct resolve_context *ctx, const char *lo
 
 bool resolve_context_add_file_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
-	return resolve_context_add_file_method(ctx, lp_parm_string(lp_ctx, NULL, "resolv", "host file"));
+	return resolve_context_add_file_method(ctx, lpcfg_parm_string(lp_ctx, NULL, "resolv", "host file"));
 }

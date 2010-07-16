@@ -1404,7 +1404,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	if (lp_lanman_auth(lp_ctx)) {
+	if (lpcfg_lanman_auth(lp_ctx)) {
 		ret = setup_lm_fields(io);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1807,12 +1807,12 @@ static int setup_io(struct ph_context *ac,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	if (lp_lanman_auth(lp_ctx) && (lm_hash != NULL)) {
+	if (lpcfg_lanman_auth(lp_ctx) && (lm_hash != NULL)) {
 		io->n.lm_hash = talloc(io->ac, struct samr_Password);
 		memcpy(io->n.lm_hash->hash, lm_hash->data, MIN(lm_hash->length,
 		       sizeof(io->n.lm_hash->hash)));
 	}
-	if (lp_lanman_auth(lp_ctx) && (old_lm_hash != NULL)) {
+	if (lpcfg_lanman_auth(lp_ctx) && (old_lm_hash != NULL)) {
 		io->og.lm_hash = talloc(io->ac, struct samr_Password);
 		memcpy(io->og.lm_hash->hash, old_lm_hash->data, MIN(old_lm_hash->length,
 		       sizeof(io->og.lm_hash->hash)));
@@ -2061,9 +2061,9 @@ static int get_domain_data_callback(struct ldb_request *req,
 		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 					 struct loadparm_context);
 
-		ac->status->domain_data.dns_domain = lp_dnsdomain(lp_ctx);
-		ac->status->domain_data.realm = lp_realm(lp_ctx);
-		ac->status->domain_data.netbios_domain = lp_sam_name(lp_ctx);
+		ac->status->domain_data.dns_domain = lpcfg_dnsdomain(lp_ctx);
+		ac->status->domain_data.realm = lpcfg_realm(lp_ctx);
+		ac->status->domain_data.netbios_domain = lpcfg_sam_name(lp_ctx);
 
 		ac->status->reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 

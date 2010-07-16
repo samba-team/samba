@@ -211,8 +211,8 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
-						lp_lanman_auth(lp_ctx),
-						lp_ntlm_auth(lp_ctx),
+						lpcfg_lanman_auth(lp_ctx),
+						lpcfg_ntlm_auth(lp_ctx),
 						MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						challenge,
@@ -226,7 +226,7 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (unix_name) {
 				if (asprintf(unix_name, "%s%c%s", domain,
-					     *lp_winbind_separator(lp_ctx),
+					     *lpcfg_winbind_separator(lp_ctx),
 					     username) < 0) {
 					nt_status = NT_STATUS_NO_MEMORY;
 				}
@@ -477,7 +477,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			/* setup the client side */
 
 			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, 
-							lp_gensec_settings(NULL, lp_ctx));
+							lpcfg_gensec_settings(NULL, lp_ctx));
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(mem_ctx);
 				exit(1);
@@ -490,7 +490,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			const char *winbind_method[] = { "winbind", NULL };
 			struct auth_context *auth_context;
 
-			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), ev);
+			msg = messaging_client_init(state, lpcfg_messaging_path(state, lp_ctx), ev);
 			if (!msg) {
 				talloc_free(mem_ctx);
 				exit(1);
@@ -509,7 +509,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			}
 			
 			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, 
-								 lp_gensec_settings(state, lp_ctx), 
+								 lpcfg_gensec_settings(state, lp_ctx),
 								 auth_context, &state->gensec_state))) {
 				talloc_free(mem_ctx);
 				exit(1);
@@ -708,7 +708,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			reply_code = "AF";
 			reply_arg = talloc_asprintf(state->gensec_state, 
 						    "%s%s%s", session_info->server_info->domain_name, 
-						    lp_winbind_separator(lp_ctx), session_info->server_info->account_name);
+						    lpcfg_winbind_separator(lp_ctx), session_info->server_info->account_name);
 			talloc_free(session_info);
 		}
 	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
@@ -760,7 +760,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
 			if (!full_username) {
-				if (asprintf(&full_username, "%s%c%s", domain, *lp_winbind_separator(lp_ctx), username) < 0) {
+				if (asprintf(&full_username, "%s%c%s", domain, *lpcfg_winbind_separator(lp_ctx), username) < 0) {
 					mux_printf(mux_id, "Error: Out of memory in asprintf!\n.\n");
 					return;
 				}
@@ -785,14 +785,14 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				SAFE_FREE(domain);
 				if (!parse_ntlm_auth_domain_user(full_username, &username, 
 												 &domain, 
-												 *lp_winbind_separator(lp_ctx))) {
+												 *lpcfg_winbind_separator(lp_ctx))) {
 					/* username might be 'tainted', don't print into our new-line deleimianted stream */
 					mux_printf(mux_id, "Error: Could not parse into domain and username\n");
 				}
 			}
 
 			if (!domain) {
-				domain = smb_xstrdup(lp_workgroup(lp_ctx));
+				domain = smb_xstrdup(lpcfg_workgroup(lp_ctx));
 			}
 
 			if (ntlm_server_1_lm_session_key) 
@@ -805,7 +805,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				    local_pw_check_specified(lp_ctx,
 							     username, 
 							      domain, 
-							      lp_netbios_name(lp_ctx),
+							      lpcfg_netbios_name(lp_ctx),
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
@@ -933,7 +933,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 }
 
-static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_helper_mode helper_mode, 
+static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_helper_mode helper_mode,
 				 stdio_helper_function fn, void **private2) 
 {
 	char *buf;
@@ -1040,7 +1040,7 @@ static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_hel
 	talloc_free(buf);
 }
 
-static void squid_stream(struct loadparm_context *lp_ctx, 
+static void squid_stream(struct loadparm_context *lp_ctx,
 			 enum stdio_helper_mode stdio_mode, 
 			 stdio_helper_function fn) {
 	/* initialize FDescs */
@@ -1133,7 +1133,7 @@ int main(int argc, const char **argv)
 	gensec_init(cmdline_lp_ctx);
 
 	if (opt_domain == NULL) {
-		opt_domain = lp_workgroup(cmdline_lp_ctx);
+		opt_domain = lpcfg_workgroup(cmdline_lp_ctx);
 	}
 
 	if (helper_protocol) {
@@ -1160,7 +1160,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (opt_workstation == NULL) {
-		opt_workstation = lp_netbios_name(cmdline_lp_ctx);
+		opt_workstation = lpcfg_netbios_name(cmdline_lp_ctx);
 	}
 
 	if (!opt_password) {
@@ -1171,7 +1171,7 @@ int main(int argc, const char **argv)
 		char *user;
 
 		if (asprintf(&user, "%s%c%s", opt_domain,
-		             *lp_winbind_separator(cmdline_lp_ctx),
+		             *lpcfg_winbind_separator(cmdline_lp_ctx),
 			     opt_username) < 0) {
 			return 1;
 		}

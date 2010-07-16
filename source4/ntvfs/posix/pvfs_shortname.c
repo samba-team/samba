@@ -614,7 +614,7 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 	}
 
 	/* by default have a max of 512 entries in the cache. */
-	ctx->cache_size = lp_parm_int(pvfs->ntvfs->ctx->lp_ctx, NULL, "mangle", "cachesize", 512);
+	ctx->cache_size = lpcfg_parm_int(pvfs->ntvfs->ctx->lp_ctx, NULL, "mangle", "cachesize", 512);
 
 	ctx->prefix_cache = talloc_array(ctx, char *, ctx->cache_size);
 	if (ctx->prefix_cache == NULL) {
@@ -628,7 +628,7 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 	memset(ctx->prefix_cache, 0, sizeof(char *) * ctx->cache_size);
 	memset(ctx->prefix_cache_hashes, 0, sizeof(uint32_t) * ctx->cache_size);
 
-	ctx->mangle_prefix = lp_parm_int(pvfs->ntvfs->ctx->lp_ctx, NULL, "mangle", "prefix", -1);
+	ctx->mangle_prefix = lpcfg_parm_int(pvfs->ntvfs->ctx->lp_ctx, NULL, "mangle", "prefix", -1);
 	if (ctx->mangle_prefix < 0 || ctx->mangle_prefix > 6) {
 		ctx->mangle_prefix = DEFAULT_MANGLE_PREFIX;
 	}

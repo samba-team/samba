@@ -47,7 +47,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
-	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data,
 							  struct loadparm_context);
 	char *parm, *val;
 	const char *ret;
@@ -61,7 +61,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string(lp_ctx, s, parm, val);
+		ret = lpcfg_parm_string(lp_ctx, s, parm, val);
 		if (!ret) {
 			ret = defval;
 		}
@@ -74,25 +74,25 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
-		return lp_pathname(s, lp_default_service(lp_ctx));
+		return lpcfg_pathname(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_COMMENT) == 0) {
-		return lp_comment(s, lp_default_service(lp_ctx));
+		return lpcfg_comment(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return volume_label(s, lp_default_service(lp_ctx));
+		return volume_label(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
-		if (lp_print_ok(s, lp_default_service(lp_ctx))) {
+		if (lpcfg_print_ok(s, lpcfg_default_service(lp_ctx))) {
 			return "PRINTER";
 		}
-		if (strcmp("NTFS", lp_fstype(s, lp_default_service(lp_ctx))) == 0) {
+		if (strcmp("NTFS", lpcfg_fstype(s, lpcfg_default_service(lp_ctx))) == 0) {
 			return "DISK";
 		}
-		return lp_fstype(s, lp_default_service(lp_ctx));
+		return lpcfg_fstype(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_PASSWORD) == 0) {
@@ -109,7 +109,7 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
-	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data,
 							  struct loadparm_context);
 	char *parm, *val;
 	int ret;
@@ -123,7 +123,7 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_int(lp_ctx, s, parm, val, defval);
+		ret = lpcfg_parm_int(lp_ctx, s, parm, val, defval);
 		if (!ret) {
 			ret = defval;
 		}
@@ -132,27 +132,27 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 	}
 
 	if (strcmp(opt_name, SHARE_CSC_POLICY) == 0) {
-		return lp_csc_policy(s, lp_default_service(lp_ctx));
+		return lpcfg_csc_policy(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAX_CONNECTIONS) == 0) {
-		return lp_max_connections(s, lp_default_service(lp_ctx));
+		return lpcfg_max_connections(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_CREATE_MASK) == 0) {
-		return lp_create_mask(s, lp_default_service(lp_ctx));
+		return lpcfg_create_mask(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_DIR_MASK) == 0) {
-		return lp_dir_mask(s, lp_default_service(lp_ctx));
+		return lpcfg_dir_mask(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_DIR_MODE) == 0) {
-		return lp_force_dir_mode(s, lp_default_service(lp_ctx));
+		return lpcfg_force_dir_mode(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_CREATE_MODE) == 0) {
-		return lp_force_create_mode(s, lp_default_service(lp_ctx));
+		return lpcfg_force_create_mode(s, lpcfg_default_service(lp_ctx));
 	}
 
 
@@ -167,7 +167,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
-	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data,
 							  struct loadparm_context);
 	char *parm, *val;
 	bool ret;
@@ -181,7 +181,7 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_bool(lp_ctx, s, parm, val, defval);
+		ret = lpcfg_parm_bool(lp_ctx, s, parm, val, defval);
 		talloc_free(parm);
 		return ret;
 	}
@@ -191,43 +191,43 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	}
 
 	if (strcmp(opt_name, SHARE_BROWSEABLE) == 0) {
-		return lp_browseable(s, lp_default_service(lp_ctx));
+		return lpcfg_browseable(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_READONLY) == 0) {
-		return lp_readonly(s, lp_default_service(lp_ctx));
+		return lpcfg_readonly(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_SYSTEM) == 0) {
-		return lp_map_system(s, lp_default_service(lp_ctx));
+		return lpcfg_map_system(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_HIDDEN) == 0) {
-		return lp_map_hidden(s, lp_default_service(lp_ctx));
+		return lpcfg_map_hidden(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_ARCHIVE) == 0) {
-		return lp_map_archive(s, lp_default_service(lp_ctx));
+		return lpcfg_map_archive(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_LOCKING) == 0) {
-		return lp_strict_locking(s, lp_default_service(lp_ctx));
+		return lpcfg_strict_locking(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_OPLOCKS) == 0) {
-		return lp_oplocks(s, lp_default_service(lp_ctx));
+		return lpcfg_oplocks(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_SYNC) == 0) {
-		return lp_strict_sync(s, lp_default_service(lp_ctx));
+		return lpcfg_strict_sync(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MSDFS_ROOT) == 0) {
-		return lp_msdfs_root(s, lp_default_service(lp_ctx));
+		return lpcfg_msdfs_root(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_CI_FILESYSTEM) == 0) {
-		return lp_ci_filesystem(s, lp_default_service(lp_ctx));
+		return lpcfg_ci_filesystem(s, lpcfg_default_service(lp_ctx));
 	}
 
 	DEBUG(0,("request for unknown share bool option '%s'\n",
@@ -240,7 +240,7 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 {
 	struct loadparm_service *s = talloc_get_type(scfg->opaque, 
 						     struct loadparm_service);
-	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data, 
+	struct loadparm_context *lp_ctx = talloc_get_type(scfg->ctx->priv_data,
 							  struct loadparm_context);
 	char *parm, *val;
 	const char **ret;
@@ -254,21 +254,21 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 		*val = '\0';
 		val++;
 
-		ret = lp_parm_string_list(mem_ctx, lp_ctx, s, parm, val, ",;");
+		ret = lpcfg_parm_string_list(mem_ctx, lp_ctx, s, parm, val, ",;");
 		talloc_free(parm);
 		return ret;
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_ALLOW) == 0) {
-		return lp_hostsallow(s, lp_default_service(lp_ctx));
+		return lpcfg_hostsallow(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_DENY) == 0) {
-		return lp_hostsdeny(s, lp_default_service(lp_ctx));
+		return lpcfg_hostsdeny(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_NTVFS_HANDLER) == 0) {
-		return lp_ntvfs_handler(s, lp_default_service(lp_ctx));
+		return lpcfg_ntvfs_handler(s, lpcfg_default_service(lp_ctx));
 	}
 
 	DEBUG(0,("request for unknown share list option '%s'\n",
@@ -286,7 +286,7 @@ static NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	int num_services;
 	const char **n;
        
-	num_services = lp_numservices((struct loadparm_context *)ctx->priv_data);
+	num_services = lpcfg_numservices((struct loadparm_context *)ctx->priv_data);
 
 	n = talloc_array(mem_ctx, const char *, num_services);
 	if (!n) {
@@ -295,7 +295,7 @@ static NTSTATUS sclassic_list_all(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_services; i++) {
-		n[i] = talloc_strdup(n, lp_servicename(lp_servicebynum((struct loadparm_context *)ctx->priv_data, i)));
+		n[i] = talloc_strdup(n, lpcfg_servicename(lpcfg_servicebynum((struct loadparm_context *)ctx->priv_data, i)));
 		if (!n[i]) {
 			DEBUG(0,("ERROR: Out of memory!\n"));
 			talloc_free(n);
@@ -317,7 +317,7 @@ static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 	struct share_config *s;
 	struct loadparm_service *service;
 
-	service = lp_service((struct loadparm_context *)ctx->priv_data, name);
+	service = lpcfg_service((struct loadparm_context *)ctx->priv_data, name);
 
 	if (service == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -329,7 +329,7 @@ static NTSTATUS sclassic_get_config(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	s->name = talloc_strdup(s, lp_servicename(service));
+	s->name = talloc_strdup(s, lpcfg_servicename(service));
 	if (!s->name) {
 		DEBUG(0,("ERROR: Out of memory!\n"));
 		talloc_free(s);

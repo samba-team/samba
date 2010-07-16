@@ -138,7 +138,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	bool am_rodc;
 	int ret;
 
-	switch (lp_server_role(task->lp_ctx)) {
+	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration", 
 				      false);
@@ -187,8 +187,8 @@ static void dreplsrv_task_init(struct task_server *task)
 		return;
 	}
 
-	periodic_startup_interval	= lp_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
-	service->periodic.interval	= lp_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_interval", 300); /* in seconds */
+	periodic_startup_interval	= lpcfg_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_startup_interval", 15); /* in seconds */
+	service->periodic.interval	= lpcfg_parm_int(task->lp_ctx, NULL, "dreplsrv", "periodic_interval", 300); /* in seconds */
 
 	status = dreplsrv_periodic_schedule(service, periodic_startup_interval);
 	if (!W_ERROR_IS_OK(status)) {
@@ -201,7 +201,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	/* if we are a RODC then we do not send DSReplicaSync*/
 	ret = samdb_rodc(service->samdb, &am_rodc);
 	if (ret == LDB_SUCCESS && !am_rodc) {
-		service->notify.interval = lp_parm_int(task->lp_ctx, NULL, "dreplsrv",
+		service->notify.interval = lpcfg_parm_int(task->lp_ctx, NULL, "dreplsrv",
 							   "notify_interval", 5); /* in seconds */
 		status = dreplsrv_notify_schedule(service, service->notify.interval);
 		if (!W_ERROR_IS_OK(status)) {

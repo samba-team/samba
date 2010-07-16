@@ -101,7 +101,7 @@ bool torture_rpc_countcalls(struct torture_context *torture)
 	const char *iface_name;
 	bool ret = true;
 	const struct ndr_interface_list *l;
-	iface_name = lp_parm_string(torture->lp_ctx, NULL, "countcalls", "interface");
+	iface_name = lpcfg_parm_string(torture->lp_ctx, NULL, "countcalls", "interface");
 	if (iface_name != NULL) {
 		iface = ndr_table_by_name(iface_name);
 		if (!iface) {

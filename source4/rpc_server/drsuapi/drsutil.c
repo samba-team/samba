@@ -107,7 +107,7 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 {
 	enum security_user_level level;
 
-	if (lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, 
+	if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
 			 "drs", "disable_sec_check", false)) {
 		return WERR_OK;
 	}

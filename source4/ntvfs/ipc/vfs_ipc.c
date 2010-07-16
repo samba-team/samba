@@ -270,7 +270,7 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	directory = talloc_asprintf(req, "%s/np",
-				    lp_ncalrpc_dir(ipriv->ntvfs->ctx->lp_ctx));
+				    lpcfg_ncalrpc_dir(ipriv->ntvfs->ctx->lp_ctx));
 	NT_STATUS_HAVE_NO_MEMORY(directory);
 
 	state = talloc(req, struct ipc_open_state);

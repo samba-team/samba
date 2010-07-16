@@ -133,14 +133,14 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 
 	tmp_ctx = talloc_new(NULL);
 
-	lp_ctx = lp_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
-	load_interfaces(tmp_ctx, lp_interfaces(lp_ctx), &ifaces);
+	load_interfaces(tmp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 
 	count = iface_count(ifaces);
 

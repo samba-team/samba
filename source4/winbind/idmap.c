@@ -164,7 +164,7 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 	idmap_ctx->lp_ctx = lp_ctx;
 
 	idmap_ctx->ldb_ctx = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
-					      lp_idmap_url(lp_ctx),
+					      lpcfg_idmap_url(lp_ctx),
 					      system_session(lp_ctx),
 					      NULL, 0);
 	if (idmap_ctx->ldb_ctx == NULL) {
@@ -279,7 +279,7 @@ failed:
  *
  * If no mapping exists, a new mapping will be created.
  *
- * \todo Check if SIDs can be resolved if lp_idmap_trusted_only() == true
+ * \todo Check if SIDs can be resolved if lpcfg_idmap_trusted_only() == true
  * \todo Fix backwards compatibility for Samba3
  *
  * \param idmap_ctx idmap context to use
@@ -398,7 +398,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		goto failed;
 	}
 
-	/*FIXME: if lp_idmap_trusted_only() == true, check if SID can be
+	/*FIXME: if lpcfg_idmap_trusted_only() == true, check if SID can be
 	 * resolved here. */
 
 	ret = idmap_get_bounds(idmap_ctx, &low, &high);

@@ -154,7 +154,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	unix_address = talloc_asprintf(signd_client,
 					"%s/socket",
-					lp_ntp_signd_socket_directory(tctx->lp_ctx));
+					lpcfg_ntp_signd_socket_directory(tctx->lp_ctx));
 	rc = tsocket_address_unix_from_path(mem_ctx,
 					    unix_address,
 					    &signd_client->remote_address);

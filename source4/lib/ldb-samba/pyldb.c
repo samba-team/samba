@@ -56,7 +56,7 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 
 	ldb = PyLdb_AsLdbContext(self);
 
-	lp_ctx = lp_from_py_object(ldb, py_lp_ctx);
+	lp_ctx = lpcfg_from_py_object(ldb, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
 		return NULL;

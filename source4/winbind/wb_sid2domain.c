@@ -84,7 +84,7 @@ struct composite_context *wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 
 	if (dom_sid_equal(service->primary_sid, sid) ||
 	    dom_sid_in_domain(service->primary_sid, sid)) {
-		ctx = wb_get_dom_info_send(state, service, lp_workgroup(service->task->lp_ctx),
+		ctx = wb_get_dom_info_send(state, service, lpcfg_workgroup(service->task->lp_ctx),
 					   service->primary_sid);
 		if (ctx == NULL) goto failed;
 		ctx->async.fn = sid2domain_recv_dom_info;

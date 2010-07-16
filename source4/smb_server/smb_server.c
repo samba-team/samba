@@ -63,7 +63,7 @@ static NTSTATUS smbsrv_recv_generic_request(void *private_data, DATA_BLOB blob)
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	case SMB2_MAGIC:
-		if (lp_srv_maxprotocol(smb_conn->lp_ctx) < PROTOCOL_SMB2) break;
+		if (lpcfg_srv_maxprotocol(smb_conn->lp_ctx) < PROTOCOL_SMB2) break;
 		status = smbsrv_init_smb2_connection(smb_conn);
 		NT_STATUS_NOT_OK_RETURN(status);
 		packet_set_callback(smb_conn->packet, smbsrv_recv_smb2_request);
@@ -157,7 +157,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	irpc_add_name(conn->msg_ctx, "smb_server");
 
-	if (!NT_STATUS_IS_OK(share_get_context_by_name(smb_conn, lp_share_backend(smb_conn->lp_ctx), 
+	if (!NT_STATUS_IS_OK(share_get_context_by_name(smb_conn, lpcfg_share_backend(smb_conn->lp_ctx),
 						       smb_conn->connection->event.ctx,
 						       smb_conn->lp_ctx, &(smb_conn->share_context)))) {
 		smbsrv_terminate_connection(smb_conn, "share_init failed!");
@@ -180,17 +180,17 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
 			       const struct model_ops *model_ops,
 			       const char *address)
 {
-	const char **ports = lp_smb_ports(lp_ctx);
+	const char **ports = lpcfg_smb_ports(lp_ctx);
 	int i;
 	NTSTATUS status;
 
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		status = stream_setup_socket(event_context, lp_ctx, 
+		status = stream_setup_socket(event_context, lp_ctx,
 					     model_ops, &smb_stream_ops, 
 					     "ipv4", address, &port, 
-					     lp_socket_options(lp_ctx), 
+					     lpcfg_socket_options(lp_ctx),
 					     NULL);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -208,12 +208,12 @@ static void smbsrv_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[smbsrv]");
 
-	if (lp_interfaces(task->lp_ctx) && lp_bind_interfaces_only(task->lp_ctx)) {
+	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces;
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
+		load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 
@@ -227,9 +227,9 @@ static void smbsrv_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops, 
-					   lp_socket_address(task->lp_ctx));
+		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
+		status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops,
+					   lpcfg_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

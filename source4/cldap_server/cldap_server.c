@@ -111,12 +111,12 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 	ret = tsocket_address_inet_from_strings(cldapd,
 						"ip",
 						address,
-						lp_cldap_port(lp_ctx),
+						lpcfg_cldap_port(lp_ctx),
 						&socket_address);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("invalid address %s:%d - %s:%s\n",
-			 address, lp_cldap_port(lp_ctx),
+			 address, lpcfg_cldap_port(lp_ctx),
 			 gai_strerror(ret), nt_errstr(status)));
 		return status;
 	}
@@ -155,7 +155,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
-	if (!lp_bind_interfaces_only(lp_ctx)) {
+	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
 		status = cldapd_add_socket(cldapd, lp_ctx, "0.0.0.0");
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -182,14 +182,14 @@ static void cldapd_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct interface *ifaces;
 	
-	load_interfaces(task, lp_interfaces(task->lp_ctx), &ifaces);
+	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
 	if (iface_count(ifaces) == 0) {
 		task_server_terminate(task, "cldapd: no network interfaces configured", false);
 		return;
 	}
 
-	switch (lp_server_role(task->lp_ctx)) {
+	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		task_server_terminate(task, "cldap_server: no CLDAP server required in standalone configuration", 
 				      false);

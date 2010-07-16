@@ -32,7 +32,7 @@ static WERROR dcesrv_wkssvc_NetWkstaGetInfo(struct dcesrv_call_state *dce_call, 
 		       struct wkssvc_NetWkstaGetInfo *r)
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
-	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
+	struct dcerpc_server_info *server_info = lpcfg_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
 
 	/* NOTE: win2k3 ignores r->in.server_name completly so we do --metze */
 

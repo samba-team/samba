@@ -36,14 +36,14 @@ static bool try_failed_login(struct torture_context *tctx, struct smbcli_state *
 	struct smbcli_session *session;
 	struct smbcli_session_options options;
 
-	lp_smbcli_session_options(tctx->lp_ctx, &options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
 	session = smbcli_session_init(cli->transport, cli, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
+	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cli_credentials_init(session);
-	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
+	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	cli_credentials_set_conf(setup.in.credentials, tctx->lp_ctx);
 	cli_credentials_set_domain(setup.in.credentials, "INVALID-DOMAIN", CRED_SPECIFIED);

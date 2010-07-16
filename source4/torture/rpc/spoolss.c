@@ -8242,20 +8242,20 @@ static bool connect_printer_driver_share(struct torture_context *tctx,
 	torture_comment(tctx, "Connecting printer driver share '%s' on '%s'\n",
 		share_name, server_name);
 
-	lp_smbcli_options(tctx->lp_ctx, &smb_options);
-	lp_smbcli_session_options(tctx->lp_ctx, &smb_session_options);
+	lpcfg_smbcli_options(tctx->lp_ctx, &smb_options);
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &smb_session_options);
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_full_connection(tctx, cli, server_name,
-					lp_smb_ports(tctx->lp_ctx),
+					lpcfg_smb_ports(tctx->lp_ctx),
 					share_name, NULL,
-					lp_socket_options(tctx->lp_ctx),
+					lpcfg_socket_options(tctx->lp_ctx),
 					cmdline_credentials,
-					lp_resolve_context(tctx->lp_ctx),
+					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev,
 					&smb_options,
 					&smb_session_options,
-					lp_gensec_settings(tctx, tctx->lp_ctx)),
+					lpcfg_gensec_settings(tctx, tctx->lp_ctx)),
 		"failed to open driver share");
 
 	return true;

@@ -82,11 +82,11 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 	}
 
 	/* init s4 configuration */
-	s4_conf_file = lp_configfile(ctx->db_ctx->lp_ctx);
+	s4_conf_file = lpcfg_configfile(ctx->db_ctx->lp_ctx);
 	if (s4_conf_file) {
-		lp_load(ctx->db_ctx->lp_ctx, s4_conf_file);
+		lpcfg_load(ctx->db_ctx->lp_ctx, s4_conf_file);
 	} else {
-		lp_load_default(ctx->db_ctx->lp_ctx);
+		lpcfg_load_default(ctx->db_ctx->lp_ctx);
 	}
 
 	ctx->session_info = system_session(ctx->db_ctx->lp_ctx);

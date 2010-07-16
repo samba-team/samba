@@ -79,7 +79,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 
 		ntds_guid_str = GUID_string(res, &ntds_guid);
 
-		dom_string = lp_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
+		dom_string = lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
 
 		/* get the dNSHostName and cn */
 		ret = ldb_search(b_state->sam_ctx, mem_ctx, &res2,

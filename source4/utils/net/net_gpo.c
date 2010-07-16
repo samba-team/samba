@@ -254,8 +254,8 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 	 * user, needed for a token */
 	status = authsam_make_server_info(gp_ctx,
 			gp_ctx->ldb_ctx,
-			lp_netbios_name(gp_ctx->lp_ctx),
-			lp_sam_name(gp_ctx->lp_ctx),
+			lpcfg_netbios_name(gp_ctx->lp_ctx),
+			lpcfg_sam_name(gp_ctx->lp_ctx),
 			ldb_get_default_basedn(gp_ctx->ldb_ctx),
 			result->msgs[0],
 			dummy,

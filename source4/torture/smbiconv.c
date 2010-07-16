@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	cd = smb_iconv_open_ex(tctx, to, from, lp_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
+	cd = smb_iconv_open_ex(tctx, to, from, lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	if((int)cd == -1) {
 		DEBUG(0,("unable to find from or to encoding, exiting...\n"));
 		if (out != stdout) fclose(out);

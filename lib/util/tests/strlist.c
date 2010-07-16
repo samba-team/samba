@@ -376,8 +376,8 @@ static bool test_list_unique_2(struct torture_context *tctx)
 	const char **list = (const char **)str_list_make_empty(tctx);
 	const char **list_dup = (const char **)str_list_make_empty(tctx);
 
-	count = lp_parm_int(tctx->lp_ctx, NULL, "list_unique", "count", 9);
-	num_dups = lp_parm_int(tctx->lp_ctx, NULL, "list_unique", "dups", 7);
+	count = lpcfg_parm_int(tctx->lp_ctx, NULL, "list_unique", "count", 9);
+	num_dups = lpcfg_parm_int(tctx->lp_ctx, NULL, "list_unique", "dups", 7);
 	torture_comment(tctx, "test_list_unique_2() with %d elements and %d dups\n", count, num_dups);
 
 	for (i = 0; i < count; i++) {

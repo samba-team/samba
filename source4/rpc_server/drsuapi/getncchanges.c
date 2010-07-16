@@ -851,7 +851,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
 
-		extra_filter = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
+		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req8->highwatermark.highest_usn;
 
@@ -941,14 +941,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	/* use this to force single objects at a time, which is useful
 	 * for working out what object is giving problems
 	 */
-	max_objects = lp_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
+	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
 	if (req8->max_object_count < max_objects) {
 		max_objects = req8->max_object_count;
 	}
 	/*
 	 * TODO: work out how the maximum should be calculated
 	 */
-	max_links = lp_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
+	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
 	for(i=getnc_state->num_sent; 
 	    i<getnc_state->site_res->count && 
@@ -1021,7 +1021,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		ureq.naming_context = ncRoot;
 		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
 							 GUID_string(mem_ctx, &req8->destination_dsa_guid),
-							 lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+							 lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx));
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOMEM;
 		}

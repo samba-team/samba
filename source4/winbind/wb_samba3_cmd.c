@@ -190,7 +190,7 @@ NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response->result			= WINBINDD_OK;
-	s3call->response->data.info.winbind_separator = *lp_winbind_separator(s3call->wbconn->lp_ctx);
+	s3call->response->data.info.winbind_separator = *lpcfg_winbind_separator(s3call->wbconn->lp_ctx);
 	WBSRV_SAMBA3_SET_STRING(s3call->response->data.info.samba_version,
 				SAMBA_VERSION_STRING);
 	return NT_STATUS_OK;
@@ -200,7 +200,7 @@ NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response->result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response->data.domain_name,
-				lp_workgroup(s3call->wbconn->lp_ctx));
+				lpcfg_workgroup(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
 
@@ -208,14 +208,14 @@ NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response->result			= WINBINDD_OK;
 	WBSRV_SAMBA3_SET_STRING(s3call->response->data.netbios_name,
-				lp_netbios_name(s3call->wbconn->lp_ctx));
+				lpcfg_netbios_name(s3call->wbconn->lp_ctx));
 	return NT_STATUS_OK;
 }
 
 NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	struct loadparm_context *lp_ctx = s3call->wbconn->listen_socket->service->task->lp_ctx;
-	const char *priv_socket_dir = lp_winbindd_privileged_socket_directory(lp_ctx);
+	const char *priv_socket_dir = lpcfg_winbindd_privileged_socket_directory(lp_ctx);
 
 	s3call->response->result		 = WINBINDD_OK;
 	s3call->response->extra_data.data = discard_const(priv_socket_dir);

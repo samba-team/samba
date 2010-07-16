@@ -35,7 +35,7 @@ enum srvsvc_PlatformId dcesrv_common_get_platform_id(TALLOC_CTX *mem_ctx, struct
 {
 	enum srvsvc_PlatformId id;
 
-	id = lp_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "platform_id", PLATFORM_ID_NT);
+	id = lpcfg_parm_int(dce_ctx->lp_ctx, NULL, "server_info", "platform_id", PLATFORM_ID_NT);
 
 	return id;
 }
@@ -46,7 +46,7 @@ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 
 	/* if there's no string return our NETBIOS name */
 	if (!p) {
-		return talloc_strdup(mem_ctx, lp_netbios_name(dce_ctx->lp_ctx));
+		return talloc_strdup(mem_ctx, lpcfg_netbios_name(dce_ctx->lp_ctx));
 	}
 
 	/* if there're '\\\\' in front remove them otherwise just pass the string */
@@ -66,7 +66,7 @@ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct tevent_contex
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
 
-	switch (lp_announce_as(dce_ctx->lp_ctx)) {
+	switch (lpcfg_announce_as(dce_ctx->lp_ctx)) {
 		case ANNOUNCE_AS_NT_SERVER:
 			default_server_announce |= SV_TYPE_SERVER_NT;
 			/* fall through... */
@@ -83,7 +83,7 @@ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct tevent_contex
 			break;
 	}
 
-	switch (lp_server_role(dce_ctx->lp_ctx)) {
+	switch (lpcfg_server_role(dce_ctx->lp_ctx)) {
 		case ROLE_DOMAIN_MEMBER:
 			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
 			break;
@@ -115,10 +115,10 @@ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct tevent_contex
 		default:
 			break;
 	}
-	if (lp_time_server(dce_ctx->lp_ctx))
+	if (lpcfg_time_server(dce_ctx->lp_ctx))
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
 
-	if (lp_host_msdfs(dce_ctx->lp_ctx))
+	if (lpcfg_host_msdfs(dce_ctx->lp_ctx))
 		default_server_announce |= SV_TYPE_DFS_SERVER;
 
 

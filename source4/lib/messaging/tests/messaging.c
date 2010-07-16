@@ -67,12 +67,12 @@ static bool test_ping_speed(struct torture_context *tctx)
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	uint32_t msg_ping, msg_exit;
 
-	lp_set_cmdline(tctx->lp_ctx, "pid directory", "piddir.tmp");
+	lpcfg_set_cmdline(tctx->lp_ctx, "pid directory", "piddir.tmp");
 
 	ev = tctx->ev;
 
 	msg_server_ctx = messaging_init(tctx, 
-					lp_messaging_path(tctx, tctx->lp_ctx), cluster_id(0, 1), 
+					lpcfg_messaging_path(tctx, tctx->lp_ctx), cluster_id(0, 1),
 					ev);
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init ping messaging context");
@@ -81,7 +81,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	messaging_register_tmp(msg_server_ctx, tctx, exit_message, &msg_exit);
 
 	msg_client_ctx = messaging_init(tctx, 
-					lp_messaging_path(tctx, tctx->lp_ctx), 
+					lpcfg_messaging_path(tctx, tctx->lp_ctx),
 					cluster_id(0, 2), 
 					ev);
 

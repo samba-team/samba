@@ -35,33 +35,33 @@
  */
 
 
-bool lp_is_mydomain(struct loadparm_context *lp_ctx, 
+bool lpcfg_is_mydomain(struct loadparm_context *lp_ctx,
 			     const char *domain)
 {
-	return strequal(lp_workgroup(lp_ctx), domain);
+	return strequal(lpcfg_workgroup(lp_ctx), domain);
 }
 
-bool lp_is_my_domain_or_realm(struct loadparm_context *lp_ctx, 
+bool lpcfg_is_my_domain_or_realm(struct loadparm_context *lp_ctx,
 			     const char *domain)
 {
-	return strequal(lp_workgroup(lp_ctx), domain) || 
-		strequal(lp_realm(lp_ctx), domain);
+	return strequal(lpcfg_workgroup(lp_ctx), domain) ||
+		strequal(lpcfg_realm(lp_ctx), domain);
 }
 
 /**
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
 */
-bool lp_is_myname(struct loadparm_context *lp_ctx, const char *name)
+bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name)
 {
 	const char **aliases;
 	int i;
 
-	if (strcasecmp(name, lp_netbios_name(lp_ctx)) == 0) {
+	if (strcasecmp(name, lpcfg_netbios_name(lp_ctx)) == 0) {
 		return true;
 	}
 
-	aliases = lp_netbios_aliases(lp_ctx);
+	aliases = lpcfg_netbios_aliases(lp_ctx);
 	for (i=0; aliases && aliases[i]; i++) {
 		if (strcasecmp(name, aliases[i]) == 0) {
 			return true;
@@ -86,7 +86,7 @@ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 		return talloc_strdup(mem_ctx, name);
 	}
 
-	dname = talloc_strdup(mem_ctx, lp_lockdir(lp_ctx));
+	dname = talloc_strdup(mem_ctx, lpcfg_lockdir(lp_ctx));
 	trim_string(dname,"","/");
 	
 	if (!directory_exist(dname)) {
@@ -112,7 +112,7 @@ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			   const char *name)
 {
 	char *fname, *config_dir, *p;
-	config_dir = talloc_strdup(mem_ctx, lp_configfile(lp_ctx));
+	config_dir = talloc_strdup(mem_ctx, lpcfg_configfile(lp_ctx));
 	if (config_dir == NULL) {
 		config_dir = talloc_strdup(mem_ctx, lp_default_path());
 	}
@@ -150,7 +150,7 @@ char *private_path(TALLOC_CTX* mem_ctx,
 	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
 		return talloc_strdup(mem_ctx, name);
 	}
-	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), name);
+	fname = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), name);
 	return fname;
 }
 
@@ -160,7 +160,7 @@ char *private_path(TALLOC_CTX* mem_ctx,
   path itself
 */
 char *smbd_tmp_path(TALLOC_CTX *mem_ctx, 
-			     struct loadparm_context *lp_ctx, 
+			     struct loadparm_context *lp_ctx,
 			     const char *name)
 {
 	char *fname, *dname;
@@ -271,7 +271,7 @@ static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 {
 	const char *env_moduledir = getenv("LD_SAMBA_MODULE_PATH");
 	return talloc_asprintf(mem_ctx, "%s/%s", 
-			       env_moduledir?env_moduledir:lp_modulesdir(lp_ctx), 
+			       env_moduledir?env_moduledir:lpcfg_modulesdir(lp_ctx),
 			       name);
 }
 
@@ -293,7 +293,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	return ret;
 }
 
-const char *lp_messaging_path(TALLOC_CTX *mem_ctx, 
+const char *lpcfg_messaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx)
 {
 	return smbd_tmp_path(mem_ctx, lp_ctx, "messaging");
@@ -303,20 +303,20 @@ struct smb_iconv_convenience *smb_iconv_convenience_reinit_lp(TALLOC_CTX *mem_ct
 							      struct loadparm_context *lp_ctx,
 							      struct smb_iconv_convenience *old_ic)
 {
-	return smb_iconv_convenience_reinit(mem_ctx, lp_dos_charset(lp_ctx),
-					    lp_unix_charset(lp_ctx),
-					    lp_parm_bool(lp_ctx, NULL, "iconv", "native", true),
+	return smb_iconv_convenience_reinit(mem_ctx, lpcfg_dos_charset(lp_ctx),
+					    lpcfg_unix_charset(lp_ctx),
+					    lpcfg_parm_bool(lp_ctx, NULL, "iconv", "native", true),
 					    old_ic);
 }
 
 
-const char *lp_sam_name(struct loadparm_context *lp_ctx) 
+const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 {
-	switch (lp_server_role(lp_ctx)) {
+	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_DOMAIN_CONTROLLER:
-		return lp_workgroup(lp_ctx);
+		return lpcfg_workgroup(lp_ctx);
 	default:
-		return lp_netbios_name(lp_ctx);
+		return lpcfg_netbios_name(lp_ctx);
 	}
 }
 

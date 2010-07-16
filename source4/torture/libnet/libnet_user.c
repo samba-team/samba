@@ -46,7 +46,7 @@ bool torture_createuser(struct torture_context *torture)
 	}
 
 	req.in.user_name = TEST_USERNAME;
-	req.in.domain_name = lp_workgroup(torture->lp_ctx);
+	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 	req.out.error_string = NULL;
 
 	status = libnet_CreateUser(ctx, mem_ctx, &req);
@@ -91,7 +91,7 @@ bool torture_deleteuser(struct torture_context *torture)
 	prep_mem_ctx = talloc_init("prepare test_deleteuser");
 
 	req.in.user_name = TEST_USERNAME;
-	req.in.domain_name = lp_workgroup(torture->lp_ctx);
+	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 
 	status = torture_rpc_connection(torture,
 					&p,
@@ -101,7 +101,7 @@ bool torture_deleteuser(struct torture_context *torture)
 		goto done;
 	}
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, p->binding_handle, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
@@ -298,7 +298,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	name = talloc_strdup(prep_mem_ctx, TEST_USERNAME);
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, b, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
@@ -317,7 +317,7 @@ bool torture_modifyuser(struct torture_context *torture)
 
 	for (fld = USER_FIELD_FIRST; fld <= USER_FIELD_LAST; fld++) {
 		ZERO_STRUCT(req);
-		req.in.domain_name = lp_workgroup(torture->lp_ctx);
+		req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 		req.in.user_name = name;
 
 		set_test_changes(torture, torture, &req, 1, &name, fld);
@@ -330,7 +330,7 @@ bool torture_modifyuser(struct torture_context *torture)
 		}
 
 		ZERO_STRUCT(user_req);
-		user_req.in.domain_name = lp_workgroup(torture->lp_ctx);
+		user_req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 		user_req.in.data.user_name = name;
 		user_req.in.level = USER_INFO_BY_NAME;
 
@@ -411,7 +411,7 @@ bool torture_userinfo_api(struct torture_context *torture)
 	}
 	b = p->binding_handle;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	if (!test_domain_open(torture, b, &domain_name, prep_mem_ctx, &h, NULL)) {
 		ret = false;
 		goto done;
@@ -474,7 +474,7 @@ bool torture_userlist(struct torture_context *torture)
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
 	ctx->cred = cmdline_credentials;
 
-	domain_name.string = lp_workgroup(torture->lp_ctx);
+	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	mem_ctx = talloc_init("torture user list");
 
 	ZERO_STRUCT(req);

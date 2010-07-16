@@ -50,51 +50,51 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 		strwicmp(service_name, GLOBAL_NAME2)) {
 		struct loadparm_service *service;
 		/* its a share parameter */
-		service = lp_service(lp_ctx, service_name);
+		service = lpcfg_service(lp_ctx, service_name);
 		if (service == NULL) {
 			return NULL;
 		}
 		if (strchr(param_name, ':')) {
 			/* its a parametric option on a share */
-			const char *type = talloc_strndup(lp_ctx, param_name, 
+			const char *type = talloc_strndup(lp_ctx, param_name,
 											  strcspn(param_name, ":"));
 			const char *option = strchr(param_name, ':') + 1;
 			const char *value;
 			if (type == NULL || option == NULL) {
 			return NULL;
 			}
-			value = lp_get_parametric(lp_ctx, service, type, option);
+			value = lpcfg_get_parametric(lp_ctx, service, type, option);
 			if (value == NULL) {
 			return NULL;
 			}
 			return PyString_FromString(value);
 		}
 
-		parm = lp_parm_struct(param_name);
+		parm = lpcfg_parm_struct(param_name);
 		if (parm == NULL || parm->pclass == P_GLOBAL) {
 			return NULL;
 		}
-		parm_ptr = lp_parm_ptr(lp_ctx, service, parm);
+		parm_ptr = lpcfg_parm_ptr(lp_ctx, service, parm);
     } else if (strchr(param_name, ':')) {
 		/* its a global parametric option */
-		const char *type = talloc_strndup(lp_ctx, 
+		const char *type = talloc_strndup(lp_ctx,
 				  param_name, strcspn(param_name, ":"));
 		const char *option = strchr(param_name, ':') + 1;
 		const char *value;
 		if (type == NULL || option == NULL) {
 			return NULL;
 		}
-		value = lp_get_parametric(lp_ctx, NULL, type, option);
+		value = lpcfg_get_parametric(lp_ctx, NULL, type, option);
 		if (value == NULL)
 			return NULL;
 		return PyString_FromString(value);
 	} else {
 		/* its a global parameter */
-		parm = lp_parm_struct(param_name);
+		parm = lpcfg_parm_struct(param_name);
 		if (parm == NULL) {
 			return NULL;
 		}
-		parm_ptr = lp_parm_ptr(lp_ctx, NULL, parm);
+		parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {
@@ -149,7 +149,7 @@ static PyObject *py_lp_ctx_load(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &filename))
 		return NULL;
 
-	ret = lp_load(PyLoadparmContext_AsLoadparmContext(self), filename);
+	ret = lpcfg_load(PyLoadparmContext_AsLoadparmContext(self), filename);
 
 	if (!ret) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to load file %s", filename);
@@ -161,7 +161,7 @@ static PyObject *py_lp_ctx_load(py_talloc_Object *self, PyObject *args)
 static PyObject *py_lp_ctx_load_default(py_talloc_Object *self)
 {
 	bool ret;
-        ret = lp_load_default(PyLoadparmContext_AsLoadparmContext(self));
+        ret = lpcfg_load_default(PyLoadparmContext_AsLoadparmContext(self));
 
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "Unable to load default file");
@@ -190,7 +190,7 @@ static PyObject *py_lp_ctx_is_myname(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	return PyBool_FromLong(lp_is_myname(PyLoadparmContext_AsLoadparmContext(self), name));
+	return PyBool_FromLong(lpcfg_is_myname(PyLoadparmContext_AsLoadparmContext(self), name));
 }
 
 static PyObject *py_lp_ctx_is_mydomain(py_talloc_Object *self, PyObject *args)
@@ -199,7 +199,7 @@ static PyObject *py_lp_ctx_is_mydomain(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	return PyBool_FromLong(lp_is_mydomain(PyLoadparmContext_AsLoadparmContext(self), name));
+	return PyBool_FromLong(lpcfg_is_mydomain(PyLoadparmContext_AsLoadparmContext(self), name));
 }
 
 static PyObject *py_lp_ctx_set(py_talloc_Object *self, PyObject *args)
@@ -209,7 +209,7 @@ static PyObject *py_lp_ctx_set(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss", &name, &value))
 		return NULL;
 
-	ret = lp_set_cmdline(PyLoadparmContext_AsLoadparmContext(self), name, value);
+	ret = lpcfg_set_cmdline(PyLoadparmContext_AsLoadparmContext(self), name, value);
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "Unable to set parameter");
 		return NULL;
@@ -237,11 +237,11 @@ static PyObject *py_lp_ctx_services(py_talloc_Object *self)
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
 	PyObject *ret;
 	int i;
-	ret = PyList_New(lp_numservices(lp_ctx));
-	for (i = 0; i < lp_numservices(lp_ctx); i++) {
-		struct loadparm_service *service = lp_servicebynum(lp_ctx, i);
+	ret = PyList_New(lpcfg_numservices(lp_ctx));
+	for (i = 0; i < lpcfg_numservices(lp_ctx); i++) {
+		struct loadparm_service *service = lpcfg_servicebynum(lp_ctx, i);
 		if (service != NULL) {
-			PyList_SetItem(ret, i, PyString_FromString(lp_servicename(service)));
+			PyList_SetItem(ret, i, PyString_FromString(lpcfg_servicename(service)));
 		}
 	}
 	return ret;
@@ -263,7 +263,7 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	lp_dump(lp_ctx, f, show_defaults, lp_numservices(lp_ctx));
+	lpcfg_dump(lp_ctx, f, show_defaults, lpcfg_numservices(lp_ctx));
 
 	Py_RETURN_NONE;
 }
@@ -299,12 +299,12 @@ static PyMethodDef py_lp_ctx_methods[] = {
 
 static PyObject *py_lp_ctx_default_service(py_talloc_Object *self, void *closure)
 {
-	return PyLoadparmService_FromService(lp_default_service(PyLoadparmContext_AsLoadparmContext(self)));
+	return PyLoadparmService_FromService(lpcfg_default_service(PyLoadparmContext_AsLoadparmContext(self)));
 }
 
 static PyObject *py_lp_ctx_config_file(py_talloc_Object *self, void *closure)
 {
-	const char *configfile = lp_configfile(PyLoadparmContext_AsLoadparmContext(self));
+	const char *configfile = lpcfg_configfile(PyLoadparmContext_AsLoadparmContext(self));
 	if (configfile == NULL)
 		Py_RETURN_NONE;
 	else
@@ -336,7 +336,7 @@ static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 
 static Py_ssize_t py_lp_ctx_len(py_talloc_Object *self)
 {
-	return lp_numservices(PyLoadparmContext_AsLoadparmContext(self));
+	return lpcfg_numservices(PyLoadparmContext_AsLoadparmContext(self));
 }
 
 static PyObject *py_lp_ctx_getitem(py_talloc_Object *self, PyObject *name)
@@ -346,7 +346,7 @@ static PyObject *py_lp_ctx_getitem(py_talloc_Object *self, PyObject *name)
 		PyErr_SetString(PyExc_TypeError, "Only string subscripts are supported");
 		return NULL;
 	}
-	service = lp_service(PyLoadparmContext_AsLoadparmContext(self), PyString_AsString(name));
+	service = lpcfg_service(PyLoadparmContext_AsLoadparmContext(self), PyString_AsString(name));
 	if (service == NULL) {
 		PyErr_SetString(PyExc_KeyError, "No such section");
 		return NULL;
@@ -396,7 +396,7 @@ static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
 
 	default_service = PyLoadparmService_AsLoadparmService(py_default_service);
 
-	lp_dump_one(f, show_defaults, service, default_service);
+	lpcfg_dump_one(f, show_defaults, service, default_service);
 
 	Py_RETURN_NONE;
 }

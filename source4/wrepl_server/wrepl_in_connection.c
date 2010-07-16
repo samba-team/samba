@@ -451,12 +451,12 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (lp_interfaces(lp_ctx) && lp_bind_interfaces_only(lp_ctx)) {
+	if (lpcfg_interfaces(lp_ctx) && lpcfg_bind_interfaces_only(lp_ctx)) {
 		int num_interfaces;
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(task, lp_interfaces(lp_ctx), &ifaces);
+		load_interfaces(task, lpcfg_interfaces(lp_ctx), &ifaces);
 
 		num_interfaces = iface_count(ifaces);
 
@@ -467,10 +467,10 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		for(i = 0; i < num_interfaces; i++) {
 			address = iface_n_ip(ifaces, i);
 			status = stream_setup_socket(task->event_ctx, 
-						     task->lp_ctx, model_ops, 
+						     task->lp_ctx, model_ops,
 						     &wreplsrv_stream_ops,
 						     "ipv4", address, &port, 
-				     	              lp_socket_options(task->lp_ctx), 
+					              lpcfg_socket_options(task->lp_ctx),
 						     service);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
@@ -479,10 +479,10 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 			}
 		}
 	} else {
-		address = lp_socket_address(lp_ctx);
-		status = stream_setup_socket(task->event_ctx, task->lp_ctx, 
+		address = lpcfg_socket_address(lp_ctx);
+		status = stream_setup_socket(task->event_ctx, task->lp_ctx,
 					     model_ops, &wreplsrv_stream_ops,
-					     "ipv4", address, &port, lp_socket_options(task->lp_ctx), 
+					     "ipv4", address, &port, lpcfg_socket_options(task->lp_ctx),
 					     service);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",

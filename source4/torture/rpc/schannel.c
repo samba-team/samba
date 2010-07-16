@@ -57,11 +57,11 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	int flags = CLI_CRED_NTLM_AUTH;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (lp_client_lanman_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_ntlmv2_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
@@ -138,7 +138,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	struct policy_handle handle;
 	struct policy_handle domain_handle;
 
-	name.string = lp_workgroup(tctx->lp_ctx);
+	name.string = lpcfg_workgroup(tctx->lp_ctx);
 	r.in.domain_name = &name;
 	r.out.info = &info;
 
@@ -304,7 +304,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon, 
-				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
+				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -331,7 +331,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
-				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
+				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -372,7 +372,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	/* and now setup an SCHANNEL bind on netlogon */
 	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
-				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
+				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p_samr2->conn),
 				  NULL);
@@ -575,11 +575,11 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 		user_creds = s->user2_creds;
 	}
 
-	if (lp_client_lanman_auth(s->tctx->lp_ctx)) {
+	if (lpcfg_client_lanman_auth(s->tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lp_client_ntlmv2_auth(s->tctx->lp_ctx)) {
+	if (lpcfg_client_ntlmv2_auth(s->tctx->lp_ctx)) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 

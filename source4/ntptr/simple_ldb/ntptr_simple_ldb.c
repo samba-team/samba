@@ -44,7 +44,7 @@
  */
 static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx, struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lp_spoolss_url(lp_ctx), system_session(lp_ctx), 
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lpcfg_spoolss_url(lp_ctx), system_session(lp_ctx),
 				NULL, 0);
 }
 
@@ -129,7 +129,7 @@ static WERROR sptr_PrintServerData(struct ntptr_GenericHandle *server,
 				   union spoolss_PrinterData *r,
 				   enum winreg_Type *type)
 {
-	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, server->ntptr->lp_ctx);
+	struct dcerpc_server_info *server_info = lpcfg_dcerpc_server_info(mem_ctx, server->ntptr->lp_ctx);
 	if (strcmp("W3SvcInstalled", value_name) == 0) {
 		*type		= REG_DWORD;
 		r->value	= 0;
@@ -212,13 +212,13 @@ static WERROR sptr_PrintServerData(struct ntptr_GenericHandle *server,
 		r->binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("DNSMachineName", value_name) == 0) {
-		const char *dnsdomain = lp_dnsdomain(server->ntptr->lp_ctx);
+		const char *dnsdomain = lpcfg_dnsdomain(server->ntptr->lp_ctx);
 
 		if (dnsdomain == NULL) return WERR_INVALID_PARAM;
 
 		*type		= REG_SZ;
 		r->string	= talloc_asprintf(mem_ctx, "%s.%s",
-							  lp_netbios_name(server->ntptr->lp_ctx),
+							  lpcfg_netbios_name(server->ntptr->lp_ctx),
 							  dnsdomain);
 		W_ERROR_HAVE_NO_MEMORY(r->string);
 		return WERR_OK;

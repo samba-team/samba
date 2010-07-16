@@ -246,16 +246,16 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	lp_smbcli_options(ntvfs->ctx->lp_ctx, &options);
+	lpcfg_smbcli_options(ntvfs->ctx->lp_ctx, &options);
 
 	creq = smb2_connect_send(p, host,
-			lp_parm_string_list(p, ntvfs->ctx->lp_ctx, NULL, "smb2", "ports", NULL),
+			lpcfg_parm_string_list(p, ntvfs->ctx->lp_ctx, NULL, "smb2", "ports", NULL),
 				remote_share, 
-				 lp_resolve_context(ntvfs->ctx->lp_ctx),
+				 lpcfg_resolve_context(ntvfs->ctx->lp_ctx),
 				 credentials,
 				 ntvfs->ctx->event_ctx, &options,
-				 lp_socket_options(ntvfs->ctx->lp_ctx),
-				 lp_gensec_settings(p, ntvfs->ctx->lp_ctx)
+				 lpcfg_socket_options(ntvfs->ctx->lp_ctx),
+				 lpcfg_gensec_settings(p, ntvfs->ctx->lp_ctx)
 				 );
 
 	status = smb2_connect_recv(creq, p, &tree);

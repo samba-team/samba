@@ -581,7 +581,7 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 
 	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
 					ntds_guid_str,
-					lp_dnsdomain(service->task->lp_ctx));
+					lpcfg_dnsdomain(service->task->lp_ctx));
 	if (tevent_req_nomem(ntds_dns_name, req)) {
 		return;
 	}

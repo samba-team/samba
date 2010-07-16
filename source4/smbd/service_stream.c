@@ -173,7 +173,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
 
-	if (!socket_check_access(sock, "smbd", lp_hostsallow(NULL, lp_default_service(lp_ctx)), lp_hostsdeny(NULL, lp_default_service(lp_ctx)))) {
+	if (!socket_check_access(sock, "smbd", lpcfg_hostsallow(NULL, lpcfg_default_service(lp_ctx)), lpcfg_hostsdeny(NULL, lpcfg_default_service(lp_ctx)))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
 		return;
 	}
@@ -187,7 +187,7 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	/* setup to receive internal messages on this connection */
 	srv_conn->msg_ctx = messaging_init(srv_conn, 
-					   lp_messaging_path(srv_conn, lp_ctx),
+					   lpcfg_messaging_path(srv_conn, lp_ctx),
 					   srv_conn->server_id, ev);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "messaging_init() failed");
@@ -242,7 +242,7 @@ static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *f
 	/* ask the process model to create us a process for this new
 	   connection.  When done, it calls stream_new_connection()
 	   with the newly created socket */
-	stream_socket->model_ops->accept_connection(ev, stream_socket->lp_ctx, 
+	stream_socket->model_ops->accept_connection(ev, stream_socket->lp_ctx,
 						    stream_socket->sock, 
 						    stream_new_connection, stream_socket);
 }

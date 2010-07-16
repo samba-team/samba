@@ -173,7 +173,7 @@ static struct smbcli_state *connect_one(TALLOC_CTX *mem_ctx,
 
 	nt_status = smbcli_full_connection(NULL, 
 			   &c, myname, server_n, ports, share, NULL,
-			   username, lp_workgroup(), password, ev,
+			   username, lpcfg_workgroup(), password, ev,
 			   options, session_options, gensec_settings);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));
@@ -513,7 +513,7 @@ static void usage(void)
 	argv += 4;
 
 	lp_ctx = loadparm_init(mem_ctx);
-	lp_load(lp_ctx, dyn_CONFIGFILE);
+	lpcfg_load(lp_ctx, dyn_CONFIGFILE);
 
 	if (getenv("USER")) {
 		username = talloc_strdup(mem_ctx, getenv("USER"));
@@ -568,11 +568,11 @@ static void usage(void)
 	ev = s4_event_context_init(mem_ctx);
 
 	locking_init(1);
-	lp_smbcli_options(lp_ctx, &options);
-	lp_smbcli_session_options(lp_ctx, &session_options);
+	lpcfg_smbcli_options(lp_ctx, &options);
+	lpcfg_smbcli_session_options(lp_ctx, &session_options);
 	test_locks(mem_ctx, share1, share2, nfspath1, nfspath2, 
-			   lp_smb_ports(lp_ctx),
-			   &options, &session_options, lp_gensec_settings(lp_ctx), ev);
+			   lpcfg_smb_ports(lp_ctx),
+			   &options, &session_options, lpcfg_gensec_settings(lp_ctx), ev);
 
 	return(0);
 }

@@ -158,7 +158,7 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 	io = talloc_zero(mem_ctx, struct libnet_LookupDCs);
 	NT_STATUS_HAVE_NO_MEMORY(io);
 	io->in.name_type = NBT_NAME_PDC;
-	io->in.domain_name = lp_workgroup(lp_ctx);
+	io->in.domain_name = lpcfg_workgroup(lp_ctx);
 
 	/* Find Active DC's */
 	rv = libnet_LookupDCs(net_ctx, mem_ctx, io);
