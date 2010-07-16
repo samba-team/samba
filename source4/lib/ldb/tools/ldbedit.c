@@ -67,16 +67,17 @@ static int modify_record(struct ldb_context *ldb,
 			 struct ldb_message *msg2,
 			 struct ldb_control **req_ctrls)
 {
+	int ret;
 	struct ldb_message *mod;
 
-	mod = ldb_msg_diff(ldb, msg1, msg2);
-	if (mod == NULL) {
+	if (ldb_msg_difference(ldb, ldb, msg1, msg2, &mod) != LDB_SUCCESS) {
 		fprintf(stderr, "Failed to calculate message differences\n");
 		return -1;
 	}
 
-	if (mod->num_elements == 0) {
-		return 0;
+	ret = mod->num_elements;
+	if (ret == 0) {
+		goto done;
 	}
 
 	if (options->verbose > 0) {
@@ -86,10 +87,13 @@ static int modify_record(struct ldb_context *ldb,
 	if (ldb_modify_ctrl(ldb, mod, req_ctrls) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
 			ldb_dn_get_linearized(msg1->dn), ldb_errstring(ldb));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
-	return mod->num_elements;
+done:
+	talloc_free(mod);
+	return ret;
 }
 
 /*
