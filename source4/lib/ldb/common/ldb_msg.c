@@ -582,35 +582,74 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 }
 
 
-/*
-  return a ldb_message representing the differences between msg1 and msg2. If you
-  then use this in a ldb_modify() call it can be used to save edits to a message
-*/
+/**
+ * return a ldb_message representing the differences between msg1 and msg2.
+ * If you then use this in a ldb_modify() call,
+ * it can be used to save edits to a message
+ */
 struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2)
 {
+	int ldb_ret;
+	struct ldb_message *mod;
+
+	ldb_ret = ldb_msg_difference(ldb, ldb, msg1, msg2, &mod);
+	if (ldb_ret != LDB_SUCCESS) {
+		return NULL;
+	}
+
+	return mod;
+}
+
+/**
+ * return a ldb_message representing the differences between msg1 and msg2.
+ * If you then use this in a ldb_modify() call it can be used to save edits to a message
+ *
+ * Result message is constructed as follows:
+ * - LDB_FLAG_MOD_ADD     - elements found only in msg2
+ * - LDB_FLAG_MOD_REPLACE - elements in msg2 that have different value in msg1
+ *                          Value for msg2 element is used
+ * - LDB_FLAG_MOD_DELETE  - elements found only in msg2
+ *
+ * @return LDB_SUCCESS or LDB_ERR_OPERATIONS_ERROR
+ */
+int ldb_msg_difference(struct ldb_context *ldb,
+		       TALLOC_CTX *mem_ctx,
+		       struct ldb_message *msg1,
+		       struct ldb_message *msg2,
+		       struct ldb_message **_msg_out)
+{
+	int ldb_res;
+	unsigned int i;
 	struct ldb_message *mod;
 	struct ldb_message_element *el;
-	unsigned int i;
+	TALLOC_CTX *temp_ctx;
 
-	mod = ldb_msg_new(ldb);
+	temp_ctx = talloc_new(mem_ctx);
+	if (!temp_ctx) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	mod = ldb_msg_new(temp_ctx);
 	if (mod == NULL) {
-		return NULL;
+		goto failed;
 	}
 
 	mod->dn = msg1->dn;
 	mod->num_elements = 0;
 	mod->elements = NULL;
 
+	/* canonicalize msg2 so we have no repeated elements */
 	msg2 = ldb_msg_canonicalize(ldb, msg2);
 	if (msg2 == NULL) {
-		talloc_free(mod);
-		return NULL;
+		goto failed;
 	}
-	
-	/* look in msg2 to find elements that need to be added
-	   or modified */
+
+	/* steal msg2 into mod context as it is allocated in ldb's context */
+	talloc_steal(mod, msg2);
+
+	/* look in msg2 to find elements that need to be added or modified */
 	for (i=0;i<msg2->num_elements;i++) {
 		el = ldb_msg_find_element(msg1, msg2->elements[i].name);
 
@@ -618,11 +657,11 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 			continue;
 		}
 
-		if (ldb_msg_add(mod, 
-				&msg2->elements[i],
-				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != LDB_SUCCESS) {
-			talloc_free(mod);
-			return NULL;
+		ldb_res = ldb_msg_add(mod,
+		                      &msg2->elements[i],
+		                      el ? LDB_FLAG_MOD_REPLACE : LDB_FLAG_MOD_ADD);
+		if (ldb_res != LDB_SUCCESS) {
+			goto failed;
 		}
 	}
 
@@ -630,17 +669,27 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
 		if (el == NULL) {
-			if (ldb_msg_add_empty(mod, 
-					      msg1->elements[i].name,
-					      LDB_FLAG_MOD_DELETE, NULL) != LDB_SUCCESS) {
-				talloc_free(mod);
-				return NULL;
+			ldb_res = ldb_msg_add_empty(mod,
+			                            msg1->elements[i].name,
+			                            LDB_FLAG_MOD_DELETE, NULL);
+			if (ldb_res != LDB_SUCCESS) {
+				goto failed;
 			}
 		}
 	}
 
-	return mod;
+	/* steal resulting message into supplied context */
+	talloc_steal(mem_ctx, mod);
+	*_msg_out = mod;
+
+	talloc_free(temp_ctx);
+	return LDB_SUCCESS;
+
+failed:
+	talloc_free(temp_ctx);
+	return LDB_ERR_OPERATIONS_ERROR;
 }
+
 
 int ldb_msg_sanity_check(struct ldb_context *ldb, 
 			 const struct ldb_message *msg)

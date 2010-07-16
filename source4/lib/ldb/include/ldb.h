@@ -1860,6 +1860,26 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 				 struct ldb_message *msg2);
 
 /**
+ * return a ldb_message representing the differences between msg1 and msg2.
+ * If you then use this in a ldb_modify() call,
+ * it can be used to save edits to a message
+ *
+ * Result message is constructed as follows:
+ * - LDB_FLAG_MOD_ADD     - elements found only in msg2
+ * - LDB_FLAG_MOD_REPLACE - elements in msg2 that have
+ * 			    different value in msg1
+ *                          Value for msg2 element is used
+ * - LDB_FLAG_MOD_DELETE  - elements found only in msg2
+ *
+ * @return LDB_SUCCESS or LDB_ERR_OPERATIONS_ERROR
+ */
+int ldb_msg_difference(struct ldb_context *ldb,
+		       TALLOC_CTX *mem_ctx,
+		       struct ldb_message *msg1,
+		       struct ldb_message *msg2,
+		       struct ldb_message **_msg_out);
+
+/**
    Tries to find a certain string attribute in a message
 
    \param msg the message to check
