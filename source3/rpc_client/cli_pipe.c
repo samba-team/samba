@@ -619,7 +619,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 			       DCERPC_AUTH_TRAILER_LENGTH
 				+ pkt->auth_length);
 
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -749,7 +749,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 				+ pkt->auth_length);
 
 
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -915,7 +915,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 	NTSTATUS ret = NT_STATUS_OK;
 	uint8 ss_padding_len = 0;
 
-	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt);
+	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt, false);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
@@ -2612,7 +2612,7 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 
 	status = dcerpc_pull_dcerpc_auth(talloc_tos(),
 					 &r->u.bind_ack.auth_info,
-					 &auth);
+					 &auth, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
 			  nt_errstr(status)));
@@ -2694,7 +2694,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 				    DCERPC_AUTH_TRAILER_LENGTH
 					+ r->auth_length);
 
-	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -2778,7 +2778,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 
 	status = dcerpc_pull_dcerpc_auth(pkt,
 					 &pkt->u.alter_resp.auth_info,
-					 &auth);
+					 &auth, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;

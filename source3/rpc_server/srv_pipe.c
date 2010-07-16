@@ -568,7 +568,7 @@ bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 
 	status = dcerpc_pull_dcerpc_auth(pkt,
 					 &pkt->u.auth3.auth_info,
-					 &auth_info);
+					 &auth_info, p->endian);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
@@ -1303,7 +1303,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
 		 */
 		status = dcerpc_pull_dcerpc_auth(pkt,
 						 &pkt->u.bind.auth_info,
-						 &auth_info);
+						 &auth_info, p->endian);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
@@ -1524,7 +1524,7 @@ bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
 
 		status = dcerpc_pull_dcerpc_auth(pkt,
 						 &pkt->u.bind.auth_info,
-						 &auth_info);
+						 &auth_info, p->endian);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;

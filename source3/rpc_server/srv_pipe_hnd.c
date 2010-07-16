@@ -406,7 +406,19 @@ static void process_complete_pdu(pipes_struct *p)
 		goto done;
 	}
 
-	status = dcerpc_pull_ncacn_packet(pkt, &p->in_data.pdu, pkt);
+	/*
+	 * Ensure we're using the corrent endianness for both the
+	 * RPC header flags and the raw data we will be reading from.
+	 */
+	if (dcerpc_get_endian_flag(&p->in_data.pdu) & DCERPC_DREP_LE) {
+		p->endian = RPC_LITTLE_ENDIAN;
+	} else {
+		p->endian = RPC_BIG_ENDIAN;
+	}
+	DEBUG(10, ("PDU is in %s Endian format!\n", p->endian?"Big":"Little"));
+
+	status = dcerpc_pull_ncacn_packet(pkt, &p->in_data.pdu,
+					  pkt, p->endian);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to unmarshal rpc packet: %s!\n",
 			  nt_errstr(status)));
@@ -415,16 +427,6 @@ static void process_complete_pdu(pipes_struct *p)
 
 	/* Store the call_id */
 	p->call_id = pkt->call_id;
-
-	/*
-	 * Ensure we're using the corrent endianness for both the
-	 * RPC header flags and the raw data we will be reading from.
-	 */
-	if (pkt->drep[0] == DCERPC_DREP_LE) {
-		p->endian = RPC_LITTLE_ENDIAN;
-	} else {
-		p->endian = RPC_BIG_ENDIAN;
-	}
 
 	DEBUG(10, ("Processing packet type %d\n", (int)pkt->ptype));
 

@@ -123,7 +123,8 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob);
 NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r);
+				  struct ncacn_packet *r,
+				  bool bigendian);
 NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
 				   struct NL_AUTH_MESSAGE *r,
 				   DATA_BLOB *blob);
@@ -136,6 +137,7 @@ NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB *blob);
 NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
-				 struct dcerpc_auth *r);
+				 struct dcerpc_auth *r,
+				 bool bigendian);
 
 #endif /* __DCERPC_H__ */
