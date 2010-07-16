@@ -32,6 +32,12 @@
  *
  ******************************************************************/
 
+#if defined(PARANOID_MALLOC_CHECKER)
+#define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
+#else
+#define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
+#endif
+
 /*******************************************************************
  Reads or writes an NTTIME structure.
 ********************************************************************/

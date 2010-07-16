@@ -273,8 +273,6 @@ NULL returns on zero request. JRA.
 
 #if defined(PARANOID_MALLOC_CHECKER)
 
-#define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
-
 /* Get medieval on our ass about malloc.... */
 
 /* Restrictions on malloc/realloc/calloc. */
@@ -310,8 +308,6 @@ NULL returns on zero request. JRA.
 #define SMB_STRNDUP(s,n) smb_xstrndup(s,n)
 
 #else
-
-#define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
 
 /* Regular malloc code. */
 
