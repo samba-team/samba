@@ -1291,8 +1291,8 @@ int main(int argc, char **argv, char **envp)
 
 	winbindd_register_handlers();
 
-	rpc_lsarpc_init();
-	rpc_samr_init();
+	rpc_lsarpc_init(NULL);
+	rpc_samr_init(NULL);
 
 	if (!init_system_info()) {
 		DEBUG(0,("ERROR: failed to setup system user info.\n"));

@@ -31,10 +31,25 @@ struct rpc_table {
 	struct ndr_syntax_id rpc_interface;
 	const struct api_struct *cmds;
 	uint32_t n_cmds;
+	bool (*shutdown_fn)(void *private_data);
+	void *shutdown_data;
 };
 
 static struct rpc_table *rpc_lookup;
 static uint32_t rpc_lookup_size;
+
+static struct rpc_table *rpc_srv_get_pipe_by_id(const struct ndr_syntax_id *id)
+{
+	uint32_t i;
+
+	for (i = 0; i < rpc_lookup_size; i++) {
+		if (ndr_syntax_id_equal(&rpc_lookup[i].rpc_interface, id)) {
+			return &rpc_lookup[i];
+		}
+	}
+
+	return NULL;
+}
 
 bool rpc_srv_pipe_exists_by_id(const struct ndr_syntax_id *id)
 {
@@ -150,7 +165,8 @@ bool rpc_srv_get_pipe_interface_by_cli_name(const char *cli_name,
 
 NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
 			  const struct ndr_interface_table *iface,
-			  const struct api_struct *cmds, int size)
+			  const struct api_struct *cmds, int size,
+			  const struct rpc_srv_callbacks *rpc_srv_cb)
 {
 	struct rpc_table *rpc_entry;
 
@@ -193,6 +209,33 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
 	rpc_entry->rpc_interface = iface->syntax_id;
 	rpc_entry->cmds = cmds;
 	rpc_entry->n_cmds = size;
+
+	if (rpc_srv_cb != NULL) {
+		rpc_entry->shutdown_fn = rpc_srv_cb->shutdown;
+		rpc_entry->shutdown_data = rpc_srv_cb->private_data;
+
+		if (rpc_srv_cb->init != NULL &&
+		    !rpc_srv_cb->init(rpc_srv_cb->private_data)) {
+			DEBUG(0, ("rpc_srv_register: Failed to call the %s "
+				  "init function!\n", srv));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpc_srv_unregister(const struct ndr_interface_table *iface)
+{
+	struct rpc_table *rpc_entry = rpc_srv_get_pipe_by_id(&iface->syntax_id);
+
+	if (rpc_entry != NULL && rpc_entry->shutdown_fn != NULL) {
+		if (!rpc_entry->shutdown_fn(rpc_entry->shutdown_data)) {
+			DEBUG(0, ("rpc_srv_unregister: Failed to call the %s "
+				  "init function!\n", rpc_entry->pipe.srv));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
 
 	return NT_STATUS_OK;
 }

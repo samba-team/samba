@@ -30,9 +30,17 @@ AC_DEFUN(SMB_MODULE,
 		AC_MSG_RESULT([shared])
 		[$6]
 		string_shared_modules="$string_shared_modules $1"
+	elif test x"$DEST" = xSTATIC && test x"$4" = xRPC; then
+		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z])  $1_init(NULL);"
+		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init(const struct rpc_srv_callbacks *rpc_srv_cb);"
+		string_static_modules="$string_static_modules $1"
+		$4_STATIC="$$4_STATIC $2"
+		AC_SUBST($4_STATIC)
+		[$5]
+		AC_MSG_RESULT([static])
 	elif test x"$DEST" = xSTATIC; then
 		[init_static_modules_]translit([$4], [A-Z], [a-z])="$[init_static_modules_]translit([$4], [A-Z], [a-z])  $1_init();"
- 		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init(void);"
+		[decl_static_modules_]translit([$4], [A-Z], [a-z])="$[decl_static_modules_]translit([$4], [A-Z], [a-z]) extern NTSTATUS $1_init(void);"
 		string_static_modules="$string_static_modules $1"
 		$4_STATIC="$$4_STATIC $2"
 		AC_SUBST($4_STATIC)

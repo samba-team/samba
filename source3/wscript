@@ -321,12 +321,20 @@ utimensat vsyslog _write __write __xstat
         conf.env[shared_env] = []
         if p in static_list:
             decl_list=""
-            for entry in static_list[p]:
-                decl_list += "extern NTSTATUS %s_init(void); " % entry
-                conf.env[static_env].append('%s' % entry.upper())
-            decl_list = decl_list.rstrip()
-            conf.DEFINE('static_decl_%s' % p, decl_list)
-            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
+            if p == "rpc":
+                for entry in static_list[p]:
+                    decl_list += "extern NTSTATUS %s_init(const struct rpc_srv_callbacks *rpc_srv_cb); " % entry
+                    conf.env[static_env].append('%s' % entry.upper())
+                decl_list = decl_list.rstrip()
+                conf.DEFINE('static_decl_%s' % p, decl_list)
+                conf.DEFINE('static_init_%s' % p, '{ %s_init(NULL); }' % '_init(NULL);  '.join(static_list[p]))
+            else:
+                for entry in static_list[p]:
+                    decl_list += "extern NTSTATUS %s_init(void); " % entry
+                    conf.env[static_env].append('%s' % entry.upper())
+                decl_list = decl_list.rstrip()
+                conf.DEFINE('static_decl_%s' % p, decl_list)
+                conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
         else:
             conf.DEFINE('static_decl_%s' % p, '')
             conf.DEFINE('static_init_%s' % p, '{}')

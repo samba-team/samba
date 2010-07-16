@@ -5047,6 +5047,22 @@ void *_policy_handle_find(struct pipes_struct *p,
 				     (_access_granted), #_type, __location__, (_pstatus))
 
 
+/* The following definitions come from rpc_server/srv_rpc_register.c  */
+
+struct rpc_srv_callbacks {
+	bool (*init)(void *private_data);
+	bool (*shutdown)(void *private_data);
+	void *private_data;
+};
+
+NTSTATUS rpc_srv_register(int version, const char *clnt,
+			  const char *srv,
+			  const struct ndr_interface_table *iface,
+			  const struct api_struct *cmds, int size,
+			  const struct rpc_srv_callbacks *rpc_srv_cb);
+
+NTSTATUS rpc_srv_unregister(const struct ndr_interface_table *iface);
+
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
 bool create_next_pdu(pipes_struct *p);
@@ -5056,10 +5072,6 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 				    const char *srv,
 				    const struct ndr_syntax_id *interface,
 				    const struct api_struct *cmds, int size);
-NTSTATUS rpc_srv_register(int version, const char *clnt,
-			  const char *srv,
-			  const struct ndr_interface_table *iface,
-			  const struct api_struct *cmds, int size);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt);
 bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt);

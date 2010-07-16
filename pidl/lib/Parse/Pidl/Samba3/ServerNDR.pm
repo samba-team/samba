@@ -257,10 +257,19 @@ sub ParseInterface($)
 	pidl "";
 
 	if (not has_property($if, "no_srv_register")) {
-	    pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";
-	    pidl "NTSTATUS rpc_$if->{NAME}_init(void)";
+	    pidl_hdr "struct rpc_srv_callbacks;";
+	    pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(const struct rpc_srv_callbacks *rpc_srv_cb);";
+	    pidl "NTSTATUS rpc_$if->{NAME}_init(const struct rpc_srv_callbacks *rpc_srv_cb)";
 	    pidl "{";
-	    pidl "\treturn rpc_srv_register(SMB_RPC_INTERFACE_VERSION, \"$if->{NAME}\", \"$if->{NAME}\", \&ndr_table_$if->{NAME}, api_$if->{NAME}_cmds, sizeof(api_$if->{NAME}_cmds) / sizeof(struct api_struct));";
+	    pidl "\treturn rpc_srv_register(SMB_RPC_INTERFACE_VERSION, \"$if->{NAME}\", \"$if->{NAME}\", \&ndr_table_$if->{NAME}, api_$if->{NAME}_cmds, sizeof(api_$if->{NAME}_cmds) / sizeof(struct api_struct), rpc_srv_cb);";
+	    pidl "}";
+
+	    pidl "";
+
+	    pidl_hdr "NTSTATUS rpc_$if->{NAME}_shutdown(void);";
+	    pidl "NTSTATUS rpc_$if->{NAME}_shutdown(void)";
+	    pidl "{";
+	    pidl "\treturn rpc_srv_unregister(\&ndr_table_$if->{NAME});";
 	    pidl "}";
 	}
 	pidl_hdr "#endif /* __SRV_$uif\__ */";
