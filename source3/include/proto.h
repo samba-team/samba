@@ -3102,7 +3102,6 @@ void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *featur
 void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
-void ntlmssp_end(struct ntlmssp_state **ntlmssp_state);
 DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx);
 NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 			      bool is_standalone,

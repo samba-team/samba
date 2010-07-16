@@ -656,7 +656,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_end(client_ntlmssp_state);
+		TALLOC_FREE(*client_ntlmssp_state);
 		return status;
 	}
 
@@ -665,7 +665,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set username: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_end(client_ntlmssp_state);
+		TALLOC_FREE(*client_ntlmssp_state);
 		return status;
 	}
 
@@ -674,7 +674,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set domain: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_end(client_ntlmssp_state);
+		TALLOC_FREE(*client_ntlmssp_state);
 		return status;
 	}
 
@@ -684,7 +684,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not set password: %s\n",
 				  nt_errstr(status)));
-			ntlmssp_end(client_ntlmssp_state);
+			TALLOC_FREE(*client_ntlmssp_state);
 			return status;
 		}
 	}
@@ -854,7 +854,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 
 	if (strncmp(buf, "YR", 2) == 0) {
 		if (state->ntlmssp_state)
-			ntlmssp_end(&state->ntlmssp_state);
+			TALLOC_FREE(state->ntlmssp_state);
 		state->svr_state = SERVER_INITIAL;
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		/* No special preprocessing required */
@@ -916,7 +916,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 
-		ntlmssp_end(&state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
@@ -1010,7 +1010,7 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 
 	if (strncmp(buf, "YR", 2) == 0) {
 		if (state->ntlmssp_state)
-			ntlmssp_end(&state->ntlmssp_state);
+			TALLOC_FREE(state->ntlmssp_state);
 		state->cli_state = CLIENT_INITIAL;
 	} else if (strncmp(buf, "TT", 2) == 0) {
 		/* No special preprocessing required */
@@ -1102,13 +1102,13 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		state->cli_state = CLIENT_FINISHED;
 		if (state->ntlmssp_state)
-			ntlmssp_end(&state->ntlmssp_state);
+			TALLOC_FREE(state->ntlmssp_state);
 	} else {
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 		state->cli_state = CLIENT_ERROR;
 		if (state->ntlmssp_state)
-			ntlmssp_end(&state->ntlmssp_state);
+			TALLOC_FREE(state->ntlmssp_state);
 	}
 
 	data_blob_free(&request);
@@ -1223,7 +1223,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 
 	if (strncmp(buf, "YR", 2) == 0) {
 		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+			TALLOC_FREE(ntlmssp_state);
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		;
 	} else {
@@ -1288,7 +1288,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 				x_fprintf(x_stdout, "BH Client wants a new "
 						    "NTLMSSP challenge, but "
 						    "already got one\n");
-				ntlmssp_end(&ntlmssp_state);
+				TALLOC_FREE(ntlmssp_state);
 				return;
 			}
 
@@ -1394,7 +1394,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		if (NT_STATUS_IS_OK(status)) {
 			user = SMB_STRDUP(ntlmssp_state->user);
 			domain = SMB_STRDUP(ntlmssp_state->domain);
-			ntlmssp_end(&ntlmssp_state);
+			TALLOC_FREE(ntlmssp_state);
 		}
 	}
 
@@ -1495,7 +1495,7 @@ static bool manage_client_ntlmssp_init(struct spnego_data spnego)
 			NT_STATUS_IS_OK(status)) ) {
 		DEBUG(1, ("Expected OK or MORE_PROCESSING_REQUIRED, got: %s\n",
 			  nt_errstr(status)));
-		ntlmssp_end(&client_ntlmssp_state);
+		TALLOC_FREE(client_ntlmssp_state);
 		return False;
 	}
 
@@ -1528,13 +1528,13 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 
 	if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
 		x_fprintf(x_stdout, "NA\n");
-		ntlmssp_end(&client_ntlmssp_state);
+		TALLOC_FREE(client_ntlmssp_state);
 		return;
 	}
 
 	if (spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_COMPLETED) {
 		x_fprintf(x_stdout, "AF\n");
-		ntlmssp_end(&client_ntlmssp_state);
+		TALLOC_FREE(client_ntlmssp_state);
 		return;
 	}
 
@@ -1549,7 +1549,7 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 		x_fprintf(x_stdout, "BH Expected MORE_PROCESSING_REQUIRED from "
 				    "ntlmssp_client_update\n");
 		data_blob_free(&request);
-		ntlmssp_end(&client_ntlmssp_state);
+		TALLOC_FREE(client_ntlmssp_state);
 		return;
 	}
 
@@ -1798,7 +1798,7 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 						    "negResult\n");
 			}
 
-			ntlmssp_end(&client_ntlmssp_state);
+			TALLOC_FREE(client_ntlmssp_state);
 			goto out;
 		}
 

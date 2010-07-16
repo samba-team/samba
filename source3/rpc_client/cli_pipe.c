@@ -2704,7 +2704,7 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 
 static int cli_auth_ntlmssp_data_destructor(struct cli_pipe_auth_data *auth)
 {
-	ntlmssp_end(&auth->a_u.ntlmssp_state);
+	TALLOC_FREE(auth->a_u.ntlmssp_state);
 	return 0;
 }
 

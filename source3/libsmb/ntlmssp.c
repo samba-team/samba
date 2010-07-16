@@ -275,23 +275,6 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
- * End an NTLMSSP state machine
- *
- * @param ntlmssp_state NTLMSSP State, free()ed by this function
- */
-
-void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
-{
-	data_blob_free(&(*ntlmssp_state)->chal);
-	data_blob_free(&(*ntlmssp_state)->lm_resp);
-	data_blob_free(&(*ntlmssp_state)->nt_resp);
-	TALLOC_FREE(*ntlmssp_state);
-
-	*ntlmssp_state = NULL;
-	return;
-}
-
-/**
  * Determine correct target name flags for reply, given server role
  * and negotiated flags
  *

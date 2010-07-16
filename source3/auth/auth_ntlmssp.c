@@ -327,7 +327,7 @@ void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
 
 	mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
 	if ((*auth_ntlmssp_state)->ntlmssp_state) {
-		ntlmssp_end(&(*auth_ntlmssp_state)->ntlmssp_state);
+		TALLOC_FREE((*auth_ntlmssp_state)->ntlmssp_state);
 	}
 	if ((*auth_ntlmssp_state)->auth_context) {
 		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
