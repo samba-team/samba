@@ -22,8 +22,6 @@
 #ifndef _DCE_RPC_H /* _DCE_RPC_H */
 #define _DCE_RPC_H 
 
-#define SCHANNEL_SIG_SIZE 0x20
-
 /* Maximum size of the signing data in a fragment. */
 #define RPC_MAX_SIGN_SIZE 0x38 /* 56 */
 

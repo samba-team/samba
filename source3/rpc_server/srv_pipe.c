@@ -427,7 +427,7 @@ bool create_next_pdu(pipes_struct *p)
 		case PIPE_AUTH_TYPE_SCHANNEL:
 			if (!create_next_packet(p, auth_type,
 						p->auth.auth_level,
-						SCHANNEL_SIG_SIZE)) {
+						NL_AUTH_SIGNATURE_SIZE)) {
 				return false;
 			}
 			return add_schannel_auth(p);

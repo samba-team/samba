@@ -722,7 +722,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (pkt->auth_length < SCHANNEL_SIG_SIZE) {
+	if (pkt->auth_length < NL_AUTH_SIGNATURE_SIZE) {
 		DEBUG(0, ("auth_len %u.\n", (unsigned int)pkt->auth_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1991,7 +1991,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					*p_auth_len = NTLMSSP_SIG_SIZE;
 					break;
 				case PIPE_AUTH_TYPE_SCHANNEL:
-					*p_auth_len = SCHANNEL_SIG_SIZE;
+					*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
 					break;
 				default:
 					smb_panic("bad auth type");
