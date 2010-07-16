@@ -1854,6 +1854,11 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
 					 const struct ldb_message *msg);
 
+int ldb_msg_normalize(struct ldb_context *ldb,
+		      TALLOC_CTX *mem_ctx,
+		      const struct ldb_message *msg,
+		      struct ldb_message **_msg_out);
+
 
 struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
 				 struct ldb_message *msg1,

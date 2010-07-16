@@ -577,36 +577,64 @@ failed:
 }
 
 
-/*
-  canonicalise a message, merging elements of the same name
-*/
+/**
+ * Canonicalize a message, merging elements of the same name
+ */
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
 					 const struct ldb_message *msg)
+{
+	int ret;
+	struct ldb_message *msg2;
+
+	/*
+	 * Preserve previous behavior and allocate
+	 * *msg2 into *ldb context
+	 */
+	ret = ldb_msg_normalize(ldb, ldb, msg, &msg2);
+	if (ret != LDB_SUCCESS) {
+		return NULL;
+	}
+
+	return msg2;
+}
+
+/**
+ * Canonicalize a message, merging elements of the same name
+ */
+int ldb_msg_normalize(struct ldb_context *ldb,
+		      TALLOC_CTX *mem_ctx,
+		      const struct ldb_message *msg,
+		      struct ldb_message **_msg_out)
 {
 	unsigned int i;
 	struct ldb_message *msg2;
 
-	msg2 = ldb_msg_copy(ldb, msg);
-	if (msg2 == NULL) return NULL;
+	msg2 = ldb_msg_copy(mem_ctx, msg);
+	if (msg2 == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ldb_msg_sort_elements(msg2);
 
-	for (i=1;i<msg2->num_elements;i++) {
+	for (i=1; i < msg2->num_elements; i++) {
 		struct ldb_message_element *el1 = &msg2->elements[i-1];
 		struct ldb_message_element *el2 = &msg2->elements[i];
+
 		if (ldb_msg_element_compare_name(el1, el2) == 0) {
-			el1->values = talloc_realloc(msg2->elements, el1->values, struct ldb_val, 
-						       el1->num_values + el2->num_values);
+			el1->values = talloc_realloc(msg2->elements,
+			                             el1->values, struct ldb_val,
+			                             el1->num_values + el2->num_values);
 			if (el1->num_values + el2->num_values > 0 && el1->values == NULL) {
-				return NULL;
+				talloc_free(msg2);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			memcpy(el1->values + el1->num_values,
 			       el2->values,
 			       sizeof(struct ldb_val) * el2->num_values);
 			el1->num_values += el2->num_values;
 			talloc_free(discard_const_p(char, el2->name));
-			if (i+1<msg2->num_elements) {
-				memmove(el2, el2+1, sizeof(struct ldb_message_element) * 
+			if ((i+1) < msg2->num_elements) {
+				memmove(el2, el2+1, sizeof(struct ldb_message_element) *
 					(msg2->num_elements - (i+1)));
 			}
 			msg2->num_elements--;
@@ -614,7 +642,8 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 		}
 	}
 
-	return msg2;
+	*_msg_out = msg2;
+	return LDB_SUCCESS;
 }
 
 
