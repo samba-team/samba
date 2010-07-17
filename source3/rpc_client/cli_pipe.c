@@ -978,7 +978,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("Got pdu len %lu, data_len %lu, ss_len %u\n",
 			   (long unsigned int)pdu->length,
 			   (long unsigned int)rdata->length,
-			   (long unsigned int)ss_padding_len));
+			   (unsigned int)ss_padding_len));
 
 		/*
 		 * If this is the first reply, and the allocation hint is
