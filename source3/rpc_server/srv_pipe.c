@@ -89,6 +89,11 @@ static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 	TALLOC_FREE(auth->a_u.auth_ntlmssp_state);
 }
 
+static void free_pipe_schannel_auth_data(struct pipe_auth_data *auth)
+{
+	TALLOC_FREE(auth->a_u.schannel_auth);
+}
+
 static DATA_BLOB generic_session_key(void)
 {
 	return data_blob("SystemLibraryDTC", 16);
@@ -1100,7 +1105,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p,
 		neg.oem_netbios_domain.a, neg.oem_netbios_computer.a));
 
 	/* We're finished with this bind - no more packets. */
-	p->auth.auth_data_free_func = NULL;
+	p->auth.auth_data_free_func = &free_pipe_schannel_auth_data;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
 	p->pipe_bound = True;
