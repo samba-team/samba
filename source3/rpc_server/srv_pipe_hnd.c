@@ -23,9 +23,6 @@
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
-#include "../libcli/auth/schannel.h"
-#include "../libcli/auth/spnego.h"
-#include "../libcli/auth/ntlmssp.h"
 #include "rpc_server.h"
 
 #undef DBGC_CLASS
