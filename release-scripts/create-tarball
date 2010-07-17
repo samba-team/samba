@@ -100,7 +100,7 @@ function parseOptions
 }
 
 ##
-## Build the dopcumentation (may be a no-op)
+## Build the documentation (may be a no-op)
 ##
 
 function buildDocs
