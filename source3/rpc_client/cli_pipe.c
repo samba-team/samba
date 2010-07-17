@@ -1585,8 +1585,8 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
  Create and add the NTLMSSP sign/seal auth header and data.
  ********************************************************************/
 
-static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
-					uint32 ss_padding_len,
+static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
+					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
 	uint16_t data_and_pad_len = rpc_out->length
@@ -1595,14 +1595,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
 
-	if (!cli->auth->a_u.auth_ntlmssp_state) {
+	if (!auth_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	switch (cli->auth->auth_level) {
+	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		status = auth_ntlmssp_seal_packet(cli->auth->a_u.auth_ntlmssp_state,
+		status = auth_ntlmssp_seal_packet(auth_state,
 					     rpc_out->data,
 					     rpc_out->data
 						+ DCERPC_RESPONSE_LENGTH,
@@ -1617,7 +1617,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		status = auth_ntlmssp_sign_packet(cli->auth->a_u.auth_ntlmssp_state,
+		status = auth_ntlmssp_sign_packet(auth_state,
 					     rpc_out->data,
 					     rpc_out->data
 						+ DCERPC_RESPONSE_LENGTH,
@@ -1653,11 +1653,10 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
  Create and add the schannel sign/seal auth header and data.
  ********************************************************************/
 
-static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
-					uint32 ss_padding_len,
+static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
+					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
-	struct schannel_state *sas = cli->auth->a_u.schannel_auth;
 	uint8_t *data_p = rpc_out->data + DCERPC_RESPONSE_LENGTH;
 	size_t data_and_pad_len = rpc_out->length
 					- DCERPC_RESPONSE_LENGTH
@@ -1672,7 +1671,7 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 	DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%d\n",
 			sas->seq_num));
 
-	switch (cli->auth->auth_level) {
+	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = netsec_outgoing_packet(sas,
 						rpc_out->data,
@@ -1977,11 +1976,13 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		break;
 	case PIPE_AUTH_TYPE_NTLMSSP:
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		status = add_ntlmssp_auth_footer(state->cli, ss_padding,
+		status = add_ntlmssp_auth_footer(state->cli->auth->a_u.auth_ntlmssp_state,
+						 state->cli->auth->auth_level,
 						 &state->rpc_out);
 		break;
 	case PIPE_AUTH_TYPE_SCHANNEL:
-		status = add_schannel_auth_footer(state->cli, ss_padding,
+		status = add_schannel_auth_footer(state->cli->auth->a_u.schannel_auth,
+						  state->cli->auth->auth_level,
 						  &state->rpc_out);
 		break;
 	default:
