@@ -107,11 +107,18 @@ struct kerberos_auth_struct {
 struct pipe_auth_data {
 	enum pipe_auth_type auth_type; /* switch for union below. */
 	enum dcerpc_AuthLevel auth_level;
+
 	union {
 		struct schannel_state *schannel_auth;
 		struct auth_ntlmssp_state *auth_ntlmssp_state;
-/*		struct kerberos_auth_struct *kerberos_auth; TO BE ADDED... */
+		struct kerberos_auth_struct *kerberos_auth; /* Client only for now */
 	} a_u;
+
+	/* Only the client code uses these 3 for now */
+	char *domain;
+	char *user_name;
+	DATA_BLOB user_session_key;
+
 	void (*auth_data_free_func)(struct pipe_auth_data *);
 };
 

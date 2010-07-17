@@ -48,21 +48,6 @@ struct print_job_info {
 	time_t t;
 };
 
-struct cli_pipe_auth_data {
-	enum pipe_auth_type auth_type; /* switch for the union below. Defined in ntdomain.h */
-	enum dcerpc_AuthLevel auth_level; /* defined in ntdomain.h */
-
-	char *domain;
-	char *user_name;
-	DATA_BLOB user_session_key;
-
-	union {
-		struct schannel_state *schannel_auth;
-		struct ntlmssp_state *ntlmssp_state;
-		struct kerberos_auth_struct *kerberos_auth;
-	} a_u;
-};
-
 /**
  * rpc_cli_transport defines a transport mechanism to ship rpc requests
  * asynchronously to a server and receive replies
@@ -149,7 +134,7 @@ struct rpc_pipe_client {
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;
 
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 
 	/* The following is only non-null on a netlogon client pipe. */
 	struct netlogon_creds_CredentialState *dc;

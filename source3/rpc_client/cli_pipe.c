@@ -26,6 +26,7 @@
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "ntlmssp_wrap.h"
 #include "rpc_client/cli_netlogon.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
@@ -384,7 +385,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (!cli->auth->a_u.ntlmssp_state) {
+	if (!cli->auth->a_u.auth_ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -434,8 +435,8 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data is encrypted. */
-		status = ntlmssp_unseal_packet(
-					cli->auth->a_u.ntlmssp_state,
+		status = auth_ntlmssp_unseal_packet(
+					cli->auth->a_u.auth_ntlmssp_state,
 					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
@@ -455,8 +456,8 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		status = ntlmssp_check_packet(
-					cli->auth->a_u.ntlmssp_state,
+		status = auth_ntlmssp_check_packet(
+					cli->auth->a_u.auth_ntlmssp_state,
 					pdu->data + DCERPC_RESPONSE_LENGTH,
 					pkt->frag_length
 						- DCERPC_RESPONSE_LENGTH
@@ -1341,7 +1342,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = ntlmssp_update(cli->auth->a_u.ntlmssp_state,
+	status = auth_ntlmssp_update(cli->auth->a_u.auth_ntlmssp_state,
 					null_blob,
 					&request);
 
@@ -1386,7 +1387,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	DATA_BLOB request = data_blob_null;
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = ntlmssp_update(cli->auth->a_u.ntlmssp_state,
+	status = auth_ntlmssp_update(cli->auth->a_u.auth_ntlmssp_state,
 					null_blob,
 					&request);
 
@@ -1588,7 +1589,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	DATA_BLOB auth_blob = data_blob_null;
 	uint16_t data_and_pad_len = rpc_out->length - DCERPC_RESPONSE_LENGTH;
 
-	if (!cli->auth->a_u.ntlmssp_state) {
+	if (!cli->auth->a_u.auth_ntlmssp_state) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1618,7 +1619,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		status = ntlmssp_seal_packet(cli->auth->a_u.ntlmssp_state,
+		status = auth_ntlmssp_seal_packet(cli->auth->a_u.auth_ntlmssp_state,
 					     rpc_out->data,
 					     rpc_out->data
 						+ DCERPC_RESPONSE_LENGTH,
@@ -1633,7 +1634,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		status = ntlmssp_sign_packet(cli->auth->a_u.ntlmssp_state,
+		status = auth_ntlmssp_sign_packet(cli->auth->a_u.auth_ntlmssp_state,
 					     rpc_out->data,
 					     rpc_out->data
 						+ DCERPC_RESPONSE_LENGTH,
@@ -2264,7 +2265,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
-				      struct cli_pipe_auth_data *auth)
+				      struct pipe_auth_data *auth)
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_pipe_bind_state *state;
@@ -2410,7 +2411,7 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 
 	/* TODO - check auth_type/auth_level match. */
 
-	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
+	status = auth_ntlmssp_update(state->cli->auth->a_u.auth_ntlmssp_state,
 				auth.credentials, &client_reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2503,7 +2504,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	/* We're finished with the server spnego response and the tmp_blob. */
 	data_blob_free(&tmp_blob);
 
-	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
+	status = auth_ntlmssp_update(state->cli->auth->a_u.auth_ntlmssp_state,
 				server_ntlm_response, &client_reply);
 
 	/* Finished with the server_ntlm response */
@@ -2595,7 +2596,7 @@ NTSTATUS rpc_pipe_bind_recv(struct tevent_req *req)
 }
 
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
-		       struct cli_pipe_auth_data *auth)
+		       struct pipe_auth_data *auth)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -2667,7 +2668,7 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 
 	if ((rpc_cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP)
 	    || (rpc_cli->auth->auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP)) {
-		memcpy(nt_hash, rpc_cli->auth->a_u.ntlmssp_state->nt_hash, 16);
+		memcpy(nt_hash, auth_ntlmssp_get_nt_hash(rpc_cli->auth->a_u.auth_ntlmssp_state), 16);
 		return true;
 	}
 
@@ -2680,11 +2681,11 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 }
 
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
-			       struct cli_pipe_auth_data **presult)
+			       struct pipe_auth_data **presult)
 {
-	struct cli_pipe_auth_data *result;
+	struct pipe_auth_data *result;
 
-	result = talloc(mem_ctx, struct cli_pipe_auth_data);
+	result = talloc(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2703,9 +2704,9 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static int cli_auth_ntlmssp_data_destructor(struct cli_pipe_auth_data *auth)
+static int cli_auth_ntlmssp_data_destructor(struct pipe_auth_data *auth)
 {
-	TALLOC_FREE(auth->a_u.ntlmssp_state);
+	TALLOC_FREE(auth->a_u.auth_ntlmssp_state);
 	return 0;
 }
 
@@ -2715,12 +2716,12 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  const char *domain,
 				  const char *username,
 				  const char *password,
-				  struct cli_pipe_auth_data **presult)
+				  struct pipe_auth_data **presult)
 {
-	struct cli_pipe_auth_data *result;
+	struct pipe_auth_data *result;
 	NTSTATUS status;
 
-	result = talloc(mem_ctx, struct cli_pipe_auth_data);
+	result = talloc(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2735,28 +2736,31 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = ntlmssp_client_start(NULL,
+	status = auth_ntlmssp_client_start(NULL,
 				      global_myname(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
-				      &result->a_u.ntlmssp_state);
+				      &result->a_u.auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
 	talloc_set_destructor(result, cli_auth_ntlmssp_data_destructor);
 
-	status = ntlmssp_set_username(result->a_u.ntlmssp_state, username);
+	status = auth_ntlmssp_set_username(result->a_u.auth_ntlmssp_state,
+					   username);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = ntlmssp_set_domain(result->a_u.ntlmssp_state, domain);
+	status = auth_ntlmssp_set_domain(result->a_u.auth_ntlmssp_state,
+					 domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = ntlmssp_set_password(result->a_u.ntlmssp_state, password);
+	status = auth_ntlmssp_set_password(result->a_u.auth_ntlmssp_state,
+					   password);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -2764,14 +2768,17 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	/*
 	 * Turn off sign+seal to allow selected auth level to turn it back on.
 	 */
-	result->a_u.ntlmssp_state->neg_flags &=
-		~(NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL);
+	auth_ntlmssp_and_flags(result->a_u.auth_ntlmssp_state,
+						~(NTLMSSP_NEGOTIATE_SIGN |
+						  NTLMSSP_NEGOTIATE_SEAL));
 
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		result->a_u.ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		auth_ntlmssp_or_flags(result->a_u.auth_ntlmssp_state,
+						NTLMSSP_NEGOTIATE_SIGN);
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		result->a_u.ntlmssp_state->neg_flags
-			|= NTLMSSP_NEGOTIATE_SEAL | NTLMSSP_NEGOTIATE_SIGN;
+		auth_ntlmssp_or_flags(result->a_u.auth_ntlmssp_state,
+						NTLMSSP_NEGOTIATE_SEAL |
+						NTLMSSP_NEGOTIATE_SIGN);
 	}
 
 	*presult = result;
@@ -2785,11 +2792,11 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum dcerpc_AuthLevel auth_level,
 				   struct netlogon_creds_CredentialState *creds,
-				   struct cli_pipe_auth_data **presult)
+				   struct pipe_auth_data **presult)
 {
-	struct cli_pipe_auth_data *result;
+	struct pipe_auth_data *result;
 
-	result = talloc(mem_ctx, struct cli_pipe_auth_data);
+	result = talloc(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2834,10 +2841,10 @@ static NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 				   const char *service_princ,
 				   const char *username,
 				   const char *password,
-				   struct cli_pipe_auth_data **presult)
+				   struct pipe_auth_data **presult)
 {
 #ifdef HAVE_KRB5
-	struct cli_pipe_auth_data *result;
+	struct pipe_auth_data *result;
 
 	if ((username != NULL) && (password != NULL)) {
 		int ret = kerberos_kinit_password(username, password, 0, NULL);
@@ -2846,7 +2853,7 @@ static NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = talloc(mem_ctx, struct cli_pipe_auth_data);
+	result = talloc(mem_ctx, struct pipe_auth_data);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2961,7 +2968,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *epm_pipe = NULL;
-	struct cli_pipe_auth_data *auth = NULL;
+	struct pipe_auth_data *auth = NULL;
 	struct dcerpc_binding *map_binding = NULL;
 	struct dcerpc_binding *res_binding = NULL;
 	struct epm_twr_t *map_tower = NULL;
@@ -3257,7 +3264,7 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
 	result = talloc(mem_ctx, struct rpc_pipe_client);
@@ -3340,7 +3347,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 					    struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -3428,7 +3435,7 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 						   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -3614,7 +3621,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -3788,7 +3795,7 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 {
 #ifdef HAVE_KRB5
 	struct rpc_pipe_client *result;
-	struct cli_pipe_auth_data *auth;
+	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
@@ -3825,6 +3832,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
 {
+	DATA_BLOB sk;
+
 	if (!session_key || !cli) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -3840,9 +3849,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			break;
 		case PIPE_AUTH_TYPE_NTLMSSP:
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			*session_key = data_blob_talloc(mem_ctx,
-				cli->auth->a_u.ntlmssp_state->session_key.data,
-				cli->auth->a_u.ntlmssp_state->session_key.length);
+			sk = auth_ntlmssp_get_session_key(cli->auth->a_u.auth_ntlmssp_state);
+			*session_key = data_blob_dup_talloc(mem_ctx, &sk);
 			break;
 		case PIPE_AUTH_TYPE_KRB5:
 		case PIPE_AUTH_TYPE_SPNEGO_KRB5:

@@ -4828,20 +4828,20 @@ NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
-				      struct cli_pipe_auth_data *auth);
+				      struct pipe_auth_data *auth);
 NTSTATUS rpc_pipe_bind_recv(struct tevent_req *req);
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
-		       struct cli_pipe_auth_data *auth);
+		       struct pipe_auth_data *auth);
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 				unsigned int timeout);
 bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli);
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16]);
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
-			       struct cli_pipe_auth_data **presult);
+			       struct pipe_auth_data **presult);
 NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 				   enum dcerpc_AuthLevel auth_level,
 				   struct netlogon_creds_CredentialState *creds,
-				   struct cli_pipe_auth_data **presult);
+				   struct pipe_auth_data **presult);
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 			   const struct ndr_syntax_id *abstract_syntax,
 			   struct rpc_pipe_client **presult);

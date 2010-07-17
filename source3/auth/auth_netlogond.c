@@ -34,7 +34,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 				   NTSTATUS *schannel_bind_result)
 {
 	struct rpc_pipe_client *p = NULL;
-	struct cli_pipe_auth_data *auth = NULL;
+	struct pipe_auth_data *auth = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS status;
 
@@ -161,7 +161,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct netr_SamInfo3 *info3 = NULL;
 	struct rpc_pipe_client *p = NULL;
-	struct cli_pipe_auth_data *auth = NULL;
+	struct pipe_auth_data *auth = NULL;
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	char *plaintext_machinepw = NULL;
 	uint8_t machine_password[16];
