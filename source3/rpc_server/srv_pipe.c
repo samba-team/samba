@@ -94,6 +94,14 @@ static void free_pipe_schannel_auth_data(struct pipe_auth_data *auth)
 	TALLOC_FREE(auth->a_u.schannel_auth);
 }
 
+static void free_pipe_auth_data(struct pipe_auth_data *auth)
+{
+	if (auth->auth_data_free_func) {
+		(*auth->auth_data_free_func)(auth);
+		auth->auth_data_free_func = NULL;
+	}
+}
+
 static DATA_BLOB generic_session_key(void)
 {
 	return data_blob("SystemLibraryDTC", 16);
@@ -602,8 +610,7 @@ bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 
  err:
 
-	free_pipe_ntlmssp_auth_data(&p->auth);
-	p->auth.a_u.auth_ntlmssp_state = NULL;
+	free_pipe_auth_data(&p->auth);
 
 	return False;
 }
@@ -651,9 +658,7 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.data_sent_length = 0;
 	p->out_data.current_pdu_sent = 0;
 
-	if (p->auth.auth_data_free_func) {
-		(*p->auth.auth_data_free_func)(&p->auth);
-	}
+	free_pipe_auth_data(&p->auth);
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
@@ -860,7 +865,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
 
 	if (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP && p->auth.a_u.auth_ntlmssp_state) {
 		/* Free any previous auth type. */
-		free_pipe_ntlmssp_auth_data(&p->auth);
+		free_pipe_auth_data(&p->auth);
 	}
 
 	if (!got_kerberos_mechanism) {
@@ -988,8 +993,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
 	data_blob_free(&auth_blob);
 	data_blob_free(&auth_reply);
 
-	free_pipe_ntlmssp_auth_data(&p->auth);
-	p->auth.a_u.auth_ntlmssp_state = NULL;
+	free_pipe_auth_data(&p->auth);
 
 	return False;
 }
@@ -1170,8 +1174,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
 
   err:
 
-	free_pipe_ntlmssp_auth_data(&p->auth);
-	p->auth.a_u.auth_ntlmssp_state = NULL;
+	TALLOC_FREE(a);
 	return False;
 }
 
