@@ -415,8 +415,10 @@ RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
 
 RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
 
-RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c rpc_client/rpc_transport_np.c
-        rpc_client/rpc_transport_sock.c rpc_client/rpc_transport_smbd.c'''
+RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c librpc/rpc/rpc_common.c
+                    rpc_client/rpc_transport_np.c
+		    rpc_client/rpc_transport_sock.c
+		    rpc_client/rpc_transport_smbd.c'''
 
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
 
