@@ -768,7 +768,8 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 		struct timeval tv = convert_timespec_to_timeval(*timeout);
 		struct tevent_timer *te = tevent_add_timer(ev,
 						frame,
-						timeval_current_ofs(tv.tv_sec,0),
+						timeval_current_ofs(tv.tv_sec,
+								    tv.tv_usec),
 						aio_fork_suspend_timed_out,
 						&timed_out);
 		if (!te) {
