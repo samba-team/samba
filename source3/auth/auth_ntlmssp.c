@@ -265,7 +265,6 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	const char *dns_name;
 	char *dns_domain;
 	struct auth_ntlmssp_state *ans;
-	struct ntlmssp_state *ntlmssp_state;
 	struct auth_context *auth_context;
 
 	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
@@ -286,7 +285,6 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	ans = talloc_zero(NULL, struct auth_ntlmssp_state);
 	if (!ans) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
-		TALLOC_FREE(ntlmssp_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
