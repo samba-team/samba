@@ -57,35 +57,10 @@ NTSTATUS auth_netlogond_init(void);
 NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *auth_ntlmssp_state,
 				struct auth_serversupplied_info **server_info);
-struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(struct auth_ntlmssp_state *auth_ntlmssp_state);
-const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *auth_ntlmssp_state);
-const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *auth_ntlmssp_state);
-const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *auth_ntlmssp_state);
-bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *auth_ntlmssp_state);
-bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state);
 void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state);
 void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state);
-NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
-			     const DATA_BLOB request, DATA_BLOB *reply) ;
-NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  TALLOC_CTX *sig_mem_ctx,
-				  const uint8_t *data, size_t length,
-				  const uint8_t *whole_pdu, size_t pdu_length,
-				  DATA_BLOB *sig);
-NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				   const uint8_t *data, size_t length,
-				   const uint8_t *whole_pdu, size_t pdu_length,
-				   const DATA_BLOB *sig) ;
-NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  TALLOC_CTX *sig_mem_ctx,
-				  uint8_t *data, size_t length,
-				  const uint8_t *whole_pdu, size_t pdu_length,
-				  DATA_BLOB *sig);
-NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				    uint8_t *data, size_t length,
-				    const uint8_t *whole_pdu, size_t pdu_length,
-				    const DATA_BLOB *sig);
+
 
 /* The following definitions come from auth/auth_sam.c  */
 

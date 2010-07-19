@@ -22,56 +22,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/ntlmssp.h"
-
-struct auth_ntlmssp_state {
-	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
-	struct ntlmssp_state *ntlmssp_state;
-};
-
-NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  TALLOC_CTX *sig_mem_ctx,
-				  const uint8_t *data, size_t length,
-				  const uint8_t *whole_pdu, size_t pdu_length,
-				  DATA_BLOB *sig)
-{
-	return ntlmssp_sign_packet(auth_ntlmssp_state->ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				   const uint8_t *data, size_t length,
-				   const uint8_t *whole_pdu, size_t pdu_length,
-				   const DATA_BLOB *sig)
-{
-	return ntlmssp_check_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				  TALLOC_CTX *sig_mem_ctx,
-				  uint8_t *data, size_t length,
-				  const uint8_t *whole_pdu, size_t pdu_length,
-				  DATA_BLOB *sig)
-{
-	return ntlmssp_seal_packet(auth_ntlmssp_state->ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				    uint8_t *data, size_t length,
-				    const uint8_t *whole_pdu, size_t pdu_length,
-				    const DATA_BLOB *sig)
-{
-	return ntlmssp_unseal_packet(auth_ntlmssp_state->ntlmssp_state, data, length, whole_pdu, pdu_length, sig);
-}
-
-bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN;
-}
-
-bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
-}
+#include "ntlmssp_wrap.h"
 
 void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
 {
@@ -103,27 +54,6 @@ NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
 	/* Steal server_info away from auth_ntlmssp_state */
 	*server_info = talloc_move(mem_ctx, &auth_ntlmssp_state->server_info);
 	return NT_STATUS_OK;
-}
-
-struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state;
-}
-
-/* Needed for 'map to guest' and 'smb username' processing */
-const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state->user;
-}
-
-const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state->domain;
-}
-
-const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-	return auth_ntlmssp_state->ntlmssp_state->client.netbios_name;
 }
 
 /**
@@ -328,10 +258,4 @@ static int auth_ntlmssp_state_destructor(void *ptr)
 	TALLOC_FREE(ans->server_info);
 	TALLOC_FREE(ans->ntlmssp_state);
 	return 0;
-}
-
-NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
-			     const DATA_BLOB request, DATA_BLOB *reply) 
-{
-	return ntlmssp_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
 }

@@ -24,6 +24,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "ntlmssp_wrap.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,

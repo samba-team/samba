@@ -33,6 +33,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "ntlmssp_wrap.h"
 #include "rpc_server.h"
 
 #undef DBGC_CLASS
