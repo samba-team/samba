@@ -8,17 +8,17 @@
    Copyright (C) Martin Pool 2001-2002
    Copyright (C) Simo Sorce 2002
    Copyright (C) James Peach 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -64,7 +64,7 @@ static bool send_message(struct messaging_context *msg_ctx,
 	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
 		  "%d processes\n", n_sent));
-	
+
 	return ret;
 }
 
@@ -482,7 +482,7 @@ static void profilelevel_cb(struct messaging_context *msg_ctx,
 		s = "BOGUS";
 		break;
 	}
-	
+
 	printf("Profiling %s on pid %u\n",s,(unsigned int)procid_to_pid(&pid));
 }
 
@@ -578,7 +578,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		fprintf(stderr, "\tjobdelete <printername> <unix jobid>\n");
 		fprintf(stderr, "\tprinter <printername> <comment|port|"
 			"driver> <value>\n");
-		
+
 		return False;
 	}
 
@@ -591,7 +591,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 				" queuepause <printername>\n");
 			return False;
 		}
-		
+
 		notify_printer_status_byname(argv[2], PRINTER_STATUS_PAUSED);
 
 		goto send;
@@ -603,7 +603,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 				" queuereume <printername>\n");
 			return False;
 		}
-		
+
 		notify_printer_status_byname(argv[2], PRINTER_STATUS_OK);
 
 		goto send;
@@ -656,7 +656,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		notify_job_status_byname(
 			argv[2], jobid, JOB_STATUS_DELETING,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
-		
+
 		notify_job_status_byname(
 			argv[2], jobid, JOB_STATUS_DELETING|
 			JOB_STATUS_DELETED,
@@ -666,7 +666,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 
 	} else if (strcmp(cmd, "printer") == 0) {
 		uint32 attribute;
-		
+
 		if (argc != 5) {
 			fprintf(stderr, "Usage: smbcontrol <dest> printnotify "
 				"printer <printername> <comment|port|driver> "
@@ -940,7 +940,7 @@ static bool do_winbind_offline(struct messaging_context *msg_ctx,
 
 		/* Check that the entry "WINBINDD_OFFLINE" still exists. */
 		d = tdb_fetch_bystring( tdb, "WINBINDD_OFFLINE" );
-	
+
 		if (!d.dptr || d.dsize != 4) {
 			SAFE_FREE(d.dptr);
 			DEBUG(10,("do_winbind_offline: offline state not set - retrying.\n"));
@@ -1349,7 +1349,7 @@ int main(int argc, const char **argv)
 	load_case_tables();
 
 	setup_logging(argv[0],True);
-	
+
 	/* Parse command line arguments using popt */
 
 	pc = poptGetContext(
@@ -1392,14 +1392,14 @@ int main(int argc, const char **argv)
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but
          * shell needs 0. */ 
-	
+
 	if (!(evt_ctx = tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, procid_self(), evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		TALLOC_FREE(frame);
 		exit(1);
 	}
-	
+
 	ret = !do_command(msg_ctx, argc, argv);
 	TALLOC_FREE(frame);
 	return ret;
