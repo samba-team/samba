@@ -826,7 +826,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
 	}
 
 	/* parse out the OIDs and the first sec blob */
-	if (!parse_negTokenTarg(pauth_info->credentials, OIDs, &secblob)) {
+	if (!spnego_parse_negTokenInit(pauth_info->credentials, OIDs, NULL, &secblob)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to parse the security blob.\n"));
 		goto err;
         }

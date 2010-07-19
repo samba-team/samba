@@ -130,7 +130,8 @@ DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob)
 */
 bool spnego_parse_negTokenInit(DATA_BLOB blob,
 			       char *OIDs[ASN1_MAX_OIDS],
-			       char **principal)
+			       char **principal,
+			       DATA_BLOB *secblob)
 {
 	int i;
 	bool ret;
@@ -167,7 +168,12 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_end_tag(data);
 	asn1_end_tag(data);
 
-	*principal = NULL;
+	if (principal) {
+		*principal = NULL;
+	}
+	if (secblob) {
+		*secblob = data_blob_null;
+	}
 
 	/*
 	  Win7 + Live Sign-in Assistant attaches a mechToken
@@ -193,28 +199,33 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 
 	if (asn1_tag_remaining(data) > 0) {
 		if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
+			DATA_BLOB sblob = data_blob_null;
 			/* mechToken [2] OCTET STRING  OPTIONAL */
-			DATA_BLOB token;
 			asn1_start_tag(data, ASN1_CONTEXT(2));
 			asn1_read_OctetString(data, talloc_autofree_context(),
-				&token);
+				&sblob);
 			asn1_end_tag(data);
-			/* Throw away the token - not used. */
-			data_blob_free(&token);
+			if (secblob) {
+				*secblob = sblob;
+			}
 		}
 	}
 
 	if (asn1_tag_remaining(data) > 0) {
 		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+			char *princ = NULL;
 			/* mechListMIC [3] OCTET STRING  OPTIONAL */
 			asn1_start_tag(data, ASN1_CONTEXT(3));
 			asn1_start_tag(data, ASN1_SEQUENCE(0));
 			asn1_start_tag(data, ASN1_CONTEXT(0));
 			asn1_read_GeneralString(data,talloc_autofree_context(),
-				principal);
+				&princ);
 			asn1_end_tag(data);
 			asn1_end_tag(data);
 			asn1_end_tag(data);
+			if (principal) {
+				*principal = princ;
+			}
 		}
 	}
 
@@ -226,7 +237,12 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	ret = !data->has_error;
 	if (data->has_error) {
 		int j;
-		TALLOC_FREE(*principal);
+		if (principal) {
+			TALLOC_FREE(*principal);
+		}
+		if (secblob) {
+			data_blob_free(secblob);
+		}
 		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
 			TALLOC_FREE(OIDs[j]);
 		}
@@ -280,72 +296,6 @@ DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 	asn1_free(data);
 
 	return ret;
-}
-
-/*
-  parse a negTokenTarg packet giving a list of OIDs and a security blob
-*/
-bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
-{
-	int i;
-	ASN1_DATA *data;
-
-	data = asn1_init(talloc_tos());
-	if (data == NULL) {
-		return false;
-	}
-
-	asn1_load(data, blob);
-	asn1_start_tag(data, ASN1_APPLICATION(0));
-	asn1_check_OID(data,OID_SPNEGO);
-	asn1_start_tag(data, ASN1_CONTEXT(0));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-
-	asn1_start_tag(data, ASN1_CONTEXT(0));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
-		const char *oid_str = NULL;
-		asn1_read_OID(data,talloc_autofree_context(),&oid_str);
-		OIDs[i] = CONST_DISCARD(char *, oid_str);
-	}
-	OIDs[i] = NULL;
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-
-	/* Skip any optional req_flags that are sent per RFC 4178 */
-	if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
-		uint8 flags;
-
-		asn1_start_tag(data, ASN1_CONTEXT(1));
-		asn1_start_tag(data, ASN1_BIT_STRING);
-		while (asn1_tag_remaining(data) > 0)
-			asn1_read_uint8(data, &flags);
-		asn1_end_tag(data);
-		asn1_end_tag(data);
-	}
-
-	asn1_start_tag(data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(data,talloc_autofree_context(),secblob);
-	asn1_end_tag(data);
-
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-
-	asn1_end_tag(data);
-
-	if (data->has_error) {
-		int j;
-		data_blob_free(secblob);
-		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
-			TALLOC_FREE(OIDs[j]);
-		}
-		DEBUG(1,("Failed to parse negTokenTarg at offset %d\n", (int)data->ofs));
-		asn1_free(data);
-		return False;
-	}
-
-	asn1_free(data);
-	return True;
 }
 
 /*

@@ -732,7 +732,7 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 	*kerb_mechOID = NULL;
 
 	/* parse out the OIDs and the first sec blob */
-	if (!parse_negTokenTarg(blob_in, OIDs, pblob_out)) {
+	if (!spnego_parse_negTokenInit(blob_in, OIDs, NULL, pblob_out)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 

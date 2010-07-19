@@ -2827,9 +2827,9 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob);
 bool spnego_parse_negTokenInit(DATA_BLOB blob,
 			       char *OIDs[ASN1_MAX_OIDS],
-			       char **principal);
+			       char **principal,
+			       DATA_BLOB *secblob);
 DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob);
-bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob);
 DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2]);
 bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
 int spnego_gen_negTokenTarg(const char *principal, int time_offset, 
