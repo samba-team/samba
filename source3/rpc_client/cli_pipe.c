@@ -3836,6 +3836,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
 {
+	struct pipe_auth_data *a = cli->auth;
 	DATA_BLOB sk;
 
 	if (!session_key || !cli) {
@@ -3847,29 +3848,27 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (cli->auth->auth_type) {
-		case PIPE_AUTH_TYPE_SCHANNEL:
-			*session_key = data_blob_talloc(mem_ctx,
-				cli->auth->a_u.schannel_auth->creds->session_key, 16);
-			break;
-		case PIPE_AUTH_TYPE_NTLMSSP:
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			sk = auth_ntlmssp_get_session_key(cli->auth->a_u.auth_ntlmssp_state);
-			*session_key = data_blob_dup_talloc(mem_ctx, &sk);
-			break;
-		case PIPE_AUTH_TYPE_KRB5:
-		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-			*session_key = data_blob_talloc(mem_ctx,
-				cli->auth->a_u.kerberos_auth->session_key.data,
-				cli->auth->a_u.kerberos_auth->session_key.length);
-			break;
-		case PIPE_AUTH_TYPE_NONE:
-			*session_key = data_blob_talloc(mem_ctx,
-				cli->auth->user_session_key.data,
-				cli->auth->user_session_key.length);
-			break;
-		default:
-			return NT_STATUS_NO_USER_SESSION_KEY;
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		sk = data_blob_const(a->a_u.schannel_auth->creds->session_key,
+				     16);
+		break;
+	case PIPE_AUTH_TYPE_NTLMSSP:
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		sk = auth_ntlmssp_get_session_key(a->a_u.auth_ntlmssp_state);
+		break;
+	case PIPE_AUTH_TYPE_KRB5:
+	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+		sk = data_blob_const(a->a_u.kerberos_auth->session_key.data,
+				     a->a_u.kerberos_auth->session_key.length);
+		break;
+	case PIPE_AUTH_TYPE_NONE:
+		sk = data_blob_const(a->user_session_key.data,
+				     a->user_session_key.length);
+		break;
+	default:
+		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
+	*session_key = data_blob_dup_talloc(mem_ctx, &sk);
 	return NT_STATUS_OK;
 }
