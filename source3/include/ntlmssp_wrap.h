@@ -63,7 +63,23 @@ struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *ans);
+const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans);
+NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
+				   const char *user);
+NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
+				 const char *domain);
+NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
+				   const char *password);
+void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
+void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
+DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans);
+
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 			     const DATA_BLOB request, DATA_BLOB *reply);
 
+NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
+				   const char *netbios_name,
+				   const char *netbios_domain,
+				   bool use_ntlmv2,
+				   struct auth_ntlmssp_state **_ans);
 #endif /* _NTLMSSP_WRAP_ */

@@ -110,9 +110,68 @@ const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *ans)
 	return ans->ntlmssp_state->client.netbios_name;
 }
 
+const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans)
+{
+	return ans->ntlmssp_state->nt_hash;
+}
+
+NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
+				   const char *user)
+{
+	return ntlmssp_set_username(ans->ntlmssp_state, user);
+}
+
+NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
+				 const char *domain)
+{
+	return ntlmssp_set_domain(ans->ntlmssp_state, domain);
+}
+
+NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
+				   const char *password)
+{
+	return ntlmssp_set_password(ans->ntlmssp_state, password);
+}
+
+void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
+{
+	ans->ntlmssp_state->neg_flags &= flags;
+}
+
+void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
+{
+	ans->ntlmssp_state->neg_flags |= flags;
+}
+
+DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans)
+{
+	return ans->ntlmssp_state->session_key;
+}
+
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 			     const DATA_BLOB request, DATA_BLOB *reply)
 {
 	return ntlmssp_update(ans->ntlmssp_state, request, reply);
 }
 
+NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
+				   const char *netbios_name,
+				   const char *netbios_domain,
+				   bool use_ntlmv2,
+				   struct auth_ntlmssp_state **_ans)
+{
+	struct auth_ntlmssp_state *ans;
+	NTSTATUS status;
+
+	ans = talloc_zero(mem_ctx, struct auth_ntlmssp_state);
+
+	status = ntlmssp_client_start(ans,
+					netbios_name, netbios_domain,
+					use_ntlmv2, &ans->ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*_ans = ans;
+	return NT_STATUS_OK;
+}
