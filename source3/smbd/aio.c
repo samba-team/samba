@@ -67,11 +67,17 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 }
 
 
-static void initialize_async_io_handler(void)
+static bool initialize_async_io_handler(void)
 {
+	static bool tried_signal_setup = false;
+
 	if (aio_signal_event) {
-		return;
+		return true;
 	}
+	if (tried_signal_setup) {
+		return false;
+	}
+	tried_signal_setup = true;
 
 	aio_signal_event = tevent_add_signal(smbd_event_context(),
 					     smbd_event_context(),
@@ -79,7 +85,8 @@ static void initialize_async_io_handler(void)
 					     smbd_aio_signal_handler,
 					     NULL);
 	if (!aio_signal_event) {
-		exit_server("Failed to setup RT_SIGNAL_AIO handler");
+		DEBUG(10, ("Failed to setup RT_SIGNAL_AIO handler\n"));
+		return false;
 	}
 
 	/* tevent supports 100 signal with SA_SIGINFO */
@@ -145,7 +152,9 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	int ret;
 
 	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
+	if (!initialize_async_io_handler()) {
+		return NT_STATUS_RETRY;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -250,7 +259,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	int ret;
 
 	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
+	if (!initialize_async_io_handler()) {
+		return NT_STATUS_RETRY;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -382,7 +393,9 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	int ret;
 
 	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
+	if (!initialize_async_io_handler()) {
+		return NT_STATUS_RETRY;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -478,7 +491,9 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	int ret;
 
 	/* Ensure aio is initialized. */
-	initialize_async_io_handler();
+	if (!initialize_async_io_handler()) {
+		return NT_STATUS_RETRY;
+	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */

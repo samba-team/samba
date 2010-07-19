@@ -18,3 +18,16 @@ bld.SAMBA_BINARY('wbinfo',
 	deps='LIBSAMBA-UTIL LIBCLI_AUTH popt POPT_SAMBA LIBWINBIND-CLIENT LIBWBCLIENT tevent UTIL_TEVENT LIBASYNC_REQ UID_WRAPPER'
 	)
 
+bld.SAMBA_LIBRARY('nsswinbind',
+    source='../nsswitch/winbind_nss_linux.c',
+    deps='LIBWINBIND-CLIENT',
+    realname='libnss_winbind.so',
+    vnum='2')
+
+if bld.CONFIG_SET('HAVE_PAM_START'):
+    bld.SAMBA_LIBRARY('pamwinbind',
+        source='../nsswitch/pam_winbind.c',
+        deps='talloc LIBWBCLIENT LIBWINBIND-CLIENT LIBINIPARSER pam',
+        cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
+        realname='pam_winbind.so',
+        )

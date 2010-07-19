@@ -165,10 +165,29 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
-	memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
-	memcpy(&new_lm_password.data, new_lm_password_blob.data, 516);
-	memcpy(&old_nt_hash_enc.hash, old_nt_hash_enc_blob.data, 16);
-	memcpy(&old_lm_hash_enc.hash, old_lm_hash_enc_blob.data, 16);
+	if (new_nt_password_blob.length > 0) {
+		memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
+	} else {
+		ZERO_STRUCT(new_nt_password_blob);
+	}
+
+	if (new_lm_password_blob.length > 0) {
+		memcpy(&new_lm_password.data, new_lm_password_blob.data, 516);
+	} else {
+		ZERO_STRUCT(new_lm_password);
+	}
+
+	if (old_nt_hash_enc_blob.length > 0) {
+		memcpy(&old_nt_hash_enc.hash, old_nt_hash_enc_blob.data, 16);
+	} else {
+		ZERO_STRUCT(old_nt_hash_enc);
+	}
+
+	if (old_lm_hash_enc_blob.length > 0) {
+		memcpy(&old_lm_hash_enc.hash, old_lm_hash_enc_blob.data, 16);
+	} else {
+		ZERO_STRUCT(old_lm_hash_enc);
+	}
 
 	result = rpccli_samr_ChangePasswordUser2(cli, mem_ctx,
 						 &server,

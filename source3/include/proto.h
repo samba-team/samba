@@ -2937,6 +2937,7 @@ NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
 uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
+uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
 NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 				  TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *pkt_auth_blob,
@@ -6165,6 +6166,10 @@ int sessionid_traverse_read(int (*fn)(const char *key,
 			    void *private_data);
 
 /* The following definitions come from smbd/sesssetup.c  */
+
+NTSTATUS do_map_to_guest(NTSTATUS status,
+		struct auth_serversupplied_info **server_info,
+		const char *user, const char *domain);
 
 NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 		DATA_BLOB *pblob_out,

@@ -20,22 +20,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_epmapper.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
-#include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
-#include "../librpc/gen_ndr/ndr_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
-#include "../librpc/gen_ndr/ndr_srvsvc.h"
-#include "../librpc/gen_ndr/ndr_wkssvc.h"
-#include "../librpc/gen_ndr/ndr_winreg.h"
-#include "../librpc/gen_ndr/ndr_spoolss.h"
-#include "../librpc/gen_ndr/ndr_dfs.h"
-#include "../librpc/gen_ndr/ndr_echo.h"
-#include "../librpc/gen_ndr/ndr_initshutdown.h"
-#include "../librpc/gen_ndr/ndr_svcctl.h"
-#include "../librpc/gen_ndr/ndr_eventlog.h"
-#include "../librpc/gen_ndr/ndr_ntsvcs.h"
-#include "../librpc/gen_ndr/ndr_epmapper.h"
-#include "../librpc/gen_ndr/ndr_drsuapi.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
@@ -46,206 +32,6 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
-
-static const char *get_pipe_name_from_iface(
-	TALLOC_CTX *mem_ctx, const struct ndr_interface_table *interface)
-{
-	int i;
-	const struct ndr_interface_string_array *ep = interface->endpoints;
-	char *p;
-
-	for (i=0; i<ep->count; i++) {
-		if (strncmp(ep->names[i], "ncacn_np:[\\pipe\\", 16) == 0) {
-			break;
-		}
-	}
-	if (i == ep->count) {
-		return NULL;
-	}
-
-	/*
-	 * extract the pipe name without \\pipe from for example
-	 * ncacn_np:[\\pipe\\epmapper]
-	 */
-	p = strchr(ep->names[i]+15, ']');
-	if (p == NULL) {
-		return "PIPE";
-	}
-	return talloc_strndup(mem_ctx, ep->names[i]+15, p - ep->names[i] - 15);
-}
-
-static const struct ndr_interface_table **interfaces;
-
-bool smb_register_ndr_interface(const struct ndr_interface_table *interface)
-{
-	int num_interfaces = talloc_array_length(interfaces);
-	const struct ndr_interface_table **tmp;
-	int i;
-
-	for (i=0; i<num_interfaces; i++) {
-		if (ndr_syntax_id_equal(&interfaces[i]->syntax_id,
-					&interface->syntax_id)) {
-			return true;
-		}
-	}
-
-	tmp = talloc_realloc(NULL, interfaces,
-			     const struct ndr_interface_table *,
-			     num_interfaces + 1);
-	if (tmp == NULL) {
-		DEBUG(1, ("smb_register_ndr_interface: talloc failed\n"));
-		return false;
-	}
-	interfaces = tmp;
-	interfaces[num_interfaces] = interface;
-	return true;
-}
-
-static bool initialize_interfaces(void)
-{
-	if (!smb_register_ndr_interface(&ndr_table_lsarpc)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_dssetup)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_samr)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_netlogon)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_srvsvc)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_wkssvc)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_winreg)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_spoolss)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_netdfs)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_rpcecho)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_initshutdown)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_svcctl)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_eventlog)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_ntsvcs)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_epmapper)) {
-		return false;
-	}
-	if (!smb_register_ndr_interface(&ndr_table_drsuapi)) {
-		return false;
-	}
-	return true;
-}
-
-const struct ndr_interface_table *get_iface_from_syntax(
-	const struct ndr_syntax_id *syntax)
-{
-	int num_interfaces;
-	int i;
-
-	if (interfaces == NULL) {
-		if (!initialize_interfaces()) {
-			return NULL;
-		}
-	}
-	num_interfaces = talloc_array_length(interfaces);
-
-	for (i=0; i<num_interfaces; i++) {
-		if (ndr_syntax_id_equal(&interfaces[i]->syntax_id, syntax)) {
-			return interfaces[i];
-		}
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
- Return the pipe name from the interface.
- ****************************************************************************/
-
-const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
-				      const struct ndr_syntax_id *syntax)
-{
-	const struct ndr_interface_table *interface;
-	char *guid_str;
-	const char *result;
-
-	interface = get_iface_from_syntax(syntax);
-	if (interface != NULL) {
-		result = get_pipe_name_from_iface(mem_ctx, interface);
-		if (result != NULL) {
-			return result;
-		}
-	}
-
-	/*
-	 * Here we should ask \\epmapper, but for now our code is only
-	 * interested in the known pipes mentioned in pipe_names[]
-	 */
-
-	guid_str = GUID_string(talloc_tos(), &syntax->uuid);
-	if (guid_str == NULL) {
-		return NULL;
-	}
-	result = talloc_asprintf(mem_ctx, "Interface %s.%d", guid_str,
-				 (int)syntax->if_version);
-	TALLOC_FREE(guid_str);
-
-	if (result == NULL) {
-		return "PIPE";
-	}
-	return result;
-}
-
-/********************************************************************
- Map internal value to wire value.
- ********************************************************************/
-
-enum dcerpc_AuthType map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
-{
-	switch (auth_type) {
-
-	case PIPE_AUTH_TYPE_NONE:
-		return DCERPC_AUTH_TYPE_NONE;
-
-	case PIPE_AUTH_TYPE_NTLMSSP:
-		return DCERPC_AUTH_TYPE_NTLMSSP;
-
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-		return DCERPC_AUTH_TYPE_SPNEGO;
-
-	case PIPE_AUTH_TYPE_SCHANNEL:
-		return DCERPC_AUTH_TYPE_SCHANNEL;
-
-	case PIPE_AUTH_TYPE_KRB5:
-		return DCERPC_AUTH_TYPE_KRB5;
-
-	default:
-		DEBUG(0,("map_pipe_auth_type_to_rpc_type: unknown pipe "
-			"auth type %u\n",
-			(unsigned int)auth_type ));
-		break;
-	}
-	return -1;
-}
 
 /********************************************************************
  Pipe description for a DEBUG
@@ -619,7 +405,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 			       DCERPC_AUTH_TRAILER_LENGTH
 				+ pkt->auth_length);
 
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -722,7 +508,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (pkt->auth_length < SCHANNEL_SIG_SIZE) {
+	if (pkt->auth_length < NL_AUTH_SIGNATURE_SIZE) {
 		DEBUG(0, ("auth_len %u.\n", (unsigned int)pkt->auth_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -749,7 +535,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
 				+ pkt->auth_length);
 
 
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -915,7 +701,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 	NTSTATUS ret = NT_STATUS_OK;
 	uint8 ss_padding_len = 0;
 
-	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt);
+	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt, false);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
@@ -976,7 +762,9 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 		}
 
 		DEBUG(10, ("Got pdu len %lu, data_len %lu, ss_len %u\n",
-			   pdu->length, rdata->length, ss_padding_len));
+			   (long unsigned int)pdu->length,
+			   (long unsigned int)rdata->length,
+			   (unsigned int)ss_padding_len));
 
 		/*
 		 * If this is the first reply, and the allocation hint is
@@ -1991,7 +1779,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					*p_auth_len = NTLMSSP_SIG_SIZE;
 					break;
 				case PIPE_AUTH_TYPE_SCHANNEL:
-					*p_auth_len = SCHANNEL_SIG_SIZE;
+					*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
 					break;
 				default:
 					smb_panic("bad auth type");
@@ -2612,7 +2400,7 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 
 	status = dcerpc_pull_dcerpc_auth(talloc_tos(),
 					 &r->u.bind_ack.auth_info,
-					 &auth);
+					 &auth, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
 			  nt_errstr(status)));
@@ -2694,7 +2482,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 				    DCERPC_AUTH_TRAILER_LENGTH
 					+ r->auth_length);
 
-	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info);
+	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
 		return status;
@@ -2778,7 +2566,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 
 	status = dcerpc_pull_dcerpc_auth(pkt,
 					 &pkt->u.alter_resp.auth_info,
-					 &auth);
+					 &auth, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;

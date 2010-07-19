@@ -175,8 +175,6 @@ static void shell_help(const struct shell_command * command,
 static void shell_set(const struct shell_command *command,
 	struct torture_context *tctx, int argc, const char **argv)
 {
-	char * name;
-
 	switch (argc) {
 	case 0:
 	    lpcfg_dump(tctx->lp_ctx, stdout,
@@ -185,9 +183,12 @@ static void shell_set(const struct shell_command *command,
 	    break;
 
 	case 2:
-	    name = talloc_asprintf(NULL, "torture:%s", argv[0]);
-	    lpcfg_set_cmdline(tctx->lp_ctx, name, argv[1]);
-	    talloc_free(name);
+	    /* We want to allow users to set any config option. Top level
+	     * options will get checked against their static definition, but
+	     * parametric options can't be checked and will just get stashed
+	     * as they are provided.
+	     */
+	    lpcfg_set_cmdline(tctx->lp_ctx, argv[0], argv[1]);
 	    break;
 
 	default:

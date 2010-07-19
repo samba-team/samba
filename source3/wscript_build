@@ -68,6 +68,9 @@ LIBNDR_SCHANNEL_SRC = '''../librpc/gen_ndr/ndr_schannel.c
 LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
                   ../librpc/ndr/ndr_spoolss_buf.c'''
 
+LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
+                  ../librpc/ndr/ndr_xattr.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -79,8 +82,7 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
                  librpc/gen_ndr/ndr_notify.c
-                 ../librpc/gen_ndr/ndr_xattr.c
-                 ../librpc/ndr/ndr_xattr.c
+                 ${LIBNDR_XATTR_SRC}
                  ../librpc/gen_ndr/ndr_epmapper.c
                  ../librpc/gen_ndr/ndr_named_pipe_auth.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
@@ -413,8 +415,10 @@ RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
 
 RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
 
-RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c rpc_client/rpc_transport_np.c
-        rpc_client/rpc_transport_sock.c rpc_client/rpc_transport_smbd.c'''
+RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c librpc/rpc/rpc_common.c
+                    rpc_client/rpc_transport_np.c
+		    rpc_client/rpc_transport_sock.c
+		    rpc_client/rpc_transport_smbd.c'''
 
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
 

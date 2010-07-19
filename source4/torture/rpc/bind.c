@@ -52,6 +52,7 @@ static bool test_bind(struct torture_context *tctx,
 		torture_rpc_binding(tctx, &binding),
 		"failed to parse binding string");
 
+	binding->flags &= ~DCERPC_AUTH_OPTIONS;
 	binding->flags |= *flags;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -86,11 +87,32 @@ static void test_bind_op(struct torture_suite *suite,
 struct torture_suite *torture_rpc_bind(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "BIND");
+	struct {
+		const char *test_name;
+		uint32_t flags;
+	} tests[] = {
+		{
+			.test_name	= "ntlm,sign",
+			.flags		= DCERPC_AUTH_NTLM | DCERPC_SIGN
+		},{
+			.test_name	= "ntlm,sign,seal",
+			.flags		= DCERPC_AUTH_NTLM | DCERPC_SIGN | DCERPC_SEAL
+		},{
+			.test_name	= "spnego,sign",
+			.flags		= DCERPC_AUTH_SPNEGO | DCERPC_SIGN
+		},{
+			.test_name	= "spnego,sign,seal",
+			.flags		= DCERPC_AUTH_SPNEGO | DCERPC_SIGN | DCERPC_SEAL
+		}
+	};
+	int i;
 
-	test_bind_op(suite, "ntlm,sign", DCERPC_AUTH_NTLM | DCERPC_SIGN);
-	test_bind_op(suite, "ntlm,sign,seal", DCERPC_AUTH_NTLM | DCERPC_SIGN | DCERPC_SEAL);
-	test_bind_op(suite, "spnego,sign", DCERPC_AUTH_SPNEGO | DCERPC_SIGN);
-	test_bind_op(suite, "spnego,sign,seal", DCERPC_AUTH_SPNEGO | DCERPC_SIGN | DCERPC_SEAL);
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		test_bind_op(suite, tests[i].test_name, tests[i].flags);
+	}
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		test_bind_op(suite, talloc_asprintf(suite, "bigendian,%s", tests[i].test_name), tests[i].flags | DCERPC_PUSH_BIGENDIAN);
+	}
 
 	return suite;
 }

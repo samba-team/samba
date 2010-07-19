@@ -143,6 +143,26 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 	return 0;
 }
 
+static NTSTATUS setup_ntlmssp_server_info(struct smbd_smb2_session *session,
+				NTSTATUS status)
+{
+	if (NT_STATUS_IS_OK(status)) {
+		status = auth_ntlmssp_server_info(session,
+				session->auth_ntlmssp_state,
+				&session->server_info);
+	} else {
+		/* Note that this server_info won't have a session
+		 * key.  But for map to guest, that's exactly the right
+		 * thing - we can't reasonably guess the key the
+		 * client wants, as the password was wrong */
+		status = do_map_to_guest(status,
+			&session->server_info,
+			auth_ntlmssp_get_username(session->auth_ntlmssp_state),
+			auth_ntlmssp_get_domain(session->auth_ntlmssp_state));
+	}
+	return status;
+}
+
 #ifdef HAVE_KRB5
 static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 					struct smbd_smb2_request *smb2req,
@@ -615,13 +635,6 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 					uint64_t *out_session_id)
 {
 	fstring tmp;
-	NTSTATUS status = auth_ntlmssp_server_info(session, session->auth_ntlmssp_state,
-						   &session->server_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		auth_ntlmssp_end(&session->auth_ntlmssp_state);
-		TALLOC_FREE(session);
-		return status;
-	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == Required) {
@@ -775,6 +788,11 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 				     &auth_out);
 	if (!NT_STATUS_IS_OK(status) &&
 			!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = setup_ntlmssp_server_info(session, status);
+	}
+
+	if (!NT_STATUS_IS_OK(status) &&
+			!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		auth_ntlmssp_end(&session->auth_ntlmssp_state);
 		data_blob_free(&auth);
 		TALLOC_FREE(session);
@@ -850,6 +868,9 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		*out_session_id = session->vuid;
 		return status;
 	}
+
+	status = setup_ntlmssp_server_info(session, status);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		auth_ntlmssp_end(&session->auth_ntlmssp_state);
 		TALLOC_FREE(session);

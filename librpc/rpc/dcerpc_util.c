@@ -52,6 +52,11 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 	}
 }
 
+uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
+{
+	return blob->data[DCERPC_DREP_OFFSET];
+}
+
 /*
   pull an dcerpc_auth structure, taking account of any auth padding in
   the blob at the end of the structure

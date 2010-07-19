@@ -92,15 +92,27 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r)
+				  struct ncacn_packet *r,
+				  bool bigendian)
 {
 	enum ndr_err_code ndr_err;
+	struct ndr_pull *ndr;
 
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
-		(ndr_pull_flags_fn_t)ndr_pull_ncacn_packet);
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (bigendian) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, r);
+
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(ndr);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
+	talloc_free(ndr);
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(ncacn_packet, r);
@@ -194,15 +206,27 @@ NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
-				 struct dcerpc_auth *r)
+				 struct dcerpc_auth *r,
+				 bool bigendian)
 {
 	enum ndr_err_code ndr_err;
+	struct ndr_pull *ndr;
 
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
-		(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (bigendian) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, r);
+
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(ndr);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
+	talloc_free(ndr);
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(dcerpc_auth, r);

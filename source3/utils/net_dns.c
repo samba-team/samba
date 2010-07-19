@@ -1,4 +1,3 @@
-
 /* 
    Samba Unix/Linux Dynamic DNS Update
    net ads commands
@@ -10,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  
 */
@@ -55,7 +54,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	if (!(mem_ctx = talloc_init("DoDNSUpdate"))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
-		
+
 	err = dns_open_connection( pszServerName, DNS_TCP, mem_ctx, &conn );
 	if (!ERR_DNS_IS_OK(err)) {
 		goto error;
@@ -114,10 +113,9 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 						     keyname, &gss_context, 
 						     DNS_SRV_WIN2000 );
 		}
-		
+
 		if (!ERR_DNS_IS_OK(err))
 			goto error;
-		
 
 		err = dns_sign_update(req, gss_context, keyname,
 				      "gss.microsoft.com", time(NULL), 3600);

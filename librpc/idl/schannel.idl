@@ -90,6 +90,8 @@ interface schannel
 		uint8 Confounder[8];
 	} NL_AUTH_SIGNATURE;
 
+	const int NL_AUTH_SIGNATURE_SIZE = 0x20;
+
 	/* MS-NRPC 2.2.1.3.3 NL_AUTH_SHA2_SIGNATURE */
 
 	typedef [public,flag(NDR_PAHEX)] struct {
