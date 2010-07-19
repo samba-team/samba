@@ -75,8 +75,7 @@ static void exit_server_common(enum server_exit_reason how,
 	change_to_root_user();
 
 	if (sconn && sconn->smb1.negprot.auth_context) {
-		struct auth_context *a = sconn->smb1.negprot.auth_context;
-		a->free(&sconn->smb1.negprot.auth_context);
+		TALLOC_FREE(sconn->smb1.negprot.auth_context);
 	}
 
 	if (lp_log_writeable_files_on_exit()) {

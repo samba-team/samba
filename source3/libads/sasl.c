@@ -106,7 +106,7 @@ static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
 	struct ntlmssp_state *ntlmssp_state =
 		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
 
-	ntlmssp_end(&ntlmssp_state);
+	TALLOC_FREE(ntlmssp_state);
 
 	ads->ldap.wrap_ops = NULL;
 	ads->ldap.wrap_private_data = NULL;
@@ -209,7 +209,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 					ber_bvfree(scred);
 				}
 
-				ntlmssp_end(&ntlmssp_state);
+				TALLOC_FREE(ntlmssp_state);
 				return ADS_ERROR(rc);
 			}
 			if (scred) {
@@ -221,7 +221,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 
 		} else {
 
-			ntlmssp_end(&ntlmssp_state);
+			TALLOC_FREE(ntlmssp_state);
 			data_blob_free(&blob_out);
 			return ADS_ERROR_NT(nt_status);
 		}
@@ -233,7 +233,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			if (!spnego_parse_challenge(blob, &blob_in, 
 						    &tmp_blob)) {
 
-				ntlmssp_end(&ntlmssp_state);
+				TALLOC_FREE(ntlmssp_state);
 				data_blob_free(&blob);
 				DEBUG(3,("Failed to parse challenges\n"));
 				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -243,7 +243,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
 							&blob_in)) {
 
-				ntlmssp_end(&ntlmssp_state);
+				TALLOC_FREE(ntlmssp_state);
 				data_blob_free(&blob);
 				DEBUG(3,("Failed to parse auth response\n"));
 				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -266,11 +266,11 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
-			ntlmssp_end(&ntlmssp_state);
+			TALLOC_FREE(ntlmssp_state);
 			return status;
 		}
 	} else {
-		ntlmssp_end(&ntlmssp_state);
+		TALLOC_FREE(ntlmssp_state);
 	}
 
 	return ADS_ERROR(rc);

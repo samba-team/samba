@@ -86,6 +86,14 @@ struct ldb_val {
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)
 #endif
+
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
 /*! \endcond */
 
 /* opaque ldb_dn structures, see ldb_dn.c for internals */
@@ -1851,13 +1859,56 @@ struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
 struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
 				 const struct ldb_message *msg);
 
+/*
+ * ldb_msg_canonicalize() is now depreciated
+ * Please use ldb_msg_normalize() instead
+ *
+ * NOTE: Returned ldb_message object is allocated
+ * into *ldb's context. Callers are recommended
+ * to steal the returned object into a TALLOC_CTX
+ * with short lifetime.
+ */
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
-					 const struct ldb_message *msg);
+					 const struct ldb_message *msg) _DEPRECATED_;
+
+int ldb_msg_normalize(struct ldb_context *ldb,
+		      TALLOC_CTX *mem_ctx,
+		      const struct ldb_message *msg,
+		      struct ldb_message **_msg_out);
 
 
+/*
+ * ldb_msg_diff() is now depreciated
+ * Please use ldb_msg_difference() instead
+ *
+ * NOTE: Returned ldb_message object is allocated
+ * into *ldb's context. Callers are recommended
+ * to steal the returned object into a TALLOC_CTX
+ * with short lifetime.
+ */
 struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
 				 struct ldb_message *msg1,
-				 struct ldb_message *msg2);
+				 struct ldb_message *msg2) _DEPRECATED_;
+
+/**
+ * return a ldb_message representing the differences between msg1 and msg2.
+ * If you then use this in a ldb_modify() call,
+ * it can be used to save edits to a message
+ *
+ * Result message is constructed as follows:
+ * - LDB_FLAG_MOD_ADD     - elements found only in msg2
+ * - LDB_FLAG_MOD_REPLACE - elements in msg2 that have
+ * 			    different value in msg1
+ *                          Value for msg2 element is used
+ * - LDB_FLAG_MOD_DELETE  - elements found only in msg2
+ *
+ * @return LDB_SUCCESS or LDB_ERR_OPERATIONS_ERROR
+ */
+int ldb_msg_difference(struct ldb_context *ldb,
+		       TALLOC_CTX *mem_ctx,
+		       struct ldb_message *msg1,
+		       struct ldb_message *msg2,
+		       struct ldb_message **_msg_out);
 
 /**
    Tries to find a certain string attribute in a message

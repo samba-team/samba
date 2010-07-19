@@ -79,6 +79,13 @@ def SAMBA_PIDL(bld, pname, source,
     # gen_ndr directory we end up generating identical output in gen_ndr for the old
     # build system and the new one. That makes keeping things in sync much easier.
     # eventually we should drop the gen_ndr files in git, but in the meanwhile this works
+
+    found_dir = bld.path.find_dir(output_dir)
+    if not 'abspath' in dir(found_dir):
+        Logs.error('Unable to find pidl output directory %s' %
+                   os.path.normpath(os.path.join(bld.curdir, output_dir)))
+        sys.exit(1)
+
     outdir = bld.path.find_dir(output_dir).abspath(t.env)
 
     if symlink and not os.path.lexists(outdir):

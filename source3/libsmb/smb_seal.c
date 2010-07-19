@@ -371,7 +371,7 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
 		if (es->s.ntlmssp_state) {
-			ntlmssp_end(&es->s.ntlmssp_state);
+			TALLOC_FREE(es->s.ntlmssp_state);
 		}
 	}
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)

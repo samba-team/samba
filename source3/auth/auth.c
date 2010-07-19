@@ -322,38 +322,40 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
  Clear out a auth_context, and destroy the attached TALLOC_CTX
 ***************************************************************************/
 
-static void free_auth_context(struct auth_context **auth_context)
+static int auth_context_destructor(void *ptr)
 {
-	auth_methods *auth_method;
+	struct auth_context *ctx = talloc_get_type(ptr, struct auth_context);
+	struct auth_methods *am;
 
-	if (*auth_context) {
-		/* Free private data of context's authentication methods */
-		for (auth_method = (*auth_context)->auth_method_list; auth_method; auth_method = auth_method->next) {
-			TALLOC_FREE(auth_method->private_data);
-		}
 
-		talloc_destroy(*auth_context);
-		*auth_context = NULL;
+	/* Free private data of context's authentication methods */
+	for (am = ctx->auth_method_list; am; am = am->next) {
+		TALLOC_FREE(am->private_data);
 	}
+
+	return 0;
 }
 
 /***************************************************************************
  Make a auth_info struct
 ***************************************************************************/
 
-static NTSTATUS make_auth_context(struct auth_context **auth_context) 
+static NTSTATUS make_auth_context(struct auth_context **auth_context)
 {
-	*auth_context = TALLOC_ZERO_P(talloc_autofree_context(),
-				      struct auth_context);
-	if (!*auth_context) {
+	struct auth_context *ctx;
+
+	ctx = talloc_zero(talloc_autofree_context(), struct auth_context);
+	if (!ctx) {
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*auth_context)->check_ntlm_password = check_ntlm_password;
-	(*auth_context)->get_ntlm_challenge = get_ntlm_challenge;
-	(*auth_context)->free = free_auth_context;
+	ctx->check_ntlm_password = check_ntlm_password;
+	ctx->get_ntlm_challenge = get_ntlm_challenge;
 
+	talloc_set_destructor((TALLOC_CTX *)ctx, auth_context_destructor);
+
+	*auth_context = ctx;
 	return NT_STATUS_OK;
 }
 

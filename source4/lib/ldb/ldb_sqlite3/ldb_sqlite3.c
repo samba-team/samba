@@ -687,14 +687,21 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 		/* call the async callback for the last entry
 		 * except the first time */
 		if (ac->current_eid != 0) {
-			msg = ldb_msg_canonicalize(ldb, msg);
-			if (!msg) return SQLITE_ABORT;
+			ret = ldb_msg_normalize(ldb, ac->req, msg, &msg);
+			if (ret != LDB_SUCCESS) {
+				return SQLITE_ABORT;
+			}
 
 			ret = ldb_module_send_entry(ac->req, msg, NULL);
 			if (ret != LDB_SUCCESS) {
 				ac->callback_failed = true;
+				/* free msg object */
+				TALLOC_FREE(msg);
 				return SQLITE_ABORT;
 			}
+
+			/* free msg object */
+			TALLOC_FREE(msg);
 		}
 
 		/* start over */
@@ -960,8 +967,10 @@ int lsql_search(struct lsql_context *ctx)
 
 	/* complete the last message if any */
 	if (ctx->ares) {
-		ctx->ares->message = ldb_msg_canonicalize(ldb, ctx->ares->message);
-		if (ctx->ares->message == NULL) {
+		ret = ldb_msg_normalize(ldb, ctx->ares,
+		                        ctx->ares->message,
+		                        &ctx->ares->message);
+		if (ret != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 

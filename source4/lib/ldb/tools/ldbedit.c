@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -45,10 +45,10 @@
 static struct ldb_cmdline *options;
 
 /*
-  debug routine 
+  debug routine
 */
-static void ldif_write_msg(struct ldb_context *ldb, 
-			   FILE *f, 
+static void ldif_write_msg(struct ldb_context *ldb,
+			   FILE *f,
 			   enum ldb_changetype changetype,
 			   struct ldb_message *msg)
 {
@@ -62,21 +62,22 @@ static void ldif_write_msg(struct ldb_context *ldb,
   modify a database record so msg1 becomes msg2
   returns the number of modified elements
 */
-static int modify_record(struct ldb_context *ldb, 
+static int modify_record(struct ldb_context *ldb,
 			 struct ldb_message *msg1,
 			 struct ldb_message *msg2,
 			 struct ldb_control **req_ctrls)
 {
+	int ret;
 	struct ldb_message *mod;
 
-	mod = ldb_msg_diff(ldb, msg1, msg2);
-	if (mod == NULL) {
+	if (ldb_msg_difference(ldb, ldb, msg1, msg2, &mod) != LDB_SUCCESS) {
 		fprintf(stderr, "Failed to calculate message differences\n");
 		return -1;
 	}
 
-	if (mod->num_elements == 0) {
-		return 0;
+	ret = mod->num_elements;
+	if (ret == 0) {
+		goto done;
 	}
 
 	if (options->verbose > 0) {
@@ -84,12 +85,15 @@ static int modify_record(struct ldb_context *ldb,
 	}
 
 	if (ldb_modify_ctrl(ldb, mod, req_ctrls) != 0) {
-		fprintf(stderr, "failed to modify %s - %s\n", 
+		fprintf(stderr, "failed to modify %s - %s\n",
 			ldb_dn_get_linearized(msg1->dn), ldb_errstring(ldb));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
-	return mod->num_elements;
+done:
+	talloc_free(mod);
+	return ret;
 }
 
 /*
@@ -184,7 +188,7 @@ static int merge_edits(struct ldb_context *ldb,
 /*
   save a set of messages as ldif to a file
 */
-static int save_ldif(struct ldb_context *ldb, 
+static int save_ldif(struct ldb_context *ldb,
 		     FILE *f, struct ldb_message **msgs, unsigned int count)
 {
 	unsigned int i;
@@ -305,7 +309,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	/* the check for '=' is for compatibility with ldapsearch */
-	if (options->argc > 0 && 
+	if (options->argc > 0 &&
 	    strchr(options->argv[0], '=')) {
 		expression = options->argv[0];
 		options->argv++;

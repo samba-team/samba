@@ -136,7 +136,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	status = NT_STATUS_OK;
 
 done:
-	ntlmssp_end(&ntlmssp_state);
+	TALLOC_FREE(ntlmssp_state);
 	return status;
 }
 

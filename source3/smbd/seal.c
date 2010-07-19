@@ -101,7 +101,7 @@ static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
 	 */
 
 	if (ec->auth_ntlmssp_state) {
-		auth_ntlmssp_end(&ec->auth_ntlmssp_state);
+		TALLOC_FREE(ec->auth_ntlmssp_state);
 		/* The auth_ntlmssp_end killed this already. */
 		ec->es->s.ntlmssp_state = NULL;
 	}

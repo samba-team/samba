@@ -969,7 +969,7 @@ static int cli_session_setup_ntlmssp_state_destructor(
 	struct cli_session_setup_ntlmssp_state *state)
 {
 	if (state->ntlmssp_state != NULL) {
-		ntlmssp_end(&state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 	}
 	return 0;
 }
@@ -1079,7 +1079,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 			return;
 		}
 		TALLOC_FREE(subreq);
-		ntlmssp_end(&state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 		tevent_req_done(req);
 		return;
 	}
@@ -1122,7 +1122,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		TALLOC_FREE(subreq);
-		ntlmssp_end(&state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 		tevent_req_nterror(req, status);
 		return;
 	}

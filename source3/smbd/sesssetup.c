@@ -150,14 +150,14 @@ static NTSTATUS check_guest_password(struct auth_serversupplied_info **server_in
 	}
 
 	if (!make_user_info_guest(&user_info)) {
-		(auth_context->free)(&auth_context);
+		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	nt_status = auth_context->check_ntlm_password(auth_context,
 						user_info,
 						server_info);
-	(auth_context->free)(&auth_context);
+	TALLOC_FREE(auth_context);
 	free_user_info(&user_info);
 	return nt_status;
 }
@@ -708,7 +708,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		/* NB. This is *NOT* an error case. JRA */
 		if (do_invalidate) {
-			auth_ntlmssp_end(auth_ntlmssp_state);
+			TALLOC_FREE(*auth_ntlmssp_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
@@ -828,7 +828,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 #endif
 
 	if (*auth_ntlmssp_state) {
-		auth_ntlmssp_end(auth_ntlmssp_state);
+		TALLOC_FREE(*auth_ntlmssp_state);
 	}
 
 	if (kerb_mech) {
@@ -1751,8 +1751,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						user_info,
 						&server_info);
 
-				(plaintext_auth_context->free)(
-						&plaintext_auth_context);
+				TALLOC_FREE(plaintext_auth_context);
 			}
 		}
 	}

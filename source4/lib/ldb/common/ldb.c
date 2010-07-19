@@ -795,15 +795,17 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		ret = module->ops->search(module, req);
 		break;
 	case LDB_ADD:
-		/* we have to canonicalise here, as so many places
+		/*
+		 * we have to normalize here, as so many places
 		 * in modules and backends assume we don't have two
-		 * elements with the same name */
-		req->op.add.message = ldb_msg_canonicalize(ldb, req->op.add.message);
-		if (!req->op.add.message) {
+		 * elements with the same name
+		 */
+		ret = ldb_msg_normalize(ldb, req, req->op.add.message,
+		                        discard_const(&req->op.add.message));
+		if (ret != LDB_SUCCESS) {
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		talloc_steal(req, req->op.add.message);
 		FIRST_OP(ldb, add);
 		ret = module->ops->add(module, req);
 		break;
