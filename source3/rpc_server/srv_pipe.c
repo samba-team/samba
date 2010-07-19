@@ -1721,12 +1721,13 @@ void set_incoming_fault(struct pipes_struct *p)
 		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 }
 
-static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
-				    struct ncacn_packet *pkt)
+static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
+				    struct ncacn_packet *pkt,
+				    DATA_BLOB *raw_pkt)
 {
 	NTSTATUS status;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
-	struct dcerpc_auth auth;
+	struct dcerpc_auth auth_info;
 	uint32_t auth_length;
 	DATA_BLOB data;
 	DATA_BLOB full_pkt;
@@ -1737,7 +1738,7 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 		hdr_size += 16;
 	}
 
-	switch (p->auth.auth_level) {
+	switch (auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		DEBUG(10, ("Requested Privacy.\n"));
 		break;
@@ -1761,24 +1762,26 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 		return NT_STATUS_OK;
 
 	default:
+		DEBUG(3, ("Unimplemented Auth Level %d",
+			  auth->auth_level));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = dcerpc_pull_auth_trailer(pkt, pkt,
 					  &pkt->u.request.stub_and_verifier,
-					  &auth, &auth_length, false);
+					  &auth_info, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	pkt->u.request.stub_and_verifier.length -= auth_length;
 
-	data.data = p->in_data.pdu.data + hdr_size;
-	data.length = pkt->u.request.stub_and_verifier.length;
-	full_pkt.data = p->in_data.pdu.data;
-	full_pkt.length = p->in_data.pdu.length - auth.credentials.length;
+	data = data_blob_const(raw_pkt->data + hdr_size,
+				pkt->u.request.stub_and_verifier.length);
+	full_pkt = data_blob_const(raw_pkt->data,
+				raw_pkt->length - auth_info.credentials.length);
 
-	switch (p->auth.auth_type) {
+	switch (auth->auth_type) {
 	case PIPE_AUTH_TYPE_NONE:
 		return NT_STATUS_OK;
 
@@ -1787,19 +1790,19 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 
 		DEBUG(10, ("NTLMSSP auth\n"));
 
-		if (!p->auth.a_u.auth_ntlmssp_state) {
+		if (!auth->a_u.auth_ntlmssp_state) {
 			DEBUG(0, ("Invalid auth level, "
 				  "failed to process packet auth.\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		switch (p->auth.auth_level) {
+		switch (auth->auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			status = auth_ntlmssp_unseal_packet(
-					p->auth.a_u.auth_ntlmssp_state,
+					auth->a_u.auth_ntlmssp_state,
 					data.data, data.length,
 					full_pkt.data, full_pkt.length,
-					&auth.credentials);
+					&auth_info.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -1809,10 +1812,10 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			status = auth_ntlmssp_check_packet(
-					p->auth.a_u.auth_ntlmssp_state,
+					auth->a_u.auth_ntlmssp_state,
 					data.data, data.length,
 					full_pkt.data, full_pkt.length,
-					&auth.credentials);
+					&auth_info.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -1829,13 +1832,13 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 
 		DEBUG(10, ("SCHANNEL auth\n"));
 
-		switch (p->auth.auth_level) {
+		switch (auth->auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			status = netsec_incoming_packet(
-					p->auth.a_u.schannel_auth,
+					auth->a_u.schannel_auth,
 					pkt, true,
 					data.data, data.length,
-					&auth.credentials);
+					&auth_info.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -1845,10 +1848,10 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
 			status = netsec_incoming_packet(
-					p->auth.a_u.schannel_auth,
+					auth->a_u.schannel_auth,
 					pkt, false,
 					data.data, data.length,
-					&auth.credentials);
+					&auth_info.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -1864,16 +1867,15 @@ static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
 	default:
 		DEBUG(0, ("process_request_pdu: "
 			  "unknown auth type %u set.\n",
-			  (unsigned int)p->auth.auth_type));
-		set_incoming_fault(p);
+			  (unsigned int)auth->auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* remove the indicated amount of padding */
-	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
+	if (pkt->u.request.stub_and_verifier.length < auth_info.auth_pad_length) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
+	pkt->u.request.stub_and_verifier.length -= auth_info.auth_pad_length;
 
 	return NT_STATUS_OK;
 }
@@ -1897,7 +1899,7 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 	/* Store the opnum */
 	p->opnum = pkt->u.request.opnum;
 
-	status = dcesrv_auth_request(p, pkt);
+	status = dcesrv_auth_request(&p->auth, pkt, &p->in_data.pdu);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to check packet auth.\n"));
 		set_incoming_fault(p);
