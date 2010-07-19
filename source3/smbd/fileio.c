@@ -653,10 +653,31 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
                         */
 
 			flush_write_cache(fsp, WRITE_FLUSH);
-			wcp->offset = wcp->file_size;
-			wcp->data_size = pos - wcp->file_size + 1;
-			memset(wcp->data, '\0', wcp->data_size);
-			memcpy(wcp->data + wcp->data_size-1, data, 1);
+
+			if (data[0] == '\0') {
+				/*
+				 * This is a 1-byte write of a 0
+				 * beyond the EOF, the typical
+				 * file-extending (and allocating, but
+				 * we're using the write cache here)
+				 * write done by Windows. We just have
+				 * to ftruncate the file and rely on
+				 * posix semantics to return zeros for
+				 * non-written file data that is
+				 * within the file length.
+				 *
+				 * We have to cheat the offset to make
+				 * wcp_file_size_change do the right
+				 * thing with the ftruncate call.
+				 */
+				wcp->offset = pos + 1;
+				wcp->data_size = 0;
+			} else {
+				wcp->offset = wcp->file_size;
+				wcp->data_size = pos - wcp->file_size + 1;
+				memset(wcp->data, '\0', wcp->data_size);
+				memcpy(wcp->data + wcp->data_size-1, data, 1);
+			}
 
 			/*
 			 * Update the file size if changed.
@@ -796,6 +817,31 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 			DO_PROFILE_INC(writecache_init_writes);
 		}
 #endif
+
+		if ((wcp->data_size == 0)
+		    && (pos > wcp->file_size)
+		    && (n == 1)
+		    && (data[0] == '\0')) {
+			/*
+			 * This is a 1-byte write of a 0 beyond the
+			 * EOF, the typical file-extending (and
+			 * allocating, but we're using the write cache
+			 * here) write done by Windows. We just have
+			 * to ftruncate the file and rely on posix
+			 * semantics to return zeros for non-written
+			 * file data that is within the file length.
+			 *
+			 * We have to cheat the offset to make
+			 * wcp_file_size_change do the right thing
+			 * with the ftruncate call.
+			 */
+			wcp->offset = pos+1;
+			wcp->data_size = 0;
+			if (wcp_file_size_change(fsp) == -1) {
+				return -1;
+			}
+			return 1;
+		}
 
 		if ((wcp->data_size == 0)
 		    && (pos > wcp->file_size)
