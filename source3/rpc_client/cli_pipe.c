@@ -1712,6 +1712,77 @@ static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
+					size_t pad_len,
+					DATA_BLOB *rpc_out)
+{
+	enum dcerpc_AuthType auth_type;
+	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
+	DATA_BLOB auth_info;
+	DATA_BLOB auth_blob;
+	NTSTATUS status;
+
+	if (auth->auth_type == PIPE_AUTH_TYPE_NONE) {
+		return NT_STATUS_OK;
+	}
+
+	if (pad_len) {
+		/* Copy the sign/seal padding data. */
+		if (!data_blob_append(NULL, rpc_out, pad, pad_len)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	auth_type = map_pipe_auth_type_to_rpc_auth_type(auth->auth_type);
+
+	/* marshall the dcerpc_auth with an actually empty auth_blob.
+	 * This is needed because the ntmlssp signature includes the
+	 * auth header. We will append the actual blob later. */
+	auth_blob = data_blob_null;
+	status = dcerpc_push_dcerpc_auth(rpc_out->data,
+					 auth_type,
+					 auth->auth_level,
+					 pad_len,
+					 1 /* context id. */,
+					 &auth_blob,
+					 &auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* append the header */
+	if (!data_blob_append(NULL, rpc_out,
+				auth_info.data, auth_info.length)) {
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)auth_info.length));
+		return NT_STATUS_NO_MEMORY;
+	}
+	data_blob_free(&auth_info);
+
+	/* Generate any auth sign/seal and add the auth footer. */
+	switch (auth->auth_type) {
+	case PIPE_AUTH_TYPE_NONE:
+		status = NT_STATUS_OK;
+		break;
+	case PIPE_AUTH_TYPE_NTLMSSP:
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		status = add_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
+						 auth->auth_level,
+						 rpc_out);
+		break;
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		status = add_schannel_auth_footer(auth->a_u.schannel_auth,
+						  auth->auth_level,
+						  rpc_out);
+		break;
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	return status;
+}
+
 /*******************************************************************
  Calculate how much data we're going to send in this packet, also
  work out any sign/seal padding length.
@@ -1877,11 +1948,8 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	uint8_t flags = 0;
 	uint32_t ss_padding;
 	uint32_t data_left;
-	char pad[8] = { 0, };
 	NTSTATUS status;
 	union dcerpc_payload u;
-	DATA_BLOB auth_info;
-	DATA_BLOB auth_blob = data_blob_null;
 
 	data_left = state->req_data->length - state->req_data_sent;
 
@@ -1916,77 +1984,21 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	}
 
 	/* explicitly set frag_len here as dcerpc_push_ncacn_packet() can't
-	 * compute it right for requests */
+	 * compute it right for requests because the auth trailer is missing
+	 * at this stage */
 	dcerpc_set_frag_length(&state->rpc_out, frag_len);
 
-	/* Copy in the data, plus any ss padding. */
+	/* Copy in the data. */
 	if (!data_blob_append(NULL, &state->rpc_out,
 				state->req_data->data + state->req_data_sent,
 				data_sent_thistime)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (ss_padding) {
-		/* Copy the sign/seal padding data. */
-		if (!data_blob_append(NULL, &state->rpc_out,
-					pad, ss_padding)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	switch (state->cli->auth->auth_type) {
-	case PIPE_AUTH_TYPE_NONE:
-		break;
-	case PIPE_AUTH_TYPE_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-	case PIPE_AUTH_TYPE_SCHANNEL:
-		/* marshall the dcerpc_auth with an actually empty auth_blob.
-		 * This is needed because the ntmlssp signature includes the
-		 * auth header */
-		status = dcerpc_push_dcerpc_auth(state->rpc_out.data,
-						 map_pipe_auth_type_to_rpc_auth_type(state->cli->auth->auth_type),
-						 state->cli->auth->auth_level,
-						 ss_padding,
-						 1 /* context id. */,
-						 &auth_blob,
-						 &auth_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* append the header */
-		if (!data_blob_append(NULL, &state->rpc_out,
-					auth_info.data, auth_info.length)) {
-			DEBUG(0, ("Failed to add %u bytes auth blob.\n",
-				  (unsigned int)auth_info.length));
-			return NT_STATUS_NO_MEMORY;
-		}
-		data_blob_free(&auth_info);
-		break;
-
-	default:
-		break;
-	}
-
-	/* Generate any auth sign/seal and add the auth footer. */
-	switch (state->cli->auth->auth_type) {
-	case PIPE_AUTH_TYPE_NONE:
-		status = NT_STATUS_OK;
-		break;
-	case PIPE_AUTH_TYPE_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		status = add_ntlmssp_auth_footer(state->cli->auth->a_u.auth_ntlmssp_state,
-						 state->cli->auth->auth_level,
-						 &state->rpc_out);
-		break;
-	case PIPE_AUTH_TYPE_SCHANNEL:
-		status = add_schannel_auth_footer(state->cli->auth->a_u.schannel_auth,
-						  state->cli->auth->auth_level,
-						  &state->rpc_out);
-		break;
-	default:
-		status = NT_STATUS_INVALID_PARAMETER;
-		break;
+	status = dcerpc_add_auth_footer(state->cli->auth, ss_padding,
+					&state->rpc_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	state->req_data_sent += data_sent_thistime;
