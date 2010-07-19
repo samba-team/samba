@@ -139,5 +139,7 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
 				 struct dcerpc_auth *r,
 				 bool bigendian);
+NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
+				size_t pad_len, DATA_BLOB *rpc_out);
 
 #endif /* __DCERPC_H__ */
