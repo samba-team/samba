@@ -21,7 +21,7 @@ bld.SAMBA_BINARY('wbinfo',
 bld.SAMBA_LIBRARY('nsswinbind',
     source='../nsswitch/winbind_nss_linux.c',
     deps='LIBWINBIND-CLIENT',
-    realname='libnss_winbind.so',
+    realname='libnss_winbind.so.2',
     vnum='2')
 
 if bld.CONFIG_SET('HAVE_PAM_START'):
