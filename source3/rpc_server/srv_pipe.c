@@ -1765,6 +1765,18 @@ static NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* Paranioa checks for auth_length. */
+	if (pkt->auth_length > pkt->frag_length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	if ((pkt->auth_length
+	     + DCERPC_AUTH_TRAILER_LENGTH < pkt->auth_length) ||
+	    (pkt->auth_length
+	     + DCERPC_AUTH_TRAILER_LENGTH < DCERPC_AUTH_TRAILER_LENGTH)) {
+		/* Integer wrap attempt. */
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
 	status = dcerpc_pull_auth_trailer(pkt, pkt, pkt_trailer,
 					  &auth_info, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
