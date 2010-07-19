@@ -2774,6 +2774,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 		close(state->fd[0]);
 		state->fd[0] = -1;
 
+		debug_extra = talloc_asprintf(NULL, "recovery-lock:");
 		if (pread(ctdb->recovery_lock_fd, &cc, 1, 0) == -1) {
 			DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
 			cc = RECLOCK_FAILED;
@@ -3582,7 +3583,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	srandom(getpid() ^ time(NULL));
 
-	if (switch_from_server_to_client(ctdb) != 0) {
+	if (switch_from_server_to_client(ctdb, "recoverd") != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
 		exit(1);
 	}

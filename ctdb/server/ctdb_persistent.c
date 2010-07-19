@@ -543,6 +543,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 		char c = 0;
 
 		close(result->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "childwrite-%s:", ctdb_db->db_name);
 		ret = ctdb_persistent_store(state);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write persistent data\n"));

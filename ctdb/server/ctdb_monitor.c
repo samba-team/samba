@@ -91,6 +91,7 @@ void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
 	if (child == 0) {
 		int ret;
 
+		debug_extra = talloc_asprintf(NULL, "notification-%s:", event);
 		ret = ctdb_run_notification_script_child(ctdb, event);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Notification script failed\n"));

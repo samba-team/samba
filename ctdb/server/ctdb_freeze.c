@@ -202,6 +202,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		/* in the child */
 		close(fd[0]);
 
+		debug_extra = talloc_asprintf(NULL, "freeze_lock-%u:", priority);
 		ret = ctdb_lock_all_databases(ctdb, priority);
 		if (ret != 0) {
 			_exit(0);
