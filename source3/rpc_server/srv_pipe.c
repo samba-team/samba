@@ -108,149 +108,14 @@ static DATA_BLOB generic_session_key(void)
 }
 
 /*******************************************************************
- Handle NTLMSSP.
- ********************************************************************/
-
-static bool add_ntlmssp_auth(struct pipes_struct *p)
-{
-	enum dcerpc_AuthLevel auth_level = p->auth.auth_level;
-	DATA_BLOB auth_blob = data_blob_null;
-	NTSTATUS status;
-
-	/* FIXME: Is this right ?
-	 * Keeping only to avoid changing semantics during refactoring
-	 * --simo
-	 */
-	if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	}
-
-	/* Generate the auth blob. */
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		/* Data portion is encrypted. */
-		status = auth_ntlmssp_seal_packet(
-				p->auth.a_u.auth_ntlmssp_state,
-				(TALLOC_CTX *)p->out_data.frag.data,
-				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
-				p->out_data.frag.length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH,
-				p->out_data.frag.data,
-				p->out_data.frag.length,
-				&auth_blob);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* Data is signed. */
-		status = auth_ntlmssp_sign_packet(
-				p->auth.a_u.auth_ntlmssp_state,
-				(TALLOC_CTX *)p->out_data.frag.data,
-				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
-				p->out_data.frag.length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH,
-				p->out_data.frag.data,
-				p->out_data.frag.length,
-				&auth_blob);
-		break;
-
-	default:
-		status = NT_STATUS_INTERNAL_ERROR;
-		return false;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to add NTLMSSP auth blob: %s\n",
-			nt_errstr(status)));
-		data_blob_free(&p->out_data.frag);
-		return false;
-	}
-
-	/* Finally append the auth blob. */
-	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
-				auth_blob.data, auth_blob.length)) {
-		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
-			  (unsigned int)auth_blob.length));
-		data_blob_free(&p->out_data.frag);
-		return False;
-	}
-	data_blob_free(&auth_blob);
-
-	return true;
-}
-
-/*******************************************************************
- Append a schannel authenticated fragment.
- ********************************************************************/
-
-static bool add_schannel_auth(struct pipes_struct *p)
-{
-	DATA_BLOB auth_blob = data_blob_null;
-	NTSTATUS status;
-
-	/* Schannel processing. */
-	switch (p->auth.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = netsec_outgoing_packet(
-				p->auth.a_u.schannel_auth,
-				(TALLOC_CTX *)p->out_data.frag.data,
-				true,
-				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
-				p->out_data.frag.length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH,
-				&auth_blob);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = netsec_outgoing_packet(
-				p->auth.a_u.schannel_auth,
-				(TALLOC_CTX *)p->out_data.frag.data,
-				false,
-				&p->out_data.frag.data[DCERPC_RESPONSE_LENGTH],
-				p->out_data.frag.length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH,
-				&auth_blob);
-		break;
-
-	default:
-		status = NT_STATUS_INTERNAL_ERROR;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to add SCHANNEL auth blob: %s\n",
-			nt_errstr(status)));
-		data_blob_free(&p->out_data.frag);
-		return false;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_blob);
-	}
-
-	if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
-				auth_blob.data, auth_blob.length)) {
-		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
-			  (unsigned int)auth_blob.length));
-		data_blob_free(&p->out_data.frag);
-		return false;
-	}
-	data_blob_free(&auth_blob);
-
-	return true;
-}
-
-/*******************************************************************
  Generate the next PDU to be returned from the data.
 ********************************************************************/
 
 static bool create_next_packet(struct pipes_struct *p,
 				enum dcerpc_AuthType auth_type,
 				enum dcerpc_AuthLevel auth_level,
-				size_t auth_length)
+				size_t auth_length,
+				size_t *_pad_len)
 {
 	union dcerpc_payload u;
 	uint8_t pfc_flags;
@@ -338,9 +203,6 @@ static bool create_next_packet(struct pipes_struct *p,
 	}
 
 	if (auth_length) {
-		DATA_BLOB empty = data_blob_null;
-		DATA_BLOB auth_hdr;
-
 		/* Set the proper length on the pdu, including padding.
 		 * Only needed if an auth trailer will be appended. */
 		dcerpc_set_frag_length(&p->out_data.frag,
@@ -348,47 +210,12 @@ static bool create_next_packet(struct pipes_struct *p,
 						+ pad_len
 						+ DCERPC_AUTH_TRAILER_LENGTH
 						+ auth_length);
-
-		if (pad_len) {
-			size_t offset = p->out_data.frag.length;
-
-			if (!data_blob_realloc(p->mem_ctx,
-						&p->out_data.frag,
-						offset + pad_len)) {
-				DEBUG(0, ("Failed to add padding!\n"));
-				data_blob_free(&p->out_data.frag);
-				return false;
-			}
-			memset(&p->out_data.frag.data[offset], '\0', pad_len);
-		}
-
-		/* auth blob is intentionally empty,
-		 * it will be appended later */
-		status = dcerpc_push_dcerpc_auth(p->out_data.frag.data,
-						 auth_type,
-						 auth_level,
-						 pad_len,
-						 1, /* context id. */
-						 &empty,
-						 &auth_hdr);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to marshall RPC Auth.\n"));
-			return false;
-		}
-
-		/* Store auth header in the data stream. */
-		if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
-					auth_hdr.data, auth_hdr.length)) {
-			DEBUG(0, ("Out of memory.\n"));
-			data_blob_free(&p->out_data.frag);
-			return false;
-		}
-		data_blob_free(&auth_hdr);
 	}
 
 	/* Setup the counts for this PDU. */
 	p->out_data.data_sent_length += data_len;
 	p->out_data.current_pdu_sent = 0;
+	*_pad_len = pad_len;
 	return true;
 }
 
@@ -400,6 +227,10 @@ bool create_next_pdu(struct pipes_struct *p)
 {
 	enum dcerpc_AuthType auth_type =
 		map_pipe_auth_type_to_rpc_auth_type(p->auth.auth_type);
+	size_t auth_len = 0;
+	size_t pad_len = 0;
+	NTSTATUS status;
+	bool ret;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -416,8 +247,7 @@ bool create_next_pdu(struct pipes_struct *p)
 		/* This is incorrect for auth level connect. Fixme. JRA */
 
 		/* No authentication done. */
-		return create_next_packet(p, auth_type,
-					  p->auth.auth_level, 0);
+		break;
 
 	case DCERPC_AUTH_LEVEL_CALL:
 	case DCERPC_AUTH_LEVEL_PACKET:
@@ -427,27 +257,42 @@ bool create_next_pdu(struct pipes_struct *p)
 		switch(p->auth.auth_type) {
 		case PIPE_AUTH_TYPE_NTLMSSP:
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			if (!create_next_packet(p, auth_type,
-						p->auth.auth_level,
-						NTLMSSP_SIG_SIZE)) {
-				return false;
-			}
-			return add_ntlmssp_auth(p);
+			auth_len = NTLMSSP_SIG_SIZE;
+			break;
 
 		case PIPE_AUTH_TYPE_SCHANNEL:
-			if (!create_next_packet(p, auth_type,
-						p->auth.auth_level,
-						NL_AUTH_SIGNATURE_SIZE)) {
-				return false;
-			}
-			return add_schannel_auth(p);
-		default:
+			auth_len = NL_AUTH_SIGNATURE_SIZE;
 			break;
+
+		default:
+			goto err_out;
 		}
-	default:
+
 		break;
+
+	default:
+		goto err_out;
 	}
 
+	ret = create_next_packet(p, auth_type,
+				  p->auth.auth_level,
+				  auth_len, &pad_len);
+	if (!ret) {
+		return false;
+	}
+
+	if (auth_len) {
+		status = dcerpc_add_auth_footer(&p->auth, pad_len,
+						&p->out_data.frag);
+		if (!NT_STATUS_IS_OK(status)) {
+			data_blob_free(&p->out_data.frag);
+			return false;
+		}
+	}
+
+	return true;
+
+err_out:
 	DEBUG(0, ("Invalid internal auth level %u / type %u\n",
 		  (unsigned int)p->auth.auth_level,
 		  (unsigned int)p->auth.auth_type));
