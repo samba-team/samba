@@ -176,15 +176,15 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn)
+DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 {
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob_out = data_blob_null;
 	nstring dos_name;
 	fstring unix_name;
 #ifdef DEVELOPER
 	size_t slen;
 #endif
-	char guid[17];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,
@@ -192,22 +192,6 @@ DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn)
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 
 	sconn->smb1.negprot.spnego = true;
-
-	memset(guid, '\0', sizeof(guid));
-
-	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
-	strlower_m(unix_name);
-	push_ascii_nstring(dos_name, unix_name);
-	safe_strcpy(guid, dos_name, sizeof(guid)-1);
-
-#ifdef DEVELOPER
-	/* Fix valgrind 'uninitialized bytes' issue. */
-	slen = strlen(dos_name);
-	if (slen < sizeof(guid)) {
-		memset(guid+slen, '\0', sizeof(guid) - slen);
-	}
-#endif
-
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
 
@@ -227,7 +211,7 @@ DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn)
 		blob = data_blob(guid, 16);
 #else
 		/* Code for standalone WXP client */
-		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
+		blob = spnego_gen_negTokenInit(OIDs_plain, "NONE");
 #endif
 	} else {
 		fstring myname;
@@ -238,11 +222,36 @@ DATA_BLOB negprot_spnego(struct smbd_server_connection *sconn)
 		    == -1) {
 			return data_blob_null;
 		}
-		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, host_princ_s);
+		blob = spnego_gen_negTokenInit(OIDs_krb5, host_princ_s);
 		SAFE_FREE(host_princ_s);
 	}
 
-	return blob;
+	blob_out = data_blob_talloc(ctx, NULL, 16 + blob.length);
+	if (blob_out.data == NULL) {
+		data_blob_free(&blob);
+		return data_blob_null;
+	}
+
+	memset(blob_out.data, '\0', 16);
+
+	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
+	strlower_m(unix_name);
+	push_ascii_nstring(dos_name, unix_name);
+	safe_strcpy((char *)blob_out.data, dos_name, 16);
+
+#ifdef DEVELOPER
+	/* Fix valgrind 'uninitialized bytes' issue. */
+	slen = strlen(dos_name);
+	if (slen < sizeof(16)) {
+		memset(blob_out.data+slen, '\0', 16 - slen);
+	}
+#endif
+
+	memcpy(&blob_out.data[16], blob.data, blob.length);
+
+	data_blob_free(&blob);
+
+	return blob_out;
 }
 
 /****************************************************************************
@@ -381,7 +390,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		DATA_BLOB spnego_blob = negprot_spnego(req->sconn);
+		DATA_BLOB spnego_blob = negprot_spnego(req, req->sconn);
 
 		if (spnego_blob.data == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);

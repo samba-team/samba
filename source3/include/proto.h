@@ -2821,8 +2821,7 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 
 /* The following definitions come from libsmb/clispnego.c  */
 
-DATA_BLOB spnego_gen_negTokenInit(char guid[16], 
-				  const char *OIDs[], 
+DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[], 
 				  const char *principal);
 DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob);
 bool spnego_parse_negTokenInit(DATA_BLOB blob,

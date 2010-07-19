@@ -119,11 +119,10 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	/* negprot_spnego() returns a the server guid in the first 16 bytes */
-	negprot_spnego_blob = negprot_spnego(req->sconn);
+	negprot_spnego_blob = negprot_spnego(req, req->sconn);
 	if (negprot_spnego_blob.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
-	talloc_steal(req, negprot_spnego_blob.data);
 
 	if (negprot_spnego_blob.length < 16) {
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);

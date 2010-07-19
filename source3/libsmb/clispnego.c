@@ -24,11 +24,10 @@
 #include "smb_krb5.h"
 
 /*
-  generate a negTokenInit packet given a GUID, a list of supported
+  generate a negTokenInit packet given a list of supported
   OIDs (the mechanisms) and a principal name string 
 */
-DATA_BLOB spnego_gen_negTokenInit(char guid[16], 
-				  const char *OIDs[], 
+DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[], 
 				  const char *principal)
 {
 	int i;
@@ -40,7 +39,6 @@ DATA_BLOB spnego_gen_negTokenInit(char guid[16],
 		return data_blob_null;
 	}
 
-	asn1_write(data, guid, 16);
 	asn1_push_tag(data,ASN1_APPLICATION(0));
 	asn1_write_OID(data,OID_SPNEGO);
 	asn1_push_tag(data,ASN1_CONTEXT(0));
