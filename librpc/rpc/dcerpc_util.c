@@ -57,22 +57,39 @@ uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
 	return blob->data[DCERPC_DREP_OFFSET];
 }
 
-/*
-  pull an dcerpc_auth structure, taking account of any auth padding in
-  the blob at the end of the structure
- */
+
+/**
+* @brief	Pull a dcerpc_auth structure, taking account of any auth
+*		padding in the blob. For request/response packets we pass
+*		the whole data blob, so auth_data_only must be set to false
+*		as the blob contains data+pad+auth and no just pad+auth.
+*
+* @param pkt		- The ncacn_packet strcuture
+* @param mem_ctx	- The mem_ctx used to allocate dcerpc_auth elements
+* @param pkt_trailer	- The packet trailer data, usually the trailing
+*			  auth_info blob, but in the request/response case
+*			  this is the stub_and_verifier blob.
+* @param auth		- A preallocated dcerpc_auth *empty* structure
+* @param auth_length	- The length of the auth trail, sum of auth header
+*			  lenght and pkt->auth_length
+* @param auth_data_only	- Whether the pkt_trailer includes only the auth_blob
+*			  (+ padding) or also other data.
+*
+* @return		- A NTSTATUS error code.
+*/
 NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 				  TALLOC_CTX *mem_ctx,
-				  DATA_BLOB *pkt_auth_blob,
+				  DATA_BLOB *pkt_trailer,
 				  struct dcerpc_auth *auth,
 				  uint32_t *auth_length,
-				  bool check_pad)
+				  bool auth_data_only)
 {
 	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
-	uint32_t pad;
+	uint32_t data_and_pad;
 
-	pad = pkt_auth_blob->length - (DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length);
+	data_and_pad = pkt_trailer->length
+			- (DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length);
 
 	/* paranoia check for pad size. This would be caught anyway by
 	   the ndr_pull_advance() a few lines down, but it scared
@@ -80,13 +97,13 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 	   it now, just to prevent someone posting a bogus YouTube
 	   video in the future.
 	*/
-	if (pad > pkt_auth_blob->length) {
+	if (data_and_pad > pkt_trailer->length) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
 	}
 
-	*auth_length = pkt_auth_blob->length - pad;
+	*auth_length = pkt_trailer->length - data_and_pad;
 
-	ndr = ndr_pull_init_blob(pkt_auth_blob, mem_ctx);
+	ndr = ndr_pull_init_blob(pkt_trailer, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -95,7 +112,7 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	ndr_err = ndr_pull_advance(ndr, pad);
+	ndr_err = ndr_pull_advance(ndr, data_and_pad);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(ndr);
 		return ndr_map_error2ntstatus(ndr_err);
@@ -107,9 +124,11 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	if (check_pad && pad != auth->auth_pad_length) {
-		DEBUG(1,(__location__ ": WARNING: pad length mismatch. Calculated %u  got %u\n",
-			 (unsigned)pad, (unsigned)auth->auth_pad_length));
+	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
+		DEBUG(1, (__location__ ": WARNING: pad length mismatch. "
+			  "Calculated %u  got %u\n",
+			  (unsigned)data_and_pad,
+			  (unsigned)auth->auth_pad_length));
 	}
 
 	DEBUG(6,(__location__ ": auth_pad_length %u\n",
