@@ -1721,7 +1721,8 @@ void set_incoming_fault(struct pipes_struct *p)
 		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 }
 
-static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt)
+static NTSTATUS dcesrv_auth_request(struct pipes_struct *p,
+				    struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
@@ -1749,22 +1750,25 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 		if (pkt->auth_length != 0) {
 			break;
 		}
-		return true;
+		return NT_STATUS_OK;
+
 	case DCERPC_AUTH_LEVEL_NONE:
 		if (pkt->auth_length != 0) {
-			return false;
+			DEBUG(3, ("Got non-zero auth len on non "
+				  "authenticated connection!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-		return true;
+		return NT_STATUS_OK;
 
 	default:
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = dcerpc_pull_auth_trailer(pkt, pkt,
 					  &pkt->u.request.stub_and_verifier,
 					  &auth, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	pkt->u.request.stub_and_verifier.length -= auth_length;
@@ -1776,7 +1780,7 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 
 	switch (p->auth.auth_type) {
 	case PIPE_AUTH_TYPE_NONE:
-		return true;
+		return NT_STATUS_OK;
 
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 	case PIPE_AUTH_TYPE_NTLMSSP:
@@ -1786,7 +1790,7 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 		if (!p->auth.a_u.auth_ntlmssp_state) {
 			DEBUG(0, ("Invalid auth level, "
 				  "failed to process packet auth.\n"));
-			return false;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		switch (p->auth.auth_level) {
@@ -1797,7 +1801,7 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 					full_pkt.data, full_pkt.length,
 					&auth.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			memcpy(pkt->u.request.stub_and_verifier.data,
 				data.data, data.length);
@@ -1810,14 +1814,14 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 					full_pkt.data, full_pkt.length,
 					&auth.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			break;
 
 		default:
 			DEBUG(0, ("Invalid auth level, "
 				  "failed to process packet auth.\n"));
-			return false;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		break;
 
@@ -1833,7 +1837,7 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 					data.data, data.length,
 					&auth.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			memcpy(pkt->u.request.stub_and_verifier.data,
 				data.data, data.length);
@@ -1846,14 +1850,14 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 					data.data, data.length,
 					&auth.credentials);
 			if (!NT_STATUS_IS_OK(status)) {
-				return false;
+				return status;
 			}
 			break;
 
 		default:
 			DEBUG(0, ("Invalid auth level, "
 				  "failed to process packet auth.\n"));
-			return false;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		break;
 
@@ -1862,16 +1866,16 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 			  "unknown auth type %u set.\n",
 			  (unsigned int)p->auth.auth_type));
 		set_incoming_fault(p);
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* remove the indicated amount of padding */
 	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1881,6 +1885,7 @@ static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt
 
 static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
+	NTSTATUS status;
 	DATA_BLOB data;
 
 	if (!p->pipe_bound) {
@@ -1892,7 +1897,8 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 	/* Store the opnum */
 	p->opnum = pkt->u.request.opnum;
 
-	if (!dcesrv_auth_request(p, pkt)) {
+	status = dcesrv_auth_request(p, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to check packet auth.\n"));
 		set_incoming_fault(p);
 		return false;
