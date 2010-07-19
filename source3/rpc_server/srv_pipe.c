@@ -1721,22 +1721,18 @@ void set_incoming_fault(struct pipes_struct *p)
 		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 }
 
-static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
-				    struct ncacn_packet *pkt,
-				    DATA_BLOB *raw_pkt)
+static NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
+				  struct ncacn_packet *pkt,
+				  DATA_BLOB *pkt_trailer,
+				  size_t header_size,
+				  DATA_BLOB *raw_pkt,
+				  size_t *pad_len)
 {
 	NTSTATUS status;
-	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 	struct dcerpc_auth auth_info;
 	uint32_t auth_length;
-	DATA_BLOB data;
 	DATA_BLOB full_pkt;
-
-	DEBUG(10, ("Checking request auth.\n"));
-
-	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		hdr_size += 16;
-	}
+	DATA_BLOB data;
 
 	switch (auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -1751,6 +1747,7 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 		if (pkt->auth_length != 0) {
 			break;
 		}
+		*pad_len = 0;
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -1759,6 +1756,7 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 				  "authenticated connection!\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		*pad_len = 0;
 		return NT_STATUS_OK;
 
 	default:
@@ -1767,17 +1765,14 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pull_auth_trailer(pkt, pkt,
-					  &pkt->u.request.stub_and_verifier,
+	status = dcerpc_pull_auth_trailer(pkt, pkt, pkt_trailer,
 					  &auth_info, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	pkt->u.request.stub_and_verifier.length -= auth_length;
-
-	data = data_blob_const(raw_pkt->data + hdr_size,
-				pkt->u.request.stub_and_verifier.length);
+	data = data_blob_const(raw_pkt->data + header_size,
+				pkt_trailer->length - auth_length);
 	full_pkt = data_blob_const(raw_pkt->data,
 				raw_pkt->length - auth_info.credentials.length);
 
@@ -1806,8 +1801,7 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
-			memcpy(pkt->u.request.stub_and_verifier.data,
-				data.data, data.length);
+			memcpy(pkt_trailer->data, data.data, data.length);
 			break;
 
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -1842,8 +1836,7 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
-			memcpy(pkt->u.request.stub_and_verifier.data,
-				data.data, data.length);
+			memcpy(pkt_trailer->data, data.data, data.length);
 			break;
 
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -1871,11 +1864,46 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* remove the indicated amount of padding */
-	if (pkt->u.request.stub_and_verifier.length < auth_info.auth_pad_length) {
-		return NT_STATUS_INVALID_PARAMETER;
+	*pad_len = auth_info.auth_pad_length;
+	data_blob_free(&auth_info.credentials);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
+				    struct ncacn_packet *pkt,
+				    DATA_BLOB *raw_pkt)
+{
+	NTSTATUS status;
+	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+	size_t pad_len;
+
+	DEBUG(10, ("Checking request auth.\n"));
+
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		hdr_size += 16;
 	}
-	pkt->u.request.stub_and_verifier.length -= auth_info.auth_pad_length;
+
+	/* in case of sealing this function will unseal the data in place */
+	status = dcerpc_check_auth(auth, pkt,
+				   &pkt->u.request.stub_and_verifier,
+				   hdr_size, raw_pkt,
+				   &pad_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+
+	/* remove padding and auth trailer,
+	 * this way the caller will get just the data */
+	if (pkt->auth_length) {
+		size_t trail_len = pad_len
+					+ DCERPC_AUTH_TRAILER_LENGTH
+					+ pkt->auth_length;
+		if (pkt->u.request.stub_and_verifier.length < trail_len) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+		pkt->u.request.stub_and_verifier.length -= trail_len;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1901,7 +1929,8 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 
 	status = dcesrv_auth_request(&p->auth, pkt, &p->in_data.pdu);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to check packet auth.\n"));
+		DEBUG(0, ("Failed to check packet auth. (%s)\n",
+			  nt_errstr(status)));
 		set_incoming_fault(p);
 		return false;
 	}
