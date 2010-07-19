@@ -450,3 +450,175 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	return status;
 }
 
+/**
+* @brief Check authentication for request/response packets
+*
+* @param auth		The auth data for the connection
+* @param pkt		The actual ncacn_packet
+* @param pkt_trailer	The stub_and_verifier part of the packet
+* @param header_size	The header size
+* @param raw_pkt	The whole raw packet data blob
+* @param pad_len	[out] The padding length used in the packet
+*
+* @return A NTSTATUS error code
+*/
+NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
+			   struct ncacn_packet *pkt,
+			   DATA_BLOB *pkt_trailer,
+			   size_t header_size,
+			   DATA_BLOB *raw_pkt,
+			   size_t *pad_len)
+{
+	NTSTATUS status;
+	struct dcerpc_auth auth_info;
+	uint32_t auth_length;
+	DATA_BLOB full_pkt;
+	DATA_BLOB data;
+
+	switch (auth->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		DEBUG(10, ("Requested Privacy.\n"));
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		DEBUG(10, ("Requested Integrity.\n"));
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		if (pkt->auth_length != 0) {
+			break;
+		}
+		*pad_len = 0;
+		return NT_STATUS_OK;
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (pkt->auth_length != 0) {
+			DEBUG(3, ("Got non-zero auth len on non "
+				  "authenticated connection!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		*pad_len = 0;
+		return NT_STATUS_OK;
+
+	default:
+		DEBUG(3, ("Unimplemented Auth Level %d",
+			  auth->auth_level));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Paranioa checks for auth_length. */
+	if (pkt->auth_length > pkt->frag_length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	if ((pkt->auth_length
+	     + DCERPC_AUTH_TRAILER_LENGTH < pkt->auth_length) ||
+	    (pkt->auth_length
+	     + DCERPC_AUTH_TRAILER_LENGTH < DCERPC_AUTH_TRAILER_LENGTH)) {
+		/* Integer wrap attempt. */
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+
+	status = dcerpc_pull_auth_trailer(pkt, pkt, pkt_trailer,
+					  &auth_info, &auth_length, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	data = data_blob_const(raw_pkt->data + header_size,
+				pkt_trailer->length - auth_length);
+	full_pkt = data_blob_const(raw_pkt->data,
+				raw_pkt->length - auth_info.credentials.length);
+
+	switch (auth->auth_type) {
+	case PIPE_AUTH_TYPE_NONE:
+		return NT_STATUS_OK;
+
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case PIPE_AUTH_TYPE_NTLMSSP:
+
+		DEBUG(10, ("NTLMSSP auth\n"));
+
+		if (!auth->a_u.auth_ntlmssp_state) {
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (auth->auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			status = auth_ntlmssp_unseal_packet(
+					auth->a_u.auth_ntlmssp_state,
+					data.data, data.length,
+					full_pkt.data, full_pkt.length,
+					&auth_info.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			memcpy(pkt_trailer->data, data.data, data.length);
+			break;
+
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			status = auth_ntlmssp_check_packet(
+					auth->a_u.auth_ntlmssp_state,
+					data.data, data.length,
+					full_pkt.data, full_pkt.length,
+					&auth_info.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			break;
+
+		default:
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
+
+	case PIPE_AUTH_TYPE_SCHANNEL:
+
+		DEBUG(10, ("SCHANNEL auth\n"));
+
+		switch (auth->auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			status = netsec_incoming_packet(
+					auth->a_u.schannel_auth,
+					pkt, true,
+					data.data, data.length,
+					&auth_info.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			memcpy(pkt_trailer->data, data.data, data.length);
+			break;
+
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			status = netsec_incoming_packet(
+					auth->a_u.schannel_auth,
+					pkt, false,
+					data.data, data.length,
+					&auth_info.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			break;
+
+		default:
+			DEBUG(0, ("Invalid auth level, "
+				  "failed to process packet auth.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
+
+	default:
+		DEBUG(0, ("process_request_pdu: "
+			  "unknown auth type %u set.\n",
+			  (unsigned int)auth->auth_type));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*pad_len = auth_info.auth_pad_length;
+	data_blob_free(&auth_info.credentials);
+	return NT_STATUS_OK;
+}
+
