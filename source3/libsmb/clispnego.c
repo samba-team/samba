@@ -146,8 +146,15 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_start_tag(data,ASN1_APPLICATION(0));
 
 	asn1_check_OID(data,OID_SPNEGO);
+
+	/* negTokenInit  [0]  NegTokenInit */
 	asn1_start_tag(data,ASN1_CONTEXT(0));
 	asn1_start_tag(data,ASN1_SEQUENCE(0));
+
+	/* mechTypes [0] MechTypeList  OPTIONAL */
+
+	/* Not really optional, we depend on this to decide
+	 * what mechanisms we have to work with. */
 
 	asn1_start_tag(data,ASN1_CONTEXT(0));
 	asn1_start_tag(data,ASN1_SEQUENCE(0));
@@ -161,14 +168,54 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_end_tag(data);
 
 	*principal = NULL;
+
+	/*
+	  Win7 + Live Sign-in Assistant attaches a mechToken
+	  ASN1_CONTEXT(2) to the negTokenInit packet
+	  which breaks our negotiation if we just assume
+	  the next tag is ASN1_CONTEXT(3).
+	*/
+
 	if (asn1_tag_remaining(data) > 0) {
-		asn1_start_tag(data, ASN1_CONTEXT(3));
-		asn1_start_tag(data, ASN1_SEQUENCE(0));
-		asn1_start_tag(data, ASN1_CONTEXT(0));
-		asn1_read_GeneralString(data,talloc_autofree_context(),principal);
-		asn1_end_tag(data);
-		asn1_end_tag(data);
-		asn1_end_tag(data);
+		if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
+			uint8 flags;
+
+			/* reqFlags [1] ContextFlags  OPTIONAL */
+			asn1_start_tag(data, ASN1_CONTEXT(1));
+			asn1_start_tag(data, ASN1_BIT_STRING);
+			while (asn1_tag_remaining(data) > 0) {
+				asn1_read_uint8(data, &flags);
+			}
+			asn1_end_tag(data);
+			asn1_end_tag(data);
+		}
+	}
+
+	if (asn1_tag_remaining(data) > 0) {
+		if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
+			/* mechToken [2] OCTET STRING  OPTIONAL */
+			DATA_BLOB token;
+			asn1_start_tag(data, ASN1_CONTEXT(2));
+			asn1_read_OctetString(data, talloc_autofree_context(),
+				&token);
+			asn1_end_tag(data);
+			/* Throw away the token - not used. */
+			data_blob_free(&token);
+		}
+	}
+
+	if (asn1_tag_remaining(data) > 0) {
+		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+			/* mechListMIC [3] OCTET STRING  OPTIONAL */
+			asn1_start_tag(data, ASN1_CONTEXT(3));
+			asn1_start_tag(data, ASN1_SEQUENCE(0));
+			asn1_start_tag(data, ASN1_CONTEXT(0));
+			asn1_read_GeneralString(data,talloc_autofree_context(),
+				principal);
+			asn1_end_tag(data);
+			asn1_end_tag(data);
+			asn1_end_tag(data);
+		}
 	}
 
 	asn1_end_tag(data);
