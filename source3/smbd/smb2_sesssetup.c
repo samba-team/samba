@@ -192,7 +192,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
 
-	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
+	if (!spnego_parse_krb5_wrap(talloc_tos(), *secblob, &ticket, tok_id)) {
 		status = NT_STATUS_LOGON_FAILURE;
 		goto fail;
 	}
@@ -488,10 +488,11 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
         status = NT_STATUS_OK;
 
 	/* wrap that up in a nice GSS-API wrapping */
-	ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep,
+	ap_rep_wrapped = spnego_gen_krb5_wrap(talloc_tos(), ap_rep,
 				TOK_ID_KRB_AP_REP);
 
 	secblob_out = spnego_gen_auth_response(
+					talloc_tos(),
 					&ap_rep_wrapped,
 					status,
 					mechOID);
@@ -524,6 +525,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 
 	ap_rep_wrapped = data_blob_null;
 	secblob_out = spnego_gen_auth_response(
+					talloc_tos(),
 					&ap_rep_wrapped,
 					status,
 					mechOID);
@@ -546,7 +548,6 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 {
 	DATA_BLOB secblob_in = data_blob_null;
 	DATA_BLOB chal_out = data_blob_null;
-	DATA_BLOB secblob_out = data_blob_null;
 	char *kerb_mech = NULL;
 	NTSTATUS status;
 
@@ -601,13 +602,11 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 		goto out;
 	}
 
-	secblob_out = spnego_gen_auth_response(&chal_out,
+	*out_security_buffer = spnego_gen_auth_response(smb2req,
+						&chal_out,
 						status,
 						OID_NTLMSSP);
-	*out_security_buffer = data_blob_talloc(smb2req,
-						secblob_out.data,
-						secblob_out.length);
-	if (secblob_out.data && out_security_buffer->data == NULL) {
+	if (out_security_buffer->data == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
@@ -616,7 +615,6 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
   out:
 
 	data_blob_free(&secblob_in);
-	data_blob_free(&secblob_out);
 	data_blob_free(&chal_out);
 	TALLOC_FREE(kerb_mech);
 	if (!NT_STATUS_IS_OK(status) &&
@@ -717,10 +715,9 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 {
 	DATA_BLOB auth = data_blob_null;
 	DATA_BLOB auth_out = data_blob_null;
-	DATA_BLOB secblob_out = data_blob_null;
 	NTSTATUS status;
 
-	if (!spnego_parse_auth(in_security_buffer, &auth)) {
+	if (!spnego_parse_auth(talloc_tos(), in_security_buffer, &auth)) {
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -803,13 +800,10 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 
 	data_blob_free(&auth);
 
-	secblob_out = spnego_gen_auth_response(&auth_out,
-                               status, NULL);
+	*out_security_buffer = spnego_gen_auth_response(smb2req,
+				&auth_out, status, NULL);
 
-	*out_security_buffer = data_blob_talloc(smb2req,
-						secblob_out.data,
-						secblob_out.length);
-	if (secblob_out.data && out_security_buffer->data == NULL) {
+	if (out_security_buffer->data == NULL) {
 		TALLOC_FREE(session->auth_ntlmssp_state);
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;

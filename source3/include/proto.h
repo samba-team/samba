@@ -2805,21 +2805,21 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       char *OIDs[ASN1_MAX_OIDS],
 			       char **principal,
 			       DATA_BLOB *secblob);
-DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob);
-DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2]);
-bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
+DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2]);
+bool spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
 int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
 			    time_t *expire_time);
-bool spnego_parse_challenge(const DATA_BLOB blob,
+bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2);
-DATA_BLOB spnego_gen_auth(DATA_BLOB blob);
-bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth);
-DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
+DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob);
+bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth);
+DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx, DATA_BLOB *reply, NTSTATUS nt_status,
 				   const char *mechOID);
-bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
+bool spnego_parse_auth_response(TALLOC_CTX *ctx,
+				DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,
 				DATA_BLOB *auth);
 

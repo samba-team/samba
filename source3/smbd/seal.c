@@ -422,7 +422,7 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	gss_release_buffer(&min, &out_buf);
 
 	/* Wrap in SPNEGO. */
-	response = spnego_gen_auth_response(&auth_reply, status, OID_KERBEROS5);
+	response = spnego_gen_auth_response(talloc_tos(), &auth_reply, status, OID_KERBEROS5);
 	data_blob_free(&auth_reply);
 
 	SAFE_FREE(*ppdata);
@@ -460,7 +460,7 @@ static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_si
 	 * for success ... */
 
 	if (spnego_wrap) {
-		response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+		response = spnego_gen_auth_response(talloc_tos(), &chal, status, OID_NTLMSSP);
 		data_blob_free(&chal);
 	} else {
 		/* Return the raw blob. */
@@ -565,7 +565,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 	}
 
 	blob = data_blob_const(*ppdata, *p_data_size);
-	if (!spnego_parse_auth(blob, &auth)) {
+	if (!spnego_parse_auth(talloc_tos(), blob, &auth)) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -582,7 +582,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 	 * So set mechOID to NULL here.
 	 */
 
-	response = spnego_gen_auth_response(&auth_reply, status, NULL);
+	response = spnego_gen_auth_response(talloc_tos(), &auth_reply, status, NULL);
 	data_blob_free(&auth_reply);
 
 	if (NT_STATUS_IS_OK(status)) {

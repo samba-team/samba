@@ -272,7 +272,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		return;
 	}
 
-	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
+	if (!spnego_parse_krb5_wrap(mem_ctx, *secblob, &ticket, tok_id)) {
 		talloc_destroy(mem_ctx);
 		reply_nterror(req, nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		return;
@@ -603,12 +603,12 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
         /* wrap that up in a nice GSS-API wrapping */
 	if (NT_STATUS_IS_OK(ret)) {
-		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep,
+		ap_rep_wrapped = spnego_gen_krb5_wrap(talloc_tos(), ap_rep,
 				TOK_ID_KRB_AP_REP);
 	} else {
 		ap_rep_wrapped = data_blob_null;
 	}
-	response = spnego_gen_auth_response(&ap_rep_wrapped, ret,
+	response = spnego_gen_auth_response(talloc_tos(), &ap_rep_wrapped, ret,
 			mechOID);
 	reply_sesssetup_blob(req, response, ret);
 
@@ -693,7 +693,8 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
   out:
 
 	if (wrap) {
-		response = spnego_gen_auth_response(ntlmssp_blob,
+		response = spnego_gen_auth_response(talloc_tos(),
+				ntlmssp_blob,
 				nt_status, OID);
 	} else {
 		response = *ntlmssp_blob;
@@ -781,7 +782,7 @@ static void reply_spnego_downgrade_to_ntlmssp(struct smb_request *req,
 	DEBUG(3,("reply_spnego_downgrade_to_ntlmssp: Got krb5 ticket in SPNEGO "
 		"but set to downgrade to NTLMSSP\n"));
 
-	response = spnego_gen_auth_response(NULL,
+	response = spnego_gen_auth_response(talloc_tos(), NULL,
 			NT_STATUS_MORE_PROCESSING_REQUIRED,
 			OID_NTLMSSP);
 	reply_sesssetup_blob(req, response, NT_STATUS_MORE_PROCESSING_REQUIRED);
@@ -881,7 +882,7 @@ static void reply_spnego_auth(struct smb_request *req,
 	NTSTATUS status = NT_STATUS_LOGON_FAILURE;
 	struct smbd_server_connection *sconn = req->sconn;
 
-	if (!spnego_parse_auth(blob1, &auth)) {
+	if (!spnego_parse_auth(talloc_tos(), blob1, &auth)) {
 #if 0
 		file_save("auth.dat", blob1.data, blob1.length);
 #endif

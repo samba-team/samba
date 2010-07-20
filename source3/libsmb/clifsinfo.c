@@ -764,7 +764,7 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 		p_tok_in = GSS_C_NO_BUFFER;
 	} else {
 		/* Remove the SPNEGO wrapper */
-		if (!spnego_parse_auth_response(spnego_blob_in, status_in, OID_KERBEROS5, &blob_in)) {
+		if (!spnego_parse_auth_response(ctx, spnego_blob_in, status_in, OID_KERBEROS5, &blob_in)) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto fail;
 		}

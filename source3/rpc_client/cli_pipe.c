@@ -1302,7 +1302,7 @@ static NTSTATUS create_krb5_auth_bind_req(struct rpc_pipe_client *cli,
 	}
 
 	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
+	tkt_wrapped = spnego_gen_krb5_wrap(talloc_tos(), tkt, TOK_ID_KRB_AP_REQ);
 
 	data_blob_free(&tkt);
 
@@ -2496,7 +2496,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	 * The server might give us back two challenges - tmp_blob is for the
 	 * second.
 	 */
-	if (!spnego_parse_challenge(auth_info.credentials,
+	if (!spnego_parse_challenge(state, auth_info.credentials,
 				    &server_ntlm_response, &tmp_blob)) {
 		data_blob_free(&server_ntlm_response);
 		data_blob_free(&tmp_blob);
@@ -2520,7 +2520,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	}
 
 	/* SPNEGO wrap the client reply. */
-	tmp_blob = spnego_gen_auth(client_reply);
+	tmp_blob = spnego_gen_auth(state, client_reply);
 	data_blob_free(&client_reply);
 	client_reply = tmp_blob;
 	tmp_blob = data_blob_null;
@@ -2577,7 +2577,7 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 	}
 
 	/* Check we got a valid auth response. */
-	if (!spnego_parse_auth_response(auth.credentials,
+	if (!spnego_parse_auth_response(talloc_tos(), auth.credentials,
 					NT_STATUS_OK,
 					OID_NTLMSSP, &tmp_blob)) {
 		data_blob_free(&tmp_blob);

@@ -887,20 +887,17 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
 		}
 
 		/* Generate the response blob we need for step 2 of the bind. */
-		*response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+		*response = spnego_gen_auth_response(mem_ctx, &chal, status, OID_NTLMSSP);
 	} else {
 		/*
 		 * SPNEGO negotiate down to NTLMSSP. The subsequent
 		 * code to process follow-up packets is not complete
 		 * yet. JRA.
 		 */
-		*response = spnego_gen_auth_response(NULL,
+		*response = spnego_gen_auth_response(mem_ctx, NULL,
 					NT_STATUS_MORE_PROCESSING_REQUIRED,
 					OID_NTLMSSP);
 	}
-
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, response->data);
 
 	/* auth_pad_len will be handled by the caller */
 
@@ -954,7 +951,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
 		goto err;
 	}
 
-	if (!spnego_parse_auth(pauth_info->credentials, &auth_blob)) {
+	if (!spnego_parse_auth(talloc_tos(), pauth_info->credentials, &auth_blob)) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: invalid SPNEGO blob.\n"));
 		goto err;
 	}
@@ -971,10 +968,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
 	data_blob_free(&auth_blob);
 
 	/* Generate the spnego "accept completed" blob - no incoming data. */
-	*response = spnego_gen_auth_response(&auth_reply, NT_STATUS_OK, OID_NTLMSSP);
-
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, response->data);
+	*response = spnego_gen_auth_response(mem_ctx, &auth_reply, NT_STATUS_OK, OID_NTLMSSP);
 
 	data_blob_free(&auth_reply);
 

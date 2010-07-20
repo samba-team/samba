@@ -196,7 +196,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 						OIDs_ntlm, &blob_out, NULL);
 			} else {
 				/* wrap it in SPNEGO */
-				msg1 = spnego_gen_auth(blob_out);
+				msg1 = spnego_gen_auth(talloc_tos(), blob_out);
 			}
 
 			data_blob_free(&blob_out);
@@ -232,7 +232,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		    (rc == LDAP_SASL_BIND_IN_PROGRESS)) {
 			DATA_BLOB tmp_blob = data_blob_null;
 			/* the server might give us back two challenges */
-			if (!spnego_parse_challenge(blob, &blob_in, 
+			if (!spnego_parse_challenge(talloc_tos(), blob, &blob_in, 
 						    &tmp_blob)) {
 
 				TALLOC_FREE(ntlmssp_state);
@@ -242,7 +242,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			}
 			data_blob_free(&tmp_blob);
 		} else if (rc == LDAP_SASL_BIND_IN_PROGRESS) {
-			if (!spnego_parse_auth_response(blob, nt_status, OID_NTLMSSP, 
+			if (!spnego_parse_auth_response(talloc_tos(), blob, nt_status, OID_NTLMSSP, 
 							&blob_in)) {
 
 				TALLOC_FREE(ntlmssp_state);
@@ -534,7 +534,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 		wrapped = data_blob_null;
 	}
 
-	ok = spnego_parse_auth_response(wrapped, NT_STATUS_OK,
+	ok = spnego_parse_auth_response(talloc_tos(), wrapped, NT_STATUS_OK,
 					OID_KERBEROS5_OLD,
 					&unwrapped);
 	if (scred) ber_bvfree(scred);

@@ -216,7 +216,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
+DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2])
 {
 	ASN1_DATA *data;
 	DATA_BLOB ret;
@@ -237,7 +237,7 @@ DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
 		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob(data->data, data->length);
+	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 
 	return ret;
@@ -246,7 +246,7 @@ DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2])
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
+bool spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 {
 	bool ret;
 	ASN1_DATA *data;
@@ -268,7 +268,7 @@ bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 	} else {
 		asn1_read(data, tok_id, 2);
 		data_remaining -= 2;
-		*ticket = data_blob(NULL, data_remaining);
+		*ticket = data_blob_talloc(ctx, NULL, data_remaining);
 		asn1_read(data, ticket->data, ticket->length);
 	}
 
@@ -309,7 +309,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 		return retval;
 
 	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
+	tkt_wrapped = spnego_gen_krb5_wrap(ctx, tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
 	*targ = spnego_gen_negTokenInit(ctx, krb_mechs, &tkt_wrapped, NULL);
@@ -324,7 +324,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 /*
   parse a spnego NTLMSSP challenge packet giving two security blobs
 */
-bool spnego_parse_challenge(const DATA_BLOB blob,
+bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
 	bool ret;
@@ -351,13 +351,13 @@ bool spnego_parse_challenge(const DATA_BLOB blob,
 	asn1_end_tag(data);
 
 	asn1_start_tag(data,ASN1_CONTEXT(2));
-	asn1_read_OctetString(data, talloc_autofree_context(), chal1);
+	asn1_read_OctetString(data, ctx, chal1);
 	asn1_end_tag(data);
 
 	/* the second challenge is optional (XP doesn't send it) */
 	if (asn1_tag_remaining(data)) {
 		asn1_start_tag(data,ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, talloc_autofree_context(), chal2);
+		asn1_read_OctetString(data, ctx, chal2);
 		asn1_end_tag(data);
 	}
 
@@ -379,7 +379,7 @@ bool spnego_parse_challenge(const DATA_BLOB blob,
 /*
  generate a SPNEGO auth packet. This will contain the encrypted passwords
 */
-DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
+DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob)
 {
 	ASN1_DATA *data;
 	DATA_BLOB ret;
@@ -397,7 +397,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 	asn1_pop_tag(data);
 	asn1_pop_tag(data);
 
-	ret = data_blob(data->data, data->length);
+	ret = data_blob_talloc(ctx, data->data, data->length);
 
 	asn1_free(data);
 
@@ -407,7 +407,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
+bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth)
 {
 	ssize_t len;
 	struct spnego_data token;
@@ -425,7 +425,7 @@ bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 		return false;
 	}
 
-	*auth = data_blob_talloc(talloc_tos(),
+	*auth = data_blob_talloc(ctx,
 				 token.negTokenTarg.responseToken.data,
 				 token.negTokenTarg.responseToken.length);
 	spnego_free_data(&token);
@@ -436,7 +436,8 @@ bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 /*
   generate a minimal SPNEGO response packet.  Doesn't contain much.
 */
-DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
+DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx,
+				   DATA_BLOB *reply, NTSTATUS nt_status,
 				   const char *mechOID)
 {
 	ASN1_DATA *data;
@@ -477,7 +478,7 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 	asn1_pop_tag(data);
 	asn1_pop_tag(data);
 
-	ret = data_blob(data->data, data->length);
+	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 	return ret;
 }
@@ -485,7 +486,8 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
+bool spnego_parse_auth_response(TALLOC_CTX *ctx,
+			        DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,
 				DATA_BLOB *auth)
 {
@@ -521,7 +523,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 
 		if (asn1_tag_remaining(data)) {
 			asn1_start_tag(data,ASN1_CONTEXT(2));
-			asn1_read_OctetString(data, talloc_autofree_context(), auth);
+			asn1_read_OctetString(data, ctx, auth);
 			asn1_end_tag(data);
 		}
 	} else if (negResult == SPNEGO_ACCEPT_INCOMPLETE) {
@@ -535,7 +537,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	if (asn1_tag_remaining(data)) {
 		DATA_BLOB mechList = data_blob_null;
 		asn1_start_tag(data, ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, talloc_autofree_context(), &mechList);
+		asn1_read_OctetString(data, ctx, &mechList);
 		asn1_end_tag(data);
 		data_blob_free(&mechList);
 		DEBUG(5,("spnego_parse_auth_response received mechListMIC, "

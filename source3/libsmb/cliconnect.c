@@ -1098,11 +1098,11 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 	    && NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DATA_BLOB tmp_blob = data_blob_null;
 		/* the server might give us back two challenges */
-		parse_ret = spnego_parse_challenge(blob_in, &msg_in,
+		parse_ret = spnego_parse_challenge(state, blob_in, &msg_in,
 						   &tmp_blob);
 		data_blob_free(&tmp_blob);
 	} else {
-		parse_ret = spnego_parse_auth_response(blob_in, status,
+		parse_ret = spnego_parse_auth_response(state, blob_in, status,
 						       OID_NTLMSSP, &msg_in);
 	}
 	state->turn += 1;
@@ -1128,7 +1128,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->blob_out = spnego_gen_auth(blob_out);
+	state->blob_out = spnego_gen_auth(state, blob_out);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nomem(state->blob_out.data, req)) {
 		return;
