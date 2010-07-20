@@ -2770,7 +2770,9 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 		goto query;
 	}
 
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+	if ((p->auth.auth_type != DCERPC_AUTH_TYPE_NTLMSSP) ||
+	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO) &&
+	     (p->auth.spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

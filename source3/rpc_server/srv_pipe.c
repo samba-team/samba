@@ -112,8 +112,6 @@ static DATA_BLOB generic_session_key(void)
 ********************************************************************/
 
 static bool create_next_packet(struct pipes_struct *p,
-				enum dcerpc_AuthType auth_type,
-				enum dcerpc_AuthLevel auth_level,
 				size_t auth_length,
 				size_t *_pad_len)
 {
@@ -225,8 +223,6 @@ static bool create_next_packet(struct pipes_struct *p,
 
 bool create_next_pdu(struct pipes_struct *p)
 {
-	enum dcerpc_AuthType auth_type =
-		map_pipe_auth_type_to_rpc_auth_type(p->auth.auth_type);
 	size_t auth_len = 0;
 	size_t pad_len = 0;
 	NTSTATUS status;
@@ -255,12 +251,18 @@ bool create_next_pdu(struct pipes_struct *p)
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 
 		switch(p->auth.auth_type) {
-		case PIPE_AUTH_TYPE_NTLMSSP:
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		case DCERPC_AUTH_TYPE_NTLMSSP:
+			auth_len = NTLMSSP_SIG_SIZE;
+			break;
+		case DCERPC_AUTH_TYPE_SPNEGO:
+			if (p->auth.spnego_type !=
+					PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+				goto err_out;
+			}
 			auth_len = NTLMSSP_SIG_SIZE;
 			break;
 
-		case PIPE_AUTH_TYPE_SCHANNEL:
+		case DCERPC_AUTH_TYPE_SCHANNEL:
 			auth_len = NL_AUTH_SIGNATURE_SIZE;
 			break;
 
@@ -274,9 +276,7 @@ bool create_next_pdu(struct pipes_struct *p)
 		goto err_out;
 	}
 
-	ret = create_next_packet(p, auth_type,
-				  p->auth.auth_level,
-				  auth_len, &pad_len);
+	ret = create_next_packet(p, auth_len, &pad_len);
 	if (!ret) {
 		return false;
 	}
@@ -506,7 +506,8 @@ static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	free_pipe_auth_data(&p->auth);
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
-	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
+	p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	p->pipe_bound = False;
 
 	return True;
@@ -709,10 +710,8 @@ static bool pipe_spnego_auth_bind_negotiate(struct pipes_struct *p,
 		return ret;
 	}
 
-	if (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP && p->auth.a_u.auth_ntlmssp_state) {
-		/* Free any previous auth type. */
-		free_pipe_auth_data(&p->auth);
-	}
+	/* Free any previous auth type. */
+	free_pipe_auth_data(&p->auth);
 
 	if (!got_kerberos_mechanism) {
 		/* Initialize the NTLM engine. */
@@ -770,7 +769,8 @@ static bool pipe_spnego_auth_bind_negotiate(struct pipes_struct *p,
 
 	p->auth.a_u.auth_ntlmssp_state = a;
 	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
-	p->auth.auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+	p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 
 	data_blob_free(&secblob);
 	data_blob_free(&chal);
@@ -808,7 +808,8 @@ static bool pipe_spnego_auth_bind_continue(struct pipes_struct *p,
 	 * NB. If we've negotiated down from krb5 to NTLMSSP we'll currently
 	 * fail here as 'a' == NULL.
 	 */
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP || !a) {
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SPNEGO ||
+	    p->auth.spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP || !a) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: not in NTLMSSP auth state.\n"));
 		goto err;
 	}
@@ -965,7 +966,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 
 	/* We're finished with this bind - no more packets. */
 	p->auth.auth_data_free_func = &free_pipe_schannel_auth_data;
-	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 	p->pipe_bound = True;
 
@@ -1026,7 +1027,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 
 	p->auth.a_u.auth_ntlmssp_state = a;
 	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
-	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth started\n"));
 
@@ -1223,7 +1224,8 @@ bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt)
 	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
 		/* Unauthenticated bind request. */
 		/* We're finished - no more packets. */
-		p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
+		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
+		p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 		/* We must set the pipe auth_level here also. */
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->pipe_bound = True;
@@ -1571,8 +1573,9 @@ bool api_pipe_request(struct pipes_struct *p, struct ncacn_packet *pkt)
 	PIPE_RPC_FNS *pipe_fns;
 
 	if (p->pipe_bound &&
-			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
-			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
+	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||
+	     ((p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO) &&
+	      (p->auth.spnego_type ==  PIPE_AUTH_TYPE_SPNEGO_NTLMSSP)))) {
 		if(!become_authenticated_pipe_user(p)) {
 			data_blob_free(&p->out_data.rdata);
 			return False;

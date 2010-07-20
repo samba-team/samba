@@ -29,7 +29,8 @@
 
 struct dom_sid domain_sid;
 
-static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
+static enum dcerpc_AuthType pipe_default_auth_type = DCERPC_AUTH_TYPE_NONE;
+static enum pipe_auth_type_spnego pipe_default_auth_spnego_type = 0;
 static enum dcerpc_AuthLevel pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
 static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
@@ -385,7 +386,7 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	const char *type = "NTLMSSP";
 
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
 		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
@@ -395,11 +396,12 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 2) {
 		type = argv[1];
 		if (strequal(type, "NTLMSSP")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else if (strequal(type, "SCHANNEL")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
 			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
@@ -418,7 +420,7 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	const char *type = "NTLMSSP";
 
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
 		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
@@ -428,11 +430,12 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 2) {
 		type = argv[1];
 		if (strequal(type, "NTLMSSP")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else if (strequal(type, "SCHANNEL")) {
-			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
 			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
@@ -482,7 +485,8 @@ static NTSTATUS cmd_none(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
-	pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
+	pipe_default_auth_type = DCERPC_AUTH_TYPE_NONE;
+	pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 
 	return cmd_set_ss_level();
 }
@@ -492,7 +496,7 @@ static NTSTATUS cmd_schannel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	d_printf("Setting schannel - sign and seal\n");
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+	pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 	return cmd_set_ss_level();
 }
@@ -502,7 +506,7 @@ static NTSTATUS cmd_schannel_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 {
 	d_printf("Setting schannel - sign only\n");
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+	pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 	return cmd_set_ss_level();
 }
@@ -647,48 +651,58 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	if ((cmd_entry->interface != NULL) && (cmd_entry->rpc_pipe == NULL)) {
 		switch (pipe_default_auth_type) {
-			case PIPE_AUTH_TYPE_NONE:
-				ntresult = cli_rpc_pipe_open_noauth_transport(
-					cli, default_transport,
-					cmd_entry->interface,
-					&cmd_entry->rpc_pipe);
-				break;
-			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
-					cli, cmd_entry->interface,
-					default_transport,
-					pipe_default_auth_level,
-					get_cmdline_auth_info_domain(auth_info),
-					get_cmdline_auth_info_username(auth_info),
-					get_cmdline_auth_info_password(auth_info),
-					&cmd_entry->rpc_pipe);
-				break;
-			case PIPE_AUTH_TYPE_NTLMSSP:
-				ntresult = cli_rpc_pipe_open_ntlmssp(
-					cli, cmd_entry->interface,
-					default_transport,
-					pipe_default_auth_level,
-					get_cmdline_auth_info_domain(auth_info),
-					get_cmdline_auth_info_username(auth_info),
-					get_cmdline_auth_info_password(auth_info),
-					&cmd_entry->rpc_pipe);
-				break;
-			case PIPE_AUTH_TYPE_SCHANNEL:
-				ntresult = cli_rpc_pipe_open_schannel(
-					cli, cmd_entry->interface,
-					default_transport,
-					pipe_default_auth_level,
-					get_cmdline_auth_info_domain(auth_info),
-					&cmd_entry->rpc_pipe);
-				break;
-			default:
-				DEBUG(0, ("Could not initialise %s. Invalid "
-					  "auth type %u\n",
+		case DCERPC_AUTH_TYPE_NONE:
+			ntresult = cli_rpc_pipe_open_noauth_transport(
+				cli, default_transport,
+				cmd_entry->interface,
+				&cmd_entry->rpc_pipe);
+			break;
+		case DCERPC_AUTH_TYPE_SPNEGO:
+			if (pipe_default_auth_spnego_type !=
+					PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+				DEBUG(0, ("Could not initialise %s. "
+					  "Currently only NTLMSSP is "
+					  "supported for SPNEGO\n",
 					  get_pipe_name_from_syntax(
-						  talloc_tos(),
-						  cmd_entry->interface),
-					  pipe_default_auth_type ));
+					    talloc_tos(),
+					    cmd_entry->interface)));
 				return NT_STATUS_UNSUCCESSFUL;
+			}
+			ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
+				cli, cmd_entry->interface,
+				default_transport,
+				pipe_default_auth_level,
+				get_cmdline_auth_info_domain(auth_info),
+				get_cmdline_auth_info_username(auth_info),
+				get_cmdline_auth_info_password(auth_info),
+				&cmd_entry->rpc_pipe);
+			break;
+		case DCERPC_AUTH_TYPE_NTLMSSP:
+			ntresult = cli_rpc_pipe_open_ntlmssp(
+				cli, cmd_entry->interface,
+				default_transport,
+				pipe_default_auth_level,
+				get_cmdline_auth_info_domain(auth_info),
+				get_cmdline_auth_info_username(auth_info),
+				get_cmdline_auth_info_password(auth_info),
+				&cmd_entry->rpc_pipe);
+			break;
+		case DCERPC_AUTH_TYPE_SCHANNEL:
+			ntresult = cli_rpc_pipe_open_schannel(
+				cli, cmd_entry->interface,
+				default_transport,
+				pipe_default_auth_level,
+				get_cmdline_auth_info_domain(auth_info),
+				&cmd_entry->rpc_pipe);
+			break;
+		default:
+			DEBUG(0, ("Could not initialise %s. Invalid "
+				  "auth type %u\n",
+				  get_pipe_name_from_syntax(
+					  talloc_tos(),
+					  cmd_entry->interface),
+				  pipe_default_auth_type ));
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
@@ -973,20 +987,22 @@ out_free:
 
 	if (binding->flags & DCERPC_SIGN) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_SEAL) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_AUTH_SPNEGO) {
-		pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_AUTH_NTLM) {
-		pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_AUTH_KRB5) {
-		pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
 	}
 
 	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {

@@ -1040,7 +1040,7 @@ NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 	struct lsa_LookupSids2 q;
 
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("_lsa_LookupSids3: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1323,7 +1323,7 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 	struct lsa_LookupNames3 q;
 
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("_lsa_lookup_names4: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;

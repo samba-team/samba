@@ -383,13 +383,12 @@ static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
 NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
-	enum dcerpc_AuthType auth_type;
 	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
 	DATA_BLOB auth_info;
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
 
-	if (auth->auth_type == PIPE_AUTH_TYPE_NONE) {
+	if (auth->auth_type == DCERPC_AUTH_TYPE_NONE) {
 		return NT_STATUS_OK;
 	}
 
@@ -400,14 +399,12 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		}
 	}
 
-	auth_type = map_pipe_auth_type_to_rpc_auth_type(auth->auth_type);
-
 	/* marshall the dcerpc_auth with an actually empty auth_blob.
 	 * This is needed because the ntmlssp signature includes the
 	 * auth header. We will append the actual blob later. */
 	auth_blob = data_blob_null;
 	status = dcerpc_push_dcerpc_auth(rpc_out->data,
-					 auth_type,
+					 auth->auth_type,
 					 auth->auth_level,
 					 pad_len,
 					 1 /* context id. */,
@@ -428,16 +425,20 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 
 	/* Generate any auth sign/seal and add the auth footer. */
 	switch (auth->auth_type) {
-	case PIPE_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NONE:
 		status = NT_STATUS_OK;
 		break;
-	case PIPE_AUTH_TYPE_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		/* fall thorugh */
+	case DCERPC_AUTH_TYPE_NTLMSSP:
 		status = add_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
 						 auth->auth_level,
 						 rpc_out);
 		break;
-	case PIPE_AUTH_TYPE_SCHANNEL:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		status = add_schannel_auth_footer(auth->a_u.schannel_auth,
 						  auth->auth_level,
 						  rpc_out);
@@ -530,11 +531,17 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 				raw_pkt->length - auth_info.credentials.length);
 
 	switch (auth->auth_type) {
-	case PIPE_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NONE:
 		return NT_STATUS_OK;
 
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-	case PIPE_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			DEBUG(0, ("Currently only NTLMSSP is supported "
+				  "with SPNEGO\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		/* fall through */
+	case DCERPC_AUTH_TYPE_NTLMSSP:
 
 		DEBUG(10, ("NTLMSSP auth\n"));
 
@@ -575,7 +582,7 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		}
 		break;
 
-	case PIPE_AUTH_TYPE_SCHANNEL:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 
 		DEBUG(10, ("SCHANNEL auth\n"));
 

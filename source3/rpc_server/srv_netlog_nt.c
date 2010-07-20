@@ -961,7 +961,7 @@ static NTSTATUS schannel_check_required(struct pipe_auth_data *auth_info,
 					const char *computer_name,
 					bool integrity, bool privacy)
 {
-	if (auth_info && auth_info->auth_type == PIPE_AUTH_TYPE_SCHANNEL) {
+	if (auth_info && auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 		if (!privacy && !integrity) {
 			return NT_STATUS_OK;
 		}
@@ -1419,7 +1419,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		memcpy(pipe_session_key, creds->session_key, 16);
 	} else {
 		/* Get the pipe session key from the schannel. */
-		if ((p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL)
+		if ((p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL)
 		    || (p->auth.a_u.schannel_auth == NULL)) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
@@ -1535,7 +1535,7 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 	}
 
 	/* Only allow this if the pipe is protected. */
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		DEBUG(0,("_netr_LogonSamLogonEx: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;

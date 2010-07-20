@@ -203,36 +203,3 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/********************************************************************
- Map internal value to wire value.
- ********************************************************************/
-
-enum dcerpc_AuthType map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
-{
-	switch (auth_type) {
-
-	case PIPE_AUTH_TYPE_NONE:
-		return DCERPC_AUTH_TYPE_NONE;
-
-	case PIPE_AUTH_TYPE_NTLMSSP:
-		return DCERPC_AUTH_TYPE_NTLMSSP;
-
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-		return DCERPC_AUTH_TYPE_SPNEGO;
-
-	case PIPE_AUTH_TYPE_SCHANNEL:
-		return DCERPC_AUTH_TYPE_SCHANNEL;
-
-	case PIPE_AUTH_TYPE_KRB5:
-		return DCERPC_AUTH_TYPE_KRB5;
-
-	default:
-		DEBUG(0,("map_pipe_auth_type_to_rpc_type: unknown pipe "
-			"auth type %u\n",
-			(unsigned int)auth_type ));
-		break;
-	}
-	return -1;
-}
-
