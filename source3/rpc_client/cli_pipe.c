@@ -366,328 +366,6 @@ static NTSTATUS get_complete_frag_recv(struct tevent_req *req)
 }
 
 /****************************************************************************
- NTLMSSP specific sign/seal.
- Virtually identical to rpc_server/srv_pipe.c:api_pipe_ntlmssp_auth_process.
- In fact I should probably abstract these into identical pieces of code... JRA.
- ****************************************************************************/
-
-static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
-					struct ncacn_packet *pkt,
-					DATA_BLOB *pdu,
-					uint8 *p_ss_padding_len)
-{
-	struct dcerpc_auth auth_info;
-	DATA_BLOB blob;
-	NTSTATUS status;
-
-	if (cli->auth->auth_level == DCERPC_AUTH_LEVEL_NONE
-	    || cli->auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
-		return NT_STATUS_OK;
-	}
-
-	if (!cli->auth->a_u.auth_ntlmssp_state) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Ensure there's enough data for an authenticated response. */
-	if ((pkt->auth_length > RPC_MAX_PDU_FRAG_LEN) ||
-	    (pkt->frag_length < DCERPC_RESPONSE_LENGTH
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length)) {
-		DEBUG(0, ("auth_len %u is too long.\n",
-			  (unsigned int)pkt->auth_length));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	/* get the auth blob at the end of the packet */
-	blob = data_blob_const(pdu->data + pkt->frag_length
-				- DCERPC_AUTH_TRAILER_LENGTH
-				- pkt->auth_length,
-			       DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length);
-
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
-		return status;
-	}
-
-	/* Ensure auth_pad_len fits into the packet. */
-	if (pkt->frag_length < DCERPC_RESPONSE_LENGTH
-				+ auth_info.auth_pad_length
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
-			"too large (%u), auth_len (%u), frag_len = (%u).\n",
-			(unsigned int)auth_info.auth_pad_length,
-			(unsigned int)pkt->auth_length,
-			(unsigned int)pkt->frag_length));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	/*
-	 * We need the full packet data + length (minus auth stuff) as well as the packet data + length
-	 * after the RPC header.
-	 * We need to pass in the full packet (minus auth len) to the NTLMSSP sign and check seal
-	 * functions as NTLMv2 checks the rpc headers also.
-	 */
-
-	switch (cli->auth->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		/* Data is encrypted. */
-		status = auth_ntlmssp_unseal_packet(
-					cli->auth->a_u.auth_ntlmssp_state,
-					pdu->data + DCERPC_RESPONSE_LENGTH,
-					pkt->frag_length
-						- DCERPC_RESPONSE_LENGTH
-						- DCERPC_AUTH_TRAILER_LENGTH
-						- pkt->auth_length,
-					pdu->data,
-					pkt->frag_length - pkt->auth_length,
-					&auth_info.credentials);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("failed to unseal packet from %s."
-				  " Error was %s.\n",
-				  rpccli_pipe_txt(talloc_tos(), cli),
-				  nt_errstr(status)));
-			return status;
-		}
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* Data is signed. */
-		status = auth_ntlmssp_check_packet(
-					cli->auth->a_u.auth_ntlmssp_state,
-					pdu->data + DCERPC_RESPONSE_LENGTH,
-					pkt->frag_length
-						- DCERPC_RESPONSE_LENGTH
-						- DCERPC_AUTH_TRAILER_LENGTH
-						- pkt->auth_length,
-					pdu->data,
-					pkt->frag_length - pkt->auth_length,
-					&auth_info.credentials);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("check signing failed on packet from %s."
-				  " Error was %s.\n",
-				  rpccli_pipe_txt(talloc_tos(), cli),
-				  nt_errstr(status)));
-			return status;
-		}
-		break;
-
-	default:
-		DEBUG(0, ("cli_pipe_verify_ntlmssp: unknown internal "
-			  "auth level %d\n", cli->auth->auth_level));
-		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	/*
-	 * Remember the padding length. We must remove it from the real data
-	 * stream once the sign/seal is done.
-	 */
-
-	*p_ss_padding_len = auth_info.auth_pad_length;
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- schannel specific sign/seal.
- ****************************************************************************/
-
-static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
-					 struct ncacn_packet *pkt,
-					 DATA_BLOB *pdu,
-					 uint8 *p_ss_padding_len)
-{
-	struct dcerpc_auth auth_info;
-	DATA_BLOB blob;
-	NTSTATUS status;
-
-	if (cli->auth->auth_level == DCERPC_AUTH_LEVEL_NONE
-	    || cli->auth->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
-		return NT_STATUS_OK;
-	}
-
-	if (pkt->auth_length < NL_AUTH_SIGNATURE_SIZE) {
-		DEBUG(0, ("auth_len %u.\n", (unsigned int)pkt->auth_length));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!cli->auth->a_u.schannel_auth) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Ensure there's enough data for an authenticated response. */
-	if ((pkt->auth_length > RPC_MAX_PDU_FRAG_LEN) ||
-	    (pkt->frag_length < DCERPC_RESPONSE_LENGTH
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length)) {
-		DEBUG(0, ("auth_len %u is too long.\n",
-			  (unsigned int)pkt->auth_length));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* get the auth blob at the end of the packet */
-	blob = data_blob_const(pdu->data + pkt->frag_length
-				- DCERPC_AUTH_TRAILER_LENGTH
-				- pkt->auth_length,
-			       DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length);
-
-
-	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
-		return status;
-	}
-
-	/* Ensure auth_pad_len fits into the packet. */
-	if (pkt->frag_length < DCERPC_RESPONSE_LENGTH
-				+ auth_info.auth_pad_length
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length) {
-		DEBUG(0,("cli_pipe_verify_schannel: auth_info.auth_pad_len "
-			"too large (%u), auth_len (%u), frag_len = (%u).\n",
-			(unsigned int)auth_info.auth_pad_length,
-			(unsigned int)pkt->auth_length,
-			(unsigned int)pkt->frag_length));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	if (auth_info.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0, ("Invalid auth info %d on schannel\n",
-			  auth_info.auth_type));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	if (DEBUGLEVEL >= 10) {
-		dump_NL_AUTH_SIGNATURE(talloc_tos(), &auth_info.credentials);
-	}
-
-	switch (cli->auth->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = netsec_incoming_packet(
-					cli->auth->a_u.schannel_auth,
-					talloc_tos(),
-					true,
-					pdu->data + DCERPC_RESPONSE_LENGTH,
-					pkt->frag_length
-						- DCERPC_RESPONSE_LENGTH
-						- DCERPC_AUTH_TRAILER_LENGTH
-						- pkt->auth_length,
-					&auth_info.credentials);
-		break;
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = netsec_incoming_packet(
-					cli->auth->a_u.schannel_auth,
-					talloc_tos(),
-					false,
-					pdu->data + DCERPC_RESPONSE_LENGTH,
-					pkt->frag_length
-						- DCERPC_RESPONSE_LENGTH
-						- DCERPC_AUTH_TRAILER_LENGTH
-						- pkt->auth_length,
-					&auth_info.credentials);
-		break;
-	default:
-		status = NT_STATUS_INTERNAL_ERROR;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
-				"Connection to %s (%s).\n",
-				rpccli_pipe_txt(talloc_tos(), cli),
-				nt_errstr(status)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/*
-	 * Remember the padding length. We must remove it from the real data
-	 * stream once the sign/seal is done.
-	 */
-
-	*p_ss_padding_len = auth_info.auth_pad_length;
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Do the authentication checks on an incoming pdu. Check sign and unseal etc.
- ****************************************************************************/
-
-static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
-						struct ncacn_packet *pkt,
-						DATA_BLOB *pdu,
-						uint8 *p_ss_padding_len)
-{
-	NTSTATUS ret = NT_STATUS_OK;
-
-	/* Paranioa checks for auth_len. */
-	if (pkt->auth_length) {
-		if (pkt->auth_length > pkt->frag_length) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		if ((pkt->auth_length
-		     + (unsigned int)DCERPC_AUTH_TRAILER_LENGTH
-						< pkt->auth_length) ||
-		    (pkt->auth_length
-		     + (unsigned int)DCERPC_AUTH_TRAILER_LENGTH
-			< (unsigned int)DCERPC_AUTH_TRAILER_LENGTH)) {
-			/* Integer wrap attempt. */
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	/*
-	 * Now we have a complete RPC request PDU fragment, try and verify any auth data.
-	 */
-
-	switch(cli->auth->auth_type) {
-	case PIPE_AUTH_TYPE_NONE:
-		if (pkt->auth_length) {
-			DEBUG(3, ("cli_pipe_validate_rpc_response: "
-				  "Connection to %s - got non-zero "
-				  "auth len %u.\n",
-				rpccli_pipe_txt(talloc_tos(), cli),
-				(unsigned int)pkt->auth_length));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		break;
-
-	case PIPE_AUTH_TYPE_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		ret = cli_pipe_verify_ntlmssp(cli, pkt, pdu,
-						p_ss_padding_len);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-		break;
-
-	case PIPE_AUTH_TYPE_SCHANNEL:
-		ret = cli_pipe_verify_schannel(cli, pkt, pdu,
-						p_ss_padding_len);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-		break;
-
-	case PIPE_AUTH_TYPE_KRB5:
-	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-	default:
-		DEBUG(3, ("cli_pipe_validate_rpc_response: Connection "
-			  "to %s - unknown internal auth type %u.\n",
-			  rpccli_pipe_txt(talloc_tos(), cli),
-			  cli->auth->auth_type ));
-		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Do basic authentication checks on an incoming pdu.
  ****************************************************************************/
 
@@ -700,7 +378,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 						DATA_BLOB *reply_pdu)
 {
 	NTSTATUS ret = NT_STATUS_OK;
-	uint8 ss_padding_len = 0;
+	size_t pad_len = 0;
 
 	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt, false);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -732,40 +410,37 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 	case DCERPC_PKT_RESPONSE:
 
 		/* Here's where we deal with incoming sign/seal. */
-		ret = cli_pipe_validate_rpc_response(cli, pkt, pdu,
-						     &ss_padding_len);
+		ret = dcerpc_check_auth(cli->auth, pkt,
+					&pkt->u.response.stub_and_verifier,
+					DCERPC_RESPONSE_LENGTH,
+					pdu, &pad_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 
-		/* Point the return values at the NDR data.
-		 * Remember to remove any ss padding. */
-		rdata->data = pdu->data + DCERPC_RESPONSE_LENGTH;
-
-		if (pdu->length < DCERPC_RESPONSE_LENGTH + ss_padding_len) {
+		if (pdu->length < DCERPC_RESPONSE_LENGTH + pad_len) {
 			return NT_STATUS_BUFFER_TOO_SMALL;
 		}
 
-		rdata->length = pdu->length
-					- DCERPC_RESPONSE_LENGTH
-					- ss_padding_len;
+		/* Point the return values at the NDR data. */
+		rdata->data = pdu->data + DCERPC_RESPONSE_LENGTH;
 
-		/* Remember to remove the auth footer. */
 		if (pkt->auth_length) {
-			/* We've already done integer wrap tests on auth_len in
-				cli_pipe_validate_rpc_response(). */
-			if (rdata->length < DCERPC_AUTH_TRAILER_LENGTH
-							+ pkt->auth_length) {
-				return NT_STATUS_BUFFER_TOO_SMALL;
-			}
-			rdata->length -= (DCERPC_AUTH_TRAILER_LENGTH
-							+ pkt->auth_length);
+			/* We've already done integer wrap tests in
+			 * dcerpc_check_auth(). */
+			rdata->length = pdu->length
+					 - DCERPC_RESPONSE_LENGTH
+					 - pad_len
+					 - DCERPC_AUTH_TRAILER_LENGTH
+					 - pkt->auth_length;
+		} else {
+			rdata->length = pdu->length - DCERPC_RESPONSE_LENGTH;
 		}
 
 		DEBUG(10, ("Got pdu len %lu, data_len %lu, ss_len %u\n",
 			   (long unsigned int)pdu->length,
 			   (long unsigned int)rdata->length,
-			   (unsigned int)ss_padding_len));
+			   (unsigned int)pad_len));
 
 		/*
 		 * If this is the first reply, and the allocation hint is
