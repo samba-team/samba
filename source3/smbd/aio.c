@@ -91,6 +91,7 @@ static bool initialize_async_io_handler(void)
 
 	/* tevent supports 100 signal with SA_SIGINFO */
 	aio_pending_size = 100;
+	return true;
 }
 
 static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode);
