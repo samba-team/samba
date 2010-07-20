@@ -1199,51 +1199,58 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 				    struct rpc_pipe_client *cli,
+				    struct pipe_auth_data *auth,
 				    uint32 rpc_call_id,
 				    const struct ndr_syntax_id *abstract,
 				    const struct ndr_syntax_id *transfer,
-				    enum pipe_auth_type auth_type,
-				    enum dcerpc_AuthLevel auth_level,
 				    DATA_BLOB *rpc_out)
 {
 	DATA_BLOB auth_info = data_blob_null;
 	NTSTATUS ret = NT_STATUS_OK;
 
-	switch (auth_type) {
-		case PIPE_AUTH_TYPE_SCHANNEL:
-			ret = create_schannel_auth_rpc_bind_req(cli, auth_level, &auth_info);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	switch (auth->auth_type) {
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		ret = create_schannel_auth_rpc_bind_req(cli,
+							auth->auth_level,
+							&auth_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_NTLMSSP:
-			ret = create_ntlmssp_auth_rpc_bind_req(cli, auth_level, &auth_info);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	case PIPE_AUTH_TYPE_NTLMSSP:
+		ret = create_ntlmssp_auth_rpc_bind_req(cli,
+							auth->auth_level,
+							&auth_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli, auth_level, &auth_info);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli,
+							auth->auth_level,
+							&auth_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_KRB5:
-			ret = create_krb5_auth_bind_req(cli, auth_level, &auth_info);
-			if (!NT_STATUS_IS_OK(ret)) {
-				return ret;
-			}
-			break;
+	case PIPE_AUTH_TYPE_KRB5:
+		ret = create_krb5_auth_bind_req(cli,
+						auth->auth_level,
+						&auth_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		break;
 
-		case PIPE_AUTH_TYPE_NONE:
-			break;
+	case PIPE_AUTH_TYPE_NONE:
+		break;
 
-		default:
-			/* "Can't" happen. */
-			return NT_STATUS_INVALID_INFO_CLASS;
+	default:
+		/* "Can't" happen. */
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	ret = create_bind_or_alt_ctx_internal(mem_ctx,
@@ -1782,11 +1789,10 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 
 	/* Marshall the outgoing data. */
 	status = create_rpc_bind_req(state, cli,
+				     &cli->auth,
 				     state->rpc_call_id,
 				     &cli->abstract_syntax,
 				     &cli->transfer_syntax,
-				     cli->auth->auth_type,
-				     cli->auth->auth_level,
 				     &state->rpc_out);
 
 	if (!NT_STATUS_IS_OK(status)) {
