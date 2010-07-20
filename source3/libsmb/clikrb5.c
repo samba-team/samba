@@ -901,16 +901,20 @@ failed:
 	return retval;
 }
 
- bool get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, bool remote)
- {
+bool get_krb5_smb_session_key(krb5_context context,
+			      krb5_auth_context auth_context,
+			      DATA_BLOB *session_key, bool remote)
+{
 	krb5_keyblock *skey = NULL;
 	krb5_error_code err = 0;
 	bool ret = false;
 
 	if (remote) {
-		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
+		err = krb5_auth_con_getremotesubkey(context,
+						    auth_context, &skey);
 	} else {
-		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
+		err = krb5_auth_con_getlocalsubkey(context,
+						   auth_context, &skey);
 	}
 
 	if (err || skey == NULL) {
@@ -918,19 +922,22 @@ failed:
 		goto done;
 	}
 
-	DEBUG(10, ("Got KRB5 session key of length %d\n",  (int)KRB5_KEY_LENGTH(skey)));
+	DEBUG(10, ("Got KRB5 session key of length %d\n",
+		   (int)KRB5_KEY_LENGTH(skey)));
+
 	*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
+	dump_data_pw("KRB5 Session Key:\n",
+			session_key->data, session_key->length);
 
 	ret = true;
 
- done:
+done:
 	if (skey) {
 		krb5_free_keyblock(context, skey);
 	}
 
 	return ret;
- }
+}
 
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
