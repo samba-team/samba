@@ -998,11 +998,18 @@ out_free:
 		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_AUTH_NTLM) {
-		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+		if (pipe_default_auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+		} else {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+		}
 	}
 	if (binding->flags & DCERPC_AUTH_KRB5) {
-		pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+		if (pipe_default_auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+		} else {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_KRB5;
+		}
 	}
 
 	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
