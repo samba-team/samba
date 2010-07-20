@@ -603,6 +603,8 @@ bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 	return False;
 }
 
+static bool pipe_init_outgoing_data(pipes_struct *p);
+
 /*******************************************************************
  Marshall a bind_nak pdu.
 *******************************************************************/
@@ -613,7 +615,7 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
 	union dcerpc_payload u;
 
 	/* Free any memory in the current return data buffer. */
-	data_blob_free(&p->out_data.rdata);
+	pipe_init_outgoing_data(p);
 
 	/*
 	 * Initialize a bind_nak header.
@@ -664,7 +666,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 	union dcerpc_payload u;
 
 	/* Free any memory in the current return data buffer. */
-	data_blob_free(&p->out_data.rdata);
+	pipe_init_outgoing_data(p);
 
 	/*
 	 * Initialize a fault header.
