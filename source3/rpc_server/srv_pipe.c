@@ -721,12 +721,21 @@ static bool pipe_spnego_auth_bind_negotiate(struct pipes_struct *p,
 			goto err;
 		}
 
+		/* Clear flags,
+		 * then set them according to requested Auth Level */
+		auth_ntlmssp_and_flags(a, ~(NTLMSSP_NEGOTIATE_SIGN |
+						NTLMSSP_NEGOTIATE_SEAL));
 		switch (pauth_info->auth_level) {
 			case DCERPC_AUTH_LEVEL_INTEGRITY:
-				auth_ntlmssp_want_sign(a);
+				auth_ntlmssp_or_flags(a,
+						NTLMSSP_NEGOTIATE_SIGN);
 				break;
 			case DCERPC_AUTH_LEVEL_PRIVACY:
-				auth_ntlmssp_want_seal(a);
+				/* Privacy always implies both sign and seal
+				 * for ntlmssp */
+				auth_ntlmssp_or_flags(a,
+						NTLMSSP_NEGOTIATE_SIGN |
+						NTLMSSP_NEGOTIATE_SEAL);
 				break;
 			default:
 				break;
@@ -988,12 +997,18 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 		goto err;
 	}
 
+	/* Clear flags, then set them according to requested Auth Level */
+	auth_ntlmssp_and_flags(a, ~(NTLMSSP_NEGOTIATE_SIGN |
+					NTLMSSP_NEGOTIATE_SEAL));
+
 	switch (auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		auth_ntlmssp_want_sign(a);
+		auth_ntlmssp_or_flags(a, NTLMSSP_NEGOTIATE_SIGN);
 		break;
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		auth_ntlmssp_want_seal(a);
+		/* Privacy always implies both sign and seal for ntlmssp */
+		auth_ntlmssp_or_flags(a, NTLMSSP_NEGOTIATE_SIGN |
+					 NTLMSSP_NEGOTIATE_SEAL);
 		break;
 	default:
 		break;
