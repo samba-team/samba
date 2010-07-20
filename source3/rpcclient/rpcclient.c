@@ -696,6 +696,15 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				get_cmdline_auth_info_domain(auth_info),
 				&cmd_entry->rpc_pipe);
 			break;
+		case DCERPC_AUTH_TYPE_KRB5:
+			ntresult = cli_rpc_pipe_open_krb5(
+				cli, cmd_entry->interface,
+				default_transport,
+				pipe_default_auth_level,
+				cli->desthost,
+				NULL, NULL,
+				&cmd_entry->rpc_pipe);
+			break;
 		default:
 			DEBUG(0, ("Could not initialise %s. Invalid "
 				  "auth type %u\n",
