@@ -1818,6 +1818,40 @@ if test "x$enable_as_needed" != xno; then
     done
 fi
 
+if test x$ld_as_needed_flag_found = xyes ; then
+# check if ld has bug described in https://bugzilla.samba.org/show_bug.cgi?id=7209#c17
+	AC_MSG_CHECKING([if $LD_AS_NEEDED_FLAG has explicit external libs bug])
+cat > conftest_shb.c <<END
+void b() {}
+END
+cat > conftest_sha.c <<END
+extern void b();
+void a() {
+	b();
+}
+END
+cat > conftest.c <<END
+extern void a();
+int main() {
+	a();
+}
+END
+
+	AC_TRY_COMMAND([$CC $CPPFLAGS $CFLAGS $PICFLAG -c -o conftest_sha.o conftest_sha.c 1>&AS_MESSAGE_LOG_FD 2>&1])
+	AC_TRY_COMMAND([$CC $CPPFLAGS $CFLAGS $PICFLAG -c -o conftest_shb.o conftest_shb.c 1>&AS_MESSAGE_LOG_FD 2>&1])
+	TESTCMD="`eval echo \"$SHLD $LDSHFLAGS $PICFLAG\"`"
+	AC_TRY_COMMAND([$TESTCMD -o libconftest_shb.$SHLIBEXT conftest_shb.o 1>&AS_MESSAGE_LOG_FD 2>&1])
+	AC_TRY_COMMAND([$TESTCMD -o libconftest_sha.$SHLIBEXT conftest_sha.o 1>&AS_MESSAGE_LOG_FD 2>&1])
+	if AC_TRY_COMMAND([$CC -o conftest conftest.c $LDFLAGS -L. -lconftest_sha -lconftest_shb 1>&AS_MESSAGE_LOG_FD 2>&1])
+	then
+		AC_MSG_RESULT([no])
+	else
+		ld_as_needed_flag_found=no
+		LDFLAGS="$saved_before_as_needed_ldflags"
+		AC_MSG_RESULT([yes])
+	fi
+	rm conftest* libconftest*
+fi
 
 # check if we have to disable LD_AS_NEEDED_FLAG:
 # On some systems for a veriety of reasons linking with
