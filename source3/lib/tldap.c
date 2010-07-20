@@ -1081,7 +1081,7 @@ static int tldap_hex2char(const char *x)
 {
 	if (isxdigit(x[0]) && isxdigit(x[1])) {
 		const char h1 = x[0], h2 = x[1];
-		int c;
+		int c = 0;
 
 		if (h1 >= 'a') c = h1 - (int)'a' + 10;
 		else if (h1 >= 'A') c = h1 - (int)'A' + 10;
@@ -1305,7 +1305,7 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 	const char *dn;
 	const char *rule;
 	const char *star;
-	size_t type_len;
+	size_t type_len = 0;
 	char *uval;
 	size_t uval_len;
 	bool write_octect = true;
