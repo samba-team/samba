@@ -23,6 +23,7 @@ m4_include(m4/check_path.m4)
 m4_include(pkg.m4)
 
 AC_LIBREPLACE_CC_CHECKS
+AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
 
 m4_include(../lib/tevent/libtevent.m4)
 
@@ -1834,15 +1835,18 @@ cat > conftest.c <<END
 extern void a();
 int main() {
 	a();
+	return 0;
 }
 END
 
+	rm -fr conftest
 	AC_TRY_COMMAND([$CC $CPPFLAGS $CFLAGS $PICFLAG -c -o conftest_sha.o conftest_sha.c 1>&AS_MESSAGE_LOG_FD 2>&1])
 	AC_TRY_COMMAND([$CC $CPPFLAGS $CFLAGS $PICFLAG -c -o conftest_shb.o conftest_shb.c 1>&AS_MESSAGE_LOG_FD 2>&1])
 	TESTCMD="`eval echo \"$SHLD $LDSHFLAGS $PICFLAG\"`"
 	AC_TRY_COMMAND([$TESTCMD -o libconftest_shb.$SHLIBEXT conftest_shb.o 1>&AS_MESSAGE_LOG_FD 2>&1])
 	AC_TRY_COMMAND([$TESTCMD -o libconftest_sha.$SHLIBEXT conftest_sha.o 1>&AS_MESSAGE_LOG_FD 2>&1])
-	if AC_TRY_COMMAND([$CC -o conftest conftest.c $LDFLAGS -L. -lconftest_sha -lconftest_shb 1>&AS_MESSAGE_LOG_FD 2>&1])
+	AC_TRY_COMMAND([$CC -o conftest conftest.c $LDFLAGS -L. -lconftest_sha -lconftest_shb 1>&AS_MESSAGE_LOG_FD 2>&1])
+	if AC_TRY_COMMAND([eval "$LIB_PATH_VAR=. ./conftest 1>&AS_MESSAGE_LOG_FD 2>&1"])
 	then
 		AC_MSG_RESULT([no])
 	else
@@ -1956,7 +1960,6 @@ AC_MSG_RESULT([$PICFLAG])
 
 AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
 
-AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
 
 
 ###########################################################
