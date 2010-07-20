@@ -801,7 +801,7 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 	blob_out = data_blob(tok_out.value, tok_out.length);
 
 	/* Wrap in an SPNEGO wrapper */
-	*p_blob_out = gen_negTokenTarg(krb_mechs, blob_out);
+	*p_blob_out = spnego_gen_negTokenInit(krb_mechs, &blob_out, NULL);
 
   fail:
 

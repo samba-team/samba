@@ -508,7 +508,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 
 	/* and wrap that in a shiny SPNEGO wrapper */
 	unwrapped = data_blob_const(output_token.value, output_token.length);
-	wrapped = gen_negTokenTarg(spnego_mechs, unwrapped);
+	wrapped = spnego_gen_negTokenInit(spnego_mechs, &unwrapped, NULL);
 	gss_release_buffer(&minor_status, &output_token);
 	if (unwrapped.length > wrapped.length) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
