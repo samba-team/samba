@@ -984,6 +984,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	struct cli_session_setup_ntlmssp_state *state;
 	NTSTATUS status;
 	DATA_BLOB blob_out;
+	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_ntlmssp_state);
@@ -1032,7 +1033,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		goto fail;
 	}
 
-	state->blob_out = gen_negTokenInit(OID_NTLMSSP, blob_out);
+	state->blob_out = spnego_gen_negTokenInit(OIDs_ntlm, &blob_out, NULL);
 	data_blob_free(&blob_out);
 
 	subreq = cli_sesssetup_blob_send(state, ev, cli, state->blob_out);

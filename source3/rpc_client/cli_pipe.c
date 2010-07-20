@@ -1338,6 +1338,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 	DATA_BLOB null_blob = data_blob_null;
 	DATA_BLOB request = data_blob_null;
 	DATA_BLOB spnego_msg = data_blob_null;
+	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
 	status = ntlmssp_update(cli->auth->a_u.ntlmssp_state,
@@ -1350,7 +1351,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 	}
 
 	/* Wrap this in SPNEGO. */
-	spnego_msg = gen_negTokenInit(OID_NTLMSSP, request);
+	spnego_msg = spnego_gen_negTokenInit(OIDs_ntlm, &request, NULL);
 
 	data_blob_free(&request);
 

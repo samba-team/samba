@@ -190,8 +190,9 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		     || NT_STATUS_IS_OK(nt_status))
 		    && blob_out.length) {
 			if (turn == 1) {
+				const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 				/* and wrap it in a SPNEGO wrapper */
-				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
+				msg1 = spnego_gen_negTokenInit(OIDs_ntlm, &blob_out, NULL);
 			} else {
 				/* wrap it in SPNEGO */
 				msg1 = spnego_gen_auth(blob_out);

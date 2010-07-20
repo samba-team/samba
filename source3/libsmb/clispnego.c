@@ -25,9 +25,11 @@
 
 /*
   generate a negTokenInit packet given a list of supported
-  OIDs (the mechanisms) and a principal name string 
+  OIDs (the mechanisms) a blob, and a principal name string
 */
-DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[], 
+
+DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
+				  DATA_BLOB *psecblob,
 				  const char *principal)
 {
 	int i;
@@ -52,60 +54,22 @@ DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
 	asn1_pop_tag(data);
 	asn1_pop_tag(data);
 
-	asn1_push_tag(data, ASN1_CONTEXT(3));
-	asn1_push_tag(data, ASN1_SEQUENCE(0));
-	asn1_push_tag(data, ASN1_CONTEXT(0));
-	asn1_write_GeneralString(data,principal);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-
-	asn1_pop_tag(data);
-
-	if (data->has_error) {
-		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
+	if (psecblob && psecblob->length && psecblob->data) {
+		asn1_push_tag(data, ASN1_CONTEXT(2));
+		asn1_write_OctetString(data,psecblob->data,
+			psecblob->length);
+		asn1_pop_tag(data);
 	}
 
-	ret = data_blob(data->data, data->length);
-	asn1_free(data);
-
-	return ret;
-}
-
-/*
-  Generate a negTokenInit as used by the client side ... It has a mechType
-  (OID), and a mechToken (a security blob) ... 
-
-  Really, we need to break out the NTLMSSP stuff as well, because it could be
-  raw in the packets!
-*/
-DATA_BLOB gen_negTokenInit(const char *OID, DATA_BLOB blob)
-{
-	ASN1_DATA *data;
-	DATA_BLOB ret;
-
-	data = asn1_init(talloc_tos());
-	if (data == NULL) {
-		return data_blob_null;
+	if (principal) {
+		asn1_push_tag(data, ASN1_CONTEXT(3));
+		asn1_push_tag(data, ASN1_SEQUENCE(0));
+		asn1_push_tag(data, ASN1_CONTEXT(0));
+		asn1_write_GeneralString(data,principal);
+		asn1_pop_tag(data);
+		asn1_pop_tag(data);
+		asn1_pop_tag(data);
 	}
-
-	asn1_push_tag(data, ASN1_APPLICATION(0));
-	asn1_write_OID(data,OID_SPNEGO);
-	asn1_push_tag(data, ASN1_CONTEXT(0));
-	asn1_push_tag(data, ASN1_SEQUENCE(0));
-
-	asn1_push_tag(data, ASN1_CONTEXT(0));
-	asn1_push_tag(data, ASN1_SEQUENCE(0));
-	asn1_write_OID(data, OID);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-
-	asn1_push_tag(data, ASN1_CONTEXT(2));
-	asn1_write_OctetString(data,blob.data,blob.length);
-	asn1_pop_tag(data);
 
 	asn1_pop_tag(data);
 	asn1_pop_tag(data);
