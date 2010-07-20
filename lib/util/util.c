@@ -891,3 +891,17 @@ void *allocate_anonymous_shared(size_t bufsz)
 
 }
 
+#ifdef DEVELOPER
+/* used when you want a debugger started at a particular point in the
+   code. Mostly useful in code that runs as a child process, where
+   normal gdb attach is harder to organise.
+*/
+void samba_start_debugger(void)
+{
+	char *cmd = NULL;
+	asprintf(&cmd, "xterm -e \"gdb --pid %u\"&", getpid());
+	system(cmd);
+	free(cmd);
+	sleep(2);
+}
+#endif

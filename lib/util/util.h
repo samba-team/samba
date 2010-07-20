@@ -877,4 +877,8 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 				     const char * const *argv0, ...);
 int samba_runcmd_recv(struct tevent_req *req, int *perrno);
 
+#ifdef DEVELOPER
+void samba_start_debugger(void);
+#endif
+
 #endif /* _SAMBA_UTIL_H_ */
