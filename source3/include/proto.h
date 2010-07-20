@@ -2806,7 +2806,7 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob);
 DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2]);
 bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
-int spnego_gen_negTokenTarg(const char *principal, int time_offset, 
+int spnego_gen_krb5_negTokenInit(const char *principal, int time_offset, 
 			    DATA_BLOB *targ, 
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
 			    time_t *expire_time);

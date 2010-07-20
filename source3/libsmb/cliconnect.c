@@ -854,14 +854,14 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 	cli_temp_set_signing(cli);
 
 	/*
-	 * Ok, this is cheated: spnego_gen_negTokenTarg can block if
+	 * Ok, this is cheating: spnego_gen_krb5_negTokenInit can block if
 	 * we have to acquire a ticket. To be fixed later :-)
 	 */
-	rc = spnego_gen_negTokenTarg(principal, 0, &state->negTokenTarg,
+	rc = spnego_gen_krb5_negTokenInit(principal, 0, &state->negTokenTarg,
 				     &state->session_key_krb5, 0, NULL);
 	if (rc) {
 		DEBUG(1, ("cli_session_setup_kerberos: "
-			  "spnego_gen_negTokenTarg failed: %s\n",
+			  "spnego_gen_krb5_negTokenInit failed: %s\n",
 			  error_message(rc)));
 		state->ads_status = ADS_ERROR_KRB5(rc);
 		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);

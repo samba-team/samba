@@ -287,10 +287,10 @@ bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 
 
 /* 
-   generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
-   kerberos session setup 
+   generate a SPNEGO krb5 negTokenInit packet, ready for a EXTENDED_SECURITY
+   kerberos session setup
 */
-int spnego_gen_negTokenTarg(const char *principal, int time_offset, 
+int spnego_gen_krb5_negTokenInit(const char *principal, int time_offset, 
 			    DATA_BLOB *targ, 
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
 			    time_t *expire_time)

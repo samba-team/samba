@@ -705,7 +705,7 @@ static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *prin
 		return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
 
-	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0,
+	rc = spnego_gen_krb5_negTokenInit(principal, ads->auth.time_offset, &blob, &session_key, 0,
 				     &ads->auth.tgs_expire);
 
 	if (rc) {
