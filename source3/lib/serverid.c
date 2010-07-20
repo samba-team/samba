@@ -145,7 +145,7 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 	if (rec->value.dsize != sizeof(struct serverid_data)) {
 		DEBUG(1, ("serverid record has unexpected size %d "
 			  "(wanted %d)\n", (int)rec->value.dsize,
-			  sizeof(struct serverid_data)));
+			  (int)sizeof(struct serverid_data)));
 		goto done;
 	}
 
