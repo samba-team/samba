@@ -826,11 +826,11 @@ cleanup_princ:
 }
 
 /*
-  get a kerberos5 ticket for the given service 
+  get a kerberos5 ticket for the given service
 */
-int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, 
-			uint32 extra_ap_opts, const char *ccname, 
+int cli_krb5_get_ticket(const char *principal, time_t time_offset,
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5,
+			uint32 extra_ap_opts, const char *ccname,
 			time_t *tgs_expire,
 			const char *impersonate_princ_s)
 
@@ -843,15 +843,15 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 		ENCTYPE_ARCFOUR_HMAC,
-#endif 
-		ENCTYPE_DES_CBC_MD5, 
-		ENCTYPE_DES_CBC_CRC, 
+#endif
+		ENCTYPE_DES_CBC_MD5,
+		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_NULL};
 
 	initialize_krb5_error_table();
 	retval = krb5_init_context(&context);
 	if (retval) {
-		DEBUG(1,("cli_krb5_get_ticket: krb5_init_context failed (%s)\n", 
+		DEBUG(1, ("krb5_init_context failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
@@ -862,43 +862,42 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 
 	if ((retval = krb5_cc_resolve(context, ccname ?
 			ccname : krb5_cc_default_name(context), &ccdef))) {
-		DEBUG(1,("cli_krb5_get_ticket: krb5_cc_default failed (%s)\n",
+		DEBUG(1, ("krb5_cc_default failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
 
 	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
-		DEBUG(1,("cli_krb5_get_ticket: krb5_set_default_tgs_ktypes failed (%s)\n",
+		DEBUG(1, ("krb5_set_default_tgs_ktypes failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
 
-	if ((retval = ads_krb5_mk_req(context, 
-					&auth_context, 
-					AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
-					principal,
-					ccdef, &packet,
-					tgs_expire,
-					impersonate_princ_s))) {
+	retval = ads_krb5_mk_req(context, &auth_context,
+				AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
+				principal, ccdef, &packet,
+				tgs_expire, impersonate_princ_s);
+	if (retval) {
 		goto failed;
 	}
 
-	get_krb5_smb_session_key(context, auth_context, session_key_krb5, False);
+	get_krb5_smb_session_key(context, auth_context,
+				 session_key_krb5, False);
 
 	*ticket = data_blob(packet.data, packet.length);
 
- 	kerberos_free_data_contents(context, &packet); 
+ 	kerberos_free_data_contents(context, &packet);
 
 failed:
 
-	if ( context ) {
+	if (context) {
 		if (ccdef)
 			krb5_cc_close(context, ccdef);
 		if (auth_context)
 			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);
 	}
-		
+
 	return retval;
 }
 
