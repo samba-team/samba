@@ -1800,9 +1800,16 @@ fi
 
 AC_MSG_RESULT($BLDSHARED)
 
+if test x"$enable_developer" = x"yes" ; then
+	default_as_needed=auto
+else
+	default_as_needed=no
+fi
 AC_ARG_ENABLE(as-needed,
-	[AS_HELP_STRING([--enable-as-needed],
-	[Turn on as-needed support if available (default=auto)])])
+	AS_HELP_STRING([--enable-as-needed],
+	[Turn on as-needed support if available (default=no)]),
+	[enable_as_needed=$enableval],
+	[enable_as_needed=$default_as_needed])
 if test "x$enable_as_needed" != xno; then
     saved_before_as_needed_ldflags="$LDFLAGS"
     for flags in "-Wl,--as-needed" "-Wl,-z,ignore" "-z ignore" ; do
@@ -1819,7 +1826,7 @@ if test "x$enable_as_needed" != xno; then
     done
 fi
 
-if test x$ld_as_needed_flag_found = xyes ; then
+if test x$ld_as_needed_flag_found = xyes -a x$enable_as_needed = xauto ; then
 # check if ld has bug described in https://bugzilla.samba.org/show_bug.cgi?id=7209#c17
 	AC_MSG_CHECKING([if $LD_AS_NEEDED_FLAG has explicit external libs bug])
 cat > conftest_shb.c <<END
