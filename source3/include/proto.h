@@ -57,8 +57,6 @@ NTSTATUS auth_netlogond_init(void);
 NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *auth_ntlmssp_state,
 				struct auth_serversupplied_info **server_info);
-void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state);
-void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state);
 
 
