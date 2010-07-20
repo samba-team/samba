@@ -4842,6 +4842,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const struct ndr_syntax_id *interface,
+				enum dcerpc_transport_t transport,
 				enum dcerpc_AuthLevel auth_level,
 				const char *service_princ,
 				const char *username,

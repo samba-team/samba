@@ -3319,6 +3319,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const struct ndr_syntax_id *interface,
+				enum dcerpc_transport_t transport,
 				enum dcerpc_AuthLevel auth_level,
 				const char *service_princ,
 				const char *username,
@@ -3330,7 +3331,7 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
