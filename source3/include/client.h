@@ -215,7 +215,6 @@ struct cli_state {
 	fstring dev;
 	struct nmb_name called;
 	struct nmb_name calling;
-	fstring full_dest_host_name;
 	struct sockaddr_storage dest_ss;
 
 	DATA_BLOB secblob; /* cryptkey or negTokenInit */
@@ -240,11 +239,6 @@ struct cli_state {
 	/* What the client requested. */
 	uint32_t requested_posix_capabilities;
 	bool dfsroot;
-
-#if 0
-	TALLOC_CTX *longterm_mem_ctx;
-	TALLOC_CTX *call_mem_ctx;
-#endif
 
 	struct smb_signing_state *signing_state;
 
