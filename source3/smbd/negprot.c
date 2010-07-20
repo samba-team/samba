@@ -211,7 +211,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		blob = data_blob(guid, 16);
 #else
 		/* Code for standalone WXP client */
-		blob = spnego_gen_negTokenInit(OIDs_ntlm, NULL, "NONE");
+		blob = spnego_gen_negTokenInit(ctx, OIDs_ntlm, NULL, "NONE");
 #endif
 	} else {
 		fstring myname;
@@ -222,7 +222,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		    == -1) {
 			return data_blob_null;
 		}
-		blob = spnego_gen_negTokenInit(OIDs_krb5, NULL, host_princ_s);
+		blob = spnego_gen_negTokenInit(ctx, OIDs_krb5, NULL, host_princ_s);
 		SAFE_FREE(host_princ_s);
 	}
 

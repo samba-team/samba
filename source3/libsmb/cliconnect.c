@@ -857,7 +857,7 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 	 * Ok, this is cheating: spnego_gen_krb5_negTokenInit can block if
 	 * we have to acquire a ticket. To be fixed later :-)
 	 */
-	rc = spnego_gen_krb5_negTokenInit(principal, 0, &state->negTokenTarg,
+	rc = spnego_gen_krb5_negTokenInit(state, principal, 0, &state->negTokenTarg,
 				     &state->session_key_krb5, 0, NULL);
 	if (rc) {
 		DEBUG(1, ("cli_session_setup_kerberos: "
@@ -1033,7 +1033,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		goto fail;
 	}
 
-	state->blob_out = spnego_gen_negTokenInit(OIDs_ntlm, &blob_out, NULL);
+	state->blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
 	data_blob_free(&blob_out);
 
 	subreq = cli_sesssetup_blob_send(state, ev, cli, state->blob_out);

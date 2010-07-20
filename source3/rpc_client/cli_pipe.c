@@ -1352,7 +1352,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 	}
 
 	/* Wrap this in SPNEGO. */
-	spnego_msg = spnego_gen_negTokenInit(OIDs_ntlm, &request, NULL);
+	spnego_msg = spnego_gen_negTokenInit(talloc_tos(), OIDs_ntlm, &request, NULL);
 
 	data_blob_free(&request);
 
@@ -1363,6 +1363,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 					 1, /* auth_context_id */
 					 &spnego_msg,
 					 auth_info);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&spnego_msg);
 		return status;
@@ -1370,6 +1371,7 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *
 
 	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
 	dump_data(5, spnego_msg.data, spnego_msg.length);
+	data_blob_free(&spnego_msg);
 
 	return NT_STATUS_OK;
 }

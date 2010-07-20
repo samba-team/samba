@@ -716,7 +716,8 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
  Get client gss blob to send to a server.
 ******************************************************************************/
 
-static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
+static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
+				struct smb_trans_enc_state *es,
 				const char *service,
 				const char *host,
 				NTSTATUS status_in,
@@ -798,10 +799,10 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	blob_out = data_blob(tok_out.value, tok_out.length);
+	blob_out = data_blob_talloc(ctx, tok_out.value, tok_out.length);
 
 	/* Wrap in an SPNEGO wrapper */
-	*p_blob_out = spnego_gen_negTokenInit(krb_mechs, &blob_out, NULL);
+	*p_blob_out = spnego_gen_negTokenInit(ctx, krb_mechs, &blob_out, NULL);
 
   fail:
 
@@ -837,10 +838,10 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	strlower_m(fqdn);
 
 	servicename = "cifs";
-	status = make_cli_gss_blob(es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
+	status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
 	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		servicename = "host";
-		status = make_cli_gss_blob(es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
+		status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			goto fail;
 		}
@@ -853,7 +854,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 			es->enc_ctx_num = SVAL(param_out.data, 0);
 		}
 		data_blob_free(&blob_send);
-		status = make_cli_gss_blob(es, servicename, fqdn, status, blob_recv, &blob_send);
+		status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, status, blob_recv, &blob_send);
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 	data_blob_free(&blob_recv);
 

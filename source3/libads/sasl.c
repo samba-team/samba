@@ -192,7 +192,8 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			if (turn == 1) {
 				const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 				/* and wrap it in a SPNEGO wrapper */
-				msg1 = spnego_gen_negTokenInit(OIDs_ntlm, &blob_out, NULL);
+				msg1 = spnego_gen_negTokenInit(talloc_tos(),
+						OIDs_ntlm, &blob_out, NULL);
 			} else {
 				/* wrap it in SPNEGO */
 				msg1 = spnego_gen_auth(blob_out);
@@ -508,7 +509,8 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 
 	/* and wrap that in a shiny SPNEGO wrapper */
 	unwrapped = data_blob_const(output_token.value, output_token.length);
-	wrapped = spnego_gen_negTokenInit(spnego_mechs, &unwrapped, NULL);
+	wrapped = spnego_gen_negTokenInit(talloc_tos(),
+			spnego_mechs, &unwrapped, NULL);
 	gss_release_buffer(&minor_status, &output_token);
 	if (unwrapped.length > wrapped.length) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -705,7 +707,8 @@ static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *prin
 		return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
 
-	rc = spnego_gen_krb5_negTokenInit(principal, ads->auth.time_offset, &blob, &session_key, 0,
+	rc = spnego_gen_krb5_negTokenInit(talloc_tos(), principal,
+				     ads->auth.time_offset, &blob, &session_key, 0,
 				     &ads->auth.tgs_expire);
 
 	if (rc) {

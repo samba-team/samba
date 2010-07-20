@@ -29,7 +29,8 @@
   OIDs (the mechanisms) a blob, and a principal name string
 */
 
-DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
+DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
+				  const char *OIDs[],
 				  DATA_BLOB *psecblob,
 				  const char *principal)
 {
@@ -81,7 +82,7 @@ DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
 		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
 	}
 
-	ret = data_blob(data->data, data->length);
+	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 
 	return ret;
@@ -289,8 +290,9 @@ bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
    generate a SPNEGO krb5 negTokenInit packet, ready for a EXTENDED_SECURITY
    kerberos session setup
 */
-int spnego_gen_krb5_negTokenInit(const char *principal, int time_offset, 
-			    DATA_BLOB *targ, 
+int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
+			    const char *principal, int time_offset,
+			    DATA_BLOB *targ,
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
 			    time_t *expire_time)
 {
@@ -310,7 +312,7 @@ int spnego_gen_krb5_negTokenInit(const char *principal, int time_offset,
 	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
 
 	/* and wrap that in a shiny SPNEGO wrapper */
-	*targ = spnego_gen_negTokenInit(krb_mechs, &tkt_wrapped, NULL);
+	*targ = spnego_gen_negTokenInit(ctx, krb_mechs, &tkt_wrapped, NULL);
 
 	data_blob_free(&tkt_wrapped);
 	data_blob_free(&tkt);

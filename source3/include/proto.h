@@ -2796,7 +2796,8 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 
 /* The following definitions come from libsmb/clispnego.c  */
 
-DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
+DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
+				  const char *OIDs[],
 				  DATA_BLOB *psecblob,
 				  const char *principal);
 bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
@@ -2807,8 +2808,9 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob);
 DATA_BLOB spnego_gen_krb5_wrap(const DATA_BLOB ticket, const uint8 tok_id[2]);
 bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
-int spnego_gen_krb5_negTokenInit(const char *principal, int time_offset, 
-			    DATA_BLOB *targ, 
+int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
+			    const char *principal, int time_offset,
+			    DATA_BLOB *targ,
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
 			    time_t *expire_time);
 bool spnego_parse_challenge(const DATA_BLOB blob,
