@@ -4,7 +4,8 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    Copyright (C) Luke Howard     2003
-   
+   Copyright (C) Jeremy Allison 2010
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -144,50 +145,48 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	  the next tag is ASN1_CONTEXT(3).
 	*/
 
-	if (asn1_tag_remaining(data) > 0) {
-		if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
-			uint8 flags;
+	if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
+		uint8 flags;
 
-			/* reqFlags [1] ContextFlags  OPTIONAL */
-			asn1_start_tag(data, ASN1_CONTEXT(1));
-			asn1_start_tag(data, ASN1_BIT_STRING);
-			while (asn1_tag_remaining(data) > 0) {
-				asn1_read_uint8(data, &flags);
-			}
-			asn1_end_tag(data);
-			asn1_end_tag(data);
+		/* reqFlags [1] ContextFlags  OPTIONAL */
+		asn1_start_tag(data, ASN1_CONTEXT(1));
+		asn1_start_tag(data, ASN1_BIT_STRING);
+		while (asn1_tag_remaining(data) > 0) {
+			asn1_read_uint8(data, &flags);
+		}
+		asn1_end_tag(data);
+		asn1_end_tag(data);
+	}
+
+	if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
+		DATA_BLOB sblob = data_blob_null;
+		/* mechToken [2] OCTET STRING  OPTIONAL */
+		asn1_start_tag(data, ASN1_CONTEXT(2));
+		asn1_read_OctetString(data, talloc_autofree_context(),
+			&sblob);
+		asn1_end_tag(data);
+		if (secblob) {
+			*secblob = sblob;
+		} else {
+			data_blob_free(&sblob);
 		}
 	}
 
-	if (asn1_tag_remaining(data) > 0) {
-		if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
-			DATA_BLOB sblob = data_blob_null;
-			/* mechToken [2] OCTET STRING  OPTIONAL */
-			asn1_start_tag(data, ASN1_CONTEXT(2));
-			asn1_read_OctetString(data, talloc_autofree_context(),
-				&sblob);
-			asn1_end_tag(data);
-			if (secblob) {
-				*secblob = sblob;
-			}
-		}
-	}
-
-	if (asn1_tag_remaining(data) > 0) {
-		if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
-			char *princ = NULL;
-			/* mechListMIC [3] OCTET STRING  OPTIONAL */
-			asn1_start_tag(data, ASN1_CONTEXT(3));
-			asn1_start_tag(data, ASN1_SEQUENCE(0));
-			asn1_start_tag(data, ASN1_CONTEXT(0));
-			asn1_read_GeneralString(data,talloc_autofree_context(),
-				&princ);
-			asn1_end_tag(data);
-			asn1_end_tag(data);
-			asn1_end_tag(data);
-			if (principal) {
-				*principal = princ;
-			}
+	if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
+		char *princ = NULL;
+		/* mechListMIC [3] OCTET STRING  OPTIONAL */
+		asn1_start_tag(data, ASN1_CONTEXT(3));
+		asn1_start_tag(data, ASN1_SEQUENCE(0));
+		asn1_start_tag(data, ASN1_CONTEXT(0));
+		asn1_read_GeneralString(data,talloc_autofree_context(),
+			&princ);
+		asn1_end_tag(data);
+		asn1_end_tag(data);
+		asn1_end_tag(data);
+		if (principal) {
+			*principal = princ;
+		} else {
+			TALLOC_FREE(princ);
 		}
 	}
 
