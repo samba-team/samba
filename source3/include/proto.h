@@ -2799,7 +2799,8 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 DATA_BLOB spnego_gen_negTokenInit(const char *OIDs[],
 				  DATA_BLOB *psecblob,
 				  const char *principal);
-bool spnego_parse_negTokenInit(DATA_BLOB blob,
+bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
+			       DATA_BLOB blob,
 			       char *OIDs[ASN1_MAX_OIDS],
 			       char **principal,
 			       DATA_BLOB *secblob);
@@ -6155,7 +6156,8 @@ NTSTATUS do_map_to_guest(NTSTATUS status,
 		struct auth_serversupplied_info **server_info,
 		const char *user, const char *domain);
 
-NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
+NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
+		DATA_BLOB blob_in,
 		DATA_BLOB *pblob_out,
 		char **kerb_mechOID);
 void reply_sesssetup_and_X(struct smb_request *req);

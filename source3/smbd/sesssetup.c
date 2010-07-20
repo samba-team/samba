@@ -723,7 +723,8 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
  Is this a krb5 mechanism ?
 ****************************************************************************/
 
-NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
+NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
+		DATA_BLOB blob_in,
 		DATA_BLOB *pblob_out,
 		char **kerb_mechOID)
 {
@@ -734,7 +735,7 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 	*kerb_mechOID = NULL;
 
 	/* parse out the OIDs and the first sec blob */
-	if (!spnego_parse_negTokenInit(blob_in, OIDs, NULL, pblob_out)) {
+	if (!spnego_parse_negTokenInit(ctx, blob_in, OIDs, NULL, pblob_out)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -751,7 +752,7 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in,
 #ifdef HAVE_KRB5
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
 	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		*kerb_mechOID = SMB_STRDUP(OIDs[0]);
+		*kerb_mechOID = talloc_strdup(ctx, OIDs[0]);
 		if (*kerb_mechOID == NULL) {
 			ret = NT_STATUS_NO_MEMORY;
 		}
@@ -802,7 +803,8 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	NTSTATUS status;
 	struct smbd_server_connection *sconn = req->sconn;
 
-	status = parse_spnego_mechanisms(blob1, &secblob, &kerb_mech);
+	status = parse_spnego_mechanisms(talloc_tos(),
+			blob1, &secblob, &kerb_mech);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
 		invalidate_vuid(sconn, vuid);
@@ -824,7 +826,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
 		}
-		SAFE_FREE(kerb_mech);
+		TALLOC_FREE(kerb_mech);
 		return;
 	}
 #endif
@@ -838,7 +840,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		/* The mechtoken is a krb5 ticket, but
 		 * we need to fall back to NTLM. */
 		reply_spnego_downgrade_to_ntlmssp(req, vuid);
-		SAFE_FREE(kerb_mech);
+		TALLOC_FREE(kerb_mech);
 		return;
 	}
 
@@ -895,7 +897,8 @@ static void reply_spnego_auth(struct smb_request *req,
 		/* Might be a second negTokenTarg packet */
 		char *kerb_mech = NULL;
 
-		status = parse_spnego_mechanisms(auth, &secblob, &kerb_mech);
+		status = parse_spnego_mechanisms(talloc_tos(),
+				auth, &secblob, &kerb_mech);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
@@ -918,7 +921,7 @@ static void reply_spnego_auth(struct smb_request *req,
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
 			}
-			SAFE_FREE(kerb_mech);
+			TALLOC_FREE(kerb_mech);
 			return;
 		}
 #endif
@@ -934,7 +937,7 @@ static void reply_spnego_auth(struct smb_request *req,
 				"not enabled\n"));
 			reply_nterror(req, nt_status_squash(
 					NT_STATUS_LOGON_FAILURE));
-			SAFE_FREE(kerb_mech);
+			TALLOC_FREE(kerb_mech);
 		}
 	}
 

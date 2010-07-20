@@ -1225,7 +1225,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	 * negprot reply. It is WRONG to depend on the principal sent in the
 	 * negprot reply, but right now we do it. If we don't receive one,
 	 * we try to best guess, then fall back to NTLM.  */
-	if (!spnego_parse_negTokenInit(blob, OIDs, &principal, NULL)) {
+	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &principal, NULL)) {
 		data_blob_free(&blob);
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
@@ -1248,6 +1248,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	status = cli_set_username(cli, user);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(principal);
 		return ADS_ERROR_NT(status);
 	}
 
@@ -1299,6 +1300,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				machine = SMB_STRDUP(cli->desthost);
 			}
 			if (machine == NULL) {
+				TALLOC_FREE(principal);
 				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 

@@ -553,7 +553,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	/* Ensure we have no old NTLM state around. */
 	TALLOC_FREE(session->auth_ntlmssp_state);
 
-	status = parse_spnego_mechanisms(in_security_buffer,
+	status = parse_spnego_mechanisms(talloc_tos(), in_security_buffer,
 			&secblob_in, &kerb_mech);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -618,7 +618,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	data_blob_free(&secblob_in);
 	data_blob_free(&secblob_out);
 	data_blob_free(&chal_out);
-	SAFE_FREE(kerb_mech);
+	TALLOC_FREE(kerb_mech);
 	if (!NT_STATUS_IS_OK(status) &&
 			!NT_STATUS_EQUAL(status,
 				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -730,7 +730,8 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		DATA_BLOB secblob_in = data_blob_null;
 		char *kerb_mech = NULL;
 
-		status = parse_spnego_mechanisms(in_security_buffer,
+		status = parse_spnego_mechanisms(talloc_tos(),
+				in_security_buffer,
 				&secblob_in, &kerb_mech);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
@@ -750,7 +751,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 					out_session_id);
 
 			data_blob_free(&secblob_in);
-			SAFE_FREE(kerb_mech);
+			TALLOC_FREE(kerb_mech);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(session);
 			}
@@ -768,7 +769,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 				"not enabled\n"));
 			TALLOC_FREE(session);
 			data_blob_free(&secblob_in);
-			SAFE_FREE(kerb_mech);
+			TALLOC_FREE(kerb_mech);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
