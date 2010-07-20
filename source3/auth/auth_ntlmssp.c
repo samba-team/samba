@@ -24,16 +24,6 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 
-void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-
-}
-
-void auth_ntlmssp_want_seal(struct auth_ntlmssp_state *auth_ntlmssp_state)
-{
-
-}
-
 NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *auth_ntlmssp_state,
 				struct auth_serversupplied_info **server_info)
