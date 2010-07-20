@@ -321,7 +321,8 @@ bool pipe_access_check(struct pipes_struct *p)
 	if (lp_restrict_anonymous() > 0) {
 
 		/* schannel, so we must be ok */
-		if (p->pipe_bound && (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL)) {
+		if (p->pipe_bound &&
+		    (p->auth.auth_type == DCERPC_AUTH_TYPE_SCHANNEL)) {
 			return True;
 		}
 

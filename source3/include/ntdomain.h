@@ -93,8 +93,11 @@ typedef struct pipe_rpc_fns {
  * Can't keep in sync with wire values as spnego wraps different auth methods.
  */
 
-enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
-			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_KRB5, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
+enum pipe_auth_type_spnego {
+	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
+	PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
+	PIPE_AUTH_TYPE_SPNEGO_KRB5
+};
 
 /* auth state for krb5. */
 struct kerberos_auth_struct {
@@ -105,7 +108,8 @@ struct kerberos_auth_struct {
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
-	enum pipe_auth_type auth_type; /* switch for union below. */
+	enum dcerpc_AuthType auth_type;
+	enum pipe_auth_type_spnego spnego_type;
 	enum dcerpc_AuthLevel auth_level;
 
 	union {

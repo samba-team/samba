@@ -1209,7 +1209,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	NTSTATUS ret = NT_STATUS_OK;
 
 	switch (auth->auth_type) {
-	case PIPE_AUTH_TYPE_SCHANNEL:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		ret = create_schannel_auth_rpc_bind_req(cli,
 							auth->auth_level,
 							&auth_info);
@@ -1218,7 +1218,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
-	case PIPE_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ret = create_ntlmssp_auth_rpc_bind_req(cli,
 							auth->auth_level,
 							&auth_info);
@@ -1227,7 +1227,11 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			/* "Can't" happen. */
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
 		ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli,
 							auth->auth_level,
 							&auth_info);
@@ -1236,7 +1240,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
-	case PIPE_AUTH_TYPE_KRB5:
+	case DCERPC_AUTH_TYPE_KRB5:
 		ret = create_krb5_auth_bind_req(cli,
 						auth->auth_level,
 						&auth_info);
@@ -1245,7 +1249,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
-	case PIPE_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NONE:
 		break;
 
 	default:
@@ -1283,51 +1287,59 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 #endif
 
 	switch (cli->auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_NONE:
-		case DCERPC_AUTH_LEVEL_CONNECT:
-			data_space = cli->max_xmit_frag - DCERPC_REQUEST_LENGTH;
-			data_len = MIN(data_space, data_left);
-			*p_ss_padding = 0;
-			*p_auth_len = 0;
-			*p_frag_len = DCERPC_REQUEST_LENGTH + data_len;
-			return data_len;
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		data_space = cli->max_xmit_frag - DCERPC_REQUEST_LENGTH;
+		data_len = MIN(data_space, data_left);
+		*p_ss_padding = 0;
+		*p_auth_len = 0;
+		*p_frag_len = DCERPC_REQUEST_LENGTH + data_len;
+		return data_len;
 
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			/* Treat the same for all authenticated rpc requests. */
-			switch(cli->auth->auth_type) {
-				case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				case PIPE_AUTH_TYPE_NTLMSSP:
-					*p_auth_len = NTLMSSP_SIG_SIZE;
-					break;
-				case PIPE_AUTH_TYPE_SCHANNEL:
-					*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
-					break;
-				default:
-					smb_panic("bad auth type");
-					break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Treat the same for all authenticated rpc requests. */
+		switch(cli->auth->auth_type) {
+		case DCERPC_AUTH_TYPE_SPNEGO:
+			switch (cli->auth->spnego_type) {
+			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+				*p_auth_len = NTLMSSP_SIG_SIZE;
+				break;
+			default:
+				smb_panic("bad auth type");
+				break;
 			}
-
-			data_space = cli->max_xmit_frag
-					- DCERPC_REQUEST_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH
-					- *p_auth_len;
-
-			data_len = MIN(data_space, data_left);
-			*p_ss_padding = 0;
-			if (data_len % CLIENT_NDR_PADDING_SIZE) {
-				*p_ss_padding = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
-			}
-			*p_frag_len = DCERPC_REQUEST_LENGTH
-					+ data_len + *p_ss_padding
-					+ DCERPC_AUTH_TRAILER_LENGTH
-					+ *p_auth_len;
-			return data_len;
-
+		case DCERPC_AUTH_TYPE_NTLMSSP:
+			*p_auth_len = NTLMSSP_SIG_SIZE;
+			break;
+		case DCERPC_AUTH_TYPE_SCHANNEL:
+			*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
+			break;
 		default:
-			smb_panic("bad auth level");
-			/* Notreached. */
-			return 0;
+			smb_panic("bad auth type");
+			break;
+		}
+
+		data_space = cli->max_xmit_frag
+				- DCERPC_REQUEST_LENGTH
+				- DCERPC_AUTH_TRAILER_LENGTH
+				- *p_auth_len;
+
+		data_len = MIN(data_space, data_left);
+		*p_ss_padding = 0;
+		if (data_len % CLIENT_NDR_PADDING_SIZE) {
+			*p_ss_padding = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
+		}
+		*p_frag_len = DCERPC_REQUEST_LENGTH
+				+ data_len + *p_ss_padding
+				+ DCERPC_AUTH_TRAILER_LENGTH
+				+ *p_auth_len;
+		return data_len;
+
+	default:
+		smb_panic("bad auth level");
+		/* Notreached. */
+		return 0;
 	}
 }
 
@@ -1663,7 +1675,7 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client *cli,
 				uint32 rpc_call_id,
-				enum pipe_auth_type auth_type,
+				enum dcerpc_AuthType auth_type,
 				enum dcerpc_AuthLevel auth_level,
 				DATA_BLOB *pauth_blob,
 				DATA_BLOB *rpc_out)
@@ -1674,7 +1686,7 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 	u.auth3._pad = 0;
 
 	status = dcerpc_push_dcerpc_auth(mem_ctx,
-			map_pipe_auth_type_to_rpc_auth_type(auth_type),
+					 auth_type,
 					 auth_level,
 					 0, /* auth_pad_length */
 					 1, /* auth_context_id */
@@ -1775,9 +1787,10 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	DEBUG(5,("Bind RPC Pipe: %s auth_type %u, auth_level %u\n",
+	DEBUG(5,("Bind RPC Pipe: %s auth_type %u(%u), auth_level %u\n",
 		rpccli_pipe_txt(talloc_tos(), cli),
 		(unsigned int)auth->auth_type,
+		(unsigned int)auth->spnego_type,
 		(unsigned int)auth->auth_level ));
 
 	state->ev = ev;
@@ -1789,7 +1802,7 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 
 	/* Marshall the outgoing data. */
 	status = create_rpc_bind_req(state, cli,
-				     &cli->auth,
+				     cli->auth,
 				     state->rpc_call_id,
 				     &cli->abstract_syntax,
 				     &cli->transfer_syntax,
@@ -1850,37 +1863,45 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	switch(state->cli->auth->auth_type) {
 
-	case PIPE_AUTH_TYPE_NONE:
-	case PIPE_AUTH_TYPE_SCHANNEL:
+	case DCERPC_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
 		tevent_req_done(req);
-		break;
+		return;
 
-	case PIPE_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_NTLMSSP:
 		/* Need to send AUTH3 packet - no reply. */
 		status = rpc_finish_auth3_bind_send(req, state, pkt);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 		}
-		break;
+		return;
 
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		if (state->cli->auth->spnego_type !=
+					PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			break;
+		}
 		/* Need to send alter context request and reply. */
 		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, pkt,
 							     &reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 		}
+		return;
+
+	case DCERPC_AUTH_TYPE_KRB5:
+		/* */
 		break;
 
-	case PIPE_AUTH_TYPE_KRB5:
-		/* */
-
 	default:
-		DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
-			 (unsigned int)state->cli->auth->auth_type));
-		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		break;
 	}
+
+	DEBUG(0,("cli_finish_bind_auth: unknown auth type %u(%u)\n",
+		 (unsigned int)state->cli->auth->auth_type,
+		 (unsigned int)state->cli->auth->spnego_type));
+	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 }
 
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
@@ -2164,8 +2185,9 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 {
 	struct cli_state *cli;
 
-	if ((rpc_cli->auth->auth_type == PIPE_AUTH_TYPE_NTLMSSP)
-	    || (rpc_cli->auth->auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP)) {
+	if ((rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_NTLMSSP)
+	    || ((rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_SPNEGO
+		 && rpc_cli->auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
 		memcpy(nt_hash, auth_ntlmssp_get_nt_hash(rpc_cli->auth->a_u.auth_ntlmssp_state), 16);
 		return true;
 	}
@@ -2188,7 +2210,8 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->auth_type = PIPE_AUTH_TYPE_NONE;
+	result->auth_type = DCERPC_AUTH_TYPE_NONE;
+	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	result->user_name = talloc_strdup(result, "");
@@ -2209,7 +2232,8 @@ static int cli_auth_ntlmssp_data_destructor(struct pipe_auth_data *auth)
 }
 
 static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
-				  enum pipe_auth_type auth_type,
+				  enum dcerpc_AuthType auth_type,
+				  enum pipe_auth_type_spnego spnego_type,
 				  enum dcerpc_AuthLevel auth_level,
 				  const char *domain,
 				  const char *username,
@@ -2225,6 +2249,7 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	result->auth_type = auth_type;
+	result->spnego_type = spnego_type;
 	result->auth_level = auth_level;
 
 	result->user_name = talloc_strdup(result, username);
@@ -2299,7 +2324,8 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+	result->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	result->auth_level = auth_level;
 
 	result->user_name = talloc_strdup(result, "");
@@ -2356,7 +2382,8 @@ static NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->auth_type = PIPE_AUTH_TYPE_KRB5;
+	result->auth_type = DCERPC_AUTH_TYPE_KRB5;
+	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	result->auth_level = auth_level;
 
 	/*
@@ -2925,7 +2952,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 						   const struct ndr_syntax_id *interface,
 						   enum dcerpc_transport_t transport,
-						   enum pipe_auth_type auth_type,
+						   bool use_spnego,
 						   enum dcerpc_AuthLevel auth_level,
 						   const char *domain,
 						   const char *username,
@@ -2934,6 +2961,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+	enum pipe_auth_type_spnego spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -2941,9 +2970,15 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_ntlmssp_bind_data(
-		result, auth_type, auth_level, domain, username,
-		password, &auth);
+	if (use_spnego) {
+		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+		spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+	}
+
+	status = rpccli_ntlmssp_bind_data(result,
+					  auth_type, spnego_type, auth_level,
+					  domain, username, password,
+					  &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_ntlmssp_bind_data returned %s\n",
 			  nt_errstr(status)));
@@ -2988,7 +3023,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
 						transport,
-						PIPE_AUTH_TYPE_NTLMSSP,
+						false,
 						auth_level,
 						domain,
 						username,
@@ -3013,7 +3048,7 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						interface,
 						transport,
-						PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
+						true,
 						auth_level,
 						domain,
 						username,
@@ -3342,20 +3377,33 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (cli->auth->auth_type) {
-	case PIPE_AUTH_TYPE_SCHANNEL:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
 		sk = data_blob_const(a->a_u.schannel_auth->creds->session_key,
 				     16);
 		break;
-	case PIPE_AUTH_TYPE_NTLMSSP:
-	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		switch (cli->auth->spnego_type) {
+		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+			sk = auth_ntlmssp_get_session_key(
+						a->a_u.auth_ntlmssp_state);
+			break;
+		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+			sk = data_blob_const(
+				a->a_u.kerberos_auth->session_key.data,
+				a->a_u.kerberos_auth->session_key.length);
+			break;
+		default:
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
+		break;
+	case DCERPC_AUTH_TYPE_NTLMSSP:
 		sk = auth_ntlmssp_get_session_key(a->a_u.auth_ntlmssp_state);
 		break;
-	case PIPE_AUTH_TYPE_KRB5:
-	case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+	case DCERPC_AUTH_TYPE_KRB5:
 		sk = data_blob_const(a->a_u.kerberos_auth->session_key.data,
 				     a->a_u.kerberos_auth->session_key.length);
 		break;
-	case PIPE_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->user_session_key.data,
 				     a->user_session_key.length);
 		break;
