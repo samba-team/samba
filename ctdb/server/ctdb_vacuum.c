@@ -808,8 +808,14 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	struct ctdb_vacuum_child_context *child_ctx;
 	int ret;
 
-	/* we dont vacuum if we are in recovery mode */
-	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+	/* we dont vacuum if we are in recovery mode, or db frozen */
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
+	    ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_NONE) {
+		DEBUG(DEBUG_INFO, ("Not vacuuming %s (%s)\n", ctdb_db->db_name,
+				   ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ? "in recovery"
+				   : ctdb->freeze_mode[ctdb_db->priority] == CTDB_FREEZE_PENDING
+				   ? "freeze pending"
+				   : "frozen"));
 		event_add_timed(ctdb->ev, vacuum_handle, timeval_current_ofs(ctdb->tunable.vacuum_default_interval, 0), ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
