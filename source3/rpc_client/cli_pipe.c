@@ -1288,8 +1288,10 @@ static NTSTATUS create_krb5_auth_bind_req(struct rpc_pipe_client *cli,
 
 	/* Create the ticket for the service principal and return it in a gss-api wrapped blob. */
 
-	ret = cli_krb5_get_ticket(a->service_principal, 0, &tkt,
-			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED, NULL, NULL, NULL);
+	ret = cli_krb5_get_ticket(a, a->service_principal, 0,
+				  &tkt, &a->session_key,
+				  AP_OPTS_MUTUAL_REQUIRED, NULL,
+				  NULL, NULL);
 
 	if (ret) {
 		DEBUG(1,("create_krb5_auth_bind_req: cli_krb5_get_ticket for principal %s "

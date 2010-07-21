@@ -301,12 +301,13 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 	const char *krb_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
 
 	/* get a kerberos ticket for the service and extract the session key */
-	retval = cli_krb5_get_ticket(principal, time_offset,
-					&tkt, session_key_krb5, extra_ap_opts, NULL, 
-					expire_time, NULL);
-
-	if (retval)
+	retval = cli_krb5_get_ticket(ctx, principal, time_offset,
+					  &tkt, session_key_krb5,
+					  extra_ap_opts, NULL,
+					  expire_time, NULL);
+	if (retval) {
 		return retval;
+	}
 
 	/* wrap that up in a nice GSS-API wrapping */
 	tkt_wrapped = spnego_gen_krb5_wrap(ctx, tkt, TOK_ID_KRB_AP_REQ);

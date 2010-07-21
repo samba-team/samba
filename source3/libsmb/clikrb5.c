@@ -828,9 +828,10 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service
 */
-int cli_krb5_get_ticket(const char *principal, time_t time_offset,
+int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
+			const char *principal, time_t time_offset,
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5,
-			uint32 extra_ap_opts, const char *ccname,
+			uint32_t extra_ap_opts, const char *ccname,
 			time_t *tgs_expire,
 			const char *impersonate_princ_s)
 
@@ -881,10 +882,10 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 		goto failed;
 	}
 
-	get_krb5_smb_session_key(context, auth_context,
-				 session_key_krb5, False);
+	get_krb5_smb_session_key(mem_ctx, context, auth_context,
+				 session_key_krb5, false);
 
-	*ticket = data_blob(packet.data, packet.length);
+	*ticket = data_blob_talloc(mem_ctx, packet.data, packet.length);
 
  	kerberos_free_data_contents(context, &packet);
 
@@ -901,7 +902,8 @@ failed:
 	return retval;
 }
 
-bool get_krb5_smb_session_key(krb5_context context,
+bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
+			      krb5_context context,
 			      krb5_auth_context auth_context,
 			      DATA_BLOB *session_key, bool remote)
 {
@@ -925,9 +927,12 @@ bool get_krb5_smb_session_key(krb5_context context,
 	DEBUG(10, ("Got KRB5 session key of length %d\n",
 		   (int)KRB5_KEY_LENGTH(skey)));
 
-	*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+	*session_key = data_blob_talloc(mem_ctx,
+					 KRB5_KEY_DATA(skey),
+					 KRB5_KEY_LENGTH(skey));
 	dump_data_pw("KRB5 Session Key:\n",
-			session_key->data, session_key->length);
+		     session_key->data,
+		     session_key->length);
 
 	ret = true;
 
@@ -2277,8 +2282,10 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
- int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
+ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
+			const char *principal, time_t time_offset,
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5,
+			uint32_t extra_ap_opts,
 			const char *ccname, time_t *tgs_expire,
 			const char *impersonate_princ_s)
 {

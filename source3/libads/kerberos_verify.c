@@ -615,7 +615,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(packet);
 	}
 
-	get_krb5_smb_session_key(context, auth_context, session_key, True);
+	get_krb5_smb_session_key(mem_ctx, context,
+				 auth_context, session_key, true);
 	dump_data_pw("SMB session key (from ticket)\n", session_key->data, session_key->length);
 
 #if 0

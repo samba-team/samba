@@ -406,7 +406,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
 
-	ret = cli_krb5_get_ticket(local_service,
+	ret = cli_krb5_get_ticket(mem_ctx,
+				  local_service,
 				  time_offset,
 				  &tkt,
 				  &sesskey1,
