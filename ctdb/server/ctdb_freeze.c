@@ -272,6 +272,9 @@ int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		return 0;
 	}
 
+	/* Stop any vacuuming going on: we don't want to wait. */
+	ctdb_stop_vacuuming(ctdb);
+
 	/* if there isn't a freeze lock child then create one */
 	if (ctdb->freeze_handles[priority] == NULL) {
 		ctdb->freeze_handles[priority] = ctdb_freeze_lock(ctdb, priority);

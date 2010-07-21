@@ -36,7 +36,9 @@
 enum vacuum_child_status { VACUUM_RUNNING, VACUUM_OK, VACUUM_ERROR, VACUUM_TIMEOUT};
 
 struct ctdb_vacuum_child_context {
+	struct ctdb_vacuum_child_context *next, *prev;
 	struct ctdb_vacuum_handle *vacuum_handle;
+	/* fd child writes status to */
 	int fd[2];
 	pid_t child_pid;
 	enum vacuum_child_status status;
@@ -743,6 +745,8 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 		kill(child_ctx->child_pid, SIGKILL);
 	}
 
+	DLIST_REMOVE(ctdb->vacuumers, child_ctx);
+
 	event_add_timed(ctdb->ev, child_ctx->vacuum_handle,
 			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0), 
 			ctdb_vacuum_event, child_ctx->vacuum_handle);
@@ -861,6 +865,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	child_ctx->status = VACUUM_RUNNING;
 	child_ctx->start_time = timeval_current();
 
+	DLIST_ADD(ctdb->vacuumers, child_ctx);
 	talloc_set_destructor(child_ctx, vacuum_child_destructor);
 
 	event_add_timed(ctdb->ev, child_ctx,
@@ -878,6 +883,17 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	child_ctx->vacuum_handle = vacuum_handle;
 }
 
+void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
+{
+	/* Simply free them all. */
+	while (ctdb->vacuumers) {
+		DEBUG(DEBUG_INFO, ("Aborting vacuuming for %s (%p)\n",
+			   ctdb->vacuumers->vacuum_handle->ctdb_db->db_name,
+			   ctdb->vacuumers->child_pid));
+		/* vacuum_child_destructor kills it, removes from list */
+		talloc_free(ctdb->vacuumers);
+	}
+}
 
 /* this function initializes the vacuuming context for a database
  * starts the vacuuming events
