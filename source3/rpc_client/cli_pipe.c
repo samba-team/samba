@@ -1289,6 +1289,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_CONNECT:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		data_space = cli->max_xmit_frag - DCERPC_REQUEST_LENGTH;
 		data_len = MIN(data_space, data_left);
 		*p_ss_padding = 0;
@@ -1487,10 +1488,21 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_add_auth_footer(state->cli->auth, ss_padding,
-					&state->rpc_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	switch (state->cli->auth->auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_CONNECT:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		break;
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = dcerpc_add_auth_footer(state->cli->auth, ss_padding,
+						&state->rpc_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	state->req_data_sent += data_sent_thistime;
