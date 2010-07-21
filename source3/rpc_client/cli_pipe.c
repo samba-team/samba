@@ -1764,12 +1764,11 @@ struct rpc_pipe_bind_state {
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct ncacn_packet *r);
+					   DATA_BLOB *credentials);
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
-						    struct rpc_pipe_bind_state *state,
-						    struct ncacn_packet *r,
-						    DATA_BLOB *reply_pdu);
+					struct rpc_pipe_bind_state *state,
+					DATA_BLOB *credentials);
 static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
 
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
@@ -1835,6 +1834,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		req, struct rpc_pipe_bind_state);
 	DATA_BLOB reply_pdu;
 	struct ncacn_packet *pkt;
+	struct dcerpc_auth auth;
 	NTSTATUS status;
 
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
@@ -1856,6 +1856,40 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 	state->cli->max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
+	switch(state->cli->auth->auth_type) {
+
+	case DCERPC_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_SCHANNEL:
+		/* Bind complete. */
+		tevent_req_done(req);
+		return;
+
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_SPNEGO:
+	case DCERPC_AUTH_TYPE_KRB5:
+		/* Paranoid lenght checks */
+		if (pkt->frag_length < DCERPC_AUTH_TRAILER_LENGTH
+						+ pkt->auth_length) {
+			tevent_req_nterror(req,
+					NT_STATUS_INFO_LENGTH_MISMATCH);
+			return;
+		}
+		/* get auth credentials */
+		status = dcerpc_pull_dcerpc_auth(talloc_tos(),
+						 &pkt->u.bind_ack.auth_info,
+						 &auth, false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
+				  nt_errstr(status)));
+			tevent_req_nterror(req, status);
+			return;
+		}
+		break;
+
+	default:
+		goto err_out;
+	}
+
 	/*
 	 * For authenticated binds we may need to do 3 or 4 leg binds.
 	 */
@@ -1870,33 +1904,34 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		/* Need to send AUTH3 packet - no reply. */
-		status = rpc_finish_auth3_bind_send(req, state, pkt);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-		}
-		return;
+		status = rpc_finish_auth3_bind_send(req, state,
+						    &auth.credentials);
+		break;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		if (state->cli->auth->spnego_type !=
 					PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			break;
+			goto err_out;
 		}
 		/* Need to send alter context request and reply. */
-		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, pkt,
-							     &reply_pdu);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-		}
-		return;
+		status = rpc_finish_spnego_ntlmssp_bind_send(req, state,
+							&auth.credentials);
+		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
-		/* */
+		status = NT_STATUS_NOT_IMPLEMENTED;
 		break;
 
 	default:
-		break;
+		goto err_out;
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+	}
+	return;
+
+err_out:
 	DEBUG(0,("cli_finish_bind_auth: unknown auth type %u(%u)\n",
 		 (unsigned int)state->cli->auth->auth_type,
 		 (unsigned int)state->cli->auth->spnego_type));
@@ -1905,32 +1940,17 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct ncacn_packet *r)
+					   DATA_BLOB *credentials)
 {
+	struct pipe_auth_data *auth = state->cli->auth;
 	DATA_BLOB client_reply = data_blob_null;
-	struct dcerpc_auth auth;
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
-	if ((r->auth_length == 0)
-	    || (r->frag_length < DCERPC_AUTH_TRAILER_LENGTH
-					+ r->auth_length)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dcerpc_pull_dcerpc_auth(talloc_tos(),
-					 &r->u.bind_ack.auth_info,
-					 &auth, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
 	/* TODO - check auth_type/auth_level match. */
 
-	status = auth_ntlmssp_update(state->cli->auth->a_u.auth_ntlmssp_state,
-				auth.credentials, &client_reply);
+	status = auth_ntlmssp_update(auth->a_u.auth_ntlmssp_state,
+				     *credentials, &client_reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpc_finish_auth3_bind: NTLMSSP update using server "
@@ -1940,11 +1960,12 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 
 	data_blob_free(&state->rpc_out);
 
-	status = create_rpc_bind_auth3(state,
-				       state->cli, state->rpc_call_id,
-				       state->cli->auth->auth_type,
-				       state->cli->auth->auth_level,
-				       &client_reply, &state->rpc_out);
+	status = create_rpc_bind_auth3(state, state->cli,
+					state->rpc_call_id,
+					auth->auth_type,
+					auth->auth_level,
+					&client_reply,
+					&state->rpc_out);
 	data_blob_free(&client_reply);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1976,44 +1997,23 @@ static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
-						    struct rpc_pipe_bind_state *state,
-						    struct ncacn_packet *r,
-						    DATA_BLOB *reply_pdu)
+					struct rpc_pipe_bind_state *state,
+					DATA_BLOB *credentials)
 {
+	struct pipe_auth_data *auth = state->cli->auth;
 	DATA_BLOB server_ntlm_response = data_blob_null;
 	DATA_BLOB client_reply = data_blob_null;
 	DATA_BLOB tmp_blob = data_blob_null;
-	struct dcerpc_auth auth_info;
-	DATA_BLOB auth_blob;
 	struct tevent_req *subreq;
 	NTSTATUS status;
-
-	if ((r->auth_length == 0)
-	    || (r->frag_length < DCERPC_AUTH_TRAILER_LENGTH
-					+ r->auth_length)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Process the returned NTLMSSP blob first. */
-	auth_blob = data_blob_const(reply_pdu->data
-					+ r->frag_length
-					- DCERPC_AUTH_TRAILER_LENGTH
-					- r->auth_length,
-				    DCERPC_AUTH_TRAILER_LENGTH
-					+ r->auth_length);
-
-	status = dcerpc_pull_dcerpc_auth(state, &auth_blob, &auth_info, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
-		return status;
-	}
 
 	/*
 	 * The server might give us back two challenges - tmp_blob is for the
 	 * second.
 	 */
-	if (!spnego_parse_challenge(state, auth_info.credentials,
-				    &server_ntlm_response, &tmp_blob)) {
+	if (!spnego_parse_challenge(state, *credentials,
+				    &server_ntlm_response,
+				    &tmp_blob)) {
 		data_blob_free(&server_ntlm_response);
 		data_blob_free(&tmp_blob);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -2022,8 +2022,8 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	/* We're finished with the server spnego response and the tmp_blob. */
 	data_blob_free(&tmp_blob);
 
-	status = auth_ntlmssp_update(state->cli->auth->a_u.auth_ntlmssp_state,
-				server_ntlm_response, &client_reply);
+	status = auth_ntlmssp_update(auth->a_u.auth_ntlmssp_state,
+				     server_ntlm_response, &client_reply);
 
 	/* Finished with the server_ntlm response */
 	data_blob_free(&server_ntlm_response);
@@ -2048,7 +2048,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 					  state->rpc_call_id,
 					  &state->cli->abstract_syntax,
 					  &state->cli->transfer_syntax,
-					  state->cli->auth->auth_level,
+					  auth->auth_level,
 					  &client_reply,
 					  &state->rpc_out);
 	data_blob_free(&client_reply);
