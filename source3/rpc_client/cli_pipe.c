@@ -1272,19 +1272,14 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
  work out any sign/seal padding length.
  ********************************************************************/
 
-static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
-					uint32 data_left,
-					uint16 *p_frag_len,
-					uint16 *p_auth_len,
-					uint32 *p_ss_padding)
+static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
+					  uint32_t data_left,
+					  uint32_t *data_to_send,
+					  uint16_t *p_frag_len,
+					  uint16_t *p_auth_len,
+					  uint32_t *p_ss_padding)
 {
-	uint32 data_space, data_len;
-
-#if 0
-	if ((data_left > 0) && (sys_random() % 2)) {
-		data_left = MAX(data_left/2, 1);
-	}
-#endif
+	uint32_t data_space, data_len;
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -1295,7 +1290,8 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 		*p_ss_padding = 0;
 		*p_auth_len = 0;
 		*p_frag_len = DCERPC_REQUEST_LENGTH + data_len;
-		return data_len;
+		*data_to_send = data_len;
+		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -1306,9 +1302,11 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 				*p_auth_len = NTLMSSP_SIG_SIZE;
 				break;
-			default:
-				smb_panic("bad auth type");
+			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+				*p_auth_len = 0; /* no signing */
 				break;
+			default:
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			*p_auth_len = NTLMSSP_SIG_SIZE;
@@ -1316,9 +1314,11 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 		case DCERPC_AUTH_TYPE_SCHANNEL:
 			*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
 			break;
-		default:
-			smb_panic("bad auth type");
+		case DCERPC_AUTH_TYPE_KRB5:
+			*p_auth_len = 0; /* no signing */
 			break;
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		data_space = cli->max_xmit_frag
@@ -1335,13 +1335,14 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 				+ data_len + *p_ss_padding
 				+ DCERPC_AUTH_TRAILER_LENGTH
 				+ *p_auth_len;
-		return data_len;
+		*data_to_send = data_len;
+		return NT_STATUS_OK;
 
 	default:
-		smb_panic("bad auth level");
-		/* Notreached. */
-		return 0;
+		break;
 	}
+
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /*******************************************************************
@@ -1439,15 +1440,20 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	uint16_t auth_len;
 	uint16_t frag_len;
 	uint8_t flags = 0;
-	uint32_t ss_padding;
+	uint32_t pad_len;
 	uint32_t data_left;
 	NTSTATUS status;
 	union dcerpc_payload u;
 
 	data_left = state->req_data->length - state->req_data_sent;
 
-	data_sent_thistime = calculate_data_len_tosend(
-		state->cli, data_left, &frag_len, &auth_len, &ss_padding);
+	status = calculate_data_len_tosend(state->cli, data_left,
+					   &data_sent_thistime,
+					   &frag_len, &auth_len,
+					   &pad_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (state->req_data_sent == 0) {
 		flags = DCERPC_PFC_FLAG_FIRST;
@@ -1495,7 +1501,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		break;
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = dcerpc_add_auth_footer(state->cli->auth, ss_padding,
+		status = dcerpc_add_auth_footer(state->cli->auth, pad_len,
 						&state->rpc_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
