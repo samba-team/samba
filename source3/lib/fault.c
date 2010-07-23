@@ -192,6 +192,52 @@ static char *get_freebsd_corepath(void)
 }
 #endif
 
+#if defined(HAVE_SYS_KERNEL_PROC_CORE_PATTERN)
+
+/**
+ * Get the Linux corepath.
+ *
+ * On Linux the contents of /proc/sys/kernel/core_pattern indicates the
+ * location of the core path.
+ */
+static char *get_linux_corepath(void)
+{
+	char *end;
+	int fd;
+	char *result;
+
+	fd = open("/proc/sys/kernel/core_pattern", O_RDONLY, 0);
+	if (fd == -1) {
+		return NULL;
+	}
+
+	result = afdgets(fd, NULL, 0);
+	close(fd);
+
+	if (result == NULL) {
+		return NULL;
+	}
+
+	if (result[0] != '/') {
+		/*
+		 * No absolute path, use the default (cwd)
+		 */
+		TALLOC_FREE(result);
+		return NULL;
+	}
+	/* Strip off the common filename expansion */
+
+	end = strrchr_m(result, '/');
+
+	if ((end != result) /* this would be the only / */
+	    && (end != NULL)) {
+		*end = '\0';
+	}
+	return result;
+}
+#endif
+
+
 /**
  * Try getting system-specific corepath if one exists.
  *
@@ -200,11 +246,18 @@ static char *get_freebsd_corepath(void)
 static char *get_corepath(const char *logbase, const char *progname)
 {
 #if (defined(FREEBSD) && defined(HAVE_SYSCTLBYNAME))
-
-	/* @todo: Add support for the linux corepath. */
-
 	char *tmp_corepath = NULL;
 	tmp_corepath = get_freebsd_corepath();
+
+	/* If this has been set correctly, we're done. */
+	if (tmp_corepath) {
+		return tmp_corepath;
+	}
+#endif
+
+#if defined(HAVE_SYS_KERNEL_PROC_CORE_PATTERN)
+	char *tmp_corepath = NULL;
+	tmp_corepath = get_linux_corepath();
 
 	/* If this has been set correctly, we're done. */
 	if (tmp_corepath) {

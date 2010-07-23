@@ -1105,6 +1105,15 @@ AC_CHECK_LIB(exc, trace_back_stack)
 # check for sysctlbyname for BSD systems
 AC_CHECK_FUNCS(sysctlbyname)
 
+#################################################
+# Check to see if core dump directory is defined in linux
+# with /proc/sys/kernel/core_pattern
+
+AC_CHECK_FILE([/proc/sys/kernel/core_pattern],
+	AC_DEFINE(HAVE_SYS_KERNEL_PROC_CORE_PATTERN, 1,
+	[Whether Linux kernel uses core_pattern for core files]),
+	 [])
+
 #############################
 # check if building with gpfs
 AC_CHECK_HEADERS(gpfs_gpl.h)
