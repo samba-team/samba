@@ -30,6 +30,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_gssapi.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -947,61 +948,40 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
  Creates krb5 auth bind.
  ********************************************************************/
 
-static NTSTATUS create_krb5_auth_bind_req(struct rpc_pipe_client *cli,
-					  enum dcerpc_AuthLevel auth_level,
-					  DATA_BLOB *auth_info)
+static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
+					    struct pipe_auth_data *auth,
+					    DATA_BLOB *auth_info)
 {
-#ifdef HAVE_KRB5
-	int ret;
+	DATA_BLOB in_token = data_blob_null;
+	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
-	struct kerberos_auth_struct *a = cli->auth->a_u.kerberos_auth;
-	DATA_BLOB tkt = data_blob_null;
-	DATA_BLOB tkt_wrapped = data_blob_null;
 
-	DEBUG(5, ("create_krb5_auth_bind_req: creating a service ticket for principal %s\n",
-		a->service_principal ));
-
-	/* Create the ticket for the service principal and return it in a gss-api wrapped blob. */
-
-	ret = cli_krb5_get_ticket(a, a->service_principal, 0,
-				  &tkt, &a->session_key,
-				  AP_OPTS_MUTUAL_REQUIRED, NULL,
-				  NULL, NULL);
-
-	if (ret) {
-		DEBUG(1,("create_krb5_auth_bind_req: cli_krb5_get_ticket for principal %s "
-			"failed with %s\n",
-			a->service_principal,
-			error_message(ret) ));
-
-		data_blob_free(&tkt);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* wrap that up in a nice GSS-API wrapping */
-	tkt_wrapped = spnego_gen_krb5_wrap(talloc_tos(), tkt, TOK_ID_KRB_AP_REQ);
-
-	data_blob_free(&tkt);
-
-	status = dcerpc_push_dcerpc_auth(cli,
-					 DCERPC_AUTH_TYPE_KRB5,
-					 auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &tkt_wrapped,
-					 auth_info);
+	/* Negotiate the initial auth token */
+	status = gse_get_client_auth_token(mem_ctx,
+					   auth->a_u.gssapi_state,
+					   &in_token,
+					   &auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&tkt_wrapped);
 		return status;
 	}
 
-	DEBUG(5, ("create_krb5_auth_bind_req: Created krb5 GSS blob :\n"));
-	dump_data(5, tkt_wrapped.data, tkt_wrapped.length);
+	status = dcerpc_push_dcerpc_auth(mem_ctx,
+					 auth->auth_type,
+					 auth->auth_level,
+					 0, /* auth_pad_length */
+					 1, /* auth_context_id */
+					 &auth_token,
+					 auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(&auth_token);
+		return status;
+	}
 
+	DEBUG(5, ("Created GSS Authentication Token:\n"));
+	dump_data(5, auth_token.data, auth_token.length);
+
+	data_blob_free(&auth_token);
 	return NT_STATUS_OK;
-#else
-	return NT_STATUS_INVALID_PARAMETER;
-#endif
 }
 
 /*******************************************************************
@@ -1240,9 +1220,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
-		ret = create_krb5_auth_bind_req(cli,
-						auth->auth_level,
-						&auth_info);
+		ret = create_gssapi_auth_bind_req(mem_ctx, auth, &auth_info);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -2369,74 +2347,6 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 	return NT_STATUS_NO_MEMORY;
 }
 
-#ifdef HAVE_KRB5
-static int cli_auth_kerberos_data_destructor(struct kerberos_auth_struct *auth)
-{
-	data_blob_free(&auth->session_key);
-	return 0;
-}
-#endif
-
-static NTSTATUS rpccli_kerberos_bind_data(TALLOC_CTX *mem_ctx,
-				   enum dcerpc_AuthLevel auth_level,
-				   const char *service_princ,
-				   const char *username,
-				   const char *password,
-				   struct pipe_auth_data **presult)
-{
-#ifdef HAVE_KRB5
-	struct pipe_auth_data *result;
-
-	if ((username != NULL) && (password != NULL)) {
-		int ret = kerberos_kinit_password(username, password, 0, NULL);
-		if (ret != 0) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	result = talloc(mem_ctx, struct pipe_auth_data);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result->auth_type = DCERPC_AUTH_TYPE_KRB5;
-	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
-	result->auth_level = auth_level;
-
-	/*
-	 * Username / domain need fixing!
-	 */
-	result->user_name = talloc_strdup(result, "");
-	result->domain = talloc_strdup(result, "");
-	if ((result->user_name == NULL) || (result->domain == NULL)) {
-		goto fail;
-	}
-
-	result->a_u.kerberos_auth = TALLOC_ZERO_P(
-		result, struct kerberos_auth_struct);
-	if (result->a_u.kerberos_auth == NULL) {
-		goto fail;
-	}
-	talloc_set_destructor(result->a_u.kerberos_auth,
-			      cli_auth_kerberos_data_destructor);
-
-	result->a_u.kerberos_auth->service_principal = talloc_strdup(
-		result, service_princ);
-	if (result->a_u.kerberos_auth->service_principal == NULL) {
-		goto fail;
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-
- fail:
-	TALLOC_FREE(result);
-	return NT_STATUS_NO_MEMORY;
-#else
-	return NT_STATUS_NOT_SUPPORTED;
-#endif
-}
-
 /**
  * Create an rpc pipe client struct, connecting to a tcp port.
  */
@@ -3339,12 +3249,12 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const struct ndr_syntax_id *interface,
 				enum dcerpc_transport_t transport,
 				enum dcerpc_AuthLevel auth_level,
-				const char *service_princ,
+				const char *server,
 				const char *username,
 				const char *password,
 				struct rpc_pipe_client **presult)
 {
-#ifdef HAVE_KRB5
+#ifdef HAVE_GSSAPI_H
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
@@ -3354,10 +3264,12 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_kerberos_bind_data(result, auth_level, service_princ,
-					   username, password, &auth);
+	status = gse_init_client(result, DCERPC_AUTH_TYPE_KRB5, auth_level,
+				 NULL, server, "cifs", username, password,
+				 GSS_C_DCE_STYLE, &auth);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpccli_kerberos_bind_data returned %s\n",
+		DEBUG(0, ("gse_init_client returned %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(result);
 		return status;
@@ -3406,9 +3318,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 						a->a_u.auth_ntlmssp_state);
 			break;
 		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-			sk = data_blob_const(
-				a->a_u.kerberos_auth->session_key.data,
-				a->a_u.kerberos_auth->session_key.length);
+			sk = gse_get_session_key(a->a_u.gssapi_state);
 			break;
 		default:
 			return NT_STATUS_NO_USER_SESSION_KEY;
@@ -3418,8 +3328,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		sk = auth_ntlmssp_get_session_key(a->a_u.auth_ntlmssp_state);
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		sk = data_blob_const(a->a_u.kerberos_auth->session_key.data,
-				     a->a_u.kerberos_auth->session_key.length);
+		sk = gse_get_session_key(a->a_u.gssapi_state);
 		break;
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->user_session_key.data,

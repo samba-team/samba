@@ -99,11 +99,7 @@ enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_KRB5
 };
 
-/* auth state for krb5. */
-struct kerberos_auth_struct {
-	const char *service_principal;
-	DATA_BLOB session_key;
-};
+struct gse_context;
 
 /* auth state for all bind types. */
 
@@ -115,7 +111,7 @@ struct pipe_auth_data {
 	union {
 		struct schannel_state *schannel_auth;
 		struct auth_ntlmssp_state *auth_ntlmssp_state;
-		struct kerberos_auth_struct *kerberos_auth; /* Client only for now */
+		struct gse_context *gssapi_state; /* Client only for now */
 	} a_u;
 
 	/* Only the client code uses these 3 for now */
