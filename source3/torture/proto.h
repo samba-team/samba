@@ -83,4 +83,6 @@ bool torture_casetable(int dummy);
 
 bool run_posix_append(int dummy);
 
+bool run_nbench2(int dummy);
+
 #endif /* __TORTURE_H__ */

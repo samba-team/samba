@@ -7492,6 +7492,7 @@ static struct {
 	{"RANDOMIPC", run_randomipc, 0},
 	{"NEGNOWAIT", run_negprot_nowait, 0},
 	{"NBENCH",  run_nbench, 0},
+	{"NBENCH2", run_nbench2, 0},
 	{"OPLOCK1",  run_oplock1, 0},
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
