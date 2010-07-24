@@ -42,6 +42,7 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out);
 
+bool gse_require_more_processing(struct gse_context *gse_ctx);
 DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx);
 
 #endif /* _CLI_PIPE_GSSAPI_H_ */

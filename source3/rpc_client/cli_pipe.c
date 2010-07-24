@@ -1715,10 +1715,11 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
+					enum dcerpc_AuthType auth_type,
+					enum dcerpc_AuthLevel auth_level,
 					uint32 rpc_call_id,
 					const struct ndr_syntax_id *abstract,
 					const struct ndr_syntax_id *transfer,
-					enum dcerpc_AuthLevel auth_level,
 					const DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
 					DATA_BLOB *rpc_out)
 {
@@ -1726,7 +1727,7 @@ static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	status = dcerpc_push_dcerpc_auth(mem_ctx,
-					 DCERPC_AUTH_TYPE_SPNEGO,
+					 auth_type,
 					 auth_level,
 					 0, /* auth_pad_length */
 					 1, /* auth_context_id */
@@ -1767,6 +1768,12 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 					struct rpc_pipe_bind_state *state,
 					DATA_BLOB *credentials);
 static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
+static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
+				   struct rpc_pipe_bind_state *state,
+				   DATA_BLOB *credentials);
+static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
+				     struct rpc_pipe_bind_state *state,
+				     DATA_BLOB *credentials);
 
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
@@ -1829,9 +1836,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
+	struct pipe_auth_data *pauth = state->cli->auth;
 	DATA_BLOB reply_pdu;
 	struct ncacn_packet *pkt;
 	struct dcerpc_auth auth;
+	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
 
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
@@ -1916,7 +1925,19 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = NT_STATUS_NOT_IMPLEMENTED;
+		status = gse_get_client_auth_token(state,
+						   pauth->a_u.gssapi_state,
+						   &auth.credentials,
+						   &auth_token);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		if (gse_require_more_processing(pauth->a_u.gssapi_state)) {
+			status = rpc_bind_next_send(req, state, &auth_token);
+		} else {
+			status = rpc_bind_finish_send(req, state, &auth_token);
+		}
 		break;
 
 	default:
@@ -2042,10 +2063,11 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	data_blob_free(&state->rpc_out);
 
 	status = create_rpc_alter_context(state,
+					  auth->auth_type,
+					  auth->auth_level,
 					  state->rpc_call_id,
 					  &state->cli->abstract_syntax,
 					  &state->cli->transfer_syntax,
-					  auth->auth_level,
 					  &client_reply,
 					  &state->rpc_out);
 	data_blob_free(&client_reply);
@@ -2103,6 +2125,68 @@ static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
 	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
 		 "%s.\n", rpccli_pipe_txt(talloc_tos(), state->cli)));
 	tevent_req_done(req);
+}
+
+static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
+				   struct rpc_pipe_bind_state *state,
+				   DATA_BLOB *auth_token)
+{
+	struct pipe_auth_data *auth = state->cli->auth;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	/* Now prepare the alter context pdu. */
+	data_blob_free(&state->rpc_out);
+
+	status = create_rpc_alter_context(state,
+					  auth->auth_type,
+					  auth->auth_level,
+					  state->rpc_call_id,
+					  &state->cli->abstract_syntax,
+					  &state->cli->transfer_syntax,
+					  auth_token,
+					  &state->rpc_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
+				   &state->rpc_out, DCERPC_PKT_ALTER_RESP);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, rpc_pipe_bind_step_one_done, req);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
+				     struct rpc_pipe_bind_state *state,
+				     DATA_BLOB *auth_token)
+{
+	struct pipe_auth_data *auth = state->cli->auth;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	/* Now prepare the auth3 context pdu. */
+	data_blob_free(&state->rpc_out);
+
+	status = create_rpc_bind_auth3(state, state->cli,
+					state->rpc_call_id,
+					auth->auth_type,
+					auth->auth_level,
+					auth_token,
+					&state->rpc_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	subreq = rpc_write_send(state, state->ev, state->cli->transport,
+				state->rpc_out.data, state->rpc_out.length);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, rpc_bind_auth3_write_done, req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpc_pipe_bind_recv(struct tevent_req *req)
