@@ -240,7 +240,7 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	mech_set.elements = &gse_ctx->gss_mech;
 
 	gss_maj = gss_acquire_cred(&gss_min,
-				   gse_ctx->server_name,
+				   GSS_C_NO_NAME,
 				   GSS_C_INDEFINITE,
 				   &mech_set,
 				   GSS_C_INITIATE,
@@ -296,7 +296,8 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	case GSS_S_CONTINUE_NEEDED:
 		/* we will need a third leg */
 		gse_ctx->more_processing = true;
-		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		/* status = NT_STATUS_MORE_PROCESSING_REQUIRED; */
+		status = NT_STATUS_OK;
 		break;
 	default:
 		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
@@ -368,6 +369,11 @@ done:
 	return errstr;
 }
 
+bool gse_require_more_processing(struct gse_context *gse_ctx)
+{
+	return gse_ctx->more_processing;
+}
+
 DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
 {
 	return gse_ctx->session_key;
@@ -392,6 +398,11 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 NTSTATUS gse_gen_client_auth_token(TALLOC_CTX *mem_ctx,
 				   struct gse_context *gse_ctx,
 				   DATA_BLOB *auth_blob)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+bool gse_require_more_processing(struct gse_context *gse_ctx)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
