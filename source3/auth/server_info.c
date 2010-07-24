@@ -377,7 +377,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		ok = sid_peek_check_rid(&domain_sid, group_sid,
 					&info3->base.primary_gid);
 		if (!ok) {
-			DEBUG(1, ("The primary group domain sid(%s) does not"
+			DEBUG(1, ("The primary group domain sid(%s) does not "
 				  "match the domain sid(%s) for %s(%s)\n",
 				  sid_string_dbg(group_sid),
 				  sid_string_dbg(&domain_sid),
