@@ -3749,7 +3749,7 @@ if test x"$with_ads_support" != x"no"; then
 
   # now check for gssapi headers.  This is also done here to allow for
   # different kerberos include paths
-  AC_CHECK_HEADERS(gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h)
+  AC_CHECK_HEADERS(gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h com_err.h)
 
   ##################################################################
   # we might need the k5crypto and com_err libraries on some systems
@@ -3774,6 +3774,7 @@ if test x"$with_ads_support" != x"no"; then
   # now see if we can find the gssapi libs in standard paths
   if test x"$have_gssapi" != x"yes"; then
      AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
+     AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
   fi
 
   AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
