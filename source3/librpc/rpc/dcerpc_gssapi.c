@@ -22,6 +22,7 @@
 #include "includes.h"
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
+#include <gssapi/gssapi_ext.h>
 #include "dcerpc_gssapi.h"
 
 #ifdef HAVE_GSSAPI_H
@@ -413,3 +414,224 @@ DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
 }
 
 #endif /* HAVE_GSSAPI_H */
+
+#ifdef HAVE_GSS_WRAP_IOV
+
+size_t gse_get_signature_length(struct gse_context *gse_ctx,
+				int seal, size_t payload_size)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_iov_buffer_desc iov[2];
+	uint8_t fakebuf[payload_size];
+	int sealed;
+
+	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+	iov[0].buffer.value = NULL;
+	iov[0].buffer.length = 0;
+	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+	iov[1].buffer.value = fakebuf;
+	iov[1].buffer.length = payload_size;
+
+	gss_maj = gss_wrap_iov_length(&gss_min, gse_ctx->gss_ctx,
+					seal, GSS_C_QOP_DEFAULT,
+					&sealed, iov, 2);
+	if (gss_maj) {
+		DEBUG(0, ("gss_wrap_iov_length failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		return 0;
+	}
+
+	return iov[0].buffer.length;
+}
+
+NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_iov_buffer_desc iov[2];
+	int req_seal = 1; /* setting to 1 means we request sign+seal */
+	int sealed;
+	NTSTATUS status;
+
+	/* allocate the memory ourselves so we do not need to talloc_memdup */
+	signature->length = gse_get_signature_length(gse_ctx, 1, data->length);
+	if (!signature->length) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	signature->data = talloc_size(mem_ctx, signature->length);
+	if (!signature->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+	iov[0].buffer.value = signature->data;
+	iov[0].buffer.length = signature->length;
+
+	/* data is encrypted in place, which is ok */
+	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+	iov[1].buffer.value = data->data;
+	iov[1].buffer.length = data->length;
+
+	gss_maj = gss_wrap_iov(&gss_min, gse_ctx->gss_ctx,
+				req_seal, GSS_C_QOP_DEFAULT,
+				&sealed, iov, 2);
+	if (gss_maj) {
+		DEBUG(0, ("gss_wrap_iov failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	if (!sealed) {
+		DEBUG(0, ("gss_wrap_iov says data was not sealed!\n"));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+	DEBUG(10, ("Sealed %d bytes, and got %d bytes header/signature.\n",
+		   (int)iov[1].buffer.length, (int)iov[0].buffer.length));
+
+done:
+	return status;
+}
+
+NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		    DATA_BLOB *data, DATA_BLOB *signature)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_iov_buffer_desc iov[2];
+	int sealed;
+	NTSTATUS status;
+
+	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+	iov[0].buffer.value = signature->data;
+	iov[0].buffer.length = signature->length;
+
+	/* data is decrypted in place, which is ok */
+	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+	iov[1].buffer.value = data->data;
+	iov[1].buffer.length = data->length;
+
+	gss_maj = gss_unwrap_iov(&gss_min, gse_ctx->gss_ctx,
+				 &sealed, NULL, iov, 2);
+	if (gss_maj) {
+		DEBUG(0, ("gss_unwrap_iov failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	if (!sealed) {
+		DEBUG(0, ("gss_unwrap_iov says data is not sealed!\n"));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+	DEBUG(10, ("Unsealed %d bytes, with %d bytes header/signature.\n",
+		   (int)iov[1].buffer.length, (int)iov[0].buffer.length));
+
+done:
+	return status;
+}
+
+NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_desc in_data = { 0, NULL };
+	gss_buffer_desc out_data = { 0, NULL};
+	NTSTATUS status;
+
+	in_data.value = data->data;
+	in_data.length = data->length;
+
+	gss_maj = gss_get_mic(&gss_min, gse_ctx->gss_ctx,
+			      GSS_C_QOP_DEFAULT,
+			      &in_data, &out_data);
+	if (gss_maj) {
+		DEBUG(0, ("gss_get_mic failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	*signature = data_blob_talloc(mem_ctx,
+					out_data.value, out_data.length);
+	if (!signature->data) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	if (out_data.value) {
+		gss_maj = gss_release_buffer(&gss_min, &out_data);
+	}
+	return status;
+}
+
+NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		      DATA_BLOB *data, DATA_BLOB *signature)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_desc in_data = { 0, NULL };
+	gss_buffer_desc in_token = { 0, NULL};
+	NTSTATUS status;
+
+	in_data.value = data->data;
+	in_data.length = data->length;
+	in_token.value = signature->data;
+	in_token.length = signature->length;
+
+	gss_maj = gss_verify_mic(&gss_min, gse_ctx->gss_ctx,
+				 &in_data, &in_token, NULL);
+	if (gss_maj) {
+		DEBUG(0, ("gss_verify_mic failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	return status;
+}
+
+#else /* HAVE_GSS_WRAP_IOV */
+
+size_t gse_get_signature_length(struct gse_context *gse_ctx,
+				int seal, size_t payload_size)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		    DATA_BLOB *data, DATA_BLOB *signature)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		      DATA_BLOB *data, DATA_BLOB *signature)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+#endif /* HAVE_GSS_WRAP_IOV */

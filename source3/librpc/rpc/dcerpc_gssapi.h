@@ -45,4 +45,14 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 bool gse_require_more_processing(struct gse_context *gse_ctx);
 DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx);
 
+size_t gse_get_signature_length(struct gse_context *gse_ctx,
+				int seal, size_t payload_size);
+NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature);
+NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		    DATA_BLOB *data, DATA_BLOB *signature);
+NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		  DATA_BLOB *data, DATA_BLOB *signature);
+NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+		      DATA_BLOB *data, DATA_BLOB *signature);
 #endif /* _CLI_PIPE_GSSAPI_H_ */

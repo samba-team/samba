@@ -1257,6 +1257,7 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					  uint32_t *p_ss_padding)
 {
 	uint32_t data_space, data_len;
+	size_t max_len;
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -1272,6 +1273,10 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
+		max_len = cli->max_xmit_frag
+				- DCERPC_REQUEST_LENGTH
+				- DCERPC_AUTH_TRAILER_LENGTH;
+
 		/* Treat the same for all authenticated rpc requests. */
 		switch(cli->auth->auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
@@ -1280,7 +1285,7 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 				*p_auth_len = NTLMSSP_SIG_SIZE;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				*p_auth_len = 0; /* no signing */
+				*p_auth_len = 0; /* TODO */
 				break;
 			default:
 				return NT_STATUS_INVALID_PARAMETER;
@@ -1292,16 +1297,17 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 			*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
 			break;
 		case DCERPC_AUTH_TYPE_KRB5:
-			*p_auth_len = 0; /* no signing */
+			*p_auth_len = gse_get_signature_length(
+					cli->auth->a_u.gssapi_state,
+					(cli->auth->auth_level ==
+						DCERPC_AUTH_LEVEL_PRIVACY),
+					max_len);
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		data_space = cli->max_xmit_frag
-				- DCERPC_REQUEST_LENGTH
-				- DCERPC_AUTH_TRAILER_LENGTH
-				- *p_auth_len;
+		data_space = max_len - *p_auth_len;
 
 		data_len = MIN(data_space, data_left);
 		*p_ss_padding = 0;
