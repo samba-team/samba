@@ -2672,6 +2672,17 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 			     SMB_STRUCT_STAT *sbuf, uint32 *attributes);
 bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **poutdata, uint32 *poutlen);
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name);
+struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct cli_state *cli, const char *fname,
+				      uint16_t level, uint32_t min_rdata,
+				      uint32_t max_rdata);
+NTSTATUS cli_qpathinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    uint8_t **rdata, uint32_t *num_rdata);
+NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+		       const char *fname, uint16_t level, uint32_t min_rdata,
+		       uint32_t max_rdata,
+		       uint8_t **rdata, uint32_t *num_rdata);
 
 /* The following definitions come from libsmb/clirap2.c  */
 struct rap_group_info_1;

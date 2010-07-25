@@ -5116,3 +5116,138 @@ NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*pchanges = talloc_move(mem_ctx, &state->changes);
 	return NT_STATUS_OK;
 }
+
+struct cli_qpathinfo_state {
+	uint8_t *param;
+	uint8_t *data;
+	uint16_t setup[1];
+	uint32_t min_rdata;
+	uint8_t *rdata;
+	uint32_t num_rdata;
+};
+
+static void cli_qpathinfo_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct cli_state *cli, const char *fname,
+				      uint16_t level, uint32_t min_rdata,
+				      uint32_t max_rdata)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_qpathinfo_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_qpathinfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->min_rdata = min_rdata;
+	SSVAL(state->setup, 0, TRANSACT2_QPATHINFO);
+
+	state->param = talloc_zero_array(state, uint8_t, 6);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+	SSVAL(state->param, 0, level);
+	state->param = trans2_bytes_push_str(
+		state->param, cli_ucs2(cli), fname, strlen(fname)+1, NULL);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_trans_send(
+		state,			/* mem ctx. */
+		ev,			/* event ctx. */
+		cli,			/* cli_state. */
+		SMBtrans2,		/* cmd. */
+		NULL,			/* pipe name. */
+		-1,			/* fid. */
+		0,			/* function. */
+		0,			/* flags. */
+		state->setup,		/* setup. */
+		1,			/* num setup uint16_t words. */
+		0,			/* max returned setup. */
+		state->param,		/* param. */
+		talloc_get_size(state->param),	/* num param. */
+		2,			/* max returned param. */
+		NULL,			/* data. */
+		0,			/* num data. */
+		max_rdata);		/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_qpathinfo_done, req);
+	return req;
+}
+
+static void cli_qpathinfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qpathinfo_state *state = tevent_req_data(
+		req, struct cli_qpathinfo_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
+				&state->rdata, state->min_rdata,
+				&state->num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_qpathinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    uint8_t **rdata, uint32_t *num_rdata)
+{
+	struct cli_qpathinfo_state *state = tevent_req_data(
+		req, struct cli_qpathinfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*rdata = talloc_move(mem_ctx, &state->rdata);
+	*num_rdata = state->num_rdata;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+		       const char *fname, uint16_t level, uint32_t min_rdata,
+		       uint32_t max_rdata,
+		       uint8_t **rdata, uint32_t *num_rdata)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_qpathinfo_send(frame, ev, cli, fname, level, min_rdata,
+				 max_rdata);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_qpathinfo_recv(req, mem_ctx, rdata, num_rdata);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
