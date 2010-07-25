@@ -778,7 +778,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
-				&state->data, 96, &state->num_data);
+				&state->data, 100, &state->num_data);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -834,7 +834,7 @@ struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 				2,			/* max returned param. */
 				NULL,			/* data. */
 				0,			/* num data. */
-				96);			/* max returned data. */
+				100);			/* max returned data. */
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -853,7 +853,7 @@ NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
 		return status;
 	}
 
-	if (state->num_data != 96) {
+	if (state->num_data != 100) {
 		return NT_STATUS_DATA_ERROR;
 	}
 
@@ -881,7 +881,7 @@ NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
 #endif
 	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(state->data,76);      /* inode */
 	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(state->data,84));     /* protection */
-	sbuf->st_ex_nlink = IVAL(state->data,92);    /* number of hard links */
+	sbuf->st_ex_nlink = BIG_UINT(state->data,92); /* number of hard links */
 
 	return NT_STATUS_OK;
 }
