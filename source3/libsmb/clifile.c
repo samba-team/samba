@@ -704,22 +704,7 @@ struct stat_state {
 	uint8_t *data;
 };
 
-static void cli_posix_stat_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	struct stat_state *state = tevent_req_data(req, struct stat_state);
-	NTSTATUS status;
-
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
-				&state->data, 100, &state->num_data);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
-}
+static void cli_posix_stat_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
@@ -733,48 +718,30 @@ struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
-	/* Setup setup word. */
-	SSVAL(&state->setup, 0, TRANSACT2_QPATHINFO);
-
-	/* Setup param array. */
-	state->param = talloc_array(state, uint8_t, 6);
-	if (tevent_req_nomem(state->param, req)) {
-		return tevent_req_post(req, ev);
-	}
-	memset(state->param, '\0', 6);
-	SSVAL(state->param, 0, SMB_QUERY_FILE_UNIX_BASIC);
-
-	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), fname,
-				   strlen(fname)+1, NULL);
-
-	if (tevent_req_nomem(state->param, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = cli_trans_send(state,			/* mem ctx. */
-				ev,			/* event ctx. */
-				cli,			/* cli_state. */
-				SMBtrans2,		/* cmd. */
-				NULL,			/* pipe name. */
-				-1,			/* fid. */
-				0,			/* function. */
-				0,			/* flags. */
-				&state->setup,		/* setup. */
-				1,			/* num setup uint16_t words. */
-				0,			/* max returned setup. */
-				state->param,		/* param. */
-				talloc_get_size(state->param),	/* num param. */
-				2,			/* max returned param. */
-				NULL,			/* data. */
-				0,			/* num data. */
-				100);			/* max returned data. */
-
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_QUERY_FILE_UNIX_BASIC, 100, 100);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_posix_stat_done, req);
 	return req;
+}
+
+static void cli_posix_stat_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct stat_state *state = tevent_req_data(req, struct stat_state);
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
@@ -785,10 +752,6 @@ NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
-	}
-
-	if (state->num_data != 100) {
-		return NT_STATUS_DATA_ERROR;
 	}
 
 	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(state->data,0);     /* total size, in bytes */
