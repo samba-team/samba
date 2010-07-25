@@ -4188,6 +4188,10 @@ bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, 
  Get an extended attribute list utility fn.
 *********************************************************/
 
+static bool parse_ea_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
+			  size_t rdata_len,
+			  size_t *pnum_eas, struct ea_struct **pea_list);
+
 static bool cli_get_ea_list(struct cli_state *cli,
 		uint16_t setup, char *param, unsigned int param_len,
 		TALLOC_CTX *ctx,
@@ -4197,11 +4201,7 @@ static bool cli_get_ea_list(struct cli_state *cli,
 	unsigned int data_len = 0;
 	unsigned int rparam_len, rdata_len;
 	char *rparam=NULL, *rdata=NULL;
-	char *p;
-	size_t ea_size;
-	size_t num_eas;
 	bool ret = False;
-	struct ea_struct *ea_list;
 
 	*pnum_eas = 0;
 	if (pea_list) {
@@ -4224,19 +4224,35 @@ static bool cli_get_ea_list(struct cli_state *cli,
 		return False;
 	}
 
-	if (!rdata || rdata_len < 4) {
-		goto out;
+	ret = parse_ea_blob(ctx, (uint8_t *)rdata, rdata_len, pnum_eas,
+			    pea_list);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+	return ret;
+}
+
+static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
+			  size_t rdata_len,
+			  size_t *pnum_eas, struct ea_struct **pea_list)
+{
+	struct ea_struct *ea_list = NULL;
+	size_t num_eas;
+	size_t ea_size;
+	const uint8_t *p;
+
+	if (rdata_len < 4) {
+		return false;
 	}
 
 	ea_size = (size_t)IVAL(rdata,0);
 	if (ea_size > rdata_len) {
-		goto out;
+		return false;
 	}
 
 	if (ea_size == 0) {
 		/* No EA's present. */
-		ret = True;
-		goto out;
+		*pnum_eas = 0;
+		return true;
 	}
 
 	p = rdata + 4;
@@ -4247,30 +4263,29 @@ static bool cli_get_ea_list(struct cli_state *cli,
 		unsigned int ea_namelen = CVAL(p,1);
 		unsigned int ea_valuelen = SVAL(p,2);
 		if (ea_namelen == 0) {
-			goto out;
+			return false;
 		}
 		if (4 + ea_namelen + 1 + ea_valuelen > ea_size) {
-			goto out;
+			return false;
 		}
 		ea_size -= 4 + ea_namelen + 1 + ea_valuelen;
 		p += 4 + ea_namelen + 1 + ea_valuelen;
 	}
 
 	if (num_eas == 0) {
-		ret = True;
-		goto out;
+		*pnum_eas = 0;
+		return true;
 	}
 
 	*pnum_eas = num_eas;
 	if (!pea_list) {
 		/* Caller only wants number of EA's. */
-		ret = True;
-		goto out;
+		return true;
 	}
 
 	ea_list = TALLOC_ARRAY(ctx, struct ea_struct, num_eas);
 	if (!ea_list) {
-		goto out;
+		return false;
 	}
 
 	ea_size = (size_t)IVAL(rdata,0);
@@ -4285,11 +4300,14 @@ static bool cli_get_ea_list(struct cli_state *cli,
 		ea->flags = CVAL(p,0);
 		unix_ea_name[0] = '\0';
 		pull_ascii_fstring(unix_ea_name, p + 4);
-		ea->name = talloc_strdup(ctx, unix_ea_name);
+		ea->name = talloc_strdup(ea_list, unix_ea_name);
+		if (!ea->name) {
+			goto fail;
+		}
 		/* Ensure the value is null terminated (in case it's a string). */
-		ea->value = data_blob_talloc(ctx, NULL, ea_valuelen + 1);
+		ea->value = data_blob_talloc(ea_list, NULL, ea_valuelen + 1);
 		if (!ea->value.data) {
-			goto out;
+			goto fail;
 		}
 		if (ea_valuelen) {
 			memcpy(ea->value.data, p+4+ea_namelen+1, ea_valuelen);
@@ -4300,13 +4318,11 @@ static bool cli_get_ea_list(struct cli_state *cli,
 	}
 
 	*pea_list = ea_list;
-	ret = True;
+	return true;
 
- out :
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-	return ret;
+fail:
+	TALLOC_FREE(ea_list);
+	return false;
 }
 
 /*********************************************************
