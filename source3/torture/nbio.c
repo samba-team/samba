@@ -245,7 +245,7 @@ void nb_rename(const char *oldname, const char *newname)
 
 void nb_qpathinfo(const char *fname)
 {
-	cli_qpathinfo(c, fname, NULL, NULL, NULL, NULL, NULL);
+	cli_qpathinfo1(c, fname, NULL, NULL, NULL, NULL, NULL);
 }
 
 void nb_qfileinfo(int fnum)

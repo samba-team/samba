@@ -2868,7 +2868,7 @@ static bool run_trans2test(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_qpathinfo(cli, fname, &c_time, &a_time, &m_time, &size, NULL)) {
+	if (!cli_qpathinfo1(cli, fname, &c_time, &a_time, &m_time, &size, NULL)) {
 		printf("ERROR: qpathinfo failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	} else {
@@ -5959,9 +5959,9 @@ static bool run_mangle1(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_qpathinfo(cli, alt_name, &change_time, &access_time,
+	if (!cli_qpathinfo1(cli, alt_name, &change_time, &access_time,
 			   &write_time, &size, &mode)) {
-		d_printf("cli_qpathinfo(%s) failed: %s\n", alt_name,
+		d_printf("cli_qpathinfo1(%s) failed: %s\n", alt_name,
 			 cli_errstr(cli));
 		return false;
 	}
@@ -6485,7 +6485,7 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
-	cli_qpathinfo(cli, streamname, &change_time, &access_time, &write_time,
+	cli_qpathinfo1(cli, streamname, &change_time, &access_time, &write_time,
 		      &size, &mode);
 	status = cli_nt_error(cli);
 

@@ -531,7 +531,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
  Send a qpathinfo call.
 ****************************************************************************/
 
-bool cli_qpathinfo(struct cli_state *cli,
+bool cli_qpathinfo1(struct cli_state *cli,
 			const char *fname,
 			time_t *change_time,
 			time_t *access_time,
