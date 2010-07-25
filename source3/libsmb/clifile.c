@@ -273,30 +273,7 @@ struct readlink_state {
 	uint32_t num_data;
 };
 
-static void cli_posix_readlink_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	struct readlink_state *state = tevent_req_data(req, struct readlink_state);
-	NTSTATUS status;
-
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
-				&state->data, 0, &state->num_data);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	if (state->num_data == 0) {
-		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
-		return;
-	}
-	if (state->data[state->num_data-1] != '\0') {
-		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
-		return;
-	}
-	tevent_req_done(req);
-}
+static void cli_posix_readlink_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
@@ -308,56 +285,51 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 	struct readlink_state *state = NULL;
 	uint32_t maxbytelen = (uint32_t)(cli_ucs2(cli) ? len*3 : len);
 
-	if (maxbytelen < len) {
-		return NULL;
-	}
-
 	req = tevent_req_create(mem_ctx, &state, struct readlink_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	/* Setup setup word. */
-	SSVAL(&state->setup, 0, TRANSACT2_QPATHINFO);
-
-	/* Setup param array. */
-	state->param = talloc_array(state, uint8_t, 6);
-	if (tevent_req_nomem(state->param, req)) {
-		return tevent_req_post(req, ev);
-	}
-	memset(state->param, '\0', 6);
-	SSVAL(state->param,0,SMB_QUERY_FILE_UNIX_LINK);
-
-	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), fname,
-				   strlen(fname)+1, NULL);
-
-	if (tevent_req_nomem(state->param, req)) {
+	/*
+	 * Len is in bytes, we need it in UCS2 units.
+	 */
+	if ((2*len < len) || (maxbytelen < len)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_trans_send(state,			/* mem ctx. */
-				ev,			/* event ctx. */
-				cli,			/* cli_state. */
-				SMBtrans2,		/* cmd. */
-				NULL,			/* pipe name. */
-				-1,			/* fid. */
-				0,			/* function. */
-				0,			/* flags. */
-				&state->setup,		/* setup. */
-				1,			/* num setup uint16_t words. */
-				0,			/* max returned setup. */
-				state->param,		/* param. */
-				talloc_get_size(state->param),	/* num param. */
-				2,			/* max returned param. */
-				NULL,			/* data. */
-				0,			/* num data. */
-				maxbytelen);		/* max returned data. */
-
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_QUERY_FILE_UNIX_LINK, 1, maxbytelen);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_posix_readlink_done, req);
 	return req;
+}
+
+static void cli_posix_readlink_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct readlink_state *state = tevent_req_data(
+		req, struct readlink_state);
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	/*
+	 * num_data is > 1, we've given 1 as minimum to cli_qpathinfo_send
+	 */
+	if (state->data[state->num_data-1] != '\0') {
+		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
+		return;
+	}
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
@@ -410,12 +382,6 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 	ev = event_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	/* Len is in bytes, we need it in UCS2 units. */
-	if (2*len < len) {
-		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
