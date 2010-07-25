@@ -4329,32 +4329,106 @@ fail:
  Get an extended attribute list from a pathname.
 *********************************************************/
 
-bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
+struct cli_get_ea_list_path_state {
+	uint32_t num_data;
+	uint8_t *data;
+};
+
+static void cli_get_ea_list_path_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_get_ea_list_path_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     const char *fname)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_get_ea_list_path_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_get_ea_list_path_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_INFO_QUERY_ALL_EAS, 4,
+				    cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_get_ea_list_path_done, req);
+	return req;
+}
+
+static void cli_get_ea_list_path_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct cli_get_ea_list_path_state *state = tevent_req_data(
+		req, struct cli_get_ea_list_path_state);
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_get_ea_list_path_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				   size_t *pnum_eas, struct ea_struct **peas)
+{
+	struct cli_get_ea_list_path_state *state = tevent_req_data(
+		req, struct cli_get_ea_list_path_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (!parse_ea_blob(mem_ctx, state->data, state->num_data,
+			   pnum_eas, peas)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
 {
-	uint16_t setup = TRANSACT2_QPATHINFO;
-	unsigned int param_len = 0;
-	char *param;
-	char *p;
-	size_t srclen = 2*(strlen(path)+1);
-	bool ret;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
-	if (!param) {
-		return false;
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-	p = param;
-	memset(p, 0, 6);
-	SSVAL(p, 0, SMB_INFO_QUERY_ALL_EAS);
-	p += 6;
-	p += clistr_push(cli, p, path, srclen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
-
-	ret = cli_get_ea_list(cli, setup, param, param_len, ctx, pnum_eas, pea_list);
-	SAFE_FREE(param);
-	return ret;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_get_ea_list_path_send(frame, ev, cli, path);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_get_ea_list_path_recv(req, ctx, pnum_eas, pea_list);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /*********************************************************

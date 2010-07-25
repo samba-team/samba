@@ -5009,6 +5009,7 @@ static bool run_eatest(int dummy)
 	size_t num_eas;
 	struct ea_struct *ea_list = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("eatest");
+	NTSTATUS status;
 
 	printf("starting eatest\n");
 
@@ -5052,8 +5053,9 @@ static bool run_eatest(int dummy)
 		}
 	}
 
-	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
-		printf("ea_get list failed - %s\n", cli_errstr(cli));
+	status = cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ea_get list failed - %s\n", nt_errstr(status));
 		correct = False;
 	}
 
@@ -5087,8 +5089,9 @@ static bool run_eatest(int dummy)
 	}
 #endif
 
-	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
-		printf("ea_get list failed - %s\n", cli_errstr(cli));
+	status = cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ea_get list failed - %s\n", nt_errstr(status));
 		correct = False;
 	}
 
