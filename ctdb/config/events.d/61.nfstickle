@@ -41,12 +41,17 @@ case "$1" in
 	mydir=$NFS_TICKLE_SHARED_DIRECTORY/`hostname`
 	rm -f $mydir/*
 	# record our connections to shared storage
-	netstat -tn |egrep '^tcp[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9\.]+:2049.*ESTABLISHED' |
-		awk '{print $4" "$5}' | 
-		while read dest src; do
-			ip=${dest%:*}
-			echo $src >> $mydir/$ip
-		done
+	netstat -tn |
+	awk -v mydir="$mydir" '
+$1 == "tcp" && $6 == "ESTABLISHED" && $4 ~ /:2049$/ {
+  destip = gensub(/:2049$/, "", 1, $4);
+  c[destip] = c[destip] (c[destip] ? "\n" : "" ) $5;
+}
+END {
+  for (ip in c) {
+    print c[ip] > mydir "/" ip
+  }
+}'
 	;;
 
     *)
