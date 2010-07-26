@@ -900,6 +900,11 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
  Get the stream info
 ****************************************************************************/
 
+static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *data,
+			       size_t data_len,
+			       unsigned int *pnum_streams,
+			       struct stream_struct **pstreams);
+
 bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			   TALLOC_CTX *mem_ctx,
 			   unsigned int *pnum_streams,
@@ -911,10 +916,8 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 	char *param;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
-	unsigned int num_streams;
-	struct stream_struct *streams;
-	unsigned int ofs;
 	size_t namelen = 2*(strlen(fname)+1);
+	bool ret;
 
 	param = SMB_MALLOC_ARRAY(char, 6+namelen+2);
 	if (param == NULL) {
@@ -948,6 +951,22 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 		SAFE_FREE(rparam);
 		return false;
 	}
+
+	ret = parse_streams_blob(mem_ctx, (uint8_t *)rdata, data_len,
+				 pnum_streams, pstreams);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	return ret;
+}
+
+static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
+			       size_t data_len,
+			       unsigned int *pnum_streams,
+			       struct stream_struct **pstreams)
+{
+	unsigned int num_streams;
+	struct stream_struct *streams;
+	unsigned int ofs;
 
 	num_streams = 0;
 	streams = NULL;
@@ -1013,17 +1032,12 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 		ofs += len;
 	}
 
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
 	*pnum_streams = num_streams;
 	*pstreams = streams;
 	return true;
 
  fail:
 	TALLOC_FREE(streams);
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
 	return false;
 }
 
