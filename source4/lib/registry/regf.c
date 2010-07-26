@@ -110,7 +110,7 @@ static DATA_BLOB hbin_get(const struct regf_data *data, uint32_t offset)
 	hbin = hbin_by_offset(data, offset, &rel_offset);
 
 	if (hbin == NULL) {
-		DEBUG(1, ("Can't find HBIN containing 0x%04x\n", offset));
+		DEBUG(1, ("Can't find HBIN at 0x%04x\n", offset));
 		return ret;
 	}
 
@@ -314,7 +314,7 @@ static void hbin_free (struct regf_data *data, uint32_t offset)
 	size = -size;
 
 	/* If the next block is free, merge into big free block */
-	if (rel_offset + size < hbin->offset_to_next) {
+	if (rel_offset + size < hbin->offset_to_next - 0x20) {
 		next_size = IVALS(hbin->data, rel_offset+size);
 		if (next_size > 0) {
 			size += next_size;
@@ -606,6 +606,11 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 	if (idx >= nk->num_subkeys)
 		return WERR_NO_MORE_ITEMS;
 
+	/* Make sure that we don't crash if the key is empty */
+	if (nk->subkeys_offset == -1) {
+		return WERR_NO_MORE_ITEMS;
+	}
+
 	data = hbin_get(private_data->hive, nk->subkeys_offset);
 	if (!data.data) {
 		DEBUG(0, ("Unable to find subkey list\n"));
@@ -844,6 +849,11 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 		(const struct regf_key_data *)key;
 	struct nk_block *nk = private_data->nk;
 	uint32_t key_off = 0;
+
+	/* Make sure that we don't crash if the key is empty */
+	if (nk->subkeys_offset == -1) {
+		return WERR_BADFILE;
+	}
 
 	data = hbin_get(private_data->hive, nk->subkeys_offset);
 	if (!data.data) {
@@ -1764,6 +1774,7 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 
 	*ret = (struct hive_key *)regf_get_key(ctx, regf, offset);
 
+	DEBUG(9, ("Storing key %s\n", name));
 	return regf_save_hbin(private_data->hive);
 }
 
