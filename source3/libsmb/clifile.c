@@ -591,7 +591,7 @@ struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
 					const char *fname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct link_state *state = NULL;
+	struct getfacl_state *state = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct getfacl_state);
 	if (req == NULL) {
