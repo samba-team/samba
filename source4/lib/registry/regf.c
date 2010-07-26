@@ -216,6 +216,8 @@ static DATA_BLOB hbin_alloc(struct regf_data *data, uint32_t size,
 	if (data->hbins[i] == NULL) {
 		DEBUG(4, ("No space available in other HBINs for block of size %d, allocating new HBIN\n",
 			size));
+
+		/* Add extra hbin block */
 		data->hbins = talloc_realloc(data, data->hbins,
 					     struct hbin_block *, i+2);
 		hbin = talloc(data->hbins, struct hbin_block);
@@ -224,17 +226,22 @@ static DATA_BLOB hbin_alloc(struct regf_data *data, uint32_t size,
 		data->hbins[i] = hbin;
 		data->hbins[i+1] = NULL;
 
+		/* Set hbin data */
 		hbin->HBIN_ID = talloc_strdup(hbin, "hbin");
 		hbin->offset_from_first = (i == 0?0:data->hbins[i-1]->offset_from_first+data->hbins[i-1]->offset_to_next);
 		hbin->offset_to_next = 0x1000;
 		hbin->unknown[0] = 0;
-		hbin->unknown[0] = 0;
+		hbin->unknown[1] = 0;
 		unix_to_nt_time(&hbin->last_change, time(NULL));
 		hbin->block_size = hbin->offset_to_next;
 		hbin->data = talloc_zero_array(hbin, uint8_t, hbin->block_size - 0x20);
+		/* Update the regf header */
+		data->header->last_block += hbin->offset_to_next;
 
-		rel_offset = 0x0;
+		/* Set the next block to it's proper size and set the
+		 * rel_offset for this block */
 		SIVAL(hbin->data, size, hbin->block_size - size - 0x20);
+		rel_offset = 0x0;
 	}
 
 	/* Set size and mark as used */
@@ -489,7 +496,7 @@ static struct regf_key_data *regf_get_key(TALLOC_CTX *ctx,
 
 	if (!hbin_get_tdr(regf, offset, nk,
 			  (tdr_pull_fn_t)tdr_pull_nk_block, nk)) {
-		DEBUG(0, ("Unable to find HBIN data for offset %d\n", offset));
+		DEBUG(0, ("Unable to find HBIN data for offset 0x%x\n", offset));
 		return NULL;
 	}
 
@@ -519,7 +526,8 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 
 	tmp = hbin_get(regf, private_data->nk->values_offset);
 	if (!tmp.data) {
-		DEBUG(0, ("Unable to find value list\n"));
+		DEBUG(0, ("Unable to find value list at 0x%x\n",
+				private_data->nk->values_offset));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -534,7 +542,7 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 
 	if (!hbin_get_tdr(regf, vk_offset, vk,
 			  (tdr_pull_fn_t)tdr_pull_vk_block, vk)) {
-		DEBUG(0, ("Unable to get VK block at %d\n", vk_offset));
+		DEBUG(0, ("Unable to get VK block at 0x%x\n", vk_offset));
 		talloc_free(vk);
 		return WERR_GENERAL_FAILURE;
 	}
@@ -613,7 +621,8 @@ static WERROR regf_get_subkey_by_index(TALLOC_CTX *ctx,
 
 	data = hbin_get(private_data->hive, nk->subkeys_offset);
 	if (!data.data) {
-		DEBUG(0, ("Unable to find subkey list\n"));
+		DEBUG(0, ("Unable to find subkey list at 0x%x\n",
+			nk->subkeys_offset));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -1749,7 +1758,7 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 
 	if (!hbin_get_tdr(regf, regf->header->data_offset, root,
 			  (tdr_pull_fn_t)tdr_pull_nk_block, root)) {
-		DEBUG(0, ("Unable to find HBIN data for offset %d\n",
+		DEBUG(0, ("Unable to find HBIN data for offset 0x%x\n",
 			regf->header->data_offset));
 		return WERR_GENERAL_FAILURE;
 	}
@@ -1800,7 +1809,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 			if (!hbin_get_tdr(regf, tmp_vk_offset, private_data,
 					  (tdr_pull_fn_t)tdr_pull_vk_block,
 					  &vk)) {
-				DEBUG(0, ("Unable to get VK block at %d\n",
+				DEBUG(0, ("Unable to get VK block at 0x%x\n",
 					tmp_vk_offset));
 				return WERR_GENERAL_FAILURE;
 			}
