@@ -33,8 +33,16 @@
 #define TOP_LEVEL_CONTROL_FORMS_KEY TOP_LEVEL_CONTROL_KEY "\\Forms"
 
 #define EMPTY_STRING ""
-static const char *empty_string_array[1] = { NULL };
-#define EMPTY_STRING_ARRAY empty_string_array
+
+#define FILL_STRING(mem_ctx, in, out) \
+	do { \
+		if (in && strlen(in)) { \
+			out = talloc_strdup(mem_ctx, in); \
+		} else { \
+			out = talloc_strdup(mem_ctx, ""); \
+		} \
+		W_ERROR_HAVE_NO_MEMORY(out); \
+	} while (0);
 
 #define CHECK_ERROR(result) \
 	if (W_ERROR_IS_OK(result)) continue; \
@@ -1098,6 +1106,11 @@ static WERROR winreg_enumval_to_dword(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
+	if (v->data_length == 0) {
+		*dw = 0;
+		return WERR_OK;
+	}
+
 	*dw = IVAL(v->data->data, 0);
 	return WERR_OK;
 }
@@ -1113,6 +1126,14 @@ static WERROR winreg_enumval_to_sz(TALLOC_CTX *mem_ctx,
 
 	if (v->type != REG_SZ) {
 		return WERR_INVALID_DATATYPE;
+	}
+
+	if (v->data_length == 0) {
+		*_str = talloc_strdup(mem_ctx, EMPTY_STRING);
+		if (*_str == NULL) {
+			return WERR_NOMEM;
+		}
+		return WERR_OK;
 	}
 
 	if (!pull_reg_sz(mem_ctx, v->data, _str)) {
@@ -1134,6 +1155,15 @@ static WERROR winreg_enumval_to_multi_sz(TALLOC_CTX *mem_ctx,
 
 	if (v->type != REG_MULTI_SZ) {
 		return WERR_INVALID_DATATYPE;
+	}
+
+	if (v->data_length == 0) {
+		*array = talloc_array(mem_ctx, const char *, 1);
+		if (*array == NULL) {
+			return WERR_NOMEM;
+		}
+		*array[0] = NULL;
+		return WERR_OK;
 	}
 
 	if (!pull_reg_multi_sz(mem_ctx, v->data, array)) {
@@ -1975,17 +2005,17 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	info2->servername     = EMPTY_STRING;
-	info2->printername    = EMPTY_STRING;
-	info2->sharename      = EMPTY_STRING;
-	info2->portname       = EMPTY_STRING;
-	info2->drivername     = EMPTY_STRING;
-	info2->comment        = EMPTY_STRING;
-	info2->location       = EMPTY_STRING;
-	info2->sepfile        = EMPTY_STRING;
-	info2->printprocessor = EMPTY_STRING;
-	info2->datatype       = EMPTY_STRING;
-	info2->parameters     = EMPTY_STRING;
+	FILL_STRING(info2, EMPTY_STRING, info2->servername);
+	FILL_STRING(info2, EMPTY_STRING, info2->printername);
+	FILL_STRING(info2, EMPTY_STRING, info2->sharename);
+	FILL_STRING(info2, EMPTY_STRING, info2->portname);
+	FILL_STRING(info2, EMPTY_STRING, info2->drivername);
+	FILL_STRING(info2, EMPTY_STRING, info2->comment);
+	FILL_STRING(info2, EMPTY_STRING, info2->location);
+	FILL_STRING(info2, EMPTY_STRING, info2->sepfile);
+	FILL_STRING(info2, EMPTY_STRING, info2->printprocessor);
+	FILL_STRING(info2, EMPTY_STRING, info2->datatype);
+	FILL_STRING(info2, EMPTY_STRING, info2->parameters);
 
 	if (servername != NULL && servername[0] != '\0') {
 		info2->servername = talloc_asprintf(info2, "\\\\%s", servername);
@@ -4006,25 +4036,6 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 		result = WERR_NOMEM;
 		goto done;
 	}
-
-	info8->config_file = EMPTY_STRING;
-	info8->data_file = EMPTY_STRING;
-	info8->default_datatype = EMPTY_STRING;
-	info8->driver_path = EMPTY_STRING;
-	info8->hardware_id = EMPTY_STRING;
-	info8->help_file = EMPTY_STRING;
-	info8->inf_path = EMPTY_STRING;
-	info8->manufacturer_name = EMPTY_STRING;
-	info8->manufacturer_url = EMPTY_STRING;
-	info8->monitor_name = EMPTY_STRING;
-	info8->print_processor = EMPTY_STRING;
-	info8->provider = EMPTY_STRING;
-	info8->vendor_setup = EMPTY_STRING;
-
-	info8->color_profiles = empty_string_array;
-	info8->core_driver_dependencies = EMPTY_STRING_ARRAY;
-	info8->dependent_files = EMPTY_STRING_ARRAY;
-	info8->previous_names = EMPTY_STRING_ARRAY;
 
 	result = WERR_OK;
 
