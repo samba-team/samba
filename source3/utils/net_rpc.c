@@ -1009,7 +1009,7 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_RPC,
 			N_("List domain groups of user"),
 			N_("net rpc user info\n"
-			   "    Lis domain groups of user")
+			   "    List domain groups of user")
 		},
 		{
 			"delete",

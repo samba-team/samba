@@ -4407,7 +4407,7 @@ msgstr ""
 #: ../../utils/net_rpc.c:954
 msgid ""
 "net rpc user info\n"
-"    Lis domain groups of user"
+"    List domain groups of user"
 msgstr ""
 
 #: ../../utils/net_rpc.c:962
