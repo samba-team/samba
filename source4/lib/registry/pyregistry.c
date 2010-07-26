@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+   Copyright (C) Wilco Baan Hofman <wilco@baanhofman.nl> 2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -238,16 +239,53 @@ static PyMethodDef hive_key_methods[] = {
 	{ NULL }
 };
 
-static PyObject *hive_open(PyTypeObject *type, PyObject *args, PyObject *kwargs)
-{
-	/* reg_open_hive */
+static PyObject *hive_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
 	Py_RETURN_NONE;
+}
+
+static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "location", "lp_ctx", "session_info", "credentials", NULL };
+	WERROR result;
+	struct loadparm_context *lp_ctx;
+	PyObject *py_lp_ctx, *py_session_info, *py_credentials;
+	struct auth_session_info *session_info;
+	struct cli_credentials *credentials;
+	char *location;
+	struct hive_key *hive_key;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO",
+					 discard_const_p(char *, kwnames),
+	                                 &location,
+					 &py_lp_ctx, &py_session_info,
+					 &py_credentials))
+		return NULL;
+
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	if (lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		return NULL;
+	}
+
+	credentials = cli_credentials_from_py_object(py_credentials);
+	if (credentials == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		return NULL;
+	}
+	session_info = NULL;
+
+	result = reg_open_hive(NULL, location, session_info, credentials,
+	                       tevent_context_init(NULL),
+	                       lp_ctx, &hive_key);
+	PyErr_WERROR_IS_ERR_RAISE(result);
+
+	return py_talloc_steal(&PyHiveKey, hive_key);
 }
 
 PyTypeObject PyHiveKey = {
 	.tp_name = "HiveKey",
 	.tp_methods = hive_key_methods,
-	.tp_new = hive_open,
+	.tp_new = hive_new,
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
@@ -396,6 +434,7 @@ static PyMethodDef py_registry_methods[] = {
 	{ "open_directory", py_open_directory, METH_VARARGS, "open_dir(location) -> key" },
 	{ "create_directory", py_create_directory, METH_VARARGS, "create_dir(location) -> key" },
 	{ "open_ldb", (PyCFunction)py_open_ldb_file, METH_VARARGS|METH_KEYWORDS, "open_ldb(location, session_info=None, credentials=None, loadparm_context=None) -> key" },
+	{ "open_hive", (PyCFunction)py_open_hive, METH_VARARGS|METH_KEYWORDS, "open_hive(location, session_info=None, credentials=None, loadparm_context=None) -> key" },
 	{ "str_regtype", py_str_regtype, METH_VARARGS, "str_regtype(int) -> str" },
 	{ "get_predef_name", py_get_predef_name, METH_VARARGS, "get_predef_name(hkey) -> str" },
 	{ NULL }
