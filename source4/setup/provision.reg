@@ -9,7 +9,7 @@ REGEDIT4
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT]
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion]
-CurrentVersion=6.1
+"CurrentVersion"="6.1"
 
 [HKEY_LOCAL_MACHINE\SYSTEM]
 
@@ -18,7 +18,7 @@ CurrentVersion=6.1
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control]
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ProductOptions]
-ProductType=LanmanNT
+"ProductType"="LanmanNT"
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print]
 
@@ -33,7 +33,7 @@ ProductType=LanmanNT
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Netlogon]
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters]
-RefusePasswordChange=REG_DWORD:0
+"RefusePasswordChange"=dword:00000000
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Alerter]
 

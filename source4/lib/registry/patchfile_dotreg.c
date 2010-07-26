@@ -3,7 +3,7 @@
    Reading .REG files
 
    Copyright (C) Jelmer Vernooij 2004-2007
-   Copyright (C) Wilco Baan Hofman 2006-2008
+   Copyright (C) Wilco Baan Hofman 2006-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* FIXME Newer .REG files, created by Windows XP and above use unicode UCS-2 */
+/* FIXME:
+ * - Newer .REG files, created by Windows XP and above use unicode UCS-2
+ * - @="" constructions should write value with empty name.
+*/
 
 #include "includes.h"
 #include "lib/registry/registry.h"
@@ -144,7 +147,12 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 	TALLOC_CTX *mem_ctx = talloc_init("reg_dotreg_diff_load");
 	WERROR error;
 	uint32_t value_type;
-	DATA_BLOB value;
+	DATA_BLOB data;
+	bool result;
+	char *type_str = NULL;
+	char *data_str;
+	char *value;
+	bool continue_next_line = 0;
 
 	line = afdgets(fd, mem_ctx, 0);
 	if (!line) {
@@ -155,6 +163,11 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 	}
 
 	while ((line = afdgets(fd, mem_ctx, 0))) {
+		/* Remove '\r' if it's a Windows text file */
+		if (line[strlen(line)-1] == '\r') {
+			line[strlen(line)-1] = '\0';
+		}
+
 		/* Ignore comments and empty lines */
 		if (strlen(line) == 0 || line[0] == ';') {
 			talloc_free(line);
@@ -168,11 +181,12 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 
 		/* Start of key */
 		if (line[0] == '[') {
-			p = strchr_m(line, ']');
-			if (p[strlen(p)-1] != ']') {
-				DEBUG(0, ("Missing ']'\n"));
-				return WERR_GENERAL_FAILURE;
+			if (line[strlen(line)-1] != ']') {
+				DEBUG(0, ("Missing ']' on line: %s\n", line));
+				talloc_free(line);
+				continue;
 			}
+
 			/* Deleting key */
 			if (line[1] == '-') {
 				curkey = talloc_strndup(line, line+2, strlen(line)-3);
@@ -207,48 +221,110 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 		}
 
 		/* Deleting/Changing value */
-		p = strchr_m(line, '=');
-		if (p == NULL) {
-			DEBUG(0, ("Malformed line\n"));
-			talloc_free(line);
-			continue;
-		}
+		if (continue_next_line) {
+			continue_next_line = 0;
 
-		*p = '\0'; p++;
+			/* Continued data start with two whitespaces */
+			if (line[0] != ' ' || line[1] != ' ') {
+				DEBUG(0, ("Malformed line: %s\n", line));
+				talloc_free(line);
+				continue;
+			}
+			p = line + 2;
 
-		if (curkey == NULL) {
-			DEBUG(0, ("Value change without key\n"));
-			talloc_free(line);
-			continue;
-		}
-
-		/* Delete value */
-		if (strcmp(p, "-") == 0) {
-			error = callbacks->del_value(callback_data,
-						     curkey, line);
-			if (!W_ERROR_IS_OK(error)) {
-				DEBUG(0, ("Error deleting value %s in key %s\n",
-					line, curkey));
-				talloc_free(mem_ctx);
-				return error;
+			/* Continue again if line ends with a backslash */
+			if (line[strlen(line)-1] == '\\') {
+				line[strlen(line)-1] = '\0';
+				continue_next_line = 1;
+				data_str = talloc_strdup_append(data_str, p);
+				talloc_free(line);
+				continue;
+			}
+			data_str = talloc_strdup_append(data_str, p);
+		} else {
+			p = strchr_m(line, '=');
+			if (p == NULL) {
+				DEBUG(0, ("Malformed line: %s\n", line));
+				talloc_free(line);
+				continue;
 			}
 
-			talloc_free(line);
-			continue;
-		}
+			*p = '\0'; p++;
 
-		q = strchr_m(p, ':');
-		if (q) {
-			*q = '\0';
-			q++;
-		}
 
-		reg_string_to_val(line, 
-				  q?p:"REG_SZ", q?q:p,
-				  &value_type, &value);
+			if (curkey == NULL) {
+				DEBUG(0, ("Value change without key\n"));
+				talloc_free(line);
+				continue;
+			}
+
+			/* Values should be double-quoted */
+			if (line[0] != '"') {
+				DEBUG(0, ("Malformed line\n"));
+				talloc_free(line);
+				continue;
+			}
+
+			/* Chop of the quotes and store as value */
+			value = talloc_strndup(mem_ctx, line+1,strlen(line)-2);
+
+			/* Delete value */
+			if (p[0] == '-') {
+				error = callbacks->del_value(callback_data,
+						     curkey, line);
+
+				/* Ignore if key does not exist (WERR_BADFILE)
+				 * Consistent with Windows behaviour */
+				if (!W_ERROR_IS_OK(error) &&
+				    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
+					DEBUG(0, ("Error deleting value %s in key %s\n",
+						line, curkey));
+					talloc_free(mem_ctx);
+					return error;
+				}
+
+				talloc_free(line);
+				talloc_free(value);
+				continue;
+			}
+
+			/* Do not look for colons in strings */
+			if (p[0] == '"') {
+				q = NULL;
+				data_str = talloc_strdup(mem_ctx, p);
+			} else {
+				/* Split the value type from the data */
+				q = strchr_m(p, ':');
+				if (q) {
+					*q = '\0';
+					q++;
+					type_str = talloc_strdup(mem_ctx, p);
+					data_str = talloc_strdup(mem_ctx, q);
+				} else {
+					data_str = talloc_strdup(mem_ctx, p);
+				}
+			}
+
+			/* Backslash before the CRLF means continue on next line */
+			if (data_str[strlen(data_str)-1] == '\\') {
+				data_str[strlen(data_str)-1] = '\0';
+				talloc_free(line);
+				continue_next_line = 1;
+				continue;
+			}
+		}
+		DEBUG(9, ("About to write %s with type %s, length %ld: %s\n", value, type_str, (long) strlen(data_str), data_str));
+		result = reg_string_to_val(value,
+				  type_str?type_str:"REG_SZ", data_str,
+				  &value_type, &data);
+		if (!result) {
+			DEBUG(0, ("Error converting string to value for line:\n%s\n",
+					line));
+			return WERR_GENERAL_FAILURE;
+		}
 
 		error = callbacks->set_value(callback_data, curkey, line,
-					     value_type, value);
+					     value_type, data);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error setting value for %s in %s\n",
 				line, curkey));
@@ -256,10 +332,19 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 			return error;
 		}
 
+		/* Clean up buffers */
+		if (type_str != NULL) {
+			talloc_free(type_str);
+			type_str = NULL;
+		}
+		talloc_free(data_str);
+		talloc_free(value);
 		talloc_free(line);
 	}
 
 	close(fd);
+
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
