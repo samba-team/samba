@@ -814,7 +814,7 @@ bool cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		return False;
 	}
 
-	if (!rdata || data_len < 22) {
+	if (!rdata || data_len < 68) {
 		return False;
 	}
 
