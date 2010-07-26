@@ -636,6 +636,7 @@ static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 	vdata->vacuum_limit = vacuum_limit;
 	vdata->repack_limit = repack_limit;
 	vdata->delete_tree = trbt_create(vdata, 0);
+	vdata->ctdb_db = ctdb_db;
 	if (vdata->delete_tree == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		talloc_free(vdata);
@@ -887,9 +888,9 @@ void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
 {
 	/* Simply free them all. */
 	while (ctdb->vacuumers) {
-		DEBUG(DEBUG_INFO, ("Aborting vacuuming for %s (%p)\n",
+		DEBUG(DEBUG_INFO, ("Aborting vacuuming for %s (%i)\n",
 			   ctdb->vacuumers->vacuum_handle->ctdb_db->db_name,
-			   ctdb->vacuumers->child_pid));
+			   (int)ctdb->vacuumers->child_pid));
 		/* vacuum_child_destructor kills it, removes from list */
 		talloc_free(ctdb->vacuumers);
 	}
