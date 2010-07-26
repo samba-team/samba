@@ -905,58 +905,109 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *data,
 			       unsigned int *pnum_streams,
 			       struct stream_struct **pstreams);
 
-bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
-			   TALLOC_CTX *mem_ctx,
-			   unsigned int *pnum_streams,
-			   struct stream_struct **pstreams)
+struct cli_qpathinfo_streams_state {
+	uint32_t num_data;
+	uint8_t *data;
+};
+
+static void cli_qpathinfo_streams_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli,
+					      const char *fname)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_QPATHINFO;
-	char *param;
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
-	size_t namelen = 2*(strlen(fname)+1);
-	bool ret;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_qpathinfo_streams_state *state = NULL;
 
-	param = SMB_MALLOC_ARRAY(char, 6+namelen+2);
-	if (param == NULL) {
-		return false;
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_qpathinfo_streams_state);
+	if (req == NULL) {
+		return NULL;
 	}
-	p = param;
-	memset(p, 0, 6);
-	SSVAL(p, 0, SMB_FILE_STREAM_INFORMATION);
-	p += 6;
-	p += clistr_push(cli, p, fname, namelen, STR_TERMINATE);
-
-	param_len = PTR_DIFF(p, param);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-                            NULL,                     /* name */
-                            -1, 0,                    /* fid, flags */
-                            &setup, 1, 0,             /* setup, len, max */
-                            param, param_len, 10,     /* param, len, max */
-                            NULL, data_len, cli->max_xmit /* data, len, max */
-                           )) {
-		return false;
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_FILE_STREAM_INFORMATION,
+				    0, cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, cli_qpathinfo_streams_done, req);
+	return req;
+}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
-		return false;
+static void cli_qpathinfo_streams_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qpathinfo_streams_state *state = tevent_req_data(
+		req, struct cli_qpathinfo_streams_state);
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
+	tevent_req_done(req);
+}
 
-	if (!rdata) {
-		SAFE_FREE(rparam);
-		return false;
+NTSTATUS cli_qpathinfo_streams_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    unsigned int *pnum_streams,
+				    struct stream_struct **pstreams)
+{
+	struct cli_qpathinfo_streams_state *state = tevent_req_data(
+                req, struct cli_qpathinfo_streams_state);
+        NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
 	}
+	if (!parse_streams_blob(mem_ctx, state->data, state->num_data,
+				pnum_streams, pstreams)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	return NT_STATUS_OK;
+}
 
-	ret = parse_streams_blob(mem_ctx, (uint8_t *)rdata, data_len,
-				 pnum_streams, pstreams);
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-	return ret;
+NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
+			       TALLOC_CTX *mem_ctx,
+			       unsigned int *pnum_streams,
+			       struct stream_struct **pstreams)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_qpathinfo_streams_send(frame, ev, cli, fname);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_qpathinfo_streams_recv(req, mem_ctx, pnum_streams,
+					    pstreams);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,

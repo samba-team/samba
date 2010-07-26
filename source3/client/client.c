@@ -1598,10 +1598,11 @@ static int do_allinfo(const char *name)
 
 	d_printf("attributes: %s\n", attr_str(talloc_tos(), mode));
 
-	if (!cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
-				   &streams)) {
-		d_printf("%s getting streams for %s\n",
-			 cli_errstr(cli),name);
+	status = cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
+				       &streams);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s getting streams for %s\n", nt_errstr(status),
+			 name);
 		return false;
 	}
 

@@ -2683,10 +2683,18 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			struct timespec *change_time,
 			SMB_OFF_T *size, uint16 *mode,
 			SMB_INO_T *ino);
-bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
-			   TALLOC_CTX *mem_ctx,
-			   unsigned int *pnum_streams,
-			   struct stream_struct **pstreams);
+struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli,
+					      const char *fname);
+NTSTATUS cli_qpathinfo_streams_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    unsigned int *pnum_streams,
+				    struct stream_struct **pstreams);
+NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
+			       TALLOC_CTX *mem_ctx,
+			       unsigned int *pnum_streams,
+			       struct stream_struct **pstreams);
 bool cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name, size_t namelen);
 bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 		   uint16 *mode, SMB_OFF_T *size,
