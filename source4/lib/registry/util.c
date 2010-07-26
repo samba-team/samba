@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Transparent registry backend handling
    Copyright (C) Jelmer Vernooij			2003-2007.
+   Copyright (C) Wilco Baan Hofman			2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +46,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 		case REG_QWORD:
 			SMB_ASSERT(data.length == sizeof(uint64_t));
 			ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
-					      (unsigned long long)BVAL(data.data, 0));
+					      (long long)BVAL(data.data, 0));
 			break;
 		case REG_BINARY:
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
@@ -79,7 +80,38 @@ _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx,
 _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 				const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
+	char *tmp_type_str, *p, *q;
+	int result;
+
 	*type = regtype_by_string(type_str);
+
+	if (*type == -1) {
+		/* Normal windows format is hex, hex(type int as string),
+		   dword or just a string. */
+		if (strncmp(type_str, "hex(", 4) == 0) {
+			/* there is a hex string with the value type between
+			   the braces */
+			tmp_type_str = talloc_strdup(mem_ctx, type_str);
+			q = p = tmp_type_str + strlen("hex(");
+
+			/* Go to the closing brace or end of the string */
+			while (*q != ')' && *q != '\0') q++;
+			*q = '\0';
+
+			/* Convert hex string to int, store it in type */
+			result = sscanf(p, "%x", type);
+			if (!result) {
+				DEBUG(0, ("Could not convert hex to int\n"));
+				return false;
+			}
+			DEBUG(10, ("Found string type: %s: %d\n", p, *type));
+			talloc_free(tmp_type_str);
+		} else if (strcmp(type_str, "hex") == 0) {
+			*type = REG_BINARY;
+		} else if (strcmp(type_str, "dword") == 0) {
+			*type = REG_DWORD;
+		}
+	}
 
 	if (*type == -1)
 		return false;
