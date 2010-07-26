@@ -531,12 +531,12 @@ SMBC_getatr(SMBCCTX * context,
 	}
 
 	if (!srv->no_pathinfo2 &&
-            cli_qpathinfo2(targetcli, targetpath,
+            NT_STATUS_IS_OK(cli_qpathinfo2(targetcli, targetpath,
                            create_time_ts,
                            access_time_ts,
                            write_time_ts,
                            change_time_ts,
-                           size, mode, ino)) {
+			   size, mode, ino))) {
 		TALLOC_FREE(frame);
 		return True;
         }

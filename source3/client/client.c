@@ -1576,10 +1576,11 @@ static int do_allinfo(const char *name)
 	}
 	d_printf("altname: %s\n", altname);
 
-	if (!cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
-			    &size, &mode, &ino)) {
-		d_printf("%s getting pathinfo for %s\n",
-			 cli_errstr(cli),name);
+	status = cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
+				&size, &mode, &ino);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s getting pathinfo for %s\n", nt_errstr(status),
+			 name);
 		return false;
 	}
 
