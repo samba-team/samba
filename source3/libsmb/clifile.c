@@ -267,8 +267,6 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 ****************************************************************************/
 
 struct readlink_state {
-	uint16_t setup;
-	uint8_t *param;
 	uint8_t *data;
 	uint32_t num_data;
 };
@@ -581,8 +579,6 @@ static mode_t unix_filetype_from_wire(uint32_t wire_type)
 ****************************************************************************/
 
 struct getfacl_state {
-	uint16_t setup;
-	uint8_t *param;
 	uint32_t num_data;
 	uint8_t *data;
 };
@@ -698,8 +694,6 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 ****************************************************************************/
 
 struct stat_state {
-	uint16_t setup;
-	uint8_t *param;
 	uint32_t num_data;
 	uint8_t *data;
 };
