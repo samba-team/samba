@@ -2259,7 +2259,8 @@ static void tickle_connection_traverse(void *param, void *data)
 
 	/* have tried too many times, just give up */
 	if (con->count >= 5) {
-		talloc_free(con);
+		/* can't delete in traverse: reparent to delete_cons */
+		talloc_steal(param, con);
 		return;
 	}
 
@@ -2279,11 +2280,13 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 					      struct timeval t, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-
+	void *delete_cons = talloc_new(NULL);
 
 	/* loop over all connections sending tickle ACKs */
-	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, NULL);
+	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, delete_cons);
 
+	/* now we've finished traverse, it's safe to do deletion. */
+	talloc_free(delete_cons);
 
 	/* If there are no more connections to kill we can remove the
 	   entire killtcp structure
