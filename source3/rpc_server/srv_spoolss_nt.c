@@ -1342,6 +1342,10 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			continue;
 		}
 
+		if (!pinfo2->drivername) {
+			continue;
+		}
+
 		if (strcmp(drivername, pinfo2->drivername) != 0) {
 			continue;
 		}
