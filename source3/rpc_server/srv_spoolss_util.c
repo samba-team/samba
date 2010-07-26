@@ -2140,7 +2140,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Create the printername */
-	if (info2->servername[0] != '\0') {
+	if (info2->servername != NULL && info2->servername[0] != '\0') {
 		if (lp_force_printername(snum)) {
 			const char *p = talloc_asprintf(info2, "%s\\%s",
 							info2->servername,
