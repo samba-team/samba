@@ -1144,68 +1144,105 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
  Send a qpathinfo BASIC_INFO call.
 ****************************************************************************/
 
-NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
-			     SMB_STRUCT_STAT *sbuf, uint32 *attributes)
+struct cli_qpathinfo_basic_state {
+	uint32_t num_data;
+	uint8_t *data;
+};
+
+static void cli_qpathinfo_basic_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
+					    struct event_context *ev,
+					    struct cli_state *cli,
+					    const char *fname)
 {
-	unsigned int param_len = 0;
-	uint32_t rdata_len;
-	uint16_t setup[1];
-	uint8_t *param, *rdata;
-	uint8_t *p;
-	char *path;
-	int len;
-	size_t nlen;
-	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_qpathinfo_basic_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_qpathinfo_basic_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_QUERY_FILE_BASIC_INFO,
+				    36, cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_qpathinfo_basic_done, req);
+	return req;
+}
+
+static void cli_qpathinfo_basic_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qpathinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qpathinfo_basic_state);
 	NTSTATUS status;
 
-	path = talloc_strdup(frame, name);
-	if (!path) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-	/* cleanup */
-
-	len = strlen(path);
-	if ( path[len-1] == '\\' || path[len-1] == '/') {
-		path[len-1] = '\0';
-	}
-	nlen = 2*(strlen(path)+1);
-
-	param = TALLOC_ARRAY(frame, uint8_t, 6+nlen+2);
-	if (!param) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = param;
-	memset(param, '\0', 6);
-
-	SSVAL(setup, 0, TRANSACT2_QPATHINFO);
-	SSVAL(p, 0, SMB_QUERY_FILE_BASIC_INFO);
-	p += 6;
-	p += clistr_push(cli, p, path, nlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
-
-	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
-			   setup, 1, 0,
-			   param, param_len, 2,
-			   NULL, 0, cli->max_xmit,
-			   NULL, 0, NULL,
-			   NULL, 0, NULL,
-			   &rdata, 36, &rdata_len);
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
+				  SMB_STRUCT_STAT *sbuf, uint32 *attributes)
+{
+	struct cli_qpathinfo_basic_state *state = tevent_req_data(
+		req, struct cli_qpathinfo_basic_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	sbuf->st_ex_atime = interpret_long_date((char *)rdata+8);
-	sbuf->st_ex_mtime = interpret_long_date((char *)rdata+16);
-	sbuf->st_ex_ctime = interpret_long_date((char *)rdata+24);
-
-	*attributes = IVAL( rdata, 32 );
-
-	TALLOC_FREE(rdata);
-
+	sbuf->st_ex_atime = interpret_long_date((char *)state->data+8);
+	sbuf->st_ex_mtime = interpret_long_date((char *)state->data+16);
+	sbuf->st_ex_ctime = interpret_long_date((char *)state->data+24);
+	*attributes = IVAL(state->data, 32);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
+			     SMB_STRUCT_STAT *sbuf, uint32 *attributes)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_qpathinfo_basic_send(frame, ev, cli, name);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_qpathinfo_basic_recv(req, sbuf, attributes);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

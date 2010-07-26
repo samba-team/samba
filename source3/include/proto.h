@@ -2695,6 +2695,12 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
                    struct timespec *write_time,
 		   struct timespec *change_time,
                    SMB_INO_T *ino);
+struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
+					    struct event_context *ev,
+					    struct cli_state *cli,
+					    const char *fname);
+NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
+				  SMB_STRUCT_STAT *sbuf, uint32 *attributes);
 NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 			     SMB_STRUCT_STAT *sbuf, uint32 *attributes);
 bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **poutdata, uint32 *poutlen);
