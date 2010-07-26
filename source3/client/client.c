@@ -1566,10 +1566,12 @@ static int do_allinfo(const char *name)
 	unsigned int num_streams;
 	struct stream_struct *streams;
 	unsigned int i;
+	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
-		d_printf("%s getting alt name for %s\n",
-			 cli_errstr(cli),name);
+	status = cli_qpathinfo_alt_name(cli, name, altname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s getting alt name for %s\n", nt_errstr(status),
+			 name);
 		return false;
 	}
 	d_printf("altname: %s\n", altname);
