@@ -531,7 +531,96 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
  Send a qpathinfo call.
 ****************************************************************************/
 
-bool cli_qpathinfo1(struct cli_state *cli,
+struct cli_qpathinfo1_state {
+	struct cli_state *cli;
+	uint32_t num_data;
+	uint8_t *data;
+};
+
+static void cli_qpathinfo1_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qpathinfo1_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       struct cli_state *cli,
+				       const char *fname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_qpathinfo1_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_qpathinfo1_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	subreq = cli_qpathinfo_send(state, ev, cli, fname, SMB_INFO_STANDARD,
+				    22, cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_qpathinfo1_done, req);
+	return req;
+}
+
+static void cli_qpathinfo1_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qpathinfo1_state *state = tevent_req_data(
+		req, struct cli_qpathinfo1_state);
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &state->data,
+				    &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
+			     time_t *change_time,
+			     time_t *access_time,
+			     time_t *write_time,
+			     SMB_OFF_T *size,
+			     uint16 *mode)
+{
+	struct cli_qpathinfo1_state *state = tevent_req_data(
+		req, struct cli_qpathinfo1_state);
+	NTSTATUS status;
+
+	time_t (*date_fn)(struct cli_state *, const void *);
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (state->cli->win95) {
+		date_fn = cli_make_unix_date;
+	} else {
+		date_fn = cli_make_unix_date2;
+	}
+
+	if (change_time) {
+		*change_time = date_fn(state->cli, state->data+0);
+	}
+	if (access_time) {
+		*access_time = date_fn(state->cli, state->data+4);
+	}
+	if (write_time) {
+		*write_time = date_fn(state->cli, state->data+8);
+	}
+	if (size) {
+		*size = IVAL(state->data, 12);
+	}
+	if (mode) {
+		*mode = SVAL(state->data, l1_attrFile);
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			const char *fname,
 			time_t *change_time,
 			time_t *access_time,
@@ -539,82 +628,37 @@ bool cli_qpathinfo1(struct cli_state *cli,
 			SMB_OFF_T *size,
 			uint16 *mode)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	unsigned int rparam_len, rdata_len;
-	uint16 setup = TRANSACT2_QPATHINFO;
-	char *param;
-	char *rparam=NULL, *rdata=NULL;
-	int count=8;
-	bool ret;
-	time_t (*date_fn)(struct cli_state *, const void *);
-	char *p;
-	size_t nlen = 2*(strlen(fname)+1);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
-	if (!param) {
-		return false;
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-	p = param;
-	memset(p, '\0', 6);
-	SSVAL(p, 0, SMB_INFO_STANDARD);
-	p += 6;
-	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
-
-	do {
-		ret = (cli_send_trans(cli, SMBtrans2,
-				      NULL,           /* Name */
-				      -1, 0,          /* fid, flags */
-				      &setup, 1, 0,   /* setup, length, max */
-				      param, param_len, 10, /* param, length, max */
-				      NULL, data_len, cli->max_xmit /* data, length, max */
-				      ) &&
-		       cli_receive_trans(cli, SMBtrans2,
-					 &rparam, &rparam_len,
-					 &rdata, &rdata_len));
-		if (!cli_is_dos_error(cli)) break;
-		if (!ret) {
-			/* we need to work around a Win95 bug - sometimes
-			   it gives ERRSRV/ERRerror temprarily */
-			uint8 eclass;
-			uint32 ecode;
-			cli_dos_error(cli, &eclass, &ecode);
-			if (eclass != ERRSRV || ecode != ERRerror) break;
-			smb_msleep(100);
-		}
-	} while (count-- && ret==False);
-
-	SAFE_FREE(param);
-	if (!ret || !rdata || rdata_len < 22) {
-		return False;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	if (cli->win95) {
-		date_fn = cli_make_unix_date;
-	} else {
-		date_fn = cli_make_unix_date2;
+	req = cli_qpathinfo1_send(frame, ev, cli, fname);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	if (change_time) {
-		*change_time = date_fn(cli, rdata+0);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-	if (access_time) {
-		*access_time = date_fn(cli, rdata+4);
+	status = cli_qpathinfo1_recv(req, change_time, access_time,
+				     write_time, size, mode);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
 	}
-	if (write_time) {
-		*write_time = date_fn(cli, rdata+8);
-	}
-	if (size) {
-		*size = IVAL(rdata, 12);
-	}
-	if (mode) {
-		*mode = SVAL(rdata,l1_attrFile);
-	}
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-	return True;
+	return status;
 }
 
 /****************************************************************************
