@@ -5190,8 +5190,14 @@ NTSTATUS cli_qpathinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*rdata = talloc_move(mem_ctx, &state->rdata);
-	*num_rdata = state->num_rdata;
+	if (rdata != NULL) {
+		*rdata = talloc_move(mem_ctx, &state->rdata);
+	} else {
+		TALLOC_FREE(state->rdata);
+	}
+	if (num_rdata != NULL) {
+		*num_rdata = state->num_rdata;
+	}
 	return NT_STATUS_OK;
 }
 
