@@ -6,7 +6,8 @@ bld.SAMBA_LIBRARY('LIBSAMBA-UTIL',
 	public_headers='attr.h byteorder.h data_blob.h debug.h memory.h mutex.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h tevent_ntstatus.h tevent_unix.h',
         header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],
         local_include=False,
-	vnum='0.0.1'
+	vnum='0.0.1',
+	pc_files='samba-util.pc'
 	)
 
 
