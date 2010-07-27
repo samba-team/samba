@@ -2,7 +2,7 @@
    Samba CIFS implementation
    Registry backend for REGF files
    Copyright (C) 2005-2007 Jelmer Vernooij, jelmer@samba.org
-   Copyright (C) 2006 Wilco Baan Hofman, wilco@baanhofman.nl
+   Copyright (C) 2006-2010 Wilco Baan Hofman, wilco@baanhofman.nl
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,9 +49,10 @@ struct regf_data {
 	int fd;
 	struct hbin_block **hbins;
 	struct regf_hdr *header;
+	time_t last_write;
 };
 
-static WERROR regf_save_hbin(struct regf_data *data);
+static WERROR regf_save_hbin(struct regf_data *data, int flush);
 
 struct regf_key_data {
 	struct hive_key key;
@@ -1621,7 +1622,7 @@ static WERROR regf_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 	hbin_store_tdr_resize(regf, (tdr_push_fn_t) tdr_push_nk_block,
 			      private_data->offset, nk);
 
-	return regf_save_hbin(private_data->hive);
+	return regf_save_hbin(private_data->hive, 0);
 }
 
 
@@ -1720,7 +1721,7 @@ static WERROR regf_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	}
 	hbin_free(private_data->hive, key->offset);
 
-	return regf_save_hbin(private_data->hive);
+	return regf_save_hbin(private_data->hive, 0);
 }
 
 static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
@@ -1784,7 +1785,7 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 	*ret = (struct hive_key *)regf_get_key(ctx, regf, offset);
 
 	DEBUG(9, ("Storing key %s\n", name));
-	return regf_save_hbin(private_data->hive);
+	return regf_save_hbin(private_data->hive, 0);
 }
 
 static WERROR regf_set_value(struct hive_key *key, const char *name,
@@ -1903,15 +1904,22 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	hbin_store_tdr_resize(regf,
 			      (tdr_push_fn_t) tdr_push_nk_block,
 			      private_data->offset, nk);
-	return regf_save_hbin(private_data->hive);
+	return regf_save_hbin(private_data->hive, 0);
 }
 
-static WERROR regf_save_hbin(struct regf_data *regf)
+static WERROR regf_save_hbin(struct regf_data *regf, int flush)
 {
 	struct tdr_push *push = tdr_push_init(regf);
 	unsigned int i;
 
 	W_ERROR_HAVE_NO_MEMORY(push);
+
+	/* Only write once every 5 seconds, or when flush is set */
+	if (!flush && regf->last_write + 5 >= time(NULL)) {
+		return WERR_OK;
+	}
+
+	regf->last_write = time(NULL);
 
 	if (lseek(regf->fd, 0, SEEK_SET) == -1) {
 		DEBUG(0, ("Error lseeking in regf file\n"));
@@ -2064,7 +2072,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	*key = (struct hive_key *)regf_get_key(parent_ctx, regf,
 					       regf->header->data_offset);
 
-	error = regf_save_hbin(regf);
+	error = regf_save_hbin(regf, 1);
 	if (!W_ERROR_IS_OK(error)) {
 		return error;
 	}
@@ -2073,6 +2081,38 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	talloc_unlink(NULL, regf);
 
 	return WERR_OK;
+}
+
+static WERROR regf_flush_key(struct hive_key *key)
+{
+	struct regf_key_data *private_data = (struct regf_key_data *)key;
+	struct regf_data *regf = private_data->hive;
+	WERROR error;
+
+	error = regf_save_hbin(regf, 1);
+	if (!W_ERROR_IS_OK(error)) {
+		DEBUG(0, ("Failed to flush regf to disk\n"));
+		return error;
+	}
+
+	return WERR_OK;
+}
+
+static int regf_destruct(struct regf_data *regf)
+{
+	WERROR error;
+
+	/* Write to disk */
+	error = regf_save_hbin(regf, 1);
+	if (!W_ERROR_IS_OK(error)) {
+		DEBUG(0, ("Failed to flush registry to disk\n"));
+		return -1;
+	}
+
+	/* Close file descriptor */
+	close(regf->fd);
+
+	return 0;
 }
 
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location, 
@@ -2084,8 +2124,9 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	unsigned int i;
 
 	regf = (struct regf_data *)talloc_zero(parent_ctx, struct regf_data);
-
 	W_ERROR_HAVE_NO_MEMORY(regf);
+
+	talloc_set_destructor(regf, regf_destruct);
 
 	DEBUG(5, ("Attempting to load registry file\n"));
 
@@ -2197,4 +2238,5 @@ static struct hive_operations reg_backend_regf = {
 	.set_value = regf_set_value,
 	.del_key = regf_del_key,
 	.delete_value = regf_del_value,
+	.flush_key = regf_flush_key
 };
