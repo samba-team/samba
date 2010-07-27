@@ -610,12 +610,12 @@ NTSTATUS _wbint_SetHWM(pipes_struct *p, struct wbint_SetHWM *r)
 
 	id.id = r->in.id;
 
-	switch (id.type) {
+	switch (r->in.type) {
 	case WBINT_ID_TYPE_UID:
 		id.type = ID_TYPE_UID;
 		status = idmap_set_uid_hwm(&id);
 		break;
-	case ID_TYPE_GID:
+	case WBINT_ID_TYPE_GID:
 		id.type = ID_TYPE_GID;
 		status = idmap_set_gid_hwm(&id);
 		break;
