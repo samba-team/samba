@@ -16,6 +16,23 @@ Major enhancements in Samba 3.6.0 include:
 SMB2 support
 ------------
 
+SMB2 support in 3.6.0 is fully functional (with one ommission),
+and can be enabled by setting:
+
+max protocol = SMB2
+
+in the [global] section of your smb.conf and re-starting
+Samba. All features should work over SMB2 except the modification
+of user quotas using the Windows quota management tools.
+
+As this is the first release containing what we consider
+to be a fully featured SMB2 protocol, we are not enabling
+this by default, but encourage users to enable SMB2 and
+test it. Once we have enough confirmation from Samba
+users and OEMs that SMB2 support is stable in wide user
+testing we will enable SMB2 by default in a future Samba
+release.
+
 
 Internal Winbind passdb changes
 -------------------------------
