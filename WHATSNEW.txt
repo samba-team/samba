@@ -26,6 +26,19 @@ reason is to use more of our infrastructure and test this infrastructure by
 using it. With this approach more code in Winbind is shared.
 
 
+SMB Traffic Analyzer
+--------------------
+
+Added the new SMB Traffic Analyzer (SMBTA) VFS module protocol 2
+featuring encryption, multiple arguments, and easier parseability. A new
+tool 'smbta-util' has been created to control the encryption behaviour
+of SMBTA. For compatibility, SMBTA by default operates on version 1.
+There are programs consuming the data that the module sends.
+
+More information can be found on
+http://holger123.wordpress.com/smb-traffic-analyzer/
+
+
 ######################################################################
 Changes
 #######
