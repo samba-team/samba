@@ -4791,7 +4791,8 @@ static bool run_openattrtest(int dummy)
 	return correct;
 }
 
-static void list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
+static void list_fn(const char *mnt, struct file_info *finfo,
+		    const char *name, void *state)
 {
 
 }
@@ -4850,7 +4851,8 @@ static bool run_dirtest(int dummy)
 	return correct;
 }
 
-static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
+static void del_fn(const char *mnt, struct file_info *finfo, const char *mask,
+		   void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
 	fstring fname;
@@ -6151,7 +6153,8 @@ static bool run_uid_regression_test(int dummy)
 static const char *illegal_chars = "*\\/?<>|\":";
 static char force_shortname_chars[] = " +,.[];=\177";
 
-static void shortname_del_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
+static void shortname_del_fn(const char *mnt, struct file_info *finfo,
+			     const char *mask, void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
 	fstring fname;
@@ -6174,7 +6177,8 @@ struct sn_state {
 	bool val;
 };
 
-static void shortname_list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
+static void shortname_list_fn(const char *mnt, struct file_info *finfo,
+			      const char *name, void *state)
 {
 	struct sn_state *s = (struct sn_state  *)state;
 	int i = s->i;

@@ -30,7 +30,7 @@ const char *client_get_cur_dir(void);
 const char *client_set_cur_dir(const char *newdir);
 void do_list(const char *mask,
 			uint16 attribute,
-			void (*fn)(file_info *, const char *dir),
+			void (*fn)(struct file_info *, const char *dir),
 			bool rec,
 			bool dirs);
 int cmd_iosize(void);

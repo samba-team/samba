@@ -279,7 +279,7 @@ struct cli_state {
 	struct tevent_req **pending;
 };
 
-typedef struct file_info {
+struct file_info {
 	struct cli_state *cli;
 	uint64_t size;
 	uint16 mode;
@@ -291,7 +291,7 @@ typedef struct file_info {
 	struct timespec ctime_ts;
 	char *name;
 	char short_name[13*3]; /* the *3 is to cope with multi-byte */
-} file_info;
+};
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
 #define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002

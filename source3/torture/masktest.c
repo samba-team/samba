@@ -263,9 +263,10 @@ static struct cli_state *connect_one(char *share)
 }
 
 static char *resultp;
-static file_info *f_info;
+static struct file_info *f_info;
 
-static void listfn(const char *mnt, file_info *f, const char *s, void *state)
+static void listfn(const char *mnt, struct file_info *f, const char *s,
+		   void *state)
 {
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';

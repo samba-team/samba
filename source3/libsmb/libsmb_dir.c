@@ -235,7 +235,7 @@ list_fn(const char *name,
 
 static void
 dir_list_fn(const char *mnt,
-            file_info *finfo,
+            struct file_info *finfo,
             const char *mask,
             void *state)
 {
@@ -1204,7 +1204,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 
 static void
 rmdir_list_fn(const char *mnt,
-              file_info *finfo,
+              struct file_info *finfo,
               const char *mask,
               void *state)
 {

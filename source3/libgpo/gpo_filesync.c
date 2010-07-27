@@ -31,7 +31,7 @@ struct sync_context {
 };
 
 static void gpo_sync_func(const char *mnt,
-			  file_info *info,
+			  struct file_info *info,
 			  const char *mask,
 			  void *state);
 
@@ -130,7 +130,7 @@ static bool gpo_sync_files(struct sync_context *ctx)
 ****************************************************************/
 
 static void gpo_sync_func(const char *mnt,
-			  file_info *info,
+			  struct file_info *info,
 			  const char *mask,
 			  void *state)
 {

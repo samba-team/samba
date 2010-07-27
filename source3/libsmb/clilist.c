@@ -48,7 +48,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 					int level,
 					const char *p,
 					const char *pdata_end,
-					file_info *finfo,
+					struct file_info *finfo,
 					uint32 *p_resume_key,
 					DATA_BLOB *p_last_name_raw)
 {
@@ -221,7 +221,8 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, struct file_info *, const char *,
+			    void *), void *state)
 {
 #if 1
 	int max_matches = 1366; /* Match W2k - was 512. */
@@ -231,7 +232,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int info_level;
 	char *p, *p2, *rdata_end;
 	char *mask = NULL;
-	file_info finfo;
+	struct file_info finfo;
 	int i;
 	char *dirlist = NULL;
 	int dirlist_len = 0;
@@ -502,7 +503,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 static bool interpret_short_filename(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				char *p,
-				file_info *finfo)
+				struct file_info *finfo)
 {
 	size_t ret;
 	ZERO_STRUCTP(finfo);
@@ -541,7 +542,8 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, struct file_info *, const char *,
+			    void *), void *state)
 {
 	char *p;
 	int received = 0;
@@ -658,7 +660,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	frame = talloc_stackframe();
 	for (p=dirlist,i=0;i<num_received;i++) {
-		file_info finfo;
+		struct file_info finfo;
 		if (!interpret_short_filename(frame, cli, p, &finfo)) {
 			break;
 		}
@@ -678,7 +680,8 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 ****************************************************************************/
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
-	     void (*fn)(const char *, file_info *, const char *, void *), void *state)
+	     void (*fn)(const char *, struct file_info *, const char *,
+			void *), void *state)
 {
 	if (cli->protocol <= PROTOCOL_LANMAN1)
 		return cli_list_old(cli, Mask, attribute, fn, state);

@@ -484,7 +484,7 @@ static int cmd_cd_oneup(void)
  Decide if a file should be operated on.
 ********************************************************************/
 
-static bool do_this_one(file_info *finfo)
+static bool do_this_one(struct file_info *finfo)
 {
 	if (!finfo->name) {
 		return false;
@@ -517,7 +517,7 @@ static bool do_this_one(file_info *finfo)
  Display info about a file.
 ****************************************************************************/
 
-static void display_finfo(file_info *finfo, const char *dir)
+static void display_finfo(struct file_info *finfo, const char *dir)
 {
 	time_t t;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -581,7 +581,7 @@ static void display_finfo(file_info *finfo, const char *dir)
  Accumulate size of a file.
 ****************************************************************************/
 
-static void do_du(file_info *finfo, const char *dir)
+static void do_du(struct file_info *finfo, const char *dir)
 {
 	if (do_this_one(finfo)) {
 		dir_total += finfo->size;
@@ -594,7 +594,7 @@ static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
 static long do_list_queue_end = 0;
-static void (*do_list_fn)(file_info *, const char *dir);
+static void (*do_list_fn)(struct file_info *, const char *dir);
 
 /****************************************************************************
  Functions for do_list_queue.
@@ -711,7 +711,8 @@ static int do_list_queue_empty(void)
  A helper for do_list.
 ****************************************************************************/
 
-static void do_list_helper(const char *mntpoint, file_info *f, const char *mask, void *state)
+static void do_list_helper(const char *mntpoint, struct file_info *f,
+			   const char *mask, void *state)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dir = NULL;
@@ -784,7 +785,7 @@ static void do_list_helper(const char *mntpoint, file_info *f, const char *mask,
 
 void do_list(const char *mask,
 			uint16 attribute,
-			void (*fn)(file_info *, const char *dir),
+			void (*fn)(struct file_info *, const char *dir),
 			bool rec,
 			bool dirs)
 {
@@ -1153,7 +1154,7 @@ static int cmd_get(void)
  Do an mget operation on one file.
 ****************************************************************************/
 
-static void do_mget(file_info *finfo, const char *dir)
+static void do_mget(struct file_info *finfo, const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *rname = NULL;
@@ -2132,7 +2133,7 @@ static int cmd_queue(void)
  Delete some files.
 ****************************************************************************/
 
-static void do_del(file_info *finfo, const char *dir)
+static void do_del(struct file_info *finfo, const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
@@ -4202,7 +4203,7 @@ struct completion_remote {
 };
 
 static void completion_remote_filter(const char *mnt,
-				file_info *f,
+				struct file_info *f,
 				const char *mask,
 				void *state)
 {

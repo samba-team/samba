@@ -114,8 +114,9 @@ static int tarhandle;
 
 static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, unsigned char ftype);
-static void do_atar(const char *rname_in,char *lname,file_info *finfo1);
-static void do_tar(file_info *finfo, const char *dir);
+static void do_atar(const char *rname_in, char *lname,
+		    struct file_info *finfo1);
+static void do_tar(struct file_info *finfo, const char *dir);
 static void oct_it(uint64_t value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, size_t l);
 static int dotarbuf(int f, char *b, int n);
@@ -613,7 +614,8 @@ static void do_setrattr(char *name, uint16 attr, int set)
 append one remote file to the tar file
 ***************************************************************************/
 
-static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
+static void do_atar(const char *rname_in, char *lname,
+		    struct file_info *finfo1)
 {
 	uint16_t fnum = (uint16_t)-1;
 	uint64_t nread=0;
@@ -803,7 +805,7 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 Append single file to tar file (or not)
 ***************************************************************************/
 
-static void do_tar(file_info *finfo, const char *dir)
+static void do_tar(struct file_info *finfo, const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_stackframe();
 

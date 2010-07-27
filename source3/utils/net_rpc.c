@@ -3343,7 +3343,7 @@ static int rpc_share_migrate_shares(struct net_context *c, int argc,
  * @param state	arg-pointer
  *
  **/
-static void copy_fn(const char *mnt, file_info *f,
+static void copy_fn(const char *mnt, struct file_info *f,
 		    const char *mask, void *state)
 {
 	static NTSTATUS nt_status;

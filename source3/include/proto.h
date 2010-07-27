@@ -2580,11 +2580,14 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 /* The following definitions come from libsmb/clilist.c  */
 
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, file_info *, const char *, void *), void *state);
+		 void (*fn)(const char *, struct file_info *, const char *,
+			    void *), void *state);
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, file_info *, const char *, void *), void *state);
+		 void (*fn)(const char *, struct file_info *, const char *,
+			    void *), void *state);
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
-	     void (*fn)(const char *, file_info *, const char *, void *), void *state);
+	     void (*fn)(const char *, struct file_info *, const char *,
+			void *), void *state);
 
 /* The following definitions come from libsmb/climessage.c  */
 
