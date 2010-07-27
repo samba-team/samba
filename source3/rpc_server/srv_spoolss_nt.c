@@ -4263,10 +4263,10 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 	do { \
 		if (in && strlen(in)) { \
 			out = talloc_strdup(mem_ctx, in); \
-			W_ERROR_HAVE_NO_MEMORY(out); \
 		} else { \
-			out = NULL; \
+			out = talloc_strdup(mem_ctx, ""); \
 		} \
+		W_ERROR_HAVE_NO_MEMORY(out); \
 	} while (0);
 
 #define FILL_DRIVER_UNC_STRING(mem_ctx, server, arch, ver, in, out) \
