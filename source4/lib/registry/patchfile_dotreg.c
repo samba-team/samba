@@ -271,14 +271,14 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 			/* Delete value */
 			if (p[0] == '-') {
 				error = callbacks->del_value(callback_data,
-						     curkey, line);
+						     curkey, value);
 
 				/* Ignore if key does not exist (WERR_BADFILE)
 				 * Consistent with Windows behaviour */
 				if (!W_ERROR_IS_OK(error) &&
 				    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
 					DEBUG(0, ("Error deleting value %s in key %s\n",
-						line, curkey));
+						value, curkey));
 					talloc_free(mem_ctx);
 					return error;
 				}
@@ -323,11 +323,11 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 			return WERR_GENERAL_FAILURE;
 		}
 
-		error = callbacks->set_value(callback_data, curkey, line,
+		error = callbacks->set_value(callback_data, curkey, value,
 					     value_type, data);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error setting value for %s in %s\n",
-				line, curkey));
+				value, curkey));
 			talloc_free(mem_ctx);
 			return error;
 		}
