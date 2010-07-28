@@ -100,7 +100,7 @@ sub CallWithStruct($$$$)
 
 	pidl "ZERO_STRUCT(r->out);" if ($hasout);
 
-	my $proto = "_$fn->{NAME}(pipes_struct *p, struct $fn->{NAME} *r";
+	my $proto = "_$fn->{NAME}(struct pipes_struct *p, struct $fn->{NAME} *r";
 	my $ret = "_$fn->{NAME}($pipes_struct, r";
 	foreach (@{$fn->{ELEMENTS}}) {
 		my @dir = @{$_->{DIRECTION}};
@@ -138,7 +138,7 @@ sub ParseFunction($$)
 
 	my $op = "NDR_".uc($fn->{NAME});
 
-	pidl "static bool api_$fn->{NAME}(pipes_struct *p)";
+	pidl "static bool api_$fn->{NAME}(struct pipes_struct *p)";
 	pidl "{";
 	indent;
 	pidl "const struct ndr_interface_call *call;";
