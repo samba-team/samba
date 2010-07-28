@@ -38,7 +38,7 @@ static char* get_device_path(TALLOC_CTX *mem_ctx, const char *device )
 /********************************************************************
 ********************************************************************/
 
-WERROR _PNP_GetVersion(pipes_struct *p,
+WERROR _PNP_GetVersion(struct pipes_struct *p,
 		       struct PNP_GetVersion *r)
 {
 	*r->out.version = 0x0400;      /* no idea what this means */
@@ -49,7 +49,7 @@ WERROR _PNP_GetVersion(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _PNP_GetDeviceListSize(pipes_struct *p,
+WERROR _PNP_GetDeviceListSize(struct pipes_struct *p,
 			      struct PNP_GetDeviceListSize *r)
 {
 	char *devicepath;
@@ -74,7 +74,7 @@ WERROR _PNP_GetDeviceListSize(pipes_struct *p,
  _PNP_GetDeviceList
 ****************************************************************/
 
-WERROR _PNP_GetDeviceList(pipes_struct *p,
+WERROR _PNP_GetDeviceList(struct pipes_struct *p,
 			  struct PNP_GetDeviceList *r)
 {
 	char *devicepath;
@@ -121,7 +121,7 @@ WERROR _PNP_GetDeviceList(pipes_struct *p,
 _PNP_GetDeviceRegProp
 ********************************************************************/
 
-WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
+WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 			     struct PNP_GetDeviceRegProp *r)
 {
 	char *ptr;
@@ -180,7 +180,7 @@ WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
+WERROR _PNP_ValidateDeviceInstance(struct pipes_struct *p,
 				   struct PNP_ValidateDeviceInstance *r)
 {
 	/* whatever dude */
@@ -190,7 +190,7 @@ WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _PNP_GetHwProfInfo(pipes_struct *p,
+WERROR _PNP_GetHwProfInfo(struct pipes_struct *p,
 			  struct PNP_GetHwProfInfo *r)
 {
 	/* steal the incoming buffer */
@@ -205,7 +205,7 @@ WERROR _PNP_GetHwProfInfo(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _PNP_HwProfFlags(pipes_struct *p,
+WERROR _PNP_HwProfFlags(struct pipes_struct *p,
 			struct PNP_HwProfFlags *r)
 {
 	/* just nod your head */
@@ -216,7 +216,7 @@ WERROR _PNP_HwProfFlags(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_Disconnect(pipes_struct *p,
+WERROR _PNP_Disconnect(struct pipes_struct *p,
 		       struct PNP_Disconnect *r)
 {
 	p->rng_fault_state = true;
@@ -226,7 +226,7 @@ WERROR _PNP_Disconnect(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_Connect(pipes_struct *p,
+WERROR _PNP_Connect(struct pipes_struct *p,
 		    struct PNP_Connect *r)
 {
 	p->rng_fault_state = true;
@@ -236,7 +236,7 @@ WERROR _PNP_Connect(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetGlobalState(pipes_struct *p,
+WERROR _PNP_GetGlobalState(struct pipes_struct *p,
 			   struct PNP_GetGlobalState *r)
 {
 	p->rng_fault_state = true;
@@ -246,7 +246,7 @@ WERROR _PNP_GetGlobalState(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_InitDetection(pipes_struct *p,
+WERROR _PNP_InitDetection(struct pipes_struct *p,
 			  struct PNP_InitDetection *r)
 {
 	p->rng_fault_state = true;
@@ -256,7 +256,7 @@ WERROR _PNP_InitDetection(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_ReportLogOn(pipes_struct *p,
+WERROR _PNP_ReportLogOn(struct pipes_struct *p,
 			struct PNP_ReportLogOn *r)
 {
 	p->rng_fault_state = true;
@@ -266,7 +266,7 @@ WERROR _PNP_ReportLogOn(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetRootDeviceInstance(pipes_struct *p,
+WERROR _PNP_GetRootDeviceInstance(struct pipes_struct *p,
 				  struct PNP_GetRootDeviceInstance *r)
 {
 	p->rng_fault_state = true;
@@ -276,7 +276,7 @@ WERROR _PNP_GetRootDeviceInstance(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetRelatedDeviceInstance(pipes_struct *p,
+WERROR _PNP_GetRelatedDeviceInstance(struct pipes_struct *p,
 				     struct PNP_GetRelatedDeviceInstance *r)
 {
 	p->rng_fault_state = true;
@@ -286,7 +286,7 @@ WERROR _PNP_GetRelatedDeviceInstance(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_EnumerateSubKeys(pipes_struct *p,
+WERROR _PNP_EnumerateSubKeys(struct pipes_struct *p,
 			     struct PNP_EnumerateSubKeys *r)
 {
 	p->rng_fault_state = true;
@@ -296,7 +296,7 @@ WERROR _PNP_EnumerateSubKeys(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetDepth(pipes_struct *p,
+WERROR _PNP_GetDepth(struct pipes_struct *p,
 		     struct PNP_GetDepth *r)
 {
 	p->rng_fault_state = true;
@@ -306,7 +306,7 @@ WERROR _PNP_GetDepth(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_SetDeviceRegProp(pipes_struct *p,
+WERROR _PNP_SetDeviceRegProp(struct pipes_struct *p,
 			     struct PNP_SetDeviceRegProp *r)
 {
 	p->rng_fault_state = true;
@@ -316,7 +316,7 @@ WERROR _PNP_SetDeviceRegProp(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetClassInstance(pipes_struct *p,
+WERROR _PNP_GetClassInstance(struct pipes_struct *p,
 			     struct PNP_GetClassInstance *r)
 {
 	p->rng_fault_state = true;
@@ -326,7 +326,7 @@ WERROR _PNP_GetClassInstance(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_CreateKey(pipes_struct *p,
+WERROR _PNP_CreateKey(struct pipes_struct *p,
 		      struct PNP_CreateKey *r)
 {
 	p->rng_fault_state = true;
@@ -336,7 +336,7 @@ WERROR _PNP_CreateKey(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_DeleteRegistryKey(pipes_struct *p,
+WERROR _PNP_DeleteRegistryKey(struct pipes_struct *p,
 			      struct PNP_DeleteRegistryKey *r)
 {
 	p->rng_fault_state = true;
@@ -346,7 +346,7 @@ WERROR _PNP_DeleteRegistryKey(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetClassCount(pipes_struct *p,
+WERROR _PNP_GetClassCount(struct pipes_struct *p,
 			  struct PNP_GetClassCount *r)
 {
 	p->rng_fault_state = true;
@@ -356,7 +356,7 @@ WERROR _PNP_GetClassCount(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetClassName(pipes_struct *p,
+WERROR _PNP_GetClassName(struct pipes_struct *p,
 			 struct PNP_GetClassName *r)
 {
 	p->rng_fault_state = true;
@@ -366,7 +366,7 @@ WERROR _PNP_GetClassName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_DeleteClassKey(pipes_struct *p,
+WERROR _PNP_DeleteClassKey(struct pipes_struct *p,
 			   struct PNP_DeleteClassKey *r)
 {
 	p->rng_fault_state = true;
@@ -376,7 +376,7 @@ WERROR _PNP_DeleteClassKey(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetInterfaceDeviceAlias(pipes_struct *p,
+WERROR _PNP_GetInterfaceDeviceAlias(struct pipes_struct *p,
 				    struct PNP_GetInterfaceDeviceAlias *r)
 {
 	p->rng_fault_state = true;
@@ -386,7 +386,7 @@ WERROR _PNP_GetInterfaceDeviceAlias(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetInterfaceDeviceList(pipes_struct *p,
+WERROR _PNP_GetInterfaceDeviceList(struct pipes_struct *p,
 				   struct PNP_GetInterfaceDeviceList *r)
 {
 	p->rng_fault_state = true;
@@ -396,7 +396,7 @@ WERROR _PNP_GetInterfaceDeviceList(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetInterfaceDeviceListSize(pipes_struct *p,
+WERROR _PNP_GetInterfaceDeviceListSize(struct pipes_struct *p,
 				       struct PNP_GetInterfaceDeviceListSize *r)
 {
 	p->rng_fault_state = true;
@@ -406,7 +406,7 @@ WERROR _PNP_GetInterfaceDeviceListSize(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RegisterDeviceClassAssociation(pipes_struct *p,
+WERROR _PNP_RegisterDeviceClassAssociation(struct pipes_struct *p,
 					   struct PNP_RegisterDeviceClassAssociation *r)
 {
 	p->rng_fault_state = true;
@@ -416,7 +416,7 @@ WERROR _PNP_RegisterDeviceClassAssociation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_UnregisterDeviceClassAssociation(pipes_struct *p,
+WERROR _PNP_UnregisterDeviceClassAssociation(struct pipes_struct *p,
 					     struct PNP_UnregisterDeviceClassAssociation *r)
 {
 	p->rng_fault_state = true;
@@ -426,7 +426,7 @@ WERROR _PNP_UnregisterDeviceClassAssociation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetClassRegProp(pipes_struct *p,
+WERROR _PNP_GetClassRegProp(struct pipes_struct *p,
 			    struct PNP_GetClassRegProp *r)
 {
 	p->rng_fault_state = true;
@@ -436,7 +436,7 @@ WERROR _PNP_GetClassRegProp(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_SetClassRegProp(pipes_struct *p,
+WERROR _PNP_SetClassRegProp(struct pipes_struct *p,
 			    struct PNP_SetClassRegProp *r)
 {
 	p->rng_fault_state = true;
@@ -446,7 +446,7 @@ WERROR _PNP_SetClassRegProp(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_CreateDevInst(pipes_struct *p,
+WERROR _PNP_CreateDevInst(struct pipes_struct *p,
 			  struct PNP_CreateDevInst *r)
 {
 	p->rng_fault_state = true;
@@ -456,7 +456,7 @@ WERROR _PNP_CreateDevInst(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_DeviceInstanceAction(pipes_struct *p,
+WERROR _PNP_DeviceInstanceAction(struct pipes_struct *p,
 				 struct PNP_DeviceInstanceAction *r)
 {
 	p->rng_fault_state = true;
@@ -466,7 +466,7 @@ WERROR _PNP_DeviceInstanceAction(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetDeviceStatus(pipes_struct *p,
+WERROR _PNP_GetDeviceStatus(struct pipes_struct *p,
 			    struct PNP_GetDeviceStatus *r)
 {
 	p->rng_fault_state = true;
@@ -476,7 +476,7 @@ WERROR _PNP_GetDeviceStatus(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_SetDeviceProblem(pipes_struct *p,
+WERROR _PNP_SetDeviceProblem(struct pipes_struct *p,
 			     struct PNP_SetDeviceProblem *r)
 {
 	p->rng_fault_state = true;
@@ -486,7 +486,7 @@ WERROR _PNP_SetDeviceProblem(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_DisableDevInst(pipes_struct *p,
+WERROR _PNP_DisableDevInst(struct pipes_struct *p,
 			   struct PNP_DisableDevInst *r)
 {
 	p->rng_fault_state = true;
@@ -496,7 +496,7 @@ WERROR _PNP_DisableDevInst(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_UninstallDevInst(pipes_struct *p,
+WERROR _PNP_UninstallDevInst(struct pipes_struct *p,
 			     struct PNP_UninstallDevInst *r)
 {
 	p->rng_fault_state = true;
@@ -506,7 +506,7 @@ WERROR _PNP_UninstallDevInst(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_AddID(pipes_struct *p,
+WERROR _PNP_AddID(struct pipes_struct *p,
 		  struct PNP_AddID *r)
 {
 	p->rng_fault_state = true;
@@ -516,7 +516,7 @@ WERROR _PNP_AddID(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RegisterDriver(pipes_struct *p,
+WERROR _PNP_RegisterDriver(struct pipes_struct *p,
 			   struct PNP_RegisterDriver *r)
 {
 	p->rng_fault_state = true;
@@ -526,7 +526,7 @@ WERROR _PNP_RegisterDriver(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_QueryRemove(pipes_struct *p,
+WERROR _PNP_QueryRemove(struct pipes_struct *p,
 			struct PNP_QueryRemove *r)
 {
 	p->rng_fault_state = true;
@@ -536,7 +536,7 @@ WERROR _PNP_QueryRemove(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RequestDeviceEject(pipes_struct *p,
+WERROR _PNP_RequestDeviceEject(struct pipes_struct *p,
 			       struct PNP_RequestDeviceEject *r)
 {
 	p->rng_fault_state = true;
@@ -546,7 +546,7 @@ WERROR _PNP_RequestDeviceEject(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_IsDockStationPresent(pipes_struct *p,
+WERROR _PNP_IsDockStationPresent(struct pipes_struct *p,
 				 struct PNP_IsDockStationPresent *r)
 {
 	p->rng_fault_state = true;
@@ -556,7 +556,7 @@ WERROR _PNP_IsDockStationPresent(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RequestEjectPC(pipes_struct *p,
+WERROR _PNP_RequestEjectPC(struct pipes_struct *p,
 			   struct PNP_RequestEjectPC *r)
 {
 	p->rng_fault_state = true;
@@ -566,7 +566,7 @@ WERROR _PNP_RequestEjectPC(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_AddEmptyLogConf(pipes_struct *p,
+WERROR _PNP_AddEmptyLogConf(struct pipes_struct *p,
 			    struct PNP_AddEmptyLogConf *r)
 {
 	p->rng_fault_state = true;
@@ -576,7 +576,7 @@ WERROR _PNP_AddEmptyLogConf(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_FreeLogConf(pipes_struct *p,
+WERROR _PNP_FreeLogConf(struct pipes_struct *p,
 			struct PNP_FreeLogConf *r)
 {
 	p->rng_fault_state = true;
@@ -586,7 +586,7 @@ WERROR _PNP_FreeLogConf(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetFirstLogConf(pipes_struct *p,
+WERROR _PNP_GetFirstLogConf(struct pipes_struct *p,
 			    struct PNP_GetFirstLogConf *r)
 {
 	p->rng_fault_state = true;
@@ -596,7 +596,7 @@ WERROR _PNP_GetFirstLogConf(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetNextLogConf(pipes_struct *p,
+WERROR _PNP_GetNextLogConf(struct pipes_struct *p,
 			   struct PNP_GetNextLogConf *r)
 {
 	p->rng_fault_state = true;
@@ -606,7 +606,7 @@ WERROR _PNP_GetNextLogConf(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetLogConfPriority(pipes_struct *p,
+WERROR _PNP_GetLogConfPriority(struct pipes_struct *p,
 			       struct PNP_GetLogConfPriority *r)
 {
 	p->rng_fault_state = true;
@@ -616,7 +616,7 @@ WERROR _PNP_GetLogConfPriority(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_AddResDes(pipes_struct *p,
+WERROR _PNP_AddResDes(struct pipes_struct *p,
 		      struct PNP_AddResDes *r)
 {
 	p->rng_fault_state = true;
@@ -626,7 +626,7 @@ WERROR _PNP_AddResDes(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_FreeResDes(pipes_struct *p,
+WERROR _PNP_FreeResDes(struct pipes_struct *p,
 		       struct PNP_FreeResDes *r)
 {
 	p->rng_fault_state = true;
@@ -636,7 +636,7 @@ WERROR _PNP_FreeResDes(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetNextResDes(pipes_struct *p,
+WERROR _PNP_GetNextResDes(struct pipes_struct *p,
 			  struct PNP_GetNextResDes *r)
 {
 	p->rng_fault_state = true;
@@ -646,7 +646,7 @@ WERROR _PNP_GetNextResDes(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetResDesData(pipes_struct *p,
+WERROR _PNP_GetResDesData(struct pipes_struct *p,
 			  struct PNP_GetResDesData *r)
 {
 	p->rng_fault_state = true;
@@ -656,7 +656,7 @@ WERROR _PNP_GetResDesData(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetResDesDataSize(pipes_struct *p,
+WERROR _PNP_GetResDesDataSize(struct pipes_struct *p,
 			      struct PNP_GetResDesDataSize *r)
 {
 	p->rng_fault_state = true;
@@ -666,7 +666,7 @@ WERROR _PNP_GetResDesDataSize(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_ModifyResDes(pipes_struct *p,
+WERROR _PNP_ModifyResDes(struct pipes_struct *p,
 			 struct PNP_ModifyResDes *r)
 {
 	p->rng_fault_state = true;
@@ -676,7 +676,7 @@ WERROR _PNP_ModifyResDes(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_DetectResourceLimit(pipes_struct *p,
+WERROR _PNP_DetectResourceLimit(struct pipes_struct *p,
 				struct PNP_DetectResourceLimit *r)
 {
 	p->rng_fault_state = true;
@@ -686,7 +686,7 @@ WERROR _PNP_DetectResourceLimit(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_QueryResConfList(pipes_struct *p,
+WERROR _PNP_QueryResConfList(struct pipes_struct *p,
 			     struct PNP_QueryResConfList *r)
 {
 	p->rng_fault_state = true;
@@ -696,7 +696,7 @@ WERROR _PNP_QueryResConfList(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_SetHwProf(pipes_struct *p,
+WERROR _PNP_SetHwProf(struct pipes_struct *p,
 		      struct PNP_SetHwProf *r)
 {
 	p->rng_fault_state = true;
@@ -706,7 +706,7 @@ WERROR _PNP_SetHwProf(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_QueryArbitratorFreeData(pipes_struct *p,
+WERROR _PNP_QueryArbitratorFreeData(struct pipes_struct *p,
 				    struct PNP_QueryArbitratorFreeData *r)
 {
 	p->rng_fault_state = true;
@@ -716,7 +716,7 @@ WERROR _PNP_QueryArbitratorFreeData(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_QueryArbitratorFreeSize(pipes_struct *p,
+WERROR _PNP_QueryArbitratorFreeSize(struct pipes_struct *p,
 				    struct PNP_QueryArbitratorFreeSize *r)
 {
 	p->rng_fault_state = true;
@@ -726,7 +726,7 @@ WERROR _PNP_QueryArbitratorFreeSize(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RunDetection(pipes_struct *p,
+WERROR _PNP_RunDetection(struct pipes_struct *p,
 			 struct PNP_RunDetection *r)
 {
 	p->rng_fault_state = true;
@@ -736,7 +736,7 @@ WERROR _PNP_RunDetection(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_RegisterNotification(pipes_struct *p,
+WERROR _PNP_RegisterNotification(struct pipes_struct *p,
 				 struct PNP_RegisterNotification *r)
 {
 	p->rng_fault_state = true;
@@ -746,7 +746,7 @@ WERROR _PNP_RegisterNotification(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_UnregisterNotification(pipes_struct *p,
+WERROR _PNP_UnregisterNotification(struct pipes_struct *p,
 				   struct PNP_UnregisterNotification *r)
 {
 	p->rng_fault_state = true;
@@ -756,7 +756,7 @@ WERROR _PNP_UnregisterNotification(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetCustomDevProp(pipes_struct *p,
+WERROR _PNP_GetCustomDevProp(struct pipes_struct *p,
 			     struct PNP_GetCustomDevProp *r)
 {
 	p->rng_fault_state = true;
@@ -766,7 +766,7 @@ WERROR _PNP_GetCustomDevProp(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetVersionInternal(pipes_struct *p,
+WERROR _PNP_GetVersionInternal(struct pipes_struct *p,
 			       struct PNP_GetVersionInternal *r)
 {
 	p->rng_fault_state = true;
@@ -776,7 +776,7 @@ WERROR _PNP_GetVersionInternal(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetBlockedDriverInfo(pipes_struct *p,
+WERROR _PNP_GetBlockedDriverInfo(struct pipes_struct *p,
 				 struct PNP_GetBlockedDriverInfo *r)
 {
 	p->rng_fault_state = true;
@@ -786,7 +786,7 @@ WERROR _PNP_GetBlockedDriverInfo(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _PNP_GetServerSideDeviceInstallFlags(pipes_struct *p,
+WERROR _PNP_GetServerSideDeviceInstallFlags(struct pipes_struct *p,
 					    struct PNP_GetServerSideDeviceInstallFlags *r)
 {
 	p->rng_fault_state = true;
