@@ -20,7 +20,7 @@
 #ifndef _RPC_SERVER_H_
 #define _RPC_SERVER_H_
 
-void set_incoming_fault(pipes_struct *p);
-void process_complete_pdu(pipes_struct *p);
+void set_incoming_fault(struct pipes_struct *p);
+void process_complete_pdu(struct pipes_struct *p);
 
 #endif /* _PRC_SERVER_H_ */

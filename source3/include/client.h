@@ -140,7 +140,7 @@ struct rpc_pipe_client {
 	struct netlogon_creds_CredentialState *dc;
 
 	/* Used by internal rpc_pipe_client */
-	pipes_struct *pipes_struct;
+	struct pipes_struct *pipes_struct;
 };
 
 /* Transport encryption state. */
