@@ -4933,14 +4933,14 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_server/rpc_handles.c  */
 
-size_t num_pipe_handles(pipes_struct *p);
-bool init_pipe_handles(pipes_struct *p, const struct ndr_syntax_id *syntax);
-bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
-bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
+size_t num_pipe_handles(struct pipes_struct *p);
+bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax);
+bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
+bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
 			void **data_p);
-bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd);
-void close_policy_by_pipe(pipes_struct *p);
-bool pipe_access_check(pipes_struct *p);
+bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd);
+void close_policy_by_pipe(struct pipes_struct *p);
+bool pipe_access_check(struct pipes_struct *p);
 
 void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 			    uint32_t access_granted, size_t data_size,
@@ -4977,23 +4977,23 @@ NTSTATUS rpc_srv_unregister(const struct ndr_interface_table *iface);
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
-bool create_next_pdu(pipes_struct *p);
-bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt);
-bool setup_fault_pdu(pipes_struct *p, NTSTATUS status);
+bool create_next_pdu(struct pipes_struct *p);
+bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
+bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
 NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 				    const char *srv,
 				    const struct ndr_syntax_id *interface,
 				    const struct api_struct *cmds, int size);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
-bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt);
-bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt);
+bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt);
+bool api_pipe_alter_context(struct pipes_struct *p, struct ncacn_packet *pkt);
 void free_pipe_rpc_context( PIPE_RPC_FNS *list );
-bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt);
+bool api_pipe_request(struct pipes_struct *p, struct ncacn_packet *pkt);
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 
-pipes_struct *get_first_internal_pipe(void);
-pipes_struct *get_next_internal_pipe(pipes_struct *p);
+struct pipes_struct *get_first_internal_pipe(void);
+struct pipes_struct *get_next_internal_pipe(struct pipes_struct *p);
 bool check_open_pipes(void);
 
 bool fsp_is_np(struct files_struct *fsp);
@@ -6174,7 +6174,7 @@ bool change_to_guest(void);
 void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
 bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_root_user(void);
-bool become_authenticated_pipe_user(pipes_struct *p);
+bool become_authenticated_pipe_user(struct pipes_struct *p);
 bool unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
