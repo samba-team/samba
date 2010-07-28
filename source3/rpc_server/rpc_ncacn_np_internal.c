@@ -45,12 +45,12 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
  Internal Pipe iterator functions.
 ****************************************************************************/
 
-pipes_struct *get_first_internal_pipe(void)
+struct pipes_struct *get_first_internal_pipe(void)
 {
 	return InternalPipes;
 }
 
-pipes_struct *get_next_internal_pipe(pipes_struct *p)
+struct pipes_struct *get_next_internal_pipe(struct pipes_struct *p)
 {
 	return p->next;
 }
@@ -71,7 +71,7 @@ static void free_pipe_rpc_context_internal( PIPE_RPC_FNS *list )
 
 bool check_open_pipes(void)
 {
-	pipes_struct *p;
+	struct pipes_struct *p;
 
 	for (p = InternalPipes; p != NULL; p = p->next) {
 		if (num_pipe_handles(p) != 0) {
@@ -117,7 +117,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const char *client_address,
 					      struct auth_serversupplied_info *server_info)
 {
-	pipes_struct *p;
+	struct pipes_struct *p;
 
 	DEBUG(4,("Create pipe requested %s\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
