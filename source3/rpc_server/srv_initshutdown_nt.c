@@ -30,7 +30,7 @@
 
 /*******************************************************************
  ********************************************************************/
-WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r)
+WERROR _initshutdown_Init(struct pipes_struct *p, struct initshutdown_Init *r)
 {
 	struct winreg_InitiateSystemShutdownEx s;
 
@@ -50,7 +50,7 @@ WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _initshutdown_InitEx(pipes_struct *p, struct initshutdown_InitEx *r)
+WERROR _initshutdown_InitEx(struct pipes_struct *p, struct initshutdown_InitEx *r)
 {
 	struct winreg_InitiateSystemShutdownEx s;
 	s.in.hostname = r->in.hostname;
@@ -70,7 +70,7 @@ WERROR _initshutdown_InitEx(pipes_struct *p, struct initshutdown_InitEx *r)
  reg_abort_shutdwon
  ********************************************************************/
 
-WERROR _initshutdown_Abort(pipes_struct *p, struct initshutdown_Abort *r)
+WERROR _initshutdown_Abort(struct pipes_struct *p, struct initshutdown_Abort *r)
 {
 	struct winreg_AbortSystemShutdown s;
 	s.in.server = r->in.server;
