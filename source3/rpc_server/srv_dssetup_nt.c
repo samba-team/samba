@@ -98,7 +98,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
  Implement the _dssetup_DsRoleGetPrimaryDomainInformation() call
  ********************************************************************/
 
-WERROR _dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p,
+WERROR _dssetup_DsRoleGetPrimaryDomainInformation(struct pipes_struct *p,
 						  struct dssetup_DsRoleGetPrimaryDomainInformation *r)
 {
 	WERROR werr = WERR_OK;
@@ -125,7 +125,7 @@ WERROR _dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleDnsNameToFlatName(pipes_struct *p,
+WERROR _dssetup_DsRoleDnsNameToFlatName(struct pipes_struct *p,
 					struct dssetup_DsRoleDnsNameToFlatName *r)
 {
 	p->rng_fault_state = true;
@@ -135,7 +135,7 @@ WERROR _dssetup_DsRoleDnsNameToFlatName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleDcAsDc(pipes_struct *p,
+WERROR _dssetup_DsRoleDcAsDc(struct pipes_struct *p,
 			     struct dssetup_DsRoleDcAsDc *r)
 {
 	p->rng_fault_state = true;
@@ -145,7 +145,7 @@ WERROR _dssetup_DsRoleDcAsDc(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleDcAsReplica(pipes_struct *p,
+WERROR _dssetup_DsRoleDcAsReplica(struct pipes_struct *p,
 				  struct dssetup_DsRoleDcAsReplica *r)
 {
 	p->rng_fault_state = true;
@@ -155,7 +155,7 @@ WERROR _dssetup_DsRoleDcAsReplica(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleDemoteDc(pipes_struct *p,
+WERROR _dssetup_DsRoleDemoteDc(struct pipes_struct *p,
 			       struct dssetup_DsRoleDemoteDc *r)
 {
 	p->rng_fault_state = true;
@@ -165,7 +165,7 @@ WERROR _dssetup_DsRoleDemoteDc(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleGetDcOperationProgress(pipes_struct *p,
+WERROR _dssetup_DsRoleGetDcOperationProgress(struct pipes_struct *p,
 					     struct dssetup_DsRoleGetDcOperationProgress *r)
 {
 	p->rng_fault_state = true;
@@ -175,7 +175,7 @@ WERROR _dssetup_DsRoleGetDcOperationProgress(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleGetDcOperationResults(pipes_struct *p,
+WERROR _dssetup_DsRoleGetDcOperationResults(struct pipes_struct *p,
 					    struct dssetup_DsRoleGetDcOperationResults *r)
 {
 	p->rng_fault_state = true;
@@ -185,7 +185,7 @@ WERROR _dssetup_DsRoleGetDcOperationResults(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleCancel(pipes_struct *p,
+WERROR _dssetup_DsRoleCancel(struct pipes_struct *p,
 			     struct dssetup_DsRoleCancel *r)
 {
 	p->rng_fault_state = true;
@@ -195,7 +195,7 @@ WERROR _dssetup_DsRoleCancel(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p,
+WERROR _dssetup_DsRoleServerSaveStateForUpgrade(struct pipes_struct *p,
 						struct dssetup_DsRoleServerSaveStateForUpgrade *r)
 {
 	p->rng_fault_state = true;
@@ -205,7 +205,7 @@ WERROR _dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p,
+WERROR _dssetup_DsRoleUpgradeDownlevelServer(struct pipes_struct *p,
 					     struct dssetup_DsRoleUpgradeDownlevelServer *r)
 {
 	p->rng_fault_state = true;
@@ -215,7 +215,7 @@ WERROR _dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p,
+WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(struct pipes_struct *p,
 						  struct dssetup_DsRoleAbortDownlevelServerUpgrade *r)
 {
 	p->rng_fault_state = true;
