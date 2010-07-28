@@ -127,7 +127,7 @@ struct pipe_auth_data {
  * NamedPipes.
  */
 
-typedef struct pipes_struct {
+struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
 	char client_address[INET6_ADDRSTRLEN];
@@ -201,12 +201,12 @@ typedef struct pipes_struct {
 	/* private data for the interface implementation */
 	void *private_data;
 
-} pipes_struct;
+};
 
 struct api_struct {  
 	const char *name;
 	uint8 opnum;
-	bool (*fn) (pipes_struct *);
+	bool (*fn) (struct pipes_struct *);
 };
 
 #endif /* _NT_DOMAIN_H */
