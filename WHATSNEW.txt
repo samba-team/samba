@@ -43,6 +43,43 @@ reason is to use more of our infrastructure and test this infrastructure by
 using it. With this approach more code in Winbind is shared.
 
 
+New Spoolss code
+----------------
+
+The spoolss and the old RAP printing code have been completely
+overhauled and refactored.
+
+All calls from lanman/printing code has been changed to go through the
+spoolss RPC interfaces, this allows us to keep all checks in one place
+and avoid special cases in the main printing code.
+Printing code has been therefore confined within the spoolss code.
+
+All the printing code, including the spoolss RPC interfaces has been
+changed to use the winreg RPC interfaces to store all data.
+All data has been migrated from custom, arbitrary TDB files to the
+registry interface. This transition allow us to present correct data to
+windows client accessing the server registry through the winreg RPC
+interfaces to query for printer data. Data is served out from a real
+registry implementation and therefore arguably 100% forward compatible.
+
+Migration code from the previous TDB files formats is provided. This
+code is automatically invoked the first time the new code is run on the
+server. Although manual migration is also available using the 'net
+printer migrate' command.
+
+These changes not only make all the spoolss code much more closer to
+"the spec", it also greatly improves our internal testing of both
+spoolss and winreg interfaces, and reduces overall code duplication.
+
+As part of this work, new tests have been also added to increase
+coverage.
+
+This code will also allow, in future, an easy transition to split out
+the spooling functions into a separate daemon for those OEMs that do not
+need printing functionality in their appliances, reducing the code
+footprint.
+
+
 SMB Traffic Analyzer
 --------------------
 
