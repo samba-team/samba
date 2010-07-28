@@ -3344,7 +3344,6 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const char *password,
 				struct rpc_pipe_client **presult)
 {
-#ifdef HAVE_GSSAPI_H
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
@@ -3367,18 +3366,14 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_open_krb5: cli_rpc_pipe_bind failed "
-			  "with error %s\n", nt_errstr(status)));
+		DEBUG(0, ("cli_rpc_pipe_bind failed with error %s\n",
+			  nt_errstr(status)));
 		TALLOC_FREE(result);
 		return status;
 	}
 
 	*presult = result;
 	return NT_STATUS_OK;
-#else
-	DEBUG(0,("cli_rpc_pipe_open_krb5: kerberos not found at compile time.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-#endif
 }
 
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
