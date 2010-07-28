@@ -245,7 +245,7 @@ static int printer_entry_destructor(Printer_entry *Printer)
   find printer index by handle
 ****************************************************************************/
 
-static Printer_entry *find_printer_index_by_hnd(pipes_struct *p,
+static Printer_entry *find_printer_index_by_hnd(struct pipes_struct *p,
 						struct policy_handle *hnd)
 {
 	Printer_entry *find_printer = NULL;
@@ -262,7 +262,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p,
  Close printer index by handle.
 ****************************************************************************/
 
-static bool close_printer_handle(pipes_struct *p, struct policy_handle *hnd)
+static bool close_printer_handle(struct pipes_struct *p, struct policy_handle *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 
@@ -343,7 +343,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const c
  Delete a printer given a handle.
 ****************************************************************************/
 
-static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
+static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
 	WERROR result;
@@ -384,7 +384,7 @@ static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
  Return the snum of a printer corresponding to an handle.
 ****************************************************************************/
 
-static bool get_printer_snum(pipes_struct *p, struct policy_handle *hnd,
+static bool get_printer_snum(struct pipes_struct *p, struct policy_handle *hnd,
 			     int *number, struct share_params **params)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
@@ -570,7 +570,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
  Find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static bool open_printer_hnd(pipes_struct *p, struct policy_handle *hnd,
+static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 			     const char *name, uint32_t access_granted)
 {
 	Printer_entry *new_printer;
@@ -1400,7 +1400,7 @@ void update_monitored_printq_cache( void )
  _spoolss_OpenPrinter
 ****************************************************************/
 
-WERROR _spoolss_OpenPrinter(pipes_struct *p,
+WERROR _spoolss_OpenPrinter(struct pipes_struct *p,
 			    struct spoolss_OpenPrinter *r)
 {
 	struct spoolss_OpenPrinterEx e;
@@ -1468,7 +1468,7 @@ static WERROR copy_devicemode(TALLOC_CTX *mem_ctx,
  _spoolss_OpenPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
+WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			      struct spoolss_OpenPrinterEx *r)
 {
 	int snum;
@@ -1702,7 +1702,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
  _spoolss_ClosePrinter
 ****************************************************************/
 
-WERROR _spoolss_ClosePrinter(pipes_struct *p,
+WERROR _spoolss_ClosePrinter(struct pipes_struct *p,
 			     struct spoolss_ClosePrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -1732,7 +1732,7 @@ WERROR _spoolss_ClosePrinter(pipes_struct *p,
  _spoolss_DeletePrinter
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinter(pipes_struct *p,
+WERROR _spoolss_DeletePrinter(struct pipes_struct *p,
 			      struct spoolss_DeletePrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -1793,7 +1793,7 @@ static int get_version_id(const char *arch)
  _spoolss_DeletePrinterDriver
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
+WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 				    struct spoolss_DeletePrinterDriver *r)
 {
 
@@ -1886,7 +1886,7 @@ done:
  _spoolss_DeletePrinterDriverEx
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
+WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 				      struct spoolss_DeletePrinterDriverEx *r)
 {
 	struct spoolss_DriverInfo8	*info = NULL;
@@ -2183,7 +2183,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
  _spoolss_GetPrinterData
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterData(pipes_struct *p,
+WERROR _spoolss_GetPrinterData(struct pipes_struct *p,
 			       struct spoolss_GetPrinterData *r)
 {
 	struct spoolss_GetPrinterDataEx r2;
@@ -2388,7 +2388,7 @@ static struct spoolss_NotifyOption *dup_spoolss_NotifyOption(TALLOC_CTX *mem_ctx
  * called from api_spoolss_rffpcnex
 ****************************************************************/
 
-WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
+WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
 	int snum = -1;
@@ -3173,7 +3173,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
  *
  ********************************************************************/
 
-static WERROR printserver_notify_info(pipes_struct *p,
+static WERROR printserver_notify_info(struct pipes_struct *p,
 				      struct policy_handle *hnd,
 				      struct spoolss_NotifyInfo *info,
 				      TALLOC_CTX *mem_ctx)
@@ -3264,7 +3264,8 @@ static WERROR printserver_notify_info(pipes_struct *p,
  *
  ********************************************************************/
 
-static WERROR printer_notify_info(pipes_struct *p, struct policy_handle *hnd,
+static WERROR printer_notify_info(struct pipes_struct *p,
+				  struct policy_handle *hnd,
 				  struct spoolss_NotifyInfo *info,
 				  TALLOC_CTX *mem_ctx)
 {
@@ -3361,7 +3362,7 @@ static WERROR printer_notify_info(pipes_struct *p, struct policy_handle *hnd,
  _spoolss_RouterRefreshPrinterChangeNotify
 ****************************************************************/
 
-WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 						 struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	struct spoolss_NotifyInfo *info;
@@ -4080,7 +4081,7 @@ static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
  _spoolss_EnumPrinters
 ****************************************************************/
 
-WERROR _spoolss_EnumPrinters(pipes_struct *p,
+WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 			     struct spoolss_EnumPrinters *r)
 {
 	const char *name = NULL;
@@ -4164,7 +4165,7 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
  _spoolss_GetPrinter
 ****************************************************************/
 
-WERROR _spoolss_GetPrinter(pipes_struct *p,
+WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 			   struct spoolss_GetPrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -5033,7 +5034,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
  _spoolss_GetPrinterDriver2
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
+WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 				  struct spoolss_GetPrinterDriver2 *r)
 {
 	Printer_entry *printer;
@@ -5084,7 +5085,7 @@ WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
  _spoolss_StartPagePrinter
 ****************************************************************/
 
-WERROR _spoolss_StartPagePrinter(pipes_struct *p,
+WERROR _spoolss_StartPagePrinter(struct pipes_struct *p,
 				 struct spoolss_StartPagePrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -5103,7 +5104,7 @@ WERROR _spoolss_StartPagePrinter(pipes_struct *p,
  _spoolss_EndPagePrinter
 ****************************************************************/
 
-WERROR _spoolss_EndPagePrinter(pipes_struct *p,
+WERROR _spoolss_EndPagePrinter(struct pipes_struct *p,
 			       struct spoolss_EndPagePrinter *r)
 {
 	int snum;
@@ -5129,7 +5130,7 @@ WERROR _spoolss_EndPagePrinter(pipes_struct *p,
  _spoolss_StartDocPrinter
 ****************************************************************/
 
-WERROR _spoolss_StartDocPrinter(pipes_struct *p,
+WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 				struct spoolss_StartDocPrinter *r)
 {
 	struct spoolss_DocumentInfo1 *info_1;
@@ -5198,7 +5199,7 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
  _spoolss_EndDocPrinter
 ****************************************************************/
 
-WERROR _spoolss_EndDocPrinter(pipes_struct *p,
+WERROR _spoolss_EndDocPrinter(struct pipes_struct *p,
 			      struct spoolss_EndDocPrinter *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -5231,7 +5232,7 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
  _spoolss_WritePrinter
 ****************************************************************/
 
-WERROR _spoolss_WritePrinter(pipes_struct *p,
+WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 			     struct spoolss_WritePrinter *r)
 {
 	ssize_t buffer_written;
@@ -5273,7 +5274,7 @@ WERROR _spoolss_WritePrinter(pipes_struct *p,
  ********************************************************************/
 
 static WERROR control_printer(struct policy_handle *handle, uint32_t command,
-			      pipes_struct *p)
+			      struct pipes_struct *p)
 {
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
@@ -5313,7 +5314,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
  * for spooling"
 ****************************************************************/
 
-WERROR _spoolss_AbortPrinter(pipes_struct *p,
+WERROR _spoolss_AbortPrinter(struct pipes_struct *p,
 			     struct spoolss_AbortPrinter *r)
 {
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -5344,7 +5345,8 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
  ********************************************************************/
 
 static WERROR update_printer_sec(struct policy_handle *handle,
-				 pipes_struct *p, struct sec_desc_buf *secdesc_ctr)
+				 struct pipes_struct *p,
+				 struct sec_desc_buf *secdesc_ctr)
 {
 	struct spoolss_security_descriptor *new_secdesc = NULL;
 	struct spoolss_security_descriptor *old_secdesc = NULL;
@@ -5894,7 +5896,8 @@ done:
  * when updating a printer description.
  ********************************************************************/
 
-static WERROR update_printer(pipes_struct *p, struct policy_handle *handle,
+static WERROR update_printer(struct pipes_struct *p,
+			     struct policy_handle *handle,
 			     struct spoolss_SetPrinterInfoCtr *info_ctr,
 			     struct spoolss_DeviceMode *devmode)
 {
@@ -5998,7 +6001,7 @@ done:
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR publish_or_unpublish_printer(pipes_struct *p,
+static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 					   struct policy_handle *handle,
 					   struct spoolss_SetPrinterInfo7 *info7)
 {
@@ -6041,7 +6044,8 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p,
 /********************************************************************
  ********************************************************************/
 
-static WERROR update_printer_devmode(pipes_struct *p, struct policy_handle *handle,
+static WERROR update_printer_devmode(struct pipes_struct *p,
+				     struct policy_handle *handle,
 				     struct spoolss_DeviceMode *devmode)
 {
 	int snum;
@@ -6078,7 +6082,7 @@ static WERROR update_printer_devmode(pipes_struct *p, struct policy_handle *hand
  _spoolss_SetPrinter
 ****************************************************************/
 
-WERROR _spoolss_SetPrinter(pipes_struct *p,
+WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 			   struct spoolss_SetPrinter *r)
 {
 	WERROR result;
@@ -6123,7 +6127,7 @@ WERROR _spoolss_SetPrinter(pipes_struct *p,
  _spoolss_FindClosePrinterNotify
 ****************************************************************/
 
-WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
+WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 				       struct spoolss_FindClosePrinterNotify *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -6160,7 +6164,7 @@ WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
  _spoolss_AddJob
 ****************************************************************/
 
-WERROR _spoolss_AddJob(pipes_struct *p,
+WERROR _spoolss_AddJob(struct pipes_struct *p,
 		       struct spoolss_AddJob *r)
 {
 	if (!r->in.buffer && (r->in.offered != 0)) {
@@ -6449,7 +6453,7 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
  _spoolss_EnumJobs
 ****************************************************************/
 
-WERROR _spoolss_EnumJobs(pipes_struct *p,
+WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 			 struct spoolss_EnumJobs *r)
 {
 	WERROR result;
@@ -6532,7 +6536,7 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
  _spoolss_ScheduleJob
 ****************************************************************/
 
-WERROR _spoolss_ScheduleJob(pipes_struct *p,
+WERROR _spoolss_ScheduleJob(struct pipes_struct *p,
 			    struct spoolss_ScheduleJob *r)
 {
 	return WERR_OK;
@@ -6567,7 +6571,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
  _spoolss_SetJob
 ****************************************************************/
 
-WERROR _spoolss_SetJob(pipes_struct *p,
+WERROR _spoolss_SetJob(struct pipes_struct *p,
 		       struct spoolss_SetJob *r)
 {
 	int snum;
@@ -6803,7 +6807,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
  _spoolss_EnumPrinterDrivers
 ****************************************************************/
 
-WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
+WERROR _spoolss_EnumPrinterDrivers(struct pipes_struct *p,
 				   struct spoolss_EnumPrinterDrivers *r)
 {
 	const char *cservername;
@@ -6852,7 +6856,7 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
  _spoolss_EnumForms
 ****************************************************************/
 
-WERROR _spoolss_EnumForms(pipes_struct *p,
+WERROR _spoolss_EnumForms(struct pipes_struct *p,
 			  struct spoolss_EnumForms *r)
 {
 	WERROR result;
@@ -6905,7 +6909,7 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
  _spoolss_GetForm
 ****************************************************************/
 
-WERROR _spoolss_GetForm(pipes_struct *p,
+WERROR _spoolss_GetForm(struct pipes_struct *p,
 			struct spoolss_GetForm *r)
 {
 	WERROR result;
@@ -7150,7 +7154,7 @@ out:
  _spoolss_EnumPorts
 ****************************************************************/
 
-WERROR _spoolss_EnumPorts(pipes_struct *p,
+WERROR _spoolss_EnumPorts(struct pipes_struct *p,
 			  struct spoolss_EnumPorts *r)
 {
 	WERROR result;
@@ -7197,7 +7201,7 @@ WERROR _spoolss_EnumPorts(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
+static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 					   const char *server,
 					   struct spoolss_SetPrinterInfoCtr *info_ctr,
 					   struct spoolss_DeviceMode *devmode,
@@ -7315,7 +7319,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
  _spoolss_AddPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterEx(pipes_struct *p,
+WERROR _spoolss_AddPrinterEx(struct pipes_struct *p,
 			     struct spoolss_AddPrinterEx *r)
 {
 	switch (r->in.info_ctr->level) {
@@ -7339,7 +7343,7 @@ WERROR _spoolss_AddPrinterEx(pipes_struct *p,
  _spoolss_AddPrinter
 ****************************************************************/
 
-WERROR _spoolss_AddPrinter(pipes_struct *p,
+WERROR _spoolss_AddPrinter(struct pipes_struct *p,
 			   struct spoolss_AddPrinter *r)
 {
 	struct spoolss_AddPrinterEx a;
@@ -7363,7 +7367,7 @@ WERROR _spoolss_AddPrinter(pipes_struct *p,
  _spoolss_AddPrinterDriverEx
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
+WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 				   struct spoolss_AddPrinterDriverEx *r)
 {
 	WERROR err = WERR_OK;
@@ -7442,7 +7446,7 @@ done:
  _spoolss_AddPrinterDriver
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
+WERROR _spoolss_AddPrinterDriver(struct pipes_struct *p,
 				 struct spoolss_AddPrinterDriver *r)
 {
 	struct spoolss_AddPrinterDriverEx a;
@@ -7568,7 +7572,7 @@ static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
  _spoolss_GetPrinterDriverDirectory
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
+WERROR _spoolss_GetPrinterDriverDirectory(struct pipes_struct *p,
 					  struct spoolss_GetPrinterDriverDirectory *r)
 {
 	WERROR werror;
@@ -7606,7 +7610,7 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
  _spoolss_EnumPrinterData
 ****************************************************************/
 
-WERROR _spoolss_EnumPrinterData(pipes_struct *p,
+WERROR _spoolss_EnumPrinterData(struct pipes_struct *p,
 				struct spoolss_EnumPrinterData *r)
 {
 	WERROR result;
@@ -7746,7 +7750,7 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
  _spoolss_SetPrinterData
 ****************************************************************/
 
-WERROR _spoolss_SetPrinterData(pipes_struct *p,
+WERROR _spoolss_SetPrinterData(struct pipes_struct *p,
 			       struct spoolss_SetPrinterData *r)
 {
 	struct spoolss_SetPrinterDataEx r2;
@@ -7765,7 +7769,7 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
  _spoolss_ResetPrinter
 ****************************************************************/
 
-WERROR _spoolss_ResetPrinter(pipes_struct *p,
+WERROR _spoolss_ResetPrinter(struct pipes_struct *p,
 			     struct spoolss_ResetPrinter *r)
 {
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -7797,7 +7801,7 @@ WERROR _spoolss_ResetPrinter(pipes_struct *p,
  _spoolss_DeletePrinterData
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterData(pipes_struct *p,
+WERROR _spoolss_DeletePrinterData(struct pipes_struct *p,
 				  struct spoolss_DeletePrinterData *r)
 {
 	struct spoolss_DeletePrinterDataEx r2;
@@ -7813,7 +7817,7 @@ WERROR _spoolss_DeletePrinterData(pipes_struct *p,
  _spoolss_AddForm
 ****************************************************************/
 
-WERROR _spoolss_AddForm(pipes_struct *p,
+WERROR _spoolss_AddForm(struct pipes_struct *p,
 			struct spoolss_AddForm *r)
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
@@ -7882,7 +7886,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
  _spoolss_DeleteForm
 ****************************************************************/
 
-WERROR _spoolss_DeleteForm(pipes_struct *p,
+WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 			   struct spoolss_DeleteForm *r)
 {
 	const char *form_name = r->in.form_name;
@@ -7940,7 +7944,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
  _spoolss_SetForm
 ****************************************************************/
 
-WERROR _spoolss_SetForm(pipes_struct *p,
+WERROR _spoolss_SetForm(struct pipes_struct *p,
 			struct spoolss_SetForm *r)
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
@@ -8051,7 +8055,7 @@ static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
  _spoolss_EnumPrintProcessors
 ****************************************************************/
 
-WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
+WERROR _spoolss_EnumPrintProcessors(struct pipes_struct *p,
 				    struct spoolss_EnumPrintProcessors *r)
 {
 	WERROR result;
@@ -8149,7 +8153,7 @@ static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
  _spoolss_EnumPrintProcDataTypes
 ****************************************************************/
 
-WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
+WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 				       struct spoolss_EnumPrintProcDataTypes *r)
 {
 	WERROR result;
@@ -8307,7 +8311,7 @@ out:
  _spoolss_EnumMonitors
 ****************************************************************/
 
-WERROR _spoolss_EnumMonitors(pipes_struct *p,
+WERROR _spoolss_EnumMonitors(struct pipes_struct *p,
 			     struct spoolss_EnumMonitors *r)
 {
 	WERROR result;
@@ -8449,7 +8453,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
  _spoolss_GetJob
 ****************************************************************/
 
-WERROR _spoolss_GetJob(pipes_struct *p,
+WERROR _spoolss_GetJob(struct pipes_struct *p,
 		       struct spoolss_GetJob *r)
 {
 	WERROR result = WERR_OK;
@@ -8519,7 +8523,7 @@ WERROR _spoolss_GetJob(pipes_struct *p,
  _spoolss_GetPrinterDataEx
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
+WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 				 struct spoolss_GetPrinterDataEx *r)
 {
 
@@ -8641,7 +8645,7 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
  _spoolss_SetPrinterDataEx
 ****************************************************************/
 
-WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
+WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 				 struct spoolss_SetPrinterDataEx *r)
 {
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -8753,7 +8757,7 @@ done:
  _spoolss_DeletePrinterDataEx
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
+WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 				    struct spoolss_DeletePrinterDataEx *r)
 {
 	const char *printer;
@@ -8803,7 +8807,7 @@ WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
  _spoolss_EnumPrinterKey
 ****************************************************************/
 
-WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
+WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 			       struct spoolss_EnumPrinterKey *r)
 {
 	uint32_t	num_keys;
@@ -8865,7 +8869,7 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
  _spoolss_DeletePrinterKey
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
+WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 				 struct spoolss_DeletePrinterKey *r)
 {
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -8915,7 +8919,7 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
  _spoolss_EnumPrinterDataEx
 ****************************************************************/
 
-WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
+WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 				  struct spoolss_EnumPrinterDataEx *r)
 {
 	uint32_t	count = 0;
@@ -9024,7 +9028,7 @@ static WERROR getprintprocessordirectory_level_1(TALLOC_CTX *mem_ctx,
  _spoolss_GetPrintProcessorDirectory
 ****************************************************************/
 
-WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
+WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 					   struct spoolss_GetPrintProcessorDirectory *r)
 {
 	WERROR result;
@@ -9311,7 +9315,7 @@ static WERROR process_xcvlocal_command(TALLOC_CTX *mem_ctx,
  _spoolss_XcvData
 ****************************************************************/
 
-WERROR _spoolss_XcvData(pipes_struct *p,
+WERROR _spoolss_XcvData(struct pipes_struct *p,
 			struct spoolss_XcvData *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -9384,7 +9388,7 @@ WERROR _spoolss_XcvData(pipes_struct *p,
  _spoolss_AddPrintProcessor
 ****************************************************************/
 
-WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
+WERROR _spoolss_AddPrintProcessor(struct pipes_struct *p,
 				  struct spoolss_AddPrintProcessor *r)
 {
 	/* for now, just indicate success and ignore the add.  We'll
@@ -9399,7 +9403,7 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
  _spoolss_AddPort
 ****************************************************************/
 
-WERROR _spoolss_AddPort(pipes_struct *p,
+WERROR _spoolss_AddPort(struct pipes_struct *p,
 			struct spoolss_AddPort *r)
 {
 	/* do what w2k3 does */
@@ -9411,7 +9415,7 @@ WERROR _spoolss_AddPort(pipes_struct *p,
  _spoolss_GetPrinterDriver
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
+WERROR _spoolss_GetPrinterDriver(struct pipes_struct *p,
 				 struct spoolss_GetPrinterDriver *r)
 {
 	p->rng_fault_state = true;
@@ -9422,7 +9426,7 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
  _spoolss_ReadPrinter
 ****************************************************************/
 
-WERROR _spoolss_ReadPrinter(pipes_struct *p,
+WERROR _spoolss_ReadPrinter(struct pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
 {
 	p->rng_fault_state = true;
@@ -9433,7 +9437,7 @@ WERROR _spoolss_ReadPrinter(pipes_struct *p,
  _spoolss_WaitForPrinterChange
 ****************************************************************/
 
-WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
+WERROR _spoolss_WaitForPrinterChange(struct pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
 {
 	p->rng_fault_state = true;
@@ -9444,7 +9448,7 @@ WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
  _spoolss_ConfigurePort
 ****************************************************************/
 
-WERROR _spoolss_ConfigurePort(pipes_struct *p,
+WERROR _spoolss_ConfigurePort(struct pipes_struct *p,
 			      struct spoolss_ConfigurePort *r)
 {
 	p->rng_fault_state = true;
@@ -9455,7 +9459,7 @@ WERROR _spoolss_ConfigurePort(pipes_struct *p,
  _spoolss_DeletePort
 ****************************************************************/
 
-WERROR _spoolss_DeletePort(pipes_struct *p,
+WERROR _spoolss_DeletePort(struct pipes_struct *p,
 			   struct spoolss_DeletePort *r)
 {
 	p->rng_fault_state = true;
@@ -9466,7 +9470,7 @@ WERROR _spoolss_DeletePort(pipes_struct *p,
  _spoolss_CreatePrinterIC
 ****************************************************************/
 
-WERROR _spoolss_CreatePrinterIC(pipes_struct *p,
+WERROR _spoolss_CreatePrinterIC(struct pipes_struct *p,
 				struct spoolss_CreatePrinterIC *r)
 {
 	p->rng_fault_state = true;
@@ -9477,7 +9481,7 @@ WERROR _spoolss_CreatePrinterIC(pipes_struct *p,
  _spoolss_PlayGDIScriptOnPrinterIC
 ****************************************************************/
 
-WERROR _spoolss_PlayGDIScriptOnPrinterIC(pipes_struct *p,
+WERROR _spoolss_PlayGDIScriptOnPrinterIC(struct pipes_struct *p,
 					 struct spoolss_PlayGDIScriptOnPrinterIC *r)
 {
 	p->rng_fault_state = true;
@@ -9488,7 +9492,7 @@ WERROR _spoolss_PlayGDIScriptOnPrinterIC(pipes_struct *p,
  _spoolss_DeletePrinterIC
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterIC(pipes_struct *p,
+WERROR _spoolss_DeletePrinterIC(struct pipes_struct *p,
 				struct spoolss_DeletePrinterIC *r)
 {
 	p->rng_fault_state = true;
@@ -9499,7 +9503,7 @@ WERROR _spoolss_DeletePrinterIC(pipes_struct *p,
  _spoolss_AddPrinterConnection
 ****************************************************************/
 
-WERROR _spoolss_AddPrinterConnection(pipes_struct *p,
+WERROR _spoolss_AddPrinterConnection(struct pipes_struct *p,
 				     struct spoolss_AddPrinterConnection *r)
 {
 	p->rng_fault_state = true;
@@ -9510,7 +9514,7 @@ WERROR _spoolss_AddPrinterConnection(pipes_struct *p,
  _spoolss_DeletePrinterConnection
 ****************************************************************/
 
-WERROR _spoolss_DeletePrinterConnection(pipes_struct *p,
+WERROR _spoolss_DeletePrinterConnection(struct pipes_struct *p,
 					struct spoolss_DeletePrinterConnection *r)
 {
 	p->rng_fault_state = true;
@@ -9521,7 +9525,7 @@ WERROR _spoolss_DeletePrinterConnection(pipes_struct *p,
  _spoolss_PrinterMessageBox
 ****************************************************************/
 
-WERROR _spoolss_PrinterMessageBox(pipes_struct *p,
+WERROR _spoolss_PrinterMessageBox(struct pipes_struct *p,
 				  struct spoolss_PrinterMessageBox *r)
 {
 	p->rng_fault_state = true;
@@ -9532,7 +9536,7 @@ WERROR _spoolss_PrinterMessageBox(pipes_struct *p,
  _spoolss_AddMonitor
 ****************************************************************/
 
-WERROR _spoolss_AddMonitor(pipes_struct *p,
+WERROR _spoolss_AddMonitor(struct pipes_struct *p,
 			   struct spoolss_AddMonitor *r)
 {
 	p->rng_fault_state = true;
@@ -9543,7 +9547,7 @@ WERROR _spoolss_AddMonitor(pipes_struct *p,
  _spoolss_DeleteMonitor
 ****************************************************************/
 
-WERROR _spoolss_DeleteMonitor(pipes_struct *p,
+WERROR _spoolss_DeleteMonitor(struct pipes_struct *p,
 			      struct spoolss_DeleteMonitor *r)
 {
 	p->rng_fault_state = true;
@@ -9554,7 +9558,7 @@ WERROR _spoolss_DeleteMonitor(pipes_struct *p,
  _spoolss_DeletePrintProcessor
 ****************************************************************/
 
-WERROR _spoolss_DeletePrintProcessor(pipes_struct *p,
+WERROR _spoolss_DeletePrintProcessor(struct pipes_struct *p,
 				     struct spoolss_DeletePrintProcessor *r)
 {
 	p->rng_fault_state = true;
@@ -9565,7 +9569,7 @@ WERROR _spoolss_DeletePrintProcessor(pipes_struct *p,
  _spoolss_AddPrintProvidor
 ****************************************************************/
 
-WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
+WERROR _spoolss_AddPrintProvidor(struct pipes_struct *p,
 				 struct spoolss_AddPrintProvidor *r)
 {
 	p->rng_fault_state = true;
@@ -9576,7 +9580,7 @@ WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
  _spoolss_DeletePrintProvidor
 ****************************************************************/
 
-WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
+WERROR _spoolss_DeletePrintProvidor(struct pipes_struct *p,
 				    struct spoolss_DeletePrintProvidor *r)
 {
 	p->rng_fault_state = true;
@@ -9587,7 +9591,7 @@ WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
  _spoolss_FindFirstPrinterChangeNotification
 ****************************************************************/
 
-WERROR _spoolss_FindFirstPrinterChangeNotification(pipes_struct *p,
+WERROR _spoolss_FindFirstPrinterChangeNotification(struct pipes_struct *p,
 						   struct spoolss_FindFirstPrinterChangeNotification *r)
 {
 	p->rng_fault_state = true;
@@ -9598,7 +9602,7 @@ WERROR _spoolss_FindFirstPrinterChangeNotification(pipes_struct *p,
  _spoolss_FindNextPrinterChangeNotification
 ****************************************************************/
 
-WERROR _spoolss_FindNextPrinterChangeNotification(pipes_struct *p,
+WERROR _spoolss_FindNextPrinterChangeNotification(struct pipes_struct *p,
 						  struct spoolss_FindNextPrinterChangeNotification *r)
 {
 	p->rng_fault_state = true;
@@ -9609,7 +9613,7 @@ WERROR _spoolss_FindNextPrinterChangeNotification(pipes_struct *p,
  _spoolss_RouterFindFirstPrinterChangeNotificationOld
 ****************************************************************/
 
-WERROR _spoolss_RouterFindFirstPrinterChangeNotificationOld(pipes_struct *p,
+WERROR _spoolss_RouterFindFirstPrinterChangeNotificationOld(struct pipes_struct *p,
 							    struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r)
 {
 	p->rng_fault_state = true;
@@ -9620,7 +9624,7 @@ WERROR _spoolss_RouterFindFirstPrinterChangeNotificationOld(pipes_struct *p,
  _spoolss_ReplyOpenPrinter
 ****************************************************************/
 
-WERROR _spoolss_ReplyOpenPrinter(pipes_struct *p,
+WERROR _spoolss_ReplyOpenPrinter(struct pipes_struct *p,
 				 struct spoolss_ReplyOpenPrinter *r)
 {
 	p->rng_fault_state = true;
@@ -9631,7 +9635,7 @@ WERROR _spoolss_ReplyOpenPrinter(pipes_struct *p,
  _spoolss_RouterReplyPrinter
 ****************************************************************/
 
-WERROR _spoolss_RouterReplyPrinter(pipes_struct *p,
+WERROR _spoolss_RouterReplyPrinter(struct pipes_struct *p,
 				   struct spoolss_RouterReplyPrinter *r)
 {
 	p->rng_fault_state = true;
@@ -9642,7 +9646,7 @@ WERROR _spoolss_RouterReplyPrinter(pipes_struct *p,
  _spoolss_ReplyClosePrinter
 ****************************************************************/
 
-WERROR _spoolss_ReplyClosePrinter(pipes_struct *p,
+WERROR _spoolss_ReplyClosePrinter(struct pipes_struct *p,
 				  struct spoolss_ReplyClosePrinter *r)
 {
 	p->rng_fault_state = true;
@@ -9653,7 +9657,7 @@ WERROR _spoolss_ReplyClosePrinter(pipes_struct *p,
  _spoolss_AddPortEx
 ****************************************************************/
 
-WERROR _spoolss_AddPortEx(pipes_struct *p,
+WERROR _spoolss_AddPortEx(struct pipes_struct *p,
 			  struct spoolss_AddPortEx *r)
 {
 	p->rng_fault_state = true;
@@ -9664,7 +9668,7 @@ WERROR _spoolss_AddPortEx(pipes_struct *p,
  _spoolss_RouterFindFirstPrinterChangeNotification
 ****************************************************************/
 
-WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p,
+WERROR _spoolss_RouterFindFirstPrinterChangeNotification(struct pipes_struct *p,
 							 struct spoolss_RouterFindFirstPrinterChangeNotification *r)
 {
 	p->rng_fault_state = true;
@@ -9675,7 +9679,7 @@ WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p,
  _spoolss_SpoolerInit
 ****************************************************************/
 
-WERROR _spoolss_SpoolerInit(pipes_struct *p,
+WERROR _spoolss_SpoolerInit(struct pipes_struct *p,
 			    struct spoolss_SpoolerInit *r)
 {
 	p->rng_fault_state = true;
@@ -9686,7 +9690,7 @@ WERROR _spoolss_SpoolerInit(pipes_struct *p,
  _spoolss_ResetPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_ResetPrinterEx(pipes_struct *p,
+WERROR _spoolss_ResetPrinterEx(struct pipes_struct *p,
 			       struct spoolss_ResetPrinterEx *r)
 {
 	p->rng_fault_state = true;
@@ -9697,7 +9701,7 @@ WERROR _spoolss_ResetPrinterEx(pipes_struct *p,
  _spoolss_RouterReplyPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p,
+WERROR _spoolss_RouterReplyPrinterEx(struct pipes_struct *p,
 				     struct spoolss_RouterReplyPrinterEx *r)
 {
 	p->rng_fault_state = true;
@@ -9708,7 +9712,7 @@ WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p,
  _spoolss_44
 ****************************************************************/
 
-WERROR _spoolss_44(pipes_struct *p,
+WERROR _spoolss_44(struct pipes_struct *p,
 		   struct spoolss_44 *r)
 {
 	p->rng_fault_state = true;
@@ -9719,7 +9723,7 @@ WERROR _spoolss_44(pipes_struct *p,
  _spoolss_47
 ****************************************************************/
 
-WERROR _spoolss_47(pipes_struct *p,
+WERROR _spoolss_47(struct pipes_struct *p,
 		   struct spoolss_47 *r)
 {
 	p->rng_fault_state = true;
@@ -9730,7 +9734,7 @@ WERROR _spoolss_47(pipes_struct *p,
  _spoolss_4a
 ****************************************************************/
 
-WERROR _spoolss_4a(pipes_struct *p,
+WERROR _spoolss_4a(struct pipes_struct *p,
 		   struct spoolss_4a *r)
 {
 	p->rng_fault_state = true;
@@ -9741,7 +9745,7 @@ WERROR _spoolss_4a(pipes_struct *p,
  _spoolss_4b
 ****************************************************************/
 
-WERROR _spoolss_4b(pipes_struct *p,
+WERROR _spoolss_4b(struct pipes_struct *p,
 		   struct spoolss_4b *r)
 {
 	p->rng_fault_state = true;
@@ -9752,7 +9756,7 @@ WERROR _spoolss_4b(pipes_struct *p,
  _spoolss_4c
 ****************************************************************/
 
-WERROR _spoolss_4c(pipes_struct *p,
+WERROR _spoolss_4c(struct pipes_struct *p,
 		   struct spoolss_4c *r)
 {
 	p->rng_fault_state = true;
@@ -9763,7 +9767,7 @@ WERROR _spoolss_4c(pipes_struct *p,
  _spoolss_53
 ****************************************************************/
 
-WERROR _spoolss_53(pipes_struct *p,
+WERROR _spoolss_53(struct pipes_struct *p,
 		   struct spoolss_53 *r)
 {
 	p->rng_fault_state = true;
@@ -9774,7 +9778,7 @@ WERROR _spoolss_53(pipes_struct *p,
  _spoolss_55
 ****************************************************************/
 
-WERROR _spoolss_55(pipes_struct *p,
+WERROR _spoolss_55(struct pipes_struct *p,
 		   struct spoolss_55 *r)
 {
 	p->rng_fault_state = true;
@@ -9785,7 +9789,7 @@ WERROR _spoolss_55(pipes_struct *p,
  _spoolss_56
 ****************************************************************/
 
-WERROR _spoolss_56(pipes_struct *p,
+WERROR _spoolss_56(struct pipes_struct *p,
 		   struct spoolss_56 *r)
 {
 	p->rng_fault_state = true;
@@ -9796,7 +9800,7 @@ WERROR _spoolss_56(pipes_struct *p,
  _spoolss_57
 ****************************************************************/
 
-WERROR _spoolss_57(pipes_struct *p,
+WERROR _spoolss_57(struct pipes_struct *p,
 		   struct spoolss_57 *r)
 {
 	p->rng_fault_state = true;
@@ -9807,7 +9811,7 @@ WERROR _spoolss_57(pipes_struct *p,
  _spoolss_5a
 ****************************************************************/
 
-WERROR _spoolss_5a(pipes_struct *p,
+WERROR _spoolss_5a(struct pipes_struct *p,
 		   struct spoolss_5a *r)
 {
 	p->rng_fault_state = true;
@@ -9818,7 +9822,7 @@ WERROR _spoolss_5a(pipes_struct *p,
  _spoolss_5b
 ****************************************************************/
 
-WERROR _spoolss_5b(pipes_struct *p,
+WERROR _spoolss_5b(struct pipes_struct *p,
 		   struct spoolss_5b *r)
 {
 	p->rng_fault_state = true;
@@ -9829,7 +9833,7 @@ WERROR _spoolss_5b(pipes_struct *p,
  _spoolss_5c
 ****************************************************************/
 
-WERROR _spoolss_5c(pipes_struct *p,
+WERROR _spoolss_5c(struct pipes_struct *p,
 		   struct spoolss_5c *r)
 {
 	p->rng_fault_state = true;
@@ -9840,7 +9844,7 @@ WERROR _spoolss_5c(pipes_struct *p,
  _spoolss_5d
 ****************************************************************/
 
-WERROR _spoolss_5d(pipes_struct *p,
+WERROR _spoolss_5d(struct pipes_struct *p,
 		   struct spoolss_5d *r)
 {
 	p->rng_fault_state = true;
@@ -9851,7 +9855,7 @@ WERROR _spoolss_5d(pipes_struct *p,
  _spoolss_5e
 ****************************************************************/
 
-WERROR _spoolss_5e(pipes_struct *p,
+WERROR _spoolss_5e(struct pipes_struct *p,
 		   struct spoolss_5e *r)
 {
 	p->rng_fault_state = true;
@@ -9862,7 +9866,7 @@ WERROR _spoolss_5e(pipes_struct *p,
  _spoolss_5f
 ****************************************************************/
 
-WERROR _spoolss_5f(pipes_struct *p,
+WERROR _spoolss_5f(struct pipes_struct *p,
 		   struct spoolss_5f *r)
 {
 	p->rng_fault_state = true;
@@ -9873,7 +9877,7 @@ WERROR _spoolss_5f(pipes_struct *p,
  _spoolss_60
 ****************************************************************/
 
-WERROR _spoolss_60(pipes_struct *p,
+WERROR _spoolss_60(struct pipes_struct *p,
 		   struct spoolss_60 *r)
 {
 	p->rng_fault_state = true;
@@ -9884,7 +9888,7 @@ WERROR _spoolss_60(pipes_struct *p,
  _spoolss_61
 ****************************************************************/
 
-WERROR _spoolss_61(pipes_struct *p,
+WERROR _spoolss_61(struct pipes_struct *p,
 		   struct spoolss_61 *r)
 {
 	p->rng_fault_state = true;
@@ -9895,7 +9899,7 @@ WERROR _spoolss_61(pipes_struct *p,
  _spoolss_62
 ****************************************************************/
 
-WERROR _spoolss_62(pipes_struct *p,
+WERROR _spoolss_62(struct pipes_struct *p,
 		   struct spoolss_62 *r)
 {
 	p->rng_fault_state = true;
@@ -9906,7 +9910,7 @@ WERROR _spoolss_62(pipes_struct *p,
  _spoolss_63
 ****************************************************************/
 
-WERROR _spoolss_63(pipes_struct *p,
+WERROR _spoolss_63(struct pipes_struct *p,
 		   struct spoolss_63 *r)
 {
 	p->rng_fault_state = true;
@@ -9917,7 +9921,7 @@ WERROR _spoolss_63(pipes_struct *p,
  _spoolss_64
 ****************************************************************/
 
-WERROR _spoolss_64(pipes_struct *p,
+WERROR _spoolss_64(struct pipes_struct *p,
 		   struct spoolss_64 *r)
 {
 	p->rng_fault_state = true;
@@ -9928,7 +9932,7 @@ WERROR _spoolss_64(pipes_struct *p,
  _spoolss_65
 ****************************************************************/
 
-WERROR _spoolss_65(pipes_struct *p,
+WERROR _spoolss_65(struct pipes_struct *p,
 		   struct spoolss_65 *r)
 {
 	p->rng_fault_state = true;
@@ -9939,7 +9943,7 @@ WERROR _spoolss_65(pipes_struct *p,
  _spoolss_GetCorePrinterDrivers
 ****************************************************************/
 
-WERROR _spoolss_GetCorePrinterDrivers(pipes_struct *p,
+WERROR _spoolss_GetCorePrinterDrivers(struct pipes_struct *p,
 				      struct spoolss_GetCorePrinterDrivers *r)
 {
 	p->rng_fault_state = true;
@@ -9950,7 +9954,7 @@ WERROR _spoolss_GetCorePrinterDrivers(pipes_struct *p,
  _spoolss_67
 ****************************************************************/
 
-WERROR _spoolss_67(pipes_struct *p,
+WERROR _spoolss_67(struct pipes_struct *p,
 		   struct spoolss_67 *r)
 {
 	p->rng_fault_state = true;
@@ -9961,7 +9965,7 @@ WERROR _spoolss_67(pipes_struct *p,
  _spoolss_GetPrinterDriverPackagePath
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDriverPackagePath(pipes_struct *p,
+WERROR _spoolss_GetPrinterDriverPackagePath(struct pipes_struct *p,
 					    struct spoolss_GetPrinterDriverPackagePath *r)
 {
 	p->rng_fault_state = true;
@@ -9972,7 +9976,7 @@ WERROR _spoolss_GetPrinterDriverPackagePath(pipes_struct *p,
  _spoolss_69
 ****************************************************************/
 
-WERROR _spoolss_69(pipes_struct *p,
+WERROR _spoolss_69(struct pipes_struct *p,
 		   struct spoolss_69 *r)
 {
 	p->rng_fault_state = true;
@@ -9983,7 +9987,7 @@ WERROR _spoolss_69(pipes_struct *p,
  _spoolss_6a
 ****************************************************************/
 
-WERROR _spoolss_6a(pipes_struct *p,
+WERROR _spoolss_6a(struct pipes_struct *p,
 		   struct spoolss_6a *r)
 {
 	p->rng_fault_state = true;
@@ -9994,7 +9998,7 @@ WERROR _spoolss_6a(pipes_struct *p,
  _spoolss_6b
 ****************************************************************/
 
-WERROR _spoolss_6b(pipes_struct *p,
+WERROR _spoolss_6b(struct pipes_struct *p,
 		   struct spoolss_6b *r)
 {
 	p->rng_fault_state = true;
@@ -10005,7 +10009,7 @@ WERROR _spoolss_6b(pipes_struct *p,
  _spoolss_6c
 ****************************************************************/
 
-WERROR _spoolss_6c(pipes_struct *p,
+WERROR _spoolss_6c(struct pipes_struct *p,
 		   struct spoolss_6c *r)
 {
 	p->rng_fault_state = true;
@@ -10016,7 +10020,7 @@ WERROR _spoolss_6c(pipes_struct *p,
  _spoolss_6d
 ****************************************************************/
 
-WERROR _spoolss_6d(pipes_struct *p,
+WERROR _spoolss_6d(struct pipes_struct *p,
 		   struct spoolss_6d *r)
 {
 	p->rng_fault_state = true;
