@@ -2857,7 +2857,7 @@ fail:
 	return false;
 }
 
-static bool spoolss_init_cb(void)
+static bool spoolss_init_cb(void *ptr)
 {
 	return nt_printing_tdb_migrate();
 }
