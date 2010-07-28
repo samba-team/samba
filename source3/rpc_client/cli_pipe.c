@@ -3353,27 +3353,65 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		return status;
 	}
 
-	status = gse_init_client(result, DCERPC_AUTH_TYPE_KRB5, auth_level,
+	auth = talloc(result, struct pipe_auth_data);
+	if (auth == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+	auth->auth_type = DCERPC_AUTH_TYPE_KRB5;
+	auth->auth_level = auth_level;
+
+	if (!username) {
+		username = "";
+	}
+	auth->user_name = talloc_strdup(auth, username);
+	if (!auth->user_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	/* Fixme, should we fetch/set the Realm ? */
+	auth->domain = talloc_strdup(auth, "");
+	if (!auth->domain) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	status = gse_init_client(auth, auth->auth_type, auth->auth_level,
 				 NULL, server, "cifs", username, password,
-				 GSS_C_DCE_STYLE, &auth);
+				 GSS_C_DCE_STYLE, &auth->a_u.gssapi_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("gse_init_client returned %s\n",
 			  nt_errstr(status)));
-		TALLOC_FREE(result);
-		return status;
+		goto err_out;
 	}
 
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("cli_rpc_pipe_bind failed with error %s\n",
 			  nt_errstr(status)));
-		TALLOC_FREE(result);
-		return status;
+		goto err_out;
 	}
 
 	*presult = result;
 	return NT_STATUS_OK;
+
+err_out:
+	TALLOC_FREE(result);
+	return status;
+}
+
+NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
+					const struct ndr_syntax_id *interface,
+					enum dcerpc_transport_t transport,
+					enum dcerpc_AuthLevel auth_level,
+					const char *server,
+					const char *username,
+					const char *password,
+					struct rpc_pipe_client **presult)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
