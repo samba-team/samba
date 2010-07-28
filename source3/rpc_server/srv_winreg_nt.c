@@ -33,7 +33,7 @@
  Find a registry key handle and return a struct registry_key *
  *****************************************************************/
 
-static struct registry_key *find_regkey_by_hnd(pipes_struct *p,
+static struct registry_key *find_regkey_by_hnd(struct pipes_struct *p,
 					       struct policy_handle *hnd)
 {
 	struct registry_key *regkey = NULL;
@@ -54,10 +54,11 @@ static struct registry_key *find_regkey_by_hnd(pipes_struct *p,
  HK[LM|U]\<key>\<key>\...
  *******************************************************************/
 
-static WERROR open_registry_key( pipes_struct *p, struct policy_handle *hnd,
-				 struct registry_key *parent,
-				 const char *subkeyname,
-				 uint32 access_desired  )
+static WERROR open_registry_key(struct pipes_struct *p,
+				struct policy_handle *hnd,
+				struct registry_key *parent,
+				const char *subkeyname,
+				uint32_t access_desired)
 {
 	WERROR result = WERR_OK;
 	struct registry_key *key;
@@ -87,7 +88,8 @@ static WERROR open_registry_key( pipes_struct *p, struct policy_handle *hnd,
  Note that P should be valid & hnd should already have space
  *******************************************************************/
 
-static bool close_registry_key(pipes_struct *p, struct policy_handle *hnd)
+static bool close_registry_key(struct pipes_struct *p,
+			       struct policy_handle *hnd)
 {
 	struct registry_key *regkey = find_regkey_by_hnd(p, hnd);
 
@@ -106,7 +108,8 @@ static bool close_registry_key(pipes_struct *p, struct policy_handle *hnd)
  _winreg_CloseKey
  ********************************************************************/
 
-WERROR _winreg_CloseKey(pipes_struct *p, struct winreg_CloseKey *r)
+WERROR _winreg_CloseKey(struct pipes_struct *p,
+			struct winreg_CloseKey *r)
 {
 	/* close the policy handle */
 
@@ -122,7 +125,8 @@ WERROR _winreg_CloseKey(pipes_struct *p, struct winreg_CloseKey *r)
  _winreg_OpenHKLM
  ********************************************************************/
 
-WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r)
+WERROR _winreg_OpenHKLM(struct pipes_struct *p,
+			struct winreg_OpenHKLM *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKLM, r->in.access_mask);
 }
@@ -131,7 +135,8 @@ WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r)
  _winreg_OpenHKPD
  ********************************************************************/
 
-WERROR _winreg_OpenHKPD(pipes_struct *p, struct winreg_OpenHKPD *r)
+WERROR _winreg_OpenHKPD(struct pipes_struct *p,
+			struct winreg_OpenHKPD *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKPD, r->in.access_mask);
 }
@@ -140,7 +145,8 @@ WERROR _winreg_OpenHKPD(pipes_struct *p, struct winreg_OpenHKPD *r)
  _winreg_OpenHKPT
  ********************************************************************/
 
-WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r)
+WERROR _winreg_OpenHKPT(struct pipes_struct *p,
+			struct winreg_OpenHKPT *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKPT, r->in.access_mask);
 }
@@ -149,7 +155,8 @@ WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r)
  _winreg_OpenHKCR
  ********************************************************************/
 
-WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r)
+WERROR _winreg_OpenHKCR(struct pipes_struct *p,
+			struct winreg_OpenHKCR *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKCR, r->in.access_mask);
 }
@@ -158,7 +165,8 @@ WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r)
  _winreg_OpenHKU
  ********************************************************************/
 
-WERROR _winreg_OpenHKU(pipes_struct *p, struct winreg_OpenHKU *r)
+WERROR _winreg_OpenHKU(struct pipes_struct *p,
+		       struct winreg_OpenHKU *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKU, r->in.access_mask);
 }
@@ -167,7 +175,8 @@ WERROR _winreg_OpenHKU(pipes_struct *p, struct winreg_OpenHKU *r)
  _winreg_OpenHKCU
  ********************************************************************/
 
-WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r)
+WERROR _winreg_OpenHKCU(struct pipes_struct *p,
+			struct winreg_OpenHKCU *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKCU, r->in.access_mask);
 }
@@ -176,7 +185,8 @@ WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r)
  _winreg_OpenHKCC
  ********************************************************************/
 
-WERROR _winreg_OpenHKCC(pipes_struct *p, struct winreg_OpenHKCC *r)
+WERROR _winreg_OpenHKCC(struct pipes_struct *p,
+			struct winreg_OpenHKCC *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKCC, r->in.access_mask);
 }
@@ -185,7 +195,8 @@ WERROR _winreg_OpenHKCC(pipes_struct *p, struct winreg_OpenHKCC *r)
  _winreg_OpenHKDD
  ********************************************************************/
 
-WERROR _winreg_OpenHKDD(pipes_struct *p, struct winreg_OpenHKDD *r)
+WERROR _winreg_OpenHKDD(struct pipes_struct *p,
+			struct winreg_OpenHKDD *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKDD, r->in.access_mask);
 }
@@ -194,7 +205,8 @@ WERROR _winreg_OpenHKDD(pipes_struct *p, struct winreg_OpenHKDD *r)
  _winreg_OpenHKPN
  ********************************************************************/
 
-WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r)
+WERROR _winreg_OpenHKPN(struct pipes_struct *p,
+			struct winreg_OpenHKPN *r)
 {
 	return open_registry_key(p, r->out.handle, NULL, KEY_HKPN, r->in.access_mask);
 }
@@ -203,7 +215,8 @@ WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r)
  _winreg_OpenKey
  ********************************************************************/
 
-WERROR _winreg_OpenKey(pipes_struct *p, struct winreg_OpenKey *r)
+WERROR _winreg_OpenKey(struct pipes_struct *p,
+		       struct winreg_OpenKey *r)
 {
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.parent_handle );
 
@@ -217,7 +230,8 @@ WERROR _winreg_OpenKey(pipes_struct *p, struct winreg_OpenKey *r)
  _winreg_QueryValue
  ********************************************************************/
 
-WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
+WERROR _winreg_QueryValue(struct pipes_struct *p,
+			  struct winreg_QueryValue *r)
 {
 	WERROR        status = WERR_BADFILE;
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
@@ -333,7 +347,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
  _winreg_QueryInfoKey
  ****************************************************************************/
 
-WERROR _winreg_QueryInfoKey(pipes_struct *p, struct winreg_QueryInfoKey *r)
+WERROR _winreg_QueryInfoKey(struct pipes_struct *p,
+			    struct winreg_QueryInfoKey *r)
 {
 	WERROR 	status = WERR_OK;
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
@@ -369,7 +384,8 @@ WERROR _winreg_QueryInfoKey(pipes_struct *p, struct winreg_QueryInfoKey *r)
  _winreg_GetVersion
  ****************************************************************************/
 
-WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
+WERROR _winreg_GetVersion(struct pipes_struct *p,
+			  struct winreg_GetVersion *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 
@@ -384,7 +400,8 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
  _winreg_EnumKey
  ****************************************************************************/
 
-WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r)
+WERROR _winreg_EnumKey(struct pipes_struct *p,
+		       struct winreg_EnumKey *r)
 {
 	WERROR err;
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
@@ -410,7 +427,8 @@ WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r)
  _winreg_EnumValue
  ****************************************************************************/
 
-WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
+WERROR _winreg_EnumValue(struct pipes_struct *p,
+			 struct winreg_EnumValue *r)
 {
 	WERROR err;
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
@@ -465,7 +483,8 @@ WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r)
  _winreg_InitiateSystemShutdown
  ********************************************************************/
 
-WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSystemShutdown *r)
+WERROR _winreg_InitiateSystemShutdown(struct pipes_struct *p,
+				      struct winreg_InitiateSystemShutdown *r)
 {
 	struct winreg_InitiateSystemShutdownEx s;
 
@@ -490,7 +509,8 @@ WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSys
 #define SHUTDOWN_F_STRING "-f"
 
 
-WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateSystemShutdownEx *r)
+WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
+					struct winreg_InitiateSystemShutdownEx *r)
 {
 	char *shutdown_script = NULL;
 	char *msg = NULL;
@@ -582,7 +602,8 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
  _winreg_AbortSystemShutdown
  ********************************************************************/
 
-WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShutdown *r)
+WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
+				   struct winreg_AbortSystemShutdown *r)
 {
 	const char *abort_shutdown_script;
 	int ret;
@@ -658,7 +679,8 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
  _winreg_RestoreKey
  ********************************************************************/
 
-WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
+WERROR _winreg_RestoreKey(struct pipes_struct *p,
+			  struct winreg_RestoreKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	char *fname = NULL;
@@ -696,7 +718,8 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
  _winreg_SaveKey
  ********************************************************************/
 
-WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
+WERROR _winreg_SaveKey(struct pipes_struct *p,
+		       struct winreg_SaveKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	char *fname = NULL;
@@ -729,7 +752,8 @@ WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
  _winreg_SaveKeyEx
  ********************************************************************/
 
-WERROR _winreg_SaveKeyEx(pipes_struct *p, struct winreg_SaveKeyEx *r)
+WERROR _winreg_SaveKeyEx(struct pipes_struct *p,
+			 struct winreg_SaveKeyEx *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -742,7 +766,8 @@ WERROR _winreg_SaveKeyEx(pipes_struct *p, struct winreg_SaveKeyEx *r)
  _winreg_CreateKey
  ********************************************************************/
 
-WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r)
+WERROR _winreg_CreateKey(struct pipes_struct *p,
+			 struct winreg_CreateKey *r)
 {
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
 	struct registry_key *new_key;
@@ -772,7 +797,8 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r)
  _winreg_SetValue
  ********************************************************************/
 
-WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
+WERROR _winreg_SetValue(struct pipes_struct *p,
+			struct winreg_SetValue *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	struct registry_value *val;
@@ -798,7 +824,8 @@ WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r)
  _winreg_DeleteKey
  ********************************************************************/
 
-WERROR _winreg_DeleteKey(pipes_struct *p, struct winreg_DeleteKey *r)
+WERROR _winreg_DeleteKey(struct pipes_struct *p,
+			 struct winreg_DeleteKey *r)
 {
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
 
@@ -813,7 +840,8 @@ WERROR _winreg_DeleteKey(pipes_struct *p, struct winreg_DeleteKey *r)
  _winreg_DeleteValue
  ********************************************************************/
 
-WERROR _winreg_DeleteValue(pipes_struct *p, struct winreg_DeleteValue *r)
+WERROR _winreg_DeleteValue(struct pipes_struct *p,
+			   struct winreg_DeleteValue *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 
@@ -827,7 +855,8 @@ WERROR _winreg_DeleteValue(pipes_struct *p, struct winreg_DeleteValue *r)
  _winreg_GetKeySecurity
  ********************************************************************/
 
-WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
+WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
+			      struct winreg_GetKeySecurity *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	WERROR err;
@@ -870,7 +899,8 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
  _winreg_SetKeySecurity
  ********************************************************************/
 
-WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
+WERROR _winreg_SetKeySecurity(struct pipes_struct *p,
+			      struct winreg_SetKeySecurity *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	struct security_descriptor *secdesc;
@@ -897,7 +927,8 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
  _winreg_FlushKey
  ********************************************************************/
 
-WERROR _winreg_FlushKey(pipes_struct *p, struct winreg_FlushKey *r)
+WERROR _winreg_FlushKey(struct pipes_struct *p,
+			struct winreg_FlushKey *r)
 {
 	/* I'm just replying OK because there's not a lot
 	   here I see to do i  --jerry */
@@ -909,7 +940,8 @@ WERROR _winreg_FlushKey(pipes_struct *p, struct winreg_FlushKey *r)
  _winreg_UnLoadKey
  ********************************************************************/
 
-WERROR _winreg_UnLoadKey(pipes_struct *p, struct winreg_UnLoadKey *r)
+WERROR _winreg_UnLoadKey(struct pipes_struct *p,
+			 struct winreg_UnLoadKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -922,7 +954,8 @@ WERROR _winreg_UnLoadKey(pipes_struct *p, struct winreg_UnLoadKey *r)
  _winreg_ReplaceKey
  ********************************************************************/
 
-WERROR _winreg_ReplaceKey(pipes_struct *p, struct winreg_ReplaceKey *r)
+WERROR _winreg_ReplaceKey(struct pipes_struct *p,
+			  struct winreg_ReplaceKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -935,7 +968,8 @@ WERROR _winreg_ReplaceKey(pipes_struct *p, struct winreg_ReplaceKey *r)
  _winreg_LoadKey
  ********************************************************************/
 
-WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r)
+WERROR _winreg_LoadKey(struct pipes_struct *p,
+		       struct winreg_LoadKey *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
@@ -948,7 +982,8 @@ WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r)
  _winreg_NotifyChangeKeyValue
  ********************************************************************/
 
-WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeKeyValue *r)
+WERROR _winreg_NotifyChangeKeyValue(struct pipes_struct *p,
+				    struct winreg_NotifyChangeKeyValue *r)
 {
 	return WERR_NOT_SUPPORTED;
 }
@@ -957,7 +992,7 @@ WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeK
  _winreg_QueryMultipleValues
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues(pipes_struct *p,
+WERROR _winreg_QueryMultipleValues(struct pipes_struct *p,
 				   struct winreg_QueryMultipleValues *r)
 {
 	struct winreg_QueryMultipleValues2 r2;
@@ -1007,7 +1042,7 @@ static WERROR construct_multiple_entry(TALLOC_CTX *mem_ctx,
  _winreg_QueryMultipleValues2
  ********************************************************************/
 
-WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
+WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 				    struct winreg_QueryMultipleValues2 *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd(p, r->in.key_handle);
@@ -1096,7 +1131,8 @@ WERROR _winreg_QueryMultipleValues2(pipes_struct *p,
  _winreg_DeleteKeyEx
  ********************************************************************/
 
-WERROR _winreg_DeleteKeyEx(pipes_struct *p, struct winreg_DeleteKeyEx *r)
+WERROR _winreg_DeleteKeyEx(struct pipes_struct *p,
+			   struct winreg_DeleteKeyEx *r)
 {
 	/* fill in your code here if you think this call should
 	   do anything */
