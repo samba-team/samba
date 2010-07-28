@@ -32,7 +32,7 @@
  Ensures we have at least RPC_HEADER_LEN amount of data in the incoming buffer.
 ****************************************************************************/
 
-static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
+static ssize_t fill_rpc_header(struct pipes_struct *p, char *data, size_t data_to_copy)
 {
 	size_t len_needed_to_complete_hdr =
 		MIN(data_to_copy, RPC_HEADER_LEN - p->in_data.pdu.length);
@@ -59,7 +59,7 @@ static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 	return (ssize_t)len_needed_to_complete_hdr;
 }
 
-static bool get_pdu_size(pipes_struct *p)
+static bool get_pdu_size(struct pipes_struct *p)
 {
 	uint16_t frag_len;
 	/* the fill_rpc_header() call insures we copy only
@@ -105,7 +105,7 @@ static bool get_pdu_size(pipes_struct *p)
   PDU's).
 ****************************************************************************/
 
-static void free_pipe_context(pipes_struct *p)
+static void free_pipe_context(struct pipes_struct *p)
 {
 	data_blob_free(&p->out_data.frag);
 	data_blob_free(&p->out_data.rdata);
@@ -121,7 +121,7 @@ static void free_pipe_context(pipes_struct *p)
  Accepts incoming data on an rpc pipe. Processes the data in pdu sized units.
 ****************************************************************************/
 
-static ssize_t process_incoming_data(pipes_struct *p, char *data, size_t n)
+static ssize_t process_incoming_data(struct pipes_struct *p, char *data, size_t n)
 {
 	size_t data_to_copy = MIN(n, RPC_MAX_PDU_FRAG_LEN
 					- p->in_data.pdu.length);
