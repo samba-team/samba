@@ -169,9 +169,8 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 			  const char *username,
 			  const char *password,
 			  uint32_t add_gss_c_flags,
-			  struct pipe_auth_data **_auth)
+			  struct gse_context **_gse_ctx)
 {
-	struct pipe_auth_data *auth;
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc name_buffer = {0, NULL};
@@ -182,42 +181,15 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	auth = talloc(mem_ctx, struct pipe_auth_data);
-	if (auth == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	auth->auth_type = auth_type;
-	if (auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
-		auth->spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
-	}
-	auth->auth_level = auth_level;
-
-	if (!username) {
-		username = "";
-	}
-
-	auth->user_name = talloc_strdup(auth, username);
-	if (!auth->user_name) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	/* Fixme, should we fetch/set the Realm ? */
-	auth->domain = talloc_strdup(auth, "");
-	if (!auth->domain) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	status = gse_context_init(auth, auth_type, auth_level,
+	status = gse_context_init(mem_ctx, auth_type, auth_level,
 				  ccache_name, add_gss_c_flags,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto err_out;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_buffer.value = talloc_asprintf(auth, "%s@%s", service, server);
+	name_buffer.value = talloc_asprintf(gse_ctx,
+					    "%s@%s", service, server);
 	if (!name_buffer.value) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_out;
@@ -229,7 +201,7 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	if (gss_maj) {
 		DEBUG(0, ("gss_import_name failed for %s, with [%s]\n",
 			  (char *)name_buffer.value,
-			  gse_errstr(auth, gss_maj, gss_min)));
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
@@ -250,18 +222,18 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	if (gss_maj) {
 		DEBUG(0, ("gss_acquire_creds failed for %s, with [%s]\n",
 			  (char *)name_buffer.value,
-			  gse_errstr(auth, gss_maj, gss_min)));
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
 
-	auth->a_u.gssapi_state = gse_ctx;
-	*_auth = auth;
+	*_gse_ctx = gse_ctx;
 	TALLOC_FREE(name_buffer.value);
 	return NT_STATUS_OK;
 
 err_out:
-	TALLOC_FREE(auth);
+	TALLOC_FREE(name_buffer.value);
+	TALLOC_FREE(gse_ctx);
 	return status;
 }
 

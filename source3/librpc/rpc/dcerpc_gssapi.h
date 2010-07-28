@@ -35,7 +35,7 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 			  const char *username,
 			  const char *password,
 			  uint32_t add_gss_c_flags,
-			  struct pipe_auth_data **_auth);
+			  struct gse_context **_gse_ctx);
 
 NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				   struct gse_context *gse_ctx,
