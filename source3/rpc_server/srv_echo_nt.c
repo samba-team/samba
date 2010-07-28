@@ -31,7 +31,7 @@
 
 /* Add one to the input and return it */
 
-void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
+void _echo_AddOne(struct pipes_struct *p, struct echo_AddOne *r )
 {
 	DEBUG(10, ("_echo_AddOne\n"));
 
@@ -40,7 +40,7 @@ void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r )
 
 /* Echo back an array of data */
 
-void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
+void _echo_EchoData(struct pipes_struct *p, struct echo_EchoData *r)
 {
 	DEBUG(10, ("_echo_EchoData\n"));
 
@@ -56,7 +56,7 @@ void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r)
 
 /* Sink an array of data */
 
-void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
+void _echo_SinkData(struct pipes_struct *p, struct echo_SinkData *r)
 {
 	DEBUG(10, ("_echo_SinkData\n"));
 
@@ -66,7 +66,7 @@ void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r)
 
 /* Source an array of data */
 
-void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
+void _echo_SourceData(struct pipes_struct *p, struct echo_SourceData *r)
 {
 	uint32 i;
 
@@ -86,37 +86,37 @@ void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r)
 	return;	
 }
 
-void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r)
+void _echo_TestCall(struct pipes_struct *p, struct echo_TestCall *r)
 {
 	p->rng_fault_state = True;
 	return;
 }
 
-NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r)
+NTSTATUS _echo_TestCall2(struct pipes_struct *p, struct echo_TestCall2 *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_OK;
 }
 
-uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r)
+uint32 _echo_TestSleep(struct pipes_struct *p, struct echo_TestSleep *r)
 {
 	p->rng_fault_state = True;
 	return 0;
 }
 
-void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r)
+void _echo_TestEnum(struct pipes_struct *p, struct echo_TestEnum *r)
 {
 	p->rng_fault_state = True;
 	return;
 }
 
-void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r)
+void _echo_TestSurrounding(struct pipes_struct *p, struct echo_TestSurrounding *r)
 {
 	p->rng_fault_state = True;
 	return;
 }
 
-uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r)
+uint16 _echo_TestDoublePointer(struct pipes_struct *p, struct echo_TestDoublePointer *r)
 {
 	p->rng_fault_state = True;
 	return 0;
