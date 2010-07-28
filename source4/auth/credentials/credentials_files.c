@@ -185,22 +185,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	
 	int ldb_ret;
 	struct ldb_message *msg;
-	const char *attrs[] = {
-		"secret",
-		"priorSecret",
-		"samAccountName",
-		"flatname",
-		"realm",
-		"secureChannelType",
-		"unicodePwd",
-		"msDS-KeyVersionNumber",
-		"saltPrincipal",
-		"privateKeytab",
-		"krb5Keytab",
-		"servicePrincipalName",
-		"ldapBindDn",
-		NULL
-	};
 	
 	const char *machine_account;
 	const char *password;
@@ -235,7 +219,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	ldb_ret = dsdb_search_one(ldb, ldb, &msg,
 				  ldb_dn_new(mem_ctx, ldb, base),
 				  LDB_SCOPE_SUBTREE,
-				  attrs, 0, "%s", filter);
+				  NULL, 0, "%s", filter);
 
 	if (ldb_ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(cred, "Could not find entry to match filter: '%s' base: '%s': %s: %s\n",
