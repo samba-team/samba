@@ -27,7 +27,7 @@
 
 static int pipes_open;
 
-static pipes_struct *InternalPipes;
+static struct pipes_struct *InternalPipes;
 
 /* TODO
  * the following prototypes are declared here to avoid
