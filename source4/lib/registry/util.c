@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "lib/util/data_blob.h"
 
 _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 				   const DATA_BLOB data)
@@ -77,6 +78,38 @@ _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx,
 			       reg_val_data_string(mem_ctx, data_type, data));
 }
 
+static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
+{
+	DATA_BLOB ret;
+	const char *HEXCHARS = "0123456789ABCDEF";
+	size_t i, j;
+	char *hi, *lo;
+
+	ret = data_blob_talloc_zero(mem_ctx, (strlen(str)+(strlen(str) % 3))/3);
+	j = 0;
+	for (i = 0; i < strlen(str); i++) {
+		hi = strchr(HEXCHARS, toupper(str[i]));
+		if (hi == NULL)
+			continue;
+
+		i++;
+		lo = strchr(HEXCHARS, toupper(str[i]));
+		if (lo == NULL)
+			break;
+		
+		ret.data[j] = PTR_DIFF(hi, HEXCHARS) << 4;
+		ret.data[j] += PTR_DIFF(lo, HEXCHARS);
+		j++;
+
+		if (j > ret.length) {
+			DEBUG(0, ("Trouble converting hex string to bin\n"));
+			break;
+		}
+	}
+	return ret;
+} 
+
+
 _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 				const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
@@ -104,7 +137,6 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 				DEBUG(0, ("Could not convert hex to int\n"));
 				return false;
 			}
-			DEBUG(10, ("Found string type: %s: %d\n", p, *type));
 			talloc_free(tmp_type_str);
 		} else if (strcmp(type_str, "hex") == 0) {
 			*type = REG_BINARY;
@@ -120,19 +152,20 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 
 	switch (*type) {
 		case REG_SZ:
-		case REG_EXPAND_SZ:
 			return convert_string_talloc(mem_ctx,
 								 CH_UNIX, CH_UTF16, data_str,
 								 strlen(data_str)+1,
 								 (void **)&data->data,
 								 &data->length, false);
 			break;
+		case REG_MULTI_SZ:
+		case REG_EXPAND_SZ:
 		case REG_BINARY:
-			*data = strhex_to_data_blob(mem_ctx, data_str);
+			*data = reg_strhex_to_data_blob(mem_ctx, data_str);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN: {
-			uint32_t tmp = strtol(data_str, NULL, 0);
+			uint32_t tmp = strtol(data_str, NULL, 16);
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint32_t));
 			if (data->data == NULL) return false;
 			SIVAL(data->data, 0, tmp);
@@ -148,9 +181,6 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 		case REG_NONE:
 			ZERO_STRUCTP(data);
 			break;
-		case REG_MULTI_SZ:
-			/* FIXME: We don't support this yet */
-			return false;
 		default:
 			/* FIXME */
 			/* Other datatypes aren't supported -> return no success */
