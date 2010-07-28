@@ -60,7 +60,7 @@ static bool is_samr_lsa_pipe(const struct ndr_syntax_id *syntax)
 		|| ndr_syntax_id_equal(syntax, &ndr_table_lsarpc.syntax_id));
 }
 
-size_t num_pipe_handles(pipes_struct *p)
+size_t num_pipe_handles(struct pipes_struct *p)
 {
 	if (p->pipe_handles == NULL) {
 		return 0;
@@ -73,9 +73,9 @@ size_t num_pipe_handles(pipes_struct *p)
  pipes of the same name.
 ****************************************************************************/
 
-bool init_pipe_handles(pipes_struct *p, const struct ndr_syntax_id *syntax)
+bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax)
 {
-	pipes_struct *plist;
+	struct pipes_struct *plist;
 	struct handle_list *hl;
 
 	for (plist = get_first_internal_pipe();
@@ -140,7 +140,7 @@ bool init_pipe_handles(pipes_struct *p, const struct ndr_syntax_id *syntax)
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-static struct dcesrv_handle *create_rpc_handle_internal(pipes_struct *p,
+static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 				struct policy_handle *hnd, void *data_ptr)
 {
 	struct dcesrv_handle *rpc_hnd;
@@ -197,7 +197,7 @@ static struct dcesrv_handle *create_rpc_handle_internal(pipes_struct *p,
 	return rpc_hnd;
 }
 
-bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd,
+bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 		       void *data_ptr)
 {
 	struct dcesrv_handle *rpc_hnd;
@@ -213,7 +213,7 @@ bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd,
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct dcesrv_handle *find_policy_by_hnd_internal(pipes_struct *p,
+static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 				const struct policy_handle *hnd, void **data_p)
 {
 	struct dcesrv_handle *h;
@@ -248,7 +248,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(pipes_struct *p,
   find policy by handle
 ****************************************************************************/
 
-bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
+bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
 			void **data_p)
 {
 	struct dcesrv_handle *rpc_hnd;
@@ -264,7 +264,7 @@ bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
   Close a policy.
 ****************************************************************************/
 
-bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd)
+bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 {
 	struct dcesrv_handle *rpc_hnd;
 
@@ -289,7 +289,7 @@ bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd)
  Close a pipe - free the handle set if it was the last pipe reference.
 ****************************************************************************/
 
-void close_policy_by_pipe(pipes_struct *p)
+void close_policy_by_pipe(struct pipes_struct *p)
 {
 	p->pipe_handles->pipe_ref_count--;
 
@@ -313,7 +313,7 @@ will be checking a security descriptor to determine whether a user
 token has enough access to access the pipe.
 ********************************************************************/
 
-bool pipe_access_check(pipes_struct *p)
+bool pipe_access_check(struct pipes_struct *p)
 {
 	/* Don't let anonymous users access this RPC if restrict
 	   anonymous > 0 */
