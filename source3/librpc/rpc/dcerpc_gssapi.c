@@ -20,12 +20,13 @@
 /* We support only GSSAPI/KRB5 here */
 
 #include "includes.h"
+#include "dcerpc_gssapi.h"
+
+#if defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
+
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
 #include <gssapi/gssapi_ext.h>
-#include "dcerpc_gssapi.h"
-
-#ifdef HAVE_GSSAPI_H
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
@@ -352,43 +353,6 @@ DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
 	return gse_ctx->session_key;
 }
 
-#else /* HAVE_GSSAPI_H */
-
-NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  enum dcerpc_AuthType auth_type,
-			  enum dcerpc_AuthLevel auth_level,
-			  const char *ccache_name,
-			  const char *server,
-			  const char *service,
-			  const char *username,
-			  const char *password,
-			  uint32_t add_gss_c_flags,
-			  struct pipe_auth_data **_auth)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_gen_client_auth_token(TALLOC_CTX *mem_ctx,
-				   struct gse_context *gse_ctx,
-				   DATA_BLOB *auth_blob)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-bool gse_require_more_processing(struct gse_context *gse_ctx)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
-{
-	return data_blob_null;
-}
-
-#endif /* HAVE_GSSAPI_H */
-
-#ifdef HAVE_GSS_WRAP_IOV
-
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size)
 {
@@ -574,12 +538,44 @@ done:
 	return status;
 }
 
-#else /* HAVE_GSS_WRAP_IOV */
+#else
+
+NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
+			  enum dcerpc_AuthType auth_type,
+			  enum dcerpc_AuthLevel auth_level,
+			  const char *ccache_name,
+			  const char *server,
+			  const char *service,
+			  const char *username,
+			  const char *password,
+			  uint32_t add_gss_c_flags,
+			  struct gse_context **_gse_ctx)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
+				   struct gse_context *gse_ctx,
+				   DATA_BLOB *token_in,
+				   DATA_BLOB *token_out)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+bool gse_require_more_processing(struct gse_context *gse_ctx)
+{
+	return false;
+}
+
+DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
+{
+	return data_blob_null;
+}
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return 0;
 }
 
 NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
@@ -606,4 +602,4 @@ NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-#endif /* HAVE_GSS_WRAP_IOV */
+#endif /* HAVE_GSSAPI_EXT_H && HAVE_GSS_WRAP_IOV */
