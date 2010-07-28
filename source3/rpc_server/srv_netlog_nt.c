@@ -49,7 +49,7 @@ struct netlogon_server_pipe_state {
  _netr_LogonControl
  *************************************************************************/
 
-WERROR _netr_LogonControl(pipes_struct *p,
+WERROR _netr_LogonControl(struct pipes_struct *p,
 			  struct netr_LogonControl *r)
 {
 	struct netr_LogonControl2Ex l;
@@ -87,7 +87,7 @@ static void send_sync_message(void)
  _netr_LogonControl2
  *************************************************************************/
 
-WERROR _netr_LogonControl2(pipes_struct *p,
+WERROR _netr_LogonControl2(struct pipes_struct *p,
 			   struct netr_LogonControl2 *r)
 {
 	struct netr_LogonControl2Ex l;
@@ -167,7 +167,7 @@ static bool wb_check_trust_creds(const char *domain, WERROR *tc_status)
  _netr_LogonControl2Ex
 ****************************************************************/
 
-WERROR _netr_LogonControl2Ex(pipes_struct *p,
+WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 			     struct netr_LogonControl2Ex *r)
 {
 	uint32_t flags = 0x0;
@@ -389,7 +389,7 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
  _netr_NetrEnumerateTrustedDomains
  *************************************************************************/
 
-NTSTATUS _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
+NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 					   struct netr_NetrEnumerateTrustedDomains *r)
 {
 	NTSTATUS status;
@@ -733,7 +733,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
  _netr_ServerReqChallenge
  *************************************************************************/
 
-NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
+NTSTATUS _netr_ServerReqChallenge(struct pipes_struct *p,
 				  struct netr_ServerReqChallenge *r)
 {
 	struct netlogon_server_pipe_state *pipe_state =
@@ -765,7 +765,7 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
  Create the initial credentials.
  *************************************************************************/
 
-NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
+NTSTATUS _netr_ServerAuthenticate(struct pipes_struct *p,
 				  struct netr_ServerAuthenticate *r)
 {
 	struct netr_ServerAuthenticate3 a;
@@ -791,7 +791,7 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
  _netr_ServerAuthenticate3
  *************************************************************************/
 
-NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
+NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 				   struct netr_ServerAuthenticate3 *r)
 {
 	NTSTATUS status;
@@ -934,7 +934,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
  _netr_ServerAuthenticate2
  *************************************************************************/
 
-NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
+NTSTATUS _netr_ServerAuthenticate2(struct pipes_struct *p,
 				   struct netr_ServerAuthenticate2 *r)
 {
 	struct netr_ServerAuthenticate3 a;
@@ -987,7 +987,7 @@ static NTSTATUS schannel_check_required(struct pipe_auth_data *auth_info,
 /*************************************************************************
  *************************************************************************/
 
-static NTSTATUS netr_creds_server_step_check(pipes_struct *p,
+static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 					     TALLOC_CTX *mem_ctx,
 					     const char *computer_name,
 					     struct netr_Authenticator *received_authenticator,
@@ -1099,7 +1099,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
  _netr_ServerPasswordSet
  *************************************************************************/
 
-NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
+NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 				 struct netr_ServerPasswordSet *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -1145,7 +1145,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
  _netr_ServerPasswordSet2
 ****************************************************************/
 
-NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
+NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 				  struct netr_ServerPasswordSet2 *r)
 {
 	NTSTATUS status;
@@ -1191,7 +1191,7 @@ NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
  _netr_LogonSamLogoff
  *************************************************************************/
 
-NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
+NTSTATUS _netr_LogonSamLogoff(struct pipes_struct *p,
 			      struct netr_LogonSamLogoff *r)
 {
 	NTSTATUS status;
@@ -1212,7 +1212,7 @@ NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
  _netr_LogonSamLogon_base
  *************************************************************************/
 
-static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
+static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 					 struct netr_LogonSamLogonEx *r,
 					 struct netlogon_creds_CredentialState *creds)
 {
@@ -1450,7 +1450,7 @@ static NTSTATUS _netr_LogonSamLogon_base(pipes_struct *p,
  _netr_LogonSamLogonWithFlags
 ****************************************************************/
 
-NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
+NTSTATUS _netr_LogonSamLogonWithFlags(struct pipes_struct *p,
 				      struct netr_LogonSamLogonWithFlags *r)
 {
 	NTSTATUS status;
@@ -1490,7 +1490,7 @@ NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
  _netr_LogonSamLogon
  *************************************************************************/
 
-NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
+NTSTATUS _netr_LogonSamLogon(struct pipes_struct *p,
 			     struct netr_LogonSamLogon *r)
 {
 	NTSTATUS status;
@@ -1520,7 +1520,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
  - no credential chaining. Map into net sam logon.
  *************************************************************************/
 
-NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
+NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 			       struct netr_LogonSamLogonEx *r)
 {
 	NTSTATUS status;
@@ -1551,7 +1551,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
  _ds_enum_dom_trusts
  *************************************************************************/
 #if 0	/* JERRY -- not correct */
- NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
+ NTSTATUS _ds_enum_dom_trusts(struct pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
 			     DS_R_ENUM_DOM_TRUSTS *r_u)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -1570,7 +1570,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_LogonUasLogon(pipes_struct *p,
+WERROR _netr_LogonUasLogon(struct pipes_struct *p,
 			   struct netr_LogonUasLogon *r)
 {
 	p->rng_fault_state = true;
@@ -1580,7 +1580,7 @@ WERROR _netr_LogonUasLogon(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_LogonUasLogoff(pipes_struct *p,
+WERROR _netr_LogonUasLogoff(struct pipes_struct *p,
 			    struct netr_LogonUasLogoff *r)
 {
 	p->rng_fault_state = true;
@@ -1590,7 +1590,7 @@ WERROR _netr_LogonUasLogoff(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_DatabaseDeltas(pipes_struct *p,
+NTSTATUS _netr_DatabaseDeltas(struct pipes_struct *p,
 			      struct netr_DatabaseDeltas *r)
 {
 	p->rng_fault_state = true;
@@ -1600,7 +1600,7 @@ NTSTATUS _netr_DatabaseDeltas(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_DatabaseSync(pipes_struct *p,
+NTSTATUS _netr_DatabaseSync(struct pipes_struct *p,
 			    struct netr_DatabaseSync *r)
 {
 	p->rng_fault_state = true;
@@ -1610,7 +1610,7 @@ NTSTATUS _netr_DatabaseSync(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_AccountDeltas(pipes_struct *p,
+NTSTATUS _netr_AccountDeltas(struct pipes_struct *p,
 			     struct netr_AccountDeltas *r)
 {
 	p->rng_fault_state = true;
@@ -1620,7 +1620,7 @@ NTSTATUS _netr_AccountDeltas(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_AccountSync(pipes_struct *p,
+NTSTATUS _netr_AccountSync(struct pipes_struct *p,
 			   struct netr_AccountSync *r)
 {
 	p->rng_fault_state = true;
@@ -1671,7 +1671,7 @@ static bool wb_getdcname(TALLOC_CTX *mem_ctx,
  _netr_GetDcName
 ****************************************************************/
 
-WERROR _netr_GetDcName(pipes_struct *p,
+WERROR _netr_GetDcName(struct pipes_struct *p,
 		       struct netr_GetDcName *r)
 {
 	NTSTATUS status;
@@ -1717,7 +1717,7 @@ WERROR _netr_GetDcName(pipes_struct *p,
  _netr_GetAnyDCName
 ****************************************************************/
 
-WERROR _netr_GetAnyDCName(pipes_struct *p,
+WERROR _netr_GetAnyDCName(struct pipes_struct *p,
 			  struct netr_GetAnyDCName *r)
 {
 	NTSTATUS status;
@@ -1761,7 +1761,7 @@ WERROR _netr_GetAnyDCName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_DatabaseSync2(pipes_struct *p,
+NTSTATUS _netr_DatabaseSync2(struct pipes_struct *p,
 			     struct netr_DatabaseSync2 *r)
 {
 	p->rng_fault_state = true;
@@ -1771,7 +1771,7 @@ NTSTATUS _netr_DatabaseSync2(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
+NTSTATUS _netr_DatabaseRedo(struct pipes_struct *p,
 			    struct netr_DatabaseRedo *r)
 {
 	p->rng_fault_state = true;
@@ -1781,7 +1781,7 @@ NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetDCName(pipes_struct *p,
+WERROR _netr_DsRGetDCName(struct pipes_struct *p,
 			  struct netr_DsRGetDCName *r)
 {
 	p->rng_fault_state = true;
@@ -1791,7 +1791,7 @@ WERROR _netr_DsRGetDCName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p,
+NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 				    struct netr_LogonGetCapabilities *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1800,7 +1800,7 @@ NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
+WERROR _netr_NETRLOGONSETSERVICEBITS(struct pipes_struct *p,
 				     struct netr_NETRLOGONSETSERVICEBITS *r)
 {
 	p->rng_fault_state = true;
@@ -1810,7 +1810,7 @@ WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_LogonGetTrustRid(pipes_struct *p,
+WERROR _netr_LogonGetTrustRid(struct pipes_struct *p,
 			      struct netr_LogonGetTrustRid *r)
 {
 	p->rng_fault_state = true;
@@ -1820,7 +1820,7 @@ WERROR _netr_LogonGetTrustRid(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p,
+WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(struct pipes_struct *p,
 					  struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
 {
 	p->rng_fault_state = true;
@@ -1830,7 +1830,7 @@ WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
+WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(struct pipes_struct *p,
 					  struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
 {
 	p->rng_fault_state = true;
@@ -1840,7 +1840,7 @@ WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetDCNameEx(pipes_struct *p,
+WERROR _netr_DsRGetDCNameEx(struct pipes_struct *p,
 			    struct netr_DsRGetDCNameEx *r)
 {
 	p->rng_fault_state = true;
@@ -1850,7 +1850,7 @@ WERROR _netr_DsRGetDCNameEx(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetSiteName(pipes_struct *p,
+WERROR _netr_DsRGetSiteName(struct pipes_struct *p,
 			    struct netr_DsRGetSiteName *r)
 {
 	p->rng_fault_state = true;
@@ -1860,7 +1860,7 @@ WERROR _netr_DsRGetSiteName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
+NTSTATUS _netr_LogonGetDomainInfo(struct pipes_struct *p,
 				  struct netr_LogonGetDomainInfo *r)
 {
 	p->rng_fault_state = true;
@@ -1870,7 +1870,7 @@ NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_ServerPasswordGet(pipes_struct *p,
+WERROR _netr_ServerPasswordGet(struct pipes_struct *p,
 			       struct netr_ServerPasswordGet *r)
 {
 	p->rng_fault_state = true;
@@ -1880,7 +1880,7 @@ WERROR _netr_ServerPasswordGet(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONSENDTOSAM(pipes_struct *p,
+WERROR _netr_NETRLOGONSENDTOSAM(struct pipes_struct *p,
 				struct netr_NETRLOGONSENDTOSAM *r)
 {
 	p->rng_fault_state = true;
@@ -1890,7 +1890,7 @@ WERROR _netr_NETRLOGONSENDTOSAM(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRAddressToSitenamesW(pipes_struct *p,
+WERROR _netr_DsRAddressToSitenamesW(struct pipes_struct *p,
 				    struct netr_DsRAddressToSitenamesW *r)
 {
 	p->rng_fault_state = true;
@@ -1900,7 +1900,7 @@ WERROR _netr_DsRAddressToSitenamesW(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetDCNameEx2(pipes_struct *p,
+WERROR _netr_DsRGetDCNameEx2(struct pipes_struct *p,
 			     struct netr_DsRGetDCNameEx2 *r)
 {
 	p->rng_fault_state = true;
@@ -1910,7 +1910,7 @@ WERROR _netr_DsRGetDCNameEx2(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p,
+WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct pipes_struct *p,
 						 struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
 {
 	p->rng_fault_state = true;
@@ -1920,7 +1920,7 @@ WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p,
+WERROR _netr_NetrEnumerateTrustedDomainsEx(struct pipes_struct *p,
 					   struct netr_NetrEnumerateTrustedDomainsEx *r)
 {
 	p->rng_fault_state = true;
@@ -1930,7 +1930,7 @@ WERROR _netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p,
+WERROR _netr_DsRAddressToSitenamesExW(struct pipes_struct *p,
 				      struct netr_DsRAddressToSitenamesExW *r)
 {
 	p->rng_fault_state = true;
@@ -1940,7 +1940,7 @@ WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
+WERROR _netr_DsrGetDcSiteCoverageW(struct pipes_struct *p,
 				   struct netr_DsrGetDcSiteCoverageW *r)
 {
 	p->rng_fault_state = true;
@@ -1950,7 +1950,7 @@ WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p,
+WERROR _netr_DsrEnumerateDomainTrusts(struct pipes_struct *p,
 				      struct netr_DsrEnumerateDomainTrusts *r)
 {
 	p->rng_fault_state = true;
@@ -1960,7 +1960,7 @@ WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p,
+WERROR _netr_DsrDeregisterDNSHostRecords(struct pipes_struct *p,
 					 struct netr_DsrDeregisterDNSHostRecords *r)
 {
 	p->rng_fault_state = true;
@@ -1970,7 +1970,7 @@ WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p,
+NTSTATUS _netr_ServerTrustPasswordsGet(struct pipes_struct *p,
 				       struct netr_ServerTrustPasswordsGet *r)
 {
 	p->rng_fault_state = true;
@@ -1980,7 +1980,7 @@ NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
+WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 					  struct netr_DsRGetForestTrustInformation *r)
 {
 	p->rng_fault_state = true;
@@ -1990,7 +1990,7 @@ WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_GetForestTrustInformation(pipes_struct *p,
+NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 					 struct netr_GetForestTrustInformation *r)
 {
 	p->rng_fault_state = true;
@@ -2000,7 +2000,7 @@ NTSTATUS _netr_GetForestTrustInformation(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _netr_ServerGetTrustInfo(pipes_struct *p,
+NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 				  struct netr_ServerGetTrustInfo *r)
 {
 	p->rng_fault_state = true;
