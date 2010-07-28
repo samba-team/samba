@@ -4562,6 +4562,14 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 				const char *username,
 				const char *password,
 				struct rpc_pipe_client **presult);
+NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
+					const struct ndr_syntax_id *interface,
+					enum dcerpc_transport_t transport,
+					enum dcerpc_AuthLevel auth_level,
+					const char *server,
+					const char *username,
+					const char *password,
+					struct rpc_pipe_client **presult);
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);

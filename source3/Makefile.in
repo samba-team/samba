@@ -678,7 +678,9 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ)
 
 RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2)
 
-RPC_CLIENT_OBJ = rpc_client/cli_pipe.o librpc/rpc/dcerpc_gssapi.o \
+RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
+		 librpc/rpc/dcerpc_gssapi.o \
+		 librpc/rpc/dcerpc_spnego.o \
 		 librpc/rpc/rpc_common.o \
 		 rpc_client/rpc_transport_np.o \
 		 rpc_client/rpc_transport_sock.o \
@@ -1361,6 +1363,7 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 		   librpc/rpc/rpc_common.o \
 		   rpc_client/cli_pipe.o \
 		   librpc/rpc/dcerpc_gssapi.o \
+		   librpc/rpc/dcerpc_spnego.o \
 		   ../librpc/rpc/binding.o \
 		   $(LIBMSRPC_GEN_OBJ)
 

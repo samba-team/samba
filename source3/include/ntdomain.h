@@ -111,7 +111,8 @@ struct pipe_auth_data {
 	union {
 		struct schannel_state *schannel_auth;
 		struct auth_ntlmssp_state *auth_ntlmssp_state;
-		struct gse_context *gssapi_state; /* Client only for now */
+		struct gse_context *gssapi_state;
+		struct spnego_context *spnego_state;
 	} a_u;
 
 	/* Only the client code uses these 3 for now */
