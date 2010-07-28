@@ -26,12 +26,12 @@
 #include "librpc/gen_ndr/srv_wbint.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
 
-void _wbint_Ping(pipes_struct *p, struct wbint_Ping *r)
+void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
 	*r->out.out_data = r->in.in_data;
 }
 
-NTSTATUS _wbint_LookupSid(pipes_struct *p, struct wbint_LookupSid *r)
+NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 	char *dom_name;
@@ -55,7 +55,7 @@ NTSTATUS _wbint_LookupSid(pipes_struct *p, struct wbint_LookupSid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_LookupName(pipes_struct *p, struct wbint_LookupName *r)
+NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 
@@ -68,7 +68,7 @@ NTSTATUS _wbint_LookupName(pipes_struct *p, struct wbint_LookupName *r)
 		r->out.sid, r->out.type);
 }
 
-NTSTATUS _wbint_Sid2Uid(pipes_struct *p, struct wbint_Sid2Uid *r)
+NTSTATUS _wbint_Sid2Uid(struct pipes_struct *p, struct wbint_Sid2Uid *r)
 {
 	uid_t uid;
 	NTSTATUS status;
@@ -82,7 +82,7 @@ NTSTATUS _wbint_Sid2Uid(pipes_struct *p, struct wbint_Sid2Uid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_Sid2Gid(pipes_struct *p, struct wbint_Sid2Gid *r)
+NTSTATUS _wbint_Sid2Gid(struct pipes_struct *p, struct wbint_Sid2Gid *r)
 {
 	gid_t gid;
 	NTSTATUS status;
@@ -96,19 +96,19 @@ NTSTATUS _wbint_Sid2Gid(pipes_struct *p, struct wbint_Sid2Gid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_Uid2Sid(pipes_struct *p, struct wbint_Uid2Sid *r)
+NTSTATUS _wbint_Uid2Sid(struct pipes_struct *p, struct wbint_Uid2Sid *r)
 {
 	return idmap_uid_to_sid(r->in.dom_name ? r->in.dom_name : "",
 				r->out.sid, r->in.uid);
 }
 
-NTSTATUS _wbint_Gid2Sid(pipes_struct *p, struct wbint_Gid2Sid *r)
+NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
 {
 	return idmap_gid_to_sid(r->in.dom_name ? r->in.dom_name : "",
 				r->out.sid, r->in.gid);
 }
 
-NTSTATUS _wbint_AllocateUid(pipes_struct *p, struct wbint_AllocateUid *r)
+NTSTATUS _wbint_AllocateUid(struct pipes_struct *p, struct wbint_AllocateUid *r)
 {
 	struct unixid xid;
 	NTSTATUS status;
@@ -121,7 +121,7 @@ NTSTATUS _wbint_AllocateUid(pipes_struct *p, struct wbint_AllocateUid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_AllocateGid(pipes_struct *p, struct wbint_AllocateGid *r)
+NTSTATUS _wbint_AllocateGid(struct pipes_struct *p, struct wbint_AllocateGid *r)
 {
 	struct unixid xid;
 	NTSTATUS status;
@@ -134,7 +134,7 @@ NTSTATUS _wbint_AllocateGid(pipes_struct *p, struct wbint_AllocateGid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_QueryUser(pipes_struct *p, struct wbint_QueryUser *r)
+NTSTATUS _wbint_QueryUser(struct pipes_struct *p, struct wbint_QueryUser *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 
@@ -146,7 +146,7 @@ NTSTATUS _wbint_QueryUser(pipes_struct *p, struct wbint_QueryUser *r)
 					   r->out.info);
 }
 
-NTSTATUS _wbint_LookupUserAliases(pipes_struct *p,
+NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 				  struct wbint_LookupUserAliases *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
@@ -160,7 +160,7 @@ NTSTATUS _wbint_LookupUserAliases(pipes_struct *p,
 		&r->out.rids->num_rids, &r->out.rids->rids);
 }
 
-NTSTATUS _wbint_LookupUserGroups(pipes_struct *p,
+NTSTATUS _wbint_LookupUserGroups(struct pipes_struct *p,
 				 struct wbint_LookupUserGroups *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
@@ -174,7 +174,7 @@ NTSTATUS _wbint_LookupUserGroups(pipes_struct *p,
 		&r->out.sids->num_sids, &r->out.sids->sids);
 }
 
-NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p,
+NTSTATUS _wbint_QuerySequenceNumber(struct pipes_struct *p,
 				    struct wbint_QuerySequenceNumber *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
@@ -186,7 +186,7 @@ NTSTATUS _wbint_QuerySequenceNumber(pipes_struct *p,
 	return domain->methods->sequence_number(domain, r->out.sequence);
 }
 
-NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p,
+NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 				   struct wbint_LookupGroupMembers *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
@@ -224,7 +224,8 @@ NTSTATUS _wbint_LookupGroupMembers(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r)
+NTSTATUS _wbint_QueryUserList(struct pipes_struct *p,
+			      struct wbint_QueryUserList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 
@@ -237,7 +238,8 @@ NTSTATUS _wbint_QueryUserList(pipes_struct *p, struct wbint_QueryUserList *r)
 		&r->out.users->userinfos);
 }
 
-NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r)
+NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
+			       struct wbint_QueryGroupList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 	uint32_t i, num_groups;
@@ -279,7 +281,7 @@ NTSTATUS _wbint_QueryGroupList(pipes_struct *p, struct wbint_QueryGroupList *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_DsGetDcName(pipes_struct *p, struct wbint_DsGetDcName *r)
+NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 	struct rpc_pipe_client *netlogon_pipe;
@@ -360,7 +362,7 @@ done:
 	return status;
 }
 
-NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
+NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
 	char *domain_name;
@@ -400,7 +402,7 @@ NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_CheckMachineAccount(pipes_struct *p,
+NTSTATUS _wbint_CheckMachineAccount(struct pipes_struct *p,
 				    struct wbint_CheckMachineAccount *r)
 {
 	struct winbindd_domain *domain;
@@ -452,7 +454,7 @@ again:
 	return status;
 }
 
-NTSTATUS _wbint_ChangeMachineAccount(pipes_struct *p,
+NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 				     struct wbint_ChangeMachineAccount *r)
 {
 	struct winbindd_domain *domain;
@@ -512,7 +514,7 @@ again:
 	return status;
 }
 
-NTSTATUS _wbint_PingDc(pipes_struct *p, struct wbint_PingDc *r)
+NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 {
 	NTSTATUS status;
 	struct winbindd_domain *domain;
@@ -561,7 +563,7 @@ NTSTATUS _wbint_PingDc(pipes_struct *p, struct wbint_PingDc *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_SetMapping(pipes_struct *p, struct wbint_SetMapping *r)
+NTSTATUS _wbint_SetMapping(struct pipes_struct *p, struct wbint_SetMapping *r)
 {
 	struct id_map map;
 
@@ -583,7 +585,8 @@ NTSTATUS _wbint_SetMapping(pipes_struct *p, struct wbint_SetMapping *r)
 	return idmap_set_mapping(&map);
 }
 
-NTSTATUS _wbint_RemoveMapping(pipes_struct *p, struct wbint_RemoveMapping *r)
+NTSTATUS _wbint_RemoveMapping(struct pipes_struct *p,
+			      struct wbint_RemoveMapping *r)
 {
 	struct id_map map;
 
@@ -605,7 +608,7 @@ NTSTATUS _wbint_RemoveMapping(pipes_struct *p, struct wbint_RemoveMapping *r)
 	return idmap_remove_mapping(&map);
 }
 
-NTSTATUS _wbint_SetHWM(pipes_struct *p, struct wbint_SetHWM *r)
+NTSTATUS _wbint_SetHWM(struct pipes_struct *p, struct wbint_SetHWM *r)
 {
 	struct unixid id;
 	NTSTATUS status;
