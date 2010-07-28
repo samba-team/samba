@@ -886,7 +886,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_qpathinfo2_recv(req, change_time, access_time,
+	status = cli_qpathinfo2_recv(req, create_time, access_time,
 				     write_time, change_time, size, mode, ino);
  fail:
 	TALLOC_FREE(frame);
