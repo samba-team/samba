@@ -111,7 +111,7 @@ static DATA_BLOB generic_session_key(void)
  Handle NTLMSSP.
  ********************************************************************/
 
-static bool add_ntlmssp_auth(pipes_struct *p)
+static bool add_ntlmssp_auth(struct pipes_struct *p)
 {
 	enum dcerpc_AuthLevel auth_level = p->auth.auth_level;
 	DATA_BLOB auth_blob = data_blob_null;
@@ -184,7 +184,7 @@ static bool add_ntlmssp_auth(pipes_struct *p)
  Append a schannel authenticated fragment.
  ********************************************************************/
 
-static bool add_schannel_auth(pipes_struct *p)
+static bool add_schannel_auth(struct pipes_struct *p)
 {
 	DATA_BLOB auth_blob = data_blob_null;
 	NTSTATUS status;
@@ -247,7 +247,7 @@ static bool add_schannel_auth(pipes_struct *p)
  Generate the next PDU to be returned from the data.
 ********************************************************************/
 
-static bool create_next_packet(pipes_struct *p,
+static bool create_next_packet(struct pipes_struct *p,
 				enum dcerpc_AuthType auth_type,
 				enum dcerpc_AuthLevel auth_level,
 				size_t auth_length)
@@ -396,7 +396,7 @@ static bool create_next_packet(pipes_struct *p,
  Generate the next PDU to be returned from the data in p->rdata. 
 ********************************************************************/
 
-bool create_next_pdu(pipes_struct *p)
+bool create_next_pdu(struct pipes_struct *p)
 {
 	enum dcerpc_AuthType auth_type =
 		map_pipe_auth_type_to_rpc_auth_type(p->auth.auth_type);
@@ -461,7 +461,8 @@ bool create_next_pdu(pipes_struct *p)
  the pipe struct.
 *******************************************************************/
 
-static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
+static bool pipe_ntlmssp_verify_final(struct pipes_struct *p,
+				      DATA_BLOB *p_resp_blob)
 {
 	DATA_BLOB session_key, reply;
 	NTSTATUS status;
@@ -550,7 +551,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
  This is the "stage3" NTLMSSP response after a bind request and reply.
 *******************************************************************/
 
-bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
+bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	NTSTATUS status;
@@ -615,13 +616,13 @@ bool api_pipe_bind_auth3(pipes_struct *p, struct ncacn_packet *pkt)
 	return False;
 }
 
-static bool pipe_init_outgoing_data(pipes_struct *p);
+static bool pipe_init_outgoing_data(struct pipes_struct *p);
 
 /*******************************************************************
  Marshall a bind_nak pdu.
 *******************************************************************/
 
-static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
+static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	union dcerpc_payload u;
@@ -670,7 +671,7 @@ static bool setup_bind_nak(pipes_struct *p, struct ncacn_packet *pkt)
  Marshall a fault pdu.
 *******************************************************************/
 
-bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
+bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS fault_status)
 {
 	NTSTATUS status;
 	union dcerpc_payload u;
@@ -805,7 +806,7 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
  Handle a SPNEGO krb5 bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p,
+static bool pipe_spnego_auth_bind_kerberos(struct pipes_struct *p,
 					   TALLOC_CTX *mem_ctx,
 					   struct dcerpc_auth *pauth_info,
 					   DATA_BLOB *psecblob,
@@ -818,7 +819,7 @@ static bool pipe_spnego_auth_bind_kerberos(pipes_struct *p,
  Handle the first part of a SPNEGO bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
+static bool pipe_spnego_auth_bind_negotiate(struct pipes_struct *p,
 					    TALLOC_CTX *mem_ctx,
 					    struct dcerpc_auth *pauth_info,
 					    DATA_BLOB *response)
@@ -937,7 +938,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p,
  Handle the second part of a SPNEGO bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
+static bool pipe_spnego_auth_bind_continue(struct pipes_struct *p,
 					   TALLOC_CTX *mem_ctx,
 					   struct dcerpc_auth *pauth_info,
 					   DATA_BLOB *response)
@@ -1002,7 +1003,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p,
  Handle an schannel bind auth.
 *******************************************************************/
 
-static bool pipe_schannel_auth_bind(pipes_struct *p,
+static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 				    TALLOC_CTX *mem_ctx,
 				    struct dcerpc_auth *auth_info,
 				    DATA_BLOB *response)
@@ -1121,7 +1122,7 @@ static bool pipe_schannel_auth_bind(pipes_struct *p,
  Handle an NTLMSSP bind auth.
 *******************************************************************/
 
-static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
+static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 				   TALLOC_CTX *mem_ctx,
 				   struct dcerpc_auth *auth_info,
 				   DATA_BLOB *response)
@@ -1182,7 +1183,7 @@ static bool pipe_ntlmssp_auth_bind(pipes_struct *p,
  Respond to a pipe bind request.
 *******************************************************************/
 
-bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
+bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
@@ -1462,7 +1463,7 @@ bool api_pipe_bind_req(pipes_struct *p, struct ncacn_packet *pkt)
  SPNEGO calls.
 ****************************************************************************/
 
-bool api_pipe_alter_context(pipes_struct *p, struct ncacn_packet *pkt)
+bool api_pipe_alter_context(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
@@ -1694,7 +1695,7 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 	return;	
 }
 
-static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
+static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds);
 
 /****************************************************************************
@@ -1703,7 +1704,7 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
  before doing the call.
 ****************************************************************************/
 
-bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt)
+bool api_pipe_request(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	bool ret = False;
 	bool changed_user = False;
@@ -1751,7 +1752,7 @@ bool api_pipe_request(pipes_struct *p, struct ncacn_packet *pkt)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
+static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
@@ -1845,7 +1846,7 @@ static bool api_rpcTNP(pipes_struct *p, struct ncacn_packet *pkt,
  Initialise an outgoing packet.
 ****************************************************************************/
 
-static bool pipe_init_outgoing_data(pipes_struct *p)
+static bool pipe_init_outgoing_data(struct pipes_struct *p)
 {
 	output_data *o_data = &p->out_data;
 
@@ -1865,7 +1866,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
  Sets the fault state on incoming packets.
 ****************************************************************************/
 
-void set_incoming_fault(pipes_struct *p)
+void set_incoming_fault(struct pipes_struct *p)
 {
 	data_blob_free(&p->in_data.data);
 	p->in_data.pdu_needed_len = 0;
@@ -1875,7 +1876,7 @@ void set_incoming_fault(pipes_struct *p)
 		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 }
 
-static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
+static bool dcesrv_auth_request(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
@@ -2033,7 +2034,7 @@ static bool dcesrv_auth_request(pipes_struct *p, struct ncacn_packet *pkt)
  appends the data into the complete stream if the LAST flag is not set.
 ****************************************************************************/
 
-static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
+static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	DATA_BLOB data;
 
@@ -2110,7 +2111,7 @@ static bool process_request_pdu(pipes_struct *p, struct ncacn_packet *pkt)
  Processes a finished PDU stored in p->in_data.pdu.
 ****************************************************************************/
 
-void process_complete_pdu(pipes_struct *p)
+void process_complete_pdu(struct pipes_struct *p)
 {
 	struct ncacn_packet *pkt = NULL;
 	NTSTATUS status;
