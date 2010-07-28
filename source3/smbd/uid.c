@@ -378,7 +378,7 @@ bool change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-bool become_authenticated_pipe_user(pipes_struct *p)
+bool become_authenticated_pipe_user(struct pipes_struct *p)
 {
 	if (!push_sec_ctx())
 		return False;
