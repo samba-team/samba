@@ -247,7 +247,7 @@ struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state)
 {
-	pipes_struct p;
+	struct pipes_struct p;
 	struct api_struct *fns;
 	int num_fns;
 	bool ret;
