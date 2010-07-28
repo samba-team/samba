@@ -658,24 +658,29 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			if (pipe_default_auth_spnego_type !=
-					PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-				DEBUG(0, ("Could not initialise %s. "
-					  "Currently only NTLMSSP is "
-					  "supported for SPNEGO\n",
-					  get_pipe_name_from_syntax(
-					    talloc_tos(),
-					    cmd_entry->interface)));
-				return NT_STATUS_UNSUCCESSFUL;
+			switch (pipe_default_auth_spnego_type) {
+			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
+						cli, cmd_entry->interface,
+						default_transport,
+						pipe_default_auth_level,
+						get_cmdline_auth_info_domain(auth_info),
+						get_cmdline_auth_info_username(auth_info),
+						get_cmdline_auth_info_password(auth_info),
+						&cmd_entry->rpc_pipe);
+				break;
+			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
+				ntresult = cli_rpc_pipe_open_spnego_krb5(
+						cli, cmd_entry->interface,
+						default_transport,
+						pipe_default_auth_level,
+						cli->desthost,
+						NULL, NULL,
+						&cmd_entry->rpc_pipe);
+				break;
+			default:
+				ntresult = NT_STATUS_INTERNAL_ERROR;
 			}
-			ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
-				cli, cmd_entry->interface,
-				default_transport,
-				pipe_default_auth_level,
-				get_cmdline_auth_info_domain(auth_info),
-				get_cmdline_auth_info_username(auth_info),
-				get_cmdline_auth_info_password(auth_info),
-				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			ntresult = cli_rpc_pipe_open_ntlmssp(
