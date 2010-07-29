@@ -3148,7 +3148,8 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	DEBUG(0, ("winreg_printer_get_changeid: get changeid from %s\n", path));
+	DEBUG(10, ("winreg_printer_get_changeid: get changeid from %s\n", path));
+
 	result = winreg_printer_query_dword(tmp_ctx,
 					    winreg_pipe,
 					    &key_hnd,
