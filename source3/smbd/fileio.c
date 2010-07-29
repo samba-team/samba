@@ -401,6 +401,37 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 	fsp->fh->pos = pos + n;
 
+	if ((n == 1) && (data[0] == '\0') && (pos > wcp->file_size)) {
+		int ret;
+
+		/*
+		 * This is a 1-byte write of a 0 beyond the EOF and
+		 * thus implicitly also beyond the current active
+		 * write cache, the typical file-extending (and
+		 * allocating, but we're using the write cache here)
+		 * write done by Windows. We just have to ftruncate
+		 * the file and rely on posix semantics to return
+		 * zeros for non-written file data that is within the
+		 * file length.
+		 *
+		 * We can not use wcp_file_size_change here because we
+		 * might have an existing write cache, and
+		 * wcp_file_size_change assumes a change to just the
+		 * end of the current write cache.
+		 */
+
+		wcp->file_size = pos + 1;
+		ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
+		if (ret == -1) {
+			DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f"
+				 "error %s\n", fsp_str_dbg(fsp),
+				 (double)wcp->file_size, strerror(errno)));
+			return -1;
+		}
+		return 1;
+	}
+
+
 	/*
 	 * If we have active cache and it isn't contiguous then we flush.
 	 * NOTE: There is a small problem with running out of disk ....
