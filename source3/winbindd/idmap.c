@@ -622,14 +622,22 @@ fail:
 
 static NTSTATUS idmap_allocate_unixid(struct unixid *id)
 {
-	struct idmap_alloc_context *ctx;
+	struct idmap_domain *dom;
 	NTSTATUS ret;
 
-	if (!NT_STATUS_IS_OK(ret = idmap_alloc_init(&ctx))) {
-		return ret;
+	dom = idmap_find_domain(NULL);
+
+	if (dom == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return ctx->methods->allocate_id(id);
+	if (dom->methods->allocate_id == NULL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ret = dom->methods->allocate_id(dom, id);
+
+	return ret;
 }
 
 
