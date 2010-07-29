@@ -35,7 +35,7 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_auth_state *state;
 	struct winbindd_domain *domain;
-	fstring name_domain, name_user, mapped_user;
+	fstring name_domain, name_user;
 	char *mapped = NULL;
 	NTSTATUS status;
 
@@ -62,17 +62,15 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 
 	status = normalize_name_unmap(state, request->data.auth.user, &mapped);
 
-	/* If the name normalization didnt' actually do anything,
-	   just use the original name */
+	/* If the name normalization changed something, copy it over the given
+	   name */
 
 	if (NT_STATUS_IS_OK(status)
 	    || NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		fstrcpy(mapped_user, mapped);
-	} else {
-		fstrcpy(mapped_user, request->data.auth.user);
+		fstrcpy(request->data.auth.user, mapped);
 	}
 
-	if (!canonicalize_username(mapped_user, name_domain, name_user)) {
+	if (!canonicalize_username(request->data.auth.user, name_domain, name_user)) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
