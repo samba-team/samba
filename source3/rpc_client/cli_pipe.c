@@ -1306,6 +1306,10 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 {
 	uint32_t data_space, data_len;
 	size_t max_len;
+	struct gse_context *gse_ctx;
+	enum dcerpc_AuthType auth_type;
+	void *auth_ctx;
+	NTSTATUS status;
 
 	switch (cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
@@ -1333,11 +1337,26 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 				*p_auth_len = NTLMSSP_SIG_SIZE;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				*p_auth_len = 0; /* TODO */
+				status = spnego_get_negotiated_mech(
+						cli->auth->a_u.spnego_state,
+						&auth_type, &auth_ctx);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
+				gse_ctx = talloc_get_type(auth_ctx,
+							  struct gse_context);
+				if (!gse_ctx) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				*p_auth_len = gse_get_signature_length(gse_ctx,
+						(cli->auth->auth_level ==
+						  DCERPC_AUTH_LEVEL_PRIVACY),
+						max_len);
 				break;
 			default:
 				return NT_STATUS_INVALID_PARAMETER;
 			}
+			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			*p_auth_len = NTLMSSP_SIG_SIZE;
 			break;
