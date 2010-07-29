@@ -177,7 +177,7 @@ void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req);
  * actual private parameter.
  */
 typedef void (*ctdb_callback_t)(struct ctdb_connection *ctdb,
-				struct ctdb_request *req, void *private);
+				struct ctdb_request *req, void *private_data);
 
 /**
  * struct ctdb_db - connection to a particular open TDB
@@ -247,7 +247,7 @@ struct ctdb_lock;
 typedef void (*ctdb_rrl_callback_t)(struct ctdb_db *ctdb_db,
 				    struct ctdb_lock *lock,
 				    TDB_DATA data,
-				    void *private);
+				    void *private_data);
 
 /**
  * ctdb_readrecordlock_async - read and lock a record
