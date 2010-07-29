@@ -524,6 +524,7 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 {
 	enum dcerpc_AuthType auth_type;
 	struct gse_context *gse_ctx;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
 	void *auth_ctx;
 	NTSTATUS status;
 
@@ -548,8 +549,15 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 						auth_level, rpc_out);
 		break;
 
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = NT_STATUS_NOT_IMPLEMENTED;
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		ntlmssp_ctx = talloc_get_type(auth_ctx,
+						struct auth_ntlmssp_state);
+		if (!ntlmssp_ctx) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			break;
+		}
+		status = add_ntlmssp_auth_footer(ntlmssp_ctx,
+						 auth_level, rpc_out);
 		break;
 
 	default:
@@ -558,6 +566,55 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 	}
 
 	return status;
+}
+
+static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
+					struct spnego_context *sp_ctx,
+					enum dcerpc_AuthLevel auth_level,
+					DATA_BLOB *data, DATA_BLOB *full_pkt,
+					DATA_BLOB *auth_token)
+{
+	enum dcerpc_AuthType auth_type;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gse_context *gse_ctx;
+	void *auth_ctx;
+	NTSTATUS status;
+
+	status = spnego_get_negotiated_mech(sp_ctx, &auth_type, &auth_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (auth_type) {
+	case DCERPC_AUTH_TYPE_KRB5:
+		gse_ctx = talloc_get_type(auth_ctx,
+					  struct gse_context);
+		if (!gse_ctx) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		DEBUG(10, ("KRB5 auth\n"));
+
+		return get_gssapi_auth_footer(mem_ctx, gse_ctx,
+						auth_level,
+						data, full_pkt,
+						auth_token);
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		ntlmssp_ctx = talloc_get_type(auth_ctx,
+					  struct auth_ntlmssp_state);
+		if (!ntlmssp_ctx) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		DEBUG(10, ("NTLMSSP auth\n"));
+
+		return get_ntlmssp_auth_footer(ntlmssp_ctx,
+						auth_level,
+						data, full_pkt,
+						auth_token);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 }
 
 /**
@@ -618,12 +675,16 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		status = NT_STATUS_OK;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			return add_spnego_auth_footer(auth->a_u.spnego_state,
-						      auth->auth_level,
-						      rpc_out);
+		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			/* compat for server code */
+			return add_ntlmssp_auth_footer(
+						auth->a_u.auth_ntlmssp_state,
+						auth->auth_level,
+						rpc_out);
 		}
-		/* fall thorugh */
+		status = add_spnego_auth_footer(auth->a_u.spnego_state,
+						auth->auth_level, rpc_out);
+		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		status = add_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
 						 auth->auth_level,
@@ -731,26 +792,12 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			enum dcerpc_AuthType auth_type;
-			struct gse_context *gse_ctx;
-			void *auth_ctx;
+		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			/* compat for server code */
+			DEBUG(10, ("NTLMSSP auth\n"));
 
-			status = spnego_get_negotiated_mech(
-						auth->a_u.spnego_state,
-						&auth_type, &auth_ctx);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			gse_ctx = talloc_get_type(auth_ctx,
-						  struct gse_context);
-			if (!gse_ctx) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			DEBUG(10, ("KRB5 auth\n"));
-
-			status = get_gssapi_auth_footer(pkt, gse_ctx,
+			status = get_ntlmssp_auth_footer(
+						auth->a_u.auth_ntlmssp_state,
 						auth->auth_level,
 						&data, &full_pkt,
 						&auth_info.credentials);
@@ -759,7 +806,16 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			}
 			break;
 		}
-		/* fall through */
+
+		status = get_spnego_auth_footer(pkt, auth->a_u.spnego_state,
+						auth->auth_level,
+						&data, &full_pkt,
+						&auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
+
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 
 		DEBUG(10, ("NTLMSSP auth\n"));

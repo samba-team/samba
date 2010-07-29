@@ -1248,20 +1248,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		switch (auth->spnego_type) {
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli,
-							auth->auth_level,
-							&auth_info);
-			break;
-
-		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-			ret = create_spnego_auth_bind_req(cli, auth,
-							  &auth_info);
-			break;
-		default:
-			return NT_STATUS_INTERNAL_ERROR;
-		}
+		ret = create_spnego_auth_bind_req(cli, auth, &auth_info);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -1332,17 +1319,17 @@ static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
 		/* Treat the same for all authenticated rpc requests. */
 		switch(cli->auth->auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			switch (cli->auth->spnego_type) {
-			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+			status = spnego_get_negotiated_mech(
+					cli->auth->a_u.spnego_state,
+					&auth_type, &auth_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			switch (auth_type) {
+			case DCERPC_AUTH_TYPE_NTLMSSP:
 				*p_auth_len = NTLMSSP_SIG_SIZE;
 				break;
-			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				status = spnego_get_negotiated_mech(
-						cli->auth->a_u.spnego_state,
-						&auth_type, &auth_ctx);
-				if (!NT_STATUS_IS_OK(status)) {
-					return status;
-				}
+			case DCERPC_AUTH_TYPE_KRB5:
 				gse_ctx = talloc_get_type(auth_ctx,
 							  struct gse_context);
 				if (!gse_ctx) {
@@ -1987,36 +1974,24 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		break;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		switch (pauth->spnego_type) {
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			/* Need to send alter context request and reply. */
-			status = rpc_finish_spnego_ntlmssp_bind_send(req,
-						state, &auth.credentials);
-			break;
-
-		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-			status = spnego_get_client_auth_token(state,
+		status = spnego_get_client_auth_token(state,
 						pauth->a_u.spnego_state,
 						&auth.credentials,
 						&auth_token);
-			if (!NT_STATUS_IS_OK(status)) {
-				break;
-			}
-			if (auth_token.length == 0) {
-				/* Bind complete. */
-				tevent_req_done(req);
-				return;
-			}
-			if (spnego_require_more_processing(pauth->a_u.spnego_state)) {
-				status = rpc_bind_next_send(req, state,
-								&auth_token);
-			} else {
-				status = rpc_bind_finish_send(req, state,
-								&auth_token);
-			}
+		if (!NT_STATUS_IS_OK(status)) {
 			break;
-		default:
-			status = NT_STATUS_INTERNAL_ERROR;
+		}
+		if (auth_token.length == 0) {
+			/* Bind complete. */
+			tevent_req_done(req);
+			return;
+		}
+		if (spnego_require_more_processing(pauth->a_u.spnego_state)) {
+			status = rpc_bind_next_send(req, state,
+							&auth_token);
+		} else {
+			status = rpc_bind_finish_send(req, state,
+							&auth_token);
 		}
 		break;
 
@@ -2359,12 +2334,31 @@ bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
 
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 {
+	struct auth_ntlmssp_state *a = NULL;
 	struct cli_state *cli;
 
-	if ((rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_NTLMSSP)
-	    || ((rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_SPNEGO
-		 && rpc_cli->auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
-		memcpy(nt_hash, auth_ntlmssp_get_nt_hash(rpc_cli->auth->a_u.auth_ntlmssp_state), 16);
+	if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_NTLMSSP) {
+		a = rpc_cli->auth->a_u.auth_ntlmssp_state;
+	} else if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
+		enum dcerpc_AuthType auth_type;
+		void *auth_ctx;
+		NTSTATUS status;
+
+		status = spnego_get_negotiated_mech(
+					rpc_cli->auth->a_u.spnego_state,
+					&auth_type, &auth_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
+		if (auth_type == DCERPC_AUTH_TYPE_NTLMSSP) {
+			a = talloc_get_type(auth_ctx,
+					    struct auth_ntlmssp_state);
+		}
+	}
+
+	if (a) {
+		memcpy(nt_hash, auth_ntlmssp_get_nt_hash(a), 16);
 		return true;
 	}
 
@@ -2409,7 +2403,6 @@ static int cli_auth_ntlmssp_data_destructor(struct pipe_auth_data *auth)
 
 static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  enum dcerpc_AuthType auth_type,
-				  enum pipe_auth_type_spnego spnego_type,
 				  enum dcerpc_AuthLevel auth_level,
 				  const char *domain,
 				  const char *username,
@@ -2425,7 +2418,6 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	result->auth_type = auth_type;
-	result->spnego_type = spnego_type;
 	result->auth_level = auth_level;
 
 	result->user_name = talloc_strdup(result, username);
@@ -3057,20 +3049,18 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
  Open a named pipe to an SMB server and bind using NTLMSSP or SPNEGO NTLMSSP
  ****************************************************************************/
 
-static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
-						   const struct ndr_syntax_id *interface,
-						   enum dcerpc_transport_t transport,
-						   bool use_spnego,
-						   enum dcerpc_AuthLevel auth_level,
-						   const char *domain,
-						   const char *username,
-						   const char *password,
-						   struct rpc_pipe_client **presult)
+NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
+				   const struct ndr_syntax_id *interface,
+				   enum dcerpc_transport_t transport,
+				   enum dcerpc_AuthLevel auth_level,
+				   const char *domain,
+				   const char *username,
+				   const char *password,
+				   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-	enum pipe_auth_type_spnego spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -3078,13 +3068,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 		return status;
 	}
 
-	if (use_spnego) {
-		auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-		spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-	}
-
 	status = rpccli_ntlmssp_bind_data(result,
-					  auth_type, spnego_type, auth_level,
+					  auth_type, auth_level,
 					  domain, username, password,
 					  &auth);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3112,56 +3097,6 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 	TALLOC_FREE(result);
 	return status;
-}
-
-/****************************************************************************
- External interface.
- Open a named pipe to an SMB server and bind using NTLMSSP (bind type 10)
- ****************************************************************************/
-
-NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
-				   const struct ndr_syntax_id *interface,
-				   enum dcerpc_transport_t transport,
-				   enum dcerpc_AuthLevel auth_level,
-				   const char *domain,
-				   const char *username,
-				   const char *password,
-				   struct rpc_pipe_client **presult)
-{
-	return cli_rpc_pipe_open_ntlmssp_internal(cli,
-						interface,
-						transport,
-						false,
-						auth_level,
-						domain,
-						username,
-						password,
-						presult);
-}
-
-/****************************************************************************
- External interface.
- Open a named pipe to an SMB server and bind using spnego NTLMSSP (bind type 9)
- ****************************************************************************/
-
-NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
-					  const struct ndr_syntax_id *interface,
-					  enum dcerpc_transport_t transport,
-					  enum dcerpc_AuthLevel auth_level,
-					  const char *domain,
-					  const char *username,
-					  const char *password,
-					  struct rpc_pipe_client **presult)
-{
-	return cli_rpc_pipe_open_ntlmssp_internal(cli,
-						interface,
-						transport,
-						true,
-						auth_level,
-						domain,
-						username,
-						password,
-						presult);
 }
 
 /****************************************************************************
@@ -3563,6 +3498,74 @@ err_out:
 	return status;
 }
 
+NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
+					  const struct ndr_syntax_id *interface,
+					  enum dcerpc_transport_t transport,
+					  enum dcerpc_AuthLevel auth_level,
+					  const char *domain,
+					  const char *username,
+					  const char *password,
+					  struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct pipe_auth_data *auth;
+	NTSTATUS status;
+
+	status = cli_rpc_pipe_open(cli, transport, interface, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	auth = talloc(result, struct pipe_auth_data);
+	if (auth == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+	auth->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+	auth->auth_level = auth_level;
+
+	if (!username) {
+		username = "";
+	}
+	auth->user_name = talloc_strdup(auth, username);
+	if (!auth->user_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	if (!domain) {
+		domain = "";
+	}
+	auth->domain = talloc_strdup(auth, domain);
+	if (!auth->domain) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	status = spnego_ntlmssp_init_client(auth, auth->auth_level,
+					    domain, username, password,
+					    &auth->a_u.spnego_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("spnego_init_client returned %s\n",
+			  nt_errstr(status)));
+		goto err_out;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("cli_rpc_pipe_bind failed with error %s\n",
+			  nt_errstr(status)));
+		goto err_out;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+
+err_out:
+	TALLOC_FREE(result);
+	return status;
+}
+
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
@@ -3584,15 +3587,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 				     16);
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		switch (cli->auth->spnego_type) {
-		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-			sk = auth_ntlmssp_get_session_key(
-						a->a_u.auth_ntlmssp_state);
-			break;
-		case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-			sk = gse_get_session_key(a->a_u.gssapi_state);
-			break;
-		default:
+		sk = spnego_get_session_key(a->a_u.spnego_state);
+		if (sk.length == 0) {
 			return NT_STATUS_NO_USER_SESSION_KEY;
 		}
 		break;
