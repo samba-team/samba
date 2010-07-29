@@ -801,7 +801,7 @@ NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	fstring name_domain, name_user, mapped_user;
+	fstring name_domain, name_user;
 	char *mapped = NULL;
 	NTSTATUS result;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
@@ -828,17 +828,15 @@ void winbindd_pam_auth(struct winbindd_cli_state *state)
 					       state->request->data.auth.user,
 					       &mapped);
 
-	/* If the name normalization didnt' actually do anything,
-	   just use the original name */
+	/* Update the auth name if we did any mapping */
 
-	if (NT_STATUS_IS_OK(name_map_status)
-	    ||NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED)) {
-		fstrcpy(mapped_user, mapped);
-	} else {
-		fstrcpy(mapped_user, state->request->data.auth.user);
+	if (NT_STATUS_IS_OK(name_map_status) ||
+	    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
+	{
+		fstrcpy(state->request->data.auth.user, mapped);
 	}
 
-	if (!canonicalize_username(mapped_user, name_domain, name_user)) {
+	if (!canonicalize_username(state->request->data.auth.user, name_domain, name_user)) {
 		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
