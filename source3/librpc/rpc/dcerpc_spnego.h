@@ -31,6 +31,12 @@ NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
 				   const char *password,
 				   uint32_t add_gss_c_flags,
 				   struct spnego_context **spengo_ctx);
+NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
+				    enum dcerpc_AuthLevel auth_level,
+				    const char *domain,
+				    const char *username,
+				    const char *password,
+				    struct spnego_context **spnego_ctx);
 
 NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				      struct spnego_context *sp_ctx,
@@ -43,4 +49,5 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 				    enum dcerpc_AuthType *auth_type,
 				    void **auth_context);
 
+DATA_BLOB spnego_get_session_key(struct spnego_context *sp_ctx);
 #endif /* _DCERPC_SPENGO_H_ */

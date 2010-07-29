@@ -105,7 +105,7 @@ struct gse_context;
 
 struct pipe_auth_data {
 	enum dcerpc_AuthType auth_type;
-	enum pipe_auth_type_spnego spnego_type;
+	enum pipe_auth_type_spnego spnego_type; /* used by server only */
 	enum dcerpc_AuthLevel auth_level;
 
 	union {
