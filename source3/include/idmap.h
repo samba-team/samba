@@ -35,6 +35,7 @@ struct idmap_domain {
 	struct idmap_methods *methods;
 	uint32_t low_id;
 	uint32_t high_id;
+	bool read_only;
 	void *private_data;
 };
 
