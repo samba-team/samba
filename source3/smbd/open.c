@@ -2142,7 +2142,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * If requested, truncate the file.
 	 */
 
-	if (flags2&O_TRUNC) {
+	if (file_existed && (flags2&O_TRUNC)) {
 		/*
 		 * We are modifing the file after open - update the stat
 		 * struct..
