@@ -1102,15 +1102,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
-		.label		= "update encrypted",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bUpdateEncrypt,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
 		.label		= "client schannel",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,

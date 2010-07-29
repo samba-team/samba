@@ -647,8 +647,10 @@ match is found and is used to update the encrypted password file
 return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
-NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
-		    bool (*fn) (const char *, const char *), bool run_cracker)
+NTSTATUS pass_check(const struct passwd *pass,
+		    const char *user,
+		    const char *password,
+		    bool run_cracker)
 {
 	char *pass2 = NULL;
 	int level = lp_passwordlevel();
@@ -820,9 +822,6 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	/* try it as it came to us */
 	nt_status = password_check(password);
         if NT_STATUS_IS_OK(nt_status) {
-                if (fn) {
-                        fn(user, password);
-		}
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
                 /* No point continuing if its not the password thats to blame (ie PAM disabled). */
@@ -850,8 +849,6 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	if (strhasupper(pass2)) {
 		strlower_m(pass2);
 		if NT_STATUS_IS_OK(nt_status = password_check(pass2)) {
-		        if (fn)
-				fn(user, pass2);
 			return (nt_status);
 		}
 	}
@@ -865,8 +862,6 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	strlower_m(pass2);
  
         if (NT_STATUS_IS_OK(nt_status = string_combinations(pass2, password_check, level))) {
-                if (fn)
-			fn(user, pass2);
 		return nt_status;
 	}
         

@@ -373,9 +373,7 @@ static bool cgi_handle_authorization(char *line)
 	 * Validate the password they have given.
 	 */
 
-	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, 
-				      NULL, False)) {
-
+	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, false)) {
 		if (pass) {
 			/*
 			 * Password was ok.

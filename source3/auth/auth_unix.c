@@ -23,60 +23,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/**
- * update the encrypted smbpasswd file from the plaintext username and password
- *  
- *  this ugly hack needs to die, but not quite yet, I think people still use it...
- **/
-static bool update_smbpassword_file(const char *user, const char *password)
-{
-	struct samu 	*sampass;
-	bool            ret;
-
-	if ( !(sampass = samu_new( NULL )) ) {
-		return False;
-	}
-
-	become_root();
-	ret = pdb_getsampwnam(sampass, user);
-	unbecome_root();
-
-	if(ret == False) {
-		DEBUG(0,("pdb_getsampwnam returned NULL\n"));
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	/*
-	 * Remove the account disabled flag - we are updating the
-	 * users password from a login.
-	 */
-	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED, PDB_CHANGED)) {
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	if (!pdb_set_plaintext_passwd (sampass, password)) {
-		TALLOC_FREE(sampass);
-		return False;
-	}
-
-	/* Now write it into the file. */
-	become_root();
-
-	ret = NT_STATUS_IS_OK(pdb_update_sam_account (sampass));
-
-	unbecome_root();
-
-	if (ret) {
-		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
-	}
-
-	TALLOC_FREE(sampass);
-	return ret;
-}
-
-
 /** Check a plaintext username/password
  *
  * Cannot deal with an encrupted password in any manner whatsoever,
@@ -102,9 +48,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->mapped.account_name,
 				user_info->password.plaintext,
-				lp_update_encrypted() ? 
-				update_smbpassword_file : NULL,
-				True);
+				true);
 
 	unbecome_root();
 

@@ -232,7 +232,7 @@ bool smb_pam_close_session(char *in_user, char *tty, char *rhost);
 
 void dfs_unlogin(void);
 NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
-		    bool (*fn) (const char *, const char *), bool run_cracker);
+		    bool run_cracker);
 
 /* The following definitions come from auth/token_util.c  */
 
@@ -3708,7 +3708,6 @@ bool _lp_writeraw(void);
 bool lp_null_passwords(void);
 bool lp_obey_pam_restrictions(void);
 bool lp_encrypted_passwords(void);
-bool lp_update_encrypted(void);
 int lp_client_schannel(void);
 int lp_server_schannel(void);
 bool lp_syslog_only(void);

@@ -353,7 +353,6 @@ parm_table = {
 	"ENHANCEDBROWSING"       : ("enhanced browsing", SambaParmBool, P_GLOBAL, "Yes"),
 	"PANICACTION"            : ("panic action", SambaParmString, P_GLOBAL, ""),
 	"LDAPMACHINESUFFIX"      : ("ldap machine suffix", SambaParmString, P_GLOBAL, ""),
-	"UPDATEENCRYPTED"        : ("update encrypted", SambaParmBool, P_GLOBAL, "No"),
 	"MAXTTL"                 : ("max ttl", SambaParmString, P_GLOBAL, "259200"),
 	"WRITABLE"               : ("read only", SambaParmBoolRev, P_LOCAL, "Yes"),
 	"SHAREMODES"             : ("share modes", SambaParmBool, P_LOCAL, "Yes"),
