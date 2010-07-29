@@ -904,7 +904,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
@@ -934,7 +934,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
 		if (!W_ERROR_IS_OK(result)) {
 			result = ntstatus_to_werror(status);
@@ -975,7 +975,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
@@ -1011,7 +1011,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
 		if (!W_ERROR_IS_OK(result)) {
 			result = ntstatus_to_werror(status);
