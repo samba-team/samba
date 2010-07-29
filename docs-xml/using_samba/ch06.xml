@@ -1592,20 +1592,6 @@ Password changed for user dave</programlisting>
 
 <row>
 
-<entry colname="col1"><para><literal>update encrypted</literal></para></entry>
-
-<entry colname="col2"><para>boolean</para></entry>
-
-<entry colname="col3"><para>If <literal>yes</literal>, Samba updates the encrypted password file when a client connects to a share with a plaintext password.</para></entry>
-
-<entry colname="col4"><para><literal>no</literal></para></entry>
-
-<entry colname="col5"><para>Global</para></entry>
-
-</row>
-
-<row>
-
 <entry colname="col1"><para><literal>null passwords</literal></para></entry>
 
 <entry colname="col2"><para>boolean</para></entry>
@@ -1769,23 +1755,6 @@ password level</title>
 
 
 <sect3 role="" label="6.4.4.7" id="ch06-SECT-4.3.7">
-<indexterm id="ch06-idx-969481-0"><primary>pdate encrypted option</primary></indexterm>
-<title>update encrypted</title>
-
-
-<para>For sites switching over to the <indexterm id="ch06-idx-967799-0"><primary>encrypted passwords</primary><secondary>Microsoft format</secondary></indexterm>encrypted password format, Samba provides an option that should help with the transition. The <literal>update</literal> <literal>encrypted</literal> option allows a site to ease into using encrypted passwords from plaintext passwords. You can activate this option as follows:</para>
-
-
-<programlisting>[global]
-    update encrypted = yes</programlisting>
-
-
-<para>This instructs Samba to create an encrypted version of each user's Unix password in the <filename>smbpasswd</filename> file each time he or she connects to a share. When this option is enabled, you must have the <literal>encrypt</literal> <literal>passwords</literal> option set to <literal>no</literal> so that the client will pass plaintext passwords to Samba to use to update the files. Once each user has connected at least once, you can set <literal>encrypted</literal> <literal>passwords</literal> <literal>=</literal> <literal>yes</literal>, allowing you to use only the encrypted passwords. The user must already have a valid entry in the <filename>smbpasswd</filename> file for this option to work.</para>
-</sect3>
-
-
-
-<sect3 role="" label="6.4.4.8" id="ch06-SECT-4.3.8">
 <title>null passwords</title>
 
 
@@ -1801,7 +1770,7 @@ password level</title>
 
 
 
-<sect3 role="" label="6.4.4.9" id="ch06-SECT-4.3.9">
+<sect3 role="" label="6.4.4.8" id="ch06-SECT-4.3.8">
 <indexterm id="ch06-idx-969483-0"><primary>smb passwd file option</primary></indexterm>
 <title>
 smb passwd file</title>
@@ -1820,7 +1789,7 @@ smb passwd file</title>
 
 
 
-<sect3 role="" label="6.4.4.10" id="ch06-SECT-4.3.10">
+<sect3 role="" label="6.4.4.9" id="ch06-SECT-4.3.9">
 <indexterm id="ch06-idx-969486-0"><primary>hosts equiv option</primary></indexterm>
 <title>
 hosts equiv</title>
@@ -1838,7 +1807,7 @@ hosts equiv</title>
 
 
 
-<sect3 role="" label="6.4.4.11" id="ch06-SECT-4.3.11">
+<sect3 role="" label="6.4.4.10" id="ch06-SECT-4.3.10">
 <indexterm id="ch06-idx-969487-0"><primary>use rhosts option</primary></indexterm>
 <title>
 use rhosts</title>

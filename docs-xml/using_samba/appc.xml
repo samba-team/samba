@@ -2728,20 +2728,6 @@ compatibility with older-client bugs.</para>
 </refsynopsisdiv>
 </refentry>
 
-<refentry id="appc-refentry-194">
-<refmeta>
-<refmiscinfo class="allowable values">YES, NO</refmiscinfo>
-<refmiscinfo class="default">NO</refmiscinfo>
-</refmeta>
-<refnamediv>
-<refname>update encrypted = boolean</refname>
-</refnamediv>
-<refsynopsisdiv>
-<para>Updates the Microsoft-format password file when a user logs in with unencrypted passwords. Provided to ease conversion to encryped passwords for Windows 95/98 and NT. Added in Samba 1.9.18p5.</para>
-
-</refsynopsisdiv>
-</refentry>
-
 <refentry id="appc-refentry-195">
 <refmeta>
 <refmiscinfo class="allowable values">comma-separated list of user names</refmiscinfo>
