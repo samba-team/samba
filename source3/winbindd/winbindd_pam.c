@@ -1558,7 +1558,9 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	parse_domain_user(mapped_user, name_domain, name_user);
 
 	if ( mapped_user != state->request->data.auth.user ) {
-		fstr_sprintf( domain_user, "%s\\%s", name_domain, name_user );
+		fstr_sprintf( domain_user, "%s%c%s", name_domain,
+			*lp_winbind_separator(),
+			name_user );
 		safe_strcpy( state->request->data.auth.user, domain_user,
 			     sizeof(state->request->data.auth.user)-1 );
 	}
