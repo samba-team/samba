@@ -27,6 +27,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "librpc/rpc/dcerpc_gssapi.h"
+#include "librpc/rpc/dcerpc_spnego.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
@@ -309,6 +310,39 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 }
 
 /*******************************************************************
+ Check/unseal the NTLMSSP auth data. (Unseal in place).
+ ********************************************************************/
+
+static NTSTATUS get_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
+					enum dcerpc_AuthLevel auth_level,
+					DATA_BLOB *data, DATA_BLOB *full_pkt,
+					DATA_BLOB *auth_token)
+{
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		return auth_ntlmssp_unseal_packet(auth_state,
+						  data->data,
+						  data->length,
+						  full_pkt->data,
+						  full_pkt->length,
+						  auth_token);
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		return auth_ntlmssp_check_packet(auth_state,
+						 data->data,
+						 data->length,
+						 full_pkt->data,
+						 full_pkt->length,
+						 auth_token);
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+/*******************************************************************
  Create and add the schannel sign/seal auth data.
  ********************************************************************/
 
@@ -373,6 +407,38 @@ static NTSTATUS add_schannel_auth_footer(struct schannel_state *sas,
 }
 
 /*******************************************************************
+ Check/unseal the Schannel auth data. (Unseal in place).
+ ********************************************************************/
+
+static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
+					 struct schannel_state *auth_state,
+					 enum dcerpc_AuthLevel auth_level,
+					 DATA_BLOB *data, DATA_BLOB *full_pkt,
+					 DATA_BLOB *auth_token)
+{
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		return netsec_incoming_packet(auth_state,
+						mem_ctx, true,
+						data->data,
+						data->length,
+						auth_token);
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		return netsec_incoming_packet(auth_state,
+						mem_ctx, false,
+						data->data,
+						data->length,
+						auth_token);
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+/*******************************************************************
  Create and add the gssapi sign/seal auth data.
  ********************************************************************/
 
@@ -419,6 +485,79 @@ static NTSTATUS add_gssapi_auth_footer(struct gse_context *gse_ctx,
 	data_blob_free(&auth_blob);
 
 	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Check/unseal the gssapi auth data. (Unseal in place).
+ ********************************************************************/
+
+static NTSTATUS get_gssapi_auth_footer(TALLOC_CTX *mem_ctx,
+					struct gse_context *gse_ctx,
+					enum dcerpc_AuthLevel auth_level,
+					DATA_BLOB *data, DATA_BLOB *full_pkt,
+					DATA_BLOB *auth_token)
+{
+	/* TODO: pass in full_pkt when
+	 * DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN is set */
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		return gse_unseal(mem_ctx, gse_ctx,
+				  data, auth_token);
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		return gse_sigcheck(mem_ctx, gse_ctx,
+				    data, auth_token);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+/*******************************************************************
+ Create and add the spnego-negotiated sign/seal auth data.
+ ********************************************************************/
+
+static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
+					enum dcerpc_AuthLevel auth_level,
+					DATA_BLOB *rpc_out)
+{
+	enum dcerpc_AuthType auth_type;
+	struct gse_context *gse_ctx;
+	void *auth_ctx;
+	NTSTATUS status;
+
+	if (!spnego_ctx) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = spnego_get_negotiated_mech(spnego_ctx,
+					    &auth_type, &auth_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (auth_type) {
+	case DCERPC_AUTH_TYPE_KRB5:
+		gse_ctx = talloc_get_type(auth_ctx, struct gse_context);
+		if (!gse_ctx) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			break;
+		}
+		status = add_gssapi_auth_footer(gse_ctx,
+						auth_level, rpc_out);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		break;
+
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+
+	return status;
 }
 
 /**
@@ -480,7 +619,9 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			return NT_STATUS_INVALID_PARAMETER;
+			return add_spnego_auth_footer(auth->a_u.spnego_state,
+						      auth->auth_level,
+						      rpc_out);
 		}
 		/* fall thorugh */
 	case DCERPC_AUTH_TYPE_NTLMSSP:
@@ -591,49 +732,44 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		if (auth->spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			DEBUG(0, ("Currently only NTLMSSP is supported "
-				  "with SPNEGO\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+			enum dcerpc_AuthType auth_type;
+			struct gse_context *gse_ctx;
+			void *auth_ctx;
+
+			status = spnego_get_negotiated_mech(
+						auth->a_u.spnego_state,
+						&auth_type, &auth_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			gse_ctx = talloc_get_type(auth_ctx,
+						  struct gse_context);
+			if (!gse_ctx) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			DEBUG(10, ("KRB5 auth\n"));
+
+			status = get_gssapi_auth_footer(pkt, gse_ctx,
+						auth->auth_level,
+						&data, &full_pkt,
+						&auth_info.credentials);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			break;
 		}
 		/* fall through */
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 
 		DEBUG(10, ("NTLMSSP auth\n"));
 
-		if (!auth->a_u.auth_ntlmssp_state) {
-			DEBUG(0, ("Invalid auth level, "
-				  "failed to process packet auth.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		switch (auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			status = auth_ntlmssp_unseal_packet(
-					auth->a_u.auth_ntlmssp_state,
-					data.data, data.length,
-					full_pkt.data, full_pkt.length,
-					&auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			memcpy(pkt_trailer->data, data.data, data.length);
-			break;
-
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			status = auth_ntlmssp_check_packet(
-					auth->a_u.auth_ntlmssp_state,
-					data.data, data.length,
-					full_pkt.data, full_pkt.length,
-					&auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			break;
-
-		default:
-			DEBUG(0, ("Invalid auth level, "
-				  "failed to process packet auth.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+		status = get_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
+						 auth->auth_level,
+						 &data, &full_pkt,
+						 &auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		break;
 
@@ -641,34 +777,13 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("SCHANNEL auth\n"));
 
-		switch (auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			status = netsec_incoming_packet(
-					auth->a_u.schannel_auth,
-					pkt, true,
-					data.data, data.length,
-					&auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			memcpy(pkt_trailer->data, data.data, data.length);
-			break;
-
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			status = netsec_incoming_packet(
-					auth->a_u.schannel_auth,
-					pkt, false,
-					data.data, data.length,
-					&auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			break;
-
-		default:
-			DEBUG(0, ("Invalid auth level, "
-				  "failed to process packet auth.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+		status = get_schannel_auth_footer(pkt,
+						  auth->a_u.schannel_auth,
+						  auth->auth_level,
+						  &data, &full_pkt,
+						  &auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		break;
 
@@ -676,30 +791,13 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("KRB5 auth\n"));
 
-		switch (auth->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			status = gse_unseal(pkt, auth->a_u.gssapi_state,
-					    &data, &auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			memcpy(pkt_trailer->data, data.data, data.length);
-			break;
-
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			/* TODO: pass in full_pkt when
-			 * DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN is set */
-			status = gse_sigcheck(pkt, auth->a_u.gssapi_state,
-					      &data, &auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			break;
-
-		default:
-			DEBUG(0, ("Invalid auth level, "
-				  "failed to process packet auth.\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+		status = get_gssapi_auth_footer(pkt,
+						auth->a_u.gssapi_state,
+						auth->auth_level,
+						&data, &full_pkt,
+						&auth_info.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		break;
 
@@ -708,6 +806,14 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			  "unknown auth type %u set.\n",
 			  (unsigned int)auth->auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* TODO: remove later
+	 * this is still needed because in the server code the
+	 * pkt_trailer actually has a copy of the raw data, and they
+	 * are still both used in later calls */
+	if (auth->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		memcpy(pkt_trailer->data, data.data, data.length);
 	}
 
 	*pad_len = auth_info.auth_pad_length;

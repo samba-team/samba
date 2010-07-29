@@ -233,3 +233,22 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 	}
 }
 
+NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
+				    enum dcerpc_AuthType *auth_type,
+				    void **auth_context)
+{
+	switch (sp_ctx->auth_type) {
+	case DCERPC_AUTH_TYPE_KRB5:
+		*auth_context = sp_ctx->mech_ctx.gssapi_state;
+		break;
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		*auth_context = sp_ctx->mech_ctx.auth_ntlmssp_state;
+		break;
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	*auth_type = sp_ctx->auth_type;
+	return NT_STATUS_OK;
+}
+
