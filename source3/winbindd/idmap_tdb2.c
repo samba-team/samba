@@ -48,6 +48,8 @@ static struct idmap_tdb2_state {
 } idmap_tdb2_state;
 
 
+static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom,
+				       struct id_map *map);
 
 /* handle to the permanent tdb */
 static struct db_context *idmap_tdb2;
@@ -283,6 +285,30 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	}
 
 	return status;
+}
+
+/**
+ * Allocate a new unix-ID.
+ * For now this is for the default idmap domain only.
+ * Should be extended later on.
+ */
+static NTSTATUS idmap_tdb2_get_new_id(struct idmap_domain *dom,
+				      struct unixid *id)
+{
+	NTSTATUS ret;
+
+	if (!strequal(dom->name, "*")) {
+		DEBUG(3, ("idmap_tdb2_get_new_id: "
+			  "Refusing creation of mapping for domain'%s'. "
+			  "Currently only supported for the default "
+			  "domain \"*\".\n",
+			   dom->name));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ret = idmap_tdb2_allocate_id(id);
+
+	return ret;
 }
 
 /*
@@ -744,42 +770,97 @@ done:
 /*
   lookup a set of sids. 
 */
+
+struct idmap_tdb2_sids_to_unixids_context {
+	struct idmap_domain *dom;
+	struct id_map **ids;
+	bool allocate_unmapped;
+};
+
+static NTSTATUS idmap_tdb2_sids_to_unixids_action(struct db_context *db,
+						  void *private_data)
+{
+	struct idmap_tdb2_sids_to_unixids_context *state;
+	int i;
+	struct idmap_tdb2_context *ctx;
+	NTSTATUS ret = NT_STATUS_OK;
+
+	state = (struct idmap_tdb2_sids_to_unixids_context *)private_data;
+
+	DEBUG(10, ("idmap_tdb2_sids_to_unixids_action: "
+		   " domain: [%s], allocate: %s\n",
+		   state->dom->name,
+		   state->allocate_unmapped ? "yes" : "no"));
+
+	ctx = talloc_get_type(state->dom->private_data,
+			      struct idmap_tdb2_context);
+
+
+	for (i = 0; state->ids[i]; i++) {
+		if ((state->ids[i]->status == ID_UNKNOWN) ||
+		    /* retry if we could not map in previous run: */
+		    (state->ids[i]->status == ID_UNMAPPED))
+		{
+			NTSTATUS ret2;
+
+			ret2 = idmap_tdb2_sid_to_id(ctx, state->ids[i]);
+			if (!NT_STATUS_IS_OK(ret2)) {
+
+				/* if it is just a failed mapping, continue */
+				if (NT_STATUS_EQUAL(ret2, NT_STATUS_NONE_MAPPED)) {
+
+					/* make sure it is marked as unmapped */
+					state->ids[i]->status = ID_UNMAPPED;
+					ret = STATUS_SOME_UNMAPPED;
+				} else {
+					/* some fatal error occurred, return immediately */
+					ret = ret2;
+					goto done;
+				}
+			} else {
+				/* all ok, id is mapped */
+				state->ids[i]->status = ID_MAPPED;
+			}
+		}
+
+		if ((state->ids[i]->status == ID_UNMAPPED) &&
+		    state->allocate_unmapped)
+		{
+			ret = idmap_tdb2_new_mapping(state->dom, state->ids[i]);
+			if (!NT_STATUS_IS_OK(ret)) {
+				goto done;
+			}
+		}
+	}
+
+done:
+	return ret;
+}
+
 static NTSTATUS idmap_tdb2_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_tdb2_context *ctx;
 	NTSTATUS ret;
 	int i;
+	struct idmap_tdb2_sids_to_unixids_context state;
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
+	state.dom = dom;
+	state.ids = ids;
+	state.allocate_unmapped = false;
 
-	for (i = 0; ids[i]; i++) {
-		ret = idmap_tdb2_sid_to_id(ctx, ids[i]);
-		if ( ! NT_STATUS_IS_OK(ret)) {
+	ret = idmap_tdb2_sids_to_unixids_action(idmap_tdb2, &state);
 
-			/* if it is just a failed mapping continue */
-			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
-
-				/* make sure it is marked as unmapped */
-				ids[i]->status = ID_UNMAPPED;
-				continue;
-			}
-
-			/* some fatal error occurred, return immediately */
-			goto done;
-		}
-
-		/* all ok, id is mapped */
-		ids[i]->status = ID_MAPPED;
+	if (NT_STATUS_EQUAL(ret, STATUS_SOME_UNMAPPED)) {
+		state.allocate_unmapped = true;
+		ret = dbwrap_trans_do(idmap_tdb2,
+				      idmap_tdb2_sids_to_unixids_action,
+				      &state);
 	}
 
-	ret = NT_STATUS_OK;
-
-done:
 	return ret;
 }
 
@@ -842,6 +923,76 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 done:
 	talloc_free(ksidstr);
 	talloc_free(kidstr);
+	return ret;
+}
+
+/**
+ * Create a new mapping for an unmapped SID, also allocating a new ID.
+ * This should be run inside a transaction.
+ *
+ * TODO:
+*  Properly integrate this with multi domain idmap config:
+ * Currently, the allocator is default-config only.
+ */
+static NTSTATUS idmap_tdb2_new_mapping(struct idmap_domain *dom, struct id_map *map)
+{
+	NTSTATUS ret;
+	char *sidstr;
+	TDB_DATA data;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (map == NULL) {
+		ret = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if ((map->xid.type != ID_TYPE_UID) && (map->xid.type != ID_TYPE_GID)) {
+		ret = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (map->sid == NULL) {
+		ret = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/* check wheter the SID is already mapped in the db */
+	sidstr = sid_string_talloc(mem_ctx, map->sid);
+	if (sidstr == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	data = dbwrap_fetch_bystring(idmap_tdb2, mem_ctx, sidstr);
+	if (data.dptr) {
+		ret = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto done;
+	}
+
+	/* unmapped - get a new id */
+	ret = idmap_tdb2_get_new_id(dom, &map->xid);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(3, ("Could not allocate id: %s\n", nt_errstr(ret)));
+		goto done;
+	}
+
+	DEBUG(10, ("Setting mapping: %s <-> %s %lu\n",
+		   sid_string_dbg(map->sid),
+		   (map->xid.type == ID_TYPE_UID) ? "UID" : "GID",
+		   (unsigned long)map->xid.id));
+
+	map->status = ID_MAPPED;
+
+	/* store the mapping */
+	ret = idmap_tdb2_set_mapping(dom, map);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(3, ("Could not store the new mapping: %s\n",
+			  nt_errstr(ret)));
+	}
+
+done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
