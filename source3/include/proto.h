@@ -1910,9 +1910,6 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  ADS_MODLIST *mods,
 					  const char *printer);
-bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
-				       ADS_MODLIST *mods,
-				       NT_PRINTER_DATA *data);
 
 /* The following definitions come from libads/ldap_user.c  */
 
@@ -5454,7 +5451,6 @@ void reply_transs(struct smb_request *req);
 
 /* The following definitions come from smbd/lanman.c  */
 
-time_t spoolss_Time_to_time_t(const struct spoolss_Time *r);
 void api_reply(connection_struct *conn, uint16 vuid,
 	       struct smb_request *req,
 	       char *data, char *params,

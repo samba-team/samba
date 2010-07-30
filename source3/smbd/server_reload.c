@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "nt_printing.h"
 
 /****************************************************************************
  Reload printers

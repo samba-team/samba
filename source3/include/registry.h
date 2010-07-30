@@ -23,6 +23,8 @@
 #ifndef _REGISTRY_H
 #define _REGISTRY_H
 
+#include "../librpc/gen_ndr/winreg.h"
+
 struct registry_value {
 	enum winreg_Type type;
 	DATA_BLOB data;

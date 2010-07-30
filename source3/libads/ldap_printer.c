@@ -22,6 +22,7 @@
 #include "rpc_client/cli_spoolss.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
+#include "nt_printing.h"
 
 #ifdef HAVE_ADS
 
@@ -396,7 +397,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	return result;
 }
 
-bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
+static bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 				       ADS_MODLIST *mods,
 				       NT_PRINTER_DATA *data)
 {

@@ -29,6 +29,7 @@
 #include "rpc_client/init_spoolss.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
+#include "nt_printing.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \
