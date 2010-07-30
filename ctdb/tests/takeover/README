@@ -1,0 +1,3 @@
+This contains a Python simulation of CTDB's IP reallocation algorithm.
+
+It is useful for experimenting with improvements.
