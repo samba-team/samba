@@ -1026,55 +1026,6 @@ static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Creates SPNEGO NTLMSSP auth bind.
- ********************************************************************/
-
-static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
-							enum dcerpc_AuthLevel auth_level,
-							DATA_BLOB *auth_info)
-{
-	NTSTATUS status;
-	DATA_BLOB null_blob = data_blob_null;
-	DATA_BLOB request = data_blob_null;
-	DATA_BLOB spnego_msg = data_blob_null;
-	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
-
-	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = auth_ntlmssp_update(cli->auth->a_u.auth_ntlmssp_state,
-					null_blob,
-					&request);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		data_blob_free(&request);
-		return status;
-	}
-
-	/* Wrap this in SPNEGO. */
-	spnego_msg = spnego_gen_negTokenInit(talloc_tos(), OIDs_ntlm, &request, NULL);
-
-	data_blob_free(&request);
-
-	status = dcerpc_push_dcerpc_auth(cli,
-					 DCERPC_AUTH_TYPE_SPNEGO,
-					 auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &spnego_msg,
-					 auth_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&spnego_msg);
-		return status;
-	}
-
-	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, spnego_msg.data, spnego_msg.length);
-	data_blob_free(&spnego_msg);
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
  Creates NTLMSSP auth bind.
  ********************************************************************/
 
@@ -1823,10 +1774,6 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
 					   DATA_BLOB *credentials);
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
-static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
-					struct rpc_pipe_bind_state *state,
-					DATA_BLOB *credentials);
-static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
 static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
 				   struct rpc_pipe_bind_state *state,
 				   DATA_BLOB *credentials);
@@ -2082,119 +2029,6 @@ static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	tevent_req_done(req);
-}
-
-static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
-					struct rpc_pipe_bind_state *state,
-					DATA_BLOB *credentials)
-{
-	struct pipe_auth_data *auth = state->cli->auth;
-	DATA_BLOB server_ntlm_response = data_blob_null;
-	DATA_BLOB client_reply = data_blob_null;
-	DATA_BLOB tmp_blob = data_blob_null;
-	struct tevent_req *subreq;
-	NTSTATUS status;
-
-	/*
-	 * The server might give us back two challenges - tmp_blob is for the
-	 * second.
-	 */
-	if (!spnego_parse_challenge(state, *credentials,
-				    &server_ntlm_response,
-				    &tmp_blob)) {
-		data_blob_free(&server_ntlm_response);
-		data_blob_free(&tmp_blob);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* We're finished with the server spnego response and the tmp_blob. */
-	data_blob_free(&tmp_blob);
-
-	status = auth_ntlmssp_update(auth->a_u.auth_ntlmssp_state,
-				     server_ntlm_response, &client_reply);
-
-	/* Finished with the server_ntlm response */
-	data_blob_free(&server_ntlm_response);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpc_finish_spnego_ntlmssp_bind: NTLMSSP update "
-			  "using server blob failed.\n"));
-		data_blob_free(&client_reply);
-		return status;
-	}
-
-	/* SPNEGO wrap the client reply. */
-	tmp_blob = spnego_gen_auth(state, client_reply);
-	data_blob_free(&client_reply);
-	client_reply = tmp_blob;
-	tmp_blob = data_blob_null;
-
-	/* Now prepare the alter context pdu. */
-	data_blob_free(&state->rpc_out);
-
-	status = create_rpc_alter_context(state,
-					  auth->auth_type,
-					  auth->auth_level,
-					  state->rpc_call_id,
-					  &state->cli->abstract_syntax,
-					  &state->cli->transfer_syntax,
-					  &client_reply,
-					  &state->rpc_out);
-	data_blob_free(&client_reply);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
-				   &state->rpc_out, DCERPC_PKT_ALTER_RESP);
-	if (subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tevent_req_set_callback(subreq, rpc_bind_ntlmssp_api_done, req);
-	return NT_STATUS_OK;
-}
-
-static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct rpc_pipe_bind_state *state = tevent_req_data(
-		req, struct rpc_pipe_bind_state);
-	DATA_BLOB tmp_blob = data_blob_null;
-	struct ncacn_packet *pkt;
-	struct dcerpc_auth auth;
-	NTSTATUS status;
-
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, NULL);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	status = dcerpc_pull_dcerpc_auth(pkt,
-					 &pkt->u.alter_resp.auth_info,
-					 &auth, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	/* Check we got a valid auth response. */
-	if (!spnego_parse_auth_response(talloc_tos(), auth.credentials,
-					NT_STATUS_OK,
-					OID_NTLMSSP, &tmp_blob)) {
-		data_blob_free(&tmp_blob);
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	data_blob_free(&tmp_blob);
-
-	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
-		 "%s.\n", rpccli_pipe_txt(talloc_tos(), state->cli)));
 	tevent_req_done(req);
 }
 
