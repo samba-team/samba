@@ -517,7 +517,8 @@ static bool do_this_one(struct file_info *finfo)
  Display info about a file.
 ****************************************************************************/
 
-static void display_finfo(struct file_info *finfo, const char *dir)
+static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
+			  const char *dir)
 {
 	time_t t;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -555,19 +556,19 @@ static void display_finfo(struct file_info *finfo, const char *dir)
 		d_printf( "MODE:%s\n", attrib_string(finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
-		if (!NT_STATUS_IS_OK(cli_ntcreate(finfo->cli, afname, 0,
+		if (!NT_STATUS_IS_OK(cli_ntcreate(cli_state, afname, 0,
 				CREATE_ACCESS_READ, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN, 0x0, 0x0, &fnum))) {
 			DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
 				afname,
-				cli_errstr( finfo->cli)));
+				cli_errstr(cli_state)));
 		} else {
 			struct security_descriptor *sd = NULL;
-			sd = cli_query_secdesc(finfo->cli, fnum, ctx);
+			sd = cli_query_secdesc(cli_state, fnum, ctx);
 			if (!sd) {
 				DEBUG( 0, ("display_finfo() failed to "
 					"get security descriptor: %s",
-					cli_errstr( finfo->cli)));
+					cli_errstr(cli_state)));
 			} else {
 				display_sec_desc(sd);
 			}
@@ -581,7 +582,8 @@ static void display_finfo(struct file_info *finfo, const char *dir)
  Accumulate size of a file.
 ****************************************************************************/
 
-static void do_du(struct file_info *finfo, const char *dir)
+static void do_du(struct cli_state *cli_state, struct file_info *finfo,
+		  const char *dir)
 {
 	if (do_this_one(finfo)) {
 		dir_total += finfo->size;
@@ -594,7 +596,8 @@ static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
 static long do_list_queue_end = 0;
-static void (*do_list_fn)(struct file_info *, const char *dir);
+static void (*do_list_fn)(struct cli_state *cli_state, struct file_info *,
+			  const char *dir);
 
 /****************************************************************************
  Functions for do_list_queue.
@@ -714,6 +717,7 @@ static int do_list_queue_empty(void)
 static void do_list_helper(const char *mntpoint, struct file_info *f,
 			   const char *mask, void *state)
 {
+	struct cli_state *cli_state = (struct cli_state *)state;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dir = NULL;
 	char *dir_end = NULL;
@@ -729,7 +733,7 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
-			do_list_fn(f, dir);
+			do_list_fn(cli_state, f, dir);
 		}
 		if (do_list_recurse &&
 		    f->name &&
@@ -774,7 +778,7 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 	}
 
 	if (do_this_one(f)) {
-		do_list_fn(f,dir);
+		do_list_fn(cli_state, f, dir);
 	}
 	TALLOC_FREE(dir);
 }
@@ -785,7 +789,8 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 
 void do_list(const char *mask,
 			uint16 attribute,
-			void (*fn)(struct file_info *, const char *dir),
+			void (*fn)(struct cli_state *cli_state, struct file_info *,
+				   const char *dir),
 			bool rec,
 			bool dirs)
 {
@@ -831,7 +836,8 @@ void do_list(const char *mask,
 				continue;
 			}
 
-			cli_list(targetcli, targetpath, attribute, do_list_helper, NULL);
+			cli_list(targetcli, targetpath, attribute,
+				 do_list_helper, targetcli);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
 				char *next_file = do_list_queue_head();
@@ -859,7 +865,8 @@ void do_list(const char *mask,
 	} else {
 		/* check for dfs */
 		if (cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetpath)) {
-			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) {
+			if (cli_list(targetcli, targetpath, attribute,
+				     do_list_helper, targetcli) == -1) {
 				d_printf("%s listing %s\n",
 					cli_errstr(targetcli), targetpath);
 			}
@@ -1154,7 +1161,8 @@ static int cmd_get(void)
  Do an mget operation on one file.
 ****************************************************************************/
 
-static void do_mget(struct file_info *finfo, const char *dir)
+static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
+		    const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *rname = NULL;
@@ -2133,7 +2141,8 @@ static int cmd_queue(void)
  Delete some files.
 ****************************************************************************/
 
-static void do_del(struct file_info *finfo, const char *dir)
+static void do_del(struct cli_state *cli_state, struct file_info *finfo,
+		   const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
@@ -2152,9 +2161,9 @@ static void do_del(struct file_info *finfo, const char *dir)
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_unlink(finfo->cli, mask, aSYSTEM | aHIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(cli_state, mask, aSYSTEM | aHIDDEN))) {
 		d_printf("%s deleting remote file %s\n",
-				cli_errstr(finfo->cli),mask);
+				cli_errstr(cli_state),mask);
 	}
 	TALLOC_FREE(mask);
 }

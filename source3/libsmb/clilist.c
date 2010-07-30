@@ -62,7 +62,6 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 		*p_resume_key = 0;
 	}
 	ZERO_STRUCTP(finfo);
-	finfo->cli = cli;
 
 	switch (level) {
 		case SMB_FIND_INFO_STANDARD: /* OS/2 understands this */
@@ -508,7 +507,6 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	size_t ret;
 	ZERO_STRUCTP(finfo);
 
-	finfo->cli = cli;
 	finfo->mode = CVAL(p,21);
 
 	/* this date is converted to GMT by make_unix_date */
