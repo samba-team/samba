@@ -301,6 +301,12 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	/* Treat the same for all authenticated rpc requests. */
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
+		/* compat for server code */
+		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
+			*auth_len = NTLMSSP_SIG_SIZE;
+			break;
+		}
+
 		status = spnego_get_negotiated_mech(auth->a_u.spnego_state,
 						    &auth_type, &auth_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
