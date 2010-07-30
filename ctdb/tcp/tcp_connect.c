@@ -263,7 +263,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
         setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one));
 
 	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT, 
-				     ctdb_tcp_read_cb, in);
+				     ctdb_tcp_read_cb, in, "ctdbd-%s", incoming_node);
 }
 
 
