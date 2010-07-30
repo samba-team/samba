@@ -1008,6 +1008,12 @@ out_free:
 		pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 	}
 	if (binding->flags & DCERPC_AUTH_NTLM) {
+		/* If neither Integrity or Privacy are requested then
+		 * Use just Connect level */
+		if (pipe_default_auth_level == DCERPC_AUTH_LEVEL_NONE) {
+			pipe_default_auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+		}
+
 		if (pipe_default_auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
 			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else {
