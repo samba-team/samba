@@ -4338,14 +4338,12 @@ do {\
 	}\
 } while(0);
 
-#if 0
 	if (!test_winreg_symbolic_link(tctx, winreg_handle, hive_handle,
 				       TOP_LEVEL_CONTROL_PRINTERS_KEY,
 				       "\\Registry\\Machine\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"))
 	{
 		torture_warning(tctx, "failed to check for winreg symlink");
 	}
-#endif
 
 	for (i=0; i < ARRAY_SIZE(keys); i++) {
 
