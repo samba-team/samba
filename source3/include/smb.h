@@ -180,7 +180,6 @@ typedef union unid_t {
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "librpc/gen_ndr/dcerpc.h"
-#include "librpc/gen_ndr/spoolss.h"
 
 struct lsa_dom_info {
 	bool valid;

@@ -18,8 +18,8 @@
  */
 
 #include "includes.h"
-#include "rpc_client/init_spoolss.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
+#include "rpc_client/init_spoolss.h"
 
 /*******************************************************************
 ********************************************************************/

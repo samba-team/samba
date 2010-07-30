@@ -27,8 +27,9 @@
 #include "registry.h"
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/srv_spoolss_util.h"
-
+#include "nt_printing.h"
 #include "../rpc_server/srv_spoolss_util.h"
 
 /* Map generic permissions to printer object specific permissions */

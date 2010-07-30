@@ -25,6 +25,8 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "librpc/gen_ndr/spoolss.h"
+#include "nt_printing.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
