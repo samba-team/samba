@@ -246,20 +246,23 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 *	 auth token and pad lengths.
 *
 * @param auth		The pipe_auth_data structure for this pipe.
+* @param header_len	The length of the packet header
 * @param data_left	The data left in the send buffer
-* @param data_to_send	The max data we will send in the pdu
-* @param frag_len	The total length of the fragment
-* @param auth_len	The length of the auth trailer
-* @param pad_len	The padding to be applied
+* @param max_xmit_frag	The max fragment size.
+* @param pad_alignment	The NDR padding size.
+* @param data_to_send	[out] The max data we will send in the pdu
+* @param frag_len	[out] The total length of the fragment
+* @param auth_len	[out] The length of the auth trailer
+* @param pad_len	[out] The padding to be applied
 *
 * @return A NT Error status code.
 */
 NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
-			    size_t data_left, size_t max_xmit_frag,
+			    size_t header_len, size_t data_left,
+			    size_t max_xmit_frag, size_t pad_alignment,
 			    size_t *data_to_send, size_t *frag_len,
 			    size_t *auth_len, size_t *pad_len)
 {
-	size_t data_space;
 	size_t max_len;
 	size_t mod_len;
 	struct gse_context *gse_ctx;
@@ -273,11 +276,11 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_CONNECT:
 	case DCERPC_AUTH_LEVEL_PACKET:
-		data_space = max_xmit_frag - DCERPC_REQUEST_LENGTH;
-		*data_to_send = MIN(data_space, data_left);
+		max_len = max_xmit_frag - header_len;
+		*data_to_send = MIN(max_len, data_left);
 		*pad_len = 0;
 		*auth_len = 0;
-		*frag_len = DCERPC_REQUEST_LENGTH + *data_to_send;
+		*frag_len = header_len + *data_to_send;
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -294,9 +297,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 
 	/* Sign/seal case, calculate auth and pad lengths */
 
-	max_len = max_xmit_frag
-			- DCERPC_REQUEST_LENGTH
-			- DCERPC_AUTH_TRAILER_LENGTH;
+	max_len = max_xmit_frag - header_len - DCERPC_AUTH_TRAILER_LENGTH;
 
 	/* Treat the same for all authenticated rpc requests. */
 	switch (auth->auth_type) {
@@ -349,17 +350,23 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	data_space = max_len - *auth_len;
+	max_len -= *auth_len;
 
-	*data_to_send = MIN(data_space, data_left);
-	mod_len = *data_to_send % CLIENT_NDR_PADDING_SIZE;
+	*data_to_send = MIN(max_len, data_left);
+
+	mod_len = (header_len + *data_to_send) % pad_alignment;
 	if (mod_len) {
-		*pad_len = CLIENT_NDR_PADDING_SIZE - mod_len;
+		*pad_len = pad_alignment - mod_len;
 	} else {
 		*pad_len = 0;
 	}
-	*frag_len = DCERPC_REQUEST_LENGTH + *data_to_send + *pad_len
-				+ DCERPC_AUTH_TRAILER_LENGTH + *auth_len;
+
+	if (*data_to_send + *pad_len > max_len) {
+		*data_to_send -= pad_alignment;
+	}
+
+	*frag_len = header_len + *data_to_send + *pad_len
+			+ DCERPC_AUTH_TRAILER_LENGTH + *auth_len;
 
 	return NT_STATUS_OK;
 }
