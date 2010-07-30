@@ -139,6 +139,10 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 				 const DATA_BLOB *blob,
 				 struct dcerpc_auth *r,
 				 bool bigendian);
+NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
+			    size_t data_left, size_t max_xmit_frag,
+			    size_t *data_to_send, size_t *frag_len,
+			    size_t *auth_len, size_t *pad_len);
 NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out);
 NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,

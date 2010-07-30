@@ -1186,109 +1186,6 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Calculate how much data we're going to send in this packet, also
- work out any sign/seal padding length.
- ********************************************************************/
-
-static NTSTATUS calculate_data_len_tosend(struct rpc_pipe_client *cli,
-					  uint32_t data_left,
-					  uint32_t *data_to_send,
-					  uint16_t *p_frag_len,
-					  uint16_t *p_auth_len,
-					  uint32_t *p_ss_padding)
-{
-	uint32_t data_space, data_len;
-	size_t max_len;
-	struct gse_context *gse_ctx;
-	enum dcerpc_AuthType auth_type;
-	void *auth_ctx;
-	NTSTATUS status;
-
-	switch (cli->auth->auth_level) {
-	case DCERPC_AUTH_LEVEL_NONE:
-	case DCERPC_AUTH_LEVEL_CONNECT:
-	case DCERPC_AUTH_LEVEL_PACKET:
-		data_space = cli->max_xmit_frag - DCERPC_REQUEST_LENGTH;
-		data_len = MIN(data_space, data_left);
-		*p_ss_padding = 0;
-		*p_auth_len = 0;
-		*p_frag_len = DCERPC_REQUEST_LENGTH + data_len;
-		*data_to_send = data_len;
-		return NT_STATUS_OK;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		max_len = cli->max_xmit_frag
-				- DCERPC_REQUEST_LENGTH
-				- DCERPC_AUTH_TRAILER_LENGTH;
-
-		/* Treat the same for all authenticated rpc requests. */
-		switch(cli->auth->auth_type) {
-		case DCERPC_AUTH_TYPE_SPNEGO:
-			status = spnego_get_negotiated_mech(
-					cli->auth->a_u.spnego_state,
-					&auth_type, &auth_ctx);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			switch (auth_type) {
-			case DCERPC_AUTH_TYPE_NTLMSSP:
-				*p_auth_len = NTLMSSP_SIG_SIZE;
-				break;
-			case DCERPC_AUTH_TYPE_KRB5:
-				gse_ctx = talloc_get_type(auth_ctx,
-							  struct gse_context);
-				if (!gse_ctx) {
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-				*p_auth_len = gse_get_signature_length(gse_ctx,
-						(cli->auth->auth_level ==
-						  DCERPC_AUTH_LEVEL_PRIVACY),
-						max_len);
-				break;
-			default:
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			break;
-		case DCERPC_AUTH_TYPE_NTLMSSP:
-			*p_auth_len = NTLMSSP_SIG_SIZE;
-			break;
-		case DCERPC_AUTH_TYPE_SCHANNEL:
-			*p_auth_len = NL_AUTH_SIGNATURE_SIZE;
-			break;
-		case DCERPC_AUTH_TYPE_KRB5:
-			*p_auth_len = gse_get_signature_length(
-					cli->auth->a_u.gssapi_state,
-					(cli->auth->auth_level ==
-						DCERPC_AUTH_LEVEL_PRIVACY),
-					max_len);
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		data_space = max_len - *p_auth_len;
-
-		data_len = MIN(data_space, data_left);
-		*p_ss_padding = 0;
-		if (data_len % CLIENT_NDR_PADDING_SIZE) {
-			*p_ss_padding = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
-		}
-		*p_frag_len = DCERPC_REQUEST_LENGTH
-				+ data_len + *p_ss_padding
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ *p_auth_len;
-		*data_to_send = data_len;
-		return NT_STATUS_OK;
-
-	default:
-		break;
-	}
-
-	return NT_STATUS_INVALID_PARAMETER;
-}
-
-/*******************************************************************
  External interface.
  Does an rpc request on a pipe. Incoming data is NDR encoded in in_data.
  Reply is NDR encoded in out_data. Splits the data stream into RPC PDU's
@@ -1379,21 +1276,21 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag)
 {
-	uint32_t data_sent_thistime;
-	uint16_t auth_len;
-	uint16_t frag_len;
+	size_t data_sent_thistime;
+	size_t auth_len;
+	size_t frag_len;
 	uint8_t flags = 0;
-	uint32_t pad_len;
-	uint32_t data_left;
+	size_t pad_len;
+	size_t data_left;
 	NTSTATUS status;
 	union dcerpc_payload u;
 
 	data_left = state->req_data->length - state->req_data_sent;
 
-	status = calculate_data_len_tosend(state->cli, data_left,
-					   &data_sent_thistime,
-					   &frag_len, &auth_len,
-					   &pad_len);
+	status = dcerpc_guess_sizes(state->cli->auth, data_left,
+				    state->cli->max_xmit_frag,
+				    &data_sent_thistime,
+				    &frag_len, &auth_len, &pad_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
