@@ -280,7 +280,6 @@ struct cli_state {
 };
 
 struct file_info {
-	struct cli_state *cli;
 	uint64_t size;
 	uint16 mode;
 	uid_t uid;
