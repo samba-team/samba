@@ -952,36 +952,22 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS create_spnego_auth_bind_req(TALLOC_CTX *mem_ctx,
 					    struct pipe_auth_data *auth,
-					    DATA_BLOB *auth_info)
+					    DATA_BLOB *auth_token)
 {
 	DATA_BLOB in_token = data_blob_null;
-	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
 
 	/* Negotiate the initial auth token */
 	status = spnego_get_client_auth_token(mem_ctx,
 					      auth->a_u.spnego_state,
-					      &in_token, &auth_token);
+					      &in_token, auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_push_dcerpc_auth(mem_ctx,
-					 auth->auth_type,
-					 auth->auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &auth_token,
-					 auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&auth_token);
 		return status;
 	}
 
 	DEBUG(5, ("Created GSS Authentication Token:\n"));
-	dump_data(5, auth_token.data, auth_token.length);
+	dump_data(5, auth_token->data, auth_token->length);
 
-	data_blob_free(&auth_token);
 	return NT_STATUS_OK;
 }
 
@@ -991,37 +977,23 @@ static NTSTATUS create_spnego_auth_bind_req(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
 					    struct pipe_auth_data *auth,
-					    DATA_BLOB *auth_info)
+					    DATA_BLOB *auth_token)
 {
 	DATA_BLOB in_token = data_blob_null;
-	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
 
 	/* Negotiate the initial auth token */
 	status = gse_get_client_auth_token(mem_ctx,
 					   auth->a_u.gssapi_state,
 					   &in_token,
-					   &auth_token);
+					   auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_push_dcerpc_auth(mem_ctx,
-					 auth->auth_type,
-					 auth->auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &auth_token,
-					 auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&auth_token);
 		return status;
 	}
 
 	DEBUG(5, ("Created GSS Authentication Token:\n"));
-	dump_data(5, auth_token.data, auth_token.length);
+	dump_data(5, auth_token->data, auth_token->length);
 
-	data_blob_free(&auth_token);
 	return NT_STATUS_OK;
 }
 
@@ -1030,37 +1002,22 @@ static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
-						 enum dcerpc_AuthLevel auth_level,
-						 DATA_BLOB *auth_info)
+						 DATA_BLOB *auth_token)
 {
 	NTSTATUS status;
 	DATA_BLOB null_blob = data_blob_null;
-	DATA_BLOB request = data_blob_null;
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
 	status = auth_ntlmssp_update(cli->auth->a_u.auth_ntlmssp_state,
-					null_blob,
-					&request);
+					null_blob, auth_token);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		data_blob_free(&request);
-		return status;
-	}
-
-	status = dcerpc_push_dcerpc_auth(cli,
-					 DCERPC_AUTH_TYPE_NTLMSSP,
-					 auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &request,
-					 auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&request);
+		data_blob_free(auth_token);
 		return status;
 	}
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, request.data, request.length);
+	dump_data(5, auth_token->data, auth_token->length);
 
 	return NT_STATUS_OK;
 }
@@ -1070,12 +1027,10 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
  ********************************************************************/
 
 static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
-						  enum dcerpc_AuthLevel auth_level,
-						  DATA_BLOB *auth_info)
+						  DATA_BLOB *auth_token)
 {
 	NTSTATUS status;
 	struct NL_AUTH_MESSAGE r;
-	DATA_BLOB schannel_blob;
 
 	/* Use lp_workgroup() if domain not specified */
 
@@ -1096,18 +1051,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	r.oem_netbios_domain.a		= cli->auth->domain;
 	r.oem_netbios_computer.a	= global_myname();
 
-	status = dcerpc_push_schannel_bind(cli, &r, &schannel_blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_push_dcerpc_auth(cli,
-					 DCERPC_AUTH_TYPE_SCHANNEL,
-					 auth_level,
-					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
-					 &schannel_blob,
-					 auth_info);
+	status = dcerpc_push_schannel_bind(cli, &r, auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1176,37 +1120,34 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 				    const struct ndr_syntax_id *transfer,
 				    DATA_BLOB *rpc_out)
 {
+	DATA_BLOB auth_token = data_blob_null;
 	DATA_BLOB auth_info = data_blob_null;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SCHANNEL:
-		ret = create_schannel_auth_rpc_bind_req(cli,
-							auth->auth_level,
-							&auth_info);
+		ret = create_schannel_auth_rpc_bind_req(cli, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ret = create_ntlmssp_auth_rpc_bind_req(cli,
-							auth->auth_level,
-							&auth_info);
+		ret = create_ntlmssp_auth_rpc_bind_req(cli, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 		break;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		ret = create_spnego_auth_bind_req(cli, auth, &auth_info);
+		ret = create_spnego_auth_bind_req(cli, auth, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
-		ret = create_gssapi_auth_bind_req(mem_ctx, auth, &auth_info);
+		ret = create_gssapi_auth_bind_req(mem_ctx, auth, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -1218,6 +1159,20 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	default:
 		/* "Can't" happen. */
 		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if (auth_token.length != 0) {
+		ret = dcerpc_push_dcerpc_auth(cli,
+						auth->auth_type,
+						auth->auth_level,
+						0, /* auth_pad_length */
+						1, /* auth_context_id */
+						&auth_token,
+						&auth_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			return ret;
+		}
+		data_blob_free(&auth_token);
 	}
 
 	ret = create_bind_or_alt_ctx_internal(mem_ctx,
