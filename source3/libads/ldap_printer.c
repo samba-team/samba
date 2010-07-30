@@ -397,18 +397,4 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
-				       ADS_MODLIST *mods,
-				       NT_PRINTER_DATA *data)
-{
-	uint32 key,val;
-
-	for (key=0; key < data->num_keys; key++) {
-		struct regval_ctr *ctr = data->keys[key].values;
-		for (val=0; val < regval_ctr_numvals(ctr); val++)
-			map_regval_to_ads(mem_ctx, mods, regval_ctr_specific_value(ctr, val));
-	}
-	return True;
-}
-
 #endif
