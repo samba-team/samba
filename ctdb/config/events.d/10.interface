@@ -78,9 +78,17 @@ monitor_interfaces()
 	    case $IFACE in
 	    lo*)
 		# loopback is always working
+		test -n "$OLDLINK" && {
+		    ok=1 # we only set ok for interfaces known to ctdbd
+		    ctdb setifacelink $IFACE up
+		}
 		;;
 	    ib*)
 		# we dont know how to test ib links
+		test -n "$OLDLINK" && {
+		    ok=1 # we only set ok for interfaces known to ctdbd
+		    ctdb setifacelink $IFACE up
+		}
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
