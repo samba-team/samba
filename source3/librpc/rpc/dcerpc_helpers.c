@@ -241,6 +241,123 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/**
+* @brief Calculate how much data we can in a packet, including calculating
+*	 auth token and pad lengths.
+*
+* @param auth		The pipe_auth_data structure for this pipe.
+* @param data_left	The data left in the send buffer
+* @param data_to_send	The max data we will send in the pdu
+* @param frag_len	The total length of the fragment
+* @param auth_len	The length of the auth trailer
+* @param pad_len	The padding to be applied
+*
+* @return A NT Error status code.
+*/
+NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
+			    size_t data_left, size_t max_xmit_frag,
+			    size_t *data_to_send, size_t *frag_len,
+			    size_t *auth_len, size_t *pad_len)
+{
+	size_t data_space;
+	size_t max_len;
+	size_t mod_len;
+	struct gse_context *gse_ctx;
+	enum dcerpc_AuthType auth_type;
+	void *auth_ctx;
+	bool seal = false;
+	NTSTATUS status;
+
+	/* no auth token cases first */
+	switch (auth->auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_CONNECT:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		data_space = max_xmit_frag - DCERPC_REQUEST_LENGTH;
+		*data_to_send = MIN(data_space, data_left);
+		*pad_len = 0;
+		*auth_len = 0;
+		*frag_len = DCERPC_REQUEST_LENGTH + *data_to_send;
+		return NT_STATUS_OK;
+
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		seal = true;
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+
+	/* Sign/seal case, calculate auth and pad lengths */
+
+	max_len = max_xmit_frag
+			- DCERPC_REQUEST_LENGTH
+			- DCERPC_AUTH_TRAILER_LENGTH;
+
+	/* Treat the same for all authenticated rpc requests. */
+	switch (auth->auth_type) {
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		status = spnego_get_negotiated_mech(auth->a_u.spnego_state,
+						    &auth_type, &auth_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		switch (auth_type) {
+		case DCERPC_AUTH_TYPE_NTLMSSP:
+			*auth_len = NTLMSSP_SIG_SIZE;
+			break;
+
+		case DCERPC_AUTH_TYPE_KRB5:
+			gse_ctx = talloc_get_type(auth_ctx,
+						  struct gse_context);
+			if (!gse_ctx) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			*auth_len = gse_get_signature_length(gse_ctx,
+							     seal, max_len);
+			break;
+
+		default:
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
+
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		*auth_len = NTLMSSP_SIG_SIZE;
+		break;
+
+	case DCERPC_AUTH_TYPE_SCHANNEL:
+		*auth_len = NL_AUTH_SIGNATURE_SIZE;
+		break;
+
+	case DCERPC_AUTH_TYPE_KRB5:
+		*auth_len = gse_get_signature_length(auth->a_u.gssapi_state,
+						     seal, max_len);
+		break;
+
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	data_space = max_len - *auth_len;
+
+	*data_to_send = MIN(data_space, data_left);
+	mod_len = *data_to_send % CLIENT_NDR_PADDING_SIZE;
+	if (mod_len) {
+		*pad_len = CLIENT_NDR_PADDING_SIZE - mod_len;
+	} else {
+		*pad_len = 0;
+	}
+	*frag_len = DCERPC_REQUEST_LENGTH + *data_to_send + *pad_len
+				+ DCERPC_AUTH_TRAILER_LENGTH + *auth_len;
+
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Create and add the NTLMSSP sign/seal auth data.
  ********************************************************************/
