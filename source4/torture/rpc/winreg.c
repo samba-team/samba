@@ -2385,6 +2385,7 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 {
 	struct policy_handle newhandle;
 	int i;
+	/* FIXME: This is GCC specific and breaks Solaris 10 "cc" */
 	struct {
 		const char *values[3];
 		uint32_t num_values;
