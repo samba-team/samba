@@ -1305,24 +1305,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			update_dns_hostname = false;
 		}
 
-		/* Gets host informations and put them in our directory */
-		new_msg = ldb_msg_new(mem_ctx);
-		NT_STATUS_HAVE_NO_MEMORY(new_msg);
-
-		new_msg->dn = workstation_dn;
-
-		/* Deletes old OS version values */
-		samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
-			"operatingSystemServicePack");
-		samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
-			"operatingSystemVersion");
-
-		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {
-			DEBUG(3,("Impossible to update samdb: %s\n",
-				ldb_errstring(sam_ctx)));
-		}
-
-		talloc_free(new_msg);
+		/* Gets host informations and put them into our directory */
 
 		new_msg = ldb_msg_new(mem_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(new_msg);
@@ -1335,7 +1318,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			r->in.query->workstation_info->os_name.string);
 
 		/*
-		 * Sets informations from "os_version". On a empty structure
+		 * Sets informations from "os_version". On an empty structure
 		 * the values are cleared.
 		 */
 		if (r->in.query->workstation_info->os_version.os != NULL) {
@@ -1353,6 +1336,12 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 					os_version->BuildNumber
 				)
 			);
+		} else {
+			samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+					     "operatingSystemServicePack");
+
+			samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+					     "operatingSystemVersion");
 		}
 
 		/*
