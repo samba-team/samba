@@ -48,9 +48,10 @@ static void log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const ch
 {
 	if (level <= TDB_DEBUG_ERROR) {
 		va_list ap;
-
+		char newfmt[strlen(tdb_name(tdb)) + 1 + strlen(fmt) + 1];
+		sprintf(newfmt, "%s:%s", tdb_name(tdb), fmt);
 		va_start(ap, fmt);
-		do_debug_v(fmt, ap);
+		do_debug_v(newfmt, ap);
 		va_end(ap);
 	}
 }

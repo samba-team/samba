@@ -202,7 +202,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	} else if (status == 0) {
 		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
 		ctdb->done_startup = true;
-		ctdb->monitor->next_interval = 5;
+		ctdb->monitor->next_interval = 0;
 		ctdb_run_notification_script(ctdb, "startup");
 	}
 
@@ -245,7 +245,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	}
 
 
-	if (timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
+	if (!fast_start && timeval_elapsed(&ctdb->last_recovery_finished) < (ctdb->tunable.rerecovery_timeout + 3)) {
 		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
 
 		DEBUG(DEBUG_NOTICE,(__location__ " wait for pending recoveries to end. Wait one more second.\n"));
@@ -301,7 +301,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			     timeval_current_ofs(1, 0), 
+			     timeval_current(),
 			     ctdb_check_health, ctdb);
 }
 
