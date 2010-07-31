@@ -2678,8 +2678,6 @@ static const char *kernel_mode_registry_path(struct torture_context *tctx,
 		torture_warning(tctx, "unsupported hkey: 0x%08x\n", hkey);
 		return NULL;
 	}
-
-	return NULL;
 }
 
 static bool test_symlink_keys(struct torture_context *tctx,
