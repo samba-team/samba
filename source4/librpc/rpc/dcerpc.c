@@ -1158,6 +1158,14 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	}
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
+	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
+		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (c->flags & DCERPC_NDR64) {
+		pull->flags |= LIBNDR_FLAG_NDR64;
+	}
+
 	ndr_err = ndr_pull(pull, NDR_IN, st);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -1171,6 +1179,14 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
+
+	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
+		push->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (c->flags & DCERPC_NDR64) {
+		push->flags |= LIBNDR_FLAG_NDR64;
+	}
 
 	ndr_err = ndr_push(push, NDR_IN, st);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
