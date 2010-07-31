@@ -3104,16 +3104,16 @@ struct torture_suite *torture_rpc_winreg(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test_ex(tcase, "HKLM",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKLM_r);
+				      (void *)dcerpc_winreg_OpenHKLM_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKU",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKU_r);
+				      (void *)dcerpc_winreg_OpenHKU_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCR",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCR_r);
+				      (void *)dcerpc_winreg_OpenHKCR_r);
 	torture_rpc_tcase_add_test_ex(tcase, "HKCU",
 				      test_Open,
-				      (winreg_open_fn)dcerpc_winreg_OpenHKCU_r);
+				      (void *)dcerpc_winreg_OpenHKCU_r);
 
 	return suite;
 }
