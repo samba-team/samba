@@ -47,7 +47,7 @@ struct subtree_rename_context {
 };
 
 static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
-					 struct ldb_request *req)
+						      struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct subtree_rename_context *ac;
@@ -56,7 +56,6 @@ static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
 
 	ac = talloc_zero(req, struct subtree_rename_context);
 	if (ac == NULL) {
-		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -241,7 +240,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 
 	ac = subren_ctx_init(module, req);
 	if (!ac) {
-		return ldb_operr(ldb);
+		return ldb_oom(ldb);
 	}
 
 	/* add this entry as the first to do */
