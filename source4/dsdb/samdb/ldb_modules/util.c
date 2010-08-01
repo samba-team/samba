@@ -954,7 +954,6 @@ int dsdb_msg_constrainted_update_int32(struct ldb_module *module,
 				       const int32_t *new_val)
 {
 	struct ldb_message_element *el;
-	struct ldb_val *v1, *v2;
 	int ret;
 	char *vstring;
 
@@ -1013,7 +1012,6 @@ int dsdb_msg_constrainted_update_int64(struct ldb_module *module,
 				       const int64_t *new_val)
 {
 	struct ldb_message_element *el;
-	struct ldb_val *v1, *v2;
 	int ret;
 	char *vstring;
 
