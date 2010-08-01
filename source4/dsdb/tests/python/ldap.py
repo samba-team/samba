@@ -688,8 +688,6 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-
-
         self.ldb.add({
              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
              "objectclass": "group"})
