@@ -64,14 +64,6 @@ struct acl_context {
 	struct dsdb_schema *schema;
 };
 
-bool is_root_base_dn(struct ldb_context *ldb, struct ldb_dn *dn_to_check)
-{
-	int result;
-	struct ldb_dn *root_base_dn = ldb_get_root_basedn(ldb);
-	result = ldb_dn_compare(root_base_dn,dn_to_check);
-	return (result==0);
-}
-
 static struct security_token *acl_user_token(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
