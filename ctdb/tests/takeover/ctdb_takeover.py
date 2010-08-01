@@ -58,6 +58,9 @@ def process_args():
                       action="store", type="int", dest="iterations",
                       default=1000,
                       help="number of iterations to run in test")
+    parser.add_option("-b", "--balance",
+                      action="store_true", dest="balance", default=False,
+                      help="show (im)balance information")
     parser.add_option("-x", "--exit",
                       action="store_true", dest="exit", default=False,
                       help="exit on the 1st gratuitous IP move")
@@ -203,6 +206,47 @@ class Cluster(object):
 
         self.print_statistics()
 
+    def calculate_imbalance(self):
+
+        imbalance = 0
+
+        assigned = sorted([ip
+                           for n in self.nodes
+                           for ip in n.current_addresses])
+
+        for ip in assigned:
+
+            num_capable = 0
+            maxnode = -1
+            minnode = -1
+            for (i, n) in enumerate(self.nodes):
+                if not n.healthy:
+                    continue
+
+                if not n.can_node_serve_ip(ip):
+                    continue
+
+                num_capable += 1
+
+                num = n.node_ip_coverage()
+
+                if maxnode == -1 or num > maxnum:
+                    maxnode = i
+                    maxnum = num
+
+                if minnode == -1 or num < minnum:
+                    minnode = i
+                    minnum = num
+            
+            if maxnode == -1:
+                continue
+
+            i = maxnum - minnum
+            if maxnum - minnum < 2:
+                i = 0
+            imbalance = max([imbalance, i])
+
+        return imbalance
 
     def diff(self, prev):
         """Calculate differences in IP assignments between self and prev.
@@ -214,7 +258,6 @@ class Cluster(object):
 
         ip_moves = 0
         grat_ip_moves = 0
-        imbalance = 0
         details = []
 
         for (new, n) in enumerate(self.nodes):
@@ -234,7 +277,7 @@ class Cluster(object):
                     details.append("%s %s: %d -> %d" %
                                    (prefix, ip, old, new))
 
-        return (ip_moves, grat_ip_moves, imbalance, details)
+        return (ip_moves, grat_ip_moves, details)
                     
     def find_least_loaded_node(self, ip):
         """Just like find_takeover_node but doesn't care about health."""
@@ -413,16 +456,21 @@ class Cluster(object):
         grat_ip_moves = 0
 
         if prev is not None:
-            (ip_moves, grat_ip_moves, imbalance, details) = self.diff(prev)
+            (ip_moves, grat_ip_moves, details) = self.diff(prev)
             self.ip_moves.append(ip_moves)
             self.grat_ip_moves.append(grat_ip_moves)
-            self.imbalance.append(imbalance)
 
             if options.diff:
                 print_begin("DIFF")
                 print "\n".join(details)
                 print_end()
 
+        imbalance = self.calculate_imbalance()
+        self.imbalance.append(imbalance)
+        if options.balance:
+            print_begin("IMBALANCE")
+            print imbalance
+            print_end()
 
         if options.show:
             print_begin("STATE")
