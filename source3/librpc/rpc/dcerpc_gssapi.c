@@ -310,7 +310,7 @@ static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 		goto done;
 	}
 	gss_maj = gss_display_status(&gss_min, min, GSS_C_MECH_CODE,
-				     discard_const(gss_mech_krb5),
+				     (gss_OID)discard_const(gss_mech_krb5),
 				     &msg_ctx, &msg_min);
 	if (gss_maj) {
 		goto done;
@@ -394,7 +394,7 @@ NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	if (!signature->length) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	signature->data = talloc_size(mem_ctx, signature->length);
+	signature->data = (uint8_t *)talloc_size(mem_ctx, signature->length);
 	if (!signature->data) {
 		return NT_STATUS_NO_MEMORY;
 	}
