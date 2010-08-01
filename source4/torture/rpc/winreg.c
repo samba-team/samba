@@ -1649,7 +1649,7 @@ static bool test_QueryMultipleValues_full(struct dcerpc_binding_handle *b,
 					  struct torture_context *tctx,
 					  struct policy_handle *handle,
 					  uint32_t num_values,
-					  const char **valuenames,
+					  const char * const *valuenames,
 					  bool existing_value)
 {
 	struct winreg_QueryMultipleValues r;
@@ -1719,7 +1719,7 @@ static bool test_QueryMultipleValues2_full(struct dcerpc_binding_handle *b,
 					   struct torture_context *tctx,
 					   struct policy_handle *handle,
 					   uint32_t num_values,
-					   const char **valuenames,
+					   const char * const *valuenames,
 					   bool existing_value)
 {
 	struct winreg_QueryMultipleValues2 r;
@@ -2385,8 +2385,7 @@ static bool test_HKLM_wellknown(struct torture_context *tctx,
 {
 	struct policy_handle newhandle;
 	int i;
-	/* FIXME: This is GCC specific and breaks Solaris 10 "cc" */
-	struct {
+	static const struct {
 		const char *values[3];
 		uint32_t num_values;
 		bool existing_value;
