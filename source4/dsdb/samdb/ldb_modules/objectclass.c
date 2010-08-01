@@ -1238,7 +1238,8 @@ static int objectclass_do_delete(struct oc_context *ac);
 
 static int objectclass_delete(struct ldb_module *module, struct ldb_request *req)
 {
-	static const char * const attrs[] = { "systemFlags", NULL };
+	static const char * const attrs[] = { "nCName", "objectClass",
+					      "systemFlags", NULL };
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct oc_context *ac;
@@ -1253,7 +1254,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	/* Bypass the "systemFlags" checks when we do have the "RELAX" control
+	/* Bypass the constraint checks when we do have the "RELAX" control
 	 * set. */
 	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
 		return ldb_next_request(module, req);
@@ -1265,7 +1266,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 	}
 
 	/* this looks up the entry object for fetching some important
-	 * informations (systemFlags...) */
+	 * informations (object classes, system flags...) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
@@ -1284,7 +1285,9 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 static int objectclass_do_delete(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
+	struct ldb_dn *dn;
 	int32_t systemFlags;
+	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -1295,6 +1298,47 @@ static int objectclass_do_delete(struct oc_context *ac)
 				       ldb_dn_get_linearized(ac->req->op.del.dn));
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
+
+	/* DC's ntDSDSA object */
+	if (ldb_dn_compare(ac->req->op.del.dn, samdb_ntds_settings_dn(ldb)) == 0) {
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's the DC's ntDSDSA object!",
+				       ldb_dn_get_linearized(ac->req->op.del.dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* DC's rIDSet object */
+	ret = samdb_rid_set_dn(ldb, ac, &dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (ldb_dn_compare(ac->req->op.del.dn, dn) == 0) {
+		talloc_free(dn);
+		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's the DC's rIDSet object!",
+				       ldb_dn_get_linearized(ac->req->op.del.dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	talloc_free(dn);
+
+	/* crossRef objects regarding config, schema and default domain NCs */
+	if (samdb_find_attribute(ldb, ac->search_res->message, "objectClass",
+				 "crossRef") != NULL) {
+		dn = ldb_msg_find_attr_as_dn(ldb, ac, ac->search_res->message,
+					     "nCName");
+		if ((ldb_dn_compare(dn, ldb_get_default_basedn(ldb)) == 0) ||
+		    (ldb_dn_compare(dn, ldb_get_config_basedn(ldb)) == 0) ||
+		    (ldb_dn_compare(dn, ldb_get_schema_basedn(ldb)) == 0)) {
+			talloc_free(dn);
+
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's a crossRef object to the three main partitions!",
+					       ldb_dn_get_linearized(ac->req->op.del.dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		talloc_free(dn);
+	}
+
+	/* systemFlags */
 
 	systemFlags = ldb_msg_find_attr_as_int(ac->search_res->message,
 					       "systemFlags", 0);
