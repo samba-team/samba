@@ -937,6 +937,14 @@ objectClass: container
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
+        # Performs some other constraints testing
+
+        try:
+            ldb.rename("CN=Policies,CN=System," + self.base_dn, "CN=Users2," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+
     def test_rename_twice(self):
         """Tests the rename operation twice - this corresponds to a past bug"""
         print "Tests the rename twice operation"""
