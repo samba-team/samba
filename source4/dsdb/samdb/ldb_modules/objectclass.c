@@ -374,11 +374,14 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* An add operation on the root basedn has a special handling when the
-	 * relax control isn't specified. */
-	if (ldb_dn_compare(ldb_get_root_basedn(ldb), req->op.add.message->dn) == 0) {
-		if (ldb_request_get_control(req,
-					    LDB_CONTROL_RELAX_OID) == NULL) {
+	/* An add operation on the basedn without "NC-add" operation isn't
+	 * allowed. */
+	if (ldb_dn_compare(ldb_get_default_basedn(ldb), req->op.add.message->dn) == 0) {
+		unsigned int instanceType;
+
+		instanceType = ldb_msg_find_attr_as_uint(req->op.add.message,
+							 "instanceType", 0);
+		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
 			/* When we are trying to readd the root basedn then
 			 * this is denied, but with an interesting mechanism:
 			 * there is generated a referral with the last
@@ -457,15 +460,20 @@ static int objectclass_do_add(struct oc_context *ac)
 	/* Check if we have a valid parent - this check is needed since
 	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
 	if (ac->search_res == NULL) {
-		if (ldb_dn_compare(ldb_get_root_basedn(ldb), msg->dn) == 0) {
-			/* Allow the tree to be started but don't keep any
-			 * error strings - they're meaningless. */
-			ldb_set_errstring(ldb, NULL);
-		} else {
+		unsigned int instanceType;
+
+		/* An add operation on partition DNs without "NC-add" operation
+		 * isn't allowed. */
+		instanceType = ldb_msg_find_attr_as_uint(ac->req->op.add.message,
+							 "instanceType", 0);
+		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
+
+		/* Don't keep any error messages - we've to add a partition */
+		ldb_set_errstring(ldb, NULL);
 	} else {
 		/* Fix up the DN to be in the standard form, taking
 		 * particular care to match the parent DN */
