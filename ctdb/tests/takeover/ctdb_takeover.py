@@ -135,6 +135,7 @@ class Cluster(object):
         print "Total IP moves:      %6d" % sum(self.ip_moves)
         print "Gratuitous IP moves: %6d" % sum(self.grat_ip_moves)
         print "Max imbalance:       %6d" % max(self.imbalance)
+        print "Final imbalance:     %6d" % self.imbalance[-1]
         print_end()
 
     def find_pnn_with_ip(self, ip):
