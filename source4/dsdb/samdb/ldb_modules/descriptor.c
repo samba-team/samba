@@ -63,7 +63,7 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct ldb_dn *root_base_dn = ldb_get_root_basedn(ldb);
+	struct ldb_dn *default_base_dn = ldb_get_default_basedn(ldb);
 	struct ldb_dn *schema_base_dn = ldb_get_schema_basedn(ldb);
 	struct ldb_dn *config_base_dn = ldb_get_config_basedn(ldb);
 	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
@@ -93,7 +93,7 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 		else
 			dag_sid = NULL;
 	}
-	else if (ldb_dn_compare_base(root_base_dn, dn) == 0){
+	else if (ldb_dn_compare_base(default_base_dn, dn) == 0){
 		if (security_token_has_sid(token, da_sid))
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		else if (security_token_has_sid(token, ea_sid))
@@ -705,8 +705,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
 	    (ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(msg->dn, (ldb_get_default_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(msg->dn, (ldb_get_root_basedn(ldb))) == 0)) {
+	    (ldb_dn_compare(msg->dn, (ldb_get_default_basedn(ldb))) == 0)) {
 		ac->parentsd_val = NULL;
 	} else if (ac->search_res != NULL) {
 		struct ldb_message_element *parent_element = ldb_msg_find_element(ac->search_res->message, "nTSecurityDescriptor");
