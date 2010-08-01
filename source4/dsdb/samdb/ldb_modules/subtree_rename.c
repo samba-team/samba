@@ -141,9 +141,9 @@ static int subtree_rename_next_request(struct subtree_rename_context *ac)
 	return ldb_next_request(ac->module, req);
 }
 
-static int check_system_flags(struct ldb_message *msg,
-			      struct subtree_rename_context *ac,
-			      struct ldb_dn *olddn, struct ldb_dn *newdn)
+static int check_constraints(struct ldb_message *msg,
+			     struct subtree_rename_context *ac,
+			     struct ldb_dn *olddn, struct ldb_dn *newdn)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_dn *dn1, *dn2;
@@ -154,6 +154,39 @@ static int check_system_flags(struct ldb_message *msg,
 	if (ldb_dn_compare(olddn, newdn) == 0) {
 		return LDB_SUCCESS;
 	}
+
+	/* Objects under CN=System */
+
+	dn1 = ldb_dn_copy(ac, ldb_get_default_basedn(ldb));
+	if (dn1 == NULL) return ldb_oom(ldb);
+
+	if ( ! ldb_dn_add_child_fmt(dn1, "CN=System")) {
+		talloc_free(dn1);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if ((ldb_dn_compare_base(dn1, olddn) == 0) &&
+	    (ldb_dn_compare_base(dn1, newdn) != 0)) {
+		talloc_free(dn1);
+		ldb_asprintf_errstring(ldb,
+				       "subtree_rename: Cannot move/rename %s. Objects under CN=System have to stay under it!",
+				       ldb_dn_get_linearized(olddn));
+		return LDB_ERR_OTHER;
+	}
+
+	talloc_free(dn1);
+
+	/* LSA objects */
+
+	if ((samdb_find_attribute(ldb, msg, "objectClass", "secret") != NULL) ||
+	    (samdb_find_attribute(ldb, msg, "objectClass", "trustedDomain") != NULL)) {
+		ldb_asprintf_errstring(ldb,
+				       "subtree_rename: Cannot move/rename %s. It's an LSA-specific object!",
+				       ldb_dn_get_linearized(olddn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* systemFlags */
 
 	dn1 = ldb_dn_get_parent(ac, olddn);
 	if (dn1 == NULL) return ldb_oom(ldb);
@@ -273,9 +306,9 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 			/* this was already stored by the
 			 * subtree_rename_search() */
 
-			ret = check_system_flags(ares->message, ac,
-						 ac->list->olddn,
-						 ac->list->newdn);
+			ret = check_constraints(ares->message, ac,
+						ac->list->olddn,
+						ac->list->newdn);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL,
 						       ret);
@@ -308,8 +341,8 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = check_system_flags(ares->message, ac,
-					 store->olddn, store->newdn);
+		ret = check_constraints(ares->message, ac,
+					store->olddn, store->newdn);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -342,7 +375,8 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "systemFlags", NULL };
+	static const char * const attrs[] = { "objectClass", "systemFlags",
+					      NULL };
 	struct ldb_request *search_req;
 	struct subtree_rename_context *ac;
 	int ret;
