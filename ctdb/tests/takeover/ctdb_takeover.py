@@ -301,7 +301,7 @@ class Cluster(object):
                     min = num
 
         if pnn == -1:
-            print "Could not find node to take over public address", ip
+            verbose_print("Could not find node to take over public address %s" % ip)
             return False
 
         self.nodes[pnn].current_addresses.add(ip)
@@ -331,7 +331,7 @@ class Cluster(object):
                     min = num
 
         if pnn == -1:
-            print "Could not find node to take over public address", ip
+            verbose_print("Could not find node to take over public address %s" % ip)
             return False
 
         self.nodes[pnn].current_addresses.add(ip)
