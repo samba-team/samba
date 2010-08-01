@@ -58,6 +58,10 @@ def process_args():
                       action="store", type="int", dest="iterations",
                       default=1000,
                       help="number of iterations to run in test")
+    parser.add_option("-s", "--seed",
+                      action="store", type="int", dest="seed",
+                      default=None,
+                      help="number of iterations to run in test")
     parser.add_option("-b", "--balance",
                       action="store_true", dest="balance", default=False,
                       help="show (im)balance information")
@@ -493,3 +497,4 @@ prev = None
 
 options = process_args()
 
+random.seed(options.seed)
