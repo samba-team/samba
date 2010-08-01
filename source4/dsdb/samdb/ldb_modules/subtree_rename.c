@@ -156,7 +156,9 @@ static int check_system_flags(struct ldb_message *msg,
 	}
 
 	dn1 = ldb_dn_get_parent(ac, olddn);
+	if (dn1 == NULL) return ldb_oom(ldb);
 	dn2 = ldb_dn_get_parent(ac, newdn);
+	if (dn2 == NULL) return ldb_oom(ldb);
 
 	if (ldb_dn_compare(dn1, dn2) == 0) {
 		rename_op = true;
@@ -184,7 +186,9 @@ static int check_system_flags(struct ldb_message *msg,
 
 			if (limited_move) {
 				dn1 = ldb_dn_copy(ac, olddn);
+				if (dn1 == NULL) return ldb_oom(ldb);
 				dn2 = ldb_dn_copy(ac, newdn);
+				if (dn2 == NULL) return ldb_oom(ldb);
 
 				limited_move &= ldb_dn_remove_child_components(dn1, 3);
 				limited_move &= ldb_dn_remove_child_components(dn2, 3);
