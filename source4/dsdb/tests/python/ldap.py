@@ -658,6 +658,7 @@ class BasicTests(unittest.TestCase):
         """Tests the 'instanceType' attribute"""
         print "Tests the 'instanceType' attribute"""
 
+        # The instance type is single-valued
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -666,6 +667,28 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # The head NC flag cannot be set without the write flag
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "instanceType": "1" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # We cannot manipulate NCs without the head NC flag
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "instanceType": "32" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+
 
         self.ldb.add({
              "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
