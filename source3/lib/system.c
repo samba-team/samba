@@ -1790,7 +1790,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 			return -1;
 		}
 		/* Shift results back, so we can prepend prefixes */
-		buf = memmove(list + len, list, list_size);
+		buf = (char *)memmove(list + len, list, list_size);
 
 		for(i = 0; i < list_size; i += len + 1) {
 			len = buf[i];
