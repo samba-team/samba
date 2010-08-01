@@ -2525,21 +2525,21 @@ static bool test_OpenHive(struct torture_context *tctx,
 		break;
 	case HKEY_CURRENT_USER:
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_winreg_OpenHKCU_r(b, tctx, (struct winreg_OpenHKCU *)&r),
+			dcerpc_winreg_OpenHKCU_r(b, tctx, (struct winreg_OpenHKCU *)(void *)&r),
 			"failed to open HKCU");
 		torture_assert_werr_ok(tctx, r.out.result,
 			"failed to open HKCU");
 		break;
 	case HKEY_USERS:
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_winreg_OpenHKU_r(b, tctx, (struct winreg_OpenHKU *)&r),
+			dcerpc_winreg_OpenHKU_r(b, tctx, (struct winreg_OpenHKU *)(void *)&r),
 			"failed to open HKU");
 		torture_assert_werr_ok(tctx, r.out.result,
 			"failed to open HKU");
 		break;
 	case HKEY_CLASSES_ROOT:
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_winreg_OpenHKCR_r(b, tctx, (struct winreg_OpenHKCR *)&r),
+			dcerpc_winreg_OpenHKCR_r(b, tctx, (struct winreg_OpenHKCR *)(void *)&r),
 			"failed to open HKCR");
 		torture_assert_werr_ok(tctx, r.out.result,
 			"failed to open HKCR");
