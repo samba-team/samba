@@ -251,7 +251,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	uint16_t hash_type;
+	uint16_t hash_type = XATTR_SD_HASH_TYPE_NONE;
 	uint8_t hash[XATTR_SD_HASH_SIZE];
 	uint8_t hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *psd = NULL;
