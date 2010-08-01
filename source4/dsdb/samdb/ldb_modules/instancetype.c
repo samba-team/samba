@@ -86,7 +86,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	struct it_context *ac;
-	uint32_t instance_type;
+	uint32_t instanceType;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -100,8 +100,6 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(req->op.add.message, "instanceType");
 	if (el != NULL) {
-		unsigned int instanceType;
-
 		if (el->num_values != 1) {
 			ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute is single-valued!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -110,7 +108,23 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		instanceType = ldb_msg_find_attr_as_uint(req->op.add.message,
 							 "instanceType", 0);
 		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+			/* if we have no NC add operation (no TYPE_IS_NC_HEAD)
+			 * then "instanceType" can only be "0" or "TYPE_WRITE".
+			 */
+			if ((instanceType != 0) &&
+			    ((instanceType & INSTANCE_TYPE_WRITE) == 0)) {
+				ldb_set_errstring(ldb, "instancetype: if TYPE_IS_NC_HEAD wasn't set, then only TYPE_WRITE or 0 are allowed!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+
 			return ldb_next_request(module, req);		
+		}
+
+		/* if we have a NC add operation then we need also the
+		 * "TYPE_WRITE" flag in order to succeed. */
+		if (!(instanceType & INSTANCE_TYPE_WRITE)) {
+			ldb_set_errstring(ldb, "instancetype: if TYPE_IS_NC_HEAD was set, then also TYPE_WRITE is requested!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
 		/* Forward the 'add' to the modules below, but if it
@@ -146,11 +160,11 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	/*
 	 * TODO: calculate correct instance type
 	 */
-	instance_type = INSTANCE_TYPE_WRITE;
+	instanceType = INSTANCE_TYPE_WRITE;
 
-	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instance_type);
+	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instanceType);
 	if (ret != LDB_SUCCESS) {
-		return ldb_oom(ldb);
+		return ret;
 	}
 
 	ret = ldb_build_add_req(&down_req, ldb, req,
