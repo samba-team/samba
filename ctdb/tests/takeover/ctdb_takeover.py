@@ -119,6 +119,7 @@ class Cluster(object):
         self.ip_moves = []
         self.grat_ip_moves = []
         self.imbalance = []
+        self.events = -1
 
     def __str__(self):
         return "\n".join(["%2d %s %s" %
@@ -130,6 +131,7 @@ class Cluster(object):
 
     def print_statistics(self):
         print_begin("STATISTICS")
+        print "Events:              %6d" % self.events
         print "Total IP moves:      %6d" % sum(self.ip_moves)
         print "Gratuitous IP moves: %6d" % sum(self.grat_ip_moves)
         print "Max imbalance:       %6d" % max(self.imbalance)
@@ -197,8 +199,8 @@ class Cluster(object):
     def random_iterations(self):
         i = 1
         while i <= options.iterations:
-            print_begin("EVENT %d" % i)
-            print_end()
+            verbose_begin("EVENT %d" % i)
+            verbose_end()
             self.do_something_random()
             if self.recover() and options.exit > 0:
                 break
@@ -339,6 +341,8 @@ class Cluster(object):
     def ctdb_takeover_run(self):
 
         global options
+
+        self.events += 1
 
         # Don't bother with the num_healthy stuff.  It is an
         # irrelevant detail.
