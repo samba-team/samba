@@ -4742,10 +4742,6 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 				    const struct ndr_syntax_id *interface,
 				    const struct api_struct *cmds, int size);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
-bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt);
-bool api_pipe_alter_context(struct pipes_struct *p, struct ncacn_packet *pkt);
-void free_pipe_rpc_context( PIPE_RPC_FNS *list );
-bool api_pipe_request(struct pipes_struct *p, struct ncacn_packet *pkt);
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 

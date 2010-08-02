@@ -982,7 +982,8 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
  Respond to a pipe bind request.
 *******************************************************************/
 
-bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt)
+static bool api_pipe_bind_req(struct pipes_struct *p,
+				struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
@@ -1263,7 +1264,8 @@ bool api_pipe_bind_req(struct pipes_struct *p, struct ncacn_packet *pkt)
  SPNEGO calls.
 ****************************************************************************/
 
-bool api_pipe_alter_context(struct pipes_struct *p, struct ncacn_packet *pkt)
+static bool api_pipe_alter_context(struct pipes_struct *p,
+					struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	uint16 assoc_gid;
@@ -1481,7 +1483,7 @@ static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 contex
  Memory cleanup.
 ****************************************************************************/
 
-void free_pipe_rpc_context( PIPE_RPC_FNS *list )
+static void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 {
 	PIPE_RPC_FNS *tmp = list;
 	PIPE_RPC_FNS *tmp2;
@@ -1504,7 +1506,8 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
  before doing the call.
 ****************************************************************************/
 
-bool api_pipe_request(struct pipes_struct *p, struct ncacn_packet *pkt)
+static bool api_pipe_request(struct pipes_struct *p,
+				struct ncacn_packet *pkt)
 {
 	bool ret = False;
 	bool changed_user = False;
