@@ -8,12 +8,14 @@
 # reassignments.  Running with --nd fixes this.
 
 import ctdb_takeover
+import sys
 from optparse import make_option
 import string
 
 ctdb_takeover.process_args([
         make_option("-g", "--group",
-                    action="append", type="string", dest="groups"),
+                    action="append", type="string", dest="groups",
+                    help="define a node group using N@IPs syntax"),
         ])
 
 def expand_range(r):
@@ -31,6 +33,10 @@ def add_node_group(s):
         c.add_node(ctdb_takeover.Node(ips))
 
 c = ctdb_takeover.Cluster()
+
+if ctdb_takeover.options.groups is None:
+    print "Error: no node groups defined."
+    sys.exit(1)
 
 for g in ctdb_takeover.options.groups:
     add_node_group(g)
