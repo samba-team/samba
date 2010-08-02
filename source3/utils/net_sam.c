@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/samr.h"
 
 /*
  * Set a user's data

@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "secrets.h"
+#include "../librpc/gen_ndr/samr.h"
 
 extern bool AllowDebugChange;
 
