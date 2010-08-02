@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/svcctl.h"
 
 int updatecount = 0;
 
