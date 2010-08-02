@@ -40,6 +40,7 @@
 #include "param/param.h"
 #include "param/provision.h"
 #include "libcli/security/dom_sid.h"
+#include "dsdb/common/util.h"
 
 /* 
 List of tasks vampire.py must perform:
@@ -88,6 +89,7 @@ struct libnet_vampire_cb_state {
 	struct tevent_context *event_ctx;
 	unsigned total_objects;
 	char *last_partition;
+	const char *server_dn_str;
 };
 
 /* Caller is expected to keep supplied pointers around for the lifetime of the structure */
@@ -152,6 +154,7 @@ NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
 	s->ldb = talloc_steal(s, result.samdb);
 	s->lp_ctx = talloc_steal(s, result.lp_ctx);
 	s->provision_schema = dsdb_get_schema(s->ldb, s);
+	s->server_dn_str = talloc_steal(s, p->dest_dsa->server_dn_str);
 
 	/* wrap the entire vapire operation in a transaction.  This
 	   isn't just cosmetic - we use this to ensure that linked
@@ -701,6 +704,55 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS update_dnshostname_for_server(TALLOC_CTX *mem_ctx,
+					      struct ldb_context *ldb,
+					      const char *server_dn_str,
+					      const char *netbios_name,
+					      const char *realm)
+{
+	int ret;
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+	struct ldb_dn *server_dn;
+	const char *dNSHostName = strlower_talloc(mem_ctx,
+						  talloc_asprintf(mem_ctx,
+								  "%s.%s",
+								  netbios_name,
+								  realm));
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	server_dn = ldb_dn_new(mem_ctx, ldb, server_dn_str);
+	if (!server_dn) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	msg->dn = server_dn;
+	ret = ldb_msg_add_empty(msg, "dNSHostName", LDB_FLAG_MOD_ADD, &el);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ret = ldb_msg_add_steal_string(msg,
+				       "dNSHostName",
+				       talloc_asprintf(el->values, "%s", dNSHostName));
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ret = dsdb_modify(ldb, msg, DSDB_MODIFY_PERMISSIVE);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to add dnsHostName to the Server object: %s\n",
+			 ldb_errstring(ldb)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 			struct libnet_Vampire *r)
 {
@@ -836,7 +888,15 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		talloc_free(s);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
-
+	/* during dcpromo the 2nd computer adds dNSHostName attribute to his Server object
+	 * the attribute appears on the original DC after replication
+	 */
+	status = update_dnshostname_for_server(s, s->ldb, s->server_dn_str, s->netbios_name, s->realm);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to update dNSHostName on Server object - %s\n", nt_errstr(status));
+		talloc_free(s);
+		return status;
+	}
 	/* prepare the transaction - this prepares to commit all the changes in
 	   the ldb from the whole vampire.  Note that this 
 	   triggers the writing of the linked attribute backlinks.
