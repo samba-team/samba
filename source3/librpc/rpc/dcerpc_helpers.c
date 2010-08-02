@@ -93,6 +93,7 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 *			elements
 * @param blob		The blob of data to decode
 * @param r		An empty ncacn_packet, must not be NULL
+* @param bigendian	Whether the packet is bignedian encoded
 *
 * @return a NTSTATUS error code
 */
