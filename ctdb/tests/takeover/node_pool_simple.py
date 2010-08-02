@@ -4,7 +4,9 @@
 # configuration.  When run with deterministic IPs (use "-d" to show
 # the problem) it does many gratuitous IP reassignments.
 
-from ctdb_takeover import Cluster, Node
+from ctdb_takeover import Cluster, Node, process_args
+
+process_args()
 
 addresses1 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 addresses2 = ['I', 'J', 'K']

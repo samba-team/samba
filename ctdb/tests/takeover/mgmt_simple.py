@@ -4,7 +4,9 @@
 # interface node and a management node.  When run with deterministic
 # IPs there are gratuitous IP reassignments.
 
-from ctdb_takeover import Cluster, Node
+from ctdb_takeover import Cluster, Node, process_args
+
+process_args()
 
 addresses = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 

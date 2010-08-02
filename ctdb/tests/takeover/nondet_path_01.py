@@ -2,9 +2,10 @@
 
 # This is a contrived example that makes the balancing algorithm fail
 # for nondeterministic IPs (run with "-dv --nd" to see the failure).
-# The --hack option fixes the problem.
 
-from ctdb_takeover import Cluster, Node
+from ctdb_takeover import Cluster, Node, process_args
+
+process_args()
 
 addresses1 = ['A', 'B', 'C', 'D']
 addresses2 = ['B', 'E', 'F']
