@@ -3433,7 +3433,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *session_key)
 {
 	struct pipe_auth_data *a = cli->auth;
-	DATA_BLOB sk;
+	DATA_BLOB sk = data_blob_null;
+	bool make_dup;
 
 	if (!session_key || !cli) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -3447,27 +3448,41 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_SCHANNEL:
 		sk = data_blob_const(a->a_u.schannel_auth->creds->session_key,
 				     16);
+		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		sk = spnego_get_session_key(a->a_u.spnego_state);
 		if (sk.length == 0) {
 			return NT_STATUS_NO_USER_SESSION_KEY;
 		}
+		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		sk = auth_ntlmssp_get_session_key(a->a_u.auth_ntlmssp_state);
+		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
 		sk = gse_get_session_key(a->a_u.gssapi_state);
+		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->user_session_key.data,
 				     a->user_session_key.length);
+		make_dup = true;
 		break;
 	default:
+		break;
+	}
+
+	if (!sk.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	*session_key = data_blob_dup_talloc(mem_ctx, &sk);
+	if (make_dup) {
+		*session_key = data_blob_dup_talloc(mem_ctx, &sk);
+	} else {
+		*session_key = sk;
+	}
+
 	return NT_STATUS_OK;
 }
