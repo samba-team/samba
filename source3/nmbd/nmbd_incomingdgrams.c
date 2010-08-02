@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/svcctl.h"
 
 extern bool found_lm_clients;
 
