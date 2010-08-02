@@ -54,10 +54,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#ifndef MAX_OPEN_PRINTER_EXS
-#define MAX_OPEN_PRINTER_EXS 50
-#endif
-
 static Printer_entry *printers_list;
 
 typedef struct _counter_printer_0 {
