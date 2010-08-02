@@ -1479,24 +1479,6 @@ static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 contex
 	return NULL;
 }
 
-/****************************************************************************
- Memory cleanup.
-****************************************************************************/
-
-static void free_pipe_rpc_context( PIPE_RPC_FNS *list )
-{
-	PIPE_RPC_FNS *tmp = list;
-	PIPE_RPC_FNS *tmp2;
-
-	while (tmp) {
-		tmp2 = tmp->next;
-		SAFE_FREE(tmp);
-		tmp = tmp2;
-	}
-
-	return;	
-}
-
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 		       const struct api_struct *api_rpc_cmds, int n_cmds);
 
