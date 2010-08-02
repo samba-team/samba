@@ -107,7 +107,6 @@ bool test_domain_open(struct torture_context *tctx,
  * when deleting users.
  */
 static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
-					   struct dcerpc_binding_handle *b,
 					   const char *user_rdn,
 					   TALLOC_CTX *mem_ctx,
 					   const char **_account_name)
@@ -116,7 +115,7 @@ static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
 	struct ldb_context *ldb;
 	TALLOC_CTX *tmp_ctx;
 	bool test_res = true;
-	struct dcerpc_pipe *p = talloc_get_type_abort(b->private_data, struct dcerpc_pipe);
+	const char *hostname = torture_setting_string(tctx, "host", NULL);
 	int ldb_ret;
 	struct ldb_result *ldb_res;
 	const char *account_name = NULL;
@@ -125,10 +124,12 @@ static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
 		NULL
 	};
 
+	torture_assert(tctx, hostname != NULL, "Failed to get hostname");
+
 	tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "Failed to create temporary mem context");
 
-	url = talloc_asprintf(tmp_ctx, "ldap://%s/", p->binding->target_hostname);
+	url = talloc_asprintf(tmp_ctx, "ldap://%s/", hostname);
 	torture_assert_goto(tctx, url != NULL, test_res, done, "Failed to allocate URL for ldb");
 
 	ldb = ldb_wrap_connect(tmp_ctx,
@@ -178,7 +179,7 @@ bool test_user_cleanup(struct torture_context *tctx,
 	struct samr_Ids rids, types;
 	const char *account_name;
 
-	if (!_get_account_name_for_user_rdn(tctx, b, user_rdn, mem_ctx, &account_name)) {
+	if (!_get_account_name_for_user_rdn(tctx, user_rdn, mem_ctx, &account_name)) {
 		torture_result(tctx, TORTURE_FAIL,
 		               __location__": Failed to find samAccountName for %s", user_rdn);
 		return false;
