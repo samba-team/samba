@@ -1983,7 +1983,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_get_printer: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_get_printer: Could not open key %s: %s\n",
 			  path, win_errstr(result)));
 		goto done;
 	}
@@ -2645,7 +2645,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_get_printer_dataex: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_get_printer_dataex: Could not open key %s: %s\n",
 			  key, win_errstr(result)));
 		goto done;
 	}
@@ -2762,7 +2762,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_enum_printer_dataex: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_enum_printer_dataex: Could not open key %s: %s\n",
 			  key, win_errstr(result)));
 		goto done;
 	}
@@ -2918,7 +2918,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_enum_printer_key: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_enum_printer_key: Could not open key %s: %s\n",
 			  key, win_errstr(result)));
 		goto done;
 	}
@@ -3143,7 +3143,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_get_changeid: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_printer_get_changeid: Could not open key %s: %s\n",
 			  path, win_errstr(result)));
 		goto done;
 	}
@@ -3626,7 +3626,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_getform1: Could not open key %s: %s\n",
+		DEBUG(2, ("winreg_printer_getform1: Could not open key %s: %s\n",
 			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
 		goto done;
 	}
