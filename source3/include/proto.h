@@ -2580,9 +2580,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		 void (*fn)(const char *, struct file_info *, const char *,
 			    void *), void *state);
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
-	     void (*fn)(const char *, struct file_info *, const char *,
-			void *), void *state);
+NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
+		  void (*fn)(const char *, struct file_info *, const char *,
+			     void *), void *state);
 
 /* The following definitions come from libsmb/climessage.c  */
 

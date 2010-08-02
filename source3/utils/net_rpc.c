@@ -3452,6 +3452,7 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 {
 	struct cli_state *targetcli;
 	char *targetpath = NULL;
+	NTSTATUS status;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
@@ -3463,9 +3464,11 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 		return false;
 	}
 
-	if (cli_list(targetcli, targetpath, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
+	status = cli_list(targetcli, targetpath, cp_clistate->attribute,
+			  copy_fn, cp_clistate);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("listing %s failed with error: %s\n"),
-			mask, cli_errstr(targetcli));
+			  mask, nt_errstr(status));
 		return false;
 	}
 

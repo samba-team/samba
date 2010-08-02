@@ -865,10 +865,13 @@ void do_list(const char *mask,
 	} else {
 		/* check for dfs */
 		if (cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetpath)) {
-			if (cli_list(targetcli, targetpath, attribute,
-				     do_list_helper, targetcli) == -1) {
+			NTSTATUS status;
+
+			status = cli_list(targetcli, targetpath, attribute,
+					  do_list_helper, targetcli);
+			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("%s listing %s\n",
-					cli_errstr(targetcli), targetpath);
+					 nt_errstr(status), targetpath);
 			}
 			TALLOC_FREE(targetpath);
 		} else {
@@ -4281,6 +4284,7 @@ static char **remote_completion(const char *text, int len)
 	struct cli_state *targetcli = NULL;
 	int i;
 	struct completion_remote info = { NULL, NULL, 1, 0, NULL, 0 };
+	NTSTATUS status;
 
 	/* can't have non-static initialisation on Sun CC, so do it
 	   at run time here */
@@ -4339,8 +4343,9 @@ static char **remote_completion(const char *text, int len)
 	if (!cli_resolve_path(ctx, "", auth_info, cli, dirmask, &targetcli, &targetpath)) {
 		goto cleanup;
 	}
-	if (cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN,
-				completion_remote_filter, (void *)&info) < 0) {
+	status = cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN,
+			  completion_remote_filter, (void *)&info);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
 	}
 

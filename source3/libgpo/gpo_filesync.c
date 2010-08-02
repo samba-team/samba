@@ -110,15 +110,15 @@ static NTSTATUS gpo_copy_dir(const char *unix_path)
 
 static bool gpo_sync_files(struct sync_context *ctx)
 {
+	NTSTATUS status;
+
 	DEBUG(3,("calling cli_list with mask: %s\n", ctx->mask));
 
-	if (cli_list(ctx->cli,
-		     ctx->mask,
-		     ctx->attribute,
-		     gpo_sync_func,
-		     ctx) == -1) {
-		DEBUG(1,("listing [%s] failed with error: %s\n",
-			ctx->mask, cli_errstr(ctx->cli)));
+	status = cli_list(ctx->cli, ctx->mask, ctx->attribute, gpo_sync_func,
+			  ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("listing [%s] failed with error: %s\n",
+			  ctx->mask, nt_errstr(status)));
 		return false;
 	}
 

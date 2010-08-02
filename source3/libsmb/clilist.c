@@ -677,11 +677,19 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
  This auto-switches between old and new style.
 ****************************************************************************/
 
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
-	     void (*fn)(const char *, struct file_info *, const char *,
-			void *), void *state)
+NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
+		  void (*fn)(const char *, struct file_info *, const char *,
+			     void *), void *state)
 {
-	if (cli->protocol <= PROTOCOL_LANMAN1)
-		return cli_list_old(cli, Mask, attribute, fn, state);
-	return cli_list_new(cli, Mask, attribute, fn, state);
+	int rec;
+
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
+		rec = cli_list_old(cli, Mask, attribute, fn, state);
+	} else {
+		rec = cli_list_new(cli, Mask, attribute, fn, state);
+	}
+	if (rec == -1) {
+		return cli_nt_error(cli);
+	}
+	return NT_STATUS_OK;
 }

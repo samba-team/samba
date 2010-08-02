@@ -4794,7 +4794,10 @@ static bool run_openattrtest(int dummy)
 static void list_fn(const char *mnt, struct file_info *finfo,
 		    const char *name, void *state)
 {
-
+	int *matched = (int *)state;
+	if (matched != NULL) {
+		*matched += 1;
+	}
 }
 
 /*
@@ -4807,6 +4810,7 @@ static bool run_dirtest(int dummy)
 	uint16_t fnum;
 	struct timeval core_start;
 	bool correct = True;
+	int matched;
 
 	printf("starting directory test\n");
 
@@ -4829,9 +4833,17 @@ static bool run_dirtest(int dummy)
 
 	core_start = timeval_current();
 
-	printf("Matched %d\n", cli_list(cli, "a*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", cli_list(cli, "b*.*", 0, list_fn, NULL));
-	printf("Matched %d\n", cli_list(cli, "xyzabc", 0, list_fn, NULL));
+	matched = 0;
+	cli_list(cli, "a*.*", 0, list_fn, &matched);
+	printf("Matched %d\n", matched);
+
+	matched = 0;
+	cli_list(cli, "b*.*", 0, list_fn, &matched);
+	printf("Matched %d\n", matched);
+
+	matched = 0;
+	cli_list(cli, "xyzabc", 0, list_fn, &matched);
+	printf("Matched %d\n", matched);
 
 	printf("dirtest core %g seconds\n", timeval_elapsed(&core_start));
 
@@ -6173,6 +6185,7 @@ static void shortname_del_fn(const char *mnt, struct file_info *finfo,
 }
 
 struct sn_state {
+	int matched;
 	int i;
 	bool val;
 };
@@ -6201,6 +6214,7 @@ static void shortname_list_fn(const char *mnt, struct file_info *finfo,
 			__location__, finfo->short_name, finfo->name);
 		s->val = true;
 	}
+	s->matched += 1;
 }
 
 static bool run_shortname_test(int dummy)
@@ -6255,7 +6269,11 @@ static bool run_shortname_test(int dummy)
 			goto out;
 		}
 		cli_close(cli, fnum);
-		if (cli_list(cli, "\\shortname\\test*.*", 0, shortname_list_fn, &s) != 1) {
+
+		s.matched = 0;
+		cli_list(cli, "\\shortname\\test*.*", 0, shortname_list_fn,
+			 &s);
+		if (s.matched != 1) {
 			d_printf("(%s) failed to list %s: %s\n",
 				__location__, fname, cli_errstr(cli));
 			correct = false;

@@ -748,6 +748,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                          */
 			char *targetpath;
 			struct cli_state *targetcli;
+			NTSTATUS status;
 
 			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
@@ -791,10 +792,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				return NULL;
 			}
 
-			if (cli_list(targetcli, targetpath,
-                                     aDIR | aSYSTEM | aHIDDEN,
-                                     dir_list_fn, (void *)dir) < 0) {
-
+			status = cli_list(targetcli, targetpath,
+					  aDIR | aSYSTEM | aHIDDEN,
+					  dir_list_fn, (void *)dir);
+			if (!NT_STATUS_IS_OK(status)) {
 				if (dir) {
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
@@ -1302,6 +1303,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
                         /* Local storage to avoid buffer overflows */
 			char *lpath;
 			bool smbc_rmdir_dirempty = true;
+			NTSTATUS status;
 
 			lpath = talloc_asprintf(frame, "%s\\*",
 						targetpath);
@@ -1311,11 +1313,12 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 				return -1;
 			}
 
-			if (cli_list(targetcli, lpath,
-                                     aDIR | aSYSTEM | aHIDDEN,
-                                     rmdir_list_fn,
-				     &smbc_rmdir_dirempty) < 0) {
+			status = cli_list(targetcli, lpath,
+					  aDIR | aSYSTEM | aHIDDEN,
+					  rmdir_list_fn,
+					  &smbc_rmdir_dirempty);
 
+			if (!NT_STATUS_IS_OK(status)) {
 				/* Fix errno to ignore latest error ... */
 				DEBUG(5, ("smbc_rmdir: "
                                           "cli_list returned an error: %d\n",
