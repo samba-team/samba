@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libads/sitename_cache.h"
 #include "ads.h"
+#include "../librpc/gen_ndr/nbt.h"
 
 /**********************************************************************
  Is this our primary domain ?
