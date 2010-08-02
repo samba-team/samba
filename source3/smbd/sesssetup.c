@@ -28,6 +28,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
 
 /* For split krb5 SPNEGO blobs. */

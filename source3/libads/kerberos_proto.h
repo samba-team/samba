@@ -1,3 +1,5 @@
+struct PAC_LOGON_INFO;
+
 /* The following definitions come from libads/kerberos_verify.c  */
 
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,

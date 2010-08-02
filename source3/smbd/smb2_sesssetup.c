@@ -25,6 +25,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
+#include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
