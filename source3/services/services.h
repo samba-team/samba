@@ -21,6 +21,8 @@
 #ifndef _SERVICES_H /* _SERVICES_H */
 #define _SERVICES_H
 
+#include "../librpc/gen_ndr/svcctl.h"
+
 /* where we assume the location of the service control scripts */
 #define SVCCTL_SCRIPT_DIR  "svcctl"
 
