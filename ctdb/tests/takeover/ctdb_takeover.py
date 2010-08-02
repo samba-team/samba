@@ -193,17 +193,19 @@ class Cluster(object):
         unhealthy."""
 
         num_nodes = len(self.nodes)
-        healthy_nodes = [n for n in self.nodes if n.healthy]
-        num_healthy = len(healthy_nodes)
+        healthy_pnns = [i for (i,n) in enumerate(self.nodes) if n.healthy]
+        num_healthy = len(healthy_pnns)
 
         if num_nodes == num_healthy:
             self.unhealthy(random.randint(0, num_nodes-1))
         elif num_healthy == 0:
             self.healthy(random.randint(0, num_nodes-1))
         elif random.randint(1, 4) == 1:
-            self.unhealthy(self.nodes.index(random.choice(healthy_nodes)))
+            self.unhealthy(random.choice(healthy_pnns))
         else:
-            self.healthy(self.nodes.index(random.choice(list(set(self.nodes) - set(healthy_nodes)))))
+            all_pnns = range(num_nodes)
+            unhealthy_pnns = sorted(list(set(all_pnns) - set(healthy_pnns)))
+            self.healthy(random.choice(unhealthy_pnns))
 
     def random_iterations(self):
         i = 1
