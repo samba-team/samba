@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "../librpc/gen_ndr/samr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

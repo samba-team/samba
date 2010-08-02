@@ -18,8 +18,8 @@
 */
 
 #include "includes.h"
-#include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
+#include "rpc_client/cli_samr.h"
 
 /*************************************************************
  Change a password on a remote machine using IPC calls.

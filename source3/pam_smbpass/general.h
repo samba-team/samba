@@ -1,3 +1,5 @@
+#include "../librpc/gen_ndr/samr.h"
+
 #ifndef LINUX
 /* This is only needed by modules in the Sun implementation. */
 #if defined(HAVE_SECURITY_PAM_APPL_H)
