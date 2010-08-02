@@ -3451,19 +3451,16 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		sk = spnego_get_session_key(a->a_u.spnego_state);
-		if (sk.length == 0) {
-			return NT_STATUS_NO_USER_SESSION_KEY;
-		}
-		make_dup = true;
+		sk = spnego_get_session_key(mem_ctx, a->a_u.spnego_state);
+		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		sk = auth_ntlmssp_get_session_key(a->a_u.auth_ntlmssp_state);
 		make_dup = true;
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		sk = gse_get_session_key(a->a_u.gssapi_state);
-		make_dup = true;
+		sk = gse_get_session_key(mem_ctx, a->a_u.gssapi_state);
+		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->user_session_key.data,

@@ -338,14 +338,19 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 	return NT_STATUS_OK;
 }
 
-DATA_BLOB spnego_get_session_key(struct spnego_context *sp_ctx)
+DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
+				 struct spnego_context *sp_ctx)
 {
+	DATA_BLOB sk;
+
 	switch (sp_ctx->auth_type) {
 	case DCERPC_AUTH_TYPE_KRB5:
-		return gse_get_session_key(sp_ctx->mech_ctx.gssapi_state);
+		return gse_get_session_key(mem_ctx,
+					   sp_ctx->mech_ctx.gssapi_state);
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		return auth_ntlmssp_get_session_key(
+		sk = auth_ntlmssp_get_session_key(
 					sp_ctx->mech_ctx.ntlmssp_state);
+		return data_blob_dup_talloc(mem_ctx, &sk);
 	default:
 		DEBUG(0, ("Unsupported type in request!\n"));
 		return data_blob_null;

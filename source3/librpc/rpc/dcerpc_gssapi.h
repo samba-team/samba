@@ -43,7 +43,8 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_out);
 
 bool gse_require_more_processing(struct gse_context *gse_ctx);
-DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx);
+DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
+				struct gse_context *gse_ctx);
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size);

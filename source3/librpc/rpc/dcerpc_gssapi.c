@@ -28,6 +28,21 @@
 #include <gssapi/gssapi_krb5.h>
 #include <gssapi/gssapi_ext.h>
 
+#ifndef GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
+#define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH 11
+#define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"
+#endif
+
+#ifndef GSS_KRB5_SESSION_KEY_ENCTYPE_OID
+#define GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH 10
+#define GSS_KRB5_SESSION_KEY_ENCTYPE_OID  "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x04"
+#endif
+
+gss_OID_desc gse_sesskey_inq_oid = { GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH,
+				(void *)GSS_KRB5_INQ_SSPI_SESSION_KEY_OID };
+gss_OID_desc gse_sesskeytype_oid = { GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH,
+				(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID };
+
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
 struct gse_context {
@@ -43,8 +58,6 @@ struct gse_context {
 
 	gss_name_t server_name;
 	gss_cred_id_t cli_creds;
-
-	DATA_BLOB session_key;
 
 	bool more_processing;
 };
@@ -348,9 +361,39 @@ bool gse_require_more_processing(struct gse_context *gse_ctx)
 	return gse_ctx->more_processing;
 }
 
-DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
+DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
+				struct gse_context *gse_ctx)
 {
-	return gse_ctx->session_key;
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
+	DATA_BLOB ret;
+
+	gss_maj = gss_inquire_sec_context_by_oid(
+				&gss_min, gse_ctx->gss_ctx,
+				&gse_sesskey_inq_oid, &set);
+	if (gss_maj) {
+		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		return data_blob_null;
+	}
+
+	if ((set == GSS_C_NO_BUFFER_SET) ||
+	    (set->count != 2) ||
+	    (memcmp(set->elements[1].value,
+		    gse_sesskeytype_oid.elements,
+		    gse_sesskeytype_oid.length) != 0)) {
+		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
+			  "OID for data in results:\n"));
+		dump_data(1, set->elements[1].value,
+			     set->elements[1].length);
+		return data_blob_null;
+	}
+
+	ret = data_blob_talloc(mem_ctx, set->elements[0].value,
+					set->elements[0].length);
+
+	gss_maj = gss_release_buffer_set(&gss_min, &set);
+	return ret;
 }
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
