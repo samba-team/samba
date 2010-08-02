@@ -247,7 +247,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	char *param;
 	uint32 resume_key = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-	DATA_BLOB last_name_raw = data_blob(NULL, 0);
+	DATA_BLOB last_name_raw = data_blob_null;
 
 	/* NT uses SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
 	   OS/2 uses SMB_FIND_EA_SIZE. Both accept SMB_FIND_INFO_STANDARD. */
