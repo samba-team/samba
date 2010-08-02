@@ -17,6 +17,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../librpc/gen_ndr/netlogon.h"
 
 enum net_samsync_mode {
 	NET_SAMSYNC_MODE_FETCH_PASSDB = 0,
