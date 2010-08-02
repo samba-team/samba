@@ -188,7 +188,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_ValNameBuf *name,
 		[in,out,unique] winreg_Type *type,
-		[in,out,unique,size_is(*size),length_is(*length)] uint8 *value,
+		[in,out,unique,size_is(size ? *size : 0),length_is(length ? *length : 0),range(0,0x4000000)] uint8 *value,
 		[in,out,unique] uint32 *size,
 		[in,out,unique] uint32 *length
 	);
