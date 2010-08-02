@@ -397,7 +397,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -557,7 +557,7 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1323,7 +1323,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1630,7 +1630,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -1962,7 +1962,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2251,7 +2251,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2407,7 +2407,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2533,7 +2533,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2621,7 +2621,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2741,7 +2741,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2815,7 +2815,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2894,7 +2894,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -2968,7 +2968,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3053,7 +3053,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3119,7 +3119,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3201,7 +3201,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3301,7 +3301,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3419,7 +3419,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3504,7 +3504,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3609,7 +3609,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3736,7 +3736,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -3960,7 +3960,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 	ZERO_STRUCT(i8);
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -4215,7 +4215,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -4306,7 +4306,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
