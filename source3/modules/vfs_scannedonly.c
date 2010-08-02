@@ -1,7 +1,7 @@
 /*
  * scannedonly VFS module for Samba 3.5
  *
- * Copyright 2007,2008,2009 (C) Olivier Sessink
+ * Copyright 2007,2008,2009,2010 (C) Olivier Sessink
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -766,6 +766,8 @@ static int scannedonly_rename(vfs_handle_struct * handle,
 	struct smb_filename *smb_fname_src_tmp = NULL;
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	char *cachefile_src, *cachefile_dst;
+	bool needscandst=false;
+	int ret;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* Setup temporary smb_filename structs. */
@@ -777,19 +779,26 @@ static int scannedonly_rename(vfs_handle_struct * handle,
 		ctx,
 		smb_fname_dst->base_name,
 		STRUCTSCANO(handle->data)->p_scanned);
-
 	create_synthetic_smb_fname(ctx, cachefile_src,NULL,NULL,
 				   &smb_fname_src_tmp);
 	create_synthetic_smb_fname(ctx, cachefile_dst,NULL,NULL,
 				   &smb_fname_dst_tmp);
 
-	if (SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp, smb_fname_dst_tmp)
-	    != 0) {
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp, smb_fname_dst_tmp);
+	if (ret == ENOENT) {
+		needscandst=true;
+	} else if (ret != 0) {
 		DEBUG(SCANNEDONLY_DEBUG,
-		      ("failed to rename %s into %s\n", cachefile_src,
-		       cachefile_dst));
+		      ("failed to rename %s into %s error %d: %s\n", cachefile_src,
+		       cachefile_dst, ret, strerror(ret)));
+		needscandst=true;
 	}
-	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
+	if (ret == 0 && needscandst) {
+		notify_scanner(handle, smb_fname_dst->base_name);
+		flush_sendbuffer(handle);
+	}
+	return ret;
 }
 
 static int scannedonly_unlink(vfs_handle_struct * handle,
