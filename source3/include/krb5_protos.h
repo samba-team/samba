@@ -1,3 +1,6 @@
+struct PAC_DATA;
+struct PAC_SIGNATURE_DATA;
+
 /* work around broken krb5.h on sles9 */
 #ifdef SIZEOF_LONG
 #undef SIZEOF_LONG

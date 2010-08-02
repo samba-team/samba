@@ -33,6 +33,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "../libcli/security/dom_sid.h"
 #include "ads.h"
+#include "../librpc/gen_ndr/krb5pac.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
