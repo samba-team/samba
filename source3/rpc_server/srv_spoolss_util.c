@@ -443,7 +443,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		struct spoolss_PrinterEnumValues val;
 		struct winreg_ValNameBuf name_buf;
 		enum winreg_Type type = REG_NONE;
-		uint8_t *data = NULL;
+		uint8_t *data;
 		uint32_t data_size;
 		uint32_t length;
 		char n = '\0';;
@@ -453,7 +453,10 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		name_buf.length = 0;
 
 		data_size = max_valbufsize;
-		data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+		data = NULL;
+		if (data_size) {
+			data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+		}
 		length = 0;
 
 		status = rpccli_winreg_EnumValue(pipe_handle,
@@ -463,7 +466,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 						 &name_buf,
 						 &type,
 						 data,
-						 &data_size,
+						 data_size ? &data_size : NULL,
 						 &length,
 						 &result);
 		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
