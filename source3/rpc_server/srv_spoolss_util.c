@@ -3373,7 +3373,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 		val.info1.area.right  = IVAL(enum_values[i].data->data, 16);
 		val.info1.area.bottom = IVAL(enum_values[i].data->data, 20);
 		/* skip form index      IVAL(enum_values[i].data->data, 24)));*/
-		val.info1.flags       = IVAL(enum_values[i].data->data, 28);
+		val.info1.flags       = (enum spoolss_FormFlags) IVAL(enum_values[i].data->data, 28);
 
 		info[i + num_builtin] = val;
 	}
@@ -3696,7 +3696,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	r->area.right  = IVAL(data_in, 16);
 	r->area.bottom = IVAL(data_in, 20);
 	/* skip index    IVAL(data_in, 24)));*/
-	r->flags       = IVAL(data_in, 28);
+	r->flags       = (enum spoolss_FormFlags) IVAL(data_in, 28);
 
 	result = WERR_OK;
 done:
@@ -4046,7 +4046,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 
 		result = winreg_enumval_to_dword(info8, v,
 						 "Version",
-						 &info8->version);
+						 (uint32_t *) &info8->version);
 		CHECK_ERROR(result);
 
 		result = winreg_enumval_to_sz(info8, v,
