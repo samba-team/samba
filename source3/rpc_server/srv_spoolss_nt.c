@@ -528,7 +528,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 					    sname,
 					    &info2);
 		if ( !W_ERROR_IS_OK(result) ) {
-			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
+			DEBUG(2,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
 				 sname, win_errstr(result)));
 			continue;
 		}
