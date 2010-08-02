@@ -25,14 +25,17 @@
 
 import os
 import sys
+# Use optparse since newer argparse not available in RHEL5/EPEL.
 from optparse import OptionParser
 import copy
 import random
 
-def process_args():
-    usage = "usage: %prog [options]"
+options = None
 
-    parser = OptionParser(usage=usage)
+def process_args(extra_options=[]):
+    global options
+
+    parser = OptionParser(option_list=extra_options)
 
     parser.add_option("--nd",
                       action="store_false", dest="deterministic_public_ips",
@@ -60,10 +63,13 @@ def process_args():
                       action="store", type="int", dest="iterations",
                       default=1000,
                       help="number of iterations to run in test")
+
+    def seed_callback(option, opt, value, parser):
+        random.seed(value)
     parser.add_option("-s", "--seed",
-                      action="store", type="int", dest="seed",
-                      default=None,
+                      action="callback", type="int", callback=seed_callback,
                       help="number of iterations to run in test")
+
     parser.add_option("-b", "--balance",
                       action="store_true", dest="balance", default=False,
                       help="show (im)balance information")
@@ -75,8 +81,6 @@ def process_args():
 
     if len(args) != 0:
         parser.error("too many argumentss")
-
-    return options
 
 def print_begin(t):
     print "=" * 40
@@ -115,8 +119,6 @@ class Node(object):
 
 class Cluster(object):
     def __init__(self):
-        global options
-
         self.nodes = []
         self.deterministic_public_ips = options.deterministic_public_ips
         self.no_ip_failback = options.no_ip_failback
@@ -126,6 +128,8 @@ class Cluster(object):
         self.grat_ip_moves = []
         self.imbalance = []
         self.events = -1
+
+        self.prev = None
 
     def __str__(self):
         return "\n".join(["%2d %s %s" %
@@ -161,8 +165,6 @@ class Cluster(object):
         self.all_public_ips |= node.public_addresses
 
     def healthy(self, *pnns):
-        global options
-
         verbose_begin("HEALTHY")
 
         for pnn in pnns:
@@ -257,7 +259,7 @@ class Cluster(object):
 
         return imbalance
 
-    def diff(self, prev):
+    def diff(self):
         """Calculate differences in IP assignments between self and prev.
 
         Gratuitous IP moves (from a healthy node to a healthy node)
@@ -271,14 +273,14 @@ class Cluster(object):
 
         for (new, n) in enumerate(self.nodes):
             for ip in n.current_addresses:
-                old = prev.find_pnn_with_ip(ip)
+                old = self.prev.find_pnn_with_ip(ip)
                 if old != new:
                     ip_moves += 1
                     if old != -1 and \
-                            prev.nodes[new].healthy and \
+                            self.prev.nodes[new].healthy and \
                             self.nodes[new].healthy and \
                             self.nodes[old].healthy and \
-                            prev.nodes[old].healthy:
+                            self.prev.nodes[old].healthy:
                         prefix = "!!"
                         grat_ip_moves += 1
                     else:
@@ -346,8 +348,6 @@ class Cluster(object):
         return True
 
     def ctdb_takeover_run(self):
-
-        global options
 
         self.events += 1
 
@@ -456,8 +456,6 @@ class Cluster(object):
                     break
 
     def recover(self):
-        global options, prev
-
         verbose_begin("TAKEOVER")
 
         self.ctdb_takeover_run()
@@ -466,8 +464,8 @@ class Cluster(object):
 
         grat_ip_moves = 0
 
-        if prev is not None:
-            (ip_moves, grat_ip_moves, details) = self.diff(prev)
+        if self.prev is not None:
+            (ip_moves, grat_ip_moves, details) = self.diff()
             self.ip_moves.append(ip_moves)
             self.grat_ip_moves.append(grat_ip_moves)
 
@@ -488,15 +486,7 @@ class Cluster(object):
             print self
             print_end()
 
-        prev = copy.deepcopy(self)
+        self.prev = None
+        self.prev = copy.deepcopy(self)
 
         return grat_ip_moves
-
-
-############################################################
-
-prev = None
-
-options = process_args()
-
-random.seed(options.seed)
