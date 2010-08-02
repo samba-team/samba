@@ -22,7 +22,6 @@
  * include
  */
 
-#include "lib/netapi/netapi.h"
 #include "localedir.h"
 
 #ifdef HAVE_LIBINTL_H

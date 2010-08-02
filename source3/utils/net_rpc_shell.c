@@ -22,6 +22,7 @@
 #include "popt_common.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
+#include "lib/netapi/netapi.h"
 
 static NTSTATUS rpc_sh_info(struct net_context *c,
 			    TALLOC_CTX *mem_ctx, struct rpc_sh_ctx *ctx,

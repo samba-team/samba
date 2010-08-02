@@ -44,6 +44,7 @@
 #include "popt_common.h"
 #include "utils/net.h"
 #include "secrets.h"
+#include "lib/netapi/netapi.h"
 
 extern bool AllowDebugChange;
 
