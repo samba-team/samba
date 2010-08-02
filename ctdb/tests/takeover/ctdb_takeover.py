@@ -2,10 +2,12 @@
 
 # ctdb ip takeover code
 
+# Copyright (C) Martin Schwenke 2010
+
+# Based on original CTDB C code:
+#
 # Copyright (C) Ronnie Sahlberg  2007
 # Copyright (C) Andrew Tridgell  2007
-#
-# Python version (C) Martin Schwenke 2010
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
