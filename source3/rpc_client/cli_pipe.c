@@ -455,16 +455,15 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_PKT_BIND_NAK:
-		DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK "
-			  "received from %s!\n",
+		DEBUG(1, (__location__ ": Bind NACK received from %s!\n",
 			  rpccli_pipe_txt(talloc_tos(), cli)));
 		/* Use this for now... */
 		return NT_STATUS_NETWORK_ACCESS_DENIED;
 
 	case DCERPC_PKT_FAULT:
 
-		DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
-			  "code %s received from %s!\n",
+		DEBUG(1, (__location__ ": RPC fault code %s received "
+			  "from %s!\n",
 			  dcerpc_errstr(talloc_tos(),
 			  pkt->u.fault.status),
 			  rpccli_pipe_txt(talloc_tos(), cli)));
@@ -476,18 +475,18 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 		}
 
 	default:
-		DEBUG(0, ("Unknown packet type %u received from %s!\n",
+		DEBUG(0, (__location__ "Unknown packet type %u received "
+			  "from %s!\n",
 			  (unsigned int)pkt->ptype,
 			  rpccli_pipe_txt(talloc_tos(), cli)));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (pkt->ptype != expected_pkt_type) {
-		DEBUG(3, ("cli_pipe_validate_current_pdu: Connection to %s "
-			  "got an unexpected RPC packet type - %u, not %u\n",
+		DEBUG(3, (__location__ ": Connection to %s got an unexpected "
+			  "RPC packet type - %u, not %u\n",
 			  rpccli_pipe_txt(talloc_tos(), cli),
-			  pkt->ptype,
-			  expected_pkt_type));
+			  pkt->ptype, expected_pkt_type));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -497,10 +496,9 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 
 	if ((pkt->ptype == DCERPC_PKT_BIND_ACK) &&
 	    !(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		DEBUG(5, ("cli_pipe_validate_current_pdu: bug in server "
-			  "(AS/U?), setting fragment first/last ON.\n"));
-		pkt->pfc_flags |= DCERPC_PFC_FLAG_FIRST |
-					DCERPC_PFC_FLAG_LAST;
+		DEBUG(5, (__location__ ": bug in server (AS/U?), setting "
+			  "fragment first/last ON.\n"));
+		pkt->pfc_flags |= DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	}
 
 	return NT_STATUS_OK;
