@@ -205,7 +205,7 @@ static NTSTATUS create_next_packet(TALLOC_CTX *mem_ctx,
 
 bool create_next_pdu(struct pipes_struct *p)
 {
-	size_t pdu_size;
+	size_t pdu_size = 0;
 	NTSTATUS status;
 
 	/*
