@@ -1260,7 +1260,7 @@ create_merged_ip_list(struct ctdb_context *ctdb)
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
-	int i, num_healthy, retries;
+  int i, num_healthy, retries, num_ips;
 	struct ctdb_public_ip ip;
 	struct ctdb_public_ipv4 ipv4;
 	uint32_t mask, *nodes;
@@ -1311,6 +1311,12 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	   keep the tree of ips around as ctdb->ip_tree
 	*/
 	all_ips = create_merged_ip_list(ctdb);
+
+	/* Count how many ips we have */
+	num_ips = 0;
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		num_ips++;
+	}
 
 	/* If we want deterministic ip allocations, i.e. that the ip addresses
 	   will always be allocated the same way for a specific set of
@@ -1445,11 +1451,11 @@ try_again:
 		/* if the spread between the smallest and largest coverage by
 		   a node is >=2 we steal one of the ips from the node with
 		   most coverage to even things out a bit.
-		   try to do this at most 5 times  since we dont want to spend
-		   too much time balancing the ip coverage.
+		   try to do this a limited number of times since we dont
+		   want to spend too much time balancing the ip coverage.
 		*/
 		if ( (maxnum > minnum+1)
-		  && (retries < 5) ){
+		  && (retries < (num_ips + 5)) ){
 			struct ctdb_public_ip_list *tmp;
 
 			/* mark one of maxnode's vnn's as unassigned and try
