@@ -124,10 +124,12 @@ class Cluster(object):
         self.no_ip_failback = options.no_ip_failback
         self.all_public_ips = set()
 
+        # Statistics
         self.ip_moves = []
         self.grat_ip_moves = []
         self.imbalance = []
         self.events = -1
+        self.num_unhealthy = []
 
         self.prev = None
 
@@ -146,6 +148,7 @@ class Cluster(object):
         print "Gratuitous IP moves: %6d" % sum(self.grat_ip_moves)
         print "Max imbalance:       %6d" % max(self.imbalance)
         print "Final imbalance:     %6d" % self.imbalance[-1]
+        print "Maximum unhealthy:   %6d" % max(self.num_unhealthy)
         print_end()
 
     def find_pnn_with_ip(self, ip):
@@ -482,6 +485,10 @@ class Cluster(object):
             print_begin("IMBALANCE")
             print imbalance
             print_end()
+
+        num_unhealthy = len(self.nodes) - \
+            len([n for n in self.nodes if n.healthy])
+        self.num_unhealthy.append(num_unhealthy)
 
         if options.show:
             print_begin("STATE")
