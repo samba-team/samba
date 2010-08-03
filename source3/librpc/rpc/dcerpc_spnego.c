@@ -68,7 +68,7 @@ NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
 				   uint32_t add_gss_c_flags,
 				   struct spnego_context **spnego_ctx)
 {
-	struct spnego_context *sp_ctx;
+	struct spnego_context *sp_ctx = NULL;
 	NTSTATUS status;
 
 	status = spnego_context_init(mem_ctx,
@@ -97,7 +97,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 				    const char *password,
 				    struct spnego_context **spnego_ctx)
 {
-	struct spnego_context *sp_ctx;
+	struct spnego_context *sp_ctx = NULL;
 	NTSTATUS status;
 
 	status = spnego_context_init(mem_ctx,

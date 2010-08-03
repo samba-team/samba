@@ -2746,7 +2746,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 				   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
-	struct pipe_auth_data *auth;
+	struct pipe_auth_data *auth = NULL;
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	NTSTATUS status;
 
