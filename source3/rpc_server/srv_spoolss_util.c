@@ -4045,13 +4045,15 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_values; i++) {
 		const char *tmp_str;
+		uint32_t tmp = 0;
 
 		v = &enum_values[i];
 
 		result = winreg_enumval_to_dword(info8, v,
 						 "Version",
-						 (uint32_t *) &info8->version);
+						 &tmp);
 		CHECK_ERROR(result);
+		info8->version = tmp;
 
 		result = winreg_enumval_to_sz(info8, v,
 					      "Driver",
