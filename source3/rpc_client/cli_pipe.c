@@ -1628,9 +1628,6 @@ struct rpc_pipe_bind_state {
 };
 
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
-static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
-					   struct rpc_pipe_bind_state *state,
-					   DATA_BLOB *credentials);
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
 static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
 				   struct rpc_pipe_bind_state *state,
@@ -1726,7 +1723,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 	state->cli->max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
-	switch(state->cli->auth->auth_type) {
+	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
@@ -1764,7 +1761,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	 * For authenticated binds we may need to do 3 or 4 leg binds.
 	 */
 
-	switch(state->cli->auth->auth_type) {
+	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
@@ -1773,9 +1770,16 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		/* Need to send AUTH3 packet - no reply. */
-		status = rpc_finish_auth3_bind_send(req, state,
-						    &auth.credentials);
+		status = auth_ntlmssp_update(pauth->a_u.auth_ntlmssp_state,
+					     auth.credentials, &auth_token);
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			status = rpc_bind_next_send(req, state,
+							&auth_token);
+		} else if (NT_STATUS_IS_OK(status)) {
+			status = rpc_bind_finish_send(req, state,
+							&auth_token);
+		}
 		break;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
@@ -1830,49 +1834,6 @@ err_out:
 		 (unsigned int)state->cli->auth->auth_type,
 		 (unsigned int)state->cli->auth->spnego_type));
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
-}
-
-static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
-					   struct rpc_pipe_bind_state *state,
-					   DATA_BLOB *credentials)
-{
-	struct pipe_auth_data *auth = state->cli->auth;
-	DATA_BLOB client_reply = data_blob_null;
-	struct tevent_req *subreq;
-	NTSTATUS status;
-
-	/* TODO - check auth_type/auth_level match. */
-
-	status = auth_ntlmssp_update(auth->a_u.auth_ntlmssp_state,
-				     *credentials, &client_reply);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpc_finish_auth3_bind: NTLMSSP update using server "
-			  "blob failed: %s.\n", nt_errstr(status)));
-		return status;
-	}
-
-	data_blob_free(&state->rpc_out);
-
-	status = create_rpc_bind_auth3(state, state->cli,
-					state->rpc_call_id,
-					auth->auth_type,
-					auth->auth_level,
-					&client_reply,
-					&state->rpc_out);
-	data_blob_free(&client_reply);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	subreq = rpc_write_send(state, state->ev, state->cli->transport,
-				state->rpc_out.data, state->rpc_out.length);
-	if (subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	tevent_req_set_callback(subreq, rpc_bind_auth3_write_done, req);
-	return NT_STATUS_OK;
 }
 
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
