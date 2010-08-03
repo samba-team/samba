@@ -58,21 +58,21 @@ def process_args(extra_options=[]):
                       help="apply a hack (see the code!!!)")
     parser.add_option("-r", "--retries",
                       action="store", type="int", dest="retries", default=5,
-                      help="number of retry loops for rebalancing")
+                      help="number of retry loops for rebalancing [default: %default]")
     parser.add_option("-i", "--iterations",
                       action="store", type="int", dest="iterations",
                       default=1000,
-                      help="number of iterations to run in test")
+                      help="number of iterations to run in test [default: %default]")
 
     def seed_callback(option, opt, value, parser):
         random.seed(value)
     parser.add_option("-s", "--seed",
                       action="callback", type="int", callback=seed_callback,
-                      help="number of iterations to run in test")
+                      help="initial random number seed for random events")
 
     parser.add_option("-b", "--balance",
                       action="store_true", dest="balance", default=False,
-                      help="show (im)balance information")
+                      help="show (im)balance information for each event")
     parser.add_option("-x", "--exit",
                       action="store_true", dest="exit", default=False,
                       help="exit on the 1st gratuitous IP move")
