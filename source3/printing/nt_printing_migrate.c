@@ -536,11 +536,11 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		}
 
 		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
-			migrate_printer(mem_ctx,
-					pipe_hnd,
-					(const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
-					dbuf.dptr,
-					dbuf.dsize);
+			status = migrate_printer(mem_ctx,
+						 pipe_hnd,
+						 (const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
+						 dbuf.dptr,
+						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
 			if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
