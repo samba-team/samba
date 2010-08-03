@@ -949,11 +949,16 @@ def getpolicypath(sysvolpath, dnsdomain, guid):
     return policy_path
 
 def create_gpo_struct(policy_path):
-    os.makedirs(policy_path, 0755)
+    if not os.path.exists(policy_path):
+        os.makedirs(policy_path, 0755)
     open(os.path.join(policy_path, "GPT.INI"), 'w').write(
                       "[General]\r\nVersion=65543")
-    os.makedirs(os.path.join(policy_path, "MACHINE"), 0755)
-    os.makedirs(os.path.join(policy_path, "USER"), 0755)
+    p = os.path.join(policy_path, "MACHINE")
+    if not os.path.exists(p):
+        os.makedirs(p, 0755)
+    p = os.path.join(policy_path, "USER")
+    if not os.path.exists(p):
+        os.makedirs(p, 0755)
 
 
 def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
