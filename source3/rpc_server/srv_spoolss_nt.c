@@ -447,7 +447,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	int n_services=lp_numservices();
 	char *aprinter;
 	const char *printername;
-	const char *servername;
+	const char *servername = NULL;
 	fstring sname;
 	bool found = false;
 	struct spoolss_PrinterInfo2 *info2 = NULL;
