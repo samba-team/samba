@@ -163,7 +163,9 @@ static int schema_create_subclasses(const struct dsdb_schema *schema)
 		struct dsdb_class *schema_class2 = discard_const_p(struct dsdb_class,
 			dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf));
 		if (schema_class2 == NULL) {
-			DEBUG(0,("ERROR: no subClassOf for '%s'\n", schema_class->lDAPDisplayName));
+			DEBUG(0,("ERROR: no subClassOf '%s' for '%s'\n",
+				 schema_class->subClassOf,
+				 schema_class->lDAPDisplayName));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (schema_class2 && schema_class != schema_class2) {
