@@ -44,15 +44,18 @@ def process_args(extra_options=[]):
     parser.add_option("--ni",
                       action="store_true", dest="no_ip_failback", default=False,
                       help="turn on no_ip_failback")
+    parser.add_option("-b", "--balance",
+                      action="store_true", dest="balance", default=False,
+                      help="show (im)balance information after each event")
+    parser.add_option("-d", "--diff",
+                      action="store_true", dest="diff", default=False,
+                      help="show IP address movements for each event")
+    parser.add_option("-n", "--no-print",
+                      action="store_false", dest="show", default=True,
+                      help="don't show IP address layout after each event")
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose", default=False,
                       help="print information and actions taken to stdout")
-    parser.add_option("-d", "--diff",
-                      action="store_true", dest="diff", default=False,
-                      help="after each recovery show IP address movements")
-    parser.add_option("-n", "--no-print",
-                      action="store_false", dest="show", default=True,
-                      help="after each recovery don't print IP address layout")
     parser.add_option("--hack",
                       action="store", type="int", dest="hack", default=0,
                       help="apply a hack (see the code!!!)")
@@ -70,9 +73,6 @@ def process_args(extra_options=[]):
                       action="callback", type="int", callback=seed_callback,
                       help="initial random number seed for random events")
 
-    parser.add_option("-b", "--balance",
-                      action="store_true", dest="balance", default=False,
-                      help="show (im)balance information for each event")
     parser.add_option("-x", "--exit",
                       action="store_true", dest="exit", default=False,
                       help="exit on the 1st gratuitous IP move")
