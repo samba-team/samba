@@ -66,6 +66,9 @@ def process_args(extra_options=[]):
                       action="store", type="int", dest="iterations",
                       default=1000,
                       help="number of iterations to run in test [default: %default]")
+    parser.add_option("-o", "--odds",
+                      action="store", type="int", dest="odds", default=4,
+                      help="make the chances of a failover 1 in ODDS [default: %default]")
 
     def seed_callback(option, opt, value, parser):
         random.seed(value)
@@ -192,8 +195,8 @@ class Cluster(object):
         """Make a random node healthy or unhealthy.
 
         If all nodes are healthy or unhealthy, then invert one of
-        them.  Otherwise, there's a 1/4 chance of making another node
-        unhealthy."""
+        them.  Otherwise, there's a 1 in options.odds chance of making
+        another node unhealthy."""
 
         num_nodes = len(self.nodes)
         healthy_pnns = [i for (i,n) in enumerate(self.nodes) if n.healthy]
@@ -203,7 +206,7 @@ class Cluster(object):
             self.unhealthy(random.randint(0, num_nodes-1))
         elif num_healthy == 0:
             self.healthy(random.randint(0, num_nodes-1))
-        elif random.randint(1, 4) == 1:
+        elif random.randint(1, options.odds) == 1:
             self.unhealthy(random.choice(healthy_pnns))
         else:
             all_pnns = range(num_nodes)
