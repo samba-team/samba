@@ -7,7 +7,8 @@ import "wkssvc.idl", "security.idl", "misc.idl";
 */
 
 [
-	pointer_default(unique)
+	pointer_default(unique),
+	helper("ads.h")
 ]
 interface libnetjoin
 {
