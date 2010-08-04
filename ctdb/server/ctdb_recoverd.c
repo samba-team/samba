@@ -887,10 +887,11 @@ static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te,
 /*
   wait for a given number of seconds
  */
-static void ctdb_wait_timeout(struct ctdb_context *ctdb, uint32_t secs)
+static void ctdb_wait_timeout(struct ctdb_context *ctdb, double secs)
 {
 	uint32_t timed_out = 0;
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, 0), ctdb_wait_handler, &timed_out);
+	time_t usecs = (secs - (time_t)secs) * 1000000;
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, usecs), ctdb_wait_handler, &timed_out);
 	while (!timed_out) {
 		event_loop_once(ctdb->ev);
 	}
@@ -904,6 +905,7 @@ static void ctdb_election_timeout(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	rec->election_timeout = NULL;
+	fast_start = false;
 
 	DEBUG(DEBUG_WARNING,(__location__ " Election timed out\n"));
 }
@@ -2090,6 +2092,8 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	/* we got an election packet - update the timeout for the election */
 	talloc_free(rec->election_timeout);
 	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						fast_start ?
+						timeval_current_ofs(0, 500000) :
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
@@ -2157,6 +2161,8 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 
 	talloc_free(rec->election_timeout);
 	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
+						fast_start ?
+						timeval_current_ofs(0, 500000) :
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
@@ -2877,14 +2883,11 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 	talloc_free(tmp_ctx);
 	return 0;
 }
-		
-/*
-  the main monitoring loop
- */
-static void monitor_cluster(struct ctdb_context *ctdb)
+
+static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
+		      TALLOC_CTX *mem_ctx)
 {
 	uint32_t pnn;
-	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *recmaster_nodemap=NULL;
 	struct ctdb_node_map **remote_nodemaps=NULL;
@@ -2892,6 +2895,539 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int32_t debug_level;
 	int i, j, ret;
+
+
+
+	/* verify that the main daemon is still running */
+	if (kill(ctdb->ctdbd_pid, 0) != 0) {
+		DEBUG(DEBUG_CRIT,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
+		exit(-1);
+	}
+
+	/* ping the local daemon to tell it we are alive */
+	ctdb_ctrl_recd_ping(ctdb);
+
+	if (rec->election_timeout) {
+		/* an election is in progress */
+		return;
+	}
+
+	/* read the debug level from the parent and update locally */
+	ret = ctdb_ctrl_get_debuglevel(ctdb, CTDB_CURRENT_NODE, &debug_level);
+	if (ret !=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to read debuglevel from parent\n"));
+		return;
+	}
+	LogLevel = debug_level;
+
+
+	/* We must check if we need to ban a node here but we want to do this
+	   as early as possible so we dont wait until we have pulled the node
+	   map from the local node. thats why we have the hardcoded value 20
+	*/
+	for (i=0; i<ctdb->num_nodes; i++) {
+		struct ctdb_banning_state *ban_state;
+
+		if (ctdb->nodes[i]->ban_state == NULL) {
+			continue;
+		}
+		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
+		if (ban_state->count < 20) {
+			continue;
+		}
+		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
+			ctdb->nodes[i]->pnn, ban_state->count,
+			ctdb->tunable.recovery_ban_period));
+		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
+		ban_state->count = 0;
+	}
+
+	/* get relevant tunables */
+	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to get tunables - retrying\n"));
+		return;
+	}
+
+	/* get the current recovery lock file from the server */
+	if (update_recovery_lock_file(ctdb) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to update the recovery lock file\n"));
+		return;
+	}
+
+	/* Make sure that if recovery lock verification becomes disabled when
+	   we close the file
+	*/
+        if (ctdb->tunable.verify_recovery_lock == 0) {
+		if (ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+		}
+	}
+
+	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+	if (pnn == (uint32_t)-1) {
+		DEBUG(DEBUG_ERR,("Failed to get local pnn - retrying\n"));
+		return;
+	}
+
+	/* get the vnnmap */
+	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from node %u\n", pnn));
+		return;
+	}
+
+
+	/* get number of nodes */
+	if (rec->nodemap) {
+		talloc_free(rec->nodemap);
+		rec->nodemap = NULL;
+		nodemap=NULL;
+	}
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", pnn));
+		return;
+	}
+	nodemap = rec->nodemap;
+
+	/* check which node is the recovery master */
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
+		return;
+	}
+
+	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
+	if (rec->recmaster != pnn) {
+		if (rec->ip_reallocate_ctx != NULL) {
+			talloc_free(rec->ip_reallocate_ctx);
+			rec->ip_reallocate_ctx = NULL;
+			rec->reallocate_callers = NULL;
+		}
+	}
+	/* if there are takeovers requested, perform it and notify the waiters */
+	if (rec->reallocate_callers) {
+		process_ipreallocate_requests(ctdb, rec);
+	}
+
+	if (rec->recmaster == (uint32_t)-1) {
+		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+
+
+	/* if the local daemon is STOPPED, we verify that the databases are
+	   also frozen and thet the recmode is set to active 
+	*/
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) {
+		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->recovery_mode);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to read recmode from local node\n"));
+		}
+		if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
+			DEBUG(DEBUG_ERR,("Node is stopped but recovery mode is not active. Activate recovery mode and lock databases\n"));
+
+			ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to node being STOPPED\n"));
+				return;
+			}
+			ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to node being stopped\n"));
+
+				return;
+			}
+			return;
+		}
+	}
+	/* If the local node is stopped, verify we are not the recmaster 
+	   and yield this role if so
+	*/
+	if ((nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) && (rec->recmaster == pnn)) {
+		DEBUG(DEBUG_ERR,("Local node is STOPPED. Yielding recmaster role\n"));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+	
+	/* check that we (recovery daemon) and the local ctdb daemon
+	   agrees on whether we are banned or not
+	*/
+//qqq
+
+	/* remember our own node flags */
+	rec->node_flags = nodemap->nodes[pnn].flags;
+
+	/* count how many active nodes there are */
+	rec->num_active    = 0;
+	rec->num_connected = 0;
+	for (i=0; i<nodemap->num; i++) {
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
+			rec->num_active++;
+		}
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			rec->num_connected++;
+		}
+	}
+
+
+	/* verify that the recmaster node is still active */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].pnn==rec->recmaster) {
+			break;
+		}
+	}
+
+	if (j == nodemap->num) {
+		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", rec->recmaster));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+
+	/* if recovery master is disconnected we must elect a new recmaster */
+	if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+		DEBUG(DEBUG_NOTICE, ("Recmaster node %u is disconnected. Force reelection\n", nodemap->nodes[j].pnn));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+
+	/* grap the nodemap from the recovery master to check if it is banned */
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+				   mem_ctx, &recmaster_nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from recovery master %u\n", 
+			  nodemap->nodes[j].pnn));
+		return;
+	}
+
+
+	if (recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+
+
+	/* verify that we have all ip addresses we should have and we dont
+	 * have addresses we shouldnt have.
+	 */ 
+	if (ctdb->do_checkpublicip) {
+		if (rec->ip_check_disable_ctx == NULL) {
+			if (verify_local_ip_allocation(ctdb, rec, pnn) != 0) {
+				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
+			}
+		}
+	}
+
+
+	/* if we are not the recmaster then we do not need to check
+	   if recovery is needed
+	 */
+	if (pnn != rec->recmaster) {
+		return;
+	}
+
+
+	/* ensure our local copies of flags are right */
+	ret = update_local_flags(rec, nodemap);
+	if (ret == MONITOR_ELECTION_NEEDED) {
+		DEBUG(DEBUG_NOTICE,("update_local_flags() called for a re-election.\n"));
+		force_election(rec, pnn, nodemap);
+		return;
+	}
+	if (ret != MONITOR_OK) {
+		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
+		return;
+	}
+
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
+		reload_nodes_file(ctdb);
+		return;
+	}
+
+	/* verify that all active nodes agree that we are the recmaster */
+	switch (verify_recmaster(rec, nodemap, pnn)) {
+	case MONITOR_RECOVERY_NEEDED:
+		/* can not happen */
+		return;
+	case MONITOR_ELECTION_NEEDED:
+		force_election(rec, pnn, nodemap);
+		return;
+	case MONITOR_OK:
+		break;
+	case MONITOR_FAILED:
+		return;
+	}
+
+
+	if (rec->need_recovery) {
+		/* a previous recovery didn't finish */
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		return;
+	}
+
+	/* verify that all active nodes are in normal mode 
+	   and not in recovery mode 
+	*/
+	switch (verify_recmode(ctdb, nodemap)) {
+	case MONITOR_RECOVERY_NEEDED:
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		return;
+	case MONITOR_FAILED:
+		return;
+	case MONITOR_ELECTION_NEEDED:
+		/* can not happen */
+	case MONITOR_OK:
+		break;
+	}
+
+
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		/* we should have the reclock - check its not stale */
+		ret = check_recovery_lock(ctdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
+			ctdb_set_culprit(rec, ctdb->pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+	}
+
+	/* get the nodemap for all active remote nodes
+	 */
+	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	if (remote_nodemaps == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
+		return;
+	}
+	for(i=0; i<nodemap->num; i++) {
+		remote_nodemaps[i] = NULL;
+	}
+	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, remote_nodemaps) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to read remote nodemaps\n"));
+		return;
+	} 
+
+	/* verify that all other nodes have the same nodemap as we have
+	*/
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		if (remote_nodemaps[j] == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Did not get a remote nodemap for node %d, restarting monitoring\n", j));
+			ctdb_set_culprit(rec, j);
+
+			return;
+		}
+
+ 		/* if the nodes disagree on how many nodes there are
+		   then this is a good reason to try recovery
+		 */
+		if (remote_nodemaps[j]->num != nodemap->num) {
+			DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
+				  nodemap->nodes[j].pnn, remote_nodemaps[j]->num, nodemap->num));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		/* if the nodes disagree on which nodes exist and are
+		   active, then that is also a good reason to do recovery
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if (remote_nodemaps[j]->nodes[i].pnn != nodemap->nodes[i].pnn) {
+				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap pnn for %d (%u vs %u).\n", 
+					  nodemap->nodes[j].pnn, i, 
+					  remote_nodemaps[j]->nodes[i].pnn, nodemap->nodes[i].pnn));
+				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+				do_recovery(rec, mem_ctx, pnn, nodemap, 
+					    vnnmap);
+				return;
+			}
+		}
+
+		/* verify the flags are consistent
+		*/
+		for (i=0; i<nodemap->num; i++) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+				continue;
+			}
+			
+			if (nodemap->nodes[i].flags != remote_nodemaps[j]->nodes[i].flags) {
+				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different flags for node %u. It has 0x%02x vs our 0x%02x\n", 
+				  nodemap->nodes[j].pnn, 
+				  nodemap->nodes[i].pnn, 
+				  remote_nodemaps[j]->nodes[i].flags,
+				  nodemap->nodes[j].flags));
+				if (i == j) {
+					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
+					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, remote_nodemaps[j]->nodes[i].flags);
+					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+					do_recovery(rec, mem_ctx, pnn, nodemap, 
+						    vnnmap);
+					return;
+				} else {
+					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
+					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, nodemap->nodes[i].flags);
+					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+					do_recovery(rec, mem_ctx, pnn, nodemap, 
+						    vnnmap);
+					return;
+				}
+			}
+		}
+	}
+
+
+	/* there better be the same number of lmasters in the vnn map
+	   as there are active nodes or we will have to do a recovery
+	 */
+	if (vnnmap->size != rec->num_active) {
+		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", 
+			  vnnmap->size, rec->num_active));
+		ctdb_set_culprit(rec, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		return;
+	}
+
+	/* verify that all active nodes in the nodemap also exist in 
+	   the vnnmap.
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[j].pnn == pnn) {
+			continue;
+		}
+
+		for (i=0; i<vnnmap->size; i++) {
+			if (vnnmap->map[i] == nodemap->nodes[j].pnn) {
+				break;
+			}
+		}
+		if (i == vnnmap->size) {
+			DEBUG(DEBUG_ERR, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", 
+				  nodemap->nodes[j].pnn));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+	}
+
+	
+	/* verify that all other nodes have the same vnnmap
+	   and are from the same generation
+	 */
+	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[j].pnn == pnn) {
+			continue;
+		}
+
+		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+					  mem_ctx, &remote_vnnmap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from remote node %u\n", 
+				  nodemap->nodes[j].pnn));
+			return;
+		}
+
+		/* verify the vnnmap generation is the same */
+		if (vnnmap->generation != remote_vnnmap->generation) {
+			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", 
+				  nodemap->nodes[j].pnn, remote_vnnmap->generation, vnnmap->generation));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		/* verify the vnnmap size is the same */
+		if (vnnmap->size != remote_vnnmap->size) {
+			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", 
+				  nodemap->nodes[j].pnn, remote_vnnmap->size, vnnmap->size));
+			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		/* verify the vnnmap is the same */
+		for (i=0;i<vnnmap->size;i++) {
+			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
+				DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different vnnmap.\n", 
+					  nodemap->nodes[j].pnn));
+				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
+				do_recovery(rec, mem_ctx, pnn, nodemap, 
+					    vnnmap);
+				return;
+			}
+		}
+	}
+
+	/* we might need to change who has what IP assigned */
+	if (rec->need_takeover_run) {
+		uint32_t culprit = (uint32_t)-1;
+
+		rec->need_takeover_run = false;
+
+		/* update the list of public ips that a node can handle for
+		   all connected nodes
+		*/
+		ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
+					 culprit));
+			ctdb_set_culprit(rec, culprit);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		/* execute the "startrecovery" event script on all nodes */
+		ret = run_startrecovery_eventscript(rec, nodemap);
+		if (ret!=0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
+			ctdb_set_culprit(rec, ctdb->pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		ret = ctdb_takeover_run(ctdb, nodemap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
+			ctdb_set_culprit(rec, ctdb->pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			return;
+		}
+
+		/* execute the "recovered" event script on all nodes */
+		ret = run_recovered_eventscript(ctdb, nodemap, "monitor_cluster");
+#if 0
+// we cant check whether the event completed successfully
+// since this script WILL fail if the node is in recovery mode
+// and if that race happens, the code here would just cause a second
+// cascading recovery.
+		if (ret!=0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Update of public ips failed.\n"));
+			ctdb_set_culprit(rec, ctdb->pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		}
+#endif
+	}
+}
+
+/*
+  the main monitoring loop
+ */
+static void monitor_cluster(struct ctdb_context *ctdb)
+{
 	struct ctdb_recoverd *rec;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
@@ -2930,547 +3466,28 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for updating the recovery daemons node assignment for an ip */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECD_UPDATE_IP, recd_update_ip_handler, rec);
 
-again:
-	if (mem_ctx) {
+	for (;;) {
+		TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+		struct timeval start;
+		double elapsed;
+
+		if (!mem_ctx) {
+			DEBUG(DEBUG_CRIT,(__location__
+					  " Failed to create temp context\n"));
+			exit(-1);
+		}
+
+		start = timeval_current();
+		main_loop(ctdb, rec, mem_ctx);
 		talloc_free(mem_ctx);
-		mem_ctx = NULL;
-	}
-	mem_ctx = talloc_new(ctdb);
-	if (!mem_ctx) {
-		DEBUG(DEBUG_CRIT,(__location__ " Failed to create temporary context\n"));
-		exit(-1);
-	}
 
-	/* we only check for recovery once every second */
-	ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
-
-	/* verify that the main daemon is still running */
-	if (kill(ctdb->ctdbd_pid, 0) != 0) {
-		DEBUG(DEBUG_CRIT,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
-		exit(-1);
-	}
-
-	/* ping the local daemon to tell it we are alive */
-	ctdb_ctrl_recd_ping(ctdb);
-
-	if (rec->election_timeout) {
-		/* an election is in progress */
-		goto again;
-	}
-
-	/* read the debug level from the parent and update locally */
-	ret = ctdb_ctrl_get_debuglevel(ctdb, CTDB_CURRENT_NODE, &debug_level);
-	if (ret !=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to read debuglevel from parent\n"));
-		goto again;
-	}
-	LogLevel = debug_level;
-
-
-	/* We must check if we need to ban a node here but we want to do this
-	   as early as possible so we dont wait until we have pulled the node
-	   map from the local node. thats why we have the hardcoded value 20
-	*/
-	for (i=0; i<ctdb->num_nodes; i++) {
-		struct ctdb_banning_state *ban_state;
-
-		if (ctdb->nodes[i]->ban_state == NULL) {
-			continue;
-		}
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
-		if (ban_state->count < 20) {
-			continue;
-		}
-		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
-			ctdb->nodes[i]->pnn, ban_state->count,
-			ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
-		ban_state->count = 0;
-	}
-
-	/* get relevant tunables */
-	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to get tunables - retrying\n"));
-		goto again;
-	}
-
-	/* get the current recovery lock file from the server */
-	if (update_recovery_lock_file(ctdb) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to update the recovery lock file\n"));
-		goto again;
-	}
-
-	/* Make sure that if recovery lock verification becomes disabled when
-	   we close the file
-	*/
-        if (ctdb->tunable.verify_recovery_lock == 0) {
-		if (ctdb->recovery_lock_fd != -1) {
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
+		/* we only check for recovery once every second */
+		elapsed = timeval_elapsed(&start);
+		if (elapsed < ctdb->tunable.recover_interval) {
+			ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval
+					  - elapsed);
 		}
 	}
-
-	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
-	if (pnn == (uint32_t)-1) {
-		DEBUG(DEBUG_ERR,("Failed to get local pnn - retrying\n"));
-		goto again;
-	}
-
-	/* get the vnnmap */
-	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from node %u\n", pnn));
-		goto again;
-	}
-
-
-	/* get number of nodes */
-	if (rec->nodemap) {
-		talloc_free(rec->nodemap);
-		rec->nodemap = NULL;
-		nodemap=NULL;
-	}
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", pnn));
-		goto again;
-	}
-	nodemap = rec->nodemap;
-
-	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
-		goto again;
-	}
-
-	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
-	if (rec->recmaster != pnn) {
-		if (rec->ip_reallocate_ctx != NULL) {
-			talloc_free(rec->ip_reallocate_ctx);
-			rec->ip_reallocate_ctx = NULL;
-			rec->reallocate_callers = NULL;
-		}
-	}
-	/* if there are takeovers requested, perform it and notify the waiters */
-	if (rec->reallocate_callers) {
-		process_ipreallocate_requests(ctdb, rec);
-	}
-
-	if (rec->recmaster == (uint32_t)-1) {
-		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-
-
-	/* if the local daemon is STOPPED, we verify that the databases are
-	   also frozen and thet the recmode is set to active 
-	*/
-	if (nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) {
-		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->recovery_mode);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to read recmode from local node\n"));
-		}
-		if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
-			DEBUG(DEBUG_ERR,("Node is stopped but recovery mode is not active. Activate recovery mode and lock databases\n"));
-
-			ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to node being STOPPED\n"));
-				goto again;
-			}
-			ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to node being stopped\n"));
-
-				goto again;
-			}
-			goto again;
-		}
-	}
-	/* If the local node is stopped, verify we are not the recmaster 
-	   and yield this role if so
-	*/
-	if ((nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) && (rec->recmaster == pnn)) {
-		DEBUG(DEBUG_ERR,("Local node is STOPPED. Yielding recmaster role\n"));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-	
-	/* check that we (recovery daemon) and the local ctdb daemon
-	   agrees on whether we are banned or not
-	*/
-//qqq
-
-	/* remember our own node flags */
-	rec->node_flags = nodemap->nodes[pnn].flags;
-
-	/* count how many active nodes there are */
-	rec->num_active    = 0;
-	rec->num_connected = 0;
-	for (i=0; i<nodemap->num; i++) {
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			rec->num_active++;
-		}
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			rec->num_connected++;
-		}
-	}
-
-
-	/* verify that the recmaster node is still active */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn==rec->recmaster) {
-			break;
-		}
-	}
-
-	if (j == nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", rec->recmaster));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-
-	/* if recovery master is disconnected we must elect a new recmaster */
-	if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(DEBUG_NOTICE, ("Recmaster node %u is disconnected. Force reelection\n", nodemap->nodes[j].pnn));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-
-	/* grap the nodemap from the recovery master to check if it is banned */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-				   mem_ctx, &recmaster_nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from recovery master %u\n", 
-			  nodemap->nodes[j].pnn));
-		goto again;
-	}
-
-
-	if (recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-
-
-	/* verify that we have all ip addresses we should have and we dont
-	 * have addresses we shouldnt have.
-	 */ 
-	if (ctdb->do_checkpublicip) {
-		if (rec->ip_check_disable_ctx == NULL) {
-			if (verify_local_ip_allocation(ctdb, rec, pnn) != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-			}
-		}
-	}
-
-
-	/* if we are not the recmaster then we do not need to check
-	   if recovery is needed
-	 */
-	if (pnn != rec->recmaster) {
-		goto again;
-	}
-
-
-	/* ensure our local copies of flags are right */
-	ret = update_local_flags(rec, nodemap);
-	if (ret == MONITOR_ELECTION_NEEDED) {
-		DEBUG(DEBUG_NOTICE,("update_local_flags() called for a re-election.\n"));
-		force_election(rec, pnn, nodemap);
-		goto again;
-	}
-	if (ret != MONITOR_OK) {
-		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
-		goto again;
-	}
-
-	if (ctdb->num_nodes != nodemap->num) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
-		reload_nodes_file(ctdb);
-		goto again;
-	}
-
-	/* verify that all active nodes agree that we are the recmaster */
-	switch (verify_recmaster(rec, nodemap, pnn)) {
-	case MONITOR_RECOVERY_NEEDED:
-		/* can not happen */
-		goto again;
-	case MONITOR_ELECTION_NEEDED:
-		force_election(rec, pnn, nodemap);
-		goto again;
-	case MONITOR_OK:
-		break;
-	case MONITOR_FAILED:
-		goto again;
-	}
-
-
-	if (rec->need_recovery) {
-		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-		goto again;		
-	}
-
-	/* verify that all active nodes are in normal mode 
-	   and not in recovery mode 
-	*/
-	switch (verify_recmode(ctdb, nodemap)) {
-	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-		goto again;
-	case MONITOR_FAILED:
-		goto again;
-	case MONITOR_ELECTION_NEEDED:
-		/* can not happen */
-	case MONITOR_OK:
-		break;
-	}
-
-
-        if (ctdb->tunable.verify_recovery_lock != 0) {
-		/* we should have the reclock - check its not stale */
-		ret = check_recovery_lock(ctdb);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-	}
-
-	/* get the nodemap for all active remote nodes
-	 */
-	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
-	if (remote_nodemaps == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
-		goto again;
-	}
-	for(i=0; i<nodemap->num; i++) {
-		remote_nodemaps[i] = NULL;
-	}
-	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, remote_nodemaps) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to read remote nodemaps\n"));
-		goto again;
-	} 
-
-	/* verify that all other nodes have the same nodemap as we have
-	*/
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		if (remote_nodemaps[j] == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Did not get a remote nodemap for node %d, restarting monitoring\n", j));
-			ctdb_set_culprit(rec, j);
-
-			goto again;
-		}
-
- 		/* if the nodes disagree on how many nodes there are
-		   then this is a good reason to try recovery
-		 */
-		if (remote_nodemaps[j]->num != nodemap->num) {
-			DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
-				  nodemap->nodes[j].pnn, remote_nodemaps[j]->num, nodemap->num));
-			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		/* if the nodes disagree on which nodes exist and are
-		   active, then that is also a good reason to do recovery
-		 */
-		for (i=0;i<nodemap->num;i++) {
-			if (remote_nodemaps[j]->nodes[i].pnn != nodemap->nodes[i].pnn) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap pnn for %d (%u vs %u).\n", 
-					  nodemap->nodes[j].pnn, i, 
-					  remote_nodemaps[j]->nodes[i].pnn, nodemap->nodes[i].pnn));
-				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-				do_recovery(rec, mem_ctx, pnn, nodemap, 
-					    vnnmap);
-				goto again;
-			}
-		}
-
-		/* verify the flags are consistent
-		*/
-		for (i=0; i<nodemap->num; i++) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-				continue;
-			}
-			
-			if (nodemap->nodes[i].flags != remote_nodemaps[j]->nodes[i].flags) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different flags for node %u. It has 0x%02x vs our 0x%02x\n", 
-				  nodemap->nodes[j].pnn, 
-				  nodemap->nodes[i].pnn, 
-				  remote_nodemaps[j]->nodes[i].flags,
-				  nodemap->nodes[j].flags));
-				if (i == j) {
-					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
-					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, remote_nodemaps[j]->nodes[i].flags);
-					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-					do_recovery(rec, mem_ctx, pnn, nodemap, 
-						    vnnmap);
-					goto again;
-				} else {
-					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
-					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, nodemap->nodes[i].flags);
-					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-					do_recovery(rec, mem_ctx, pnn, nodemap, 
-						    vnnmap);
-					goto again;
-				}
-			}
-		}
-	}
-
-
-	/* there better be the same number of lmasters in the vnn map
-	   as there are active nodes or we will have to do a recovery
-	 */
-	if (vnnmap->size != rec->num_active) {
-		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", 
-			  vnnmap->size, rec->num_active));
-		ctdb_set_culprit(rec, ctdb->pnn);
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-		goto again;
-	}
-
-	/* verify that all active nodes in the nodemap also exist in 
-	   the vnnmap.
-	 */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[j].pnn == pnn) {
-			continue;
-		}
-
-		for (i=0; i<vnnmap->size; i++) {
-			if (vnnmap->map[i] == nodemap->nodes[j].pnn) {
-				break;
-			}
-		}
-		if (i == vnnmap->size) {
-			DEBUG(DEBUG_ERR, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", 
-				  nodemap->nodes[j].pnn));
-			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-	}
-
-	
-	/* verify that all other nodes have the same vnnmap
-	   and are from the same generation
-	 */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[j].pnn == pnn) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					  mem_ctx, &remote_vnnmap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from remote node %u\n", 
-				  nodemap->nodes[j].pnn));
-			goto again;
-		}
-
-		/* verify the vnnmap generation is the same */
-		if (vnnmap->generation != remote_vnnmap->generation) {
-			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", 
-				  nodemap->nodes[j].pnn, remote_vnnmap->generation, vnnmap->generation));
-			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		/* verify the vnnmap size is the same */
-		if (vnnmap->size != remote_vnnmap->size) {
-			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", 
-				  nodemap->nodes[j].pnn, remote_vnnmap->size, vnnmap->size));
-			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		/* verify the vnnmap is the same */
-		for (i=0;i<vnnmap->size;i++) {
-			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different vnnmap.\n", 
-					  nodemap->nodes[j].pnn));
-				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-				do_recovery(rec, mem_ctx, pnn, nodemap, 
-					    vnnmap);
-				goto again;
-			}
-		}
-	}
-
-	/* we might need to change who has what IP assigned */
-	if (rec->need_takeover_run) {
-		uint32_t culprit = (uint32_t)-1;
-
-		rec->need_takeover_run = false;
-
-		/* update the list of public ips that a node can handle for
-		   all connected nodes
-		*/
-		ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
-					 culprit));
-			ctdb_set_culprit(rec, culprit);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		/* execute the "startrecovery" event script on all nodes */
-		ret = run_startrecovery_eventscript(rec, nodemap);
-		if (ret!=0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		ret = ctdb_takeover_run(ctdb, nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			goto again;
-		}
-
-		/* execute the "recovered" event script on all nodes */
-		ret = run_recovered_eventscript(ctdb, nodemap, "monitor_cluster");
-#if 0
-// we cant check whether the event completed successfully
-// since this script WILL fail if the node is in recovery mode
-// and if that race happens, the code here would just cause a second
-// cascading recovery.
-		if (ret!=0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Update of public ips failed.\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-		}
-#endif
-	}
-
-
-	goto again;
-
 }
 
 /*

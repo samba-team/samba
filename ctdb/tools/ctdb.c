@@ -4551,6 +4551,10 @@ int main(int argc, const char *argv[])
 	control = extra_argv[0];
 
 	ev = event_context_init(NULL);
+	if (!ev) {
+		DEBUG(DEBUG_ERR, ("Failed to initialize event system\n"));
+		exit(1);
+	}
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {

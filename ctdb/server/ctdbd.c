@@ -64,6 +64,7 @@ static struct {
 };
 
 int script_log_level;
+bool fast_start;
 
 /*
   called by the transport layer when a packet comes in
@@ -144,6 +145,7 @@ int main(int argc, const char *argv[])
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
 		{ "log-ringbuf-size", 0, POPT_ARG_INT, &log_ringbuf_size, DEBUG_ERR, "Number of log messages we can store in the memory ringbuffer", NULL },
+		{ "sloppy-start", 0, POPT_ARG_NONE, &fast_start, 0, "Do not perform full recovery on start", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;

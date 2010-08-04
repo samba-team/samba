@@ -676,7 +676,8 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx, int fd, int alignment,
 				    
 				    ctdb_queue_cb_fn_t callback,
-				    void *private_data);
+				    void *private_data, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(7,8);
 
 /*
   allocate a packet for use in client<->daemon communication
@@ -1299,6 +1300,7 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
 
 extern int script_log_level;
+extern bool fast_start;
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 					     uint32_t call_type,
