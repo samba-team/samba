@@ -1335,6 +1335,44 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
+static const char *acl_user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct auth_session_info *session_info
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+	if (!session_info) {
+		return "UNKNOWN (NULL)";
+	}
+
+	return talloc_asprintf(mem_ctx, "%s\\%s",
+			       session_info->server_info->domain_name,
+			       session_info->server_info->account_name);
+}
+
+static int acl_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+
+	/* allow everybody to read the sequence number */
+	if (strcmp(req->op.extended.oid,
+		   LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
+		return ldb_next_request(module, req);
+	}
+
+	if (dsdb_module_am_system(module) ||
+	    dsdb_module_am_administrator(module) || as_system) {
+		return ldb_next_request(module, req);
+	} else {
+		ldb_asprintf_errstring(ldb,
+				       "acl_extended: "
+				       "attempted database modify not permitted. "
+				       "User %s is not SYSTEM or an administrator",
+				       acl_user_name(req, module));
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+}
+
 _PUBLIC_ const struct ldb_module_ops ldb_acl_module_ops = {
 	.name		   = "acl",
 	.search            = acl_search,
@@ -1342,5 +1380,6 @@ _PUBLIC_ const struct ldb_module_ops ldb_acl_module_ops = {
 	.modify            = acl_modify,
 	.del               = acl_delete,
 	.rename            = acl_rename,
+	.extended          = acl_extended,
 	.init_context	   = acl_module_init
 };

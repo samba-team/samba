@@ -151,16 +151,6 @@ bld.SAMBA_MODULE('ldb_local_password',
 	deps='talloc LIBEVENTS LIBNDR SAMDB'
 	)
 
-
-bld.SAMBA_MODULE('ldb_kludge_acl',
-	source='kludge_acl.c',
-	subsystem='ldb',
-	init_function='LDB_MODULE(kludge_acl)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSECURITY SAMDB'
-	)
-
-
 bld.SAMBA_MODULE('ldb_extended_dn_in',
 	source='extended_dn_in.c',
 	subsystem='ldb',

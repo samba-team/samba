@@ -218,18 +218,6 @@ INIT_FUNCTION = LDB_MODULE(local_password)
 ldb_local_password_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/local_password.o
 
 ################################################
-# Start MODULE ldb_kludge_acl
-[MODULE::ldb_kludge_acl]
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY SAMDB
-SUBSYSTEM = LIBLDB
-INIT_FUNCTION = LDB_MODULE(kludge_acl)
-
-# End MODULE ldb_kludge_acl
-################################################
-
-ldb_kludge_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/kludge_acl.o
-
-################################################
 # Start MODULE ldb_extended_dn_in
 [MODULE::ldb_extended_dn_in]
 SUBSYSTEM = LIBLDB
