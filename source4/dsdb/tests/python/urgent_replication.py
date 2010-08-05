@@ -254,8 +254,7 @@ defaultHidingValue: TRUE""");
             "objectClass":"secret",
             "cn":"test secret",
             "name":"test secret",
-            "currentValue":"xxxxxxx"});
-
+            "currentValue":"xxxxxxx"}, ["relax:0"]);
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
