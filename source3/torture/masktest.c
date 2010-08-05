@@ -485,6 +485,7 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
+	load_case_tables();
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 
