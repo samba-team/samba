@@ -5022,8 +5022,9 @@ static void cli_notify_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t *params;
 	uint32_t i, ofs, num_params;
+	uint16_t flags2;
 
-	status = cli_trans_recv(subreq, talloc_tos(), NULL, NULL, 0, NULL,
+	status = cli_trans_recv(subreq, talloc_tos(), &flags2, NULL, 0, NULL,
 				&params, 0, &num_params, NULL, 0, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5068,8 +5069,8 @@ static void cli_notify_done(struct tevent_req *subreq)
 		}
 
 		state->changes[i].action = IVAL(params, ofs+4);
-		ret = clistr_pull_talloc(params, (char *)params, &name,
-					 params+ofs+12, len,
+		ret = clistr_pull_talloc(params, (char *)params, flags2,
+					 &name, params+ofs+12, len,
 					 STR_TERMINATE|STR_UNICODE);
 		if (ret == -1) {
 			TALLOC_FREE(params);

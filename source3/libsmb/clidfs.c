@@ -717,6 +717,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 				goto out;
 			}
 			clistr_pull_talloc(ctx, cli->inbuf,
+					   SVAL(cli->inbuf, smb_flg2),
 					   &referrals[i].dfspath,
 					   p+node_offset, -1,
 					   STR_TERMINATE|STR_UNICODE);

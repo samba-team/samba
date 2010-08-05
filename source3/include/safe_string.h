@@ -146,9 +146,9 @@ size_t __unsafe_string_function_usage_here_char__(void);
 	clistr_pull_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
 			inbuf, dest, src, dest_len, src_len, flags)
 
-#define clistr_pull_talloc(ctx, inbuf, pp_dest, src, src_len, flags) \
+#define clistr_pull_talloc(ctx, base, flags2, pp_dest, src, src_len, flags) \
 	clistr_pull_talloc_fn(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
-			ctx, inbuf, pp_dest, src, src_len, flags)
+			      ctx, base, flags2, pp_dest, src, src_len, flags)
 
 #define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
 	srvstr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
