@@ -14,6 +14,7 @@ use Exporter;
 use strict;
 use Parse::Pidl qw(fatal warning error);
 use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::Typelist qw(mapTypeName);
 use Parse::Pidl::Samba4 qw(DeclLong);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
 
@@ -166,10 +167,10 @@ sub ParseFunctionAsyncState($$$)
 
 	$self->pidl("$state_str {");
 	$self->indent;
-	$self->pidl("struct $fn->{NAME} orig;");
-	$self->pidl("struct $fn->{NAME} tmp;");
 	$self->pidl("TALLOC_CTX *out_mem_ctx;");
-	$self->pidl("NTSTATUS (*dispatch_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx);");
+	if (defined($fn->{RETURN_TYPE})) {
+		$self->pidl(mapTypeName($fn->{RETURN_TYPE}). " result;");
+	}
 	$self->deindent;
 	$self->pidl("};");
 	$self->pidl("");
@@ -215,31 +216,13 @@ sub ParseFunctionAsyncSend($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("state->out_mem_ctx = NULL;");
-	$self->pidl("state->dispatch_recv = cli->dispatch_recv;");
-	$self->pidl("");
-
-	$self->pidl("/* In parameters */");
-	foreach (@{$fn->{ELEMENTS}}) {
-		if (grep(/in/, @{$_->{DIRECTION}})) {
-			$self->pidl("state->orig.in.$_->{NAME} = _$_->{NAME};");
-		}
-	}
 	$self->pidl("");
 
 	my $out_params = 0;
-	$self->pidl("/* Out parameters */");
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/, @{$_->{DIRECTION}})) {
-			$self->pidl("state->orig.out.$_->{NAME} = _$_->{NAME};");
 			$out_params++;
 		}
-	}
-	$self->pidl("");
-
-	if (defined($fn->{RETURN_TYPE})) {
-		$self->pidl("/* Result */");
-		$self->pidl("ZERO_STRUCT(state->orig.out.result);");
-		$self->pidl("");
 	}
 
 	if ($out_params > 0) {
@@ -253,14 +236,14 @@ sub ParseFunctionAsyncSend($$$)
 		$self->pidl("");
 	}
 
-	$self->pidl("/* make a temporary copy, that we pass to the dispatch function */");
-	$self->pidl("state->tmp = state->orig;");
-	$self->pidl("");
+	$fn_str = "subreq = dcerpc_$fn->{NAME}_send";
+	$pad = "\t" . genpad($fn_str);
+	$fn_args = "state,\n" . $pad . "ev,\n" . $pad . "cli->binding_handle";
+	foreach (@{$fn->{ELEMENTS}}) {
+		$fn_args .= ",\n" . $pad . "_". $_->{NAME};
+	}
 
-	$self->pidl("subreq = cli->dispatch_send(state, ev, cli,");
-	$self->pidl("\t\t\t    &ndr_table_$if,");
-	$self->pidl("\t\t\t    $ufn,");
-	$self->pidl("\t\t\t    &state->tmp);");
+	$self->pidl("$fn_str($fn_args);");
 	$self->pidl("if (tevent_req_nomem(subreq, req)) {");
 	$self->indent;
 	$self->pidl("return tevent_req_post(req, ev);");
@@ -302,7 +285,14 @@ sub ParseFunctionAsyncDone($$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("status = state->dispatch_recv(subreq, mem_ctx);");
+	my $fn_str = "status = dcerpc_$fn->{NAME}_recv";
+	my $pad = "\t" . genpad($fn_str);
+	my $fn_args = "subreq,\n" . $pad . "mem_ctx";
+	if (defined($fn->{RETURN_TYPE})) {
+		$fn_args .= ",\n" . $pad . "&state->result";
+	}
+
+	$self->pidl("$fn_str($fn_args);");
 	$self->pidl("TALLOC_FREE(subreq);");
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 	$self->indent;
@@ -310,27 +300,6 @@ sub ParseFunctionAsyncDone($$$)
 	$self->pidl("return;");
 	$self->deindent;
 	$self->pidl("}");
-	$self->pidl("");
-
-	$self->pidl("/* Copy out parameters */");
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless (grep(/out/, @{$e->{DIRECTION}}));
-
-		$self->ParseOutputArgument($fn, $e,
-					   "state->tmp.",
-					   "state->orig.out.",
-					   "async");
-	}
-	$self->pidl("");
-
-	if (defined($fn->{RETURN_TYPE})) {
-		$self->pidl("/* Copy result */");
-		$self->pidl("state->orig.out.result = state->tmp.out.result;");
-		$self->pidl("");
-	}
-
-	$self->pidl("/* Reset temporary structure */");
-	$self->pidl("ZERO_STRUCT(state->tmp);");
 	$self->pidl("");
 
 	$self->pidl("tevent_req_done(req);");
@@ -375,7 +344,7 @@ sub ParseFunctionAsyncRecv($$$)
 
 	if (defined($fn->{RETURN_TYPE})) {
 		$self->pidl("/* Return result */");
-		$self->pidl("*result = state->orig.out.result;");
+		$self->pidl("*result = state->result;");
 		$self->pidl("");
 	}
 
@@ -401,7 +370,7 @@ sub ParseFunctionSync($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 		my $dir = ElementDirection($_);
 		my $prop = HeaderProperties($_->{PROPERTIES}, ["in", "out"]);
-		$fn_args .= ",\n" . $pad . DeclLong($_) . " /* $dir $prop */";
+		$fn_args .= ",\n" . $pad . DeclLong($_, "_") . " /* $dir $prop */";
 	}
 
 	if (defined($fn->{RETURN_TYPE}) && ($fn->{RETURN_TYPE} eq "WERROR")) {
@@ -411,60 +380,43 @@ sub ParseFunctionSync($$$)
 	$self->fn_declare("$fn_str($fn_args)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("struct $fn->{NAME} r;");
+	if (defined($fn->{RETURN_TYPE})) {
+		$self->pidl(mapTypeName($fn->{RETURN_TYPE})." result;");
+	}
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
-	$self->pidl("/* In parameters */");
 
+	$fn_str = "status = dcerpc_$fn->{NAME}";
+	$pad = "\t" . genpad($fn_str);
+	$fn_args = "cli->binding_handle,\n" . $pad . "mem_ctx";
 	foreach (@{$fn->{ELEMENTS}}) {
-		if (grep(/in/, @{$_->{DIRECTION}})) {
-			$self->pidl("r.in.$_->{NAME} = $_->{NAME};");
-		}
+		$fn_args .= ",\n" . $pad . "_". $_->{NAME};
+	}
+	if (defined($fn->{RETURN_TYPE})) {
+		$fn_args .= ",\n" . $pad . "&result";
 	}
 
-	$self->pidl("");
-	$self->pidl("status = cli->dispatch(cli,");
-	$self->pidl("\t\t\tmem_ctx,");
-	$self->pidl("\t\t\t&ndr_table_$if,");
-	$self->pidl("\t\t\t$ufn,");
-	$self->pidl("\t\t\t&r);");
-	$self->pidl("");
-
+	$self->pidl("$fn_str($fn_args);");
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 	$self->indent;
 	$self->pidl("return status;");
 	$self->deindent;
 	$self->pidl("}");
-
 	$self->pidl("");
-	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
-	$self->indent;
-	$self->pidl("return status;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("/* Return variables */");
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless (grep(/out/, @{$e->{DIRECTION}}));
 
-		$self->ParseOutputArgument($fn, $e);
-
-	}
-
-	$self->pidl("");
 	$self->pidl("/* Return result */");
 	if (not $fn->{RETURN_TYPE}) {
 		$self->pidl("return NT_STATUS_OK;");
 	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
-		$self->pidl("return r.out.result;");
+		$self->pidl("return result;");
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
 		$self->pidl("if (werror) {");
 		$self->indent;
-		$self->pidl("*werror = r.out.result;");
+		$self->pidl("*werror = result;");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
-		$self->pidl("return werror_to_ntstatus(r.out.result);");
+		$self->pidl("return werror_to_ntstatus(result);");
 	} else {
 		warning($fn->{ORIGINAL}, "Unable to convert $fn->{RETURN_TYPE} to NTSTATUS");
 		$self->pidl("return NT_STATUS_OK;");
@@ -505,7 +457,7 @@ sub ParseInterface($$)
 
 sub Parse($$$$)
 {
-	my($self,$ndr,$header,$ndr_header) = @_;
+	my($self,$ndr,$header,$c_header) = @_;
 
 	$self->pidl("/*");
 	$self->pidl(" * Unix SMB/CIFS implementation.");
@@ -514,7 +466,7 @@ sub Parse($$$$)
 	$self->pidl("");
 	$self->pidl("#include \"includes.h\"");
 	$self->pidl("#include \"$header\"");
-	$self->pidl_hdr("#include \"$ndr_header\"");
+	$self->pidl_hdr("#include \"$c_header\"");
 	$self->pidl("");
 	
 	foreach (@$ndr) {
