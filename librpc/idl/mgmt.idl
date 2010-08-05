@@ -70,6 +70,6 @@ interface mgmt
 	WERROR mgmt_inq_princ_name (
 		[in]        uint32                  authn_proto,
 		[in]        uint32                  princ_name_size,
-		[out]       [string,charset(DOS)] uint8 princ_name[]
+		[out]       [string,size_is(princ_name_size),charset(DOS)] uint8 princ_name[]
 		);
 }
