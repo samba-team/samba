@@ -118,10 +118,20 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
         self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
     def test_objectclasses(self):
         """Test objectClass behaviour"""
         print "Test objectClass behaviour"""
+
+        # We cannot create LSA-specific objects (oc "secret" or "trustedDomain")
+        try:
+            self.ldb.add({
+                "dn": "cn=testsecret,cn=system," + self.base_dn,
+                "objectClass": "secret" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         # Invalid objectclass specified
         try:
@@ -322,6 +332,7 @@ class BasicTests(unittest.TestCase):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+        self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
     def test_invalid_parent(self):
         """Test adding an object with invalid parent"""
