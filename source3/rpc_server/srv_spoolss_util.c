@@ -499,7 +499,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		val.value_name_len = strlen_m_term(val.value_name) * 2;
 
 		val.type = type;
-		val.data_length = data_size;
+		val.data_length = length;
 		val.data = NULL;
 		if (val.data_length) {
 			val.data = talloc(enum_values, DATA_BLOB);
@@ -507,7 +507,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 				result = WERR_NOMEM;
 				goto error;
 			}
-			*val.data = data_blob_talloc(enum_values, data, data_size);
+			*val.data = data_blob_talloc(val.data, data, val.data_length);
 		}
 
 		enum_values[i] = val;
