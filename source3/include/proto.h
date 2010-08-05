@@ -180,6 +180,10 @@ NTSTATUS auth_winbind_init(void);
 
 /* The following definitions come from auth/server_info.c  */
 
+struct netr_SamInfo2;
+struct netr_SamInfo3;
+struct netr_SamInfo6;
+
 struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx);
 NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
@@ -2727,6 +2731,8 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 				  bool auth_data_only);
 
 /* The following definitions come from libsmb/dsgetdcname.c  */
+
+struct netr_DsRGetDCNameInfo;
 
 void debug_dsdcinfo_flags(int lvl, uint32_t flags);
 NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,

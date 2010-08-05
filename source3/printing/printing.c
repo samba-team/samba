@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "nt_printing.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;

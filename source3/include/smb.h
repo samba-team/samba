@@ -178,7 +178,6 @@ typedef union unid_t {
 
 #include "librpc/gen_ndr/idmap.h"
 #include "librpc/gen_ndr/epmapper.h"
-#include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/dcerpc.h"
 
 struct lsa_dom_info {

@@ -24,6 +24,7 @@
 #include "vfs_smb_traffic_analyzer.h"
 #include "../libcli/security/dom_sid.h"
 #include "secrets.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 /* abstraction for the send_over_network function */
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};

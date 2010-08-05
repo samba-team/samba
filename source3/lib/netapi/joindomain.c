@@ -20,12 +20,12 @@
 #include "includes.h"
 #include "ads.h"
 #include "librpc/gen_ndr/libnetapi.h"
+#include "libcli/auth/libcli_auth.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
-#include "libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_wkssvc.h"
 #include "secrets.h"
 

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 /* what user is current? */
 extern struct current_user current_user;

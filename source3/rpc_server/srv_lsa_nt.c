@@ -31,6 +31,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "secrets.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

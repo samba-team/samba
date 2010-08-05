@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/crypto/arcfour.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
