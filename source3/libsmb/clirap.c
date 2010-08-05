@@ -1171,6 +1171,7 @@ bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 			   &setup, 1, 0,          /* setup, length, max */
 			   param, 4, 2,   /* param, length, max */
 			   NULL, 0, MIN(cli->max_xmit, 0xffff), /* data, length, max */
+			   NULL,				/* recv_flags2 */
 			   NULL, 0, NULL, /* rsetup, length */
 			   NULL, 0, NULL,	/* rparam, length */
 			   &rdata, 68, &data_len);

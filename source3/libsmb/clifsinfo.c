@@ -74,8 +74,8 @@ static void cli_unix_extensions_version_done(struct tevent_req *subreq)
 	uint32_t num_data;
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
-				&data, 12, &num_data);
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL, &data, 12, &num_data);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -214,7 +214,7 @@ static void cli_set_unix_extensions_capabilities_done(
 	struct cli_set_unix_extensions_capabilities_state *state = tevent_req_data(
 		req, struct cli_set_unix_extensions_capabilities_state);
 
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	if (NT_STATUS_IS_OK(status)) {
 		state->cli->requested_posix_capabilities = IVAL(state->data, 4);
@@ -304,7 +304,7 @@ static void cli_get_fs_attr_info_done(struct tevent_req *subreq)
 	uint32_t num_data;
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, talloc_tos(), NULL, 0, NULL,
+	status = cli_trans_recv(subreq, talloc_tos(), NULL, NULL, 0, NULL,
 				NULL, 0, NULL, &data, 12, &num_data);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -376,6 +376,7 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 			   setup, 1, 0,
 			   param, 2, 0,
 			   NULL, 0, 560,
+			   NULL,
 			   NULL, 0, NULL,
 			   NULL, 0, NULL,
 			   &rdata, 10, &rdata_count);

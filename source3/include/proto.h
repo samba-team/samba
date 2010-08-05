@@ -2687,6 +2687,7 @@ struct tevent_req *cli_trans_send(
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
 	uint8_t *data, uint32_t num_data, uint32_t max_data);
 NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			uint16_t *recv_flags2,
 			uint16_t **setup, uint8_t min_setup,
 			uint8_t *num_setup,
 			uint8_t **param, uint32_t min_param,
@@ -2700,6 +2701,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 		   uint8_t *param, uint32_t num_param, uint32_t max_param,
 		   uint8_t *data, uint32_t num_data, uint32_t max_data,
+		   uint16_t *recv_flags2,
 		   uint16_t **rsetup, uint8_t min_rsetup, uint8_t *num_rsetup,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);

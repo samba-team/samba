@@ -40,6 +40,7 @@ struct security_descriptor *cli_query_secdesc(struct cli_state *cli, uint16_t fn
 			   NULL, 0, 0, /* setup, length, max */
 			   param, 8, 4, /* param, length, max */
 			   NULL, 0, 0x10000, /* data, length, max */
+			   NULL,	     /* recv_flags2 */
 			   NULL, 0, NULL, /* rsetup, length */
 			   NULL, 0, NULL,
 			   &rdata, 0, &rdata_count);

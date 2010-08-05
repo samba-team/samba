@@ -329,7 +329,8 @@ static void rpc_np_trans_done(struct tevent_req *subreq)
 		req, struct rpc_np_trans_state);
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL,
 				&state->rdata, 0, &state->rdata_len);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {

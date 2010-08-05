@@ -119,7 +119,7 @@ struct link_state {
 
 static void cli_posix_link_internal_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -836,7 +836,7 @@ struct ch_state {
 
 static void cli_posix_chown_chmod_internal_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -1734,7 +1734,7 @@ struct doc_state {
 
 static void cli_nt_delete_on_close_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -2344,7 +2344,7 @@ struct ftrunc_state {
 
 static void cli_ftruncate_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -2869,7 +2869,7 @@ struct posix_lock_state {
 
 static void cli_posix_unlock_internal_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -4517,8 +4517,8 @@ static void cli_posix_open_internal_done(struct tevent_req *subreq)
 	uint8_t *data;
 	uint32_t num_data;
 
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
-				&data, 12, &num_data);
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL, &data, 12, &num_data);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -4753,7 +4753,7 @@ struct unlink_state {
 
 static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, 0, NULL,
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
 					 NULL, 0, NULL, NULL, 0, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
@@ -5020,7 +5020,7 @@ static void cli_notify_done(struct tevent_req *subreq)
 	uint8_t *params;
 	uint32_t i, ofs, num_params;
 
-	status = cli_trans_recv(subreq, talloc_tos(), NULL, 0, NULL,
+	status = cli_trans_recv(subreq, talloc_tos(), NULL, NULL, 0, NULL,
 				&params, 0, &num_params, NULL, 0, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5170,7 +5170,8 @@ static void cli_qpathinfo_done(struct tevent_req *subreq)
 		req, struct cli_qpathinfo_state);
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, 0, NULL, NULL, 0, NULL,
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL,
 				&state->rdata, state->min_rdata,
 				&state->num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {

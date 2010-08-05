@@ -720,6 +720,7 @@ struct cli_trans_state {
 	uint16_t *rsetup;
 	struct trans_recvblob rparam;
 	struct trans_recvblob rdata;
+	uint16_t recv_flags2;
 
 	TALLOC_CTX *secondary_request_ctx;
 
@@ -1191,6 +1192,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 
 	if ((state->rparam.total == state->rparam.received)
 	    && (state->rdata.total == state->rdata.received)) {
+		state->recv_flags2 = SVAL(inbuf, smb_flg2);
 		TALLOC_FREE(subreq);
 		cli_state_seqnum_remove(state->cli, state->mid);
 		tevent_req_done(req);
@@ -1212,6 +1214,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			uint16_t *recv_flags2,
 			uint16_t **setup, uint8_t min_setup,
 			uint8_t *num_setup,
 			uint8_t **param, uint32_t min_param,
@@ -1231,6 +1234,10 @@ NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	    || (state->rparam.total < min_param)
 	    || (state->rdata.total < min_data)) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (recv_flags2 != NULL) {
+		*recv_flags2 = state->recv_flags2;
 	}
 
 	if (setup != NULL) {
@@ -1264,6 +1271,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 		   uint8_t *param, uint32_t num_param, uint32_t max_param,
 		   uint8_t *data, uint32_t num_data, uint32_t max_data,
+		   uint16_t *recv_flags2,
 		   uint16_t **rsetup, uint8_t min_rsetup, uint8_t *num_rsetup,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata)
@@ -1302,7 +1310,8 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_trans_recv(req, mem_ctx, rsetup, min_rsetup, num_rsetup,
+	status = cli_trans_recv(req, mem_ctx, recv_flags2,
+				rsetup, min_rsetup, num_rsetup,
 				rparam, min_rparam, num_rparam,
 				rdata, min_rdata, num_rdata);
  fail:
