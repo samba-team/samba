@@ -82,7 +82,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
 			p += 27;
-			p += align_string(cli->inbuf, p, 0);
+			p += align_string(base_ptr, p, 0);
 
 			/* We can safely use len here (which is required by OS/2)
 			 * and the NAS-BASIC server instead of +2 or +1 as the
@@ -189,7 +189,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				/* stupid NT bugs. grr */
 				int flags = 0;
 				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
-				clistr_pull(cli->inbuf, finfo->short_name, p,
+				clistr_pull(base_ptr, finfo->short_name, p,
 					    sizeof(finfo->short_name),
 					    slen, flags);
 			}
