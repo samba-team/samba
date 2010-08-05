@@ -590,26 +590,26 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 		req, struct cli_qpathinfo1_state);
 	NTSTATUS status;
 
-	time_t (*date_fn)(struct cli_state *, const void *);
+	time_t (*date_fn)(const void *buf, int serverzone);
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
 	if (state->cli->win95) {
-		date_fn = cli_make_unix_date;
+		date_fn = make_unix_date;
 	} else {
-		date_fn = cli_make_unix_date2;
+		date_fn = make_unix_date2;
 	}
 
 	if (change_time) {
-		*change_time = date_fn(state->cli, state->data+0);
+		*change_time = date_fn(state->data+0, state->cli->serverzone);
 	}
 	if (access_time) {
-		*access_time = date_fn(state->cli, state->data+4);
+		*access_time = date_fn(state->data+4, state->cli->serverzone);
 	}
 	if (write_time) {
-		*write_time = date_fn(state->cli, state->data+8);
+		*write_time = date_fn(state->data+8, state->cli->serverzone);
 	}
 	if (size) {
 		*size = IVAL(state->data, 12);

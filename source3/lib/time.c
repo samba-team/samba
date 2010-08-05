@@ -259,7 +259,7 @@ void dos_filetime_timespec(struct timespec *tsp)
  localtime).
 ********************************************************************/
 
-static time_t make_unix_date(const void *date_ptr, int zone_offset)
+time_t make_unix_date(const void *date_ptr, int zone_offset)
 {
 	uint32_t dos_date=0;
 	struct tm t;
@@ -451,22 +451,6 @@ void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unix
 {
 	push_dos_date3((uint8_t *)buf, offset, unixdate, cli->serverzone);
 }
-
-time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr)
-{
-	return make_unix_date(date_ptr, cli->serverzone);
-}
-
-time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr)
-{
-	return make_unix_date2(date_ptr, cli->serverzone);
-}
-
-time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr)
-{
-	return make_unix_date3(date_ptr, cli->serverzone);
-}
-
 
 /*******************************************************************
  Re-read the smb serverzone value.

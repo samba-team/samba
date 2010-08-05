@@ -2146,8 +2146,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->serverzone = SVALS(vwv + 10, 0);
 		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
-		cli->servertime = cli_make_unix_date(
-			cli, (char *)(vwv + 8));
+		cli->servertime = make_unix_date(
+			(char *)(vwv + 8), cli->serverzone);
 		cli->readbraw_supported = ((SVAL(vwv + 5, 0) & 0x1) != 0);
 		cli->writebraw_supported = ((SVAL(vwv + 5, 0) & 0x2) != 0);
 		cli->secblob = data_blob(bytes, num_bytes);
