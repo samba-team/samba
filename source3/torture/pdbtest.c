@@ -21,6 +21,7 @@
 
 
 #include "includes.h"
+#include "popt_common.h"
 
 static bool samu_correct(struct samu *s1, struct samu *s2)
 {

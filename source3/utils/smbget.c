@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "libsmbclient.h"
 
 #if _FILE_OFFSET_BITS==64

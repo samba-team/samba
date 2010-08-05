@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "vfstest.h"
 
 /* List to hold groups of commands */

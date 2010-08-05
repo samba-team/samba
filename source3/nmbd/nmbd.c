@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "librpc/gen_ndr/messaging.h"
 
 int ClientNMB       = -1;

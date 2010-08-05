@@ -1859,8 +1859,6 @@ struct unix_error_map {
 
 #define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
 
-#include "popt_common.h"
-
 #define PORT_NONE	0
 #ifndef LDAP_PORT
 #define LDAP_PORT	389

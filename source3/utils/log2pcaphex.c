@@ -51,6 +51,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 
 /* We don't care about the paranoid malloc checker in this standalone
    program */

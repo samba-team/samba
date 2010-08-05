@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"

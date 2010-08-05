@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "registry.h"

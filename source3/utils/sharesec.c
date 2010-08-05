@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "popt_common.h"
 
 static TALLOC_CTX *ctx;
 

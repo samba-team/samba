@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 
 extern bool AllowDebugChange;
 

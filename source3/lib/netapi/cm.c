@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "popt_common.h"
 
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
