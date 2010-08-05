@@ -106,6 +106,8 @@ struct dcerpc_connection {
   this encapsulates a full dcerpc client side pipe 
 */
 struct dcerpc_pipe {
+	struct dcerpc_binding_handle *binding_handle;
+
 	uint32_t context_id;
 
 	uint32_t assoc_group_id;
@@ -115,8 +117,6 @@ struct dcerpc_pipe {
 
 	struct dcerpc_connection *conn;
 	struct dcerpc_binding *binding;
-
-	struct dcerpc_binding_handle *binding_handle;
 
 	/** the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
@@ -394,9 +394,120 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 
+struct dcerpc_binding_handle_ops {
+	const char *name;
+
+	bool (*is_connected)(struct dcerpc_binding_handle *h);
+
+	struct tevent_req *(*raw_call_send)(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct dcerpc_binding_handle *h,
+					    const struct GUID *object,
+					    uint32_t opnum,
+					    uint32_t in_flags,
+					    const uint8_t *in_data,
+					    size_t in_length);
+	NTSTATUS (*raw_call_recv)(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  uint8_t **out_data,
+				  size_t *out_length,
+				  uint32_t *out_flags);
+
+	struct tevent_req *(*disconnect_send)(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct dcerpc_binding_handle *h);
+	NTSTATUS (*disconnect_recv)(struct tevent_req *req);
+
+	/* TODO: remove the following functions */
+	bool (*push_bigendian)(struct dcerpc_binding_handle *h);
+	bool (*ref_alloc)(struct dcerpc_binding_handle *h);
+	void (*do_ndr_print)(struct dcerpc_binding_handle *h,
+			     int ndr_flags,
+			     const void *struct_ptr,
+			     const struct ndr_interface_call *call);
+	void (*ndr_push_failed)(struct dcerpc_binding_handle *h,
+				NTSTATUS error,
+				const void *struct_ptr,
+				const struct ndr_interface_call *call);
+	void (*ndr_pull_failed)(struct dcerpc_binding_handle *h,
+				NTSTATUS error,
+				const DATA_BLOB *blob,
+				const struct ndr_interface_call *call);
+	NTSTATUS (*ndr_validate_in)(struct dcerpc_binding_handle *h,
+				    TALLOC_CTX *mem_ctx,
+				    const DATA_BLOB *blob,
+				    const struct ndr_interface_call *call);
+	NTSTATUS (*ndr_validate_out)(struct dcerpc_binding_handle *h,
+				     struct ndr_pull *pull_in,
+				     const void *struct_ptr,
+				     const struct ndr_interface_call *call);
+};
+
 /* TODO: this needs to be completely private */
 struct dcerpc_binding_handle {
 	void *private_data;
+	const struct dcerpc_binding_handle_ops *ops;
+	const char *location;
+	const struct GUID *object;
+	const struct ndr_interface_table *table;
+	struct tevent_context *sync_ev;
 };
+
+struct dcerpc_binding_handle *_dcerpc_binding_handle_create(TALLOC_CTX *mem_ctx,
+					const struct dcerpc_binding_handle_ops *ops,
+					const struct GUID *object,
+					const struct ndr_interface_table *table,
+					void *pstate,
+					size_t psize,
+					const char *type,
+					const char *location);
+#define dcerpc_binding_handle_create(mem_ctx, ops, object, table, \
+				state, type, location) \
+	_dcerpc_binding_handle_create(mem_ctx, ops, object, table, \
+				state, sizeof(type), #type, location)
+
+void *_dcerpc_binding_handle_data(struct dcerpc_binding_handle *h);
+#define dcerpc_binding_handle_data(_h, _type) \
+	talloc_get_type_abort(_dcerpc_binding_handle_data(_h), _type)
+
+_DEPRECATED_ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
+						    struct tevent_context *ev);
+
+bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
+
+struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h,
+						const struct GUID *object,
+						uint32_t opnum,
+						uint32_t in_flags,
+						const uint8_t *in_data,
+						size_t in_length);
+NTSTATUS dcerpc_binding_handle_raw_call_recv(struct tevent_req *req,
+					     TALLOC_CTX *mem_ctx,
+					     uint8_t **out_data,
+					     size_t *out_length,
+					     uint32_t *out_flags);
+
+struct tevent_req *dcerpc_binding_handle_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h);
+NTSTATUS dcerpc_binding_handle_disconnect_recv(struct tevent_req *req);
+
+struct tevent_req *dcerpc_binding_handle_call_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct dcerpc_binding_handle *h,
+					const struct GUID *object,
+					const struct ndr_interface_table *table,
+					uint32_t opnum,
+					TALLOC_CTX *r_mem,
+					void *r_ptr);
+NTSTATUS dcerpc_binding_handle_call_recv(struct tevent_req *req);
+NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
+				    const struct GUID *object,
+				    const struct ndr_interface_table *table,
+				    uint32_t opnum,
+				    TALLOC_CTX *r_mem,
+				    void *r_ptr);
 
 #endif /* __DCERPC_H__ */
