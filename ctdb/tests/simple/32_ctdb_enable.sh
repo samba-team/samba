@@ -62,9 +62,4 @@ try_command_on_node 1 $CTDB enable -n $test_node
 
 wait_until_node_has_status $test_node enabled
 
-if wait_until_node_has_some_ips "$test_node" ; then
-    echo "OK."
-else
-    echo "No IPs moved to node $test_node."
-    testfailures=1
-fi
+wait_until_node_has_some_ips "$test_node"
