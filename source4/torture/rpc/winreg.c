@@ -2924,7 +2924,8 @@ static bool test_key_base(struct torture_context *tctx,
 		}
 
 		if (!test_DeleteKey(b, tctx, handle, test_key1)) {
-			torture_comment(tctx, "DeleteKey failed\n");
+			torture_comment(tctx, "DeleteKey(%s) failed\n",
+					      test_key1);
 			ret = false;
 		} else {
 			deleted = true;
@@ -2959,13 +2960,13 @@ static bool test_key_base(struct torture_context *tctx,
 		if (created3) {
 			if (test_CreateKey(b, tctx, handle, test_subkey, NULL)) {
 				if (!test_DeleteKey(b, tctx, handle, test_subkey)) {
-					torture_comment(tctx, "DeleteKey failed\n");
+					torture_comment(tctx, "DeleteKey(%s) failed\n", test_subkey);
 					ret = false;
 				}
 			}
 
 			if (!test_DeleteKey(b, tctx, handle, test_key3)) {
-				torture_comment(tctx, "DeleteKey failed\n");
+				torture_comment(tctx, "DeleteKey(%s) failed\n", test_key3);
 				ret = false;
 			}
 		}
@@ -3029,12 +3030,12 @@ static bool test_key_base_sd(struct torture_context *tctx,
 	}
 
 	if (created4 && !test_DeleteKey(b, tctx, handle, test_key4)) {
-		torture_comment(tctx, "DeleteKey failed\n");
+		torture_comment(tctx, "DeleteKey(%s) failed\n", test_key4);
 		ret = false;
 	}
 
 	if (created2 && !test_DeleteKey(b, tctx, handle, test_key4)) {
-		torture_comment(tctx, "DeleteKey failed\n");
+		torture_comment(tctx, "DeleteKey(%s) failed\n", test_key4);
 		ret = false;
 	}
 
