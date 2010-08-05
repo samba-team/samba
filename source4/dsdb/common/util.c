@@ -3528,6 +3528,36 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 }
 
 /*
+  an add with a set of controls
+*/
+int dsdb_add(struct ldb_context *ldb, const struct ldb_message *message,
+	     uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_build_add_req(&req, ldb, ldb,
+				message,
+				NULL,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ret;
+	}
+
+	ret = dsdb_autotransaction_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
+}
+
+/*
   a modify with a set of controls
 */
 int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
