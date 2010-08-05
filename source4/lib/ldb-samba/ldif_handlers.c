@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
@@ -868,6 +869,20 @@ static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
 }
 
 
+/*
+  convert a NDR formatted blob to a ldif formatted dnsRecord
+*/
+static int ldif_write_dnsRecord(struct ldb_context *ldb, void *mem_ctx,
+				const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct dnsp_DnssrvRpcRecord),
+			      (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord,
+			      (ndr_print_fn_t)ndr_print_dnsp_DnssrvRpcRecord,
+			      true);
+}
+
+
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
@@ -1094,7 +1109,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldif_write_range64,
 		.canonicalise_fn  = ldif_canonicalise_int64,
 		.comparison_fn	  = ldif_comparison_int64
-	},
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_DNSRECORD,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_dnsRecord,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
+	}
 };
 
 static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
@@ -1207,6 +1228,7 @@ static const struct {
 	{ "invocationId",			LDB_SYNTAX_SAMBA_GUID },
 	{ "parentGUID",				LDB_SYNTAX_SAMBA_GUID },
 	{ "msDS-OptionalFeatureGUID",		LDB_SYNTAX_SAMBA_GUID },
+	{ "dnsRecord",				LDB_SYNTAX_SAMBA_DNSRECORD },
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
