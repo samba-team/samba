@@ -1218,19 +1218,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
       </para>
     </refsect2>
 
-    <refsect2><title>freeze</title>
-      <para>
-        This command will lock all the local TDB databases causing clients 
-        that are accessing these TDBs such as samba3 to block until the
-        databases are thawed.
-      </para>
-      <para>
-        This is primarily used by the recovery daemon to stop all samba
-        daemons from accessing any databases while the database is recovered
-        and rebuilt.
-      </para>
-    </refsect2>
-
     <refsect2><title>thaw</title>
       <para>
         Thaw a previously frozen node.
