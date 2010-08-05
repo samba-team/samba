@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/srv_spoolss_util.h"
 #include "nt_printing.h"
+#include "secrets.h"
 
 /* Map generic permissions to printer object specific permissions */
 

@@ -4367,53 +4367,6 @@ NTSTATUS pdb_wbc_sam_init(void);
 bool init_sam_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_t buflen);
 NTSTATUS pdb_tdbsam_init(void);
 
-/* The following definitions come from passdb/secrets.c  */
-
-bool secrets_init(void);
-struct db_context *secrets_db_ctx(void);
-void secrets_shutdown(void);
-void *secrets_fetch(const char *key, size_t *size);
-bool secrets_store(const char *key, const void *data, size_t size);
-bool secrets_delete(const char *key);
-bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
-bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
-bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
-bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
-void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
-enum netr_SchannelType get_default_sec_channel(void);
-bool secrets_fetch_trust_account_password_legacy(const char *domain,
-						 uint8 ret_pwd[16],
-						 time_t *pass_last_set_time,
-						 enum netr_SchannelType *channel);
-bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
-					  time_t *pass_last_set_time,
-					  enum netr_SchannelType *channel);
-bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
-                                           struct dom_sid  *sid, time_t *pass_last_set_time);
-bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
-                                           const struct dom_sid  *sid);
-bool secrets_delete_machine_password(const char *domain);
-bool secrets_delete_machine_password_ex(const char *domain);
-bool secrets_delete_domain_sid(const char *domain);
-bool secrets_store_machine_password(const char *pass, const char *domain, enum netr_SchannelType sec_channel);
-char *secrets_fetch_prev_machine_password(const char *domain);
-char *secrets_fetch_machine_password(const char *domain,
-				     time_t *pass_last_set_time,
-				     enum netr_SchannelType *channel);
-bool trusted_domain_password_delete(const char *domain);
-bool secrets_store_ldap_pw(const char* dn, char* pw);
-bool fetch_ldap_pw(char **dn, char** pw);
-NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
-				 struct trustdom_info ***domains);
-bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile);
-bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
-void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
-bool secrets_store_generic(const char *owner, const char *key, const char *secret);
-char *secrets_fetch_generic(const char *owner, const char *key);
-bool secrets_delete_generic(const char *owner, const char *key);
-bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
-bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
-
 /* The following definitions come from passdb/util_builtin.c  */
 
 bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name);

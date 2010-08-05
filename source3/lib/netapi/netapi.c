@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
+#include "secrets.h"
 
 extern bool AllowDebugChange;
 

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "ads.h"
+#include "secrets.h"
 
 #ifdef HAVE_KRB5
 

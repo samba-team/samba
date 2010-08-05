@@ -28,6 +28,7 @@
 #include "../libcli/cldap/cldap.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/dom_sid.h"
+#include "secrets.h"
 
 struct sam_database_info {
         uint32 index;

@@ -24,6 +24,7 @@
 #include "rpc_server/srv_spoolss_util.h"
 #include "nt_printing.h"
 #include "ads.h"
+#include "secrets.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************

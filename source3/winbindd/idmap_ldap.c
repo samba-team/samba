@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

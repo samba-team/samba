@@ -642,7 +642,6 @@ extern void *cmdline_lp_ctx;
 #include "smb_signing.h"
 #include "smb.h"
 #include "nameserv.h"
-#include "secrets.h"
 #include "../lib/util/byteorder.h"
 #include "privileges.h"
 #include "rpc_misc.h"

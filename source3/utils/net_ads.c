@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "smb_krb5.h"
+#include "secrets.h"
 
 #ifdef HAVE_ADS
 

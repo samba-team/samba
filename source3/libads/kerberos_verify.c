@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "libads/kerberos_proto.h"
+#include "secrets.h"
 
 #ifdef HAVE_KRB5
 

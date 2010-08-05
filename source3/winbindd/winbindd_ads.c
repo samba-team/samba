@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/cli_netlogon.h"
 #include "../libds/common/flags.h"
 #include "ads.h"
+#include "secrets.h"
 
 #ifdef HAVE_ADS
 

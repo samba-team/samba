@@ -27,6 +27,7 @@
 #include "rpc_client/init_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
+#include "secrets.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 

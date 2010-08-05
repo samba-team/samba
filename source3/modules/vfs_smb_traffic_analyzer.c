@@ -23,6 +23,7 @@
 #include "../lib/crypto/crypto.h"
 #include "vfs_smb_traffic_analyzer.h"
 #include "../libcli/security/dom_sid.h"
+#include "secrets.h"
 
 /* abstraction for the send_over_network function */
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};

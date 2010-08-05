@@ -25,6 +25,7 @@
 /* functions moved from auth/auth_util.c to minimize linker deps */
 
 #include "includes.h"
+#include "secrets.h"
 
 /****************************************************************************
  Check for a SID in an NT_USER_TOKEN

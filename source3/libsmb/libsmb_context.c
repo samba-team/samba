@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
+#include "secrets.h"
 
 
 /*

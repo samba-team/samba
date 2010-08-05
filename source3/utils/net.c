@@ -42,6 +42,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "secrets.h"
 
 extern bool AllowDebugChange;
 
