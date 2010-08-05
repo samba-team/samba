@@ -509,16 +509,25 @@ static int objectclass_do_add(struct oc_context *ac)
 			return ret;
 		}
 		
-		ldb_msg_remove_attr(msg, "objectClass");
+		ldb_msg_remove_element(msg, objectclass_element);
+
+		/* Well, now we shouldn't find any additional "objectClass"
+		 * message element (required by the AD specification). */
+		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+		if (objectclass_element != NULL) {
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, only one 'objectclass' attribute specification is allowed!",
+					       ldb_dn_get_linearized(msg->dn));
+			talloc_free(mem_ctx);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+		}
+
+		/* We must completely replace the existing objectClass entry,
+		 * because we need it sorted. */
 		ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
-		
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
-
-		/* We must completely replace the existing objectClass entry,
-		 * because we need it sorted */
 
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
