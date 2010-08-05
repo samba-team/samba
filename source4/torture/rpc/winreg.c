@@ -1461,7 +1461,10 @@ static bool test_DeleteKey(struct dcerpc_binding_handle *b,
 
 static bool test_QueryInfoKey(struct dcerpc_binding_handle *b,
 			      struct torture_context *tctx,
-			      struct policy_handle *handle, char *kclass)
+			      struct policy_handle *handle,
+			      char *kclass,
+			      uint32_t *pmax_valnamelen,
+			      uint32_t *pmax_valbufsize)
 {
 	struct winreg_QueryInfoKey r;
 	uint32_t num_subkeys, max_subkeylen, max_classlen,
@@ -1490,6 +1493,14 @@ static bool test_QueryInfoKey(struct dcerpc_binding_handle *b,
 				   "QueryInfoKey failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "QueryInfoKey failed");
+
+	if (pmax_valnamelen) {
+		*pmax_valnamelen = max_valnamelen;
+	}
+
+	if (pmax_valbufsize) {
+		*pmax_valbufsize = max_valbufsize;
+	}
 
 	return true;
 }
@@ -1966,11 +1977,9 @@ static bool test_EnumValue(struct dcerpc_binding_handle *b,
 	enum winreg_Type type = 0;
 	uint32_t size = max_valbufsize, zero = 0;
 	bool ret = true;
-	uint8_t buf8;
+	uint8_t *data = NULL;
 	struct winreg_ValNameBuf name;
-
-	name.name   = "";
-	name.size   = 1024;
+	char n = '\0';
 
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
@@ -1978,11 +1987,20 @@ static bool test_EnumValue(struct dcerpc_binding_handle *b,
 	r.in.name = &name;
 	r.out.name = &name;
 	r.in.type = &type;
-	r.in.value = &buf8;
 	r.in.length = &zero;
 	r.in.size = &size;
 
 	do {
+		name.name = &n;
+		name.size = max_valnamelen + 2;
+		name.length = 0;
+
+		data = NULL;
+		if (size) {
+			data = (uint8_t *) talloc_array(tctx, uint8_t *, size);
+		}
+		r.in.value = data;
+
 		torture_assert_ntstatus_ok(tctx,
 					   dcerpc_winreg_EnumValue_r(b, tctx, &r),
 					   "EnumValue failed");
@@ -1995,6 +2013,8 @@ static bool test_EnumValue(struct dcerpc_binding_handle *b,
 			ret &= test_QueryMultipleValues2(b, tctx, handle,
 							 r.out.name->name);
 		}
+
+		talloc_free(data);
 
 		r.in.enum_index++;
 	} while (W_ERROR_IS_OK(r.out.result));
@@ -2082,11 +2102,14 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 		     bool test_security)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t max_valnamelen = 0;
+	uint32_t max_valbufsize = 0;
 
 	if (depth == MAX_DEPTH)
 		return true;
 
-	if (!test_QueryInfoKey(b, tctx, handle, NULL)) {
+	if (!test_QueryInfoKey(b, tctx, handle, NULL,
+			       &max_valnamelen, &max_valbufsize)) {
 	}
 
 	if (!test_NotifyChangeKeyValue(b, tctx, handle)) {
@@ -2098,7 +2121,10 @@ static bool test_key(struct dcerpc_pipe *p, struct torture_context *tctx,
 	if (!test_EnumKey(p, tctx, handle, depth, test_security)) {
 	}
 
-	if (!test_EnumValue(b, tctx, handle, 0xFF, 0xFFFF)) {
+	if (!test_EnumValue(b, tctx, handle, max_valnamelen, max_valbufsize)) {
+	}
+
+	if (!test_EnumValue(b, tctx, handle, max_valnamelen, 0xFFFF)) {
 	}
 
 	test_CloseKey(b, tctx, handle);
