@@ -306,6 +306,11 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_STANDARD
 
 NDR_NTPRINTING_OBJ_FILES = ../librpc/gen_ndr/ndr_ntprinting.o ../librpc/ndr/ndr_ntprinting.o
 
+[SUBSYSTEM::NDR_DNSP]
+PUBLIC_DEPENDENCIES = LIBNDR
+
+NDR_DNSP_OBJ_FILES = ../librpc/gen_ndr/ndr_dnsp.o ../librpc/ndr/ndr_dnsp.o
+
 $(librpcsrcdir)/idl-deps:
 	$(PERL) $(librpcsrcdir)/idl-deps.pl $(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl) >$@
 
@@ -362,7 +367,7 @@ PUBLIC_DEPENDENCIES = \
 	NDR_FRSRPC NDR_FRSAPI NDR_FRSTRANS \
 	NDR_NFS4ACL NDR_NTP_SIGND \
 	NDR_DCOM NDR_WMI NDR_NAMED_PIPE_AUTH \
-	NDR_NTLMSSP NDR_NTPRINTING NDR_DFSBLOBS
+	NDR_NTLMSSP NDR_NTPRINTING NDR_DFSBLOBS NDR_DNSP
 
 NDR_TABLE_OBJ_FILES = ../librpc/ndr/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
