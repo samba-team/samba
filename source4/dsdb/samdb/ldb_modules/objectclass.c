@@ -571,6 +571,14 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
+		if (((strcmp(objectclass->lDAPDisplayName, "secret") == 0) ||
+		     (strcmp(objectclass->lDAPDisplayName, "trustedDomain") == 0)) &&
+                    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			ldb_asprintf_errstring(ldb, "objectClass %s is LSA-specific, rejecting creation of %s",
+						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
 		if (ac->search_res && ac->search_res->message) {
 			struct ldb_message_element *oc_el
 				= ldb_msg_find_element(ac->search_res->message, "objectClass");
