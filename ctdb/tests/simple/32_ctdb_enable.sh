@@ -23,8 +23,7 @@ Steps:
    failed over to other nodes.
 5. Enable the disabled node using 'ctdb enable -n '<node>'.
 6. Verify that the status changes back to 'OK'.
-7. Verify that the public IP addreses served by the disabled node are
-   failed back to the node.
+7. Verify that some public IP addreses are failed back to the node.
 
 
 Expected results:
@@ -63,11 +62,9 @@ try_command_on_node 1 $CTDB enable -n $test_node
 
 wait_until_node_has_status $test_node enabled
 
-# BUG: this is only guaranteed if DeterministicIPs is 1 and
-#      NoIPFailback is 0.
-if wait_until_ips_are_on_nodeglob "$test_node" $test_node_ips ; then
-    echo "All IPs moved."
+if wait_until_node_has_some_ips "$test_node" ; then
+    echo "OK."
 else
-    echo "Some IPs didn't move."
+    echo "No IPs moved to node $test_node."
     testfailures=1
 fi
