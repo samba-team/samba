@@ -421,6 +421,7 @@ struct dcerpc_binding_handle_ops {
 	/* TODO: remove the following functions */
 	bool (*push_bigendian)(struct dcerpc_binding_handle *h);
 	bool (*ref_alloc)(struct dcerpc_binding_handle *h);
+	bool (*use_ndr64)(struct dcerpc_binding_handle *h);
 	void (*do_ndr_print)(struct dcerpc_binding_handle *h,
 			     int ndr_flags,
 			     const void *struct_ptr,
