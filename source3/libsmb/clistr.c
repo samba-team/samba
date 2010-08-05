@@ -90,8 +90,3 @@ size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
 {
 	return align_string(cli->outbuf, (const char *)p, flags);
 }
-
-size_t clistr_align_in(struct cli_state *cli, const void *p, int flags)
-{
-	return align_string(cli->inbuf, (const char *)p, flags);
-}

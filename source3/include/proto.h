@@ -2653,7 +2653,6 @@ size_t clistr_pull_talloc_fn(const char *function,
 				int src_len,
 				int flags);
 size_t clistr_align_out(struct cli_state *cli, const void *p, int flags);
-size_t clistr_align_in(struct cli_state *cli, const void *p, int flags);
 
 /* The following definitions come from libsmb/clitrans.c  */
 
