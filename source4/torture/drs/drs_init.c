@@ -34,6 +34,8 @@ static struct torture_suite * torture_drs_rpc_suite(TALLOC_CTX *mem_ctx)
 		talloc_autofree_context(),
 		"RPC");
 
+	torture_drs_rpc_dssync_tcase(suite);
+
 	return suite;
 }
 
