@@ -1,0 +1,45 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for DNSP structures
+
+   See [MS-DNSP].pdf in MCPP for details
+*/
+
+import "misc.idl";
+
+/*
+  note that this is not a real RPC interface. We are just using PIDL
+  to save us a lot of tedious hand parsing of the dnsRecord
+  attribute. The uuid is randomly generated.
+ */
+[
+  uuid("bdd66e9e-d45f-4202-85c0-6132edc4f30a"),
+  version(0.0),
+  pointer_default(unique),
+  helpstring("DNSP interfaces")
+]
+
+interface dnsp
+{
+	/* this is the format for the dnsRecord attribute in the DNS
+	   partitions in AD */
+	typedef [public] struct {
+		uint16 wDataLength;
+		uint16 wType;
+		uint32 dwFlags;
+		uint32 dwSerial;
+		uint32 dwTtlSeconds;
+		uint32 dwTimeStamp;
+		uint32 dwReserved;
+		[flag(NDR_BIG_ENDIAN)] ipv4address ip;
+	} dnsp_DnssrvRpcRecord;
+
+
+	/*
+	  this is a convenience hook for ndrdump
+	 */
+	void decode_DnssrvRpcRecord(
+		[in] dnsp_DnssrvRpcRecord blob
+		);
+}
