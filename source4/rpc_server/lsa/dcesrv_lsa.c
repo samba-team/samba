@@ -27,8 +27,8 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "../lib/crypto/crypto.h"
 #include "lib/util/tsort.h"
+#include "dsdb/common/util.c"
 
 /*
   this type allows us to distinguish handle types
@@ -1084,7 +1084,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msg->dn);
 
 	/* create the trusted_domain */
-	ret = ldb_add(sam_ldb, msg);
+	ret = dsdb_add(sam_ldb, msg, DSDB_MODIFY_RELAX);
 	switch (ret) {
 	case  LDB_SUCCESS:
 		break;
@@ -2966,7 +2966,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
 
 	/* create the secret */
-	ret = ldb_add(secret_state->sam_ldb, msg);
+	ret = dsdb_add(secret_state->sam_ldb, msg, DSDB_MODIFY_RELAX);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create secret record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn), 
