@@ -164,6 +164,19 @@ set_retval() {
     return $1
 }
 
+wait_until_ready () {
+    _timeout="${1:-10}" # default is 10 seconds
+
+    _count=0
+    while ! ctdb ping >/dev/null 2>&1 ; do
+	if [ $_count -ge $_timeout ] ; then
+	    return 1
+	fi
+	sleep 1
+	_count=$(($_count + 1))
+    done
+}
+
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
 start() {
@@ -193,14 +206,11 @@ start() {
 	    ;;
 	suse)
 	    eval startproc $ctdbd "$CTDB_OPTIONS"
-	    rc_status -v
 	    RETVAL=$?
 	    ;;
 	redhat)
 	    eval $ctdbd "$CTDB_OPTIONS"
 	    RETVAL=$?
-	    [ $RETVAL -eq 0 ] && success || failure
-	    echo
 	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 	    ;;
 	debian)
@@ -210,9 +220,25 @@ start() {
 	    ;;
     esac
 
-    sleep 1
+    if [ $RETVAL -eq 0 ] ; then
+	if wait_until_ready ; then
+	    set_ctdb_variables
+	else
+	    RETVAL=1
+	    pkill -9 -f $ctdbd >/dev/null 2>&1
+	fi
+    fi
 
-    set_ctdb_variables
+    case $init_style in
+	suse)
+	    set_retval $RETVAL
+	    rc_status -v
+	    ;;
+	redhat)
+	    [ $RETVAL -eq 0 ] && success || failure
+	    echo
+	    ;;
+    esac
 
     return $RETVAL
 }
