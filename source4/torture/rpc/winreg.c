@@ -2583,7 +2583,7 @@ static bool test_volatile_keys(struct torture_context *tctx,
 			       struct policy_handle *handle,
 			       int hkey)
 {
-	struct policy_handle new_handle;
+	struct policy_handle new_handle, hive_handle;
 	enum winreg_CreateAction action_taken;
 
 	torture_comment(tctx, "Testing VOLATILE key\n");
@@ -2657,15 +2657,11 @@ static bool test_volatile_keys(struct torture_context *tctx,
 		"failed to close");
 
 	torture_assert(tctx,
-		test_CloseKey(b, tctx, handle),
-		"failed to close");
-
-	torture_assert(tctx,
-		test_OpenHive(tctx, b, handle, hkey),
+		test_OpenHive(tctx, b, &hive_handle, hkey),
 		"failed top open hive");
 
 	torture_assert(tctx,
-		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+		test_OpenKey_opts(tctx, b, &hive_handle, TEST_KEY_VOLATILE,
 				  REG_OPTION_VOLATILE,
 				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &new_handle,
@@ -2673,12 +2669,21 @@ static bool test_volatile_keys(struct torture_context *tctx,
 		"failed to open volatile key");
 
 	torture_assert(tctx,
-		test_OpenKey_opts(tctx, b, handle, TEST_KEY_VOLATILE,
+		test_OpenKey_opts(tctx, b, &hive_handle, TEST_KEY_VOLATILE,
 				  REG_OPTION_NON_VOLATILE,
 				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &new_handle,
 				  WERR_BADFILE),
 		"failed to open volatile key");
+
+	torture_assert(tctx,
+		test_CloseKey(b, tctx, &hive_handle),
+		"failed to close");
+
+	torture_assert(tctx,
+		test_DeleteKey(b, tctx, handle, TEST_KEY_VOLATILE),
+		"failed to delete key");
+
 
 	torture_comment(tctx, "Testing VOLATILE key succeeded\n");
 
