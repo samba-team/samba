@@ -31,6 +31,7 @@
 #include "rpc_server/srv_spoolss_util.h"
 #include "nt_printing.h"
 #include "secrets.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 /* Map generic permissions to printer object specific permissions */
 

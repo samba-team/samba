@@ -27,6 +27,8 @@
 #include "includes.h"
 #include "secrets.h"
 
+#include "../librpc/gen_ndr/netlogon.h"
+
 /****************************************************************************
  Check for a SID in an NT_USER_TOKEN
 ****************************************************************************/

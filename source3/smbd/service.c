@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 extern userdom_struct current_user_info;
 

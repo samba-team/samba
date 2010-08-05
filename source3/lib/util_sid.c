@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/dom_sid.h"
 
 /*

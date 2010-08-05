@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

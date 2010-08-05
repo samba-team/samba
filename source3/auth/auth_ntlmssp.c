@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
+#include "../librpc/gen_ndr/netlogon.h"
 
 void auth_ntlmssp_want_sign(struct auth_ntlmssp_state *auth_ntlmssp_state)
 {
