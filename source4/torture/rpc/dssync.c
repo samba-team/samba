@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    DsGetNCChanges replication test
 
    Copyright (C) Stefan (metze) Metzmacher 2005
    Copyright (C) Brad Henry 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -52,7 +52,7 @@ struct DsSyncLDAPInfo {
 
 struct DsSyncTest {
 	struct dcerpc_binding *drsuapi_binding;
-	
+
 	const char *ldap_url;
 	const char *dest_address;
 	const char *domain_dn;
@@ -199,7 +199,7 @@ static bool _test_DsBind(struct torture_context *tctx,
 				       &b->drs_pipe, ctx->drsuapi_binding,
 				       &ndr_table_drsuapi,
 				       credentials, tctx->ev, tctx->lp_ctx);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
 		return false;
@@ -249,7 +249,7 @@ static bool _test_DsBind(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx, 
+static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 			  struct cli_credentials *credentials, struct DsSyncLDAPInfo *l)
 {
 	bool ret = true;
@@ -290,7 +290,7 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 		talloc_free(ldb);
 		torture_assert_int_equal(tctx, ret, LDB_SUCCESS, "Failed to make LDB connection to target");
 	}
-	
+
 	printf("connected to LDAP: %s\n", ctx->ldap_url);
 
 	return true;
@@ -315,9 +315,9 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	return true;
 }
 
-static bool test_analyse_objects(struct torture_context *tctx, 
+static bool test_analyse_objects(struct torture_context *tctx,
 				 struct DsSyncTest *ctx,
-				 const char *partition, 
+				 const char *partition,
 				 const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 				 uint32_t object_count,
 				 const struct drsuapi_DsReplicaObjectListItemEx *first_object,
@@ -380,7 +380,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 							       "dsdb_attribute_from_ldb() failed for: %s",
 							       ldb_dn_get_linearized(a_res->msgs[i]->dn)));
 		}
-		
+
 		for (i=0; i < c_res->count; i++) {
 			status = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
 			torture_assert_werr_ok(tctx, status,
@@ -402,8 +402,8 @@ static bool test_analyse_objects(struct torture_context *tctx,
 							  mapping_ctr,
 							  object_count,
 							  first_object,
-							  0, NULL, 
-							  NULL, NULL, 
+							  0, NULL,
+							  NULL, NULL,
 							  gensec_skey,
 							  ctx, &objs);
 	torture_assert_werr_ok(tctx, status, "dsdb_extended_replicated_objects_convert() failed!");
@@ -413,7 +413,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 	deleted_dn = ldb_dn_new(objs, ldb, partition);
 	ldb_dn_add_child_fmt(deleted_dn, "CN=Deleted Objects");
-		
+
 	for (i=0; i < object_count; i++) {
 		struct ldb_request *search_req;
 		struct ldb_result *res;
@@ -427,7 +427,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		if (!res) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ret = ldb_build_search_req(&search_req, ldb, objs, 
+		ret = ldb_build_search_req(&search_req, ldb, objs,
 					   objs->objects[i].msg->dn,
 					   LDB_SCOPE_BASE,
 					   NULL,
@@ -464,7 +464,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		for (j=0; j < ldap_msg->num_elements; j++) {
 			ldap_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
 			/* For unknown reasons, there is no nTSecurityDescriptor on cn=deleted objects over LDAP, but there is over DRS!  Skip it on both transports for now here so */
-			if ((ldb_attr_cmp(ldap_msg->elements[j].name, "nTSecurityDescriptor") == 0) && 
+			if ((ldb_attr_cmp(ldap_msg->elements[j].name, "nTSecurityDescriptor") == 0) &&
 			    (ldb_dn_compare(ldap_msg->dn, deleted_dn) == 0)) {
 				ldb_msg_remove_element(ldap_msg, &ldap_msg->elements[j]);
 				/* Don't skip one */
@@ -482,9 +482,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
 				/* Don't skip one */
 				j--;
-				
+
 				/* For unknown reasons, there is no nTSecurityDescriptor on cn=deleted objects over LDAP, but there is over DRS! */
-			} else if ((ldb_attr_cmp(drs_msg->elements[j].name, "nTSecurityDescriptor") == 0) && 
+			} else if ((ldb_attr_cmp(drs_msg->elements[j].name, "nTSecurityDescriptor") == 0) &&
 				   (ldb_dn_compare(drs_msg->dn, deleted_dn) == 0)) {
 				ldb_msg_remove_element(drs_msg, &drs_msg->elements[j]);
 				/* Don't skip one */
@@ -509,8 +509,8 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				drs_msg->elements[j].flags = LDB_FLAG_MOD_ADD;
 			}
 		}
-		
-		
+
+
 		ret = ldb_msg_difference(ldb, search_req,
 		                         drs_msg, ldap_msg, &new_msg);
 		torture_assert(tctx, ret == LDB_SUCCESS, "ldb_msg_difference() has failed");
@@ -569,7 +569,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 	if (!lpcfg_parm_bool(tctx->lp_ctx, NULL, "dssync", "print_pwd_blobs", false)) {
 		talloc_free(objs);
-		return true;	
+		return true;
 	}
 
 	save_values_dir = lpcfg_parm_string(tctx->lp_ctx, NULL, "dssync", "save_pwd_blobs_dir");
