@@ -22,6 +22,7 @@
 #include "ads.h"
 #include "idmap_adex.h"
 #include "nss_info.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

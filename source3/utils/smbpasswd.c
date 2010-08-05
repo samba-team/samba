@@ -17,6 +17,7 @@
  * this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "secrets.h"
 
 extern bool AllowDebugChange;
 

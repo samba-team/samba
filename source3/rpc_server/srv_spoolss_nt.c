@@ -38,6 +38,7 @@
 #include "registry.h"
 #include "registry/reg_objects.h"
 #include "include/printing.h"
+#include "secrets.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

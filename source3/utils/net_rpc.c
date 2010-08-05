@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/cli_initshutdown.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
+#include "secrets.h"
 
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);

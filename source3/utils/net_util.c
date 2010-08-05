@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/cli_dssetup.h"
+#include "secrets.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,

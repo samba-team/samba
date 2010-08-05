@@ -71,6 +71,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "libsmb/clidgram.h"
 #include "ads.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

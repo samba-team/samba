@@ -21,6 +21,7 @@
 #include "tldap.h"
 #include "tldap_util.h"
 #include "../libds/common/flags.h"
+#include "secrets.h"
 
 struct pdb_ads_state {
 	struct sockaddr_un socket_address;

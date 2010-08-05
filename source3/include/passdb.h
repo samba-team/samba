@@ -219,6 +219,15 @@ struct pdb_domain_info {
 };
 
 /*
+ * trusted domain entry/entries returned by secrets_get_trusted_domains
+ * (used in _lsa_enum_trust_dom call)
+ */
+struct trustdom_info {
+	char *name;
+	struct dom_sid sid;
+};
+
+/*
  * Types of account policy.
  */
 enum pdb_policy_type {

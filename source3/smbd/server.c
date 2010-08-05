@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "registry.h"
 #include "libcli/auth/schannel.h"
+#include "secrets.h"
 
 static_decl_rpc;
 

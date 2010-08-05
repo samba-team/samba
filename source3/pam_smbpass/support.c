@@ -19,6 +19,7 @@
 #include "general.h"
 
 #include "support.h"
+#include "secrets.h"
 
 #include "../libcli/auth/libcli_auth.h"
 #if defined(HAVE_SECURITY_PAM_EXT_H)

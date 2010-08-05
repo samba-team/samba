@@ -20,6 +20,7 @@
 #define FOO(x) (x)
 #include "includes.h"
 #include "utils/net.h"
+#include "secrets.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \

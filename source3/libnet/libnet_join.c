@@ -32,7 +32,7 @@
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_reg.h"
 #include "../libds/common/flags.h"
-
+#include "secrets.h"
 
 /****************************************************************
 ****************************************************************/

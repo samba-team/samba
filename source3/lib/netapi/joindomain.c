@@ -27,6 +27,7 @@
 #include "libnet/libnet_join.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_wkssvc.h"
+#include "secrets.h"
 
 /****************************************************************
 ****************************************************************/

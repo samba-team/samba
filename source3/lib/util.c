@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "secrets.h"
 
 extern char *global_clobber_region_function;
 extern unsigned int global_clobber_region_line;

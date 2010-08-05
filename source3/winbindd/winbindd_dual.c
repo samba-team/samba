@@ -31,6 +31,7 @@
 #include "winbindd.h"
 #include "../../nsswitch/libwbclient/wbc_async.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
