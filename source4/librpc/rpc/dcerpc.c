@@ -30,6 +30,7 @@
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 _PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
 {
@@ -38,6 +39,24 @@ _PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
 
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status);
 static void dcerpc_ship_next_request(struct dcerpc_connection *c);
+
+static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
+					       const struct GUID *object,
+					       uint16_t opnum,
+					       DATA_BLOB *stub_data);
+static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB blob,
+				       size_t struct_size,
+				       ndr_push_flags_fn_t ndr_push,
+				       ndr_pull_flags_fn_t ndr_pull);
+static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
+					struct ndr_pull *pull_in,
+					void *struct_ptr,
+					size_t struct_size,
+					ndr_push_flags_fn_t ndr_push,
+					ndr_pull_flags_fn_t ndr_pull,
+					ndr_print_function_t ndr_print);
 
 /* destroy a dcerpc connection */
 static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
@@ -86,6 +105,395 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	return c;
 }
 
+struct dcerpc_bh_state {
+	struct dcerpc_pipe *p;
+};
+
+static bool dcerpc_bh_is_connected(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (!hs->p) {
+		return false;
+	}
+
+	return true;
+}
+
+struct dcerpc_bh_raw_call_state {
+	struct dcerpc_binding_handle *h;
+	DATA_BLOB in_data;
+	DATA_BLOB out_data;
+	uint32_t out_flags;
+};
+
+static void dcerpc_bh_raw_call_done(struct rpc_request *subreq);
+
+static struct tevent_req *dcerpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *h,
+						  const struct GUID *object,
+						  uint32_t opnum,
+						  uint32_t in_flags,
+						  const uint8_t *in_data,
+						  size_t in_length)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	struct tevent_req *req;
+	struct dcerpc_bh_raw_call_state *state;
+	bool ok;
+	struct rpc_request *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dcerpc_bh_raw_call_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->h = h;
+	state->in_data.data = discard_const_p(uint8_t, in_data);
+	state->in_data.length = in_length;
+
+	ok = dcerpc_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dcerpc_request_send(hs->p,
+				     object,
+				     opnum,
+				     &state->in_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	subreq->async.callback = dcerpc_bh_raw_call_done;
+	subreq->async.private_data = req;
+
+	return req;
+}
+
+static void dcerpc_bh_raw_call_done(struct rpc_request *subreq)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct tevent_req);
+	struct dcerpc_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct dcerpc_bh_raw_call_state);
+	NTSTATUS status;
+	uint32_t fault_code;
+
+	state->out_flags = 0;
+	if (subreq->flags & DCERPC_PULL_BIGENDIAN) {
+		state->out_flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	fault_code = subreq->fault_code;
+
+	status = dcerpc_request_recv(subreq, state, &state->out_data);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		status = dcerpc_fault_to_nt_status(fault_code);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS dcerpc_bh_raw_call_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags)
+{
+	struct dcerpc_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct dcerpc_bh_raw_call_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_data = talloc_move(mem_ctx, &state->out_data.data);
+	*out_length = state->out_data.length;
+	*out_flags = state->out_flags;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct dcerpc_bh_disconnect_state {
+	uint8_t _dummy;
+};
+
+static struct tevent_req *dcerpc_bh_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	struct tevent_req *req;
+	struct dcerpc_bh_disconnect_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dcerpc_bh_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ok = dcerpc_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	/* TODO: do a real disconnect ... */
+	hs->p = NULL;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS dcerpc_bh_disconnect_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static bool dcerpc_bh_push_bigendian(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p->conn->flags & DCERPC_PUSH_BIGENDIAN) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool dcerpc_bh_ref_alloc(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p->conn->flags & DCERPC_NDR_REF_ALLOC) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool dcerpc_bh_use_ndr64(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p->conn->flags & DCERPC_NDR64) {
+		return true;
+	}
+
+	return false;
+}
+
+static void dcerpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
+				   int ndr_flags,
+				   const void *_struct_ptr,
+				   const struct ndr_interface_call *call)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	void *struct_ptr = discard_const(_struct_ptr);
+
+	if (ndr_flags & NDR_IN) {
+		if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+			ndr_print_function_debug(call->ndr_print,
+						 call->name,
+						 ndr_flags,
+						 struct_ptr);
+		}
+	}
+	if (ndr_flags & NDR_OUT) {
+		if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+			ndr_print_function_debug(call->ndr_print,
+						 call->name,
+						 ndr_flags,
+						 struct_ptr);
+		}
+	}
+}
+
+static void dcerpc_bh_ndr_push_failed(struct dcerpc_binding_handle *h,
+				      NTSTATUS error,
+				      const void *struct_ptr,
+				      const struct ndr_interface_call *call)
+{
+	DEBUG(2,("Unable to ndr_push structure for %s - %s\n",
+		 call->name, nt_errstr(error)));
+}
+
+static void dcerpc_bh_ndr_pull_failed(struct dcerpc_binding_handle *h,
+				      NTSTATUS error,
+				      const DATA_BLOB *blob,
+				      const struct ndr_interface_call *call)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	const uint32_t num_examples = 20;
+	uint32_t i;
+
+	DEBUG(2,("Unable to ndr_pull structure for %s - %s\n",
+		 call->name, nt_errstr(error)));
+
+	if (hs->p->conn->packet_log_dir == NULL) return;
+
+	for (i=0;i<num_examples;i++) {
+		char *name=NULL;
+		asprintf(&name, "%s/rpclog/%s-out.%d",
+			 hs->p->conn->packet_log_dir,
+			 call->name, i);
+		if (name == NULL) {
+			return;
+		}
+		if (!file_exist(name)) {
+			if (file_save(name, blob->data, blob->length)) {
+				DEBUG(10,("Logged rpc packet to %s\n", name));
+			}
+			free(name);
+			break;
+		}
+		free(name);
+	}
+}
+
+static NTSTATUS dcerpc_bh_ndr_validate_in(struct dcerpc_binding_handle *h,
+					  TALLOC_CTX *mem_ctx,
+					  const DATA_BLOB *blob,
+					  const struct ndr_interface_call *call)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p->conn->flags & DCERPC_DEBUG_VALIDATE_IN) {
+		NTSTATUS status;
+
+		status = dcerpc_ndr_validate_in(hs->p->conn,
+						mem_ctx,
+						*blob,
+						call->struct_size,
+						call->ndr_push,
+						call->ndr_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Validation [in] failed for %s - %s\n",
+				 call->name, nt_errstr(status)));
+			return status;
+		}
+	}
+
+	DEBUG(10,("rpc request data:\n"));
+	dump_data(10, blob->data, blob->length);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcerpc_bh_ndr_validate_out(struct dcerpc_binding_handle *h,
+					   struct ndr_pull *pull_in,
+					   const void *_struct_ptr,
+					   const struct ndr_interface_call *call)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	void *struct_ptr = discard_const(_struct_ptr);
+
+	DEBUG(10,("rpc reply data:\n"));
+	dump_data(10, pull_in->data, pull_in->data_size);
+
+	if (pull_in->offset != pull_in->data_size) {
+		DEBUG(0,("Warning! ignoring %u unread bytes at ofs:%u (0x%08X) for %s!\n",
+			 pull_in->data_size - pull_in->offset,
+			 pull_in->offset, pull_in->offset,
+			 call->name));
+		/* we used to return NT_STATUS_INFO_LENGTH_MISMATCH here,
+		   but it turns out that early versions of NT
+		   (specifically NT3.1) add junk onto the end of rpc
+		   packets, so if we want to interoperate at all with
+		   those versions then we need to ignore this error */
+	}
+
+	if (hs->p->conn->flags & DCERPC_DEBUG_VALIDATE_OUT) {
+		NTSTATUS status;
+
+		status = dcerpc_ndr_validate_out(hs->p->conn,
+						 pull_in,
+						 struct_ptr,
+						 call->struct_size,
+						 call->ndr_push,
+						 call->ndr_pull,
+						 call->ndr_print);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2,("Validation [out] failed for %s - %s\n",
+				 call->name, nt_errstr(status)));
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
+	.name			= "dcerpc",
+	.is_connected		= dcerpc_bh_is_connected,
+	.raw_call_send		= dcerpc_bh_raw_call_send,
+	.raw_call_recv		= dcerpc_bh_raw_call_recv,
+	.disconnect_send	= dcerpc_bh_disconnect_send,
+	.disconnect_recv	= dcerpc_bh_disconnect_recv,
+
+	.push_bigendian		= dcerpc_bh_push_bigendian,
+	.ref_alloc		= dcerpc_bh_ref_alloc,
+	.use_ndr64		= dcerpc_bh_use_ndr64,
+	.do_ndr_print		= dcerpc_bh_do_ndr_print,
+	.ndr_push_failed	= dcerpc_bh_ndr_push_failed,
+	.ndr_pull_failed	= dcerpc_bh_ndr_pull_failed,
+	.ndr_validate_in	= dcerpc_bh_ndr_validate_in,
+	.ndr_validate_out	= dcerpc_bh_ndr_validate_out,
+};
+
+/* initialise a dcerpc pipe. */
+struct dcerpc_binding_handle *dcerpc_pipe_binding_handle(struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *h;
+	struct dcerpc_bh_state *hs;
+
+	h = dcerpc_binding_handle_create(p,
+					 &dcerpc_bh_ops,
+					 NULL,
+					 NULL, /* TODO */
+					 &hs,
+					 struct dcerpc_bh_state,
+					 __location__);
+	if (h == NULL) {
+		return NULL;
+	}
+	hs->p = p;
+
+	dcerpc_binding_handle_set_sync_ev(h, p->conn->event_ctx);
+
+	return h;
+}
+
 /* initialise a dcerpc pipe. */
 _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev)
 {
@@ -114,12 +522,11 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 		p->conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	}
 
-	p->binding_handle = talloc(p, struct dcerpc_binding_handle);
+	p->binding_handle = dcerpc_pipe_binding_handle(p);
 	if (p->binding_handle == NULL) {
 		talloc_free(p);
 		return NULL;
 	}
-	p->binding_handle->private_data = p;
 
 	return p;
 }
