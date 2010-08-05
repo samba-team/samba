@@ -537,6 +537,8 @@ static int objectclass_do_add(struct oc_context *ac)
 			}
 		}
 
+		talloc_free(mem_ctx);
+
 		/* Retrive the message again so get_last_structural_class works */
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 
@@ -606,7 +608,6 @@ static int objectclass_do_add(struct oc_context *ac)
 				value = talloc_strdup(msg, objectclass->defaultObjectCategory);
 			}
 			if (value == NULL) {
-				talloc_free(mem_ctx);
 				return ldb_oom(ldb);
 			}
 			ldb_msg_add_string(msg, "objectCategory", value);
@@ -651,10 +652,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			samdb_msg_add_int(ldb, msg, msg, "systemFlags", systemFlags);
 		}
 	}
-
-	talloc_free(mem_ctx);
 	ret = ldb_msg_sanity_check(ldb, msg);
-
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
