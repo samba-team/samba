@@ -15,7 +15,7 @@ use strict;
 use Parse::Pidl qw(fatal warning error);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::Samba4 qw(DeclLong);
-use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -71,12 +71,27 @@ sub HeaderProperties($$)
 	}
 }
 
-sub ParseOutputArgument($$$;$$)
+sub ParseInvalidResponse($$)
 {
-	my ($self, $fn, $e, $r, $o) = @_;
+	my ($self, $type) = @_;
+
+	if ($type eq "sync") {
+		$self->pidl("return NT_STATUS_INVALID_NETWORK_RESPONSE;");
+	} elsif ($type eq "async") {
+		$self->pidl("tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);");
+		$self->pidl("return;");
+	} else {
+		die("ParseInvalidResponse($type)");
+	}
+}
+
+sub ParseOutputArgument($$$;$$$)
+{
+	my ($self, $fn, $e, $r, $o, $invalid_response_type) = @_;
 	my $level = 0;
 	$r = "r." unless defined($r);
 	$o = "" unless defined($o);
+	$invalid_response_type = "sync" unless defined($invalid_response_type);
 
 	if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY") {
 		$self->pidl("return NT_STATUS_NOT_SUPPORTED;");
@@ -97,17 +112,37 @@ sub ParseOutputArgument($$$;$$)
 		# Since the data is being copied into a user-provided data 
 		# structure, the user should be able to know the size beforehand 
 		# to allocate a structure of the right size.
-		my $env = GenerateFunctionInEnv($fn, $r);
+		my $in_env = GenerateFunctionInEnv($fn, $r);
+		my $out_env = GenerateFunctionOutEnv($fn, $r);
 		my $l = $e->{LEVELS}[$level];
 		unless (defined($l->{SIZE_IS})) {
-			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
 			$self->pidl('#error No size known for [out] array `$e->{NAME}');
+			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
 		} else {
-			my $size_is = ParseExpr($l->{SIZE_IS}, $env, $e->{ORIGINAL});
+			my $in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
+			my $out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
+			my $out_length_is = $out_size_is;
+			if (defined($l->{LENGTH_IS})) {
+				$out_length_is = ParseExpr($l->{LENGTH_IS}, $out_env, $e->{ORIGINAL});
+			}
+			if ($out_size_is ne $in_size_is) {
+				$self->pidl("if (($out_size_is) > ($in_size_is)) {");
+				$self->indent;
+				$self->ParseInvalidResponse($invalid_response_type);
+				$self->deindent;
+				$self->pidl("}");
+			}
+			if ($out_length_is ne $out_size_is) {
+				$self->pidl("if (($out_length_is) > ($out_size_is)) {");
+				$self->indent;
+				$self->ParseInvalidResponse($invalid_response_type);
+				$self->deindent;
+				$self->pidl("}");
+			}
 			if (has_property($e, "charset")) {
-				$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), ${r}out.$e->{NAME}, ($size_is) * sizeof(*$o$e->{NAME}));");
+				$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
 			} else {
-				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, ($size_is) * sizeof(*$o$e->{NAME}));");
+				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
 			}
 		}
 	} else {
@@ -281,7 +316,10 @@ sub ParseFunctionAsyncDone($$$)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 
-		$self->ParseOutputArgument($fn, $e, "state->tmp.", "state->orig.out.");
+		$self->ParseOutputArgument($fn, $e,
+					   "state->tmp.",
+					   "state->orig.out.",
+					   "async");
 	}
 	$self->pidl("");
 
