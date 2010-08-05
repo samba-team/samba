@@ -6,6 +6,10 @@
 
 package Parse::Pidl::Samba4::NDR::Client;
 
+use Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(Parse);
+
 use Parse::Pidl::Samba4 qw(choose_header is_intree);
 use Parse::Pidl::Util qw(has_property);
 
@@ -14,54 +18,71 @@ $VERSION = '0.01';
 
 use strict;
 
-my($res,$res_hdr);
+sub indent($) { my ($self) = @_; $self->{tabs}.="\t"; }
+sub deindent($) { my ($self) = @_; $self->{tabs} = substr($self->{tabs}, 1); }
+sub pidl($$) { my ($self,$txt) = @_; $self->{res} .= $txt ? "$self->{tabs}$txt\n" : "\n"; }
+sub pidl_hdr($$) { my ($self, $txt) = @_; $self->{res_hdr} .= "$txt\n"; }
+sub fn_declare($$) { my ($self,$n) = @_; $self->pidl($n); $self->pidl_hdr("$n;"); }
 
-sub ParseFunction_r_State($$$)
+sub genpad($)
 {
-	my ($if, $fn, $name) = @_;
-	my $uname = uc $name;
-
-	if (has_property($fn, "todo")) {
-		return;
-	}
-
-	$res .= "struct dcerpc_$name\_r_state {\n";
-	$res .= "\tTALLOC_CTX *out_mem_ctx;\n";
-	$res .= "};\n";
-	$res .= "\n";
-	$res .= "static void dcerpc_$name\_r_done(struct tevent_req *subreq);\n";
-	$res .= "\n";
+	my ($s) = @_;
+	my $nt = int((length($s)+1)/8);
+	my $lt = ($nt*8)-1;
+	my $ns = (length($s)-$lt);
+	return "\t"x($nt)." "x($ns);
 }
 
-sub ParseFunction_r_Send($$$)
+sub new($)
 {
-	my ($if, $fn, $name) = @_;
+	my ($class) = shift;
+	my $self = { res => "", res_hdr => "", tabs => "" };
+	bless($self, $class);
+}
+
+sub ParseFunction_r_State($$$$)
+{
+	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
 
-	if (has_property($fn, "todo")) {
-		return;
-	}
+	$self->pidl("struct dcerpc_$name\_r_state {");
+	$self->indent;
+	$self->pidl("TALLOC_CTX *out_mem_ctx;");
+	$self->deindent;
+	$self->pidl("};");
+	$self->pidl("");
+	$self->pidl("static void dcerpc_$name\_r_done(struct tevent_req *subreq);");
+	$self->pidl("");
+}
+
+sub ParseFunction_r_Send($$$$)
+{
+	my ($self, $if, $fn, $name) = @_;
+	my $uname = uc $name;
 
 	my $proto = "struct tevent_req *dcerpc_$name\_r_send(TALLOC_CTX *mem_ctx,\n";
 	$proto   .= "\tstruct tevent_context *ev,\n",
 	$proto   .= "\tstruct dcerpc_binding_handle *h,\n",
 	$proto   .= "\tstruct $name *r)";
 
-	$res_hdr .= "\n$proto;\n";
+	$self->fn_declare($proto);
 
-	$res .= "$proto\n{\n";
+	$self->pidl("{");
+	$self->indent;
 
-	$res .= "\tstruct tevent_req *req;\n";
-	$res .= "\tstruct dcerpc_$name\_r_state *state;\n";
-	$res .= "\tstruct tevent_req *subreq;\n";
-	$res .= "\n";
+	$self->pidl("struct tevent_req *req;");
+	$self->pidl("struct dcerpc_$name\_r_state *state;");
+	$self->pidl("struct tevent_req *subreq;");
+	$self->pidl("");
 
-	$res .= "\treq = tevent_req_create(mem_ctx, &state,\n";
-	$res .= "\t\t\t\tstruct dcerpc_$name\_r_state);\n";
-	$res .= "\tif (req == NULL) {\n";
-	$res .= "\t\treturn NULL;\n";
-	$res .= "\t}\n";
-	$res .= "\n";
+	$self->pidl("req = tevent_req_create(mem_ctx, &state,");
+	$self->pidl("\t\t\tstruct dcerpc_$name\_r_state);");
+	$self->pidl("if (req == NULL) {");
+	$self->indent;
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
 	my $out_params = 0;
 	foreach (@{$fn->{ELEMENTS}}) {
@@ -72,203 +93,210 @@ sub ParseFunction_r_Send($$$)
 
 	my $submem;
 	if ($out_params > 0) {
-		$res .= "\tstate->out_mem_ctx = talloc_new(state);\n";
-		$res .= "\tif (tevent_req_nomem(state->out_mem_ctx, req)) {\n";
-		$res .= "\t\treturn tevent_req_post(req, ev);\n";
-		$res .= "\t}\n";
-		$res .= "\n";
+		$self->pidl("state->out_mem_ctx = talloc_new(state);");
+		$self->pidl("if (tevent_req_nomem(state->out_mem_ctx, req)) {");
+		$self->indent;
+		$self->pidl("return tevent_req_post(req, ev);");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
 		$submem = "state->out_mem_ctx";
 	} else {
-		$res .= "\tstate->out_mem_ctx = NULL;\n";
+		$self->pidl("state->out_mem_ctx = NULL;");
 		$submem = "state";
 	}
 
-	$res .= "\tsubreq = dcerpc_binding_handle_call_send(state, ev, h,\n";
-	$res .= "\t\t\tNULL, &ndr_table_$if->{NAME},\n";
-	$res .= "\t\t\tNDR_$uname, $submem, r);\n";
-	$res .= "\tif (tevent_req_nomem(subreq, req)) {\n";
-	$res .= "\t\treturn tevent_req_post(req, ev);\n";
-	$res .= "\t}\n";
-	$res .= "\ttevent_req_set_callback(subreq, dcerpc_$name\_r_done, req);\n";
-	$res .= "\n";
+	$self->pidl("subreq = dcerpc_binding_handle_call_send(state, ev, h,");
+	$self->pidl("\t\tNULL, &ndr_table_$if->{NAME},");
+	$self->pidl("\t\tNDR_$uname, $submem, r);");
+	$self->pidl("if (tevent_req_nomem(subreq, req)) {");
+	$self->indent;
+	$self->pidl("return tevent_req_post(req, ev);");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("tevent_req_set_callback(subreq, dcerpc_$name\_r_done, req);");
+	$self->pidl("");
 
-	$res .= "\treturn req;\n";
-	$res .= "}\n";
-	$res .= "\n";
+	$self->pidl("return req;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 }
 
-sub ParseFunction_r_Done($$$)
+sub ParseFunction_r_Done($$$$)
 {
-	my ($if, $fn, $name) = @_;
+	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
-
-	if (has_property($fn, "todo")) {
-		return;
-	}
 
 	my $proto = "static void dcerpc_$name\_r_done(struct tevent_req *subreq)";
 
-	$res .= "$proto\n";
-	$res .= "{\n";
+	$self->pidl("$proto");
+	$self->pidl("{");
+	$self->indent;
 
-	$res .= "\tstruct tevent_req *req =\n";
-	$res .= "\t\ttevent_req_callback_data(subreq,\n";
-	$res .= "\t\tstruct tevent_req);\n";
-	$res .= "\tNTSTATUS status;\n";
-	$res .= "\n";
+	$self->pidl("struct tevent_req *req =");
+	$self->pidl("\ttevent_req_callback_data(subreq,");
+	$self->pidl("\tstruct tevent_req);");
+	$self->pidl("NTSTATUS status;");
+	$self->pidl("");
 
-	$res .= "\tstatus = dcerpc_binding_handle_call_recv(subreq);\n";
-	$res .= "\tif (!NT_STATUS_IS_OK(status)) {\n";
-	$res .= "\t\ttevent_req_nterror(req, status);\n";
-	$res .= "\t\treturn;\n";
-	$res .= "\t}\n";
-	$res .= "\n";
+	$self->pidl("status = dcerpc_binding_handle_call_recv(subreq);");
+	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+	$self->indent;
+	$self->pidl("tevent_req_nterror(req, status);");
+	$self->pidl("return;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
-	$res .= "\ttevent_req_done(req);\n";
-	$res .= "}\n";
-	$res .= "\n";
+	$self->pidl("tevent_req_done(req);");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 }
 
-sub ParseFunction_r_Recv($$$)
+sub ParseFunction_r_Recv($$$$)
 {
 	my ($if, $fn, $name) = @_;
+	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
-
-	if (has_property($fn, "todo")) {
-		return;
-	}
 
 	my $proto = "NTSTATUS dcerpc_$name\_r_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)";
 
-	$res_hdr .= "\n$proto;\n";
+	$self->fn_declare($proto);
 
-	$res .= "$proto\n{\n";
+	$self->pidl("{");
+	$self->indent;
 
-	$res .= "\tstruct dcerpc_$name\_r_state *state =\n";
-	$res .= "\t\ttevent_req_data(req,\n";
-	$res .= "\t\tstruct dcerpc_$name\_r_state);\n";
-	$res .= "\tNTSTATUS status;\n";
-	$res .= "\n";
+	$self->pidl("struct dcerpc_$name\_r_state *state =");
+	$self->pidl("\ttevent_req_data(req,");
+	$self->pidl("\tstruct dcerpc_$name\_r_state);");
+	$self->pidl("NTSTATUS status;");
+	$self->pidl("");
 
-	$res .= "\tif (tevent_req_is_nterror(req, &status)) {\n";
-	$res .= "\t\ttevent_req_received(req);\n";
-	$res .= "\t\treturn status;\n";
-	$res .= "\t}\n";
-	$res .= "\n";
+	$self->pidl("if (tevent_req_is_nterror(req, &status)) {");
+	$self->indent;
+	$self->pidl("tevent_req_received(req);");
+	$self->pidl("return status;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
-	$res .= "\ttalloc_steal(mem_ctx, state->out_mem_ctx);\n";
-	$res .= "\n";
+	$self->pidl("talloc_steal(mem_ctx, state->out_mem_ctx);");
+	$self->pidl("");
 
-	$res .= "\ttevent_req_received(req);\n";
-	$res .= "\treturn NT_STATUS_OK;\n";
-	$res .= "}\n";
-	$res .= "\n";
+	$self->pidl("tevent_req_received(req);");
+	$self->pidl("return NT_STATUS_OK;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 }
 
-sub ParseFunction_r_Sync($$$)
+sub ParseFunction_r_Sync($$$$)
 {
 	my ($if, $fn, $name) = @_;
+	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
-
-	if (has_property($fn, "todo")) {
-		return;
-	}
 
 	my $proto = "NTSTATUS dcerpc_$name\_r(struct dcerpc_binding_handle *h, TALLOC_CTX *mem_ctx, struct $name *r)";
 
-	$res_hdr .= "\n$proto;\n";
-	$res .= "$proto\n{\n";
-	$res .= "\tNTSTATUS status;\n";
-	$res .= "\n";
+	$self->fn_declare($proto);
 
-	$res .= "\tstatus = dcerpc_binding_handle_call(h,\n";
-	$res .= "\t\t\tNULL, &ndr_table_$if->{NAME},\n";
-	$res .= "\t\t\tNDR_$uname, mem_ctx, r);\n";
-	$res .= "\n";
-	$res .= "\treturn status;\n";
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("NTSTATUS status;");
+	$self->pidl("");
 
-	$res .= "}\n";
-	$res .= "\n";
+	$self->pidl("status = dcerpc_binding_handle_call(h,");
+	$self->pidl("\t\tNULL, &ndr_table_$if->{NAME},");
+	$self->pidl("\t\tNDR_$uname, mem_ctx, r);");
+	$self->pidl("");
+	$self->pidl("return status;");
+
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 }
 
 #####################################################################
 # parse a function
-sub ParseFunction($$)
+sub ParseFunction($$$)
 {
-	my ($if, $fn) = @_;
+	my ($self, $if, $fn) = @_;
 
-	ParseFunction_r_State($if, $fn, $fn->{NAME});
-	ParseFunction_r_Send($if, $fn, $fn->{NAME});
-	ParseFunction_r_Done($if, $fn, $fn->{NAME});
-	ParseFunction_r_Recv($if, $fn, $fn->{NAME});
-	ParseFunction_r_Sync($if, $fn, $fn->{NAME});
+	$self->ParseFunction_r_State($if, $fn, $fn->{NAME});
+	$self->ParseFunction_r_Send($if, $fn, $fn->{NAME});
+	$self->ParseFunction_r_Done($if, $fn, $fn->{NAME});
+	$self->ParseFunction_r_Recv($if, $fn, $fn->{NAME});
+	$self->ParseFunction_r_Sync($if, $fn, $fn->{NAME});
+
+	$self->pidl_hdr("");
 }
 
 my %done;
 
 #####################################################################
 # parse the interface definitions
-sub ParseInterface($)
+sub ParseInterface($$)
 {
-	my($if) = shift;
+	my ($self, $if) = @_;
 
-	$res_hdr .= "#ifndef _HEADER_RPC_$if->{NAME}\n";
-	$res_hdr .= "#define _HEADER_RPC_$if->{NAME}\n\n";
+	$self->pidl_hdr("#ifndef _HEADER_RPC_$if->{NAME}");
+	$self->pidl_hdr("#define _HEADER_RPC_$if->{NAME}");
+	$self->pidl_hdr("");
 
 	if (defined $if->{PROPERTIES}->{uuid}) {
-		$res_hdr .= "extern const struct ndr_interface_table ndr_table_$if->{NAME};\n";
+		$self->pidl_hdr("extern const struct ndr_interface_table ndr_table_$if->{NAME};");
+		$self->pidl_hdr("");
 	}
 
-	$res .= "/* $if->{NAME} - client functions generated by pidl */\n\n";
+	$self->pidl("/* $if->{NAME} - client functions generated by pidl */");
+	$self->pidl("");
 
 	foreach my $fn (@{$if->{FUNCTIONS}}) {
-		next if not defined($fn->{OPNUM});
 		next if defined($done{$fn->{NAME}});
-		ParseFunction($if, $fn);
+		next if has_property($fn, "noopnum");
+		next if has_property($fn, "todo");
+		$self->ParseFunction($if, $fn);
 		$done{$fn->{NAME}} = 1;
 	}
 
-	$res_hdr .= "#endif /* _HEADER_RPC_$if->{NAME} */\n";
-
-	return $res;
+	$self->pidl_hdr("#endif /* _HEADER_RPC_$if->{NAME} */");
 }
 
-sub Parse($$$$)
+sub Parse($$$$$$)
 {
-	my($ndr,$header,$ndr_header,$client_header) = @_;
+	my($self,$ndr,$header,$ndr_header,$client_header) = @_;
 
-	$res = "";
-	$res_hdr = "";
-
-	$res .= "/* client functions auto-generated by pidl */\n";
-	$res .= "\n";
+	$self->pidl("/* client functions auto-generated by pidl */");
+	$self->pidl("");
 	if (is_intree()) {
-		$res .= "#include \"includes.h\"\n";
+		$self->pidl("#include \"includes.h\"");
 	} else {
-		$res .= "#ifndef _GNU_SOURCE\n";
-		$res .= "#define _GNU_SOURCE\n";
-		$res .= "#endif\n";
-		$res .= "#include <stdio.h>\n";
-		$res .= "#include <stdbool.h>\n";
-		$res .= "#include <stdlib.h>\n";
-		$res .= "#include <stdint.h>\n";
-		$res .= "#include <stdarg.h>\n";
-		$res .= "#include <core/ntstatus.h>\n";
+		$self->pidl("#ifndef _GNU_SOURCE");
+		$self->pidl("#define _GNU_SOURCE");
+		$self->pidl("#endif");
+		$self->pidl("#include <stdio.h>");
+		$self->pidl("#include <stdbool.h>");
+		$self->pidl("#include <stdlib.h>");
+		$self->pidl("#include <stdint.h>");
+		$self->pidl("#include <stdarg.h>");
+		$self->pidl("#include <core/ntstatus.h>");
 	}
-	$res .= "#include <tevent.h>\n";
-	$res .= choose_header("lib/util/tevent_ntstatus.h", "util/tevent_ntstatus.h")."\n";
-	$res .= "#include \"$ndr_header\"\n";
-	$res .= "#include \"$client_header\"\n";
-	$res .= "\n";
+	$self->pidl("#include <tevent.h>");
+	$self->pidl(choose_header("lib/util/tevent_ntstatus.h", "util/tevent_ntstatus.h")."");
+	$self->pidl("#include \"$ndr_header\"");
+	$self->pidl("#include \"$client_header\"");
+	$self->pidl("");
 
-	$res_hdr .= choose_header("librpc/rpc/dcerpc.h", "dcerpc.h")."\n";
-	$res_hdr .= "#include \"$header\"\n";
+	$self->pidl_hdr(choose_header("librpc/rpc/dcerpc.h", "dcerpc.h")."");
+	$self->pidl_hdr("#include \"$header\"");
 
 	foreach my $x (@{$ndr}) {
-		($x->{TYPE} eq "INTERFACE") && ParseInterface($x);
+		($x->{TYPE} eq "INTERFACE") && $self->ParseInterface($x);
 	}
 
-	return ($res,$res_hdr);
+	return ($self->{res},$self->{res_hdr});
 }
 
 1;

@@ -698,7 +698,8 @@ sub process_file($)
 		my ($c_header) = $c_client;
 		$c_header =~ s/\.c$/.h/;
 
-		my ($srcd,$hdrd) = Parse::Pidl::Samba4::NDR::Client::Parse(
+		my $generator = new Parse::Pidl::Samba4::NDR::Client();
+		my ($srcd,$hdrd) = $generator->Parse(
 			$ndr,$gen_header,$h_filename,$c_header);
 
 		FileSave($c_client, $srcd);
