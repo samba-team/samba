@@ -401,13 +401,6 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	/* the various objectclasses must be specified on add operations */
-	if (ldb_msg_find_element(req->op.add.message, "objectClass") == NULL) {
-		ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, no objectclass specified!",
-				       ldb_dn_get_linearized(req->op.add.message->dn));
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
 		return ldb_operr(ldb);
@@ -494,14 +487,16 @@ static int objectclass_do_add(struct oc_context *ac)
 	}
 
 	if (ac->schema != NULL) {
-		/* This is now the objectClass list from the database */
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
-
 		if (!objectclass_element) {
-			/* Where did it go?  bail now... */
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, no objectclass specified!",
+					       ldb_dn_get_linearized(msg->dn));
 			talloc_free(mem_ctx);
-			return ldb_operr(ldb);
+			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
+
+		/* Here we do now get the "objectClass" list from the
+		 * database. */
 		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
 				       objectclass_element, &sorted);
 		if (ret != LDB_SUCCESS) {
@@ -570,6 +565,12 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_NAMING_VIOLATION;
 		}
 
+		if (objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
+						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
 		if (ac->search_res && ac->search_res->message) {
 			struct ldb_message_element *oc_el
 				= ldb_msg_find_element(ac->search_res->message, "objectClass");
@@ -598,12 +599,6 @@ static int objectclass_do_add(struct oc_context *ac)
 						objectclass->lDAPDisplayName, ldb_dn_get_linearized(ac->search_res->message->dn));
 				return LDB_ERR_NAMING_VIOLATION;
 			}
-		}
-
-		if (objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-			ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
-						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
 		if (!ldb_msg_find_element(msg, "objectCategory")) {
