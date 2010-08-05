@@ -433,25 +433,6 @@ struct timespec interpret_long_date(const char *p)
 	return nt_time_to_unix_timespec(&nt);
 }
 
-/***************************************************************************
- Client versions of the above functions.
-***************************************************************************/
-
-void cli_put_dos_date(struct cli_state *cli, char *buf, int offset, time_t unixdate)
-{
-	push_dos_date((uint8_t *)buf, offset, unixdate, cli->serverzone);
-}
-
-void cli_put_dos_date2(struct cli_state *cli, char *buf, int offset, time_t unixdate)
-{
-	push_dos_date2((uint8_t *)buf, offset, unixdate, cli->serverzone);
-}
-
-void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unixdate)
-{
-	push_dos_date3((uint8_t *)buf, offset, unixdate, cli->serverzone);
-}
-
 /*******************************************************************
  Re-read the smb serverzone value.
 ******************************************************************/

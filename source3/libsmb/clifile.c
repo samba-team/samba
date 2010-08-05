@@ -3441,9 +3441,12 @@ struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
 	}
 
 	SSVAL(state->vwv+0, 0, fnum);
-	cli_put_dos_date2(cli, (char *)&state->vwv[1], 0, change_time);
-	cli_put_dos_date2(cli, (char *)&state->vwv[3], 0, access_time);
-	cli_put_dos_date2(cli, (char *)&state->vwv[5], 0, write_time);
+	push_dos_date2((uint8_t *)&state->vwv[1], 0, change_time,
+		       cli->serverzone);
+	push_dos_date2((uint8_t *)&state->vwv[3], 0, access_time,
+		       cli->serverzone);
+	push_dos_date2((uint8_t *)&state->vwv[5], 0, write_time,
+		       cli->serverzone);
 
 	subreq = cli_smb_send(state, ev, cli, SMBsetattrE, additional_flags,
 			      7, state->vwv, 0, NULL);
@@ -3554,7 +3557,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	}
 
 	SSVAL(state->vwv+0, 0, attr);
-	cli_put_dos_date3(cli, (char *)&state->vwv[1], 0, mtime);
+	push_dos_date3((uint8_t *)&state->vwv[1], 0, mtime, cli->serverzone);
 
 	bytes = talloc_array(state, uint8_t, 1);
 	if (tevent_req_nomem(bytes, req)) {
