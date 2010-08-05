@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 
 #if 0
 #include "lib/events/events.h"

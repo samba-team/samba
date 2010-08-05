@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "secrets.h"
 
 extern char *global_clobber_region_function;

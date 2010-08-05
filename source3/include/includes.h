@@ -659,7 +659,6 @@ struct ntlmssp_state;
 #include "client.h"
 
 #include "session.h"
-#include "popt.h"
 #include "mangle.h"
 #include "module.h"
 #include "nsswitch/winbind_client.h"

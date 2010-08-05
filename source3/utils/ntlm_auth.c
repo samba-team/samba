@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"

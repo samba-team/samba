@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "winbind_client.h"
 #include "libwbclient/wbclient.h"
 #include "lib/popt/popt.h"

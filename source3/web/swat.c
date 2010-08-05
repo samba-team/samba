@@ -28,6 +28,7 @@
  **/
 
 #include "includes.h"
+#include "popt_common.h"
 #include "web/swat_proto.h"
 
 static int demo_mode = False;

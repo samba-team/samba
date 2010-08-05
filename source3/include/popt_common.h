@@ -58,4 +58,6 @@ struct user_auth_info {
 	bool use_ccache;
 };
 
+void popt_common_set_auth_info(struct user_auth_info *auth_info);
+
 #endif /* _POPT_COMMON_H */

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "client/client_proto.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 

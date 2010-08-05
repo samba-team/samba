@@ -655,10 +655,6 @@ pid_t pidfile_pid(const char *name);
 void pidfile_create(const char *program_name);
 void pidfile_unlink(void);
 
-/* The following definitions come from lib/popt_common.c  */
-
-void popt_common_set_auth_info(struct user_auth_info *auth_info);
-
 /* The following definitions come from lib/privileges.c  */
 
 bool get_privileges_for_sids(SE_PRIV *privileges, struct dom_sid *slist, int scount);

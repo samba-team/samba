@@ -41,6 +41,7 @@
 /*****************************************************/
 
 #include "includes.h"
+#include "popt_common.h"
 #include "utils/net.h"
 #include "secrets.h"
 

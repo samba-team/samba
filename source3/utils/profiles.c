@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "registry/reg_objects.h"
 #include "regfio.h"
 

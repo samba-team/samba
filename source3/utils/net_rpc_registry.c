@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
  
 #include "includes.h"
+#include "popt_common.h"
 #include "registry.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"

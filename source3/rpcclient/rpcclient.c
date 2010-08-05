@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "popt_common.h"
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
