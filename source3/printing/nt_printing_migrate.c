@@ -420,6 +420,10 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 					    &hnd,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME, result)) {
+			DEBUG(3, ("Ignoring missing printer %s\n", key_name));
+			return NT_STATUS_OK;
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			status = werror_to_ntstatus(result);
 		}
@@ -493,6 +497,12 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 	int rc;
 
 	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0600);
+	if (tdb == NULL && errno == ENOENT) {
+		/* if we have no printers database then migration is
+		   considered successful */
+		DEBUG(4, ("No printers database to migrate in %s\n", tdb_path));
+		return NT_STATUS_OK;
+	}
 	if (tdb == NULL) {
 		DEBUG(2, ("Failed to open tdb file: %s\n", tdb_path));
 		return NT_STATUS_NO_SUCH_FILE;
