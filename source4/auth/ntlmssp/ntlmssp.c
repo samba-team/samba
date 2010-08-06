@@ -47,7 +47,7 @@ static const struct ntlmssp_callbacks {
 	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_NEGOTIATE,
-		.sync_fn	= ntlmssp_server_negotiate,
+		.sync_fn	= gensec_ntlmssp_server_negotiate,
 	},{
 		.role		= NTLMSSP_CLIENT,
 		.command	= NTLMSSP_CHALLENGE,
@@ -55,7 +55,7 @@ static const struct ntlmssp_callbacks {
 	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_AUTH,
-		.sync_fn	= ntlmssp_server_auth,
+		.sync_fn	= gensec_ntlmssp_server_auth,
 	}
 };
 

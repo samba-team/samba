@@ -67,21 +67,17 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 /**
  * Next state function for the Negotiate packet
  * 
- * @param gensec_security GENSEC state
+ * @param ntlmssp_state NTLMSSP state
  * @param out_mem_ctx Memory context for *out
  * @param in The request, as a DATA_BLOB.  reply.data must be NULL
  * @param out The reply, as an allocated DATA_BLOB, caller to free.
  * @return Errors or MORE_PROCESSING_REQUIRED if (normal) a reply is required. 
  */
 
-NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security, 
+NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 				  TALLOC_CTX *out_mem_ctx, 
-					 const DATA_BLOB request, DATA_BLOB *reply)
+				  const DATA_BLOB request, DATA_BLOB *reply)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
@@ -400,13 +396,9 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK. 
  */
 
-static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security, 
+static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 					struct ntlmssp_server_auth_state *state)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB *user_session_key = &state->user_session_key;
 	DATA_BLOB *lm_session_key = &state->lm_session_key;
 	NTSTATUS nt_status;
@@ -540,14 +532,10 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
  * @return Errors or NT_STATUS_OK if authentication sucessful
  */
 
-NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security, 
+NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			     TALLOC_CTX *out_mem_ctx, 
 			     const DATA_BLOB in, DATA_BLOB *out) 
 {	
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	struct ntlmssp_server_auth_state *state;
 	NTSTATUS nt_status;
 
@@ -581,7 +569,11 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 		return nt_status;
 	}
 
-	nt_status = ntlmssp_server_postauth(gensec_security, state);
+	/* When we get more async in the auth code behind
+	   ntlmssp_state->check_password, the ntlmssp_server_postpath
+	   can be done in a callback */
+
+	nt_status = ntlmssp_server_postauth(ntlmssp_state, state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(state);
 		return nt_status;
@@ -590,6 +582,48 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	TALLOC_FREE(state);
 	return NT_STATUS_OK;
 }
+
+/**
+ * Next state function for the Negotiate packet (GENSEC wrapper)
+ *
+ * @param gensec_security GENSEC state
+ * @param out_mem_ctx Memory context for *out
+ * @param in The request, as a DATA_BLOB.  reply.data must be NULL
+ * @param out The reply, as an allocated DATA_BLOB, caller to free.
+ * @return Errors or MORE_PROCESSING_REQUIRED if (normal) a reply is required.
+ */
+
+NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 const DATA_BLOB request, DATA_BLOB *reply)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	return ntlmssp_server_negotiate(ntlmssp_state, out_mem_ctx, request, reply);
+}
+
+/**
+ * Next state function for the Authenticate packet (GENSEC wrapper)
+ *
+ * @param gensec_security GENSEC state
+ * @param out_mem_ctx Memory context for *out
+ * @param in The request, as a DATA_BLOB.  reply.data must be NULL
+ * @param out The reply, as an allocated DATA_BLOB, caller to free.
+ * @return Errors or NT_STATUS_OK if authentication sucessful
+ */
+
+NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
+				    TALLOC_CTX *out_mem_ctx,
+				    const DATA_BLOB in, DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	return ntlmssp_server_auth(ntlmssp_state, out_mem_ctx, in, out);
+};
 
 /**
  * Return the challenge as determined by the authentication subsystem 
