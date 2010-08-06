@@ -49,3 +49,9 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 				uint32_t neg_flags, uint32_t *chal_flags);
+NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
+				  TALLOC_CTX *out_mem_ctx,
+				  const DATA_BLOB in, DATA_BLOB *out);
+NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
+			     TALLOC_CTX *out_mem_ctx,
+			     const DATA_BLOB request, DATA_BLOB *reply);
