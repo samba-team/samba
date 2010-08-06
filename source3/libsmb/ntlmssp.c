@@ -635,9 +635,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				if (session_key.data == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
-				SMBsesskeygen_lm_sess_key(
-					lm_session_key.data, zeros,
-					session_key.data);
+				SMBsesskeygen_lm_sess_key(zeros, zeros,
+							  session_key.data);
+				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			}
 			dump_data_pw("LM session key:\n", session_key.data,
 				     session_key.length);
