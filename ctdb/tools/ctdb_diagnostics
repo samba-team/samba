@@ -1,15 +1,60 @@
 #!/bin/sh
 # a script to test the basic setup of a CTDB/Samba install 
 # tridge@samba.org September 2007
+# martin@meltin.net August 2010
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: ctdb_diagnostics [OPTION] ...
+  options:
+    -n <nodes>  Comma separated list of nodes to operate on
+    -c          Ignore comment lines (starting with '#') in file comparisons
+    -w          Ignore whitespace in file comparisons
+    --no-ads    Do not use commands that assume an Active Directory Server
+EOF
+    exit 1
+
+}
+
+nodes=$(ctdb listnodes -Y | cut -d: -f2)
+diff_opts=
+no_ads=false
+
+parse_options ()
+{
+    temp=$(getopt -n "ctdb_diagnostics" -o "n:cwh" -l no-ads,help -- "$@")
+
+    [ $? != 0 ] && usage
+
+    eval set -- "$temp"
+
+    while true ; do
+	case "$1" in
+	    -n) nodes=$(echo "$2" | sed -e 's@,@ @g') ; shift 2 ;;
+	    -c) diff_opts="${diff_opts} -I ^#.*" ; shift ;;
+	    -w) diff_opts="${diff_opts} -w" ; shift ;;
+	    --no-ads) no_ads=true ; shift ;;
+	    --) shift ; break ;;
+	    -h|--help|*) usage ;;
+	esac
+    done
+
+    [ $# -ne 0 ] && usage
+}
+
+parse_options "$@"
+
+nodes_comma=$(echo $nodes | sed -e 's@[[:space:]]@,@g')
 
 PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 
 # list of config files that must exist and that we check are the same 
-# on all nodes
+# on the nodes
 CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 
 # list of config files that may exist and should be checked that they
-# are the same on all nodes
+# are the same on the nodes
 CONFIG_FILES_MAY="/etc/ctdb/public_addresses /etc/ctdb/static-routes"
 
 2>&1
@@ -41,67 +86,83 @@ show_file() {
 }
 
 show_all() {
-    echo "running $1 on all nodes"
-    onnode all "hostname; date; $1 2>&1 | sed 's/^/  /'"
+    echo "running $1 on nodes $nodes_comma"
+    onnode $nodes_comma "hostname; date; $1 2>&1 | sed 's/^/  /'" 2>&1
+}
+
+show_and_compare_files () {
+
+    fmt="$1" ; shift
+
+    for f ; do
+
+	first=true
+
+	for n in $nodes ; do
+
+	    if $first ; then
+		onnode $n [ -r "$f" ] || {
+		    msg=$(printf "$fmt" "$f" $n)
+		    error "$msg"
+		    continue 2;
+		}
+
+		fstf=/tmp/`basename $f`.node$n
+		onnode $n cat $f > $fstf 2>&1
+
+		echo "  ================================"
+		echo "  File (on node $n): $f"
+		echo "  `onnode $n ls -l $f 2>&1`"
+		cat "$fstf" | sed 's/^/  /'
+		echo "  ================================"
+		first=false
+	    else
+		echo "Testing for same config file $f on node $n"
+		tmpf=/tmp/`basename $f`.node$n
+		onnode $n cat $f > $tmpf 2>&1
+		diff $diff_opts $fstf $tmpf >/dev/null 2>&1 || {
+		    error "File $f is different on node $n"
+		    diff -u $diff_opts $fstf $tmpf
+		}
+		rm -f $tmpf
+	    fi
+	done
+
+	rm -f $fstf
+    done
 }
 
 ERRORS="/tmp/diag_err.$$"
-NUM_NODES=`wc -l < /etc/ctdb/nodes`
-MAX_NODE=`expr $NUM_NODES - 1`
 NUM_ERRORS=0
+
 cat <<EOF
-Diagnosis started on a $NUM_NODES node cluster. The following node list will be used:
+Diagnosis started on these nodes:
+$nodes_comma
+
+For reference, here is the nodes file on the current node...
 EOF
 show_file /etc/ctdb/nodes
 
 
 cat <<EOF
 --------------------------------------------------------------------
-Comping critical config files on all nodes
+Comping critical config files on nodes $nodes_comma
 EOF
 
-for f in $CONFIG_FILES_MUST; do
- [ -r "$f" ] || {
-    error "$f is missing on this node"
-    continue;
- }
- show_file $f
- for i in `seq 0 $MAX_NODE`; do
-     echo "Testing for same config file $f on node $i"
-     tmpf=/tmp/`basename $f`.node$i
-     onnode $i cat $f > $tmpf 2>&1
-     cmp $f $tmpf 2>&1 || {
-	 error "File $f is different on node $i"
-	 diff -u $f $tmpf
-     }
-     rm -f $tmpf
- done
-done
+show_and_compare_files \
+    "%s is missing on node %d" \
+    $CONFIG_FILES_MUST
 
-for f in $CONFIG_FILES_MAY; do
- [ -r "$f" ] || {
-    echo "Optional file $f is not present on local node"
-    continue;
- }
- show_file $f
- for i in `seq 0 $MAX_NODE`; do
-     echo "Testing for same config file $f on node $i"
-     tmpf=/tmp/`basename $f`.node$i
-     onnode $i cat $f > $tmpf 2>&1
-     cmp $f $tmpf 2>&1 || {
-	 error "File $f is different on node $i"
-	 diff -u $f $tmpf
-     }
-     rm -f $tmpf
- done
-done
+show_and_compare_files \
+    "Optional file %s is not present on node %d" \
+    $CONFIG_FILES_MAY
 
 cat <<EOF
 --------------------------------------------------------------------
 Checking for clock drift
 EOF
 t=`date +%s`
-for i in `seq 0 $MAX_NODE`; do
+for i in $nodes; do
     t2=`onnode $i date +%s`
     d=`expr $t2 - $t`
     if [ $d -gt 30 -o $d -lt -30 ]; then
@@ -225,12 +286,24 @@ cat <<EOF
 Showing Samba status
 EOF
 show_all "smbstatus -n -B"
-show_all "net ads testjoin"
+if $no_ads ; then
+    echo
+    echo "Skipping \"net ads testjoin\" as requested"
+    echo
+else
+    show_all "net ads testjoin"
+fi
 show_all "net conf list"
 show_all "lsof -n | grep smbd"
 show_all "lsof -n | grep ctdbd"
 show_all "netstat -tan"
-show_all "net ads info"
+if $no_ads ; then
+    echo
+    echo "Skipping \"net ads info\" as requested"
+    echo
+else
+    show_all "net ads info"
+fi
 show_all "date"
 show_all "smbclient -U% -L 127.0.0.1"
 WORKGROUP=`testparm -s --parameter-name=WORKGROUP 2> /dev/null`
