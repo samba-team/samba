@@ -1110,7 +1110,7 @@ static WERROR winreg_enumval_to_dword(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_DATATYPE;
 	}
 
-	if (v->data_length == 0) {
+	if (v->data_length != 4) {
 		*dw = 0;
 		return WERR_OK;
 	}
