@@ -2020,6 +2020,226 @@ bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
 	return rpc_cli->transport->is_connected(rpc_cli->transport->priv);
 }
 
+struct rpccli_bh_state {
+	struct rpc_pipe_client *rpc_cli;
+};
+
+static bool rpccli_bh_is_connected(struct dcerpc_binding_handle *h)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+
+	return rpccli_is_connected(hs->rpc_cli);
+}
+
+struct rpccli_bh_raw_call_state {
+	DATA_BLOB in_data;
+	DATA_BLOB out_data;
+	uint32_t out_flags;
+};
+
+static void rpccli_bh_raw_call_done(struct tevent_req *subreq);
+
+static struct tevent_req *rpccli_bh_raw_call_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *h,
+						  const struct GUID *object,
+						  uint32_t opnum,
+						  uint32_t in_flags,
+						  const uint8_t *in_data,
+						  size_t in_length)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+	struct tevent_req *req;
+	struct rpccli_bh_raw_call_state *state;
+	bool ok;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_bh_raw_call_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->in_data.data = discard_const_p(uint8_t, in_data);
+	state->in_data.length = in_length;
+
+	ok = rpccli_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = rpc_api_pipe_req_send(state, ev, hs->rpc_cli,
+				       opnum, &state->in_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpccli_bh_raw_call_done, req);
+
+	return req;
+}
+
+static void rpccli_bh_raw_call_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct rpccli_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct rpccli_bh_raw_call_state);
+	NTSTATUS status;
+
+	state->out_flags = 0;
+
+	/* TODO: support bigendian responses */
+
+	status = rpc_api_pipe_req_recv(subreq, state, &state->out_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS rpccli_bh_raw_call_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags)
+{
+	struct rpccli_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct rpccli_bh_raw_call_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_data = talloc_move(mem_ctx, &state->out_data.data);
+	*out_length = state->out_data.length;
+	*out_flags = state->out_flags;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct rpccli_bh_disconnect_state {
+	uint8_t _dummy;
+};
+
+static struct tevent_req *rpccli_bh_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+	struct tevent_req *req;
+	struct rpccli_bh_disconnect_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpccli_bh_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ok = rpccli_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * TODO: do a real async disconnect ...
+	 *
+	 * For now the caller needs to free rpc_cli
+	 */
+	hs->rpc_cli = NULL;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS rpccli_bh_disconnect_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static bool rpccli_bh_ref_alloc(struct dcerpc_binding_handle *h)
+{
+	return true;
+}
+
+static void rpccli_bh_do_ndr_print(struct dcerpc_binding_handle *h,
+				   int ndr_flags,
+				   const void *_struct_ptr,
+				   const struct ndr_interface_call *call)
+{
+	void *struct_ptr = discard_const(_struct_ptr);
+
+	if (DEBUGLEVEL < 10) {
+		return;
+	}
+
+	if (ndr_flags & NDR_IN) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name,
+					 ndr_flags,
+					 struct_ptr);
+	}
+	if (ndr_flags & NDR_OUT) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name,
+					 ndr_flags,
+					 struct_ptr);
+	}
+}
+
+static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
+	.name			= "rpccli",
+	.is_connected		= rpccli_bh_is_connected,
+	.raw_call_send		= rpccli_bh_raw_call_send,
+	.raw_call_recv		= rpccli_bh_raw_call_recv,
+	.disconnect_send	= rpccli_bh_disconnect_send,
+	.disconnect_recv	= rpccli_bh_disconnect_recv,
+
+	.ref_alloc		= rpccli_bh_ref_alloc,
+	.do_ndr_print		= rpccli_bh_do_ndr_print,
+};
+
+/* initialise a rpc_pipe_client binding handle */
+static struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c)
+{
+	struct dcerpc_binding_handle *h;
+	struct rpccli_bh_state *hs;
+
+	h = dcerpc_binding_handle_create(c,
+					 &rpccli_bh_ops,
+					 NULL,
+					 NULL, /* TODO */
+					 &hs,
+					 struct rpccli_bh_state,
+					 __location__);
+	if (h == NULL) {
+		return NULL;
+	}
+	hs->rpc_cli = c;
+
+	return h;
+}
+
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 {
 	struct auth_ntlmssp_state *a = NULL;
@@ -2262,6 +2482,12 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 
 	result->transport->transport = NCACN_IP_TCP;
 
+	result->binding_handle = rpccli_bh_create(result);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	*presult = result;
 	return NT_STATUS_OK;
 
@@ -2479,6 +2705,12 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->transport->transport = NCALRPC;
 
+	result->binding_handle = rpccli_bh_create(result);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	*presult = result;
 	return NT_STATUS_OK;
 
@@ -2567,6 +2799,12 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	DLIST_ADD(np_ref->cli->pipe_list, np_ref->pipe);
 	talloc_set_destructor(np_ref, rpc_pipe_client_np_ref_destructor);
 
+	result->binding_handle = rpccli_bh_create(result);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	*presult = result;
 	return NT_STATUS_OK;
 }
@@ -2625,6 +2863,12 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 	}
 
 	result->transport->transport = NCACN_INTERNAL;
+
+	result->binding_handle = rpccli_bh_create(result);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	*presult = result;
 	return NT_STATUS_OK;
