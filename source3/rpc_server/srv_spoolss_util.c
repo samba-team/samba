@@ -4053,8 +4053,10 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 		result = winreg_enumval_to_dword(info8, v,
 						 "Version",
 						 &tmp);
+		if (NT_STATUS_IS_OK(result)) {
+			info8->version = (enum spoolss_DriverOSVersion) tmp;
+		}
 		CHECK_ERROR(result);
-		info8->version = tmp;
 
 		result = winreg_enumval_to_sz(info8, v,
 					      "Driver",
