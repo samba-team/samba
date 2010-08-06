@@ -325,7 +325,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
+	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, ntlmssp_state->allow_lm_key);
 
 	/* Ask our caller what challenge they would like in the packet */
 	status = ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
@@ -518,7 +518,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (auth_flags)
-		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
+		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, ntlmssp_state->allow_lm_key);
 
 	if (DEBUGLEVEL >= 10) {
 		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
@@ -743,6 +743,8 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 	ntlmssp_state->server.is_standalone = is_standalone;
 
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
+
+	ntlmssp_state->allow_lm_key = lp_lanman_auth();
 
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_128 |
