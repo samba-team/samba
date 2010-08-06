@@ -5025,6 +5025,27 @@ AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
 fi
 fi
 
+if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
+AC_CACHE_CHECK([whether the sys_quota interface works with NFS],samba_cv_SYSQUOTA_WORKS_NFS,[
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+AC_TRY_COMPILE([
+#include "confdefs.h"
+#define NO_PROTO_H 1
+#define NO_CONFIG_H 1
+#define HAVE_SYS_QUOTAS 1
+#define HAVE_NFS_QUOTAS 1
+#include "${srcdir-.}/lib/sysquotas_nfs.c"
+],[],samba_cv_SYSQUOTA_WORKS_NFS=yes,samba_cv_SYSQUOTA_WORKS_NFS=no)
+CPPFLAGS="$SAVE_CPPFLAGS"
+])
+if test x"$samba_cv_SYSQUOTA_WORKS_NFS" = x"yes"; then
+    if test x"$samba_cv_WE_USE_SYS_QUOTAS" = x"yes"; then
+	AC_DEFINE(HAVE_NFS_QUOTAS,1,[Whether nfs quota support is available])
+    fi
+fi
+fi
+
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no" -a x"$samba_cv_found_xfs_header" = x"yes"; then
 AC_CACHE_CHECK([whether the sys_quota interface works with XFS],samba_cv_SYSQUOTA_WORKS_XFS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
