@@ -555,6 +555,24 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/init_samr.o \
 		   ../librpc/rpc/binding.o
 
+DCERPC_CLIENT_GEN_OBJ = \
+		librpc/gen_ndr/ndr_lsa_c.o \
+		librpc/gen_ndr/ndr_dfs_c.o \
+		librpc/gen_ndr/ndr_echo_c.o \
+		librpc/gen_ndr/ndr_srvsvc_c.o \
+		librpc/gen_ndr/ndr_svcctl_c.o \
+		librpc/gen_ndr/ndr_winreg_c.o \
+		librpc/gen_ndr/ndr_initshutdown_c.o \
+		librpc/gen_ndr/ndr_eventlog_c.o \
+		librpc/gen_ndr/ndr_wkssvc_c.o \
+		librpc/gen_ndr/ndr_netlogon_c.o \
+		librpc/gen_ndr/ndr_samr_c.o \
+		librpc/gen_ndr/ndr_dssetup_c.o \
+		librpc/gen_ndr/ndr_ntsvcs_c.o \
+		librpc/gen_ndr/ndr_epmapper_c.o \
+		librpc/gen_ndr/ndr_drsuapi_c.o \
+		librpc/gen_ndr/ndr_spoolss_c.o
+
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o \
 		   librpc/gen_ndr/cli_echo.o \
@@ -571,6 +589,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_epmapper.o \
 		   librpc/gen_ndr/cli_drsuapi.o \
 		   librpc/gen_ndr/cli_spoolss.o \
+		   $(DCERPC_CLIENT_GEN_OBJ) \
 		   ../librpc/rpc/dcerpc_util.o \
 		   ../librpc/rpc/binding_handle.o \
 		   librpc/rpc/dcerpc_helpers.o \
@@ -1219,6 +1238,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_dual_ndr.o  \
 		winbindd/winbindd_dual_srv.o  \
 		librpc/gen_ndr/cli_wbint.o \
+		librpc/gen_ndr/ndr_wbint_c.o \
 		librpc/gen_ndr/srv_wbint.o \
 		librpc/gen_ndr/ndr_wbint.o \
 		winbindd/winbindd_async.o \
