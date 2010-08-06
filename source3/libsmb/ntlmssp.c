@@ -416,7 +416,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 		if (DEBUGLEVEL >= 10) {
 			struct CHALLENGE_MESSAGE *challenge = talloc(
-				talloc_tos(), struct CHALLENGE_MESSAGE);
+				ntlmssp_state, struct CHALLENGE_MESSAGE);
 			if (challenge != NULL) {
 				challenge->NegotiateFlags = chal_flags;
 				status = ntlmssp_pull_CHALLENGE_MESSAGE(
@@ -524,7 +524,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	if (DEBUGLEVEL >= 10) {
 		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
-			talloc_tos(), struct AUTHENTICATE_MESSAGE);
+			ntlmssp_state, struct AUTHENTICATE_MESSAGE);
 		if (authenticate != NULL) {
 			NTSTATUS status;
 			authenticate->NegotiateFlags = auth_flags;
