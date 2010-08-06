@@ -667,6 +667,11 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("ALT_NAME_INFO");
 	if (s1) {
 		correct_name = s1->alt_name_info.out.fname.s;
+	}
+
+	if (!correct_name) {
+		torture_comment(torture, "no alternate name information\n");
+	} else {
 		torture_comment(torture, "alt_name: %s\n", correct_name);
 		
 		NAME_CHECK("ALT_NAME_INFO",        alt_name_info, fname, STR_UNICODE);
