@@ -198,6 +198,261 @@ static NTSTATUS wb_ndr_dispatch(struct rpc_pipe_client *cli,
 	return status;
 }
 
+struct wbint_bh_state {
+	struct rpc_pipe_client *rpc_cli;
+};
+
+static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
+{
+	struct wbint_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct wbint_bh_state);
+
+	if (!hs->rpc_cli) {
+		return false;
+	}
+
+	return true;
+}
+
+struct wbint_bh_raw_call_state {
+	struct winbindd_domain *domain;
+	uint32_t opnum;
+	DATA_BLOB in_data;
+	struct winbindd_request request;
+	struct winbindd_response *response;
+	DATA_BLOB out_data;
+};
+
+static void wbint_bh_raw_call_done(struct tevent_req *subreq);
+
+static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
+						  struct tevent_context *ev,
+						  struct dcerpc_binding_handle *h,
+						  const struct GUID *object,
+						  uint32_t opnum,
+						  uint32_t in_flags,
+						  const uint8_t *in_data,
+						  size_t in_length)
+{
+	struct wbint_bh_state *hs =
+		dcerpc_binding_handle_data(h,
+		struct wbint_bh_state);
+	struct wb_ndr_transport_priv *transport =
+		talloc_get_type_abort(hs->rpc_cli->transport->priv,
+		struct wb_ndr_transport_priv);
+	struct tevent_req *req;
+	struct wbint_bh_raw_call_state *state;
+	bool ok;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wbint_bh_raw_call_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->domain = transport->domain;
+	state->opnum = opnum;
+	state->in_data.data = discard_const_p(uint8_t, in_data);
+	state->in_data.length = in_length;
+
+	ok = wbint_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	if ((state->domain != NULL)
+	    && wcache_fetch_ndr(state, state->domain, state->opnum,
+				&state->in_data, &state->out_data)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	state->request.cmd = WINBINDD_DUAL_NDRCMD;
+	state->request.data.ndrcmd = state->opnum;
+	state->request.extra_data.data = (char *)state->in_data.data;
+	state->request.extra_len = state->in_data.length;
+
+	subreq = wb_child_request_send(state, ev, transport->child,
+				       &state->request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wbint_bh_raw_call_done, req);
+
+	return req;
+}
+
+static void wbint_bh_raw_call_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct wbint_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct wbint_bh_raw_call_state);
+	int ret, err;
+
+	ret = wb_child_request_recv(subreq, state, &state->response, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(err);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->out_data = data_blob_talloc(state,
+		state->response->extra_data.data,
+		state->response->length - sizeof(struct winbindd_response));
+	if (state->response->extra_data.data && !state->out_data.data) {
+		tevent_req_nomem(NULL, req);
+		return;
+	}
+
+	if (state->domain != NULL) {
+		wcache_store_ndr(state->domain, state->opnum,
+				 &state->in_data, &state->out_data);
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS wbint_bh_raw_call_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags)
+{
+	struct wbint_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct wbint_bh_raw_call_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_data = talloc_move(mem_ctx, &state->out_data.data);
+	*out_length = state->out_data.length;
+	*out_flags = 0;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct wbint_bh_disconnect_state {
+	uint8_t _dummy;
+};
+
+static struct tevent_req *wbint_bh_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h)
+{
+	struct wbint_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct wbint_bh_state);
+	struct tevent_req *req;
+	struct wbint_bh_disconnect_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wbint_bh_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ok = wbint_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * TODO: do a real async disconnect ...
+	 *
+	 * For now the caller needs to free rpc_cli
+	 */
+	hs->rpc_cli = NULL;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS wbint_bh_disconnect_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static bool wbint_bh_ref_alloc(struct dcerpc_binding_handle *h)
+{
+	return true;
+}
+
+static void wbint_bh_do_ndr_print(struct dcerpc_binding_handle *h,
+				  int ndr_flags,
+				  const void *_struct_ptr,
+				  const struct ndr_interface_call *call)
+{
+	void *struct_ptr = discard_const(_struct_ptr);
+
+	if (DEBUGLEVEL < 10) {
+		return;
+	}
+
+	if (ndr_flags & NDR_IN) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name,
+					 ndr_flags,
+					 struct_ptr);
+	}
+	if (ndr_flags & NDR_OUT) {
+		ndr_print_function_debug(call->ndr_print,
+					 call->name,
+					 ndr_flags,
+					 struct_ptr);
+	}
+}
+
+static const struct dcerpc_binding_handle_ops wbint_bh_ops = {
+	.name			= "wbint",
+	.is_connected		= wbint_bh_is_connected,
+	.raw_call_send		= wbint_bh_raw_call_send,
+	.raw_call_recv		= wbint_bh_raw_call_recv,
+	.disconnect_send	= wbint_bh_disconnect_send,
+	.disconnect_recv	= wbint_bh_disconnect_recv,
+
+	.ref_alloc		= wbint_bh_ref_alloc,
+	.do_ndr_print		= wbint_bh_do_ndr_print,
+};
+
+/* initialise a wbint binding handle */
+static struct dcerpc_binding_handle *wbint_binding_handle(struct rpc_pipe_client *rpc_cli)
+{
+	struct dcerpc_binding_handle *h;
+	struct wbint_bh_state *hs;
+
+	h = dcerpc_binding_handle_create(rpc_cli,
+					 &wbint_bh_ops,
+					 NULL,
+					 NULL, /* TODO */
+					 &hs,
+					 struct wbint_bh_state,
+					 __location__);
+	if (h == NULL) {
+		return NULL;
+	}
+	hs->rpc_cli = rpc_cli;
+
+	return h;
+}
+
 struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
 					    struct winbindd_domain *domain,
 					    struct winbindd_child *child)
@@ -241,6 +496,13 @@ struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
 	transp->domain = domain;
 	transp->child = child;
 	result->transport->priv = transp;
+
+	result->binding_handle = wbint_binding_handle(result);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
 	return result;
 }
 
