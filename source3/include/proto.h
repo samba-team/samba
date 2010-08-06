@@ -964,6 +964,13 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 
+int sys_get_nfs_quota(const char *path, const char *bdev,
+		      enum SMB_QUOTA_TYPE qtype,
+		      unid_t id, SMB_DISK_QUOTA *dp);
+int sys_set_nfs_quota(const char *path, const char *bdev,
+		      enum SMB_QUOTA_TYPE qtype,
+		      unid_t id, SMB_DISK_QUOTA *dp);
+
 /* The following definitions come from lib/system.c  */
 
 void *sys_memalign( size_t align, size_t size );
