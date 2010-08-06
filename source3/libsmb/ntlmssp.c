@@ -330,6 +330,8 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* Ask our caller what challenge they would like in the packet */
 	status = ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge: %s\n",
+			  nt_errstr(status)));
 		return status;
 	}
 
