@@ -717,7 +717,7 @@ int net_printing(struct net_context *c, int argc, const char **argv)
 			"dump",
 			net_printing_dump,
 			NET_TRANSPORT_LOCAL,
-			N_("Dump eventlog"),
+			N_("Dump printer databases"),
 			N_("net printing dump\n"
 			   "    Dump tdb printing file")
 		},
