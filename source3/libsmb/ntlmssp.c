@@ -642,6 +642,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			dump_data_pw("LM session key:\n", session_key.data,
 				     session_key.length);
 		} else {
+			/* LM Key not selected */
+			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
 			session_key = data_blob_null;
 		}
@@ -649,13 +652,25 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		session_key = user_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+
+		/* LM Key not selected */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+
 	} else if (lm_session_key.data) {
+		/* Very weird to have LM key, but no user session key, but anyway.. */
 		session_key = lm_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+
+		/* LM Key not selected */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+
 	} else {
 		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
 		session_key = data_blob_null;
+
+		/* LM Key not selected */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	/* With KEY_EXCH, the client supplies the proposed session key,
