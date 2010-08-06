@@ -1292,6 +1292,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_ctdb->db = result;
 
 	conn = messaging_ctdbd_connection(procid_self());
+	if (conn == NULL) {
+		DEBUG(1, ("Could not connect to ctdb\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
 
 	if (!NT_STATUS_IS_OK(ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags))) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
