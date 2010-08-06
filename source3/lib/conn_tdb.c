@@ -56,7 +56,7 @@ struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(ckey);
 	ckey.pid = procid_self();
-	ckey.cnum = conn ? conn->cnum : -1;
+	ckey.cnum = conn->cnum;
 	strlcpy(ckey.name, name, sizeof(ckey.name));
 
 	key.dsize = sizeof(ckey);
