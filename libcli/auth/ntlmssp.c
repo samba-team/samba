@@ -74,3 +74,63 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 	if (neg_flags & NTLMSSP_NEGOTIATE_56)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_56\n"));
 }
+
+void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
+			      uint32_t neg_flags, bool allow_lm)
+{
+	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
+		ntlmssp_state->unicode = true;
+	} else {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+		ntlmssp_state->unicode = false;
+	}
+
+	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm) {
+		/* other end forcing us to use LM */
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
+		ntlmssp_state->use_ntlmv2 = false;
+	} else {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	/* Woop Woop - unknown flag for Windows compatibility...
+	   What does this really do ? JRA. */
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
+	}
+
+	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
+	}
+}

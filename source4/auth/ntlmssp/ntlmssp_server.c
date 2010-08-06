@@ -35,36 +35,6 @@
 #include "param/param.h"
 
 /**
- * Determine correct target name flags for reply, given server role
- * and negotiated flags
- *
- * @param ntlmssp_state NTLMSSP State
- * @param neg_flags The flags from the packet
- * @param chal_flags The flags to be set in the reply packet
- * @return The 'target name' string.
- */
-
-static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
-				       uint32_t neg_flags, uint32_t *chal_flags)
-{
-	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
-		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
-		*chal_flags |= NTLMSSP_REQUEST_TARGET;
-		if (ntlmssp_state->server.is_standalone) {
-			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
-			return ntlmssp_state->server.netbios_name;
-		} else {
-			*chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN;
-			return ntlmssp_state->server.netbios_domain;
-		};
-	} else {
-		return "";
-	}
-}
-
-
-
-/**
  * Next state function for the Negotiate packet
  * 
  * @param ntlmssp_state NTLMSSP state
