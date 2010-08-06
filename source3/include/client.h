@@ -104,10 +104,13 @@ struct rpc_cli_transport {
 	void *priv;
 };
 
+struct dcerpc_binding_handle;
+
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
 	struct rpc_cli_transport *transport;
+	struct dcerpc_binding_handle *binding_handle;
 
 	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id transfer_syntax;
