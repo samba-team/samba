@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../librpc/gen_ndr/ndr_svcctl.h"
 #include "../librpc/gen_ndr/cli_svcctl.h"
 
 struct svc_state_msg {
