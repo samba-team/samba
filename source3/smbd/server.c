@@ -439,7 +439,9 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
-	} else if (pid < 0) {
+	}
+
+	if (pid < 0) {
 		DEBUG(0,("smbd_accept_connection: sys_fork() failed: %s\n",
 			 strerror(errno)));
 	}
