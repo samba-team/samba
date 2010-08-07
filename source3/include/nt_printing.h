@@ -187,6 +187,7 @@ typedef struct _Printer{
 		uint32 change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
 		bool fnpcn;
+		struct messaging_context *msg_ctx;
 	} notify;
 	struct {
 		fstring machine;

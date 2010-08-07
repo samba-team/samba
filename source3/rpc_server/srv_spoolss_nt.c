@@ -159,7 +159,9 @@ static int nt_printq_status(int v)
  Disconnect from the client
 ****************************************************************************/
 
-static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle)
+static void srv_spoolss_replycloseprinter(
+	int snum, struct policy_handle *handle,
+	struct messaging_context *msg_ctx)
 {
 	WERROR result;
 	NTSTATUS status;
@@ -194,15 +196,19 @@ static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle
 		 */
 		notify_cli_pipe = NULL;
 
-		messaging_deregister(smbd_messaging_context(),
-				     MSG_PRINTER_NOTIFY2, NULL);
+		if (msg_ctx != NULL) {
+			messaging_deregister(msg_ctx, MSG_PRINTER_NOTIFY2,
+					     NULL);
 
-        	/* Tell the connections db we're no longer interested in
-		 * printer notify messages. */
+			/*
+			 * Tell the serverid.tdb we're no longer
+			 * interested in printer notify messages.
+			 */
 
-		serverid_register_msg_flags(
-			messaging_server_id(smbd_messaging_context()),
-			false, FLAG_MSG_PRINT_NOTIFY);
+			serverid_register_msg_flags(
+				messaging_server_id(msg_ctx),
+				false, FLAG_MSG_PRINT_NOTIFY);
+		}
 	}
 
 	smb_connections--;
@@ -219,12 +225,15 @@ static int printer_entry_destructor(Printer_entry *Printer)
 
 		if ( Printer->printer_type == SPLHND_SERVER) {
 			snum = -1;
-			srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
+			srv_spoolss_replycloseprinter(
+				snum, &Printer->notify.client_hnd,
+				Printer->notify.msg_ctx);
 		} else if (Printer->printer_type == SPLHND_PRINTER) {
 			snum = print_queue_snum(Printer->sharename);
 			if (snum != -1)
-				srv_spoolss_replycloseprinter(snum,
-						&Printer->notify.client_hnd);
+				srv_spoolss_replycloseprinter(
+					snum, &Printer->notify.client_hnd,
+					Printer->notify.msg_ctx);
 		}
 	}
 
@@ -2410,6 +2419,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	Printer->notify.flags		= r->in.flags;
 	Printer->notify.options		= r->in.options;
 	Printer->notify.printerlocal	= r->in.printer_local;
+	Printer->notify.msg_ctx		= p->msg_ctx;
 
 	TALLOC_FREE(Printer->notify.option);
 	Printer->notify.option = dup_spoolss_NotifyOption(Printer, option);
@@ -6150,7 +6160,8 @@ WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 				!get_printer_snum(p, r->in.handle, &snum, NULL) )
 			return WERR_BADFID;
 
-		srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
+		srv_spoolss_replycloseprinter(
+			snum, &Printer->notify.client_hnd, p->msg_ctx);
 	}
 
 	Printer->notify.flags=0;
