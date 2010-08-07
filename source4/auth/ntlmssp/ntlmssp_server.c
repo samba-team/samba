@@ -399,26 +399,24 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 					struct ntlmssp_server_auth_state *state)
 {
-	DATA_BLOB *user_session_key = &state->user_session_key;
-	DATA_BLOB *lm_session_key = &state->lm_session_key;
+	DATA_BLOB user_session_key = state->user_session_key;
+	DATA_BLOB lm_session_key = state->lm_session_key;
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
-	if (user_session_key)
-		dump_data_pw("USER session key:\n", user_session_key->data, user_session_key->length);
-
-	if (lm_session_key) 
-		dump_data_pw("LM first-8:\n", lm_session_key->data, lm_session_key->length);
+	dump_data_pw("NT session key:\n", user_session_key.data, user_session_key.length);
+	dump_data_pw("LM first-8:\n", lm_session_key.data, lm_session_key.length);
 
 	/* Handle the different session key derivation for NTLM2 */
 	if (state->doing_ntlm2) {
-		if (user_session_key && user_session_key->data && user_session_key->length == 16) {
-			session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
-			hmac_md5(user_session_key->data, state->session_nonce,
+		if (user_session_key.data && user_session_key.length == 16) {
+			session_key = data_blob_talloc(ntlmssp_state,
+						       NULL, 16);
+			hmac_md5(user_session_key.data, state->session_nonce,
 				 sizeof(state->session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
-			
+
 		} else {
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
 			session_key = data_blob_null;
@@ -427,10 +425,14 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 		/* Ensure we can never get here on NTLMv2 */
 		&& (ntlmssp_state->nt_resp.length == 0 || ntlmssp_state->nt_resp.length == 24)) {
 
-		if (lm_session_key && lm_session_key->data && lm_session_key->length >= 8) {
+		if (lm_session_key.data && lm_session_key.length >= 8) {
 			if (ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
-				session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
-				SMBsesskeygen_lm_sess_key(lm_session_key->data, ntlmssp_state->lm_resp.data,
+				session_key = data_blob_talloc(ntlmssp_state,
+							       NULL, 16);
+				if (session_key.data == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+				SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data,
 							  session_key.data);
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			} else {
@@ -443,7 +445,6 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
  				SMBsesskeygen_lm_sess_key(zeros, zeros, 
  							  session_key.data);
  				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
- 				dump_data_pw("LM session key:\n", session_key.data, session_key.length);
 			}
 			dump_data_pw("LM session key:\n", session_key.data,
 				     session_key.length);
@@ -455,17 +456,17 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 			session_key = data_blob_null;
 		}
 
-	} else if (user_session_key && user_session_key->data) {
-		session_key = data_blob_talloc(ntlmssp_state, user_session_key->data, user_session_key->length);
+	} else if (user_session_key.data) {
+		session_key = user_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
 		/* LM Key not selected */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 
-	} else if (lm_session_key && lm_session_key->data) {
+	} else if (lm_session_key.data) {
 		/* Very weird to have LM key, but no user session key, but anyway.. */
-		session_key = data_blob_talloc(ntlmssp_state, lm_session_key->data, lm_session_key->length);
+		session_key = lm_session_key;
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
@@ -474,7 +475,7 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 
 	} else {
 		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
-		session_key = data_blob(NULL, 0);
+		session_key = data_blob_null;
 
 		/* LM Key not selected */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
