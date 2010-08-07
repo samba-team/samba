@@ -172,7 +172,7 @@ static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle
 	if (!print_notify_deregister_pid(snum))
 		DEBUG(0,("print_notify_register_pid: Failed to register our pid for printer %s\n", lp_const_servicename(snum) ));
 
-	/* weird if the test succeds !!! */
+	/* weird if the test succeeds !!! */
 	if (smb_connections==0) {
 		DEBUG(0,("srv_spoolss_replycloseprinter:Trying to close non-existant notify backchannel !\n"));
 		return;
@@ -189,7 +189,10 @@ static void srv_spoolss_replycloseprinter(int snum, struct policy_handle *handle
 	if (smb_connections==1) {
 
 		cli_shutdown( rpc_pipe_np_smb_conn(notify_cli_pipe) );
-		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
+		/*
+		 * The above call shuts down the pipe also.
+		 */
+		notify_cli_pipe = NULL;
 
 		messaging_deregister(smbd_messaging_context(),
 				     MSG_PRINTER_NOTIFY2, NULL);
