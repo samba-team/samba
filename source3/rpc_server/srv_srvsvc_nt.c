@@ -2472,16 +2472,21 @@ WERROR _srvsvc_NetNameValidate(struct pipes_struct *p,
 /*******************************************************************
 ********************************************************************/
 
+struct enum_file_close_state {
+	struct srvsvc_NetFileClose *r;
+	struct messaging_context *msg_ctx;
+};
+
 static void enum_file_close_fn( const struct share_mode_entry *e,
                           const char *sharepath, const char *fname,
 			  void *private_data )
 {
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-	struct srvsvc_NetFileClose *r =
- 		(struct srvsvc_NetFileClose *)private_data;
+	struct enum_file_close_state *state =
+		(struct enum_file_close_state *)private_data;
 	uint32_t fid = (((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
 
-	if (fid != r->in.fid) {
+	if (fid != state->r->in.fid) {
 		return; /* Not this file. */
 	}
 
@@ -2496,8 +2501,8 @@ static void enum_file_close_fn( const struct share_mode_entry *e,
 
 	share_mode_entry_to_message(msg, e);
 
-	r->out.result = ntstatus_to_werror(
-			messaging_send_buf(smbd_messaging_context(),
+	state->r->out.result = ntstatus_to_werror(
+		messaging_send_buf(state->msg_ctx,
 				e->pid, MSG_SMB_CLOSE_FILE,
 				(uint8 *)msg,
 				MSG_SMB_SHARE_MODE_ENTRY_SIZE));
@@ -2510,6 +2515,7 @@ static void enum_file_close_fn( const struct share_mode_entry *e,
 WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 			    struct srvsvc_NetFileClose *r)
 {
+	struct enum_file_close_state state;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 
@@ -2525,7 +2531,9 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 	 * the relevent smbd process. */
 
 	r->out.result = WERR_BADFILE;
-	share_mode_forall( enum_file_close_fn, (void *)r);
+	state.r = r;
+	state.msg_ctx = p->msg_ctx;
+	share_mode_forall(enum_file_close_fn, &state);
 	return r->out.result;
 }
 
