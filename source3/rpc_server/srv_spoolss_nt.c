@@ -279,7 +279,9 @@ static bool close_printer_handle(struct pipes_struct *p, struct policy_handle *h
  Delete a printer given a handle.
 ****************************************************************************/
 
-static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename)
+static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+				  const char *sharename,
+				  struct messaging_context *msg_ctx)
 {
 	char *cmd = lp_deleteprinter_cmd();
 	char *command = NULL;
@@ -310,8 +312,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const c
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(smbd_messaging_context(),
-				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+		message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
 	}
 
 	if ( is_print_op )
@@ -375,7 +376,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 	}
 
 	return delete_printer_hook(p->mem_ctx, p->server_info->ptok,
-				   Printer->sharename );
+				   Printer->sharename, p->msg_ctx);
 }
 
 /****************************************************************************
@@ -1266,7 +1267,8 @@ static void receive_notify2_message_list(struct messaging_context *msg,
  driver
  ********************************************************************/
 
-static bool srv_spoolss_drv_upgrade_printer(const char *drivername)
+static bool srv_spoolss_drv_upgrade_printer(const char *drivername,
+					    struct messaging_context *msg_ctx)
 {
 	int len = strlen(drivername);
 
@@ -1276,8 +1278,7 @@ static bool srv_spoolss_drv_upgrade_printer(const char *drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 
-	messaging_send_buf(smbd_messaging_context(),
-			   messaging_server_id(smbd_messaging_context()),
+	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
 			   MSG_PRINTER_DRVUPGRADE,
 			   (uint8_t *)drivername, len+1);
 
@@ -2273,7 +2274,8 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 					uint32_t localprinter, uint32_t type,
 					struct policy_handle *handle,
-					struct sockaddr_storage *client_ss)
+					struct sockaddr_storage *client_ss,
+					struct messaging_context *msg_ctx)
 {
 	WERROR result;
 	NTSTATUS status;
@@ -2290,14 +2292,12 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 		if ( !spoolss_connect_to_client( &notify_cli_pipe, client_ss, unix_printer ))
 			return false;
 
-		messaging_register(smbd_messaging_context(), NULL,
-				   MSG_PRINTER_NOTIFY2,
+		messaging_register(msg_ctx, NULL, MSG_PRINTER_NOTIFY2,
 				   receive_notify2_message_list);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
-		serverid_register_msg_flags(
-			messaging_server_id(smbd_messaging_context()),
-			true, FLAG_MSG_PRINT_NOTIFY);
+		serverid_register_msg_flags(messaging_server_id(msg_ctx),
+					    true, FLAG_MSG_PRINT_NOTIFY);
 	}
 
 	/*
@@ -2431,7 +2431,8 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
-					&Printer->notify.client_hnd, &client_ss))
+					&Printer->notify.client_hnd,
+					&client_ss, p->msg_ctx))
 		return WERR_SERVER_UNAVAILABLE;
 
 	Printer->notify.client_connected = true;
@@ -5547,9 +5548,10 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *p
 /****************************************************************************
 ****************************************************************************/
 
-bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
-		      struct spoolss_SetPrinterInfo2 *info2,
-		      const char *remote_machine)
+static bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+			     struct spoolss_SetPrinterInfo2 *info2,
+			     const char *remote_machine,
+			     struct messaging_context *msg_ctx)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -5585,8 +5587,7 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 
 	if ( (ret = smbrun(command, &fd)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(smbd_messaging_context(),
-				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+		message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
 	}
 
 	if ( is_print_op )
@@ -5966,7 +5967,8 @@ static WERROR update_printer(struct pipes_struct *p,
 	{
 		/* add_printer_hook() will call reload_services() */
 		if (!add_printer_hook(tmp_ctx, p->server_info->ptok,
-				      printer, p->client_address) ) {
+				      printer, p->client_address,
+				      p->msg_ctx)) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7256,7 +7258,8 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 
 	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
-				       info2, p->client_address) ) {
+				       info2, p->client_address,
+				       p->msg_ctx) ) {
 			return WERR_ACCESS_DENIED;
 		}
 	} else {
@@ -7431,7 +7434,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	 * to update each printer bound to this driver.   --jerry
 	 */
 
-	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
+	if (!srv_spoolss_drv_upgrade_printer(driver_name, p->msg_ctx)) {
 		DEBUG(0,("%s: Failed to send message about upgrading driver [%s]!\n",
 			fn, driver_name));
 	}
