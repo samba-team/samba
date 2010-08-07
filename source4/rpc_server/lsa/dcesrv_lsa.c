@@ -27,8 +27,9 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "../lib/crypto/crypto.h"
 #include "lib/util/tsort.h"
-#include "dsdb/common/util.c"
+#include "dsdb/common/util.h"
 
 /*
   this type allows us to distinguish handle types
