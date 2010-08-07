@@ -1327,7 +1327,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 				become_root();
 			}
 
-			ntstat = messaging_send(smbd_messaging_context(),
+			ntstat = messaging_send(p->msg_ctx,
 						session_list[snum].pid,
 						MSG_SHUTDOWN, &data_blob_null);
 
@@ -1705,9 +1705,8 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 		if ( (ret = smbrun(command, NULL)) == 0 ) {
 			/* Tell everyone we updated smb.conf. */
-			message_send_all(smbd_messaging_context(),
-					 MSG_SMB_CONF_UPDATED, NULL, 0,
-					 NULL);
+			message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED,
+					 NULL, 0, NULL);
 		}
 
 		if ( is_disk_op )
@@ -1893,8 +1892,8 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(smbd_messaging_context(),
-				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
+				 NULL);
 	}
 
 	if ( is_disk_op )
@@ -1997,8 +1996,8 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 
 	if ( (ret = smbrun(command, NULL)) == 0 ) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(smbd_messaging_context(),
-				 MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
+				 NULL);
 	}
 
 	if ( is_disk_op )

@@ -859,7 +859,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	j->in.admin_password	= cleartext_pwd;
 	j->in.debug		= true;
 	j->in.modify_config     = lp_config_backend_is_registry();
-	j->in.msg_ctx		= smbd_messaging_context();
+	j->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
 	werr = libnet_Join(p->mem_ctx, j);
@@ -925,7 +925,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	u->in.admin_password	= cleartext_pwd;
 	u->in.debug		= true;
 	u->in.modify_config     = lp_config_backend_is_registry();
-	u->in.msg_ctx		= smbd_messaging_context();
+	u->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
 	werr = libnet_Unjoin(p->mem_ctx, u);

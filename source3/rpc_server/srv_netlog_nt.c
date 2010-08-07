@@ -76,11 +76,10 @@ WERROR _netr_LogonControl(struct pipes_struct *p,
 Send a message to smbd to do a sam synchronisation
 **************************************************************************/
 
-static void send_sync_message(void)
+static void send_sync_message(struct messaging_context *msg_ctx)
 {
         DEBUG(3, ("sending sam synchronisation message\n"));
-        message_send_all(smbd_messaging_context(), MSG_SMB_SAM_SYNC, NULL, 0,
-			 NULL);
+        message_send_all(msg_ctx, MSG_SMB_SAM_SYNC, NULL, 0, NULL);
 }
 
 /*************************************************************************
@@ -379,7 +378,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	}
 
         if (lp_server_role() == ROLE_DOMAIN_BDC) {
-                send_sync_message();
+                send_sync_message(p->msg_ctx);
 	}
 
 	return WERR_OK;
@@ -1694,7 +1693,7 @@ WERROR _netr_GetDcName(struct pipes_struct *p,
 	flags = DS_PDC_REQUIRED | DS_IS_FLAT_NAME | DS_RETURN_FLAT_NAME;
 
 	status = dsgetdcname(p->mem_ctx,
-			     smbd_messaging_context(),
+			     p->msg_ctx,
 			     r->in.domainname,
 			     NULL,
 			     NULL,
@@ -1739,7 +1738,7 @@ WERROR _netr_GetAnyDCName(struct pipes_struct *p,
 	flags = DS_IS_FLAT_NAME | DS_RETURN_FLAT_NAME;
 
 	status = dsgetdcname(p->mem_ctx,
-			     smbd_messaging_context(),
+			     p->msg_ctx,
 			     r->in.domainname,
 			     NULL,
 			     NULL,
