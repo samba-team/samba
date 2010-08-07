@@ -216,8 +216,8 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 		ret = dsdb_find_guid_by_dn(s->samdb, server_dn,
 					   &list->servers[i].dsa_guid);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("failed to find connection server's GUID"
-				  "by DN=%s: %s\n",
+			DEBUG(0, ("Failed to find connection server's GUID by "
+				  "DN=%s: %s\n",
 				  ldb_dn_get_linearized(server_dn),
 				  ldb_strerror(ret)));
 			continue;
