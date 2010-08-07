@@ -29,7 +29,7 @@ from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb
 from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, 
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
-    ATYPE_WORKSTATION_TRUST)
+    ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -151,6 +151,16 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Multi-valued "systemFlags"
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": "person",
+                "systemFlags": ["0", str(SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # We cannot instanciate from an abstract objectclass
         try:
