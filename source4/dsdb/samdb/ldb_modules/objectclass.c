@@ -443,6 +443,7 @@ static int objectclass_do_add(struct oc_context *ac)
 	const char *rdn_name = NULL;
 	char *value;
 	const struct dsdb_class *objectclass;
+	struct ldb_dn *objectcategory;
 	int32_t systemFlags = 0;
 	int ret;
 
@@ -609,21 +610,49 @@ static int objectclass_do_add(struct oc_context *ac)
 			}
 		}
 
-		if (!ldb_msg_find_element(msg, "objectCategory")) {
-			struct dsdb_extended_dn_store_format *dn_format = talloc_get_type(ldb_module_get_private(ac->module), struct dsdb_extended_dn_store_format);
+		objectcategory = ldb_msg_find_attr_as_dn(ldb, ac, msg,
+							 "objectCategory");
+		if (objectcategory == NULL) {
+			struct dsdb_extended_dn_store_format *dn_format =
+					talloc_get_type(ldb_module_get_private(ac->module),
+							struct dsdb_extended_dn_store_format);
 			if (dn_format && dn_format->store_extended_dn_in_ldb == false) {
 				/* Strip off extended components */
-				struct ldb_dn *dn = ldb_dn_new(msg, ldb, objectclass->defaultObjectCategory);
+				struct ldb_dn *dn = ldb_dn_new(ac, ldb,
+							       objectclass->defaultObjectCategory);
 				value = ldb_dn_alloc_linearized(msg, dn);
 				talloc_free(dn);
 			} else {
-				value = talloc_strdup(msg, objectclass->defaultObjectCategory);
+				value = talloc_strdup(msg,
+						      objectclass->defaultObjectCategory);
 			}
 			if (value == NULL) {
 				return ldb_oom(ldb);
 			}
-			ldb_msg_add_string(msg, "objectCategory", value);
+
+			ret = ldb_msg_add_string(msg, "objectCategory", value);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		} else {
+			const struct dsdb_class *ocClass =
+					dsdb_class_by_cn_ldb_val(ac->schema,
+								 ldb_dn_get_rdn_val(objectcategory));
+			if (ocClass != NULL) {
+				struct ldb_dn *dn = ldb_dn_new(ac, ldb,
+							       ocClass->defaultObjectCategory);
+				if (ldb_dn_compare(objectcategory, dn) != 0) {
+					ocClass = NULL;
+				}
+			}
+			talloc_free(objectcategory);
+			if (ocClass == NULL) {
+				ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, 'objectCategory' attribute invalid!",
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
 		}
+
 		if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly") && (objectclass->defaultHidingValue == true)) {
 			ldb_msg_add_string(msg, "showInAdvancedViewOnly",
 						"TRUE");
