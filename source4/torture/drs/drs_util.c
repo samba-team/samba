@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/torture.h"
+#include "dsdb/samdb/samdb.h"
 #include "torture/rpc/drsuapi.h"
 #include "../lib/util/asn1.h"
 
@@ -165,4 +166,95 @@ const char * drs_util_DsAttributeId_to_string(enum drsuapi_DsAttributeId r)
 	default: val = "UNKNOWN_ENUM_VALUE"; break;
 	}
 	return val;
+}
+
+
+/**
+ * Loads dsdb_schema from ldb connection using remote prefixMap.
+ * Schema will be loaded only if:
+ *  - ldb has no attached schema
+ *  - reload_schema is true
+ *
+ * This function is to be used in tests that use GetNCChanges() function
+ */
+bool drs_util_dsdb_schema_load_ldb(struct torture_context *tctx,
+				   struct ldb_context *ldb,
+				   const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+				   bool reload_schema)
+{
+	int i, ret;
+	WERROR werr;
+	const char *err_msg;
+	struct ldb_result *a_res;
+	struct ldb_result *c_res;
+	struct ldb_dn *schema_dn;
+	struct dsdb_schema *ldap_schema;
+
+	ldap_schema = dsdb_get_schema(ldb, NULL);
+	if (ldap_schema && !reload_schema) {
+		return true;
+	}
+
+	schema_dn = ldb_get_schema_basedn(ldb);
+	torture_assert(tctx, schema_dn != NULL,
+		       talloc_asprintf(tctx, "ldb_get_schema_basedn() failed: %s", ldb_errstring(ldb)));
+
+	ldap_schema = dsdb_new_schema(ldb);
+	torture_assert(tctx, ldap_schema != NULL, "dsdb_new_schema() failed!");
+
+	werr = dsdb_load_prefixmap_from_drsuapi(ldap_schema, mapping_ctr);
+
+	/*
+	 * load the attribute definitions
+	 */
+	ret = ldb_search(ldb, ldap_schema, &a_res,
+			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+			 "(objectClass=attributeSchema)");
+	if (ret != LDB_SUCCESS) {
+		err_msg = talloc_asprintf(tctx,
+					  "failed to search attributeSchema objects: %s",
+					  ldb_errstring(ldb));
+		torture_fail(tctx, err_msg);
+	}
+
+	/*
+	 * load the objectClass definitions
+	 */
+	ret = ldb_search(ldb, ldap_schema, &c_res,
+			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+			 "(objectClass=classSchema)");
+	if (ret != LDB_SUCCESS) {
+		err_msg = talloc_asprintf(tctx,
+					  "failed to search classSchema objects: %s",
+					  ldb_errstring(ldb));
+		torture_fail(tctx, err_msg);
+	}
+
+	/* Build schema */
+	for (i=0; i < a_res->count; i++) {
+		werr = dsdb_attribute_from_ldb(ldb, ldap_schema, a_res->msgs[i]);
+		torture_assert_werr_ok(tctx, werr,
+				       talloc_asprintf(tctx,
+						       "dsdb_attribute_from_ldb() failed for: %s",
+						       ldb_dn_get_linearized(a_res->msgs[i]->dn)));
+	}
+
+	for (i=0; i < c_res->count; i++) {
+		werr = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
+		torture_assert_werr_ok(tctx, werr,
+				       talloc_asprintf(tctx,
+						       "dsdb_class_from_ldb() failed for: %s",
+						       ldb_dn_get_linearized(c_res->msgs[i]->dn)));
+	}
+
+	talloc_free(a_res);
+	talloc_free(c_res);
+
+	ret = dsdb_set_schema(ldb, ldap_schema);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx,
+			     talloc_asprintf(tctx, "dsdb_set_schema() failed: %s", ldb_strerror(ret)));
+	}
+
+	return true;
 }

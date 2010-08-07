@@ -335,67 +335,11 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	const char *err_msg;
 	struct dsdb_schema *ldap_schema;
 
+	/* load dsdb_schema using remote prefixMap */
+	torture_assert(tctx,
+		       drs_util_dsdb_schema_load_ldb(tctx, ldb, mapping_ctr, false),
+		       "drs_util_dsdb_schema_load_ldb() failed");
 	ldap_schema = dsdb_get_schema(ldb, NULL);
-	if (!ldap_schema) {
-		struct ldb_result *a_res;
-		struct ldb_result *c_res;
-		struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
-		ldap_schema = dsdb_new_schema(ctx);
-		if (!ldap_schema) {
-			return false;
-		}
-		status = dsdb_load_prefixmap_from_drsuapi(ldap_schema, mapping_ctr);
-
-		/*
-		 * load the attribute definitions
-		 */
-		ret = ldb_search(ldb, ldap_schema, &a_res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 "(objectClass=attributeSchema)");
-		if (ret != LDB_SUCCESS) {
-			err_msg = talloc_asprintf(tctx,
-						  "failed to search attributeSchema objects: %s",
-						  ldb_errstring(ldb));
-			torture_fail(tctx, err_msg);
-		}
-
-		/*
-		 * load the objectClass definitions
-		 */
-		ret = ldb_search(ldb, ldap_schema, &c_res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 "(objectClass=classSchema)");
-		if (ret != LDB_SUCCESS) {
-			err_msg = talloc_asprintf(tctx,
-						  "failed to search classSchema objects: %s",
-						  ldb_errstring(ldb));
-			torture_fail(tctx, err_msg);
-		}
-
-		/* Build schema */
-		for (i=0; i < a_res->count; i++) {
-			status = dsdb_attribute_from_ldb(ldb, ldap_schema, a_res->msgs[i]);
-			torture_assert_werr_ok(tctx, status,
-					       talloc_asprintf(tctx,
-							       "dsdb_attribute_from_ldb() failed for: %s",
-							       ldb_dn_get_linearized(a_res->msgs[i]->dn)));
-		}
-
-		for (i=0; i < c_res->count; i++) {
-			status = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
-			torture_assert_werr_ok(tctx, status,
-					       talloc_asprintf(tctx,
-							       "dsdb_class_from_ldb() failed for: %s",
-							       ldb_dn_get_linearized(c_res->msgs[i]->dn)));
-		}
-		talloc_free(a_res);
-		talloc_free(c_res);
-		ret = dsdb_set_schema(ldb, ldap_schema);
-		if (ret != LDB_SUCCESS) {
-			torture_fail(tctx,
-				     talloc_asprintf(tctx, "dsdb_set_schema() failed: %s", ldb_strerror(ret)));
-		}
-	}
 
 	status = dsdb_extended_replicated_objects_convert(ldb,
 							  partition,
