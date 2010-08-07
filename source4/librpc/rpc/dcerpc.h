@@ -444,16 +444,6 @@ struct dcerpc_binding_handle_ops {
 				     const struct ndr_interface_call *call);
 };
 
-/* TODO: this needs to be completely private */
-struct dcerpc_binding_handle {
-	void *private_data;
-	const struct dcerpc_binding_handle_ops *ops;
-	const char *location;
-	const struct GUID *object;
-	const struct ndr_interface_table *table;
-	struct tevent_context *sync_ev;
-};
-
 struct dcerpc_binding_handle *_dcerpc_binding_handle_create(TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding_handle_ops *ops,
 					const struct GUID *object,

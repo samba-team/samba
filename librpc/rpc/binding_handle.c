@@ -24,6 +24,15 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
 
+struct dcerpc_binding_handle {
+	void *private_data;
+	const struct dcerpc_binding_handle_ops *ops;
+	const char *location;
+	const struct GUID *object;
+	const struct ndr_interface_table *table;
+	struct tevent_context *sync_ev;
+};
+
 static int dcerpc_binding_handle_destructor(struct dcerpc_binding_handle *b)
 {
 	return 0;
