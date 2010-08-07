@@ -658,16 +658,24 @@ static int objectclass_do_add(struct oc_context *ac)
 						"TRUE");
 		}
 
-		/* There are very special rules for systemFlags, see MS-ADTS 3.1.1.5.2.4 */
+		/* There are very special rules for systemFlags, see MS-ADTS
+		 * MS-ADTS 3.1.1.5.2.4 */
+
 		el = ldb_msg_find_element(msg, "systemFlags");
+		if ((el != NULL) && (el->num_values > 1)) {
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, 'systemFlags' attribute multivalued!",
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 
 		systemFlags = ldb_msg_find_attr_as_int(msg, "systemFlags", 0);
 
-		if (el) {
-			/* Only these flags may be set by a client, but we can't tell between a client and our provision at this point */
-			/* systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE); */
-			ldb_msg_remove_element(msg, el);
-		}
+		ldb_msg_remove_attr(msg, "systemFlags");
+
+		/* Only these flags may be set by a client, but we can't tell
+		 * between a client and our provision at this point
+		 * systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE);
+		 */
 
 		/* This flag is only allowed on attributeSchema objects */
 		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "attributeSchema") == 0) {
@@ -690,11 +698,15 @@ static int objectclass_do_add(struct oc_context *ac)
 		/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
 
 		if (el || systemFlags != 0) {
-			samdb_msg_add_int(ldb, msg, msg, "systemFlags", systemFlags);
+			ret = samdb_msg_add_int(ldb, msg, msg, "systemFlags",
+						systemFlags);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	}
-	ret = ldb_msg_sanity_check(ldb, msg);
 
+	ret = ldb_msg_sanity_check(ldb, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
