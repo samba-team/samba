@@ -2435,7 +2435,8 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
  */
 static bool deadtime_fn(const struct timeval *now, void *private_data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn =
+		(struct smbd_server_connection *)private_data;
 
 	if (sconn->using_smb2) {
 		/* TODO: implement real idle check */
@@ -2443,7 +2444,7 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 			return true;
 		}
 		DEBUG( 2, ( "Closing idle SMB2 connection\n" ) );
-		messaging_send(smbd_messaging_context(), procid_self(),
+		messaging_send(sconn->msg_ctx, procid_self(),
 			       MSG_SHUTDOWN, &data_blob_null);
 		return false;
 	}
@@ -2451,7 +2452,7 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 	if ((conn_num_open(sconn) == 0)
 	    || (conn_idle_all(sconn, now->tv_sec))) {
 		DEBUG( 2, ( "Closing idle SMB1 connection\n" ) );
-		messaging_send(smbd_messaging_context(), procid_self(),
+		messaging_send(sconn->msg_ctx, procid_self(),
 			       MSG_SHUTDOWN, &data_blob_null);
 		return False;
 	}
@@ -2807,7 +2808,7 @@ static bool fork_echo_handler(struct smbd_server_connection *sconn)
 
 		close(listener_pipe[0]);
 
-		status = reinit_after_fork(smbd_messaging_context(),
+		status = reinit_after_fork(sconn->msg_ctx,
 					   smbd_event_context(),
 					   procid_self(), false);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3036,7 +3037,7 @@ void smbd_process(void)
 
 	if (!(event_add_idle(smbd_event_context(), NULL,
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
-			     "deadtime", deadtime_fn, NULL))) {
+			     "deadtime", deadtime_fn, smbd_server_conn))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
