@@ -293,16 +293,23 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 	}
 
 	if (!cmds[i].fn(cli->pipes_struct)) {
+		data_blob_free(&cli->pipes_struct->in_data.data);
+		data_blob_free(&cli->pipes_struct->out_data.rdata);
+		talloc_free_children(cli->pipes_struct->mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	status = internal_ndr_pull(mem_ctx, cli, table, opnum, r);
 	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(&cli->pipes_struct->in_data.data);
+		data_blob_free(&cli->pipes_struct->out_data.rdata);
+		talloc_free_children(cli->pipes_struct->mem_ctx);
 		return status;
 	}
 
 	data_blob_free(&cli->pipes_struct->in_data.data);
 	data_blob_free(&cli->pipes_struct->out_data.rdata);
+	talloc_free_children(cli->pipes_struct->mem_ctx);
 
 	return NT_STATUS_OK;
 }
