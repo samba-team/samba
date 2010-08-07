@@ -142,6 +142,16 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
+        # Invalid objectCategory specified
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": "person",
+                "objectCategory": self.base_dn })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
         # We cannot instanciate from an abstract objectclass
         try:
             self.ldb.add({
