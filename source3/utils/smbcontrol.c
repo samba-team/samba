@@ -695,7 +695,8 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 			return False;
 		}
 
-		notify_printer_byname(argv[2], attribute,
+		notify_printer_byname(messaging_event_context(msg_ctx),
+				      msg_ctx, argv[2], attribute,
 				      CONST_DISCARD(char *, argv[4]));
 
 		goto send;

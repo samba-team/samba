@@ -577,7 +577,10 @@ void notify_printer_location(struct tevent_context *ev,
 		snum, strlen(location) + 1, location);
 }
 
-void notify_printer_byname( const char *printername, uint32 change, const char *value )
+void notify_printer_byname(struct tevent_context *ev,
+			   struct messaging_context *msg_ctx,
+			   const char *printername, uint32 change,
+			   const char *value)
 {
 	int snum = print_queue_snum(printername);
 	int type = PRINTER_NOTIFY_TYPE;
@@ -586,7 +589,7 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
 		return;
 		
 	send_notify_field_buffer(
-		server_event_context(), server_messaging_context(),
+		ev, msg_ctx,
 		printername, type, change, snum, strlen(value)+1, value );
 } 
 
