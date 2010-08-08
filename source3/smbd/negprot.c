@@ -242,7 +242,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 #ifdef DEVELOPER
 	/* Fix valgrind 'uninitialized bytes' issue. */
 	slen = strlen(dos_name);
-	if (slen < sizeof(16)) {
+	if (slen < 16) {
 		memset(blob_out.data+slen, '\0', 16 - slen);
 	}
 #endif
