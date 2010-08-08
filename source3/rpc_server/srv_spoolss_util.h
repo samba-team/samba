@@ -73,6 +73,7 @@ enum spoolss_PrinterInfo2Mask {
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     struct messaging_context *msg_ctx,
 			     const char *servername,
 			     const char *sharename);
 

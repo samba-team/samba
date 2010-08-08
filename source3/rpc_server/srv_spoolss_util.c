@@ -1315,6 +1315,7 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     struct messaging_context *msg_ctx,
 			     const char *servername,
 			     const char *sharename)
 {
@@ -1347,7 +1348,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					"",
@@ -1369,7 +1370,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	/* Create the main key */
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					"",

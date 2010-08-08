@@ -1670,6 +1670,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		winreg_create_printer(p->mem_ctx,
 				      p->server_info,
+				      p->msg_ctx,
 				      Printer->servername,
 				      lp_const_servicename(snum));
 
@@ -3811,6 +3812,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 		result = winreg_create_printer(mem_ctx,
 					       server_info,
+					       smbd_messaging_context(),
 					       NULL,
 					       printer);
 		if (!W_ERROR_IS_OK(result)) {
