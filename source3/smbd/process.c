@@ -2237,7 +2237,7 @@ void check_reload(time_t t)
 			|| (t-last_printer_reload_time  < 0) ) 
 		{
 			DEBUG( 3,( "Printcap cache time expired.\n"));
-			reload_printers();
+			reload_printers(smbd_messaging_context());
 			last_printer_reload_time = t;
 		}
 	}

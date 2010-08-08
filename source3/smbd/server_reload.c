@@ -29,7 +29,7 @@
 /****************************************************************************
  Reload printers
 **************************************************************************/
-void reload_printers(void)
+void reload_printers(struct messaging_context *msg_ctx)
 {
 	struct auth_serversupplied_info *server_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -63,18 +63,18 @@ void reload_printers(void)
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(server_info, server_info,
-						 smbd_messaging_context(),
+						 msg_ctx,
 						 NULL, lp_servicename(snum),
 						 NULL, &pinfo2)) {
 				nt_printer_publish(server_info,
 						   server_info,
-						   smbd_messaging_context(),
+						   msg_ctx,
 						   pinfo2,
 						   DSPRINT_UNPUBLISH);
 				TALLOC_FREE(pinfo2);
 			}
-			nt_printer_remove(server_info, server_info,
-					  smbd_messaging_context(), pname);
+			nt_printer_remove(server_info, server_info, msg_ctx,
+					  pname);
 			lp_killservice(snum);
 		}
 	}
@@ -110,7 +110,7 @@ bool reload_services(bool test)
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
-	reload_printers();
+	reload_printers(smbd_messaging_context());
 
 	/* perhaps the config filename is now set */
 	if (!test)

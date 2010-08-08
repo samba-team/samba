@@ -5755,7 +5755,7 @@ int get_client_fd(void);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
-void reload_printers(void);
+void reload_printers(struct messaging_context *msg_ctx);
 bool reload_services(bool test);
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);
