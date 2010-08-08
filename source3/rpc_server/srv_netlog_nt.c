@@ -1020,6 +1020,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 
 static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 						  struct auth_serversupplied_info *server_info,
+						  struct messaging_context *msg_ctx,
 						  const char *account_name,
 						  struct samr_Password *nt_hash)
 {
@@ -1034,8 +1035,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info,
-					smbd_messaging_context(),
+					server_info, msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1139,6 +1139,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   p->server_info,
+						   p->msg_ctx,
 						   creds->account_name,
 						   r->in.new_password);
 	return status;
@@ -1185,6 +1186,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   p->server_info,
+						   p->msg_ctx,
 						   creds->account_name,
 						   &nt_hash);
 	return status;
