@@ -455,6 +455,7 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *hand
 
 static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,
+				 struct messaging_context *msg_ctx,
 				 Printer_entry *Printer,
 				 const char *handlename)
 {
@@ -539,7 +540,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 		result = winreg_get_printer(mem_ctx,
 					    server_info,
-					    smbd_messaging_context(),
+					    msg_ctx,
 					    servername,
 					    sname,
 					    &info2);
@@ -610,7 +611,8 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 		return false;
 	}
 
-	if (!set_printer_hnd_name(p->mem_ctx, p->server_info, new_printer, name)) {
+	if (!set_printer_hnd_name(p->mem_ctx, p->server_info, p->msg_ctx,
+				  new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return false;
 	}
