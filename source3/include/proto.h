@@ -4497,7 +4497,8 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
 					      const char *client_address,
-					      struct auth_serversupplied_info *server_info);
+					      struct auth_serversupplied_info *server_info,
+					      struct messaging_context *msg_ctx);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax,
 				struct auth_serversupplied_info *serversupplied_info,
 				struct rpc_pipe_client **presult);

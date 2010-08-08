@@ -582,7 +582,8 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		}
 
 		p = make_internal_rpc_pipe_p(handle, &syntax, client_address,
-					     server_info);
+					     server_info,
+					     smbd_messaging_context());
 
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
 		handle->private_data = p;
