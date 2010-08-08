@@ -280,6 +280,7 @@ void map_printer_permissions(struct security_descriptor *sd);
 void map_job_permissions(struct security_descriptor *sd);
 
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
+			     struct messaging_context *msg_ctx,
 			     const char *servicename);
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,

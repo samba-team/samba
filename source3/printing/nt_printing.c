@@ -2167,6 +2167,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info,
 *****************************************************************************/
 
 bool print_time_access_check(struct auth_serversupplied_info *server_info,
+			     struct messaging_context *msg_ctx,
 			     const char *servicename)
 {
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -2176,8 +2177,7 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 	struct tm *t;
 	uint32 mins;
 
-	result = winreg_get_printer(NULL, server_info,
-				    smbd_messaging_context(),
+	result = winreg_get_printer(NULL, server_info, msg_ctx,
 				    NULL, servicename, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return False;

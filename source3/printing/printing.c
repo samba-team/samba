@@ -2519,7 +2519,8 @@ static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
 		return WERR_ACCESS_DENIED;
 	}
 
-	if (!print_time_access_check(server_info, sharename)) {
+	if (!print_time_access_check(server_info, smbd_messaging_context(),
+				     sharename)) {
 		DEBUG(3, ("print_job_checks: "
 			  "job start denied by time check\n"));
 		return WERR_ACCESS_DENIED;
