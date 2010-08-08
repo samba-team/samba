@@ -558,7 +558,8 @@ static void cups_async_callback(struct event_context *event_ctx,
 	TALLOC_FREE(cache_fd_event);
 }
 
-bool cups_cache_reload(void)
+bool cups_cache_reload(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx)
 {
 	int *p_pipe_fd = TALLOC_P(NULL, int);
 
@@ -569,9 +570,7 @@ bool cups_cache_reload(void)
 	*p_pipe_fd = -1;
 
 	/* Set up an async refresh. */
-	if (!cups_pcap_load_async(server_event_context(),
-				  server_messaging_context(),
-				  p_pipe_fd)) {
+	if (!cups_pcap_load_async(ev, msg_ctx, p_pipe_fd)) {
 		return false;
 	}
 	if (!local_pcap_copy) {
@@ -581,8 +580,7 @@ bool cups_cache_reload(void)
 		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
 			*p_pipe_fd ));
 
-		cups_async_callback(server_event_context(),
-					NULL,
+		cups_async_callback(ev, NULL,
 					EVENT_FD_READ,
 					(void *)p_pipe_fd);
 		if (!local_pcap_copy) {
@@ -597,7 +595,7 @@ bool cups_cache_reload(void)
 			*p_pipe_fd ));
 
 		/* Trigger an event when the pipe can be read. */
-		cache_fd_event = event_add_fd(server_event_context(),
+		cache_fd_event = event_add_fd(ev,
 					NULL, *p_pipe_fd,
 					EVENT_FD_READ,
 					cups_async_callback,

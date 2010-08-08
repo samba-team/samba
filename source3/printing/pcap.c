@@ -120,7 +120,8 @@ void pcap_cache_reload(void)
 
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
-		pcap_reloaded = cups_cache_reload();
+		pcap_reloaded = cups_cache_reload(server_event_context(),
+						  server_messaging_context());
 		goto done;
 	}
 #endif

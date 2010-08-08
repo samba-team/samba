@@ -34,7 +34,8 @@ bool aix_cache_reload(void);
 
 /* The following definitions come from printing/print_cups.c  */
 
-bool cups_cache_reload(void);
+bool cups_cache_reload(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx);
 bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
 				const char *printername,
 				char **comment,
