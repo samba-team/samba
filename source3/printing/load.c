@@ -52,11 +52,11 @@ static void add_auto_printers(void)
 /***************************************************************************
 load automatic printer services
 ***************************************************************************/
-void load_printers(void)
+void load_printers(struct tevent_context *ev,
+		   struct messaging_context *msg_ctx)
 {
 	if (!pcap_cache_loaded()) {
-		pcap_cache_reload(server_event_context(),
-				  server_messaging_context());
+		pcap_cache_reload(ev, msg_ctx);
 	}
 
 	add_auto_printers();

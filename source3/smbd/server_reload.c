@@ -79,7 +79,7 @@ void reload_printers(struct messaging_context *msg_ctx)
 		}
 	}
 
-	load_printers();
+	load_printers(server_event_context(), msg_ctx);
 
 	TALLOC_FREE(server_info);
 }

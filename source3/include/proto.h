@@ -4396,7 +4396,8 @@ bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 
 /* The following definitions come from printing/load.c  */
 
-void load_printers(void);
+void load_printers(struct tevent_context *ev,
+		   struct messaging_context *msg_ctx);
 
 /* The following definitions come from printing/lpq_parse.c  */
 
