@@ -1571,7 +1571,8 @@ void start_background_queue(struct tevent_context *ev,
 update the internal database from the system print queue for a queue
 ****************************************************************************/
 
-static void print_queue_update(int snum, bool force)
+static void print_queue_update(struct messaging_context *msg_ctx,
+			       int snum, bool force)
 {
 	fstring key;
 	fstring sharename;
@@ -1690,8 +1691,7 @@ static void print_queue_update(int snum, bool force)
 
 	/* finally send the message */
 
-	messaging_send_buf(server_messaging_context(),
-			   pid_to_procid(background_lpq_updater_pid),
+	messaging_send_buf(msg_ctx, pid_to_procid(background_lpq_updater_pid),
 			   MSG_PRINTER_UPDATE, (uint8 *)buffer, len);
 
 	SAFE_FREE( buffer );
@@ -2162,7 +2162,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	/* force update the database and say the delete failed if the
            job still exists */
 
-	print_queue_update(snum, True);
+	print_queue_update(msg_ctx, snum, True);
 
 	pjob = print_job_find(sharename, jobid);
 	if (pjob && (pjob->status != LPQ_DELETING)) {
@@ -2376,7 +2376,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum, False);
+		print_queue_update(server_messaging_context(), snum, False);
 
 	/* also fetch the queue status */
 	memset(&status, 0, sizeof(status));
@@ -2833,7 +2833,7 @@ NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum, False);
+		print_queue_update(server_messaging_context(), snum, False);
 
 	return NT_STATUS_OK;
 
@@ -2866,7 +2866,7 @@ static bool get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum, False);
+		print_queue_update(server_messaging_context(), snum, False);
 
 	*pcount = 0;
 	*ppqueue = NULL;
@@ -2982,7 +2982,7 @@ int print_queue_status(int snum,
 	/* make sure the database is up to date */
 
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum, False);
+		print_queue_update(server_messaging_context(), snum, False);
 
 	/* return if we are done */
 	if ( !ppqueue || !status )
@@ -3091,7 +3091,7 @@ WERROR print_queue_resume(struct auth_serversupplied_info *server_info,
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(snum, True);
+		print_queue_update(msg_ctx, snum, True);
 
 	/* Send a printer notify message */
 
@@ -3113,7 +3113,7 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
 	bool can_job_admin;
 
 	/* Force and update so the count is accurate (i.e. not a cached count) */
-	print_queue_update(snum, True);
+	print_queue_update(msg_ctx, snum, True);
 
 	can_job_admin = print_access_check(server_info,
 					   msg_ctx,
@@ -3137,7 +3137,7 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
 		unbecome_root();
 
 	/* update the cache */
-	print_queue_update( snum, True );
+	print_queue_update(msg_ctx, snum, True);
 
 	SAFE_FREE(queue);
 
