@@ -372,7 +372,9 @@ static void send_notify_field_values(struct tevent_context *ev,
 	send_spoolss_notify2_msg(ev, msg_ctx, msg);
 }
 
-static void send_notify_field_buffer(const char *sharename, uint32 type,
+static void send_notify_field_buffer(struct tevent_context *ev,
+				     struct messaging_context *msg_ctx,
+				     const char *sharename, uint32 type,
 				     uint32 field, uint32 id, uint32 len,
 				     const char *buffer)
 {
@@ -397,8 +399,7 @@ static void send_notify_field_buffer(const char *sharename, uint32 type,
 	msg->len = len;
 	msg->notify.data = CONST_DISCARD(char *,buffer);
 
-	send_spoolss_notify2_msg(server_event_context(),
-				 server_messaging_context(), msg);
+	send_spoolss_notify2_msg(ev, msg_ctx, msg);
 }
 
 /* Send a message that the printer status has changed */
@@ -468,6 +469,7 @@ void notify_job_total_pages(const char *sharename, uint32 jobid,
 void notify_job_username(const char *sharename, uint32 jobid, char *name)
 {
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_USER_NAME,
 		jobid, strlen(name) + 1, name);
 }
@@ -475,6 +477,7 @@ void notify_job_username(const char *sharename, uint32 jobid, char *name)
 void notify_job_name(const char *sharename, uint32 jobid, char *name)
 {
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_DOCUMENT,
 		jobid, strlen(name) + 1, name);
 }
@@ -483,6 +486,7 @@ void notify_job_submitted(const char *sharename, uint32 jobid,
 			  time_t submitted)
 {
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_SUBMITTED,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
@@ -492,6 +496,7 @@ void notify_printer_driver(int snum, const char *driver_name)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_DRIVER_NAME,
 		snum, strlen(driver_name) + 1, driver_name);
 }
@@ -501,6 +506,7 @@ void notify_printer_comment(int snum, const char *comment)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_COMMENT,
 		snum, strlen(comment) + 1, comment);
 }
@@ -510,6 +516,7 @@ void notify_printer_sharename(int snum, const char *share_name)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_SHARE_NAME,
 		snum, strlen(share_name) + 1, share_name);
 }
@@ -519,6 +526,7 @@ void notify_printer_printername(int snum, const char *printername)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PRINTER_NAME,
 		snum, strlen(printername) + 1, printername);
 }
@@ -528,6 +536,7 @@ void notify_printer_port(int snum, const char *port_name)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PORT_NAME,
 		snum, strlen(port_name) + 1, port_name);
 }
@@ -537,6 +546,7 @@ void notify_printer_location(int snum, const char *location)
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_LOCATION,
 		snum, strlen(location) + 1, location);
 }
@@ -549,7 +559,9 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
 	if ( snum == -1 )
 		return;
 		
-	send_notify_field_buffer( printername, type, change, snum, strlen(value)+1, value );
+	send_notify_field_buffer(
+		server_event_context(), server_messaging_context(),
+		printername, type, change, snum, strlen(value)+1, value );
 } 
 
 
