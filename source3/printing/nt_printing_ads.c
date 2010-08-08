@@ -68,7 +68,9 @@ static void store_printer_guid(const char *printer, struct GUID guid)
 		goto done;
 	}
 
-	result = winreg_set_printer_dataex(tmp_ctx, server_info, printer,
+	result = winreg_set_printer_dataex(tmp_ctx, server_info,
+					   smbd_messaging_context(),
+					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   REG_SZ, blob.data, blob.length);
 	if (!W_ERROR_IS_OK(result)) {
