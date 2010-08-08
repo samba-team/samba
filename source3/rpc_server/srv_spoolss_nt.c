@@ -6695,6 +6695,7 @@ WERROR _spoolss_ScheduleJob(struct pipes_struct *p,
 ****************************************************************/
 
 static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
+			       struct messaging_context *msg_ctx,
 			       const char *printer_name,
 			       uint32_t job_id,
 			       struct spoolss_SetJobInfo1 *r)
@@ -6709,8 +6710,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!print_job_set_name(server_event_context(),
-				server_messaging_context(),
+	if (!print_job_set_name(server_event_context(), msg_ctx,
 				printer_name, job_id, r->document_name)) {
 		return WERR_BADFID;
 	}
@@ -6775,7 +6775,8 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 
 	switch (r->in.ctr->level) {
 	case 1:
-		errcode = spoolss_setjob_1(p->mem_ctx, lp_const_servicename(snum),
+		errcode = spoolss_setjob_1(p->mem_ctx, p->msg_ctx,
+					   lp_const_servicename(snum),
 					   r->in.job_id,
 					   r->in.ctr->info.info1);
 		break;
