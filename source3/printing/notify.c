@@ -529,12 +529,14 @@ void notify_printer_comment(struct tevent_context *ev,
 		snum, strlen(comment) + 1, comment);
 }
 
-void notify_printer_sharename(int snum, const char *share_name)
+void notify_printer_sharename(struct tevent_context *ev,
+			      struct messaging_context *msg_ctx,
+			      int snum, const char *share_name)
 {
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
-		server_event_context(), server_messaging_context(),
+		ev, msg_ctx,
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_SHARE_NAME,
 		snum, strlen(share_name) + 1, share_name);
 }
