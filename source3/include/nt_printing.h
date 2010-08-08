@@ -285,6 +285,7 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
 			struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx,
 			const char *printer);
 
 #endif /* NT_PRINTING_H_ */

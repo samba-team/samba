@@ -70,7 +70,8 @@ void reload_printers(void)
 						   DSPRINT_UNPUBLISH);
 				TALLOC_FREE(pinfo2);
 			}
-			nt_printer_remove(server_info, server_info, pname);
+			nt_printer_remove(server_info, server_info,
+					  smbd_messaging_context(), pname);
 			lp_killservice(snum);
 		}
 	}

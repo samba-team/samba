@@ -2205,12 +2205,12 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
 			struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx,
 			const char *printer)
 {
 	WERROR result;
 
-	result = winreg_delete_printer_key(mem_ctx, server_info,
-					   smbd_messaging_context(),
+	result = winreg_delete_printer_key(mem_ctx, server_info, msg_ctx,
 					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
