@@ -2112,6 +2112,7 @@ static bool is_owner(struct auth_serversupplied_info *server_info,
 ****************************************************************************/
 
 WERROR print_job_delete(struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx,
 			int snum, uint32_t jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
@@ -2125,7 +2126,7 @@ WERROR print_job_delete(struct auth_serversupplied_info *server_info,
 	   owns their job. */
 
 	if (!owner &&
-	    !print_access_check(server_info, smbd_messaging_context(), snum,
+	    !print_access_check(server_info, msg_ctx, snum,
 				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 

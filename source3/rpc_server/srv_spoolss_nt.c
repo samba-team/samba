@@ -5405,7 +5405,8 @@ WERROR _spoolss_AbortPrinter(struct pipes_struct *p,
 		return WERR_SPL_NO_STARTDOC;
 	}
 
-	errcode = print_job_delete(p->server_info, snum, Printer->jobid);
+	errcode = print_job_delete(p->server_info, p->msg_ctx, snum,
+				   Printer->jobid);
 
 	return errcode;
 }
@@ -6684,7 +6685,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 	switch (r->in.command) {
 	case SPOOLSS_JOB_CONTROL_CANCEL:
 	case SPOOLSS_JOB_CONTROL_DELETE:
-		errcode = print_job_delete(p->server_info,
+		errcode = print_job_delete(p->server_info, p->msg_ctx,
 					   snum, r->in.job_id);
 		if (W_ERROR_EQUAL(errcode, WERR_PRINTER_HAS_JOBS_QUEUED)) {
 			errcode = WERR_OK;

@@ -125,7 +125,8 @@ struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid
 bool print_job_set_name(const char *sharename, uint32 jobid, const char *name);
 bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name);
 WERROR print_job_delete(struct auth_serversupplied_info *server_info,
-			int snum, uint32 jobid);
+			struct messaging_context *msg_ctx,
+			int snum, uint32_t jobid);
 bool print_job_pause(struct auth_serversupplied_info *server_info, int snum,
 		     uint32 jobid, WERROR *errcode);
 bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
