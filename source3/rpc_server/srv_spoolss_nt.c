@@ -3158,7 +3158,8 @@ static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
  *
  ********************************************************************/
 
-static bool construct_notify_jobs_info(print_queue_struct *queue,
+static bool construct_notify_jobs_info(struct messaging_context *msg_ctx,
+				       print_queue_struct *queue,
 				       struct spoolss_NotifyInfo *info,
 				       struct spoolss_PrinterInfo2 *pinfo2,
 				       int snum,
@@ -3196,9 +3197,8 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		current_data=&(info->notifies[info->count]);
 
 		construct_info_data(current_data, type, field, id);
-		notify_info_data_table[j].fn(server_messaging_context(),
-					     snum, current_data, queue,
-					     pinfo2, mem_ctx);
+		notify_info_data_table[j].fn(msg_ctx, snum, current_data,
+					     queue, pinfo2, mem_ctx);
 		info->count++;
 	}
 
@@ -3393,7 +3393,8 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 						   &status);
 
 			for (j=0; j<count; j++) {
-				construct_notify_jobs_info(&queue[j], info,
+				construct_notify_jobs_info(p->msg_ctx,
+							   &queue[j], info,
 							   pinfo2, snum,
 							   &option_type,
 							   queue[j].job,
