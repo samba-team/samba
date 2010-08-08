@@ -5757,7 +5757,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 					  buffer.length);
 
 		if (!force_update) {
-			notify_printer_comment(snum, printer->comment);
+			notify_printer_comment(server_event_context(), msg_ctx,
+					       snum, printer->comment);
 		}
 	}
 
