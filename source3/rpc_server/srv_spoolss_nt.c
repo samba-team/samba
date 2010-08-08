@@ -1390,7 +1390,7 @@ done:
  connection
  ********************************************************************/
 
-void update_monitored_printq_cache( void )
+void update_monitored_printq_cache(struct messaging_context *msg_ctx)
 {
 	Printer_entry *printer = printers_list;
 	int snum;
@@ -1403,8 +1403,7 @@ void update_monitored_printq_cache( void )
 			&& printer->notify.client_connected )
 		{
 			snum = print_queue_snum(printer->sharename);
-			print_queue_status(server_messaging_context(),  snum,
-					   NULL, NULL );
+			print_queue_status(msg_ctx, snum, NULL, NULL );
 		}
 
 		printer = printer->next;
