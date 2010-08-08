@@ -3760,6 +3760,7 @@ static WERROR construct_printer_info5(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg_ctx,
 				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo6 *r,
 				      int snum)
@@ -3767,7 +3768,7 @@ static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
 	int count;
 	print_status_struct status;
 
-	count = print_queue_length(server_messaging_context(), snum, &status);
+	count = print_queue_length(msg_ctx, snum, &status);
 
 	r->status = nt_printq_status(status.status);
 
@@ -4331,7 +4332,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 						 &r->out.info->info5, snum);
 		break;
 	case 6:
-		result = construct_printer_info6(p->mem_ctx, info2,
+		result = construct_printer_info6(p->mem_ctx, p->msg_ctx, info2,
 						 &r->out.info->info6, snum);
 		break;
 	case 7:
