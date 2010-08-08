@@ -2752,6 +2752,7 @@ done:
 /* Enumerate on the values of a given key and provide the data. */
 WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info *server_info,
+				  struct messaging_context *msg_ctx,
 				  const char *printer,
 				  const char *key,
 				  uint32_t *pnum_values,
@@ -2781,7 +2782,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					key,

@@ -9006,6 +9006,7 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 	/* now look for a match on the key name */
 	result = winreg_enum_printer_dataex(p->mem_ctx,
 					    p->server_info,
+					    p->msg_ctx,
 					    lp_const_servicename(snum),
 					    r->in.key_name,
 					    &count,
