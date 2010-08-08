@@ -3941,13 +3941,13 @@ static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 
 static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
 					     struct auth_serversupplied_info *server_info,
+					     struct messaging_context *msg_ctx,
 					     union spoolss_PrinterInfo **info,
 					     uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));
 
-	return enum_all_printers_info_1(mem_ctx, server_info,
-					smbd_messaging_context(),
+	return enum_all_printers_info_1(mem_ctx, server_info, msg_ctx,
 					PRINTER_ENUM_ICON8, info, count);
 }
 
@@ -4045,7 +4045,9 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
 	/* Not all the flags are equals */
 
 	if (flags & PRINTER_ENUM_LOCAL) {
-		return enum_all_printers_info_1_local(mem_ctx, server_info, info, count);
+		return enum_all_printers_info_1_local(mem_ctx, server_info,
+						      smbd_messaging_context(),
+						      info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
