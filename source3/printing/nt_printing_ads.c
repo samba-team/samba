@@ -82,7 +82,8 @@ done:
 	talloc_free(tmp_ctx);
 }
 
-static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
+static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
+				     ADS_STRUCT *ads,
 				     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	ADS_STATUS ads_rc;
@@ -188,7 +189,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		ZERO_STRUCT(guid);
 		ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
-		store_printer_guid(smbd_messaging_context(), printer, guid);
+		store_printer_guid(msg_ctx, printer, guid);
 	}
 	TALLOC_FREE(ctx);
 
@@ -298,7 +299,8 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	switch (action) {
 	case DSPRINT_PUBLISH:
 	case DSPRINT_UPDATE:
-		win_rc = nt_printer_publish_ads(ads, pinfo2);
+		win_rc = nt_printer_publish_ads(smbd_messaging_context(),
+						ads, pinfo2);
 		break;
 	case DSPRINT_UNPUBLISH:
 		win_rc = nt_printer_unpublish_ads(ads, pinfo2->sharename);
@@ -364,7 +366,8 @@ WERROR check_published_printers(void)
 		}
 
 		if (pinfo2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
-			nt_printer_publish_ads(ads, pinfo2);
+			nt_printer_publish_ads(smbd_messaging_context(),
+					       ads, pinfo2);
 		}
 
 		TALLOC_FREE(pinfo2);
