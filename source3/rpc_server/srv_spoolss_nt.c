@@ -5458,6 +5458,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	result = winreg_set_printer_secdesc(p->mem_ctx,
 					    p->server_info,
+					    p->msg_ctx,
 					    printer,
 					    new_secdesc);
 
