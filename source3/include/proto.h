@@ -4410,7 +4410,9 @@ uint32_t print_parse_jobid(const char *fname);
 int print_queue_snum(const char *qname);
 void print_notify_send_messages(struct messaging_context *msg_ctx,
 				unsigned int timeout);
-void notify_printer_status_byname(const char *sharename, uint32 status);
+void notify_printer_status_byname(struct tevent_context *ev,
+				  struct messaging_context *msg_ctx,
+				  const char *sharename, uint32 status);
 void notify_printer_status(int snum, uint32 status);
 void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status,
 			      uint32 flags);

@@ -593,7 +593,9 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 			return False;
 		}
 
-		notify_printer_status_byname(argv[2], PRINTER_STATUS_PAUSED);
+		notify_printer_status_byname(messaging_event_context(msg_ctx),
+					     msg_ctx, argv[2],
+					     PRINTER_STATUS_PAUSED);
 
 		goto send;
 
@@ -605,7 +607,9 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 			return False;
 		}
 
-		notify_printer_status_byname(argv[2], PRINTER_STATUS_OK);
+		notify_printer_status_byname(messaging_event_context(msg_ctx),
+					     msg_ctx, argv[2],
+					     PRINTER_STATUS_OK);
 
 		goto send;
 
@@ -621,7 +625,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
-			argv[2], jobid, JOB_STATUS_PAUSED, 
+			argv[2], jobid, JOB_STATUS_PAUSED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
 		goto send;

@@ -404,15 +404,15 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 
 /* Send a message that the printer status has changed */
 
-void notify_printer_status_byname(const char *sharename, uint32 status)
+void notify_printer_status_byname(struct tevent_context *ev,
+				  struct messaging_context *msg_ctx,
+				  const char *sharename, uint32 status)
 {
 	/* Printer status stored in value1 */
 
 	int snum = print_queue_snum(sharename);
 
-	send_notify_field_values(server_event_context(),
-				 server_messaging_context(),
-				 sharename, PRINTER_NOTIFY_TYPE,
+	send_notify_field_values(ev, msg_ctx, sharename, PRINTER_NOTIFY_TYPE,
 				 PRINTER_NOTIFY_FIELD_STATUS, snum,
 				 status, 0, 0);
 }
@@ -422,7 +422,9 @@ void notify_printer_status(int snum, uint32 status)
 	const char *sharename = lp_servicename(snum);
 
 	if (sharename)
-		notify_printer_status_byname(sharename, status);
+		notify_printer_status_byname(server_event_context(),
+					     server_messaging_context(),
+					     sharename, status);
 }
 
 void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status,
