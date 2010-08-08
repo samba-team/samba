@@ -3008,24 +3008,24 @@ void smbd_process(struct smbd_server_connection *sconn)
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks(smbd_messaging_context()))
+	if (!init_oplocks(sconn->msg_ctx))
 		exit_server("Failed to init oplocks");
 
 	/* register our message handlers */
-	messaging_register(smbd_messaging_context(), NULL,
+	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	messaging_register(smbd_messaging_context(), NULL,
+	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_RELEASE_IP, msg_release_ip);
-	messaging_register(smbd_messaging_context(), NULL,
+	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
 
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting
 	 * MSGs to all child processes
 	 */
-	messaging_deregister(smbd_messaging_context(),
+	messaging_deregister(sconn->msg_ctx,
 			     MSG_DEBUG, NULL);
-	messaging_register(smbd_messaging_context(), NULL,
+	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_DEBUG, debug_message);
 
 	if ((lp_keepalive() != 0)
@@ -3047,7 +3047,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	if (!(event_add_idle(smbd_event_context(), NULL,
 			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
 			     "housekeeping", housekeeping_fn,
-			     smbd_messaging_context()))) {
+			     sconn->msg_ctx))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
