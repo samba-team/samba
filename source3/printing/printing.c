@@ -1488,7 +1488,8 @@ static pid_t background_lpq_updater_pid = -1;
 /****************************************************************************
 main thread of the background lpq updater
 ****************************************************************************/
-void start_background_queue(void)
+void start_background_queue(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx)
 {
 	/* Use local variables for this as we don't
 	 * need to save the parent side of this, just
@@ -1524,9 +1525,7 @@ void start_background_queue(void)
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		status = reinit_after_fork(server_messaging_context(),
-					   server_event_context(),
-					   procid_self(), true);
+		status = reinit_after_fork(msg_ctx, ev, procid_self(), true);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
@@ -1534,8 +1533,7 @@ void start_background_queue(void)
 		}
 
 		smbd_setup_sig_term_handler();
-		smbd_setup_sig_hup_handler(server_event_context(),
-					   server_messaging_context());
+		smbd_setup_sig_hup_handler(ev, msg_ctx);
 
 		if (!serverid_register(procid_self(),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
@@ -1547,12 +1545,10 @@ void start_background_queue(void)
 			exit(1);
 		}
 
-		messaging_register(server_messaging_context(), NULL,
-				   MSG_PRINTER_UPDATE, print_queue_receive);
+		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
+				   print_queue_receive);
 
-		fde = tevent_add_fd(server_event_context(),
-				    server_event_context(),
-				    pause_pipe[1], TEVENT_FD_READ,
+		fde = tevent_add_fd(ev, ev, pause_pipe[1], TEVENT_FD_READ,
 				    printing_pause_fd_handler,
 				    NULL);
 		if (!fde) {
@@ -1561,7 +1557,7 @@ void start_background_queue(void)
 		}
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		ret = tevent_loop_wait(server_event_context());
+		ret = tevent_loop_wait(ev);
 		/* should not be reached */
 		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
 			 ret, (ret == 0) ? "out of events" : strerror(errno)));

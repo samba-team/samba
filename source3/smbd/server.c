@@ -1114,7 +1114,8 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		start_background_queue();
+		start_background_queue(smbd_event_context(),
+				       smbd_messaging_context());
 	}
 
 	if (!is_daemon) {
