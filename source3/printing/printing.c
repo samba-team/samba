@@ -2853,7 +2853,9 @@ fail:
  Get a snapshot of jobs in the system without traversing.
 ****************************************************************************/
 
-static bool get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcount, print_queue_struct **ppqueue)
+static bool get_stored_queue_info(struct messaging_context *msg_ctx,
+				  struct tdb_print_db *pdb, int snum,
+				  int *pcount, print_queue_struct **ppqueue)
 {
 	TDB_DATA data, cgdata;
 	print_queue_struct *queue = NULL;
@@ -2868,7 +2870,7 @@ static bool get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(server_messaging_context(), snum, False);
+		print_queue_update(msg_ctx, snum, False);
 
 	*pcount = 0;
 	*ppqueue = NULL;
@@ -3021,7 +3023,8 @@ int print_queue_status(int snum,
 	 * of entries, and then only retrieve the queue if necessary.
 	 */
 
-	if (!get_stored_queue_info(pdb, snum, &count, ppqueue)) {
+	if (!get_stored_queue_info(server_messaging_context(), pdb, snum,
+				   &count, ppqueue)) {
 		release_print_db(pdb);
 		return 0;
 	}
