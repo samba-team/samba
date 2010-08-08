@@ -6978,6 +6978,7 @@ WERROR _spoolss_GetForm(struct pipes_struct *p,
 	case 1:
 		result = winreg_printer_getform1(p->mem_ctx,
 						 p->server_info,
+						 p->msg_ctx,
 						 r->in.form_name,
 						 &r->out.info->info1);
 		break;
