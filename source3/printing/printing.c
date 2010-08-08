@@ -1378,7 +1378,9 @@ static void print_queue_update_internal( struct tevent_context *ev,
  smbd processes maytry to update the lpq cache concurrently).
 ****************************************************************************/
 
-static void print_queue_update_with_lock( const char *sharename,
+static void print_queue_update_with_lock( struct tevent_context *ev,
+					  struct messaging_context *msg_ctx,
+					  const char *sharename,
                                           struct printif *current_printif,
                                           char *lpq_command, char *lprm_command )
 {
@@ -1447,8 +1449,7 @@ static void print_queue_update_with_lock( const char *sharename,
 
 	/* do the main work now */
 
-	print_queue_update_internal(server_event_context(),
-				    server_messaging_context(),
+	print_queue_update_internal(ev, msg_ctx,
 				    sharename, current_printif,
 				    lpq_command, lprm_command);
 
@@ -1484,7 +1485,7 @@ static void print_queue_receive(struct messaging_context *msg,
 		return;
 	}
 
-	print_queue_update_with_lock(sharename,
+	print_queue_update_with_lock(server_event_context(), msg, sharename,
 		get_printer_fns_from_type((enum printing_types)printing_type),
 		lpqcommand, lprmcommand );
 
@@ -1677,7 +1678,9 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	if ( force || background_lpq_updater_pid == -1 ) {
 		DEBUG(4,("print_queue_update: updating queue [%s] myself\n", sharename));
 		current_printif = get_printer_fns( snum );
-		print_queue_update_with_lock( sharename, current_printif, lpqcommand, lprmcommand );
+		print_queue_update_with_lock(server_event_context(), msg_ctx,
+					     sharename, current_printif,
+					     lpqcommand, lprmcommand);
 
 		return;
 	}
