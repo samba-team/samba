@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "rpc_server.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -929,6 +930,7 @@ NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
 		status = rpc_pipe_open_internal(conn,
 						&ndr_table_spoolss.syntax_id,
 						conn->server_info,
+						conn->sconn->msg_ctx,
 						&conn->spoolss_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

@@ -261,6 +261,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_winreg.syntax_id,
 					server_info,
+					smbd_messaging_context(),
 					&pipe_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_openkey: Could not connect to winreg_pipe: %s\n",

@@ -347,6 +347,7 @@ static NTSTATUS rpc_pipe_internal_dispatch(struct rpc_pipe_client *cli,
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				struct auth_serversupplied_info *serversupplied_info,
+				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -361,8 +362,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	result->dispatch = rpc_pipe_internal_dispatch;
 
 	result->pipes_struct = make_internal_rpc_pipe_p(
-		result, abstract_syntax, "", serversupplied_info,
-		smbd_messaging_context());
+		result, abstract_syntax, "", serversupplied_info, msg_ctx);
 	if (result->pipes_struct == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
