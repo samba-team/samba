@@ -3514,7 +3514,12 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->number_of_processors		= 0x1;
 	r->processor_type		= PROCESSOR_INTEL_PENTIUM; /* 586 Pentium ? */
 	r->high_part_total_bytes	= 0x0;
-	winreg_printer_get_changeid(mem_ctx, server_info, info2->sharename, &r->change_id); /* ChangeID in milliseconds*/
+
+	/* ChangeID in milliseconds*/
+	winreg_printer_get_changeid(mem_ctx, server_info,
+				    smbd_messaging_context(),
+				    info2->sharename, &r->change_id);
+
 	r->last_error			= WERR_OK;
 	r->status			= nt_printq_status(status.status);
 	r->enumerate_network_printers	= 0x0;
@@ -8652,6 +8657,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 
 			result = winreg_printer_get_changeid(p->mem_ctx,
 							     p->server_info,
+							     p->msg_ctx,
 							     printer,
 							     &changeid);
 			if (!W_ERROR_IS_OK(result)) {
