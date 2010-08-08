@@ -553,12 +553,14 @@ void notify_printer_printername(struct tevent_context *ev,
 		snum, strlen(printername) + 1, printername);
 }
 
-void notify_printer_port(int snum, const char *port_name)
+void notify_printer_port(struct tevent_context *ev,
+			 struct messaging_context *msg_ctx,
+			 int snum, const char *port_name)
 {
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
-		server_event_context(), server_messaging_context(),
+		ev, msg_ctx,
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PORT_NAME,
 		snum, strlen(port_name) + 1, port_name);
 }
