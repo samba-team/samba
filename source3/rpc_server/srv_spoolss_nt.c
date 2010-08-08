@@ -2472,7 +2472,8 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
  * fill a notify_info_data with the servername
  ********************************************************************/
 
-static void spoolss_notify_server_name(int snum,
+static void spoolss_notify_server_name(struct messaging_context *msg_ctx,
+				       int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       struct spoolss_PrinterInfo2 *pinfo2,
@@ -2485,7 +2486,8 @@ static void spoolss_notify_server_name(int snum,
  * fill a notify_info_data with the printername (not including the servername).
  ********************************************************************/
 
-static void spoolss_notify_printer_name(int snum,
+static void spoolss_notify_printer_name(struct messaging_context *msg_ctx,
+					int snum,
 					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					struct spoolss_PrinterInfo2 *pinfo2,
@@ -2507,7 +2509,8 @@ static void spoolss_notify_printer_name(int snum,
  * fill a notify_info_data with the servicename
  ********************************************************************/
 
-static void spoolss_notify_share_name(int snum,
+static void spoolss_notify_share_name(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2520,7 +2523,8 @@ static void spoolss_notify_share_name(int snum,
  * fill a notify_info_data with the port name
  ********************************************************************/
 
-static void spoolss_notify_port_name(int snum,
+static void spoolss_notify_port_name(struct messaging_context *msg_ctx,
+				     int snum,
 				     struct spoolss_Notify *data,
 				     print_queue_struct *queue,
 				     struct spoolss_PrinterInfo2 *pinfo2,
@@ -2534,7 +2538,8 @@ static void spoolss_notify_port_name(int snum,
  * but it doesn't exist, have to see what to do
  ********************************************************************/
 
-static void spoolss_notify_driver_name(int snum,
+static void spoolss_notify_driver_name(struct messaging_context *msg_ctx,
+				       int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       struct spoolss_PrinterInfo2 *pinfo2,
@@ -2547,7 +2552,8 @@ static void spoolss_notify_driver_name(int snum,
  * fill a notify_info_data with the comment
  ********************************************************************/
 
-static void spoolss_notify_comment(int snum,
+static void spoolss_notify_comment(struct messaging_context *msg_ctx,
+				   int snum,
 				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   struct spoolss_PrinterInfo2 *pinfo2,
@@ -2569,7 +2575,8 @@ static void spoolss_notify_comment(int snum,
  * location = "Room 1, floor 2, building 3"
  ********************************************************************/
 
-static void spoolss_notify_location(int snum,
+static void spoolss_notify_location(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2583,7 +2590,8 @@ static void spoolss_notify_location(int snum,
  * jfm:xxxx don't to it for know but that's a real problem !!!
  ********************************************************************/
 
-static void spoolss_notify_devmode(int snum,
+static void spoolss_notify_devmode(struct messaging_context *msg_ctx,
+				   int snum,
 				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   struct spoolss_PrinterInfo2 *pinfo2,
@@ -2597,7 +2605,8 @@ static void spoolss_notify_devmode(int snum,
  * fill a notify_info_data with the separator file name
  ********************************************************************/
 
-static void spoolss_notify_sepfile(int snum,
+static void spoolss_notify_sepfile(struct messaging_context *msg_ctx,
+				   int snum,
 				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   struct spoolss_PrinterInfo2 *pinfo2,
@@ -2611,7 +2620,8 @@ static void spoolss_notify_sepfile(int snum,
  * jfm:xxxx return always winprint to indicate we don't do anything to it
  ********************************************************************/
 
-static void spoolss_notify_print_processor(int snum,
+static void spoolss_notify_print_processor(struct messaging_context *msg_ctx,
+					   int snum,
 					   struct spoolss_Notify *data,
 					   print_queue_struct *queue,
 					   struct spoolss_PrinterInfo2 *pinfo2,
@@ -2625,7 +2635,8 @@ static void spoolss_notify_print_processor(int snum,
  * jfm:xxxx send an empty string
  ********************************************************************/
 
-static void spoolss_notify_parameters(int snum,
+static void spoolss_notify_parameters(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2639,7 +2650,8 @@ static void spoolss_notify_parameters(int snum,
  * jfm:xxxx always send RAW as data type
  ********************************************************************/
 
-static void spoolss_notify_datatype(int snum,
+static void spoolss_notify_datatype(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2654,7 +2666,8 @@ static void spoolss_notify_datatype(int snum,
  * have to implement security before !
  ********************************************************************/
 
-static void spoolss_notify_security_desc(int snum,
+static void spoolss_notify_security_desc(struct messaging_context *msg_ctx,
+					 int snum,
 					 struct spoolss_Notify *data,
 					 print_queue_struct *queue,
 					 struct spoolss_PrinterInfo2 *pinfo2,
@@ -2668,7 +2681,8 @@ static void spoolss_notify_security_desc(int snum,
  * jfm:xxxx a samba printer is always shared
  ********************************************************************/
 
-static void spoolss_notify_attributes(int snum,
+static void spoolss_notify_attributes(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2681,7 +2695,8 @@ static void spoolss_notify_attributes(int snum,
  * fill a notify_info_data with the priority
  ********************************************************************/
 
-static void spoolss_notify_priority(int snum,
+static void spoolss_notify_priority(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2694,7 +2709,8 @@ static void spoolss_notify_priority(int snum,
  * fill a notify_info_data with the default priority
  ********************************************************************/
 
-static void spoolss_notify_default_priority(int snum,
+static void spoolss_notify_default_priority(struct messaging_context *msg_ctx,
+					    int snum,
 					    struct spoolss_Notify *data,
 					    print_queue_struct *queue,
 					    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2707,7 +2723,8 @@ static void spoolss_notify_default_priority(int snum,
  * fill a notify_info_data with the start time
  ********************************************************************/
 
-static void spoolss_notify_start_time(int snum,
+static void spoolss_notify_start_time(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2720,7 +2737,8 @@ static void spoolss_notify_start_time(int snum,
  * fill a notify_info_data with the until time
  ********************************************************************/
 
-static void spoolss_notify_until_time(int snum,
+static void spoolss_notify_until_time(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2733,7 +2751,8 @@ static void spoolss_notify_until_time(int snum,
  * fill a notify_info_data with the status
  ********************************************************************/
 
-static void spoolss_notify_status(int snum,
+static void spoolss_notify_status(struct messaging_context *msg_ctx,
+				  int snum,
 				  struct spoolss_Notify *data,
 				  print_queue_struct *queue,
 				  struct spoolss_PrinterInfo2 *pinfo2,
@@ -2741,7 +2760,7 @@ static void spoolss_notify_status(int snum,
 {
 	print_status_struct status;
 
-	print_queue_length(server_messaging_context(), snum, &status);
+	print_queue_length(msg_ctx, snum, &status);
 	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, status.status);
 }
 
@@ -2749,22 +2768,23 @@ static void spoolss_notify_status(int snum,
  * fill a notify_info_data with the number of jobs queued
  ********************************************************************/
 
-static void spoolss_notify_cjobs(int snum,
+static void spoolss_notify_cjobs(struct messaging_context *msg_ctx,
+				 int snum,
 				 struct spoolss_Notify *data,
 				 print_queue_struct *queue,
 				 struct spoolss_PrinterInfo2 *pinfo2,
 				 TALLOC_CTX *mem_ctx)
 {
 	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(
-		data, print_queue_length(server_messaging_context(), snum,
-					 NULL));
+		data, print_queue_length(msg_ctx, snum, NULL));
 }
 
 /*******************************************************************
  * fill a notify_info_data with the average ppm
  ********************************************************************/
 
-static void spoolss_notify_average_ppm(int snum,
+static void spoolss_notify_average_ppm(struct messaging_context *msg_ctx,
+				       int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       struct spoolss_PrinterInfo2 *pinfo2,
@@ -2779,7 +2799,8 @@ static void spoolss_notify_average_ppm(int snum,
  * fill a notify_info_data with username
  ********************************************************************/
 
-static void spoolss_notify_username(int snum,
+static void spoolss_notify_username(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2792,7 +2813,8 @@ static void spoolss_notify_username(int snum,
  * fill a notify_info_data with job status
  ********************************************************************/
 
-static void spoolss_notify_job_status(int snum,
+static void spoolss_notify_job_status(struct messaging_context *msg_ctx,
+				      int snum,
 				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      struct spoolss_PrinterInfo2 *pinfo2,
@@ -2805,7 +2827,8 @@ static void spoolss_notify_job_status(int snum,
  * fill a notify_info_data with job name
  ********************************************************************/
 
-static void spoolss_notify_job_name(int snum,
+static void spoolss_notify_job_name(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2818,7 +2841,8 @@ static void spoolss_notify_job_name(int snum,
  * fill a notify_info_data with job status
  ********************************************************************/
 
-static void spoolss_notify_job_status_string(int snum,
+static void spoolss_notify_job_status_string(struct messaging_context *msg_ctx,
+					     int snum,
 					     struct spoolss_Notify *data,
 					     print_queue_struct *queue,
 					     struct spoolss_PrinterInfo2 *pinfo2,
@@ -2856,7 +2880,8 @@ static void spoolss_notify_job_status_string(int snum,
  * fill a notify_info_data with job time
  ********************************************************************/
 
-static void spoolss_notify_job_time(int snum,
+static void spoolss_notify_job_time(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2869,7 +2894,8 @@ static void spoolss_notify_job_time(int snum,
  * fill a notify_info_data with job size
  ********************************************************************/
 
-static void spoolss_notify_job_size(int snum,
+static void spoolss_notify_job_size(struct messaging_context *msg_ctx,
+				    int snum,
 				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    struct spoolss_PrinterInfo2 *pinfo2,
@@ -2881,7 +2907,8 @@ static void spoolss_notify_job_size(int snum,
 /*******************************************************************
  * fill a notify_info_data with page info
  ********************************************************************/
-static void spoolss_notify_total_pages(int snum,
+static void spoolss_notify_total_pages(struct messaging_context *msg_ctx,
+				       int snum,
 				struct spoolss_Notify *data,
 				print_queue_struct *queue,
 				struct spoolss_PrinterInfo2 *pinfo2,
@@ -2893,7 +2920,8 @@ static void spoolss_notify_total_pages(int snum,
 /*******************************************************************
  * fill a notify_info_data with pages printed info.
  ********************************************************************/
-static void spoolss_notify_pages_printed(int snum,
+static void spoolss_notify_pages_printed(struct messaging_context *msg_ctx,
+					 int snum,
 				struct spoolss_Notify *data,
 				print_queue_struct *queue,
 				struct spoolss_PrinterInfo2 *pinfo2,
@@ -2907,7 +2935,8 @@ static void spoolss_notify_pages_printed(int snum,
  Fill a notify_info_data with job position.
  ********************************************************************/
 
-static void spoolss_notify_job_position(int snum,
+static void spoolss_notify_job_position(struct messaging_context *msg_ctx,
+					int snum,
 					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					struct spoolss_PrinterInfo2 *pinfo2,
@@ -2920,7 +2949,8 @@ static void spoolss_notify_job_position(int snum,
  Fill a notify_info_data with submitted time.
  ********************************************************************/
 
-static void spoolss_notify_submitted_time(int snum,
+static void spoolss_notify_submitted_time(struct messaging_context *msg_ctx,
+					  int snum,
 					  struct spoolss_Notify *data,
 					  print_queue_struct *queue,
 					  struct spoolss_PrinterInfo2 *pinfo2,
@@ -2941,7 +2971,8 @@ struct s_notify_info_data_table
 	uint16_t field;
 	const char *name;
 	enum spoolss_NotifyTable variable_type;
-	void (*fn) (int snum, struct spoolss_Notify *data,
+	void (*fn) (struct messaging_context *msg_ctx,
+		    int snum, struct spoolss_Notify *data,
 		    print_queue_struct *queue,
 		    struct spoolss_PrinterInfo2 *pinfo2,
 		    TALLOC_CTX *mem_ctx);
@@ -3111,7 +3142,8 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd,
 			   notify_info_data_table[j].name, snum,
 			   pinfo2->printername));
 
-		notify_info_data_table[j].fn(snum, current_data, queue,
+		notify_info_data_table[j].fn(server_messaging_context(),
+					     snum, current_data, queue,
 					     pinfo2, mem_ctx);
 
 		info->count++;
@@ -3164,7 +3196,8 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		current_data=&(info->notifies[info->count]);
 
 		construct_info_data(current_data, type, field, id);
-		notify_info_data_table[j].fn(snum, current_data, queue,
+		notify_info_data_table[j].fn(server_messaging_context(),
+					     snum, current_data, queue,
 					     pinfo2, mem_ctx);
 		info->count++;
 	}
