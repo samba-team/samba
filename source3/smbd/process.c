@@ -910,9 +910,11 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
-	reload_services(smbd_messaging_context(), False);
+	reload_services(msg_ctx, False);
 }
 
 void smbd_setup_sig_hup_handler(void)
@@ -923,7 +925,7 @@ void smbd_setup_sig_hup_handler(void)
 			       smbd_event_context(),
 			       SIGHUP, 0,
 			       smbd_sig_hup_handler,
-			       NULL);
+			       smbd_messaging_context());
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
