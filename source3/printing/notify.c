@@ -441,11 +441,11 @@ void notify_job_status_byname(struct tevent_context *ev,
 				 status, 0, flags);
 }
 
-void notify_job_status(const char *sharename, uint32 jobid, uint32 status)
+void notify_job_status(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx,
+		       const char *sharename, uint32 jobid, uint32 status)
 {
-	notify_job_status_byname(server_event_context(),
-				 server_messaging_context(),
-				 sharename, jobid, status, 0);
+	notify_job_status_byname(ev, msg_ctx, sharename, jobid, status, 0);
 }
 
 void notify_job_total_bytes(const char *sharename, uint32 jobid,

@@ -590,7 +590,10 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 		notify_job_name(sharename, jobid, new_data->jobname);
 
 	if (new_job || old_data->status != new_data->status)
-		notify_job_status(sharename, jobid, map_to_spoolss_status(new_data->status));
+		notify_job_status(server_event_context(),
+				  server_messaging_context(),
+				  sharename, jobid,
+				  map_to_spoolss_status(new_data->status));
 
 	if (new_job || old_data->size != new_data->size)
 		notify_job_total_bytes(sharename, jobid, new_data->size);
@@ -720,7 +723,9 @@ void pjob_delete(const char* sharename, uint32 jobid)
            properly. */
 
 	job_status = JOB_STATUS_DELETING|JOB_STATUS_DELETED;
-	notify_job_status(sharename, jobid, job_status);
+	notify_job_status(server_event_context(),
+			  server_messaging_context(),
+			  sharename, jobid, job_status);
 
 	/* Remove from printing.tdb */
 
@@ -2229,7 +2234,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 	/* Send a printer notify message */
 
-	notify_job_status(sharename, jobid, JOB_STATUS_PAUSED);
+	notify_job_status(server_event_context(), msg_ctx, sharename, jobid,
+			  JOB_STATUS_PAUSED);
 
 	/* how do we tell if this succeeded? */
 
@@ -2291,7 +2297,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 	/* Send a printer notify message */
 
-	notify_job_status(sharename, jobid, JOB_STATUS_QUEUED);
+	notify_job_status(server_event_context(), msg_ctx, sharename, jobid,
+			  JOB_STATUS_QUEUED);
 
 	return True;
 }
