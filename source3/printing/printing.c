@@ -799,6 +799,8 @@ struct traverse_struct {
 	time_t lpq_time;
 	const char *lprm_command;
 	struct printif *print_if;
+	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
 };
 
 /****************************************************************************
@@ -832,8 +834,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (i == ts->qcount) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
 						(unsigned int)jobid ));
-			pjob_delete(server_event_context(),
-				    server_messaging_context(),
+			pjob_delete(ts->ev, ts->msg_ctx,
 				    ts->sharename, jobid);
 			return 0;
 		}
@@ -850,8 +851,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (!process_exists_by_pid(pjob.pid)) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
 						(unsigned int)jobid, (unsigned int)pjob.pid ));
-			pjob_delete(server_event_context(),
-				    server_messaging_context(),
+			pjob_delete(ts->ev, ts->msg_ctx,
 				    ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
@@ -882,14 +882,13 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 					if ( result != 0 ) {
 						/* if we can't delete, then reset the job status */
 						pjob.status = LPQ_QUEUED;
-						pjob_store(server_event_context(),
-							   server_messaging_context(),
+						pjob_store(ts->ev, ts->msg_ctx,
 							   ts->sharename, jobid, &pjob);
 					}
 					else {
 						/* if we deleted the job, the remove the tdb record */
-						pjob_delete(server_event_context(),
-							    server_messaging_context(),
+						pjob_delete(ts->ev,
+							    ts->msg_ctx,
 							    ts->sharename, jobid);
 						pjob.status = LPQ_DELETED;
 					}
@@ -918,8 +917,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 						(unsigned int)jobid,
 						(unsigned int)pjob.starttime,
 						(unsigned int)ts->lpq_time ));
-			pjob_delete(server_event_context(),
-				    server_messaging_context(),
+			pjob_delete(ts->ev, ts->msg_ctx,
 				    ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
@@ -1322,6 +1320,8 @@ static void print_queue_update_internal( const char *sharename,
 	tstruct.sharename = sharename;
 	tstruct.lprm_command = lprm_command;
 	tstruct.print_if = current_printif;
+	tstruct.ev = server_event_context();
+	tstruct.msg_ctx = server_messaging_context();
 
 	tdb_traverse(pdb->tdb, traverse_fn_delete, (void *)&tstruct);
 
