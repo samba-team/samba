@@ -4451,7 +4451,9 @@ void notify_printer_comment(struct tevent_context *ev,
 void notify_printer_sharename(struct tevent_context *ev,
 			      struct messaging_context *msg_ctx,
 			      int snum, const char *share_name);
-void notify_printer_printername(int snum, const char *printername);
+void notify_printer_printername(struct tevent_context *ev,
+				struct messaging_context *msg_ctx,
+				int snum, const char *printername);
 void notify_printer_port(int snum, const char *port_name);
 void notify_printer_location(int snum, const char *location);
 void notify_printer_byname( const char *printername, uint32 change, const char *value );
