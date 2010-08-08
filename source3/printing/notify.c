@@ -267,7 +267,9 @@ static bool copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
  Batch up print notify messages.
 *******************************************************************/
 
-static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
+static void send_spoolss_notify2_msg(struct tevent_context *ev,
+				     struct messaging_context *msg_ctx,
+				     SPOOLSS_NOTIFY_MSG *msg)
 {
 	struct notify_queue *pnqueue, *tmp_ptr;
 
@@ -330,12 +332,11 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
 
-	if ((notify_event == NULL) && (server_event_context() != NULL)) {
+	if ((notify_event == NULL) && (ev != NULL)) {
 		/* Add an event for 1 second's time to send this queue. */
-		notify_event = tevent_add_timer(server_event_context(), NULL,
-					timeval_current_ofs(1,0),
-					print_notify_event_send_messages,
-					server_messaging_context());
+		notify_event = tevent_add_timer(
+			ev, NULL, timeval_current_ofs(1,0),
+			print_notify_event_send_messages, msg_ctx);
 	}
 
 }
@@ -366,7 +367,8 @@ static void send_notify_field_values(const char *sharename, uint32 type,
 	msg->notify.value[1] = value2;
 	msg->flags = flags;
 
-	send_spoolss_notify2_msg(msg);
+	send_spoolss_notify2_msg(server_event_context(),
+				 server_messaging_context(), msg);
 }
 
 static void send_notify_field_buffer(const char *sharename, uint32 type,
@@ -394,7 +396,8 @@ static void send_notify_field_buffer(const char *sharename, uint32 type,
 	msg->len = len;
 	msg->notify.data = CONST_DISCARD(char *,buffer);
 
-	send_spoolss_notify2_msg(msg);
+	send_spoolss_notify2_msg(server_event_context(),
+				 server_messaging_context(), msg);
 }
 
 /* Send a message that the printer status has changed */
