@@ -8879,6 +8879,7 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 
 	result = winreg_enum_printer_key(p->mem_ctx,
 					 p->server_info,
+					 p->msg_ctx,
 					 lp_const_servicename(snum),
 					 r->in.key_name,
 					 &num_keys,
