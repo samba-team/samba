@@ -232,6 +232,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,
+				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
 				 const char *value,

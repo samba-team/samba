@@ -408,7 +408,8 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 
 	/* fetching printer guids really ought to be a separate function. */
 
-	result = winreg_get_printer_dataex(mem_ctx, server_info, printer,
+	result = winreg_get_printer_dataex(mem_ctx, server_info,
+					   smbd_messaging_context(), printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   &type, &data, &data_size);
 	if (!W_ERROR_IS_OK(result)) {

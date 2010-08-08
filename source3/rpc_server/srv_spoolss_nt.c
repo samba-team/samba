@@ -8661,6 +8661,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 
 	result = winreg_get_printer_dataex(p->mem_ctx,
 					   p->server_info,
+					   p->msg_ctx,
 					   printer,
 					   r->in.key_name,
 					   r->in.value_name,
