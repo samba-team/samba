@@ -3924,14 +3924,15 @@ static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
 
 static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 				       struct auth_serversupplied_info *server_info,
+				       struct messaging_context *msg_ctx,
 				       uint32_t flags,
 				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_1\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info,
-					    smbd_messaging_context(), 1, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info, msg_ctx,
+					    1, flags, info, count);
 }
 
 /********************************************************************
@@ -3945,7 +3946,9 @@ static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));
 
-	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_ICON8, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info,
+					smbd_messaging_context(),
+					PRINTER_ENUM_ICON8, info, count);
 }
 
 /********************************************************************
@@ -3970,7 +3973,9 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_NAME;
 	}
 
-	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_ICON8, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info,
+					smbd_messaging_context(),
+					PRINTER_ENUM_ICON8, info, count);
 }
 
 /********************************************************************
@@ -4003,7 +4008,9 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
 		 return WERR_CAN_NOT_COMPLETE;
 	}
 
-	return enum_all_printers_info_1(mem_ctx, server_info, PRINTER_ENUM_NAME, info, count);
+	return enum_all_printers_info_1(mem_ctx, server_info,
+					smbd_messaging_context(),
+					PRINTER_ENUM_NAME, info, count);
 }
 
 /********************************************************************
