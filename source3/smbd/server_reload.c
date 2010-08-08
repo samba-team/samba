@@ -40,7 +40,7 @@ void reload_printers(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	bool skip = false;
 
-	pcap_cache_reload();
+	pcap_cache_reload(server_event_context(), msg_ctx);
 
 	status = make_server_info_system(talloc_tos(), &server_info);
 	if (!NT_STATUS_IS_OK(status)) {

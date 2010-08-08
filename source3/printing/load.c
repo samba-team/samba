@@ -54,8 +54,10 @@ load automatic printer services
 ***************************************************************************/
 void load_printers(void)
 {
-	if (!pcap_cache_loaded())
-		pcap_cache_reload();
+	if (!pcap_cache_loaded()) {
+		pcap_cache_reload(server_event_context(),
+				  server_messaging_context());
+	}
 
 	add_auto_printers();
 

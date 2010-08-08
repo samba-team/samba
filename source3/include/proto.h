@@ -4467,7 +4467,8 @@ void notify_printer_byname(struct tevent_context *ev,
 
 /* The following definitions come from printing/pcap.c  */
 
-void pcap_cache_reload(void);
+void pcap_cache_reload(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx);
 bool pcap_printername_ok(const char *printername);
 
 /* The following definitions come from printing/printing.c  */

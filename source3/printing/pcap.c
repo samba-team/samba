@@ -101,7 +101,8 @@ void pcap_cache_replace(const struct pcap_cache *pcache)
 	}
 }
 
-void pcap_cache_reload(void)
+void pcap_cache_reload(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx)
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
@@ -120,8 +121,7 @@ void pcap_cache_reload(void)
 
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
-		pcap_reloaded = cups_cache_reload(server_event_context(),
-						  server_messaging_context());
+		pcap_reloaded = cups_cache_reload(ev, msg_ctx);
 		goto done;
 	}
 #endif
