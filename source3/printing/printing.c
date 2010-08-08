@@ -614,7 +614,10 @@ static void pjob_store_notify(struct tevent_context *ev,
  Store a job structure back to the database.
 ****************************************************************************/
 
-static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjob)
+static bool pjob_store(struct tevent_context *ev,
+		       struct messaging_context *msg_ctx,
+		       const char* sharename, uint32 jobid,
+		       struct printjob *pjob)
 {
 	uint32_t tmp;
 	TDB_DATA 		old_data, new_data;
@@ -685,7 +688,7 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
 			{
 				pjob_store_notify(server_event_context(),
-						  server_messaging_context(),
+						  msg_ctx,
 						  sharename, jobid, &old_pjob,
 						  pjob);
 				talloc_free(old_pjob.devmode);
@@ -693,8 +696,7 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		}
 		else {
 			/* new job */
-			pjob_store_notify(server_event_context(),
-					  server_messaging_context(),
+			pjob_store_notify(server_event_context(), msg_ctx,
 					  sharename, jobid, NULL, pjob);
 		}
 	}
@@ -783,7 +785,8 @@ static void print_unix_job(const char *sharename, print_queue_struct *q, uint32 
 	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
 	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : sharename );
 
-	pjob_store(sharename, jobid, &pj);
+	pjob_store(server_event_context(), server_messaging_context(),
+		   sharename, jobid, &pj);
 }
 
 
@@ -873,7 +876,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 					if ( result != 0 ) {
 						/* if we can't delete, then reset the job status */
 						pjob.status = LPQ_QUEUED;
-						pjob_store(ts->sharename, jobid, &pjob);
+						pjob_store(server_event_context(),
+							   server_messaging_context(),
+							   ts->sharename, jobid, &pjob);
 					}
 					else {
 						/* if we deleted the job, the remove the tdb record */
@@ -1285,7 +1290,8 @@ static void print_queue_update_internal( const char *sharename,
 		if ( pjob->status != LPQ_DELETING )
 			pjob->status = queue[i].status;
 
-		pjob_store(sharename, jobid, pjob);
+		pjob_store(server_event_context(), server_messaging_context(),
+			   sharename, jobid, pjob);
 
 		check_job_changed(sharename, jcdata, jobid);
 	}
@@ -1959,7 +1965,8 @@ bool print_job_set_name(const char *sharename, uint32 jobid, const char *name)
 		return False;
 
 	fstrcpy(pjob->jobname, name);
-	return pjob_store(sharename, jobid, pjob);
+	return pjob_store(server_event_context(), server_messaging_context(),
+			  sharename, jobid, pjob);
 }
 
 /****************************************************************************
@@ -2076,7 +2083,8 @@ static bool print_job_delete1(int snum, uint32 jobid)
 	/* Set the tdb entry to be deleting. */
 
 	pjob->status = LPQ_DELETING;
-	pjob_store(sharename, jobid, pjob);
+	pjob_store(server_event_context(), server_messaging_context(),
+		   sharename, jobid, pjob);
 
 	if (pjob->spooled && pjob->sysjob != -1)
 	{
@@ -2343,7 +2351,8 @@ ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, 
 
 	if (return_code>0) {
 		pjob->size += size;
-		pjob_store(sharename, jobid, pjob);
+		pjob_store(server_event_context(), server_messaging_context(),
+			   sharename, jobid, pjob);
 	}
 	return return_code;
 }
@@ -2718,7 +2727,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 		goto fail;
 	}
 
-	pjob_store(sharename, jobid, &pjob);
+	pjob_store(server_event_context(), msg_ctx, sharename, jobid, &pjob);
 
 	/* Update the 'jobs changed' entry used by print_queue_status. */
 	add_to_jobs_changed(pdb, jobid);
@@ -2760,7 +2769,8 @@ void print_job_endpage(int snum, uint32 jobid)
 		return;
 
 	pjob->page_count++;
-	pjob_store(sharename, jobid, pjob);
+	pjob_store(server_event_context(), server_messaging_context(),
+		   sharename, jobid, pjob);
 }
 
 /****************************************************************************
@@ -2851,7 +2861,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 
 	pjob->spooled = True;
 	pjob->status = LPQ_QUEUED;
-	pjob_store(sharename, jobid, pjob);
+	pjob_store(server_event_context(), msg_ctx, sharename, jobid, pjob);
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
