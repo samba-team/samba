@@ -2348,7 +2348,10 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Write to a print file.
 ****************************************************************************/
 
-ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size)
+ssize_t print_job_write(struct tevent_context *ev,
+			struct messaging_context *msg_ctx,
+			int snum, uint32 jobid, const char *buf, SMB_OFF_T pos,
+			size_t size)
 {
 	const char* sharename = lp_const_servicename(snum);
 	ssize_t return_code;
@@ -2371,8 +2374,7 @@ ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, 
 
 	if (return_code>0) {
 		pjob->size += size;
-		pjob_store(server_event_context(), server_messaging_context(),
-			   sharename, jobid, pjob);
+		pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 	}
 	return return_code;
 }

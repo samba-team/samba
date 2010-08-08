@@ -5325,7 +5325,8 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 		return WERR_BADFID;
 
 	/* print_job_write takes care of checking for PJOB_SMBD_SPOOLING */
-	buffer_written = print_job_write(snum, Printer->jobid,
+	buffer_written = print_job_write(server_event_context(),p->msg_ctx,
+						   snum, Printer->jobid,
 						   (const char *)r->in.data.data,
 						   (SMB_OFF_T)-1,
 						   (size_t)r->in._data_size);
