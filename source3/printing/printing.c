@@ -3035,12 +3035,13 @@ int print_queue_status(int snum,
  Pause a queue.
 ****************************************************************************/
 
-WERROR print_queue_pause(struct auth_serversupplied_info *server_info, int snum)
+WERROR print_queue_pause(struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx, int snum)
 {
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
-	if (!print_access_check(server_info, smbd_messaging_context(), snum,
+	if (!print_access_check(server_info, msg_ctx, snum,
 				PRINTER_ACCESS_ADMINISTER)) {
 		return WERR_ACCESS_DENIED;
 	}

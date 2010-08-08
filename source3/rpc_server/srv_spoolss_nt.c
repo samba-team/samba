@@ -5362,7 +5362,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 
 	switch (command) {
 	case SPOOLSS_PRINTER_CONTROL_PAUSE:
-		errcode = print_queue_pause(p->server_info, snum);
+		errcode = print_queue_pause(p->server_info, p->msg_ctx, snum);
 		break;
 	case SPOOLSS_PRINTER_CONTROL_RESUME:
 	case SPOOLSS_PRINTER_CONTROL_UNPAUSE:
