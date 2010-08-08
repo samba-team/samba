@@ -7473,7 +7473,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 		goto done;
 	}
 
-	err = winreg_add_driver(p->mem_ctx, p->server_info,
+	err = winreg_add_driver(p->mem_ctx, p->server_info, p->msg_ctx,
                                 r->in.info_ctr, &driver_name, &version);
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;

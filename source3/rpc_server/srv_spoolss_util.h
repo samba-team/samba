@@ -510,6 +510,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 			 struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx,
 			 struct spoolss_AddDriverInfoCtr *r,
 			 const char **driver_name,
 			 uint32_t *driver_version);

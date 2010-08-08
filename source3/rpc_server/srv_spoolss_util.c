@@ -3767,6 +3767,7 @@ done:
 
 WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 			 struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx,
 			 struct spoolss_AddDriverInfoCtr *r,
 			 const char **driver_name,
 			 uint32_t *driver_version)
@@ -3794,7 +3795,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_opendriver(tmp_ctx,
 					   server_info,
-					   smbd_messaging_context(),
+					   msg_ctx,
 					   info8.driver_name,
 					   info8.architecture,
 					   info8.version,
