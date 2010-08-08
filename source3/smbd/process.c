@@ -2869,7 +2869,7 @@ static bool spoolss_init_cb(void *ptr)
  Process commands from the client
 ****************************************************************************/
 
-void smbd_process(void)
+void smbd_process(struct smbd_server_connection *sconn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct sockaddr_storage ss;
@@ -2891,7 +2891,7 @@ void smbd_process(void)
 		 * with the first negprot
 		 * packet.
 		 */
-		smbd_server_conn->using_smb2 = true;
+		sconn->using_smb2 = true;
 	}
 
 	/* Ensure child is set to blocking mode */
@@ -2908,7 +2908,7 @@ void smbd_process(void)
 		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getpeername() failed.\n");
 	}
-	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
+	ret = tsocket_address_bsd_from_sockaddr(sconn,
 						sa, sa_len,
 						&remote_address);
 	if (ret != 0) {
@@ -2925,7 +2925,7 @@ void smbd_process(void)
 		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getsockname() failed.\n");
 	}
-	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
+	ret = tsocket_address_bsd_from_sockaddr(sconn,
 						sa, sa_len,
 						&local_address);
 	if (ret != 0) {
@@ -2934,12 +2934,12 @@ void smbd_process(void)
 		exit_server_cleanly("tsocket_address_bsd_from_sockaddr remote failed.\n");
 	}
 
-	smbd_server_conn->local_address = local_address;
-	smbd_server_conn->remote_address = remote_address;
+	sconn->local_address = local_address;
+	sconn->remote_address = remote_address;
 
 	if (tsocket_address_is_inet(remote_address, "ip")) {
 		remaddr = tsocket_address_inet_addr_string(
-				smbd_server_conn->remote_address,
+				sconn->remote_address,
 				talloc_tos());
 		if (remaddr == NULL) {
 
@@ -2951,7 +2951,7 @@ void smbd_process(void)
 	/* this is needed so that we get decent entries
 	   in smbstatus for port 445 connects */
 	set_remote_machine_name(remaddr, false);
-	reload_services(smbd_server_conn->msg_ctx, true);
+	reload_services(sconn->msg_ctx, true);
 
 	/*
 	 * Before the first packet, check the global hosts allow/ hosts deny
@@ -2999,11 +2999,11 @@ void smbd_process(void)
 		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	if (!srv_init_signing(smbd_server_conn)) {
+	if (!srv_init_signing(sconn)) {
 		exit_server("Failed to init smb_signing");
 	}
 
-	if (lp_async_smb_echo_handler() && !fork_echo_handler(smbd_server_conn)) {
+	if (lp_async_smb_echo_handler() && !fork_echo_handler(sconn)) {
 		exit_server("Failed to fork echo handler");
 	}
 
@@ -3039,7 +3039,7 @@ void smbd_process(void)
 
 	if (!(event_add_idle(smbd_event_context(), NULL,
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
-			     "deadtime", deadtime_fn, smbd_server_conn))) {
+			     "deadtime", deadtime_fn, sconn))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
@@ -3086,34 +3086,34 @@ void smbd_process(void)
 
 #endif
 
-	smbd_server_conn->nbt.got_session = false;
+	sconn->nbt.got_session = false;
 
-	smbd_server_conn->smb1.negprot.max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
+	sconn->smb1.negprot.max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-	smbd_server_conn->smb1.sessions.done_sesssetup = false;
-	smbd_server_conn->smb1.sessions.max_send = BUFFER_SIZE;
-	smbd_server_conn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
+	sconn->smb1.sessions.done_sesssetup = false;
+	sconn->smb1.sessions.max_send = BUFFER_SIZE;
+	sconn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
 	/* users from session setup */
-	smbd_server_conn->smb1.sessions.session_userlist = NULL;
+	sconn->smb1.sessions.session_userlist = NULL;
 	/* workgroup from session setup. */
-	smbd_server_conn->smb1.sessions.session_workgroup = NULL;
+	sconn->smb1.sessions.session_workgroup = NULL;
 	/* this holds info on user ids that are already validated for this VC */
-	smbd_server_conn->smb1.sessions.validated_users = NULL;
-	smbd_server_conn->smb1.sessions.next_vuid = VUID_OFFSET;
-	smbd_server_conn->smb1.sessions.num_validated_vuids = 0;
+	sconn->smb1.sessions.validated_users = NULL;
+	sconn->smb1.sessions.next_vuid = VUID_OFFSET;
+	sconn->smb1.sessions.num_validated_vuids = 0;
 
-	conn_init(smbd_server_conn);
-	if (!init_dptrs(smbd_server_conn)) {
+	conn_init(sconn);
+	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
 	}
 
-	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
-						  smbd_server_conn,
+	sconn->smb1.fde = event_add_fd(smbd_event_context(),
+						  sconn,
 						  smbd_server_fd(),
 						  EVENT_FD_READ,
 						  smbd_server_connection_handler,
-						  smbd_server_conn);
-	if (!smbd_server_conn->smb1.fde) {
+						  sconn);
+	if (!sconn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
@@ -3145,7 +3145,7 @@ void smbd_process(void)
 
 		errno = 0;
 
-		status = smbd_server_connection_loop_once(smbd_server_conn);
+		status = smbd_server_connection_loop_once(sconn);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY) &&
 		    !NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
