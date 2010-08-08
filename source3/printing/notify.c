@@ -341,7 +341,9 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 
 }
 
-static void send_notify_field_values(const char *sharename, uint32 type,
+static void send_notify_field_values(struct tevent_context *ev,
+				     struct messaging_context *msg_ctx,
+				     const char *sharename, uint32 type,
 				     uint32 field, uint32 id, uint32 value1, 
 				     uint32 value2, uint32 flags)
 {
@@ -367,8 +369,7 @@ static void send_notify_field_values(const char *sharename, uint32 type,
 	msg->notify.value[1] = value2;
 	msg->flags = flags;
 
-	send_spoolss_notify2_msg(server_event_context(),
-				 server_messaging_context(), msg);
+	send_spoolss_notify2_msg(ev, msg_ctx, msg);
 }
 
 static void send_notify_field_buffer(const char *sharename, uint32 type,
@@ -408,7 +409,9 @@ void notify_printer_status_byname(const char *sharename, uint32 status)
 
 	int snum = print_queue_snum(sharename);
 
-	send_notify_field_values(sharename, PRINTER_NOTIFY_TYPE, 
+	send_notify_field_values(server_event_context(),
+				 server_messaging_context(),
+				 sharename, PRINTER_NOTIFY_TYPE,
 				 PRINTER_NOTIFY_FIELD_STATUS, snum,
 				 status, 0, 0);
 }
@@ -426,7 +429,9 @@ void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
+	send_notify_field_values(server_event_context(),
+				 server_messaging_context(),
+				 sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_FIELD_STATUS, jobid,
 				 status, 0, flags);
 }
@@ -441,7 +446,9 @@ void notify_job_total_bytes(const char *sharename, uint32 jobid,
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
+	send_notify_field_values(server_event_context(),
+				 server_messaging_context(),
+				 sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_FIELD_TOTAL_BYTES, jobid,
 				 size, 0, 0);
 }
@@ -451,7 +458,9 @@ void notify_job_total_pages(const char *sharename, uint32 jobid,
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
+	send_notify_field_values(server_event_context(),
+				 server_messaging_context(),
+				 sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_FIELD_TOTAL_PAGES, jobid,
 				 pages, 0, 0);
 }
