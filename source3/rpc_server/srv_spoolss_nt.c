@@ -7909,7 +7909,8 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	status = winreg_printer_addform1(p->mem_ctx, p->server_info, form);
+	status = winreg_printer_addform1(p->mem_ctx, p->server_info,
+					 p->msg_ctx, form);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}

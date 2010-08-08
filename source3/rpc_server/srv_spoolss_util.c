@@ -3226,6 +3226,7 @@ done:
 
 WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 			       struct auth_serversupplied_info *server_info,
+			       struct messaging_context *msg_ctx,
 			       struct spoolss_AddFormInfo1 *form)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -3250,7 +3251,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
