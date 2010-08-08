@@ -917,15 +917,13 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	reload_services(msg_ctx, False);
 }
 
-void smbd_setup_sig_hup_handler(void)
+void smbd_setup_sig_hup_handler(struct tevent_context *ev,
+				struct messaging_context *msg_ctx)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(smbd_event_context(),
-			       smbd_event_context(),
-			       SIGHUP, 0,
-			       smbd_sig_hup_handler,
-			       smbd_messaging_context());
+	se = tevent_add_signal(ev, ev, SIGHUP, 0, smbd_sig_hup_handler,
+			       msg_ctx);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}

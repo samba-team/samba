@@ -1534,7 +1534,8 @@ void start_background_queue(void)
 		}
 
 		smbd_setup_sig_term_handler();
-		smbd_setup_sig_hup_handler();
+		smbd_setup_sig_hup_handler(server_event_context(),
+					   server_messaging_context());
 
 		if (!serverid_register(procid_self(),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD

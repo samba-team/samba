@@ -425,7 +425,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		}
 
 		smbd_setup_sig_term_handler();
-		smbd_setup_sig_hup_handler();
+		smbd_setup_sig_hup_handler(server_event_context(),
+					   server_messaging_context());
 
 		if (!serverid_register(procid_self(),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
@@ -1020,7 +1021,8 @@ extern void build_options(bool screen);
 	smbd_server_conn->msg_ctx = smbd_messaging_context();
 
 	smbd_setup_sig_term_handler();
-	smbd_setup_sig_hup_handler();
+	smbd_setup_sig_hup_handler(smbd_event_context(),
+				   smbd_server_conn->msg_ctx);
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
