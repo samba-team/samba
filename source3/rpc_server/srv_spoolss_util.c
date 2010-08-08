@@ -3445,6 +3445,7 @@ done:
 
 WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info *server_info,
+				  struct messaging_context *msg_ctx,
 				  const char *form_name)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -3473,7 +3474,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
@@ -3575,7 +3576,9 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 
 	/* If form_name != form->form_name then we renamed the form */
 	if (strequal(form_name, form->form_name)) {
-		result = winreg_printer_deleteform1(tmp_ctx, server_info, form_name);
+		result = winreg_printer_deleteform1(tmp_ctx, server_info,
+						    smbd_messaging_context(),
+						    form_name);
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(0, ("winreg_printer_setform1: Could not open key %s: %s\n",
 				  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));

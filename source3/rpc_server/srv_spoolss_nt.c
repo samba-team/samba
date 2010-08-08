@@ -7970,6 +7970,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 
 	status = winreg_printer_deleteform1(p->mem_ctx,
 					    p->server_info,
+					    p->msg_ctx,
 					    form_name);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
