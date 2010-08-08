@@ -4104,6 +4104,7 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 
 static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info *server_info,
+				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *servername,
 				  union spoolss_PrinterInfo **info,
@@ -4111,8 +4112,7 @@ static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_4\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info,
-					    smbd_messaging_context(),
+	return enum_all_printers_info_level(mem_ctx, server_info, msg_ctx,
 					    4, flags, info, count);
 }
 
@@ -4193,7 +4193,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 		break;
 	case 4:
 		result = enumprinters_level4(p->mem_ctx, p->server_info,
-					     r->in.flags, name,
+					     p->msg_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 5:
