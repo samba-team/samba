@@ -4021,13 +4021,13 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
 
 static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
 				       struct auth_serversupplied_info *server_info,
+				       struct messaging_context *msg_ctx,
 				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_2\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info,
-					    smbd_messaging_context(),
+	return enum_all_printers_info_level(mem_ctx, server_info, msg_ctx,
 					    2, 0, info, count);
 }
 
@@ -4077,7 +4077,9 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 				  uint32_t *count)
 {
 	if (flags & PRINTER_ENUM_LOCAL) {
-		return enum_all_printers_info_2(mem_ctx, server_info, info, count);
+		return enum_all_printers_info_2(mem_ctx, server_info,
+						smbd_messaging_context(),
+						info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
@@ -4085,7 +4087,9 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 			return WERR_INVALID_NAME;
 		}
 
-		return enum_all_printers_info_2(mem_ctx, server_info, info, count);
+		return enum_all_printers_info_2(mem_ctx, server_info,
+						smbd_messaging_context(),
+						info, count);
 	}
 
 	if (flags & PRINTER_ENUM_REMOTE) {
