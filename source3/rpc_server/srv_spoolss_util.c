@@ -4351,6 +4351,7 @@ done:
 
 WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 			      struct auth_serversupplied_info *server_info,
+			      struct messaging_context *msg_ctx,
 			      const char *architecture,
 			      uint32_t version,
 			      uint32_t *num_drivers,
@@ -4378,7 +4379,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 	 * parent of all drivers for this architecture and version */
 	result = winreg_printer_opendriver(tmp_ctx,
 					   server_info,
-					   smbd_messaging_context(),
+					   msg_ctx,
 					   NULL,
 					   architecture,
 					   version,

@@ -1805,6 +1805,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 	/* get the list of drivers */
 
 	result = winreg_get_driver_list(mem_ctx, server_info,
+					smbd_messaging_context(),
 					info->architecture, version,
 					&num_drivers, &drivers);
 	if (!W_ERROR_IS_OK(result)) {

@@ -6720,6 +6720,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
 		result = winreg_get_driver_list(mem_ctx, server_info,
+						smbd_messaging_context(),
 						architecture, version,
 						&num_drivers, &drivers);
 		if (!W_ERROR_IS_OK(result)) {

@@ -585,6 +585,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 
 WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 			      struct auth_serversupplied_info *server_info,
+                              struct messaging_context *msg_ctx,
 			      const char *architecture,
 			      uint32_t version,
 			      uint32_t *num_drivers,
