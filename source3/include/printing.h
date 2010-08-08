@@ -141,7 +141,8 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 		       int snum, const char *docname, const char *filename,
 		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid);
 void print_job_endpage(int snum, uint32 jobid);
-NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
+NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
+		       uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum,
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);

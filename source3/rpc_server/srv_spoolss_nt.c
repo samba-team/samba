@@ -5290,7 +5290,7 @@ WERROR _spoolss_EndDocPrinter(struct pipes_struct *p,
 	}
 
 	Printer->document_started = false;
-	status = print_job_end(snum, Printer->jobid, NORMAL_CLOSE);
+	status = print_job_end(p->msg_ctx, snum, Printer->jobid, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("_spoolss_EndDocPrinter: "
 			  "print_job_end failed [%s]\n",

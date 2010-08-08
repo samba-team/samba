@@ -2749,7 +2749,8 @@ void print_job_endpage(int snum, uint32 jobid)
  error.
 ****************************************************************************/
 
-NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
+NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
+		       uint32 jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2834,7 +2835,7 @@ NTSTATUS print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(server_messaging_context(), snum, False);
+		print_queue_update(msg_ctx, snum, False);
 
 	return NT_STATUS_OK;
 
