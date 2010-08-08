@@ -1601,17 +1601,20 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 
 		if (!strequal("Windows NT x86", r->architecture)) {
 			werr = winreg_get_driver(mem_ctx, server_info,
+						 smbd_messaging_context(),
 						 "Windows NT x86",
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
 		} else if (r->version == 2) {
 			werr = winreg_get_driver(mem_ctx, server_info,
+						 smbd_messaging_context(),
 						 "Windows NT x86",
 						 r->driver_name,
 						 3, &driver);
 		} else if (r->version == 3) {
 			werr = winreg_get_driver(mem_ctx, server_info,
+						 smbd_messaging_context(),
 						 "Windows NT x86",
 						 r->driver_name,
 						 2, &driver);
@@ -1819,6 +1822,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 		driver = NULL;
 
 		result = winreg_get_driver(mem_ctx, server_info,
+					   smbd_messaging_context(),
 					   info->architecture, drivers[i],
 					   version, &driver);
 		if (!W_ERROR_IS_OK(result)) {

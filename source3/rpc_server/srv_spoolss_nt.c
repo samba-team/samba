@@ -1839,7 +1839,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	if ((version = get_version_id(r->in.architecture)) == -1)
 		return WERR_INVALID_ENVIRONMENT;
 
-	status = winreg_get_driver(p->mem_ctx, p->server_info,
+	status = winreg_get_driver(p->mem_ctx, p->server_info, p->msg_ctx,
 				   r->in.architecture, r->in.driver,
 				   version, &info);
 	if (!W_ERROR_IS_OK(status)) {
@@ -1849,6 +1849,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 			version = 3;
 
 			status = winreg_get_driver(p->mem_ctx, p->server_info,
+						   p->msg_ctx,
 						   r->in.architecture,
 						   r->in.driver,
 						   version, &info);
@@ -1872,6 +1873,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 
 	if (version == 2) {
 		status = winreg_get_driver(p->mem_ctx, p->server_info,
+					   p->msg_ctx,
 					   r->in.architecture,
 					   r->in.driver, 3, &info_win2k);
 		if (W_ERROR_IS_OK(status)) {
@@ -1936,8 +1938,8 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		version = r->in.version;
 
 	status = winreg_get_driver(p->mem_ctx, p->server_info,
-				   r->in.architecture, r->in.driver,
-				   version, &info);
+				   p->msg_ctx, r->in.architecture,
+				   r->in.driver, version, &info);
 	if (!W_ERROR_IS_OK(status)) {
 		status = WERR_UNKNOWN_PRINTER_DRIVER;
 
@@ -1953,7 +1955,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		status = winreg_get_driver(info, p->server_info,
+		status = winreg_get_driver(info, p->server_info, p->msg_ctx,
 					   r->in.architecture,
 					   r->in.driver,
 					   version, &info);
@@ -1996,7 +1998,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		status = winreg_get_driver(info, p->server_info,
+		status = winreg_get_driver(info, p->server_info, p->msg_ctx,
 					   r->in.architecture,
 					   r->in.driver, 3, &info_win2k);
 		if (W_ERROR_IS_OK(status)) {
@@ -4990,7 +4992,9 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	result = winreg_get_driver(mem_ctx, server_info, architecture,
+	result = winreg_get_driver(mem_ctx, server_info,
+				   smbd_messaging_context(),
+				   architecture,
 				   pinfo2->drivername, version, &driver);
 
 	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
@@ -5008,7 +5012,9 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		result = winreg_get_driver(mem_ctx, server_info, architecture,
+		result = winreg_get_driver(mem_ctx, server_info,
+					   smbd_messaging_context(),
+					   architecture,
 					   pinfo2->drivername,
 					   version, &driver);
 		DEBUG(8,("construct_printer_driver_level: status: %s\n",
@@ -6736,6 +6742,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("\tdriver: [%s]\n", drivers[i]));
 
 			result = winreg_get_driver(mem_ctx, server_info,
+						   smbd_messaging_context(),
 						   architecture, drivers[i],
 						   version, &driver);
 			if (!W_ERROR_IS_OK(result)) {
