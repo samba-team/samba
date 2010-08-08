@@ -3799,6 +3799,7 @@ static bool snum_is_shared_printer(int snum)
 
 static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 					   struct auth_serversupplied_info *server_info,
+					   struct messaging_context *msg_ctx,
 					   uint32_t level,
 					   uint32_t flags,
 					   union spoolss_PrinterInfo **info_p,
@@ -3829,7 +3830,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 		result = winreg_create_printer(mem_ctx,
 					       server_info,
-					       smbd_messaging_context(),
+					       msg_ctx,
 					       NULL,
 					       printer);
 		if (!W_ERROR_IS_OK(result)) {
@@ -3844,8 +3845,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		result = winreg_get_printer(mem_ctx, server_info,
-					    smbd_messaging_context(),
+		result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
 					    NULL, printer, &info2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
@@ -3854,8 +3854,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 		switch (level) {
 		case 0:
 			result = construct_printer_info0(info, server_info,
-							 smbd_messaging_context(),
-							 info2,
+							 msg_ctx, info2,
 							 &info[count].info0, snum);
 			break;
 		case 1:
@@ -3914,7 +3913,9 @@ static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_0\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info, 0, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info,
+					    smbd_messaging_context(),
+					    0, flags, info, count);
 }
 
 
@@ -3929,7 +3930,8 @@ static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_1\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info, 1, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info,
+					    smbd_messaging_context(), 1, flags, info, count);
 }
 
 /********************************************************************
@@ -4017,7 +4019,9 @@ static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_2\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info, 2, 0, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info,
+					    smbd_messaging_context(),
+					    2, 0, info, count);
 }
 
 /********************************************************************
@@ -4091,7 +4095,9 @@ static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_4\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info, 4, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info,
+					    smbd_messaging_context(),
+					    4, flags, info, count);
 }
 
 
@@ -4108,7 +4114,9 @@ static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(4,("enum_all_printers_info_5\n"));
 
-	return enum_all_printers_info_level(mem_ctx, server_info, 5, flags, info, count);
+	return enum_all_printers_info_level(mem_ctx, server_info,
+					    smbd_messaging_context(),
+					    5, flags, info, count);
 }
 
 /****************************************************************
@@ -4237,7 +4245,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	switch (r->in.level) {
 	case 0:
 		result = construct_printer_info0(p->mem_ctx, p->server_info,
-						 info2,
+						 p->msg_ctx, info2,
 						 &r->out.info->info0, snum);
 		break;
 	case 1:
