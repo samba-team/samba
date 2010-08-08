@@ -6731,6 +6731,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 
 static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 						       struct auth_serversupplied_info *server_info,
+						       struct messaging_context *msg_ctx,
 						       const char *servername,
 						       const char *architecture,
 						       uint32_t level,
@@ -6750,8 +6751,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 	*info_p = NULL;
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		result = winreg_get_driver_list(mem_ctx, server_info,
-						smbd_messaging_context(),
+		result = winreg_get_driver_list(mem_ctx, server_info, msg_ctx,
 						architecture, version,
 						&num_drivers, &drivers);
 		if (!W_ERROR_IS_OK(result)) {
@@ -6777,7 +6777,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("\tdriver: [%s]\n", drivers[i]));
 
 			result = winreg_get_driver(mem_ctx, server_info,
-						   smbd_messaging_context(),
+						   msg_ctx,
 						   architecture, drivers[i],
 						   version, &driver);
 			if (!W_ERROR_IS_OK(result)) {
@@ -6867,6 +6867,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 
 			result = enumprinterdrivers_level_by_architecture(mem_ctx,
 									  server_info,
+									  smbd_messaging_context(),
 									  servername,
 									  archi_table[a].long_archi,
 									  level,
@@ -6887,6 +6888,7 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 
 	return enumprinterdrivers_level_by_architecture(mem_ctx,
 							server_info,
+							smbd_messaging_context(),
 							servername,
 							architecture,
 							level,
