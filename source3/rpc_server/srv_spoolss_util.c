@@ -2830,6 +2830,7 @@ done:
 /* Delete printer data over a winreg pipe. */
 WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 				    struct auth_serversupplied_info *server_info,
+				    struct messaging_context *msg_ctx,
 				    const char *printer,
 				    const char *key,
 				    const char *value)
@@ -2860,7 +2861,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					key,

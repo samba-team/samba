@@ -288,6 +288,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 				    struct auth_serversupplied_info *server_info,
+				    struct messaging_context *msg_ctx,
 				    const char *printer,
 				    const char *key,
 				    const char *value);

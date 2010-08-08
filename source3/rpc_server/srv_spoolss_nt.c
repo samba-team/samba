@@ -8838,6 +8838,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 
 	status = winreg_delete_printer_dataex(p->mem_ctx,
 					      p->server_info,
+					      p->msg_ctx,
 					      printer,
 					      r->in.key_name,
 					      r->in.value_name);
