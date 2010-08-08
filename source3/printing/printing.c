@@ -1213,7 +1213,9 @@ done:
  main work for updating the lpq cahe for a printer queue
 ****************************************************************************/
 
-static void print_queue_update_internal( const char *sharename,
+static void print_queue_update_internal( struct tevent_context *ev,
+					 struct messaging_context *msg_ctx,
+					 const char *sharename,
                                          struct printif *current_printif,
                                          char *lpq_command, char *lprm_command )
 {
@@ -1277,8 +1279,7 @@ static void print_queue_update_internal( const char *sharename,
 
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
-			print_unix_job(server_event_context(),
-				       server_messaging_context(),
+			print_unix_job(ev, msg_ctx,
 				       sharename, &queue[i], jobid);
 			continue;
 		}
@@ -1289,8 +1290,7 @@ static void print_queue_update_internal( const char *sharename,
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
-			print_unix_job(server_event_context(),
-				       server_messaging_context(),
+			print_unix_job(ev, msg_ctx,
 				       sharename, &queue[i], jobid);
 			continue;
 		}
@@ -1302,8 +1302,7 @@ static void print_queue_update_internal( const char *sharename,
 		if ( pjob->status != LPQ_DELETING )
 			pjob->status = queue[i].status;
 
-		pjob_store(server_event_context(), server_messaging_context(),
-			   sharename, jobid, pjob);
+		pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 
 		check_job_changed(sharename, jcdata, jobid);
 	}
@@ -1320,8 +1319,8 @@ static void print_queue_update_internal( const char *sharename,
 	tstruct.sharename = sharename;
 	tstruct.lprm_command = lprm_command;
 	tstruct.print_if = current_printif;
-	tstruct.ev = server_event_context();
-	tstruct.msg_ctx = server_messaging_context();
+	tstruct.ev = ev;
+	tstruct.msg_ctx = msg_ctx;
 
 	tdb_traverse(pdb->tdb, traverse_fn_delete, (void *)&tstruct);
 
@@ -1448,8 +1447,10 @@ static void print_queue_update_with_lock( const char *sharename,
 
 	/* do the main work now */
 
-	print_queue_update_internal( sharename, current_printif,
-		lpq_command, lprm_command );
+	print_queue_update_internal(server_event_context(),
+				    server_messaging_context(),
+				    sharename, current_printif,
+				    lpq_command, lprm_command);
 
 	/* Delete our pid from the db. */
 	set_updating_pid(sharename, False);
