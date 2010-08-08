@@ -8035,6 +8035,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 
 	status = winreg_printer_setform1(p->mem_ctx,
 					 p->server_info,
+					 p->msg_ctx,
 					 form_name,
 					 form);
 	if (!W_ERROR_IS_OK(status)) {

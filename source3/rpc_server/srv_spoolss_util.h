@@ -468,6 +468,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 			       struct auth_serversupplied_info *server_info,
+			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form);
 
