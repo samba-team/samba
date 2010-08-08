@@ -257,6 +257,7 @@ bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			   struct auth_serversupplied_info *server_info,
+			   struct messaging_context *msg_ctx,
 			   const struct spoolss_DriverInfo8 *r);
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,

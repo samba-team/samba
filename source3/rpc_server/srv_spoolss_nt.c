@@ -1868,7 +1868,8 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 
 	}
 
-	if (printer_driver_in_use(p->mem_ctx, p->server_info, info)) {
+	if (printer_driver_in_use(p->mem_ctx, p->server_info, p->msg_ctx,
+				  info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
@@ -1969,7 +1970,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		}
 	}
 
-	if (printer_driver_in_use(info, p->server_info, info)) {
+	if (printer_driver_in_use(info, p->server_info, p->msg_ctx, info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}

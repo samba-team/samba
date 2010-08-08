@@ -1553,6 +1553,7 @@ bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			   struct auth_serversupplied_info *server_info,
+			   struct messaging_context *msg_ctx,
                            const struct spoolss_DriverInfo8 *r)
 {
 	int snum;
@@ -1574,9 +1575,9 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		result = winreg_get_printer(mem_ctx, server_info,
-					    smbd_messaging_context(), NULL,
-					    lp_servicename(snum), &pinfo2);
+		result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
+					    NULL, lp_servicename(snum),
+					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue; /* skip */
 		}
@@ -1600,21 +1601,18 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		   "Windows NT x86" version 2 or 3 left */
 
 		if (!strequal("Windows NT x86", r->architecture)) {
-			werr = winreg_get_driver(mem_ctx, server_info,
-						 smbd_messaging_context(),
+			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
 		} else if (r->version == 2) {
-			werr = winreg_get_driver(mem_ctx, server_info,
-						 smbd_messaging_context(),
+			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 3, &driver);
 		} else if (r->version == 3) {
-			werr = winreg_get_driver(mem_ctx, server_info,
-						 smbd_messaging_context(),
+			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 2, &driver);
