@@ -2634,6 +2634,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 ***************************************************************************/
 
 WERROR print_job_start(struct auth_serversupplied_info *server_info,
+		       struct messaging_context *msg_ctx,
 		       int snum, const char *docname, const char *filename,
 		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid)
 {
@@ -2651,8 +2652,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 
 	path = lp_pathname(snum);
 
-	werr = print_job_checks(server_info, smbd_messaging_context(), snum,
-				&njobs);
+	werr = print_job_checks(server_info, msg_ctx, snum, &njobs);
 	if (!W_ERROR_IS_OK(werr)) {
 		release_print_db(pdb);
 		return werr;

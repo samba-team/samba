@@ -136,6 +136,7 @@ bool print_job_resume(struct auth_serversupplied_info *server_info,
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 WERROR print_job_start(struct auth_serversupplied_info *server_info,
+		       struct messaging_context *msg_ctx,
 		       int snum, const char *docname, const char *filename,
 		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid);
 void print_job_endpage(int snum, uint32 jobid);
