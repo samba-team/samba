@@ -453,19 +453,21 @@ done:
 #else
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
 {
 	return WERR_OK;
 }
 
-WERROR check_published_printers(void)
+WERROR check_published_printers(struct messaging_context *msg_ctx)
 {
 	return WERR_OK;
 }
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
 {
