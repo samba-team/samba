@@ -4428,7 +4428,9 @@ void notify_job_total_bytes(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
 			    const char *sharename, uint32 jobid,
 			    uint32 size);
-void notify_job_total_pages(const char *sharename, uint32 jobid,
+void notify_job_total_pages(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx,
+			    const char *sharename, uint32 jobid,
 			    uint32 pages);
 void notify_job_username(const char *sharename, uint32 jobid, char *name);
 void notify_job_name(const char *sharename, uint32 jobid, char *name);
