@@ -4263,6 +4263,7 @@ done:
 
 WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 			 struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx,
 			 struct spoolss_DriverInfo8 *info8,
 			 uint32_t version)
 {
@@ -4284,7 +4285,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 	/* test that the key exists */
 	result = winreg_printer_opendriver(tmp_ctx,
 					   server_info,
-					   smbd_messaging_context(),
+					   msg_ctx,
 					   info8->driver_name,
 					   info8->architecture,
 					   version,

@@ -1882,6 +1882,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 
 			status = winreg_del_driver(p->mem_ctx,
 						   p->server_info,
+						   p->msg_ctx,
 						   info_win2k, 3);
 			talloc_free(info_win2k);
 
@@ -1892,7 +1893,8 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 		}
 	}
 
-	status = winreg_del_driver(p->mem_ctx, p->server_info, info, version);
+	status = winreg_del_driver(p->mem_ctx, p->server_info, p->msg_ctx,
+				   info, version);
 
 done:
 	talloc_free(info);
@@ -2017,7 +2019,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 			/* remove the Win2k driver first*/
 
 			status = winreg_del_driver(info, p->server_info,
-						   info_win2k, 3);
+						   p->msg_ctx, info_win2k, 3);
 
 			/* this should not have failed---if it did, report to client */
 
@@ -2037,7 +2039,8 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		}
 	}
 
-	status = winreg_del_driver(info, p->server_info, info, version);
+	status = winreg_del_driver(info, p->server_info, p->msg_ctx, info,
+				   version);
 	if (!W_ERROR_IS_OK(status)) {
 		goto done;
 	}
