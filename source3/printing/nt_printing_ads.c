@@ -30,7 +30,8 @@
 /*****************************************************************
  ****************************************************************/
 
-static void store_printer_guid(const char *printer, struct GUID guid)
+static void store_printer_guid(struct messaging_context *msg_ctx,
+			       const char *printer, struct GUID guid)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -68,8 +69,7 @@ static void store_printer_guid(const char *printer, struct GUID guid)
 		goto done;
 	}
 
-	result = winreg_set_printer_dataex(tmp_ctx, server_info,
-					   smbd_messaging_context(),
+	result = winreg_set_printer_dataex(tmp_ctx, server_info, msg_ctx,
 					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   REG_SZ, blob.data, blob.length);
@@ -188,7 +188,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		ZERO_STRUCT(guid);
 		ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
-		store_printer_guid(printer, guid);
+		store_printer_guid(smbd_messaging_context(), printer, guid);
 	}
 	TALLOC_FREE(ctx);
 
