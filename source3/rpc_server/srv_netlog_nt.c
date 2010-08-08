@@ -584,7 +584,9 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
  ******************************************************************/
 
 static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
-			  enum netr_SchannelType sec_chan_type, struct dom_sid *sid)
+			  enum netr_SchannelType sec_chan_type,
+			  struct dom_sid *sid,
+			  struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
@@ -629,8 +631,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info,
-					smbd_messaging_context(),
+					server_info, msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -875,7 +876,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	status = get_md4pw(&mach_pwd,
 			   r->in.account_name,
 			   r->in.secure_channel_type,
-			   &sid);
+			   &sid, p->msg_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s: failed to get machine password for "
 			"account %s: %s\n",
