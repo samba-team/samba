@@ -6671,7 +6671,9 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!print_job_set_name(printer_name, job_id, r->document_name)) {
+	if (!print_job_set_name(server_event_context(),
+				server_messaging_context(),
+				printer_name, job_id, r->document_name)) {
 		return WERR_BADFID;
 	}
 

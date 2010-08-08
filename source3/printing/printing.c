@@ -1974,7 +1974,9 @@ struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid
  Set the name of a job. Only possible for owner.
 ****************************************************************************/
 
-bool print_job_set_name(const char *sharename, uint32 jobid, const char *name)
+bool print_job_set_name(struct tevent_context *ev,
+			struct messaging_context *msg_ctx,
+			const char *sharename, uint32 jobid, const char *name)
 {
 	struct printjob *pjob;
 
@@ -1983,8 +1985,7 @@ bool print_job_set_name(const char *sharename, uint32 jobid, const char *name)
 		return False;
 
 	fstrcpy(pjob->jobname, name);
-	return pjob_store(server_event_context(), server_messaging_context(),
-			  sharename, jobid, pjob);
+	return pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 }
 
 /****************************************************************************
