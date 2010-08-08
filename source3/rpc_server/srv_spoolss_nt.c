@@ -4037,6 +4037,7 @@ static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
 
 static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info *server_info,
+				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *name,
 				  union spoolss_PrinterInfo **info,
@@ -4046,20 +4047,19 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
 
 	if (flags & PRINTER_ENUM_LOCAL) {
 		return enum_all_printers_info_1_local(mem_ctx, server_info,
-						      smbd_messaging_context(),
-						      info, count);
+						      msg_ctx, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
 		return enum_all_printers_info_1_name(mem_ctx, server_info,
-						     smbd_messaging_context(),
-						     name, info, count);
+						     msg_ctx, name, info,
+						     count);
 	}
 
 	if (flags & PRINTER_ENUM_NETWORK) {
 		return enum_all_printers_info_1_network(mem_ctx, server_info,
-							smbd_messaging_context(),
-							name, info, count);
+							msg_ctx, name, info,
+							count);
 	}
 
 	return WERR_OK; /* NT4sp5 does that */
@@ -4184,7 +4184,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 		break;
 	case 1:
 		result = enumprinters_level1(p->mem_ctx, p->server_info,
-					     r->in.flags, name,
+					     p->msg_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 2:
