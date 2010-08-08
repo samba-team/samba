@@ -393,7 +393,9 @@ static bool cups_cache_reload_async(int fd)
 static struct pcap_cache *local_pcap_copy;
 struct fd_event *cache_fd_event;
 
-static bool cups_pcap_load_async(int *pfd)
+static bool cups_pcap_load_async(struct tevent_context *ev,
+				 struct messaging_context *msg_ctx,
+				 int *pfd)
 {
 	int fds[2];
 	pid_t pid;
@@ -435,9 +437,7 @@ static bool cups_pcap_load_async(int *pfd)
 
 	close_all_print_db();
 
-	status = reinit_after_fork(server_messaging_context(),
-				   server_event_context(), procid_self(),
-				   true);
+	status = reinit_after_fork(msg_ctx, ev, procid_self(), true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
@@ -569,7 +569,9 @@ bool cups_cache_reload(void)
 	*p_pipe_fd = -1;
 
 	/* Set up an async refresh. */
-	if (!cups_pcap_load_async(p_pipe_fd)) {
+	if (!cups_pcap_load_async(server_event_context(),
+				  server_messaging_context(),
+				  p_pipe_fd)) {
 		return false;
 	}
 	if (!local_pcap_copy) {
