@@ -4424,7 +4424,9 @@ void notify_job_status_byname(struct tevent_context *ev,
 void notify_job_status(struct tevent_context *ev,
 		       struct messaging_context *msg_ctx,
 		       const char *sharename, uint32 jobid, uint32 status);
-void notify_job_total_bytes(const char *sharename, uint32 jobid,
+void notify_job_total_bytes(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx,
+			    const char *sharename, uint32 jobid,
 			    uint32 size);
 void notify_job_total_pages(const char *sharename, uint32 jobid,
 			    uint32 pages);

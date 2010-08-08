@@ -448,13 +448,14 @@ void notify_job_status(struct tevent_context *ev,
 	notify_job_status_byname(ev, msg_ctx, sharename, jobid, status, 0);
 }
 
-void notify_job_total_bytes(const char *sharename, uint32 jobid,
+void notify_job_total_bytes(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx,
+			    const char *sharename, uint32 jobid,
 			    uint32 size)
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(server_event_context(),
-				 server_messaging_context(),
+	send_notify_field_values(ev, msg_ctx,
 				 sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_FIELD_TOTAL_BYTES, jobid,
 				 size, 0, 0);

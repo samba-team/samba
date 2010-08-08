@@ -596,7 +596,9 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 				  map_to_spoolss_status(new_data->status));
 
 	if (new_job || old_data->size != new_data->size)
-		notify_job_total_bytes(sharename, jobid, new_data->size);
+		notify_job_total_bytes(server_event_context(),
+				       server_messaging_context(),
+				       sharename, jobid, new_data->size);
 
 	if (new_job || old_data->page_count != new_data->page_count)
 		notify_job_total_pages(sharename, jobid, new_data->page_count);
