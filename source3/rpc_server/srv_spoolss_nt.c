@@ -3459,6 +3459,7 @@ done:
 
 static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 				      struct auth_serversupplied_info *server_info,
+				      struct messaging_context *msg_ctx,
 				      struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo0 *r,
 				      int snum)
@@ -3523,8 +3524,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->high_part_total_bytes	= 0x0;
 
 	/* ChangeID in milliseconds*/
-	winreg_printer_get_changeid(mem_ctx, server_info,
-				    smbd_messaging_context(),
+	winreg_printer_get_changeid(mem_ctx, server_info, msg_ctx,
 				    info2->sharename, &r->change_id);
 
 	r->last_error			= WERR_OK;
@@ -3853,7 +3853,9 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 		switch (level) {
 		case 0:
-			result = construct_printer_info0(info, server_info, info2,
+			result = construct_printer_info0(info, server_info,
+							 smbd_messaging_context(),
+							 info2,
 							 &info[count].info0, snum);
 			break;
 		case 1:
