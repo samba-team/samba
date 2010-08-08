@@ -557,7 +557,10 @@ static uint32 map_to_spoolss_status(uint32 lpq_status)
 	return 0;
 }
 
-static void pjob_store_notify(const char* sharename, uint32 jobid, struct printjob *old_data,
+static void pjob_store_notify(struct tevent_context *ev,
+			      struct messaging_context *msg_ctx,
+			      const char* sharename, uint32 jobid,
+			      struct printjob *old_data,
 			      struct printjob *new_data)
 {
 	bool new_job = False;
@@ -576,41 +579,34 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 	   --jerry (i'll feel dirty for this) */
 
 	if (new_job) {
-		notify_job_submitted(server_event_context(),
-				     server_messaging_context(),
+		notify_job_submitted(ev, msg_ctx,
 				     sharename, jobid, new_data->starttime);
-		notify_job_username(server_event_context(),
-				    server_messaging_context(),
+		notify_job_username(ev, msg_ctx,
 				    sharename, jobid, new_data->user);
 	}
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(server_event_context(),
-				server_messaging_context(),
+		notify_job_name(ev, msg_ctx,
 				sharename, jobid, new_data->jobname);
 
 	/* Job attributes of a new job or attributes that can be
 	   modified. */
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(server_event_context(),
-				server_messaging_context(),
+		notify_job_name(ev, msg_ctx,
 				sharename, jobid, new_data->jobname);
 
 	if (new_job || old_data->status != new_data->status)
-		notify_job_status(server_event_context(),
-				  server_messaging_context(),
+		notify_job_status(ev, msg_ctx,
 				  sharename, jobid,
 				  map_to_spoolss_status(new_data->status));
 
 	if (new_job || old_data->size != new_data->size)
-		notify_job_total_bytes(server_event_context(),
-				       server_messaging_context(),
+		notify_job_total_bytes(ev, msg_ctx,
 				       sharename, jobid, new_data->size);
 
 	if (new_job || old_data->page_count != new_data->page_count)
-		notify_job_total_pages(server_event_context(),
-				       server_messaging_context(),
+		notify_job_total_pages(ev, msg_ctx,
 				       sharename, jobid, new_data->page_count);
 }
 
@@ -688,13 +684,18 @@ static bool pjob_store(const char* sharename, uint32 jobid, struct printjob *pjo
 		{
 			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
 			{
-				pjob_store_notify( sharename, jobid, &old_pjob , pjob );
+				pjob_store_notify(server_event_context(),
+						  server_messaging_context(),
+						  sharename, jobid, &old_pjob,
+						  pjob);
 				talloc_free(old_pjob.devmode);
 			}
 		}
 		else {
 			/* new job */
-			pjob_store_notify( sharename, jobid, NULL, pjob );
+			pjob_store_notify(server_event_context(),
+					  server_messaging_context(),
+					  sharename, jobid, NULL, pjob);
 		}
 	}
 
