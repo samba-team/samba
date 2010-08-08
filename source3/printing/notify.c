@@ -494,11 +494,13 @@ void notify_job_name(struct tevent_context *ev,
 		jobid, strlen(name) + 1, name);
 }
 
-void notify_job_submitted(const char *sharename, uint32 jobid,
+void notify_job_submitted(struct tevent_context *ev,
+			  struct messaging_context *msg_ctx,
+			  const char *sharename, uint32 jobid,
 			  time_t submitted)
 {
 	send_notify_field_buffer(
-		server_event_context(), server_messaging_context(),
+		ev, msg_ctx,
 		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_SUBMITTED,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
