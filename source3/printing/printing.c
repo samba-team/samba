@@ -754,7 +754,10 @@ static void pjob_delete(struct tevent_context *ev,
  List a unix job in the print database.
 ****************************************************************************/
 
-static void print_unix_job(const char *sharename, print_queue_struct *q, uint32 jobid)
+static void print_unix_job(struct tevent_context *ev,
+			   struct messaging_context *msg_ctx,
+			   const char *sharename, print_queue_struct *q,
+			   uint32 jobid)
 {
 	struct printjob pj, *old_pj;
 
@@ -785,8 +788,7 @@ static void print_unix_job(const char *sharename, print_queue_struct *q, uint32 
 	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
 	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : sharename );
 
-	pjob_store(server_event_context(), server_messaging_context(),
-		   sharename, jobid, &pj);
+	pjob_store(ev, msg_ctx, sharename, jobid, &pj);
 }
 
 
@@ -1277,7 +1279,9 @@ static void print_queue_update_internal( const char *sharename,
 
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
-			print_unix_job(sharename, &queue[i], jobid);
+			print_unix_job(server_event_context(),
+				       server_messaging_context(),
+				       sharename, &queue[i], jobid);
 			continue;
 		}
 
@@ -1287,7 +1291,9 @@ static void print_queue_update_internal( const char *sharename,
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
-			print_unix_job(sharename, &queue[i], jobid);
+			print_unix_job(server_event_context(),
+				       server_messaging_context(),
+				       sharename, &queue[i], jobid);
 			continue;
 		}
 
