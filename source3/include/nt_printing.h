@@ -243,6 +243,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info,
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action);
 

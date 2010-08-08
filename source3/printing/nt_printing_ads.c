@@ -237,6 +237,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
 {
@@ -266,8 +267,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	sinfo2->attributes = pinfo2->attributes;
 
-	win_rc = winreg_update_printer(mem_ctx, server_info,
-					smbd_messaging_context(),
+	win_rc = winreg_update_printer(mem_ctx, server_info, msg_ctx,
 					pinfo2->sharename, info2_mask,
 					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
@@ -299,8 +299,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	switch (action) {
 	case DSPRINT_PUBLISH:
 	case DSPRINT_UPDATE:
-		win_rc = nt_printer_publish_ads(smbd_messaging_context(),
-						ads, pinfo2);
+		win_rc = nt_printer_publish_ads(msg_ctx, ads, pinfo2);
 		break;
 	case DSPRINT_UNPUBLISH:
 		win_rc = nt_printer_unpublish_ads(ads, pinfo2->sharename);

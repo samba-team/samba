@@ -66,7 +66,9 @@ void reload_printers(void)
 						 NULL, lp_servicename(snum),
 						 NULL, &pinfo2)) {
 				nt_printer_publish(server_info,
-						   server_info, pinfo2,
+						   server_info,
+						   smbd_messaging_context(),
+						   pinfo2,
 						   DSPRINT_UNPUBLISH);
 				TALLOC_FREE(pinfo2);
 			}

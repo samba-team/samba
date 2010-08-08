@@ -6122,7 +6122,8 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	nt_printer_publish(pinfo2, p->server_info, pinfo2, info7->action);
+	nt_printer_publish(pinfo2, p->server_info, p->msg_ctx, pinfo2,
+			   info7->action);
 
 	TALLOC_FREE(pinfo2);
 	return WERR_OK;
