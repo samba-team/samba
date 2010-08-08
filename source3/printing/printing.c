@@ -2508,6 +2508,7 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 ***************************************************************************/
 
 static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
+			       struct messaging_context *msg_ctx,
 			       int snum, int *njobs)
 {
 	const char *sharename = lp_const_servicename(snum);
@@ -2515,15 +2516,14 @@ static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
 	uint64_t minspace;
 	int ret;
 
-	if (!print_access_check(server_info, smbd_messaging_context(), snum,
+	if (!print_access_check(server_info, msg_ctx, snum,
 				PRINTER_ACCESS_USE)) {
 		DEBUG(3, ("print_job_checks: "
 			  "job start denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	if (!print_time_access_check(server_info, smbd_messaging_context(),
-				     sharename)) {
+	if (!print_time_access_check(server_info, msg_ctx, sharename)) {
 		DEBUG(3, ("print_job_checks: "
 			  "job start denied by time check\n"));
 		return WERR_ACCESS_DENIED;
@@ -2651,7 +2651,8 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 
 	path = lp_pathname(snum);
 
-	werr = print_job_checks(server_info, snum, &njobs);
+	werr = print_job_checks(server_info, smbd_messaging_context(), snum,
+				&njobs);
 	if (!W_ERROR_IS_OK(werr)) {
 		release_print_db(pdb);
 		return werr;
