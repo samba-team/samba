@@ -6699,7 +6699,8 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 		break;
 	case SPOOLSS_JOB_CONTROL_RESTART:
 	case SPOOLSS_JOB_CONTROL_RESUME:
-		if (print_job_resume(p->server_info, snum, r->in.job_id, &errcode)) {
+		if (print_job_resume(p->server_info, p->msg_ctx,
+				     snum, r->in.job_id, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;

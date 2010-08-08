@@ -2243,8 +2243,9 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Resume a job.
 ****************************************************************************/
 
-bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
-		      uint32 jobid, WERROR *errcode)
+bool print_job_resume(struct auth_serversupplied_info *server_info,
+		      struct messaging_context *msg_ctx,
+		      int snum, uint32 jobid, WERROR *errcode)
 {
 	const char *sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2266,7 +2267,7 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
-	    !print_access_check(server_info, smbd_messaging_context(), snum,
+	    !print_access_check(server_info, msg_ctx, snum,
 				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;

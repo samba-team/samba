@@ -130,8 +130,9 @@ WERROR print_job_delete(struct auth_serversupplied_info *server_info,
 bool print_job_pause(struct auth_serversupplied_info *server_info,
 		     struct messaging_context *msg_ctx,
 		     int snum, uint32 jobid, WERROR *errcode);
-bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
-		      uint32 jobid, WERROR *errcode);
+bool print_job_resume(struct auth_serversupplied_info *server_info,
+		      struct messaging_context *msg_ctx,
+		      int snum, uint32 jobid, WERROR *errcode);
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 WERROR print_job_start(struct auth_serversupplied_info *server_info,
