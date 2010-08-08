@@ -537,6 +537,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
 		 struct auth_serversupplied_info *server_info,
+		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle)
 {
 	const char **proxy_list;
@@ -582,8 +583,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		}
 
 		p = make_internal_rpc_pipe_p(handle, &syntax, client_address,
-					     server_info,
-					     smbd_messaging_context());
+					     server_info, msg_ctx);
 
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
 		handle->private_data = p;

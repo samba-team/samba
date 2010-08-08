@@ -4720,6 +4720,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
 		 struct auth_serversupplied_info *server_info,
+		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle);
 bool np_read_in_progress(struct fake_file_handle *handle);
 struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
