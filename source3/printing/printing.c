@@ -712,7 +712,9 @@ done:
  Remove a job structure from the database.
 ****************************************************************************/
 
-void pjob_delete(const char* sharename, uint32 jobid)
+static void pjob_delete(struct tevent_context *ev,
+			struct messaging_context *msg_ctx,
+			const char* sharename, uint32 jobid)
 {
 	uint32_t tmp;
 	struct printjob *pjob;
@@ -738,9 +740,7 @@ void pjob_delete(const char* sharename, uint32 jobid)
            properly. */
 
 	job_status = JOB_STATUS_DELETING|JOB_STATUS_DELETED;
-	notify_job_status(server_event_context(),
-			  server_messaging_context(),
-			  sharename, jobid, job_status);
+	notify_job_status(ev, msg_ctx, sharename, jobid, job_status);
 
 	/* Remove from printing.tdb */
 
@@ -830,7 +830,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (i == ts->qcount) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
 						(unsigned int)jobid ));
-			pjob_delete(ts->sharename, jobid);
+			pjob_delete(server_event_context(),
+				    server_messaging_context(),
+				    ts->sharename, jobid);
 			return 0;
 		}
 
@@ -846,7 +848,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (!process_exists_by_pid(pjob.pid)) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
 						(unsigned int)jobid, (unsigned int)pjob.pid ));
-			pjob_delete(ts->sharename, jobid);
+			pjob_delete(server_event_context(),
+				    server_messaging_context(),
+				    ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
 		return 0;
@@ -882,7 +886,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 					}
 					else {
 						/* if we deleted the job, the remove the tdb record */
-						pjob_delete(ts->sharename, jobid);
+						pjob_delete(server_event_context(),
+							    server_messaging_context(),
+							    ts->sharename, jobid);
 						pjob.status = LPQ_DELETED;
 					}
 
@@ -910,7 +916,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 						(unsigned int)jobid,
 						(unsigned int)pjob.starttime,
 						(unsigned int)ts->lpq_time ));
-			pjob_delete(ts->sharename, jobid);
+			pjob_delete(server_event_context(),
+				    server_messaging_context(),
+				    ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
 		return 0;
@@ -2102,7 +2110,9 @@ static bool print_job_delete1(int snum, uint32 jobid)
 
 			if (!pdb)
 				return False;
-			pjob_delete(sharename, jobid);
+			pjob_delete(server_event_context(),
+				    server_messaging_context(),
+				    sharename, jobid);
 			/* Ensure we keep a rough count of the number of total jobs... */
 			tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, -1);
 			release_print_db(pdb);
@@ -2742,7 +2752,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 
 fail:
 	if (jobid != -1) {
-		pjob_delete(sharename, jobid);
+		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
 	}
 
 	release_print_db(pdb);
@@ -2846,7 +2856,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		DEBUG(5,("print_job_end: canceling spool of %s (%s)\n",
 			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
-		pjob_delete(sharename, jobid);
+		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
 		return NT_STATUS_OK;
 	}
 
@@ -2875,7 +2885,7 @@ fail:
 	/* Still need to add proper error return propagation! 010122:JRR */
 	pjob->fd = -1;
 	unlink(pjob->filename);
-	pjob_delete(sharename, jobid);
+	pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
 	return status;
 }
 

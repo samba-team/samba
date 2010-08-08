@@ -116,7 +116,6 @@ void print_spool_terminate(struct connection_struct *conn,
 
 int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob );
 uint32 sysjob_to_jobid(int unix_jobid);
-void pjob_delete(const char* sharename, uint32 jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
 bool print_job_exists(const char* sharename, uint32 jobid);
