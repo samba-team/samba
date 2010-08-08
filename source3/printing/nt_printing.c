@@ -2063,7 +2063,8 @@ void map_job_permissions(struct security_descriptor *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
+bool print_access_check(struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx, int snum,
 			int access_type)
 {
 	struct spoolss_security_descriptor *secdesc = NULL;
@@ -2102,7 +2103,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
 	result = winreg_get_printer_secdesc(mem_ctx,
 					    server_info,
-					    smbd_messaging_context(),
+					    msg_ctx,
 					    pname,
 					    &secdesc);
 	if (!W_ERROR_IS_OK(result)) {

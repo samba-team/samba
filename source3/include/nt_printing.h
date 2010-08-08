@@ -237,7 +237,8 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername);
 
 const char *get_short_archi(const char *long_archi);
 
-bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
+bool print_access_check(struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx, int snum,
 			int access_type);
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,

@@ -2125,7 +2125,8 @@ WERROR print_job_delete(struct auth_serversupplied_info *server_info,
 	   owns their job. */
 
 	if (!owner &&
-	    !print_access_check(server_info, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(server_info, smbd_messaging_context(), snum,
+				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 
 		/* BEGIN_ADMIN_LOG */
@@ -2200,7 +2201,8 @@ bool print_job_pause(struct auth_serversupplied_info *server_info, int snum,
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
-	    !print_access_check(server_info, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(server_info, smbd_messaging_context(), snum,
+				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 
 		/* BEGIN_ADMIN_LOG */
@@ -2262,7 +2264,8 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
-	    !print_access_check(server_info, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(server_info, smbd_messaging_context(), snum,
+				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;
 
@@ -2509,7 +2512,8 @@ static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
 	uint64_t minspace;
 	int ret;
 
-	if (!print_access_check(server_info, snum, PRINTER_ACCESS_USE)) {
+	if (!print_access_check(server_info, smbd_messaging_context(), snum,
+				PRINTER_ACCESS_USE)) {
 		DEBUG(3, ("print_job_checks: "
 			  "job start denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
@@ -3031,7 +3035,7 @@ WERROR print_queue_pause(struct auth_serversupplied_info *server_info, int snum)
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
-	if (!print_access_check(server_info, snum,
+	if (!print_access_check(server_info, smbd_messaging_context(), snum,
 				PRINTER_ACCESS_ADMINISTER)) {
 		return WERR_ACCESS_DENIED;
 	}
@@ -3066,7 +3070,7 @@ WERROR print_queue_resume(struct auth_serversupplied_info *server_info, int snum
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
-	if (!print_access_check(server_info, snum,
+	if (!print_access_check(server_info, smbd_messaging_context(), snum,
 				PRINTER_ACCESS_ADMINISTER)) {
 		return WERR_ACCESS_DENIED;
 	}
@@ -3106,7 +3110,9 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum)
 	/* Force and update so the count is accurate (i.e. not a cached count) */
 	print_queue_update(snum, True);
 
-	can_job_admin = print_access_check(server_info, snum,
+	can_job_admin = print_access_check(server_info,
+					   smbd_messaging_context(),
+					   snum,
 					   JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);
 
