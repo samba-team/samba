@@ -527,6 +527,7 @@ static bool check_bind_req(struct pipes_struct *p,
 		return False;
 	}
 
+	context_fns->next = context_fns->prev = NULL;
 	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
 	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
