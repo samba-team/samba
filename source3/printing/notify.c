@@ -230,11 +230,13 @@ static void print_notify_event_send_messages(struct tevent_context *event_ctx,
 					     struct timeval now,
 					     void *private_data)
 {
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
 	/* Remove this timed event handler. */
 	TALLOC_FREE(notify_event);
 
 	change_to_root_user();
-	print_notify_send_messages(server_messaging_context(), 0);
+	print_notify_send_messages(msg_ctx, 0);
 }
 
 /**********************************************************************
@@ -332,7 +334,8 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 		/* Add an event for 1 second's time to send this queue. */
 		notify_event = tevent_add_timer(server_event_context(), NULL,
 					timeval_current_ofs(1,0),
-					print_notify_event_send_messages, NULL);
+					print_notify_event_send_messages,
+					server_messaging_context());
 	}
 
 }
