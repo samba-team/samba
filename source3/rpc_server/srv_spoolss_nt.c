@@ -3621,6 +3621,7 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg_ctx,
 				      const struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo2 *r,
 				      int snum)
@@ -3628,7 +3629,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	int count;
 	print_status_struct status;
 
-	count = print_queue_length(server_messaging_context(), snum, &status);
+	count = print_queue_length(msg_ctx, snum, &status);
 
 	r->servername		= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
@@ -3906,7 +3907,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 							 &info[count].info1, snum);
 			break;
 		case 2:
-			result = construct_printer_info2(info, info2,
+			result = construct_printer_info2(info, msg_ctx, info2,
 							 &info[count].info2, snum);
 			break;
 		case 4:
@@ -4314,7 +4315,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 						 &r->out.info->info1, snum);
 		break;
 	case 2:
-		result = construct_printer_info2(p->mem_ctx, info2,
+		result = construct_printer_info2(p->mem_ctx, p->msg_ctx, info2,
 						 &r->out.info->info2, snum);
 		break;
 	case 3:
