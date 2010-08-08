@@ -2862,7 +2862,9 @@ fail:
 
 static bool spoolss_init_cb(void *ptr)
 {
-	return nt_printing_tdb_migrate(smbd_messaging_context());
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		ptr, struct messaging_context);
+	return nt_printing_tdb_migrate(msg_ctx);
 }
 
 /****************************************************************************
@@ -3124,7 +3126,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	 */
 	spoolss_cb.init = spoolss_init_cb;
 	spoolss_cb.shutdown = NULL;
-
+	spoolss_cb.private_data = sconn->msg_ctx;
 
 	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
 		exit(1);
