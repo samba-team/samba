@@ -3265,7 +3265,8 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_enumforms1(tmp_ctx, server_info, &num_info, &info);
+	result = winreg_printer_enumforms1(tmp_ctx, server_info, msg_ctx,
+					   &num_info, &info);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_addform: Could not enum keys %s: %s\n",
 			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
@@ -3328,6 +3329,7 @@ done:
 
 WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,
+				 struct messaging_context *msg_ctx,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo)
 {
@@ -3352,7 +3354,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",

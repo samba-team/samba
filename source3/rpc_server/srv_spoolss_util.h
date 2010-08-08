@@ -425,6 +425,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,
+				 struct messaging_context *msg_ctx,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo);
 

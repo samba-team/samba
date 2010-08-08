@@ -6928,6 +6928,7 @@ WERROR _spoolss_EnumForms(struct pipes_struct *p,
 	case 1:
 		result = winreg_printer_enumforms1(p->mem_ctx,
 						   p->server_info,
+						   p->msg_ctx,
 						   r->out.count,
 						   r->out.info);
 		break;
