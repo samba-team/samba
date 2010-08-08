@@ -912,7 +912,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 {
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
-	reload_services(False);
+	reload_services(smbd_messaging_context(), False);
 }
 
 void smbd_setup_sig_hup_handler(void)
@@ -2223,7 +2223,7 @@ void check_reload(time_t t)
 	}
 
 	if (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK) {
-		reload_services(True);
+		reload_services(smbd_messaging_context(), True);
 		last_smb_conf_reload_time = t;
 	}
 
@@ -2949,7 +2949,7 @@ void smbd_process(void)
 	/* this is needed so that we get decent entries
 	   in smbstatus for port 445 connects */
 	set_remote_machine_name(remaddr, false);
-	reload_services(true);
+	reload_services(smbd_server_conn->msg_ctx, true);
 
 	/*
 	 * Before the first packet, check the global hosts allow/ hosts deny

@@ -327,7 +327,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	/* setup the string used by %U */
 
 	sub_set_smb_name(real_username);
-	reload_services(true);
+	reload_services(smb2req->sconn->msg_ctx, true);
 
 	if (map_domainuser_to_guest) {
 		make_server_info_guest(session, &session->server_info);

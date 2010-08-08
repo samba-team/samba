@@ -68,7 +68,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(False);
+	reload_services(smbd_messaging_context(), False);
 }
 
 
@@ -952,7 +952,7 @@ extern void build_options(bool screen);
 	if (smbd_messaging_context() == NULL)
 		exit(1);
 
-	if (!reload_services(False))
+	if (!reload_services(smbd_messaging_context(), False))
 		return(-1);	
 
 	init_structs();

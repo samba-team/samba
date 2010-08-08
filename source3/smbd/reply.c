@@ -547,7 +547,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 			add_session_user(sconn, get_remote_machine_name());
 		}
 
-		reload_services(True);
+		reload_services(sconn->msg_ctx, True);
 		reopen_logs();
 
 		sconn->nbt.got_session = true;

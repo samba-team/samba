@@ -88,7 +88,7 @@ void reload_printers(struct messaging_context *msg_ctx)
  Reload the services file.
 **************************************************************************/
 
-bool reload_services(bool test)
+bool reload_services(struct messaging_context *msg_ctx, bool test)
 {
 	bool ret;
 
@@ -110,11 +110,11 @@ bool reload_services(bool test)
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
-	reload_printers(smbd_messaging_context());
+	reload_printers(msg_ctx);
 
 	/* perhaps the config filename is now set */
 	if (!test)
-		reload_services(True);
+		reload_services(msg_ctx, True);
 
 	reopen_logs();
 

@@ -468,7 +468,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	/* setup the string used by %U */
 
 	sub_set_smb_name( real_username );
-	reload_services(True);
+	reload_services(sconn->msg_ctx, True);
 
 	if ( map_domainuser_to_guest ) {
 		make_server_info_guest(NULL, &server_info);
@@ -589,7 +589,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
 		/* current_user_info is changed on new vuid */
-		reload_services( True );
+		reload_services(sconn->msg_ctx, True);
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
@@ -683,7 +683,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 		}
 
 		/* current_user_info is changed on new vuid */
-		reload_services( True );
+		reload_services(sconn->msg_ctx, True);
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
@@ -1695,7 +1695,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	sub_set_smb_name(sub_user);
 
-	reload_services(True);
+	reload_services(sconn->msg_ctx, True);
 
 	if (lp_security() == SEC_SHARE) {
 		/* In share level we should ignore any passwords */
@@ -1848,7 +1848,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		/* current_user_info is changed on new vuid */
-		reload_services( True );
+		reload_services(sconn->msg_ctx, True);
 	}
 
 	data_blob_free(&nt_resp);

@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
 	poptFreeContext(pc);
 
 	/* TODO: check output */
-	reload_services(False);
+	reload_services(smbd_messaging_context(), False);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
