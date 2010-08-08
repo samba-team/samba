@@ -3096,7 +3096,8 @@ static void construct_info_data(struct spoolss_Notify *info_data,
  *
  ********************************************************************/
 
-static bool construct_notify_printer_info(Printer_entry *print_hnd,
+static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
+					  Printer_entry *print_hnd,
 					  struct spoolss_NotifyInfo *info,
 					  struct spoolss_PrinterInfo2 *pinfo2,
 					  int snum,
@@ -3142,9 +3143,8 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd,
 			   notify_info_data_table[j].name, snum,
 			   pinfo2->printername));
 
-		notify_info_data_table[j].fn(server_messaging_context(),
-					     snum, current_data, queue,
-					     pinfo2, mem_ctx);
+		notify_info_data_table[j].fn(msg_ctx, snum, current_data,
+					     queue, pinfo2, mem_ctx);
 
 		info->count++;
 	}
@@ -3293,7 +3293,8 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 			}
 
 
-			construct_notify_printer_info(Printer, info,
+			construct_notify_printer_info(p->msg_ctx,
+						      Printer, info,
 						      pinfo2, snum,
 						      &option_type, snum,
 						      mem_ctx);
@@ -3377,7 +3378,8 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 
 		switch (option_type.type) {
 		case PRINTER_NOTIFY_TYPE:
-			if (construct_notify_printer_info(Printer, info,
+			if (construct_notify_printer_info(p->msg_ctx,
+							  Printer, info,
 							  pinfo2, snum,
 							  &option_type, id,
 							  mem_ctx)) {
