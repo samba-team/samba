@@ -21,6 +21,6 @@
 #ifndef _NT_PRINTING_MIGRATE_H_
 #define _NT_PRINTING_MIGRATE_H_
 
-bool nt_printing_tdb_migrate(void);
+bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx);
 
 #endif /* _NT_PRINTING_MIGRATE_H_ */

@@ -585,7 +585,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-bool nt_printing_tdb_migrate(void)
+bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 {
 	const char *drivers_path = state_path("ntdrivers.tdb");
 	const char *printers_path = state_path("ntprinters.tdb");
@@ -613,7 +613,7 @@ bool nt_printing_tdb_migrate(void)
 	status = rpc_pipe_open_internal(tmp_ctx,
 					&ndr_table_spoolss.syntax_id,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Couldn't open internal spoolss pipe: %s\n",

@@ -2860,7 +2860,7 @@ fail:
 
 static bool spoolss_init_cb(void *ptr)
 {
-	return nt_printing_tdb_migrate();
+	return nt_printing_tdb_migrate(smbd_messaging_context());
 }
 
 /****************************************************************************
