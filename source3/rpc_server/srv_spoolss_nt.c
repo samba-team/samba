@@ -2228,7 +2228,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 			addr));
 	}
 
-	if (ismyaddr((struct sockaddr *)&rm_addr)) {
+	if (ismyaddr((struct sockaddr *)(void *)&rm_addr)) {
 		DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n",
 			addr));
 		return false;
