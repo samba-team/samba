@@ -2073,7 +2073,9 @@ static bool remove_from_jobs_changed(const char* sharename, uint32 jobid)
  Delete a print job - don't update queue.
 ****************************************************************************/
 
-static bool print_job_delete1(int snum, uint32 jobid)
+static bool print_job_delete1(struct tevent_context *ev,
+			      struct messaging_context *msg_ctx,
+			      int snum, uint32 jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob = print_job_find(sharename, jobid);
@@ -2102,8 +2104,7 @@ static bool print_job_delete1(int snum, uint32 jobid)
 	/* Set the tdb entry to be deleting. */
 
 	pjob->status = LPQ_DELETING;
-	pjob_store(server_event_context(), server_messaging_context(),
-		   sharename, jobid, pjob);
+	pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 
 	if (pjob->spooled && pjob->sysjob != -1)
 	{
@@ -2121,9 +2122,7 @@ static bool print_job_delete1(int snum, uint32 jobid)
 
 			if (!pdb)
 				return False;
-			pjob_delete(server_event_context(),
-				    server_messaging_context(),
-				    sharename, jobid);
+			pjob_delete(ev, msg_ctx, sharename, jobid);
 			/* Ensure we keep a rough count of the number of total jobs... */
 			tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, -1);
 			release_print_db(pdb);
@@ -2202,7 +2201,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 		}
 	}
 
-	if (!print_job_delete1(snum, jobid)) {
+	if (!print_job_delete1(server_event_context(), msg_ctx, snum, jobid)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3186,7 +3185,8 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
 				      queue[i].job);
 
 		if (owner || can_job_admin) {
-			print_job_delete1(snum, queue[i].job);
+			print_job_delete1(server_event_context(), msg_ctx,
+					  snum, queue[i].job);
 		}
 	}
 
