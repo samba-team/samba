@@ -4998,6 +4998,7 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
 
 static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 						  struct auth_serversupplied_info *server_info,
+						  struct messaging_context *msg_ctx,
 						  uint32_t level,
 						  union spoolss_DriverInfo *r,
 						  int snum,
@@ -5011,7 +5012,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 	result = winreg_get_printer(mem_ctx,
 				    server_info,
-				    smbd_messaging_context(),
+				    msg_ctx,
 				    servername,
 				    lp_const_servicename(snum),
 				    &pinfo2);
@@ -5023,8 +5024,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	result = winreg_get_driver(mem_ctx, server_info,
-				   smbd_messaging_context(),
+	result = winreg_get_driver(mem_ctx, server_info, msg_ctx,
 				   architecture,
 				   pinfo2->drivername, version, &driver);
 
@@ -5043,8 +5043,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		result = winreg_get_driver(mem_ctx, server_info,
-					   smbd_messaging_context(),
+		result = winreg_get_driver(mem_ctx, server_info, msg_ctx,
 					   architecture,
 					   pinfo2->drivername,
 					   version, &driver);
@@ -5127,7 +5126,9 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = construct_printer_driver_info_level(p->mem_ctx, p->server_info,
+	result = construct_printer_driver_info_level(p->mem_ctx,
+						     p->server_info,
+						     p->msg_ctx,
 						     r->in.level, r->out.info,
 						     snum, printer->servername,
 						     r->in.architecture,
