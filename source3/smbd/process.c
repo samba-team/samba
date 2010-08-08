@@ -2198,7 +2198,7 @@ void chain_reply(struct smb_request *req)
  Check if services need reloading.
 ****************************************************************************/
 
-void check_reload(time_t t)
+static void check_reload(time_t t)
 {
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 

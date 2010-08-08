@@ -5618,7 +5618,6 @@ void construct_reply_common_req(struct smb_request *req, char *outbuf);
 size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
 bool req_is_in_chain(struct smb_request *req);
-void check_reload(time_t t);
 void smbd_process(void);
 
 /* The following definitions come from smbd/quotas.c  */
