@@ -2741,7 +2741,7 @@ static void spoolss_notify_status(int snum,
 {
 	print_status_struct status;
 
-	print_queue_length(snum, &status);
+	print_queue_length(server_messaging_context(), snum, &status);
 	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, status.status);
 }
 
@@ -2755,7 +2755,9 @@ static void spoolss_notify_cjobs(int snum,
 				 struct spoolss_PrinterInfo2 *pinfo2,
 				 TALLOC_CTX *mem_ctx)
 {
-	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, print_queue_length(snum, NULL));
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(
+		data, print_queue_length(server_messaging_context(), snum,
+					 NULL));
 }
 
 /*******************************************************************
@@ -3478,7 +3480,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->servername		= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
 
-	count = print_queue_length(snum, &status);
+	count = print_queue_length(msg_ctx, snum, &status);
 
 	/* check if we already have a counter for this printer */
 	for (session_counter = counter_list; session_counter; session_counter = session_counter->next) {
@@ -3589,7 +3591,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	int count;
 	print_status_struct status;
 
-	count = print_queue_length(snum, &status);
+	count = print_queue_length(server_messaging_context(), snum, &status);
 
 	r->servername		= talloc_strdup(mem_ctx, info2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->servername);
@@ -3727,7 +3729,7 @@ static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
 	int count;
 	print_status_struct status;
 
-	count = print_queue_length(snum, &status);
+	count = print_queue_length(server_messaging_context(), snum, &status);
 
 	r->status = nt_printq_status(status.status);
 

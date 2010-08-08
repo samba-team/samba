@@ -2366,7 +2366,8 @@ static int get_queue_status(const char* sharename, print_status_struct *status)
  Determine the number of jobs in a queue.
 ****************************************************************************/
 
-int print_queue_length(int snum, print_status_struct *pstatus)
+int print_queue_length(struct messaging_context *msg_ctx, int snum,
+		       print_status_struct *pstatus)
 {
 	const char* sharename = lp_const_servicename( snum );
 	print_status_struct status;
@@ -2376,7 +2377,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(server_messaging_context(), snum, False);
+		print_queue_update(msg_ctx, snum, False);
 
 	/* also fetch the queue status */
 	memset(&status, 0, sizeof(status));
@@ -2545,7 +2546,7 @@ static WERROR print_job_checks(struct auth_serversupplied_info *server_info,
 	}
 
 	/* Insure the maximum queue size is not violated */
-	*njobs = print_queue_length(snum, NULL);
+	*njobs = print_queue_length(msg_ctx, snum, NULL);
 	if (*njobs > lp_maxprintjobs(snum)) {
 		DEBUG(3, ("print_job_checks: Queue %s number of jobs (%d) "
 			  "larger than max printjobs per queue (%d).\n",
