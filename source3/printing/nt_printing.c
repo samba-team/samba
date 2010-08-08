@@ -2100,6 +2100,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
 	result = winreg_get_printer_secdesc(mem_ctx,
 					    server_info,
+					    smbd_messaging_context(),
 					    pname,
 					    &secdesc);
 	if (!W_ERROR_IS_OK(result)) {

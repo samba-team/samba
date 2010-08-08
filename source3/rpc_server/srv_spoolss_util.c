@@ -2222,6 +2222,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 
 	result = winreg_get_printer_secdesc(info2,
 					    server_info,
+					    msg_ctx,
 					    printer,
 					    &info2->secdesc);
 	if (!W_ERROR_IS_OK(result)) {
@@ -2254,6 +2255,7 @@ done:
 
 WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info *server_info,
+				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  struct spoolss_security_descriptor **psecdesc)
 {
@@ -2283,7 +2285,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					"",
@@ -2448,6 +2450,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 		result = winreg_get_printer_secdesc(tmp_ctx,
 						    server_info,
+						    smbd_messaging_context(),
 						    sharename,
 						    &old_secdesc);
 		if (!W_ERROR_IS_OK(result)) {
