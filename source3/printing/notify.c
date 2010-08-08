@@ -417,14 +417,14 @@ void notify_printer_status_byname(struct tevent_context *ev,
 				 status, 0, 0);
 }
 
-void notify_printer_status(int snum, uint32 status)
+void notify_printer_status(struct tevent_context *ev,
+			   struct messaging_context *msg_ctx,
+			   int snum, uint32 status)
 {
 	const char *sharename = lp_servicename(snum);
 
 	if (sharename)
-		notify_printer_status_byname(server_event_context(),
-					     server_messaging_context(),
-					     sharename, status);
+		notify_printer_status_byname(ev, msg_ctx, sharename, status);
 }
 
 void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status,

@@ -3063,7 +3063,8 @@ WERROR print_queue_pause(struct auth_serversupplied_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_printer_status(snum, PRINTER_STATUS_PAUSED);
+	notify_printer_status(server_event_context(), msg_ctx, snum,
+			      PRINTER_STATUS_PAUSED);
 
 	return WERR_OK;
 }
@@ -3099,7 +3100,8 @@ WERROR print_queue_resume(struct auth_serversupplied_info *server_info,
 
 	/* Send a printer notify message */
 
-	notify_printer_status(snum, PRINTER_STATUS_OK);
+	notify_printer_status(server_event_context(), msg_ctx, snum,
+			      PRINTER_STATUS_OK);
 
 	return WERR_OK;
 }
