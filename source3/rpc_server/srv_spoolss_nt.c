@@ -539,6 +539,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 		result = winreg_get_printer(mem_ctx,
 					    server_info,
+					    smbd_messaging_context(),
 					    servername,
 					    sname,
 					    &info2);
@@ -1345,7 +1346,8 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			continue;
 		}
 
-		result = winreg_get_printer(tmp_ctx, server_info, NULL,
+		result = winreg_get_printer(tmp_ctx, server_info, msg,
+					    NULL,
 					    lp_const_servicename(snum),
 					    &pinfo2);
 
@@ -3232,6 +3234,7 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 
 			/* Maybe we should use the SYSTEM server_info here... */
 			result = winreg_get_printer(mem_ctx, p->server_info,
+						    p->msg_ctx,
 						    Printer->servername,
 						    lp_servicename(snum),
 						    &pinfo2);
@@ -3315,7 +3318,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	get_printer_snum(p, hnd, &snum, NULL);
 
 	/* Maybe we should use the SYSTEM server_info here... */
-	result = winreg_get_printer(mem_ctx, p->server_info,
+	result = winreg_get_printer(mem_ctx, p->server_info, p->msg_ctx,
 				    Printer->servername,
 				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
@@ -3828,6 +3831,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 		}
 
 		result = winreg_get_printer(mem_ctx, server_info,
+					    smbd_messaging_context(),
 					    NULL, printer, &info2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
@@ -4206,6 +4210,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 
 	result = winreg_get_printer(p->mem_ctx,
 				    p->server_info,
+				    p->msg_ctx,
 				    servername,
 				    lp_const_servicename(snum),
 				    &info2);
@@ -4966,6 +4971,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 	result = winreg_get_printer(mem_ctx,
 				    server_info,
+				    smbd_messaging_context(),
 				    servername,
 				    lp_const_servicename(snum),
 				    &pinfo2);
@@ -5947,6 +5953,7 @@ static WERROR update_printer(struct pipes_struct *p,
 
 	result = winreg_get_printer(tmp_ctx,
 				    p->server_info,
+				    p->msg_ctx,
 				    servername,
 				    lp_const_servicename(snum),
 				    &old_printer);
@@ -6041,7 +6048,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
-	result = winreg_get_printer(p->mem_ctx, p->server_info,
+	result = winreg_get_printer(p->mem_ctx, p->server_info, p->msg_ctx,
 				    Printer->servername,
 				    lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
@@ -6499,8 +6506,8 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = winreg_get_printer(p->mem_ctx, p->server_info, NULL,
-				    lp_servicename(snum), &pinfo2);
+	result = winreg_get_printer(p->mem_ctx, p->server_info, p->msg_ctx,
+				    NULL, lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -8497,8 +8504,8 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	result = winreg_get_printer(p->mem_ctx, p->server_info, NULL,
-				    lp_servicename(snum), &pinfo2);
+	result = winreg_get_printer(p->mem_ctx, p->server_info, p->msg_ctx,
+				    NULL, lp_servicename(snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -8709,7 +8716,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	result = winreg_get_printer(Printer, p->server_info,
+	result = winreg_get_printer(Printer, p->server_info, p->msg_ctx,
 				    Printer->servername,
 				    lp_servicename(snum),
 				    &pinfo2);

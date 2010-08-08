@@ -1574,7 +1574,8 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		result = winreg_get_printer(mem_ctx, server_info, NULL,
+		result = winreg_get_printer(mem_ctx, server_info,
+					    smbd_messaging_context(), NULL,
 					    lp_servicename(snum), &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue; /* skip */
@@ -2172,6 +2173,7 @@ bool print_time_access_check(struct auth_serversupplied_info *server_info,
 	uint32 mins;
 
 	result = winreg_get_printer(NULL, server_info,
+				    smbd_messaging_context(),
 				    NULL, servicename, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return False;

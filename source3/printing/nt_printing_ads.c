@@ -354,7 +354,8 @@ WERROR check_published_printers(void)
 			continue;
 		}
 
-		result = winreg_get_printer(tmp_ctx, server_info, NULL,
+		result = winreg_get_printer(tmp_ctx, server_info,
+					    smbd_messaging_context(), NULL,
 					    lp_servicename(snum), &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue;
@@ -388,6 +389,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	result = winreg_get_printer(mem_ctx, server_info,
+				    smbd_messaging_context(),
 				    servername, printer, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return false;
