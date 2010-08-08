@@ -3107,7 +3107,8 @@ WERROR print_queue_resume(struct auth_serversupplied_info *server_info,
  Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
 
-WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum)
+WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx, int snum)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
@@ -3118,7 +3119,7 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum)
 	print_queue_update(snum, True);
 
 	can_job_admin = print_access_check(server_info,
-					   smbd_messaging_context(),
+					   msg_ctx,
 					   snum,
 					   JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);

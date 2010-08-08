@@ -148,6 +148,7 @@ WERROR print_queue_pause(struct auth_serversupplied_info *server_info,
 			 struct messaging_context *msg_ctx, int snum);
 WERROR print_queue_resume(struct auth_serversupplied_info *server_info,
 			  struct messaging_context *msg_ctx, int snum);
-WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum);
+WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
+			 struct messaging_context *msg_ctx, int snum);
 
 #endif /* PRINTING_H_ */
