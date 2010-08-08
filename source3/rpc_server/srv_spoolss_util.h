@@ -101,6 +101,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  */
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct auth_serversupplied_info *server_info,
+			     struct messaging_context *msg_ctx,
 			     const char *sharename,
 			     uint32_t info2_mask,
 			     struct spoolss_SetPrinterInfo2 *info2,

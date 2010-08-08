@@ -264,6 +264,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	sinfo2->attributes = pinfo2->attributes;
 
 	win_rc = winreg_update_printer(mem_ctx, server_info,
+					smbd_messaging_context(),
 					pinfo2->sharename, info2_mask,
 					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
