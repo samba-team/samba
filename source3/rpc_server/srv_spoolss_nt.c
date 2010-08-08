@@ -3740,6 +3740,7 @@ static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg_ctx,
 				      Printer_entry *print_hnd,
 				      struct spoolss_PrinterInfo7 *r,
 				      int snum)
@@ -3755,8 +3756,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	if (is_printer_published(mem_ctx, server_info,
-				 smbd_messaging_context(),
+	if (is_printer_published(mem_ctx, server_info, msg_ctx,
 				 print_hnd->servername,
 				 lp_servicename(snum), &guid, NULL)) {
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
@@ -4295,7 +4295,8 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 						 &r->out.info->info6, snum);
 		break;
 	case 7:
-		result = construct_printer_info7(p->mem_ctx, Printer,
+		result = construct_printer_info7(p->mem_ctx, p->msg_ctx,
+						 Printer,
 						 &r->out.info->info7, snum);
 		break;
 	case 8:
