@@ -577,7 +577,9 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 
 	if (new_job) {
 		notify_job_submitted(sharename, jobid, new_data->starttime);
-		notify_job_username(sharename, jobid, new_data->user);
+		notify_job_username(server_event_context(),
+				    server_messaging_context(),
+				    sharename, jobid, new_data->user);
 	}
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
