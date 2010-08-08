@@ -2466,13 +2466,15 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 
 static bool housekeeping_fn(const struct timeval *now, void *private_data)
 {
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
 	change_to_root_user();
 
 	/* update printer queue caches if necessary */
-	update_monitored_printq_cache(smbd_messaging_context());
+	update_monitored_printq_cache(msg_ctx);
 
 	/* check if we need to reload services */
-	check_reload(smbd_messaging_context(), time(NULL));
+	check_reload(msg_ctx, time(NULL));
 
 	/* Change machine password if neccessary. */
 	attempt_machine_password_change();
@@ -3044,7 +3046,8 @@ void smbd_process(void)
 
 	if (!(event_add_idle(smbd_event_context(), NULL,
 			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
-			     "housekeeping", housekeeping_fn, NULL))) {
+			     "housekeeping", housekeeping_fn,
+			     smbd_messaging_context()))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
