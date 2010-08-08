@@ -381,7 +381,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 	   done on the handle already */
 
 	result = winreg_delete_printer_key(p->mem_ctx, p->server_info,
-					   Printer->sharename, "");
+					   p->msg_ctx, Printer->sharename, "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->sharename));
 		return WERR_BADFID;
@@ -1764,6 +1764,7 @@ WERROR _spoolss_DeletePrinter(struct pipes_struct *p,
 	if (get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		winreg_delete_printer_key(p->mem_ctx,
 					  p->server_info,
+					  p->msg_ctx,
 					  lp_const_servicename(snum),
 					  "");
 	}
@@ -8953,6 +8954,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 	/* delete the key and all subkeys */
 	status = winreg_delete_printer_key(p->mem_ctx,
 					   p->server_info,
+					   p->msg_ctx,
 					   printer,
 					   r->in.key_name);
 	if (W_ERROR_IS_OK(status)) {

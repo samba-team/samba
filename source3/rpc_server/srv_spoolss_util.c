@@ -2990,6 +2990,7 @@ done:
 /* Delete a key with subkeys of a given printer. */
 WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info *server_info,
+				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key)
 {
@@ -3014,7 +3015,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					smbd_messaging_context(),
+					msg_ctx,
 					&winreg_pipe,
 					path,
 					key,

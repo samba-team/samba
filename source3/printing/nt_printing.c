@@ -2206,7 +2206,9 @@ void nt_printer_remove(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 
-	result = winreg_delete_printer_key(mem_ctx, server_info, printer, "");
+	result = winreg_delete_printer_key(mem_ctx, server_info,
+					   smbd_messaging_context(),
+					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
 			  printer));
