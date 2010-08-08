@@ -249,6 +249,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2);
 

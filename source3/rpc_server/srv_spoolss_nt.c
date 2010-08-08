@@ -3755,7 +3755,9 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	if (is_printer_published(mem_ctx, server_info, print_hnd->servername,
+	if (is_printer_published(mem_ctx, server_info,
+				 smbd_messaging_context(),
+				 print_hnd->servername,
 				 lp_servicename(snum), &guid, NULL)) {
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;

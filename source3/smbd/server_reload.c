@@ -63,6 +63,7 @@ void reload_printers(void)
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(server_info, server_info,
+						 smbd_messaging_context(),
 						 NULL, lp_servicename(snum),
 						 NULL, &pinfo2)) {
 				nt_printer_publish(server_info,

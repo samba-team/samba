@@ -381,6 +381,7 @@ done:
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  struct auth_serversupplied_info *server_info,
+			  struct messaging_context *msg_ctx,
 			  char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
 {
@@ -391,8 +392,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	NTSTATUS status;
 
-	result = winreg_get_printer(mem_ctx, server_info,
-				    smbd_messaging_context(),
+	result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
 				    servername, printer, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return false;
@@ -409,8 +409,8 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 
 	/* fetching printer guids really ought to be a separate function. */
 
-	result = winreg_get_printer_dataex(mem_ctx, server_info,
-					   smbd_messaging_context(), printer,
+	result = winreg_get_printer_dataex(mem_ctx, server_info, msg_ctx,
+					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   &type, &data, &data_size);
 	if (!W_ERROR_IS_OK(result)) {
