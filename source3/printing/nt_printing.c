@@ -96,7 +96,7 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 	   msgs.  This is done in serverid_register() */
 
 	if ( lp_security() == SEC_ADS ) {
-		win_rc = check_published_printers();
+		win_rc = check_published_printers(msg_ctx);
 		if (!W_ERROR_IS_OK(win_rc))
 			DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", win_errstr(win_rc)));
 	}

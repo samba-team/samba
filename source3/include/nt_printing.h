@@ -252,7 +252,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2);
 
-WERROR check_published_printers(void);
+WERROR check_published_printers(struct messaging_context *msg_ctx);
 
 bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 			      struct spoolss_DriverInfo8 *_info8);

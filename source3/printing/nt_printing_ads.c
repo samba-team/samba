@@ -311,7 +311,7 @@ done:
 	return win_rc;
 }
 
-WERROR check_published_printers(void)
+WERROR check_published_printers(struct messaging_context *msg_ctx)
 {
 	ADS_STATUS ads_rc;
 	ADS_STRUCT *ads = NULL;
@@ -357,16 +357,15 @@ WERROR check_published_printers(void)
 			continue;
 		}
 
-		result = winreg_get_printer(tmp_ctx, server_info,
-					    smbd_messaging_context(), NULL,
-					    lp_servicename(snum), &pinfo2);
+		result = winreg_get_printer(tmp_ctx, server_info, msg_ctx,
+					    NULL, lp_servicename(snum),
+					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue;
 		}
 
 		if (pinfo2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
-			nt_printer_publish_ads(smbd_messaging_context(),
-					       ads, pinfo2);
+			nt_printer_publish_ads(msg_ctx, ads, pinfo2);
 		}
 
 		TALLOC_FREE(pinfo2);
