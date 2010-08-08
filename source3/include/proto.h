@@ -4435,7 +4435,9 @@ void notify_job_total_pages(struct tevent_context *ev,
 void notify_job_username(struct tevent_context *ev,
 			 struct messaging_context *msg_ctx,
 			 const char *sharename, uint32 jobid, char *name);
-void notify_job_name(const char *sharename, uint32 jobid, char *name);
+void notify_job_name(struct tevent_context *ev,
+		     struct messaging_context *msg_ctx,
+		     const char *sharename, uint32 jobid, char *name);
 void notify_job_submitted(const char *sharename, uint32 jobid,
 			  time_t submitted);
 void notify_printer_driver(int snum, const char *driver_name);

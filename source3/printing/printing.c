@@ -583,13 +583,17 @@ static void pjob_store_notify(const char* sharename, uint32 jobid, struct printj
 	}
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(sharename, jobid, new_data->jobname);
+		notify_job_name(server_event_context(),
+				server_messaging_context(),
+				sharename, jobid, new_data->jobname);
 
 	/* Job attributes of a new job or attributes that can be
 	   modified. */
 
 	if (new_job || !strequal(old_data->jobname, new_data->jobname))
-		notify_job_name(sharename, jobid, new_data->jobname);
+		notify_job_name(server_event_context(),
+				server_messaging_context(),
+				sharename, jobid, new_data->jobname);
 
 	if (new_job || old_data->status != new_data->status)
 		notify_job_status(server_event_context(),
