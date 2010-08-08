@@ -625,6 +625,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
+			messaging_event_context(msg_ctx), msg_ctx,
 			argv[2], jobid, JOB_STATUS_PAUSED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
@@ -642,6 +643,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
+			messaging_event_context(msg_ctx), msg_ctx,
 			argv[2], jobid, JOB_STATUS_QUEUED, 
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
@@ -659,10 +661,12 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
+			messaging_event_context(msg_ctx), msg_ctx,
 			argv[2], jobid, JOB_STATUS_DELETING,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
 		notify_job_status_byname(
+			messaging_event_context(msg_ctx), msg_ctx,
 			argv[2], jobid, JOB_STATUS_DELETING|
 			JOB_STATUS_DELETED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);

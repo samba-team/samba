@@ -427,13 +427,15 @@ void notify_printer_status(struct tevent_context *ev,
 		notify_printer_status_byname(ev, msg_ctx, sharename, status);
 }
 
-void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status,
+void notify_job_status_byname(struct tevent_context *ev,
+			      struct messaging_context *msg_ctx,
+			      const char *sharename, uint32 jobid,
+			      uint32 status,
 			      uint32 flags)
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(server_event_context(),
-				 server_messaging_context(),
+	send_notify_field_values(ev, msg_ctx,
 				 sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_FIELD_STATUS, jobid,
 				 status, 0, flags);
@@ -441,7 +443,9 @@ void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status
 
 void notify_job_status(const char *sharename, uint32 jobid, uint32 status)
 {
-	notify_job_status_byname(sharename, jobid, status, 0);
+	notify_job_status_byname(server_event_context(),
+				 server_messaging_context(),
+				 sharename, jobid, status, 0);
 }
 
 void notify_job_total_bytes(const char *sharename, uint32 jobid,
