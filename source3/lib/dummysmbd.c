@@ -65,11 +65,6 @@ struct event_context *smbd_event_context(void)
 	return NULL;
 }
 
-struct messaging_context *smbd_messaging_context(void)
-{
-	return NULL;
-}
-
 /**
  * The following two functions need to be called from inside the low-level BRL
  * code for oplocks correctness in smbd.  Since other utility binaries also
