@@ -143,7 +143,7 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 void print_job_endpage(int snum, uint32 jobid);
 NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		       uint32 jobid, enum file_close_type close_type);
-int print_queue_status(int snum,
+int print_queue_status(struct messaging_context *msg_ctx, int snum,
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);
 WERROR print_queue_pause(struct auth_serversupplied_info *server_info,

@@ -2973,7 +2973,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
  set queue = NULL and status = NULL if you just want to update the cache
 ****************************************************************************/
 
-int print_queue_status(int snum,
+int print_queue_status(struct messaging_context *msg_ctx, int snum,
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status)
 {
@@ -2986,7 +2986,7 @@ int print_queue_status(int snum,
 	/* make sure the database is up to date */
 
 	if (print_cache_expired(lp_const_servicename(snum), True))
-		print_queue_update(server_messaging_context(), snum, False);
+		print_queue_update(msg_ctx, snum, False);
 
 	/* return if we are done */
 	if ( !ppqueue || !status )
@@ -3023,8 +3023,7 @@ int print_queue_status(int snum,
 	 * of entries, and then only retrieve the queue if necessary.
 	 */
 
-	if (!get_stored_queue_info(server_messaging_context(), pdb, snum,
-				   &count, ppqueue)) {
+	if (!get_stored_queue_info(msg_ctx, pdb, snum, &count, ppqueue)) {
 		release_print_db(pdb);
 		return 0;
 	}
@@ -3124,7 +3123,7 @@ WERROR print_queue_purge(struct auth_serversupplied_info *server_info,
 					   msg_ctx,
 					   snum,
 					   JOB_ACCESS_ADMINISTER);
-	njobs = print_queue_status(snum, &queue, &status);
+	njobs = print_queue_status(msg_ctx, snum, &queue, &status);
 
 	if ( can_job_admin )
 		become_root();

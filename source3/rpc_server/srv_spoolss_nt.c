@@ -1403,7 +1403,8 @@ void update_monitored_printq_cache( void )
 			&& printer->notify.client_connected )
 		{
 			snum = print_queue_snum(printer->sharename);
-			print_queue_status( snum, NULL, NULL );
+			print_queue_status(server_messaging_context(),  snum,
+					   NULL, NULL );
 		}
 
 		printer = printer->next;
@@ -3354,7 +3355,8 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 
 		case JOB_NOTIFY_TYPE:
 
-			count = print_queue_status(snum, &queue, &status);
+			count = print_queue_status(p->msg_ctx, snum, &queue,
+						   &status);
 
 			for (j=0; j<count; j++) {
 				construct_notify_jobs_info(&queue[j], info,
@@ -6586,7 +6588,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 		return result;
 	}
 
-	count = print_queue_status(snum, &queue, &prt_status);
+	count = print_queue_status(p->msg_ctx, snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n",
 		count, prt_status.status, prt_status.message));
 
@@ -8602,7 +8604,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 		return result;
 	}
 
-	count = print_queue_status(snum, &queue, &prt_status);
+	count = print_queue_status(p->msg_ctx, snum, &queue, &prt_status);
 
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
