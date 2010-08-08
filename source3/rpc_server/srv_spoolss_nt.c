@@ -5739,7 +5739,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
 				printer->drivername));
 
-			notify_printer_driver(snum, printer->drivername);
+			notify_printer_driver(server_event_context(), msg_ctx,
+					      snum, printer->drivername);
 		}
 	}
 

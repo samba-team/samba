@@ -4442,7 +4442,9 @@ void notify_job_submitted(struct tevent_context *ev,
 			  struct messaging_context *msg_ctx,
 			  const char *sharename, uint32 jobid,
 			  time_t submitted);
-void notify_printer_driver(int snum, const char *driver_name);
+void notify_printer_driver(struct tevent_context *ev,
+			   struct messaging_context *msg_ctx,
+			   int snum, const char *driver_name);
 void notify_printer_comment(int snum, const char *comment);
 void notify_printer_sharename(int snum, const char *share_name);
 void notify_printer_printername(int snum, const char *printername);

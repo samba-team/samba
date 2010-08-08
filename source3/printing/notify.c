@@ -505,12 +505,14 @@ void notify_job_submitted(struct tevent_context *ev,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
 
-void notify_printer_driver(int snum, const char *driver_name)
+void notify_printer_driver(struct tevent_context *ev,
+			   struct messaging_context *msg_ctx,
+			   int snum, const char *driver_name)
 {
 	const char *sharename = lp_servicename(snum);
 
 	send_notify_field_buffer(
-		server_event_context(), server_messaging_context(),
+		ev, msg_ctx,
 		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_DRIVER_NAME,
 		snum, strlen(driver_name) + 1, driver_name);
 }
