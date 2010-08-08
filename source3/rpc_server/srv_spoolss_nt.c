@@ -5196,7 +5196,7 @@ WERROR _spoolss_EndPagePrinter(struct pipes_struct *p,
 		return WERR_BADFID;
 
 	Printer->page_started = false;
-	print_job_endpage(snum, Printer->jobid);
+	print_job_endpage(p->msg_ctx, snum, Printer->jobid);
 
 	return WERR_OK;
 }

@@ -2778,7 +2778,8 @@ fail:
  Update the number of pages spooled to jobid
 ****************************************************************************/
 
-void print_job_endpage(int snum, uint32 jobid)
+void print_job_endpage(struct messaging_context *msg_ctx,
+		       int snum, uint32 jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
@@ -2791,8 +2792,7 @@ void print_job_endpage(int snum, uint32 jobid)
 		return;
 
 	pjob->page_count++;
-	pjob_store(server_event_context(), server_messaging_context(),
-		   sharename, jobid, pjob);
+	pjob_store(server_event_context(), msg_ctx, sharename, jobid, pjob);
 }
 
 /****************************************************************************
