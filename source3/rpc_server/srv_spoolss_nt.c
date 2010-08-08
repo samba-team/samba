@@ -1368,6 +1368,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 		/* all we care about currently is the change_id */
 		result = winreg_printer_update_changeid(tmp_ctx,
 							server_info,
+							msg,
 							pinfo2->printername);
 
 		if (!W_ERROR_IS_OK(result)) {
@@ -7918,6 +7919,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 
 		status = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -7976,6 +7978,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 
 		status = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -8040,6 +8043,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 
 		status = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -8792,6 +8796,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 
 		result = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							lp_const_servicename(snum));
 
 	}
@@ -8846,6 +8851,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 	if (W_ERROR_IS_OK(status)) {
 		status = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							printer);
 	}
 
@@ -8960,6 +8966,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 	if (W_ERROR_IS_OK(status)) {
 		status = winreg_printer_update_changeid(p->mem_ctx,
 							p->server_info,
+							p->msg_ctx,
 							printer);
 	}
 
