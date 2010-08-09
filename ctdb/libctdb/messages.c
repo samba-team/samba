@@ -6,6 +6,7 @@
 #include <ctdb_protocol.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 /* Remove type-safety macros. */
 #undef ctdb_set_message_handler_send
@@ -17,7 +18,7 @@ struct message_handler_info {
 
 	uint64_t srvid;
 	ctdb_message_fn_t handler;
-	void *private_data;
+	void *handler_data;
 };
 
 void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
@@ -30,9 +31,10 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	data.dptr = msg->data;
 	data.dsize = msg->datalen;
 
+	/* Note: we want to call *every* handler: there may be more than one */
 	for (i = ctdb->message_handlers; i; i = i->next) {
 		if (i->srvid == msg->srvid) {
-			i->handler(ctdb, msg->srvid, data, i->private_data);
+			i->handler(ctdb, msg->srvid, data, i->handler_data);
 			found = true;
 		}
 	}
@@ -86,7 +88,7 @@ static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req)
 
 struct ctdb_request *
 ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
-			      ctdb_message_fn_t handler,
+			      ctdb_message_fn_t handler, void *handler_data,
 			      ctdb_callback_t callback, void *private_data)
 {
 	struct message_handler_info *info;
@@ -114,12 +116,75 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 
 	info->srvid = srvid;
 	info->handler = handler;
-	info->private_data = private_data;
+	info->handler_data = handler_data;
 
 	DEBUG(ctdb, LOG_DEBUG,
 	      "ctdb_set_message_handler_send: sending request %u for id %llu",
 	      req->hdr.hdr->reqid, srvid);
 	return req;
+}
+
+struct ctdb_request *
+ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
+				 ctdb_message_fn_t handler, void *hdata,
+				 ctdb_callback_t callback, void *cbdata)
+{
+	struct message_handler_info *i;
+	struct ctdb_request *req;
+
+	for (i = ctdb->message_handlers; i; i = i->next) {
+		if (i->srvid == srvid
+		    && i->handler == handler && i->handler_data == hdata) {
+			break;
+		}
+	}
+	if (!i) {
+		DEBUG(ctdb, LOG_ALERT,
+		      "ctdb_remove_message_handler_send: no such handler");
+		errno = ENOENT;
+		return NULL;
+	}
+
+	req = new_ctdb_control_request(ctdb, CTDB_CONTROL_DEREGISTER_SRVID,
+				       CTDB_CURRENT_NODE, NULL, 0,
+				       callback, cbdata);
+	if (!req) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_remove_message_handler_send: allocating request");
+		return NULL;
+	}
+	req->hdr.control->srvid = srvid;
+	req->extra = i;
+
+	DEBUG(ctdb, LOG_DEBUG,
+	      "ctdb_set_remove_handler_send: sending request %u for id %llu",
+	      req->hdr.hdr->reqid, srvid);
+	return req;
+}
+
+bool ctdb_remove_message_handler_recv(struct ctdb_connection *ctdb,
+				      struct ctdb_request *req)
+{
+	struct message_handler_info *handler = req->extra;
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_DEREGISTER_SRVID);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status != 0) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_remove_message_handler_recv: status %i",
+		      reply->status);
+		return false;
+	}
+
+	/* Remove ourselves from list of handlers. */
+	DLIST_REMOVE(ctdb->message_handlers, handler);
+	free(handler);
+	/* Crash if they call this again! */
+	req->extra = NULL;
+	return true;
 }
 
 bool ctdb_send_message(struct ctdb_connection *ctdb,

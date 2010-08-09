@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include "libctdb_private.h"
 
+/* Remove type-safety macros. */
+#undef ctdb_set_message_handler
+
 /* On failure, frees req and returns NULL. */
 static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 					struct ctdb_request *req,
@@ -111,6 +114,24 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_getpnn_recv(ctdb, req, pnn);
+		ctdb_request_free(ctdb, req);
+	}
+	return ret;
+}
+
+bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
+			      ctdb_message_fn_t handler, void *cbdata)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_set_message_handler_send(ctdb, srvid, handler,
+							cbdata, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_set_message_handler_recv(ctdb, req);
 		ctdb_request_free(ctdb, req);
 	}
 	return ret;
