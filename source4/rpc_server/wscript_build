@@ -118,13 +118,15 @@ bld.SAMBA_MODULE('dcerpc_browser',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('dcerpc_server',
+bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c',
+	pc_files='dcerpc_server.pc',
+	deps='LIBCLI_AUTH LIBNDR samba_server_gensec',
+	public_deps='dcerpc',
 	autoproto='dcerpc_server_proto.h',
 	public_headers='dcerpc_server.h',
-	deps='LIBCLI_AUTH LIBNDR dcerpc samba_server_gensec'
+	vnum='0.0.1'
 	)
-
 
 bld.SAMBA_MODULE('DCESRV',
 	source='service_rpc.c',
