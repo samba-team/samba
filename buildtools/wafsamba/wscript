@@ -160,8 +160,9 @@ def configure(conf):
     # we need git for 'waf dist'
     conf.find_program('git', var='GIT')
 
-    if Options.options.enable_gccdeps:
-        # don't enable gccdeps by default as it needs a very recent version gcc
+    if Options.options.enable_gccdeps or Options.options.developer:
+        # don't enable gccdeps by default for non-developer builds
+        # as it needs a very recent version gcc
         conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
 
     # make the install paths available in environment
