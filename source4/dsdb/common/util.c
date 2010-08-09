@@ -1831,7 +1831,7 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 	}
 
 	ret = ldb_search(ldb, tmp_ctx, &dom_res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, dom_attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Searching for fSMORoleOwner in %s failed: %s\n", 
 			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
 			 ldb_errstring(ldb)));
@@ -1877,7 +1877,7 @@ bool samdb_is_gc(struct ldb_context *ldb)
 
 	/* Query cn=ntds settings,.... */
 	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return false;
 	}
@@ -1903,7 +1903,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *sdn = dn;
 	struct ldb_result *res = NULL;
-	int ret = 0;
+	int ret = LDB_SUCCESS;
 	const char *attrs[] = { NULL };
 
 	local_ctx = talloc_new(mem_ctx);
@@ -2350,7 +2350,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 					    domain_ref_attrs,
 					    "(&(nETBIOSName=%s)(objectclass=crossRef))", 
 					    escaped_domain);
-	if (ret_domain != 0) {
+	if (ret_domain != LDB_SUCCESS) {
 		return NULL;
 	}
 
@@ -2361,7 +2361,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 						LDB_SCOPE_BASE,
 						domain_ref2_attrs,
 						"(objectclass=domain)");
-		if (ret_domain != 0) {
+		if (ret_domain != LDB_SUCCESS) {
 			return NULL;
 		}
 
@@ -2895,7 +2895,7 @@ int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
 	}
 
 	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
@@ -2922,7 +2922,7 @@ const char* samdb_ntds_object_category(TALLOC_CTX *tmp_ctx, struct ldb_context *
 	struct ldb_result *res;
 
 	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
@@ -3209,7 +3209,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 
 	ret = ldb_search(samdb, tmp_ctx, &root_res,
 			 ldb_dn_new(tmp_ctx, samdb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(samdb)));
 		talloc_free(tmp_ctx);
 		return ret;
