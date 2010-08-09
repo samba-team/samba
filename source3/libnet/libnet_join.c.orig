@@ -982,6 +982,12 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	/* Fill in the additional account flags now */
 
 	acct_flags |= ACB_PWNOEXP;
+	if (r->out.domain_is_ad) {
+#if !defined(ENCTYPE_ARCFOUR_HMAC)
+		acct_flags |= ACB_USE_DES_KEY_ONLY;
+#endif
+		;;
+	}
 
 	/* Set account flags on machine account */
 	ZERO_STRUCT(user_info.info16);

@@ -4040,6 +4040,7 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the krb5_keyblock struct has a keyvalue property])
   fi
 
+  found_arcfour_hmac=no
   AC_CACHE_CHECK([for ENCTYPE_ARCFOUR_HMAC_MD5],
                  samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,[
     AC_TRY_COMPILE([#include <krb5.h>],
@@ -4057,7 +4058,19 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes" -a\
           x"$samba_cv_HAVE_KEYTYPE_ARCFOUR_56" = x"yes"; then
     AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,1,
-              [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
+              [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type definition is available])
+    found_arcfour_hmac=yes
+  fi
+  AC_CACHE_CHECK([for ENCTYPE_ARCFOUR_HMAC],
+                 samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_enctype enctype; enctype = ENCTYPE_ARCFOUR_HMAC;],
+      samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC=yes,
+      samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC=no)])
+  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC" = x"yes"; then
+    AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC,1,
+              [Whether the ENCTYPE_ARCFOUR_HMAC key type definition is available])
+    found_arcfour_hmac=yes
   fi
 
   AC_CACHE_CHECK([for AP_OPTS_USE_SUBKEY],
@@ -4300,6 +4313,11 @@ if test x"$with_ads_support" != x"no"; then
   # NOTE: all tests should be done before this block!
   #
   #
+  if test x"$found_arcfour_hmac" != x"yes"; then
+    AC_MSG_WARN(arcfour-hmac-md5 encryption type not found in -lkrb5)
+    use_ads=no
+  fi
+
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" != x"yes"; then
     AC_MSG_WARN(krb5_mk_req_extended not found in -lkrb5)
     use_ads=no

@@ -344,9 +344,7 @@ static krb5_error_code ads_secrets_verify_ticket(krb5_context context,
 	/* Let's make some room for 2 password (old and new)*/
 	krb5_data passwords[2];
 	krb5_enctype enctypes[] = {
-#if defined(ENCTYPE_ARCFOUR_HMAC)
 		ENCTYPE_ARCFOUR_HMAC,
-#endif
 		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_DES_CBC_MD5,
 		ENCTYPE_NULL
