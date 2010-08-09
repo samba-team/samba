@@ -482,6 +482,30 @@ wait_until_ips_are_on_nodeglob ()
     wait_until 60 ips_are_on_nodeglob "$@"
 }
 
+node_has_some_ips ()
+{
+    local node="$1"
+
+    local out
+
+    all_ips_on_node 1
+
+    while read ip pnn ; do
+	if [ "$node" = "$pnn" ] ; then
+	    return 0
+	fi
+    done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+
+    return 1
+}
+
+wait_until_node_has_some_ips ()
+{
+    echo "Waiting for node to have some IPs..."
+
+    wait_until 60 node_has_some_ips "$@"
+}
+
 get_src_socket ()
 {
     local proto="$1"

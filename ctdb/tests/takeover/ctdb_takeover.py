@@ -44,35 +44,38 @@ def process_args(extra_options=[]):
     parser.add_option("--ni",
                       action="store_true", dest="no_ip_failback", default=False,
                       help="turn on no_ip_failback")
+    parser.add_option("-b", "--balance",
+                      action="store_true", dest="balance", default=False,
+                      help="show (im)balance information after each event")
+    parser.add_option("-d", "--diff",
+                      action="store_true", dest="diff", default=False,
+                      help="show IP address movements for each event")
+    parser.add_option("-n", "--no-print",
+                      action="store_false", dest="show", default=True,
+                      help="don't show IP address layout after each event")
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose", default=False,
                       help="print information and actions taken to stdout")
-    parser.add_option("-d", "--diff",
-                      action="store_true", dest="diff", default=False,
-                      help="after each recovery show IP address movements")
-    parser.add_option("-n", "--no-print",
-                      action="store_false", dest="show", default=True,
-                      help="after each recovery don't print IP address layout")
     parser.add_option("--hack",
                       action="store", type="int", dest="hack", default=0,
                       help="apply a hack (see the code!!!)")
     parser.add_option("-r", "--retries",
                       action="store", type="int", dest="retries", default=5,
-                      help="number of retry loops for rebalancing")
+                      help="number of retry loops for rebalancing [default: %default]")
     parser.add_option("-i", "--iterations",
                       action="store", type="int", dest="iterations",
                       default=1000,
-                      help="number of iterations to run in test")
+                      help="number of iterations to run in test [default: %default]")
+    parser.add_option("-o", "--odds",
+                      action="store", type="int", dest="odds", default=4,
+                      help="make the chances of a failover 1 in ODDS [default: %default]")
 
     def seed_callback(option, opt, value, parser):
         random.seed(value)
     parser.add_option("-s", "--seed",
                       action="callback", type="int", callback=seed_callback,
-                      help="number of iterations to run in test")
+                      help="initial random number seed for random events")
 
-    parser.add_option("-b", "--balance",
-                      action="store_true", dest="balance", default=False,
-                      help="show (im)balance information")
     parser.add_option("-x", "--exit",
                       action="store_true", dest="exit", default=False,
                       help="exit on the 1st gratuitous IP move")
@@ -124,10 +127,12 @@ class Cluster(object):
         self.no_ip_failback = options.no_ip_failback
         self.all_public_ips = set()
 
+        # Statistics
         self.ip_moves = []
         self.grat_ip_moves = []
         self.imbalance = []
         self.events = -1
+        self.num_unhealthy = []
 
         self.prev = None
 
@@ -146,6 +151,7 @@ class Cluster(object):
         print "Gratuitous IP moves: %6d" % sum(self.grat_ip_moves)
         print "Max imbalance:       %6d" % max(self.imbalance)
         print "Final imbalance:     %6d" % self.imbalance[-1]
+        print "Maximum unhealthy:   %6d" % max(self.num_unhealthy)
         print_end()
 
     def find_pnn_with_ip(self, ip):
@@ -189,8 +195,8 @@ class Cluster(object):
         """Make a random node healthy or unhealthy.
 
         If all nodes are healthy or unhealthy, then invert one of
-        them.  Otherwise, there's a 1/4 chance of making another node
-        unhealthy."""
+        them.  Otherwise, there's a 1 in options.odds chance of making
+        another node unhealthy."""
 
         num_nodes = len(self.nodes)
         healthy_pnns = [i for (i,n) in enumerate(self.nodes) if n.healthy]
@@ -200,7 +206,7 @@ class Cluster(object):
             self.unhealthy(random.randint(0, num_nodes-1))
         elif num_healthy == 0:
             self.healthy(random.randint(0, num_nodes-1))
-        elif random.randint(1, 4) == 1:
+        elif random.randint(1, options.odds) == 1:
             self.unhealthy(random.choice(healthy_pnns))
         else:
             all_pnns = range(num_nodes)
@@ -482,6 +488,10 @@ class Cluster(object):
             print_begin("IMBALANCE")
             print imbalance
             print_end()
+
+        num_unhealthy = len(self.nodes) - \
+            len([n for n in self.nodes if n.healthy])
+        self.num_unhealthy.append(num_unhealthy)
 
         if options.show:
             print_begin("STATE")
