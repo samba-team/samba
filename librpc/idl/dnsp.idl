@@ -64,9 +64,30 @@ interface dnsp
 		DNS_TYPE_WINSR = 0xFF02
 	} dns_record_type;
 
+	typedef [public] struct {
+		uint32		serial;
+		uint32		refresh;
+		uint32		retry;
+		uint32		expire;
+		uint32		minimum;
+		dnsp_name       mname;
+		dnsp_name       rname;
+	} dnsp_soa;
+
+	typedef [public] struct {
+		uint16          wPriority;
+		uint16          wWeight;
+		uint16          wPort;
+		dnsp_name       nameTarget;
+	} dnsp_srv;
+
 	typedef [nodiscriminant] union {
-		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)] ipv4address ip;
-		[case(DNS_TYPE_NS)]                       dnsp_name ns;
+		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ip;
+		[case(DNS_TYPE_NS)]                         dnsp_name ns;
+		[case(DNS_TYPE_CNAME)]                      dnsp_name cname;
+		[case(DNS_TYPE_SOA)] [flag(NDR_BIG_ENDIAN)] dnsp_soa soa;
+		[case(DNS_TYPE_PTR)]                        dnsp_name ptr;
+		[case(DNS_TYPE_SRV)] [flag(NDR_BIG_ENDIAN)] dnsp_srv srv;
 		[default] [flag(NDR_REMAINING)] DATA_BLOB data;
 	} dnsRecordData;
 
