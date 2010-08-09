@@ -543,7 +543,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     try:
         if str(reference[0].get("cn"))  == "RID Set":
             for klass in reference[0].get("objectClass"):
-                if str(klass).lower == "ridset":
+                if str(klass).lower() == "ridset":
                     skip = True
     finally:
         if delta.get("objectSid"):
