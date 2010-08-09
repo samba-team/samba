@@ -787,8 +787,10 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
 				     auth,
 				     &auth_out);
-	if (!NT_STATUS_IS_OK(status) &&
-			!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	/* We need to call setup_ntlmssp_server_info() if status==NT_STATUS_OK,
+	   or if status is anything except NT_STATUS_MORE_PROCESSING_REQUIRED,
+	   as this can trigger map to guest. */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		status = setup_ntlmssp_server_info(session, status);
 	}
 
