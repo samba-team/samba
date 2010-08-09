@@ -189,8 +189,9 @@ void file_init(void)
 		real_max_open_files = 65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
 
 	if(real_max_open_files != request_max_open_files) {
-		DEBUG(1,("file_init: Information only: requested %d \
-open files, %d are available.\n", request_max_open_files, real_max_open_files));
+		DEBUG(1, ("file_init: Information only: requested %d "
+			  "open files, %d are available.\n",
+			  request_max_open_files, real_max_open_files));
 	}
 
 	SMB_ASSERT(real_max_open_files > 100);
