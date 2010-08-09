@@ -964,9 +964,7 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 	krb5_ccache ccdef = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_enctype enc_types[] = {
-#ifdef ENCTYPE_ARCFOUR_HMAC
 		ENCTYPE_ARCFOUR_HMAC,
-#endif
 		ENCTYPE_DES_CBC_MD5,
 		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_NULL};

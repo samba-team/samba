@@ -236,16 +236,15 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	krb5_keytab keytab = NULL;
 	krb5_data password;
 	krb5_kvno kvno;
-        krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, ENCTYPE_DES_CBC_MD5, 0, 0 };
+        krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, 
+				     ENCTYPE_DES_CBC_MD5, 
+				     ENCTYPE_ARCFOUR_HMAC, 
+				     0 };
 	char *princ_s = NULL, *short_princ_s = NULL;
 	char *password_s = NULL;
 	char *my_fqdn;
 	TALLOC_CTX *ctx = NULL;
 	char *machine_name;
-
-#if defined(ENCTYPE_ARCFOUR_HMAC)
-        enctypes[2] = ENCTYPE_ARCFOUR_HMAC;
-#endif
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);

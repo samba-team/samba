@@ -25,7 +25,7 @@
 #include "libnet/libnet_keytab.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 
-#if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
+#if defined(HAVE_ADS)
 
 static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			       struct replUpToDateVectorBlob **pold_utdv)
@@ -601,7 +601,7 @@ static NTSTATUS keytab_process_objects(struct dssync_context *ctx,
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
-#endif /* defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC) */
+#endif /* defined(HAVE_ADS) */
 
 const struct dssync_ops libnet_dssync_keytab_ops = {
 	.startup		= keytab_startup,
