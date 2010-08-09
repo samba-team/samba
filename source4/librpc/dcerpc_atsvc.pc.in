@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: dcerpc_atsvc
 Description: DCE/RPC client library - ATSVC
 Requires.private: dcerpc ndr
-Version: 0.0.1
+Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ldcerpc_atsvc
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1

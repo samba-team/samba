@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: dcerpc_server
 Description: DCE/RPC server library
 Requires: dcerpc
-Version: 0.0.1
+Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ldcerpc
 Cflags: -I${includedir} -DHAVE_IMMEDIATE_STRUCTURES=1
