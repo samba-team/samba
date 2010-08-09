@@ -9296,18 +9296,19 @@ bool lp_load(const char *pszFname,
 			  save_defaults,
 			  add_ipc,
 			  initialize_globals,
-			  true, false);
+			  true,   /* allow_include_registry */
+			  false); /* allow_registry_shares*/
 }
 
 bool lp_load_initial_only(const char *pszFname)
 {
 	return lp_load_ex(pszFname,
-			  true,
-			  false,
-			  false,
-			  true,
-			  false,
-			  false);
+			  true,   /* global only */
+			  false,  /* save_defaults */
+			  false,  /* add_ipc */
+			  true,   /* initialize_globals */
+			  false,  /* allow_include_registry */
+			  false); /* allow_registry_shares*/
 }
 
 bool lp_load_with_registry_shares(const char *pszFname,
@@ -9321,8 +9322,8 @@ bool lp_load_with_registry_shares(const char *pszFname,
 			  save_defaults,
 			  add_ipc,
 			  initialize_globals,
-			  true,
-			  true);
+			  true,  /* allow_include_registry */
+			  true); /* allow_registry_shares*/
 }
 
 /***************************************************************************
