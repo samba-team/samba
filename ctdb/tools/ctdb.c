@@ -97,7 +97,7 @@ static void verify_node(struct ctdb_context *ctdb)
 	/* verify we can access the node */
 	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("Can not ban node. Node is not operational.\n"));
+		DEBUG(DEBUG_ERR,("Can not access node. Node is not operational.\n"));
 		exit(10);
 	}
 }
