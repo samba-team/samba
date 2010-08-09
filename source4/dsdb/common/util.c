@@ -2965,8 +2965,7 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 }
 
 /*
-  return domain functional level
-  returns DS_DOMAIN_FUNCTION_*
+ * This detects and returns the domain functional level (DS_DOMAIN_FUNCTION_*)
  */
 int dsdb_functional_level(struct ldb_context *ldb)
 {
@@ -2977,6 +2976,20 @@ int dsdb_functional_level(struct ldb_context *ldb)
 		return DS_DOMAIN_FUNCTION_2000;
 	}
 	return *domainFunctionality;
+}
+
+/*
+ * This detects and returns the forest functional level (DS_DOMAIN_FUNCTION_*)
+ */
+int dsdb_forest_functional_level(struct ldb_context *ldb)
+{
+	int *forestFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int);
+	if (!forestFunctionality) {
+		DEBUG(0,(__location__ ": WARNING: forestFunctionality not setup\n"));
+		return DS_DOMAIN_FUNCTION_2000;
+	}
+	return *forestFunctionality;
 }
 
 /*
