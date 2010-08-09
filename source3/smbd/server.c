@@ -876,8 +876,6 @@ extern void build_options(bool screen);
 	setluid(0);
 #endif
 
-	sec_init();
-
 	set_remote_machine_name("smbd", False);
 
 	if (interactive && (DEBUGLEVEL >= 9)) {
@@ -893,9 +891,11 @@ extern void build_options(bool screen);
            client problems at a later date. (tridge) */
 	generate_random_buffer(NULL, 0);
 
+	/* get initial effective uid and gid */
+	sec_init();
+
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
-
 	gain_root_privilege();
 	gain_root_group_privilege();
 
@@ -930,8 +930,6 @@ extern void build_options(bool screen);
 	   so set our umask to 0 */
 	umask(0);
 
-	init_sec_ctx();
-
 	reopen_logs();
 
 	DEBUG(0,("smbd version %s started.\n", samba_version_string()));
@@ -952,6 +950,9 @@ extern void build_options(bool screen);
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
+
+	/* Init the security context and global current_user */
+	init_sec_ctx();
 
 	if (smbd_messaging_context() == NULL)
 		exit(1);
