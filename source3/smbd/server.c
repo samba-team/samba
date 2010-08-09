@@ -816,6 +816,9 @@ extern void build_options(bool screen);
 	NTSTATUS status;
 	uint64_t unique_id;
 
+	/* Initialize the event context, it will panic on error */
+	smbd_event_context();
+
 	smbd_init_globals();
 
 	TimeInit();
