@@ -1668,7 +1668,15 @@ static void rpccli_winreg_EnumValue_done(struct tevent_req *subreq)
 		*state->orig.out.type = *state->tmp.out.type;
 	}
 	if (state->orig.out.value && state->tmp.out.value) {
-		memcpy(state->orig.out.value, state->tmp.out.value, (*state->tmp.in.size) * sizeof(*state->orig.out.value));
+		if ((*state->tmp.out.size) > (*state->tmp.in.size)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		if ((*state->tmp.out.length) > (*state->tmp.out.size)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		memcpy(state->orig.out.value, state->tmp.out.value, (*state->tmp.out.length) * sizeof(*state->orig.out.value));
 	}
 	if (state->orig.out.size && state->tmp.out.size) {
 		*state->orig.out.size = *state->tmp.out.size;
@@ -1752,7 +1760,13 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (value && r.out.value) {
-		memcpy(value, r.out.value, (*r.in.size) * sizeof(*value));
+		if ((*r.out.size) > (*r.in.size)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if ((*r.out.length) > (*r.out.size)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		memcpy(value, r.out.value, (*r.out.length) * sizeof(*value));
 	}
 	if (size && r.out.size) {
 		*size = *r.out.size;
@@ -2823,7 +2837,15 @@ static void rpccli_winreg_QueryValue_done(struct tevent_req *subreq)
 		*state->orig.out.type = *state->tmp.out.type;
 	}
 	if (state->orig.out.data && state->tmp.out.data) {
-		memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.in.data_size?*state->tmp.in.data_size:0) * sizeof(*state->orig.out.data));
+		if ((state->tmp.out.data_size?*state->tmp.out.data_size:0) > (state->tmp.in.data_size?*state->tmp.in.data_size:0)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		if ((state->tmp.out.data_length?*state->tmp.out.data_length:0) > (state->tmp.out.data_size?*state->tmp.out.data_size:0)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		memcpy(state->orig.out.data, state->tmp.out.data, (state->tmp.out.data_length?*state->tmp.out.data_length:0) * sizeof(*state->orig.out.data));
 	}
 	if (state->orig.out.data_size && state->tmp.out.data_size) {
 		*state->orig.out.data_size = *state->tmp.out.data_size;
@@ -2904,7 +2926,13 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 		*type = *r.out.type;
 	}
 	if (data && r.out.data) {
-		memcpy(data, r.out.data, (r.in.data_size?*r.in.data_size:0) * sizeof(*data));
+		if ((r.out.data_size?*r.out.data_size:0) > (r.in.data_size?*r.in.data_size:0)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if ((r.out.data_length?*r.out.data_length:0) > (r.out.data_size?*r.out.data_size:0)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		memcpy(data, r.out.data, (r.out.data_length?*r.out.data_length:0) * sizeof(*data));
 	}
 	if (data_size && r.out.data_size) {
 		*data_size = *r.out.data_size;
@@ -4629,7 +4657,11 @@ static void rpccli_winreg_QueryMultipleValues_done(struct tevent_req *subreq)
 	/* Copy out parameters */
 	memcpy(state->orig.out.values, state->tmp.out.values, (state->tmp.in.num_values) * sizeof(*state->orig.out.values));
 	if (state->orig.out.buffer && state->tmp.out.buffer) {
-		memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.in.buffer_size) * sizeof(*state->orig.out.buffer));
+		if ((*state->tmp.out.buffer_size) > (*state->tmp.in.buffer_size)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.out.buffer_size) * sizeof(*state->orig.out.buffer));
 	}
 	*state->orig.out.buffer_size = *state->tmp.out.buffer_size;
 
@@ -4701,7 +4733,10 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 	/* Return variables */
 	memcpy(values, r.out.values, (r.in.num_values) * sizeof(*values));
 	if (buffer && r.out.buffer) {
-		memcpy(buffer, r.out.buffer, (*r.in.buffer_size) * sizeof(*buffer));
+		if ((*r.out.buffer_size) > (*r.in.buffer_size)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		memcpy(buffer, r.out.buffer, (*r.out.buffer_size) * sizeof(*buffer));
 	}
 	*buffer_size = *r.out.buffer_size;
 

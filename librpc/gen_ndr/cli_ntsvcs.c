@@ -1459,7 +1459,11 @@ static void rpccli_PNP_GetDeviceList_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.in.length) * sizeof(*state->orig.out.buffer));
+	if ((*state->tmp.out.length) > (*state->tmp.in.length)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.out.length) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.length = *state->tmp.out.length;
 
 	/* Copy result */
@@ -1525,7 +1529,10 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, (*r.in.length) * sizeof(*buffer));
+	if ((*r.out.length) > (*r.in.length)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	memcpy(buffer, r.out.buffer, (*r.out.length) * sizeof(*buffer));
 	*length = *r.out.length;
 
 	/* Return result */
@@ -1918,7 +1925,11 @@ static void rpccli_PNP_GetDeviceRegProp_done(struct tevent_req *subreq)
 
 	/* Copy out parameters */
 	*state->orig.out.reg_data_type = *state->tmp.out.reg_data_type;
-	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.in.buffer_size) * sizeof(*state->orig.out.buffer));
+	if ((*state->tmp.out.buffer_size) > (*state->tmp.in.buffer_size)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	memcpy(state->orig.out.buffer, state->tmp.out.buffer, (*state->tmp.out.buffer_size) * sizeof(*state->orig.out.buffer));
 	*state->orig.out.buffer_size = *state->tmp.out.buffer_size;
 	*state->orig.out.needed = *state->tmp.out.needed;
 
@@ -1992,7 +2003,10 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*reg_data_type = *r.out.reg_data_type;
-	memcpy(buffer, r.out.buffer, (*r.in.buffer_size) * sizeof(*buffer));
+	if ((*r.out.buffer_size) > (*r.in.buffer_size)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	memcpy(buffer, r.out.buffer, (*r.out.buffer_size) * sizeof(*buffer));
 	*buffer_size = *r.out.buffer_size;
 	*needed = *r.out.needed;
 
