@@ -15,7 +15,7 @@ use strict;
 use Parse::Pidl qw(fatal warning error);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::Samba4 qw(DeclLong);
-use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -95,12 +95,38 @@ sub ParseOutputArgument($$$)
 		# Since the data is being copied into a user-provided data 
 		# structure, the user should be able to know the size beforehand 
 		# to allocate a structure of the right size.
-		my $env = GenerateFunctionInEnv($fn, "r.");
-		my $size_is = ParseExpr($e->{LEVELS}[$level]->{SIZE_IS}, $env, $e->{ORIGINAL});
-		if (has_property($e, "charset")) {
-		    $self->pidl("memcpy(discard_const_p(uint8_t *, $e->{NAME}), r.out.$e->{NAME}, ($size_is) * sizeof(*$e->{NAME}));");
+		my $in_env = GenerateFunctionInEnv($fn, "r.");
+		my $out_env = GenerateFunctionOutEnv($fn, "r.");
+		my $l = $e->{LEVELS}[$level];
+		unless (defined($l->{SIZE_IS})) {
+			$self->pidl('#error No size known for [out] array `$e->{NAME}');
+			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
 		} else {
-		    $self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, ($size_is) * sizeof(*$e->{NAME}));");
+			my $in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
+			my $out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
+			my $out_length_is = $out_size_is;
+			if (defined($l->{LENGTH_IS})) {
+				$out_length_is = ParseExpr($l->{LENGTH_IS}, $out_env, $e->{ORIGINAL});
+			}
+			if ($out_size_is ne $in_size_is) {
+				$self->pidl("if (($out_size_is) > ($in_size_is)) {");
+				$self->indent;
+				$self->pidl("return NT_STATUS_INVALID_NETWORK_RESPONSE;");
+				$self->deindent;
+				$self->pidl("}");
+			}
+			if ($out_length_is ne $out_size_is) {
+				$self->pidl("if (($out_length_is) > ($out_size_is)) {");
+				$self->indent;
+				$self->pidl("return NT_STATUS_INVALID_NETWORK_RESPONSE;");
+				$self->deindent;
+				$self->pidl("}");
+			}
+			if (has_property($e, "charset")) {
+				$self->pidl("memcpy(discard_const_p(uint8_t *, $e->{NAME}), r.out.$e->{NAME}, ($out_length_is) * sizeof(*$e->{NAME}));");
+			} else {
+				$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, ($out_length_is) * sizeof(*$e->{NAME}));");
+			}
 		}
 	} else {
 		$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");
