@@ -172,7 +172,7 @@
 
 /* "domainFunctionality", "forestFunctionality" and "domainControllerFunctionality" in the rootDSE */
 #define DS_DOMAIN_FUNCTION_2000		0
-#define DS_DOMAIN_FUNCTION_2003_MIXED	1 /* Not a valid/meaningfulxs
+#define DS_DOMAIN_FUNCTION_2003_MIXED	1 /* Not a valid/meaningful
 					   * domainControllerFunctionality
 					   * Level */
 #define DS_DOMAIN_FUNCTION_2003		2
