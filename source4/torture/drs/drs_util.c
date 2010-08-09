@@ -203,6 +203,8 @@ bool drs_util_dsdb_schema_load_ldb(struct torture_context *tctx,
 	torture_assert(tctx, ldap_schema != NULL, "dsdb_new_schema() failed!");
 
 	werr = dsdb_load_prefixmap_from_drsuapi(ldap_schema, mapping_ctr);
+	torture_assert_werr_ok(tctx, werr,
+			       "Failed to construct prefixMap from drsuapi data");
 
 	/*
 	 * load the attribute definitions

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_MODULE('TORTURE_DRS',
-	source='drs_init.c drs_util.c unit/prefixmap_tests.c unit/schemainfo_tests.c rpc/dssync.c',
+	source='drs_init.c drs_util.c unit/prefixmap_tests.c unit/schemainfo_tests.c rpc/dssync.c rpc/msds_intid.c',
 	autoproto='proto.h',
 	subsystem='smbtorture',
 	init_function='torture_drs_init',

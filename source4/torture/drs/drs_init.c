@@ -35,6 +35,7 @@ static struct torture_suite * torture_drs_rpc_suite(TALLOC_CTX *mem_ctx)
 		"RPC");
 
 	torture_drs_rpc_dssync_tcase(suite);
+	torture_drs_rpc_dsintid_tcase(suite);
 
 	return suite;
 }
