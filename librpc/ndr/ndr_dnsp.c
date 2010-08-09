@@ -69,6 +69,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		total_len = newlen;
 	}
 	(*name) = ret;
+	NDR_PULL_ALIGN(ndr, 2);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -93,6 +94,7 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)name, sublen));
 		name += sublen + 1;
 	}
+	NDR_PUSH_ALIGN(ndr, 2);
 
 	return NDR_ERR_SUCCESS;
 }
