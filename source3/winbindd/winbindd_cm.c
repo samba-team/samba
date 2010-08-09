@@ -2267,6 +2267,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 			    struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
+	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
@@ -2287,14 +2288,19 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	TALLOC_FREE(conn->lsa_pipe_tcp);
 
-	status = cli_rpc_pipe_open_schannel(conn->cli,
-					    &ndr_table_lsarpc.syntax_id,
-					    NCACN_IP_TCP,
-					    DCERPC_AUTH_LEVEL_PRIVACY,
-					    domain->name,
-					    &conn->lsa_pipe_tcp);
+	if (!cm_get_schannel_creds(domain, &creds)) {
+		goto done;
+	}
+
+	status = cli_rpc_pipe_open_schannel_with_key(conn->cli,
+						     &ndr_table_lsarpc.syntax_id,
+						     NCACN_IP_TCP,
+						     DCERPC_AUTH_LEVEL_PRIVACY,
+						     domain->name,
+						     &creds,
+						     &conn->lsa_pipe_tcp);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("cli_rpc_pipe_open_schannel failed: %s\n",
+		DEBUG(10,("cli_rpc_pipe_open_schannel_with_key failed: %s\n",
 			nt_errstr(status)));
 		goto done;
 	}
