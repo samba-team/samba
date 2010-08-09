@@ -124,7 +124,7 @@ sub GetElementLevelTable($$)
 		if ($d eq "*") {
 			$is_conformant = 1;
 			if ($size = shift @size_is) {
-				if (has_property($e, "string")) {
+				if ($e->{POINTERS} < 1 and has_property($e, "string")) {
 					$is_string = 1;
 					delete($e->{PROPERTIES}->{string});
 				}
