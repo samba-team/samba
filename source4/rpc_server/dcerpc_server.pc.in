@@ -7,5 +7,5 @@ Name: dcerpc_server
 Description: DCE/RPC server library
 Requires: dcerpc
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ldcerpc
+Libs: -L${libdir} -ldcerpc_server
 Cflags: -I${includedir} -DHAVE_IMMEDIATE_STRUCTURES=1
