@@ -176,6 +176,12 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 		return;
 	}
 
+	if (ndr->no_newline) {
+		DEBUGADD(1,("%s", s));
+		free(s);
+		return;
+	}
+
 	for (i=0;i<ndr->depth;i++) {
 		DEBUGADD(1,("    "));
 	}
@@ -189,17 +195,21 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 	va_list ap;
 	int i;
 
-	for (i=0;i<ndr->depth;i++) {
-		ndr->private_data = talloc_asprintf_append_buffer(
-					(char *)ndr->private_data, "    ");
+	if (!ndr->no_newline) {
+		for (i=0;i<ndr->depth;i++) {
+			ndr->private_data = talloc_asprintf_append_buffer(
+				(char *)ndr->private_data, "    ");
+		}
 	}
 
 	va_start(ap, format);
 	ndr->private_data = talloc_vasprintf_append_buffer((char *)ndr->private_data, 
 						    format, ap);
 	va_end(ap);
-	ndr->private_data = talloc_asprintf_append_buffer((char *)ndr->private_data, 
-						   "\n");
+	if (!ndr->no_newline) {
+		ndr->private_data = talloc_asprintf_append_buffer((char *)ndr->private_data,
+								  "\n");
+	}
 }
 
 /*

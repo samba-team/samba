@@ -105,6 +105,7 @@ struct ndr_print {
 	struct ndr_token_list *switch_list;
 	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
+	bool no_newline;
 };
 
 #define LIBNDR_FLAG_BIGENDIAN  (1<<0)
