@@ -4378,6 +4378,7 @@ static const struct {
 	{ "showban",         control_showban,           true,	false,  "show ban information"},
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
 	{ "recover",         control_recover,           true,	false,  "force recovery" },
+	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
 	{ "ipreallocate",    control_ipreallocate,      true,	false,  "force the recovery daemon to perform a ip reallocation procedure" },
 	{ "thaw",            control_thaw,              true,	false,  "thaw databases", "[priority:1-3]" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },
@@ -4418,6 +4419,7 @@ static const struct {
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
+	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
 };
 
 /*
