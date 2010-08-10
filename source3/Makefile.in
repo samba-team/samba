@@ -3281,7 +3281,7 @@ test_pam_modules:: pam_modules
 
 TEST_EXTRA_ARGS = ${smbtorture4_option} ${selftest_shrdir} ${selftest_custom_conf}
 
-test:: all torture timelimit
+oldtest:: all torture timelimit
 	@echo Running Test suite
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) PERL="$(PERL)" NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/@WINBIND_NSS@" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all ${TEST_EXTRA_ARGS}
 
@@ -3300,7 +3300,7 @@ S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
 SUBUNIT_FORMATTER = $(PYTHON) $(selftestdir)/format-subunit --immediate
 
-selftest:: all torture timelimit
+test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
@@ -3314,16 +3314,16 @@ selftest:: all torture timelimit
 		--expected-failures=$(srcdir)/selftest/knownfail | \
 		$(SUBUNIT_FORMATTER)
 
-selftest-%:
-	$(MAKE) selftest TESTS=$*
+test-%:
+	$(MAKE) test TESTS=$*
 
 SELFTEST_TESTENV = dc
 
 testenv:
-	$(MAKE) selftest SELFTEST_TESTENV=$(SELFTEST_TESTENV) TESTS="--testenv"
+	$(MAKE) test SELFTEST_TESTENV=$(SELFTEST_TESTENV) TESTS="--testenv"
 
 gdbtestenv:
-	$(MAKE) selftest SELFTEST_TESTENV=$(SELFTEST_TESTENV) \
+	$(MAKE) test SELFTEST_TESTENV=$(SELFTEST_TESTENV) \
 		SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
 		WINBINDD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
 		TESTS="--testenv"
