@@ -29,6 +29,23 @@
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
 
+#include "../librpc/gen_ndr/srv_dfs.h"
+#include "../librpc/gen_ndr/srv_dssetup.h"
+#include "../librpc/gen_ndr/srv_echo.h"
+#include "../librpc/gen_ndr/srv_eventlog.h"
+#include "../librpc/gen_ndr/srv_initshutdown.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
+#include "../librpc/gen_ndr/srv_netlogon.h"
+#include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
+#include "../librpc/gen_ndr/srv_svcctl.h"
+#include "../librpc/gen_ndr/srv_winreg.h"
+#include "../librpc/gen_ndr/srv_wkssvc.h"
+
+#include "printing/nt_printing_migrate.h"
+
 static_decl_rpc;
 
 #ifdef WITH_DFS
@@ -767,6 +784,13 @@ static bool init_structs(void )
 	return True;
 }
 
+static bool spoolss_init_cb(void *ptr)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		ptr, struct messaging_context);
+	return nt_printing_tdb_migrate(msg_ctx);
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -815,6 +839,7 @@ extern void build_options(bool screen);
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 	NTSTATUS status;
 	uint64_t unique_id;
+	struct rpc_srv_callbacks spoolss_cb;
 
 	/* Initialize the event context, it will panic on error */
 	smbd_event_context();
@@ -1110,6 +1135,26 @@ extern void build_options(bool screen);
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
 	}
+
+	/*
+	 * Initialize spoolss with an init function to convert printers first.
+	 * static_init_rpc will try to initialize the spoolss server too but you
+	 * can't register it twice.
+	 */
+	spoolss_cb.init = spoolss_init_cb;
+	spoolss_cb.shutdown = NULL;
+	spoolss_cb.private_data = smbd_server_conn->msg_ctx;
+
+	/* Spoolss depends on a winreg pipe, so start it first. */
+	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
+		exit(1);
+	}
+
+	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
+		exit(1);
+	}
+
+	static_init_rpc;
 
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if

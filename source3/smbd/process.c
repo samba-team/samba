@@ -20,22 +20,8 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../librpc/gen_ndr/srv_dfs.h"
-#include "../librpc/gen_ndr/srv_dssetup.h"
-#include "../librpc/gen_ndr/srv_echo.h"
-#include "../librpc/gen_ndr/srv_eventlog.h"
-#include "../librpc/gen_ndr/srv_initshutdown.h"
-#include "../librpc/gen_ndr/srv_lsa.h"
-#include "../librpc/gen_ndr/srv_netlogon.h"
-#include "../librpc/gen_ndr/srv_ntsvcs.h"
-#include "../librpc/gen_ndr/srv_samr.h"
-#include "../librpc/gen_ndr/srv_spoolss.h"
-#include "../librpc/gen_ndr/srv_srvsvc.h"
-#include "../librpc/gen_ndr/srv_svcctl.h"
-#include "../librpc/gen_ndr/srv_winreg.h"
-#include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/messaging.h"
-#include "printing/nt_printing_migrate.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -2868,13 +2854,6 @@ fail:
 	return false;
 }
 
-static bool spoolss_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
-	return nt_printing_tdb_migrate(msg_ctx);
-}
-
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -2889,7 +2868,6 @@ void smbd_process(struct smbd_server_connection *sconn)
 	struct tsocket_address *remote_address = NULL;
 	const char *remaddr = NULL;
 	int ret;
-	struct rpc_srv_callbacks spoolss_cb;
 
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    lp_security() != SEC_SHARE &&
@@ -3126,25 +3104,6 @@ void smbd_process(struct smbd_server_connection *sconn)
 	if (!sconn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
-
-	/*
-	 * Initialize spoolss with an init function to convert printers first.
-	 * static_init_rpc will try to initialize the spoolss server too but you
-	 * can't register it twice.
-	 */
-	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = NULL;
-	spoolss_cb.private_data = sconn->msg_ctx;
-
-	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
-		exit(1);
-	}
-
-	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
-		exit(1);
-	}
-
-	static_init_rpc;
 
 	TALLOC_FREE(frame);
 
