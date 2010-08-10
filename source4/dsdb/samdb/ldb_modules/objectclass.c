@@ -1366,19 +1366,21 @@ static int objectclass_do_delete(struct oc_context *ac)
 	}
 
 	/* DC's rIDSet object */
+	/* Perform this check only when it does exist - this is needed in order
+	 * to don't let existing provisions break. */
 	ret = samdb_rid_set_dn(ldb, ac, &dn);
-	if (ret != LDB_SUCCESS) {
+	if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
 		return ret;
 	}
-
-	if (ldb_dn_compare(ac->req->op.del.dn, dn) == 0) {
+	if (ret == LDB_SUCCESS) {
+		if (ldb_dn_compare(ac->req->op.del.dn, dn) == 0) {
+			talloc_free(dn);
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's the DC's rIDSet object!",
+					       ldb_dn_get_linearized(ac->req->op.del.dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 		talloc_free(dn);
-		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's the DC's rIDSet object!",
-				       ldb_dn_get_linearized(ac->req->op.del.dn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-
-	talloc_free(dn);
 
 	/* crossRef objects regarding config, schema and default domain NCs */
 	if (samdb_find_attribute(ldb, ac->search_res->message, "objectClass",
