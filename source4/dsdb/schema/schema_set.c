@@ -230,6 +230,10 @@ static int dsdb_compare_attribute_by_attributeID_id(struct dsdb_attribute **a1, 
 {
 	return uint32_cmp((*a1)->attributeID_id, (*a2)->attributeID_id);
 }
+static int dsdb_compare_attribute_by_msDS_IntId(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
+{
+	return uint32_cmp((*a1)->msDS_IntId, (*a2)->msDS_IntId);
+}
 static int dsdb_compare_attribute_by_attributeID_oid(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
 	return strcasecmp((*a1)->attributeID_oid, (*a2)->attributeID_oid);
@@ -345,7 +349,7 @@ static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	/* sort the arrays */
 	TYPESAFE_QSORT(schema->attributes_by_lDAPDisplayName, schema->num_attributes, dsdb_compare_attribute_by_lDAPDisplayName);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_id, schema->num_attributes, dsdb_compare_attribute_by_attributeID_id);
-	TYPESAFE_QSORT(schema->attributes_by_msDS_IntId, schema->num_int_id_attr, dsdb_compare_attribute_by_attributeID_id);
+	TYPESAFE_QSORT(schema->attributes_by_msDS_IntId, schema->num_int_id_attr, dsdb_compare_attribute_by_msDS_IntId);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_oid, schema->num_attributes, dsdb_compare_attribute_by_attributeID_oid);
 	TYPESAFE_QSORT(schema->attributes_by_linkID, schema->num_attributes, dsdb_compare_attribute_by_linkID);
 
