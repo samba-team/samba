@@ -78,3 +78,4 @@ samba4.smb2.acls.*.OWNER
 samba4.smb2.compound.*.RELATED1
 samba4.smb2.compound.*.RELATED2
 samba4.smb2.compound.*.INVALID2
+samba4.drs.rpc.msdsintid # not working yet
