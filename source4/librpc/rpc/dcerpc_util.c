@@ -721,9 +721,9 @@ _PUBLIC_ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
   this triggers on a debug level of >= 10
 */
 _PUBLIC_ void dcerpc_log_packet(const char *lockdir,
-								const struct ndr_interface_table *ndr,
-		       uint32_t opnum, uint32_t flags, 
-		       DATA_BLOB *pkt)
+				const struct ndr_interface_table *ndr,
+				uint32_t opnum, uint32_t flags,
+				const DATA_BLOB *pkt)
 {
 	const int num_examples = 20;
 	int i;

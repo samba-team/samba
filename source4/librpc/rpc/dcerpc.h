@@ -360,9 +360,9 @@ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c,
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   struct dcerpc_binding *b);
 void dcerpc_log_packet(const char *lockdir, 
-					   const struct ndr_interface_table *ndr,
-					   uint32_t opnum, uint32_t flags, 
-					   DATA_BLOB *pkt);
+		       const struct ndr_interface_table *ndr,
+		       uint32_t opnum, uint32_t flags,
+		       const DATA_BLOB *pkt);
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 				    const struct dcerpc_binding *binding,
 				    struct epm_tower *tower);
