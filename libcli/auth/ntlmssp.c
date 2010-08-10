@@ -124,8 +124,6 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	/* Woop Woop - unknown flag for Windows compatibility...
-	   What does this really do ? JRA. */
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
 	}
