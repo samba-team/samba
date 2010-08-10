@@ -1335,9 +1335,10 @@ def sync_calculated_attributes(samdb, names):
       :param samdb: An LDB object attached to the currently upgraded samdb
       :param names: Various key parameter about current provision.
    """
-   listAttrs = ["msDs-KeyVersionAttribute"]
+   listAttrs = ["msDs-KeyVersionNumber"]
    hash = search_constructed_attrs_stored(samdb, names.rootdn, listAttrs)
-   increment_calculated_keyversion_number(samdb, names.rootdn, hash)
+   increment_calculated_keyversion_number(samdb, names.rootdn,
+                                            hash["msDs-KeyVersionNumber"])
 
 def setup_path(file):
     return os.path.join(setup_dir, file)
@@ -1658,6 +1659,6 @@ if __name__ == '__main__':
     except StandardError, err:
         message(ERROR,"A problem has occured when trying to upgrade your provision,"
                       " a full backup is located at %s" % backupdir)
-        if opts.changeall:
+        if opts.debugall or opts.debugchange:
             (typ, val, tb) = sys.exc_info()
             traceback.print_exception(typ, val, tb)

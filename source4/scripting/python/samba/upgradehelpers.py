@@ -737,12 +737,12 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
     else:
         for e in entry:
             if hashDns.has_key(str(e.dn).lower()):
-                done = done + 1
                 val = e.get("msDs-KeyVersionNumber")
                 if not val:
                     continue
                 version = int(str(hashDns[str(e.dn).lower()]))
                 if int(str(val)) < version:
+                    done = done + 1
                     samdb.set_attribute_replmetadata_version(str(e.dn),
                                                               "unicodePwd",
                                                               version)
