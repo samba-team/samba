@@ -227,289 +227,6 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Do a directory listing, calling fn on each file found.
-****************************************************************************/
-
-int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
-			    void *), void *state)
-{
-#if 1
-	int max_matches = 1366; /* Match W2k - was 512. */
-#else
-	int max_matches = 512;
-#endif
-	int info_level;
-	char *p, *p2, *rdata_end;
-	char *mask = NULL;
-	struct file_info finfo;
-	int i;
-	char *dirlist = NULL;
-	int dirlist_len = 0;
-	int total_received = -1;
-	bool First = True;
-	int ff_searchcount=0;
-	int ff_eos=0;
-	int ff_dir_handle=0;
-	int loop_count = 0;
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int param_len, data_len;
-	uint16 setup;
-	char *param;
-	uint32 resume_key = 0;
-	TALLOC_CTX *frame = talloc_stackframe();
-	DATA_BLOB last_name_raw = data_blob_null;
-
-	/* NT uses SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
-	   OS/2 uses SMB_FIND_EA_SIZE. Both accept SMB_FIND_INFO_STANDARD. */
-	info_level = (cli->capabilities&CAP_NT_SMBS)?
-		SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
-
-	mask = SMB_STRDUP(Mask);
-	if (!mask) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	ZERO_STRUCT(finfo);
-
-	while (ff_eos == 0) {
-		size_t nlen = 2*(strlen(mask)+1);
-
-		loop_count++;
-		if (loop_count > 200) {
-			DEBUG(0,("Error: Looping in FIND_NEXT??\n"));
-			break;
-		}
-
-		param = SMB_MALLOC_ARRAY(char, 12+nlen+last_name_raw.length+2);
-		if (!param) {
-			break;
-		}
-
-		if (First) {
-			setup = TRANSACT2_FINDFIRST;
-			SSVAL(param,0,attribute); /* attribute */
-			SSVAL(param,2,max_matches); /* max count */
-			SSVAL(param,4,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
-			SSVAL(param,6,info_level);
-			SIVAL(param,8,0);
-			p = param+12;
-			p += clistr_push(cli, param+12, mask,
-					 nlen, STR_TERMINATE);
-		} else {
-			setup = TRANSACT2_FINDNEXT;
-			SSVAL(param,0,ff_dir_handle);
-			SSVAL(param,2,max_matches); /* max count */
-			SSVAL(param,4,info_level);
-			/* For W2K servers serving out FAT filesystems we *must* set the
-			   resume key. If it's not FAT then it's returned as zero. */
-			SIVAL(param,6,resume_key); /* ff_resume_key */
-			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
-			   can miss filenames. Use last filename continue instead. JRA */
-			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
-			p = param+12;
-			if (last_name_raw.length) {
-				memcpy(p, last_name_raw.data, last_name_raw.length);
-				p += last_name_raw.length;
-			} else {
-				p += clistr_push(cli, param+12, mask,
-						nlen, STR_TERMINATE);
-			}
-		}
-
-		param_len = PTR_DIFF(p, param);
-
-		if (!cli_send_trans(cli, SMBtrans2,
-				    NULL,                   /* Name */
-				    -1, 0,                  /* fid, flags */
-				    &setup, 1, 0,           /* setup, length, max */
-				    param, param_len, 10,   /* param, length, max */
-				    NULL, 0,
-#if 0
-				    /* w2k value. */
-				    MIN(16384,cli->max_xmit) /* data, length, max. */
-#else
-				    cli->max_xmit	    /* data, length, max. */
-#endif
-				    )) {
-			SAFE_FREE(param);
-			TALLOC_FREE(frame);
-			break;
-		}
-
-		SAFE_FREE(param);
-
-		if (!cli_receive_trans(cli, SMBtrans2,
-				       &rparam, &param_len,
-				       &rdata, &data_len) &&
-                    cli_is_dos_error(cli)) {
-			/* We need to work around a Win95 bug - sometimes
-			   it gives ERRSRV/ERRerror temprarily */
-			uint8 eclass;
-			uint32 ecode;
-
-			SAFE_FREE(rdata);
-			SAFE_FREE(rparam);
-
-			cli_dos_error(cli, &eclass, &ecode);
-
-			/*
-			 * OS/2 might return "no more files",
-			 * which just tells us, that searchcount is zero
-			 * in this search.
-			 * Guenter Kukkukk <linux@kukkukk.com>
-			 */
-
-			if (eclass == ERRDOS && ecode == ERRnofiles) {
-				ff_searchcount = 0;
-				cli_reset_error(cli);
-				break;
-			}
-
-			if (eclass != ERRSRV || ecode != ERRerror)
-				break;
-			smb_msleep(100);
-			continue;
-		}
-
-                if (cli_is_error(cli) || !rdata || !rparam) {
-			SAFE_FREE(rdata);
-			SAFE_FREE(rparam);
-			break;
-		}
-
-		if (total_received == -1)
-			total_received = 0;
-
-		/* parse out some important return info */
-		p = rparam;
-		if (First) {
-			ff_dir_handle = SVAL(p,0);
-			ff_searchcount = SVAL(p,2);
-			ff_eos = SVAL(p,4);
-		} else {
-			ff_searchcount = SVAL(p,0);
-			ff_eos = SVAL(p,2);
-		}
-
-		if (ff_searchcount == 0) {
-			SAFE_FREE(rdata);
-			SAFE_FREE(rparam);
-			break;
-		}
-
-		/* point to the data bytes */
-		p = rdata;
-		rdata_end = rdata + data_len;
-
-		/* we might need the lastname for continuations */
-		for (p2=p,i=0;i<ff_searchcount && p2 < rdata_end;i++) {
-			if ((info_level == SMB_FIND_FILE_BOTH_DIRECTORY_INFO) &&
-					(i == ff_searchcount-1)) {
-				/* Last entry - fixup the last offset length. */
-				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
-			}
-			p2 += interpret_long_filename(frame,
-							cli,
-							info_level,
-							cli->inbuf,
-							SVAL(cli->inbuf, smb_flg2),
-							p2,
-							rdata_end,
-							&finfo,
-							&resume_key,
-							&last_name_raw);
-
-			if (!finfo.name) {
-				DEBUG(0,("cli_list_new: Error: unable to parse name from info level %d\n",
-					info_level));
-				ff_eos = 1;
-				break;
-			}
-			if (!First && *mask && strcsequal(finfo.name, mask)) {
-				DEBUG(0,("Error: Looping in FIND_NEXT as name %s has already been seen?\n",
-					finfo.name));
-				ff_eos = 1;
-				break;
-			}
-		}
-
-		SAFE_FREE(mask);
-		if (ff_searchcount > 0 && ff_eos == 0 && finfo.name) {
-			mask = SMB_STRDUP(finfo.name);
-		} else {
-			mask = SMB_STRDUP("");
-		}
-		if (!mask) {
-			SAFE_FREE(rdata);
-			SAFE_FREE(rparam);
-			break;
-		}
-
-		/* grab the data for later use */
-		/* and add them to the dirlist pool */
-		dirlist = (char *)SMB_REALLOC(dirlist,dirlist_len + data_len);
-
-		if (!dirlist) {
-			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
-			SAFE_FREE(rdata);
-			SAFE_FREE(rparam);
-			break;
-		}
-
-		memcpy(dirlist+dirlist_len,p,data_len);
-		dirlist_len += data_len;
-
-		total_received += ff_searchcount;
-
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-
-		DEBUG(3,("received %d entries (eos=%d)\n",
-			 ff_searchcount,ff_eos));
-
-		if (ff_searchcount > 0)
-			loop_count = 0;
-
-		First = False;
-	}
-
-        /* see if the server disconnected or the connection otherwise failed */
-        if (cli_is_error(cli)) {
-                total_received = -1;
-        } else {
-                /* no connection problem.  let user function add each entry */
-		rdata_end = dirlist + dirlist_len;
-                for (p=dirlist,i=0;i<total_received;i++) {
-                        p += interpret_long_filename(frame,
-							cli,
-							info_level,
-							cli->inbuf,
-							SVAL(cli->inbuf, smb_flg2),
-							p,
-							rdata_end,
-							&finfo,
-							NULL,
-							NULL);
-			if (!finfo.name) {
-				DEBUG(0,("cli_list_new: unable to parse name from info level %d\n",
-					info_level));
-				break;
-			}
-                        fn(cli->dfs_mountpoint, &finfo, Mask, state);
-                }
-        }
-
-	/* free up the dirlist buffer and last name raw blob */
-	SAFE_FREE(dirlist);
-	data_blob_free(&last_name_raw);
-	SAFE_FREE(mask);
-	TALLOC_FREE(frame);
-	return(total_received);
-}
-
-/****************************************************************************
  Interpret a short filename structure.
  The length of the structure is returned.
 ****************************************************************************/
@@ -549,163 +266,697 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	return true;
 }
 
-/****************************************************************************
- Do a directory listing, calling fn on each file found.
- this uses the old SMBsearch interface. It is needed for testing Samba,
- but should otherwise not be used.
-****************************************************************************/
+struct cli_list_old_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t vwv[2];
+	char *mask;
+	int num_asked;
+	uint16_t attribute;
+	uint8_t search_status[23];
+	bool first;
+	bool done;
+	uint8_t *dirlist;
+};
 
-int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
-			    void *), void *state)
+static void cli_list_old_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    const char *mask,
+					    uint16_t attribute)
 {
-	char *p;
-	int received = 0;
-	bool first = True;
-	char status[21];
-	int num_asked = (cli->max_xmit - 100)/DIR_STRUCT_SIZE;
-	int num_received = 0;
-	int i;
-	char *dirlist = NULL;
-	char *mask = NULL;
-	TALLOC_CTX *frame = NULL;
+	struct tevent_req *req, *subreq;
+	struct cli_list_old_state *state;
+	uint8_t *bytes;
+	static const uint16_t zero = 0;
 
-	ZERO_ARRAY(status);
+	req = tevent_req_create(mem_ctx, &state, struct cli_list_old_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->attribute = attribute;
+	state->first = true;
+	state->mask = talloc_strdup(state, mask);
+	if (tevent_req_nomem(state->mask, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->num_asked = (cli->max_xmit - 100) / DIR_STRUCT_SIZE;
 
-	mask = SMB_STRDUP(Mask);
-	if (!mask) {
-		return -1;
+	SSVAL(state->vwv + 0, 0, state->num_asked);
+	SSVAL(state->vwv + 1, 0, state->attribute);
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), mask,
+				   strlen(mask)+1, NULL);
+
+	bytes = smb_bytes_push_bytes(bytes, 5, (uint8_t *)&zero, 2);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	while (1) {
-		memset(cli->outbuf,'\0',smb_size);
-		memset(cli->inbuf,'\0',smb_size);
-
-		cli_set_message(cli->outbuf,2,0,True);
-
-		SCVAL(cli->outbuf,smb_com,SMBsearch);
-
-		SSVAL(cli->outbuf,smb_tid,cli->cnum);
-		cli_setup_packet(cli);
-
-		SSVAL(cli->outbuf,smb_vwv0,num_asked);
-		SSVAL(cli->outbuf,smb_vwv1,attribute);
-
-		p = smb_buf(cli->outbuf);
-		*p++ = 4;
-
-		p += clistr_push(cli, p, first?mask:"",
-				cli->bufsize - PTR_DIFF(p,cli->outbuf),
-				STR_TERMINATE);
-		*p++ = 5;
-		if (first) {
-			SSVAL(p,0,0);
-			p += 2;
-		} else {
-			SSVAL(p,0,21);
-			p += 2;
-			memcpy(p,status,21);
-			p += 21;
-		}
-
-		cli_setup_bcc(cli, p);
-		cli_send_smb(cli);
-		if (!cli_receive_smb(cli)) break;
-
-		received = SVAL(cli->inbuf,smb_vwv0);
-		if (received <= 0) break;
-
-		/* Ensure we received enough data. */
-		if ((cli->inbuf+4+smb_len(cli->inbuf) - (smb_buf(cli->inbuf)+3)) <
-				received*DIR_STRUCT_SIZE) {
-			break;
-		}
-
-		first = False;
-
-		dirlist = (char *)SMB_REALLOC(
-			dirlist,(num_received + received)*DIR_STRUCT_SIZE);
-		if (!dirlist) {
-			DEBUG(0,("cli_list_old: failed to expand dirlist"));
-			SAFE_FREE(mask);
-			return 0;
-		}
-
-		p = smb_buf(cli->inbuf) + 3;
-
-		memcpy(dirlist+num_received*DIR_STRUCT_SIZE,
-		       p,received*DIR_STRUCT_SIZE);
-
-		memcpy(status,p + ((received-1)*DIR_STRUCT_SIZE),21);
-
-		num_received += received;
-
-		if (cli_is_error(cli)) break;
+	subreq = cli_smb_send(state, state->ev, state->cli, SMBsearch,
+			      0, 2, state->vwv, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-
-	if (!first) {
-		memset(cli->outbuf,'\0',smb_size);
-		memset(cli->inbuf,'\0',smb_size);
-
-		cli_set_message(cli->outbuf,2,0,True);
-		SCVAL(cli->outbuf,smb_com,SMBfclose);
-		SSVAL(cli->outbuf,smb_tid,cli->cnum);
-		cli_setup_packet(cli);
-
-		SSVAL(cli->outbuf, smb_vwv0, 0); /* find count? */
-		SSVAL(cli->outbuf, smb_vwv1, attribute);
-
-		p = smb_buf(cli->outbuf);
-		*p++ = 4;
-		fstrcpy(p, "");
-		p += strlen(p) + 1;
-		*p++ = 5;
-		SSVAL(p, 0, 21);
-		p += 2;
-		memcpy(p,status,21);
-		p += 21;
-
-		cli_setup_bcc(cli, p);
-		cli_send_smb(cli);
-		if (!cli_receive_smb(cli)) {
-			DEBUG(0,("Error closing search: %s\n",cli_errstr(cli)));
-		}
-	}
-
-	frame = talloc_stackframe();
-	for (p=dirlist,i=0;i<num_received;i++) {
-		struct file_info finfo;
-		if (!interpret_short_filename(frame, cli, p, &finfo)) {
-			break;
-		}
-		p += DIR_STRUCT_SIZE;
-		fn("\\", &finfo, Mask, state);
-	}
-	TALLOC_FREE(frame);
-
-	SAFE_FREE(mask);
-	SAFE_FREE(dirlist);
-	return(num_received);
+	tevent_req_set_callback(subreq, cli_list_old_done, req);
+	return req;
 }
 
-/****************************************************************************
- Do a directory listing, calling fn on each file found.
- This auto-switches between old and new style.
-****************************************************************************/
+static void cli_list_old_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_list_old_state *state = tevent_req_data(
+		req, struct cli_list_old_state);
+	NTSTATUS status;
+	uint8_t cmd;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint32_t num_bytes;
+	uint8_t *bytes;
+	uint16_t received;
+	size_t dirlist_len;
+	uint8_t *tmp;
 
-NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
+	status = cli_smb_recv(subreq, state, NULL, 0, &wct, &vwv, &num_bytes,
+			      &bytes);
+	if (!NT_STATUS_IS_OK(status)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRnofiles))
+	    && !NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRnofiles))
+	    || NT_STATUS_EQUAL(status, STATUS_NO_MORE_FILES)) {
+		received = 0;
+	} else {
+		if (wct < 1) {
+			TALLOC_FREE(subreq);
+			tevent_req_nterror(
+				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		received = SVAL(vwv + 0, 0);
+	}
+
+	if (received > 0) {
+		/*
+		 * I don't think this can wrap. received is
+		 * initialized from a 16-bit value.
+		 */
+		if (num_bytes < (received * DIR_STRUCT_SIZE + 3)) {
+			TALLOC_FREE(subreq);
+			tevent_req_nterror(
+				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		dirlist_len = talloc_get_size(state->dirlist);
+
+		tmp = TALLOC_REALLOC_ARRAY(
+			state, state->dirlist, uint8_t,
+			dirlist_len + received * DIR_STRUCT_SIZE);
+		if (tevent_req_nomem(tmp, req)) {
+			return;
+		}
+		state->dirlist = tmp;
+		memcpy(state->dirlist + dirlist_len, bytes + 3,
+		       received * DIR_STRUCT_SIZE);
+
+		SSVAL(state->search_status, 0, 21);
+		memcpy(state->search_status + 2,
+		       bytes + 3 + (received-1)*DIR_STRUCT_SIZE, 21);
+		cmd = SMBsearch;
+	} else {
+		if (state->first || state->done) {
+			tevent_req_done(req);
+			return;
+		}
+		state->done = true;
+		state->num_asked = 0;
+		cmd = SMBfclose;
+	}
+	TALLOC_FREE(subreq);
+
+	state->first = false;
+
+	SSVAL(state->vwv + 0, 0, state->num_asked);
+	SSVAL(state->vwv + 1, 0, state->attribute);
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(state->cli), "",
+				   1, NULL);
+	bytes = smb_bytes_push_bytes(bytes, 5, state->search_status,
+				     sizeof(state->search_status));
+	if (tevent_req_nomem(bytes, req)) {
+		return;
+	}
+	subreq = cli_smb_send(state, state->ev, state->cli, cmd, 0,
+			      2, state->vwv, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_list_old_done, req);
+}
+
+static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				  struct file_info **pfinfo)
+{
+	struct cli_list_old_state *state = tevent_req_data(
+		req, struct cli_list_old_state);
+	NTSTATUS status;
+	size_t i, num_received;
+	struct file_info *finfo;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	num_received = talloc_array_length(state->dirlist) / DIR_STRUCT_SIZE;
+
+	finfo = TALLOC_ARRAY(mem_ctx, struct file_info, num_received);
+	if (finfo == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_received; i++) {
+		if (!interpret_short_filename(
+			    finfo, state->cli,
+			    (char *)state->dirlist + i * DIR_STRUCT_SIZE,
+			    &finfo[i])) {
+			TALLOC_FREE(finfo);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	*pfinfo = finfo;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
+		      uint16 attribute,
+		      void (*fn)(const char *, struct file_info *,
+				 const char *, void *), void *state)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct file_info *finfo;
+	size_t i, num_finfo;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_list_old_send(frame, ev, cli, mask, attribute);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+	status = cli_list_old_recv(req, frame, &finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	num_finfo = talloc_array_length(finfo);
+	for (i=0; i<num_finfo; i++) {
+		fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+	}
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
+struct cli_list_trans_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	char *mask;
+	uint16_t attribute;
+	uint16_t info_level;
+
+	int loop_count;
+	int total_received;
+	uint16_t max_matches;
+	bool first;
+
+	int ff_eos;
+	int ff_dir_handle;
+
+	uint16_t setup[1];
+	uint8_t *param;
+
+	struct file_info *finfo;
+};
+
+static void cli_list_trans_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli,
+					      const char *mask,
+					      uint16_t attribute,
+					      uint16_t info_level)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_list_trans_state *state;
+	size_t nlen, param_len;
+	char *p;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_list_trans_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->mask = talloc_strdup(state, mask);
+	if (tevent_req_nomem(state->mask, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->attribute = attribute;
+	state->info_level = info_level;
+	state->loop_count = 0;
+	state->first = true;
+
+	state->max_matches = 1366; /* Match W2k */
+
+	state->setup[0] = TRANSACT2_FINDFIRST;
+
+	nlen = 2*(strlen(mask)+1);
+	state->param = TALLOC_ARRAY(state, uint8_t, 12+nlen+2);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	SSVAL(state->param, 0, state->attribute);
+	SSVAL(state->param, 2, state->max_matches);
+	SSVAL(state->param, 4,
+	      FLAG_TRANS2_FIND_REQUIRE_RESUME
+	      |FLAG_TRANS2_FIND_CLOSE_IF_END);
+	SSVAL(state->param, 6, state->info_level);
+	SIVAL(state->param, 8, 0);
+
+	p = ((char *)state->param)+12;
+	p += clistr_push(state->cli, p, state->mask, nlen,
+			 STR_TERMINATE);
+	param_len = PTR_DIFF(p, state->param);
+
+	subreq = cli_trans_send(state, state->ev, state->cli,
+				SMBtrans2, NULL, -1, 0, 0,
+				state->setup, 1, 0,
+				state->param, param_len, 10,
+				NULL, 0, cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_list_trans_done, req);
+	return req;
+}
+
+static void cli_list_trans_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_list_trans_state *state = tevent_req_data(
+		req, struct cli_list_trans_state);
+	NTSTATUS status;
+	uint8_t *param;
+	uint32_t num_param;
+	uint8_t *data;
+	char *data_end;
+	uint32_t num_data;
+	uint32_t min_param;
+	struct file_info *tmp;
+	size_t old_num_finfo;
+	uint16_t recv_flags2;
+	int ff_searchcount;
+	bool ff_eos;
+	char *p, *p2;
+	uint32_t resume_key;
+	int i;
+	DATA_BLOB last_name_raw;
+	struct file_info *finfo;
+	size_t nlen, param_len;
+
+	min_param = (state->first ? 6 : 4);
+
+	status = cli_trans_recv(subreq, talloc_tos(), &recv_flags2,
+				NULL, 0, NULL,
+				&param, min_param, &num_param,
+				&data, 0, &num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * TODO: retry, OS/2 nofiles
+		 */
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (state->first) {
+		state->ff_dir_handle = SVAL(param, 0);
+		ff_searchcount = SVAL(param, 2);
+		ff_eos = SVAL(param, 4) != 0;
+	} else {
+		ff_searchcount = SVAL(param, 0);
+		ff_eos = SVAL(param, 2) != 0;
+	}
+
+	old_num_finfo = talloc_array_length(state->finfo);
+
+	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+				   old_num_finfo + ff_searchcount);
+	if (tevent_req_nomem(tmp, req)) {
+		return;
+	}
+	state->finfo = tmp;
+
+	p2 = p = (char *)data;
+	data_end = (char *)data + num_data;
+	last_name_raw = data_blob_null;
+
+	for (i=0; i<ff_searchcount; i++) {
+		if (p2 >= data_end) {
+			ff_eos = true;
+			break;
+		}
+		if ((state->info_level == SMB_FIND_FILE_BOTH_DIRECTORY_INFO)
+		    && (i == ff_searchcount-1)) {
+			/* Last entry - fixup the last offset length. */
+			SIVAL(p2, 0, PTR_DIFF((data + num_data), p2));
+		}
+
+		data_blob_free(&last_name_raw);
+
+		finfo = &state->finfo[old_num_finfo + i];
+
+		p2 += interpret_long_filename(
+			state->finfo, /* Stick fname to the array as such */
+			state->cli, state->info_level,
+			(char *)data, recv_flags2, p2,
+			data_end, finfo, &resume_key, &last_name_raw);
+
+		if (finfo->name == NULL) {
+			DEBUG(1, ("cli_list: Error: unable to parse name from "
+				  "info level %d\n", state->info_level));
+			ff_eos = true;
+			break;
+		}
+		if (!state->first && (state->mask[0] != '\0') &&
+		    strcsequal(finfo->name, state->mask)) {
+			DEBUG(1, ("Error: Looping in FIND_NEXT as name %s has "
+				  "already been seen?\n", finfo->name));
+			ff_eos = true;
+			break;
+		}
+	}
+
+	if (ff_searchcount == 0) {
+		ff_eos = true;
+	}
+
+	TALLOC_FREE(param);
+	TALLOC_FREE(data);
+
+	/*
+	 * Shrink state->finfo to the real length we received
+	 */
+	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+				   old_num_finfo + i);
+	if (tevent_req_nomem(tmp, req)) {
+		return;
+	}
+	state->finfo = tmp;
+
+	state->first = false;
+
+	if (ff_eos) {
+		data_blob_free(&last_name_raw);
+		tevent_req_done(req);
+		return;
+	}
+
+	TALLOC_FREE(state->mask);
+	state->mask = talloc_strdup(state, finfo->name);
+	if (tevent_req_nomem(state->mask, req)) {
+		return;
+	}
+
+	state->setup[0] = TRANSACT2_FINDNEXT;
+
+	nlen = 2*(strlen(state->mask) + 1);
+
+	param = TALLOC_REALLOC_ARRAY(state, state->param, uint8_t,
+				     12 + nlen + last_name_raw.length + 2);
+	if (tevent_req_nomem(param, req)) {
+		return;
+	}
+	state->param = param;
+
+	SSVAL(param, 0, state->ff_dir_handle);
+	SSVAL(param, 2, state->max_matches); /* max count */
+	SSVAL(param, 4, state->info_level);
+	/*
+	 * For W2K servers serving out FAT filesystems we *must* set
+	 * the resume key. If it's not FAT then it's returned as zero.
+	 */
+	SIVAL(param, 6, resume_key); /* ff_resume_key */
+	/*
+	 * NB. *DON'T* use continue here. If you do it seems that W2K
+	 * and bretheren can miss filenames. Use last filename
+	 * continue instead. JRA
+	 */
+	SSVAL(param, 10, (FLAG_TRANS2_FIND_REQUIRE_RESUME
+			  |FLAG_TRANS2_FIND_CLOSE_IF_END));
+	p = ((char *)param)+12;
+	if (last_name_raw.length) {
+		memcpy(p, last_name_raw.data, last_name_raw.length);
+		p += last_name_raw.length;
+		data_blob_free(&last_name_raw);
+	} else {
+		p += clistr_push(state->cli, p, state->mask, nlen,
+				 STR_TERMINATE);
+	}
+
+	param_len = PTR_DIFF(p, param);
+
+	subreq = cli_trans_send(state, state->ev, state->cli,
+				SMBtrans2, NULL, -1, 0, 0,
+				state->setup, 1, 0,
+				state->param, param_len, 10,
+				NULL, 0, state->cli->max_xmit);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_list_trans_done, req);
+}
+
+static NTSTATUS cli_list_trans_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct file_info **finfo)
+{
+	struct cli_list_trans_state *state = tevent_req_data(
+		req, struct cli_list_trans_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*finfo = talloc_move(mem_ctx, &state->finfo);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
+			uint16_t attribute, int info_level,
+			void (*fn)(const char *mnt, struct file_info *finfo,
+				   const char *mask, void *private_data),
+			void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	int i, num_finfo;
+	struct file_info *finfo;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_list_trans_send(frame, ev, cli, mask, attribute, info_level);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_list_trans_recv(req, frame, &finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	num_finfo = talloc_array_length(finfo);
+	for (i=0; i<num_finfo; i++) {
+		fn(cli->dfs_mountpoint, &finfo[i], mask, private_data);
+	}
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
+struct cli_list_state {
+	NTSTATUS (*recv_fn)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct file_info **finfo);
+	struct file_info *finfo;
+};
+
+static void cli_list_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct cli_state *cli,
+				 const char *mask,
+				 uint16_t attribute,
+				 uint16_t info_level)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_list_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_list_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (cli->protocol <= PROTOCOL_LANMAN1) {
+		subreq = cli_list_old_send(state, ev, cli, mask, attribute);
+		state->recv_fn = cli_list_old_recv;
+	} else {
+		subreq = cli_list_trans_send(state, ev, cli, mask, attribute,
+					     info_level);
+		state->recv_fn = cli_list_trans_recv;
+	}
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_list_done, req);
+	return req;
+}
+
+static void cli_list_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_list_state *state = tevent_req_data(
+		req, struct cli_list_state);
+	NTSTATUS status;
+
+	status = state->recv_fn(subreq, state, &state->finfo);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+		       struct file_info **finfo, size_t *num_finfo)
+{
+	struct cli_list_state *state = tevent_req_data(
+		req, struct cli_list_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*num_finfo = talloc_array_length(state->finfo);
+	*finfo = talloc_move(mem_ctx, &state->finfo);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 		  void (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state)
 {
-	int rec;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct file_info *finfo;
+	size_t i, num_finfo;
+	uint16_t info_level;
 
-	if (cli->protocol <= PROTOCOL_LANMAN1) {
-		rec = cli_list_old(cli, Mask, attribute, fn, state);
-	} else {
-		rec = cli_list_new(cli, Mask, attribute, fn, state);
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-	if (rec == -1) {
-		return cli_nt_error(cli);
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-	return NT_STATUS_OK;
+
+	info_level = (cli->capabilities & CAP_NT_SMBS)
+		? SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
+
+	req = cli_list_send(frame, ev, cli, mask, attribute, info_level);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_list_recv(req, frame, &finfo, &num_finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	for (i=0; i<num_finfo; i++) {
+		fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+	}
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }

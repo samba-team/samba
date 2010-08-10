@@ -263,11 +263,16 @@ static struct cli_state *connect_one(char *share)
 }
 
 static char *resultp;
-static struct file_info *f_info;
+
+struct rn_state {
+	char **pp_long_name;
+	char *short_name;
+};
 
 static void listfn(const char *mnt, struct file_info *f, const char *s,
-		   void *state)
+		   void *private_data)
 {
+	struct rn_state *state = (struct rn_state *)private_data;
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';
 	} else if (strcmp(f->name,"..") == 0) {
@@ -275,28 +280,38 @@ static void listfn(const char *mnt, struct file_info *f, const char *s,
 	} else {
 		resultp[2] = '+';
 	}
-	f_info = f;
+
+	if ((state == NULL) || ISDOT(f->name) || ISDOTDOT(f->name))  {
+		return;
+	}
+
+	fstrcpy(state->short_name, f->short_name);
+	strlower_m(state->short_name);
+	*state->pp_long_name = SMB_STRDUP(f->name);
+	if (!*state->pp_long_name) {
+		return;
+	}
+	strlower_m(*state->pp_long_name);
 }
 
 static void get_real_name(struct cli_state *cli,
 			  char **pp_long_name, fstring short_name)
 {
+	struct rn_state state;
+
+	state.pp_long_name = pp_long_name;
+	state.short_name = short_name;
+
 	*pp_long_name = NULL;
 	/* nasty hack to force level 260 listings - tridge */
-	cli->capabilities |= CAP_NT_SMBS;
 	if (max_protocol <= PROTOCOL_LANMAN1) {
-		cli_list_new(cli, "\\masktest\\*.*", aHIDDEN | aDIR, listfn, NULL);
+		cli_list_trans(cli, "\\masktest\\*.*", aHIDDEN | aDIR,
+			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO, listfn,
+			       &state);
 	} else {
-		cli_list_new(cli, "\\masktest\\*", aHIDDEN | aDIR, listfn, NULL);
-	}
-	if (f_info) {
-		fstrcpy(short_name, f_info->short_name);
-		strlower_m(short_name);
-		*pp_long_name = SMB_STRDUP(f_info->name);
-		if (!*pp_long_name) {
-			return;
-		}
-		strlower_m(*pp_long_name);
+		cli_list_trans(cli, "\\masktest\\*", aHIDDEN | aDIR,
+			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
+			       listfn, &state);
 	}
 
 	if (*short_name == 0) {
@@ -331,12 +346,10 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 
 	resultp = res1;
 	fstrcpy(short_name, "");
-	f_info = NULL;
 	get_real_name(cli, &long_name, short_name);
 	if (!long_name) {
 		return;
 	}
-	f_info = NULL;
 	fstrcpy(res1, "---");
 	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 

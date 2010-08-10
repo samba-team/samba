@@ -91,6 +91,26 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 			true, pconverted_size);
 }
 
+uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
+			      const uint8_t *bytes, size_t num_bytes)
+{
+	size_t buflen;
+
+	if (buf == NULL) {
+		return NULL;
+	}
+	buflen = talloc_get_size(buf);
+
+	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
+				   buflen + 1 + num_bytes);
+	if (buf == NULL) {
+		return NULL;
+	}
+	buf[buflen] = prefix;
+	memcpy(&buf[buflen+1], bytes, num_bytes);
+	return buf;
+}
+
 /***********************************************************
  Same as smb_bytes_push_str(), but without the odd byte
  align for ucs2 (we're pushing into a param or data block).

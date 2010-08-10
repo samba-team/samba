@@ -5183,7 +5183,8 @@ static bool run_dirtest1(int dummy)
 	}
 
 	/* Now ensure that doing an old list sees both files and directories. */
-	num_seen = cli_list_old(cli, "\\LISTDIR\\*", aDIR, list_fn, NULL);
+	num_seen = 0;
+	cli_list_old(cli, "\\LISTDIR\\*", aDIR, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	/* We should see 100 files + 1000 directories + . and .. */
 	if (num_seen != 2002)
@@ -5192,12 +5193,14 @@ static bool run_dirtest1(int dummy)
 	/* Ensure if we have the "must have" bits we only see the
 	 * relevent entries.
 	 */
-	num_seen = cli_list_old(cli, "\\LISTDIR\\*", (aDIR<<8)|aDIR, list_fn, NULL);
+	num_seen = 0;
+	cli_list_old(cli, "\\LISTDIR\\*", (aDIR<<8)|aDIR, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != 1002)
 		correct = False;
 
-	num_seen = cli_list_old(cli, "\\LISTDIR\\*", (aARCH<<8)|aDIR, list_fn, NULL);
+	num_seen = 0;
+	cli_list_old(cli, "\\LISTDIR\\*", (aARCH<<8)|aDIR, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != 1000)
 		correct = False;

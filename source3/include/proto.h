@@ -2070,6 +2070,8 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint16_t *pfid);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
+uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
+			      const uint8_t *bytes, size_t num_bytes);
 struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 				   struct event_context *ev,
 				   struct cli_state *cli, const char *fname,
@@ -2334,12 +2336,22 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 
 /* The following definitions come from libsmb/clilist.c  */
 
-int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
-			    void *), void *state);
-int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
-			    void *), void *state);
+NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
+		      void (*fn)(const char *, struct file_info *,
+				 const char *, void *), void *state);
+NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
+			uint16_t attribute, int info_level,
+			void (*fn)(const char *mnt, struct file_info *finfo,
+				   const char *mask, void *private_data),
+			void *private_data);
+struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct cli_state *cli,
+				 const char *mask,
+				 uint16_t attribute,
+				 uint16_t info_level);
+NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+		       struct file_info **finfo, size_t *num_finfo);
 NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		  void (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state);
