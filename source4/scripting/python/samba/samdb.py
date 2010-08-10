@@ -536,7 +536,7 @@ accountExpires: %u
         return None
 
 
-    def set_attribute_replmetadata_version(self, dn, att, value):
+    def set_attribute_replmetadata_version(self, dn, att, value, addifnotexist=False):
         res = self.search(expression="dn=%s" % dn,
                             scope=ldb.SCOPE_SUBTREE,
                             controls=["search_options:1:2"],
@@ -563,6 +563,23 @@ accountExpires: %u
                 o.originating_invocation_id = misc.GUID(self.get_invocation_id())
                 o.originating_usn = seq
                 o.local_usn = seq
+
+        if not found and addifnotexist and len(ctr.array) >0:
+            o2 = drsblobs.replPropertyMetaData1()
+            o2.attid = 589914
+            att_oid = self.get_oid_from_attid(o2.attid)
+            seq = self.sequence_number(ldb.SEQ_NEXT)
+            o2.version = value
+            o2.originating_change_time = now
+            o2.originating_invocation_id = misc.GUID(self.get_invocation_id())
+            o2.originating_usn = seq
+            o2.local_usn = seq
+            found = True
+            tab = ctr.array
+            tab.append(o2)
+            ctr.count = ctr.count + 1
+            ctr.array = tab
+
         if found :
             replBlob = ndr_pack(repl)
             msg = ldb.Message()

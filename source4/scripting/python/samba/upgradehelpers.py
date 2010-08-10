@@ -732,6 +732,7 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
                          scope=SCOPE_SUBTREE, attrs=["msDs-KeyVersionNumber"],
                          controls=["search_options:1:2"])
     done = 0
+    hashDone = {}
     if len(entry) == 0:
         raise ProvisioningError("Unable to find msDs-KeyVersionNumber")
     else:
@@ -739,7 +740,7 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
             if hashDns.has_key(str(e.dn).lower()):
                 val = e.get("msDs-KeyVersionNumber")
                 if not val:
-                    continue
+                    val = "0"
                 version = int(str(hashDns[str(e.dn).lower()]))
                 if int(str(val)) < version:
                     done = done + 1

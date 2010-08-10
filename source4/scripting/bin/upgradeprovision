@@ -1337,7 +1337,8 @@ def sync_calculated_attributes(samdb, names):
    """
    listAttrs = ["msDs-KeyVersionNumber"]
    hash = search_constructed_attrs_stored(samdb, names.rootdn, listAttrs)
-   increment_calculated_keyversion_number(samdb, names.rootdn,
+   if hash.has_key("msDs-KeyVersionNumber"):
+       increment_calculated_keyversion_number(samdb, names.rootdn,
                                             hash["msDs-KeyVersionNumber"])
 
 def setup_path(file):
