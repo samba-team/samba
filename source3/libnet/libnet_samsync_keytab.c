@@ -19,6 +19,9 @@
 */
 
 #include "includes.h"
+#include "smb_krb5.h"
+#include "ads.h"
+#include "libnet/libnet_keytab.h"
 #include "libnet/libnet_samsync.h"
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
