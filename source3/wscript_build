@@ -245,7 +245,8 @@ LIBSMB_SRC0 = '''
                ../libcli/auth/ntlmssp.c
                ../libcli/auth/ntlmssp_sign.c
                ${LIBNDR_NTLMSSP_SRC}
-               ../libcli/auth/ntlmssp_ndr.c'''
+               ../libcli/auth/ntlmssp_ndr.c
+	       ../libcli/auth/ntlmssp_server.c'''
 
 LIBSAMBA_SRC = '${LIBSMB_SRC0}'
 
