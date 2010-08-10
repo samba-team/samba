@@ -20,8 +20,8 @@ use strict;
 my %types = ();
 
 my @reference_scalars = (
-	"string", "string_array", "nbt_string", 
-	"wrepl_nbt_name", "ipv4address"
+	"string", "string_array", "nbt_string",
+	"wrepl_nbt_name", "ipv4address", "ipv6address"
 );
 
 # a list of known scalar types
@@ -57,6 +57,7 @@ my %scalars = (
 	"nbt_string"	=> "const char *",
 	"wrepl_nbt_name"=> "struct nbt_name *",
 	"ipv4address"	=> "const char *",
+	"ipv6address"   => "const char *",
 	"dnsp_name"	=> "const char *",
 );
 

@@ -831,7 +831,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ipv4address(struct ndr_push *ndr, int ndr_fl
 	uint32_t addr;
 	if (!is_ipaddress(address)) {
 		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
-				      "Invalid IPv4 address: '%s'", 
+				      "Invalid IPv4 address: '%s'",
 				      address);
 	}
 	addr = inet_addr(address);
@@ -842,12 +842,60 @@ _PUBLIC_ enum ndr_err_code ndr_push_ipv4address(struct ndr_push *ndr, int ndr_fl
 /*
   print a ipv4address
 */
-_PUBLIC_ void ndr_print_ipv4address(struct ndr_print *ndr, const char *name, 
+_PUBLIC_ void ndr_print_ipv4address(struct ndr_print *ndr, const char *name,
 			   const char *address)
 {
 	ndr->print(ndr, "%-25s: %s", name, address);
 }
 
+/*
+  pull a ipv6address
+*/
+#define IPV6_BYTES 16
+#define IPV6_ADDR_STR_LEN 39
+_PUBLIC_ enum ndr_err_code ndr_pull_ipv6address(struct ndr_pull *ndr, int ndr_flags, const char **address)
+{
+	uint8_t addr[IPV6_BYTES];
+	char *addr_str = talloc_strdup(ndr->current_mem_ctx, "");
+	int i;
+	NDR_CHECK(ndr_pull_array_uint8(ndr, ndr_flags, addr, IPV6_BYTES));
+	for (i = 0; i < IPV6_BYTES; ++i) {
+		addr_str = talloc_asprintf_append(addr_str, "%02x", addr[i]);
+		/* We need a ':' every second byte but the last one */
+		if (i%2 == 1 && i != (IPV6_BYTES - 1)) {
+			addr_str = talloc_strdup_append(addr_str, ":");
+		}
+	}
+	*address = addr_str;
+	NDR_ERR_HAVE_NO_MEMORY(*address);
+	return NDR_ERR_SUCCESS;
+}
+
+/*
+  push a ipv6address
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_ipv6address(struct ndr_push *ndr, int ndr_flags, const char *address)
+{
+	uint32_t addr;
+	if (!is_ipaddress(address)) {
+		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
+				      "Invalid IPv6 address: '%s'",
+				      address);
+	}
+	addr = inet_addr(address);
+	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
+	return NDR_ERR_SUCCESS;
+}
+
+/*
+  print a ipv6address
+*/
+_PUBLIC_ void ndr_print_ipv6address(struct ndr_print *ndr, const char *name,
+			   const char *address)
+{
+	ndr->print(ndr, "%-25s: %s", name, address);
+}
+#undef IPV6_BYTES
 
 _PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {

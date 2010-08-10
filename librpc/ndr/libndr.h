@@ -493,6 +493,7 @@ NDR_SCALAR_PROTO(NTTIME_1sec, NTTIME)
 NDR_SCALAR_PROTO(NTTIME_hyper, NTTIME)
 NDR_SCALAR_PROTO(DATA_BLOB, DATA_BLOB)
 NDR_SCALAR_PROTO(ipv4address, const char *)
+NDR_SCALAR_PROTO(ipv6address, const char *)
 NDR_SCALAR_PROTO(string, const char *)
 NDR_SCALAR_PROTO(double, double)
 
