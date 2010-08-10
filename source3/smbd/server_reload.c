@@ -44,7 +44,7 @@ void reload_printers(struct messaging_context *msg_ctx)
 
 	status = make_server_info_system(talloc_tos(), &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("reload_printers: "
+		DEBUG(3, ("reload_printers: "
 			  "Could not create system server_info\n"));
 		/* can't remove stale printers before we
 		 * are fully initilized */

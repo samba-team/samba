@@ -982,8 +982,17 @@ extern void build_options(bool screen);
 	if (smbd_messaging_context() == NULL)
 		exit(1);
 
-	if (!reload_services(smbd_messaging_context(), False))
-		return(-1);	
+	/*
+	 * Reloading of the printers will not work here as we don't have a
+	 * server info and rpc services set up. It will be called later.
+	 */
+	if (!reload_services(smbd_messaging_context(), False)) {
+		exit(1);
+	}
+
+	/* ...NOTE... Log files are working from this point! */
+
+	DEBUG(3,("loaded services\n"));
 
 	init_structs();
 
@@ -1001,8 +1010,6 @@ extern void build_options(bool screen);
 		set_profile_level(pl, src);
 	}
 #endif
-
-	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
 		if (!interactive)
@@ -1155,6 +1162,9 @@ extern void build_options(bool screen);
 	}
 
 	static_init_rpc;
+
+	/* Publish nt printers, this requires a working winreg pipe */
+	reload_printers(smbd_messaging_context());
 
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
