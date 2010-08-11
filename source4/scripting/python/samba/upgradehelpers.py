@@ -746,27 +746,29 @@ def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
                     done = done + 1
                     samdb.set_attribute_replmetadata_version(str(e.dn),
                                                               "unicodePwd",
-                                                              version)
-
-def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
+                                                              version, True)
+def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
     """Update the provision container db: sam.ldb
     This function is aimed for alpha9 and newer;
 
-    :param refsam: Path to the samdb in the reference provision
-    :param sam: Path to the samdb in the upgraded provision
+    :param refsampath: Path to the samdb in the reference provision
+    :param sampath: Path to the samdb in the upgraded provision
     :param creds: Credential used for openning LDB files
     :param session: Session to use for openning LDB files
-    :param lp: A loadparam object"""
+    :param lp: A loadparam object
+    :return: A msg_diff object with the difference between the @ATTRIBUTES
+             of the current provision and the reference provision
+    """
 
     message(SIMPLE,
             "Update base samdb by searching difference with reference one")
-    refsam = Ldb(refsam, session_info=session, credentials=creds,
+    refsam = Ldb(refsampath, session_info=session, credentials=creds,
                     lp=lp, options=["modules:"])
-    sam = Ldb(sam, session_info=session, credentials=creds, lp=lp,
+    sam = Ldb(sampath, session_info=session, credentials=creds, lp=lp,
                 options=["modules:"])
 
     empty = ldb.Message()
-
+    deltaattr = None
     reference = refsam.search(expression="")
 
     for refentry in reference:
@@ -782,6 +784,8 @@ def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
             sam.add(delta)
         else:
             delta = sam.msg_diff(entry[0], refentry)
+            if str(refentry.dn) == "@ATTRIBUTES":
+                deltaattr = sam.msg_diff(refentry, entry[0])
             if str(refentry.dn) == "@PROVISION" and\
                 delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
                 delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
@@ -789,6 +793,7 @@ def delta_update_basesamdb(refsam, sam, creds, session, lp, message):
                 delta.dn = refentry.dn
                 sam.modify(delta)
 
+    return deltaattr
 
 def construct_existor_expr(attrs):
     """Construct a exists or LDAP search expression.
