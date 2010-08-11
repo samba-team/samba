@@ -613,40 +613,31 @@ static struct loadparm_context *global_loadparm_context;
 #define lpcfg_global_service(i) global_loadparm_context->services[i]
 
 #define FN_GLOBAL_STRING(fn_name,var_name) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : "";} \
- _PUBLIC_ const char *lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_string(lp_ctx->globals->var_name) : "";}
 
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_ctx->globals->var_name : "";} \
- _PUBLIC_ const char *lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name ? lp_ctx->globals->var_name : "";}
 
 #define FN_GLOBAL_LIST(fn_name,var_name) \
- _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name;} \
- _PUBLIC_ const char **lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+ _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return NULL; return lp_ctx->globals->var_name;}
 
 #define FN_GLOBAL_BOOL(fn_name,var_name) \
- _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->globals->var_name;} \
- _PUBLIC_ bool lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+ _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {if (lp_ctx == NULL) return false; return lp_ctx->globals->var_name;}
 
 #define FN_GLOBAL_INTEGER(fn_name,var_name) \
- _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;} \
- _PUBLIC_ int lp_ ## fn_name(void) { return lpcfg_ ## fn_name(global_loadparm_context); }
+ _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)));} \
- _PUBLIC_ const char *lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+ _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)));}
 
 #define FN_LOCAL_LIST(fn_name,val) \
- _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val);} \
- _PUBLIC_ const char **lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+ _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val);}
 
 #define FN_LOCAL_BOOL(fn_name,val) \
- _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);} \
- _PUBLIC_ bool lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+ _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
 
 #define FN_LOCAL_INTEGER(fn_name,val) \
- _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);} \
- _PUBLIC_ int lp_ ## fn_name(int i) { return lpcfg_ ## fn_name(lpcfg_global_service(i), lpcfg_default_service); }
+ _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
 
 FN_GLOBAL_INTEGER(server_role, server_role)
 FN_GLOBAL_INTEGER(sid_generator, sid_generator)
