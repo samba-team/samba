@@ -128,7 +128,7 @@ sub handle_loadparm($$)
 {
 	my ($file,$line) = @_;
 
-	if ($line =~ /^_PUBLIC_ FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
+	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
 		my $scope = $1;
 		my $type = $2;
 		my $name = $3;
@@ -147,7 +147,7 @@ sub handle_loadparm($$)
 			    "LOCAL" => "struct loadparm_service *, struct loadparm_service *"
 			    );
 
-		$file->("$tmap{$type}$name($smap{$scope});\n");
+		$file->("$tmap{$type}lpcfg_$name($smap{$scope});\n");
 	}
 }
 
@@ -190,7 +190,7 @@ sub process_file($$$)
 
 		next if ($line =~ /^\/|[;]/);
 
-		if ($line =~ /^_PUBLIC_ FN_/) {
+		if ($line =~ /^FN_/) {
 			handle_loadparm($public_file, $line);
 			handle_loadparm($private_file, $line);
 			next;

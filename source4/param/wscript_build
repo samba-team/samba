@@ -6,7 +6,8 @@ bld.SAMBA_LIBRARY('LIBSAMBA-HOSTCONFIG',
 	vnum='0.0.1',
 	deps='DYNCONFIG CHARSET',
 	public_deps='LIBSAMBA-UTIL',
-	public_headers='param.h'
+	public_headers='param.h',
+        autoproto='param_proto.h'                 
 	)
 
 
