@@ -542,11 +542,14 @@ return 0;
                         headers='krb5.h stdlib.h', lib='krb5',
                         addmain=False, cflags='-Werror',
                         msg="Checking whether krb5_enctype_to_string takes krb5_context argument")
+        conf.DEFINE('HAVE_KRB5', '1')
 
     else:
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
+        conf.SET_TARGET_TYPE('com_err', 'EMPTY')
+        conf.SET_TARGET_TYPE('k5crypto', 'EMPTY')
 
     if Options.options.with_utmp:
         conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx getutxent')
