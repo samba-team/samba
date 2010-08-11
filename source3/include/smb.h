@@ -905,6 +905,7 @@ struct parm_struct {
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
 #define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
 #define FLAG_META	0x8000 /* A meta directive - not a real parameter */
+#define FLAG_CMDLINE	0x10000 /* option has been overridden */
 
 struct bitmap {
 	uint32 *b;

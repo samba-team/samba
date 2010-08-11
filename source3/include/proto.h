@@ -3605,6 +3605,8 @@ const char *lp_ldap_group_suffix(void);
 const char *lp_ldap_idmap_suffix(void);
 void *lp_local_ptr_by_snum(int snum, void *ptr);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);
+bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
+bool lp_set_option(const char *option);
 void init_locals(void);
 bool lp_is_default(int snum, struct parm_struct *parm);
 bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);

@@ -117,6 +117,7 @@ struct param_opt_struct {
 	char *key;
 	char *value;
 	char **list;
+	unsigned flags;
 };
 
 /*
@@ -705,6 +706,7 @@ static void set_allowed_client_auth(void);
 static void *lp_local_ptr(struct service *service, void *ptr);
 
 static void add_to_file_list(const char *fname, const char *subfname);
+static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2, "SMB2"},
@@ -4944,6 +4946,67 @@ static void free_global_parameters(void)
 	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
 }
 
+static int map_parameter(const char *pszParmName);
+
+struct lp_stored_option {
+	struct lp_stored_option *prev, *next;
+	const char *label;
+	const char *value;
+};
+
+static struct lp_stored_option *stored_options;
+
+/*
+  save options set by lp_set_cmdline() into a list. This list is
+  re-applied when we do a globals reset, so that cmdline set options
+  are sticky across reloads of smb.conf
+ */
+static bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
+{
+	struct lp_stored_option *entry = NULL;
+	for (entry = stored_options; entry != NULL; entry = entry->next) {
+		if (strcmp(pszParmName, entry->label) == 0) {
+			DLIST_REMOVE(stored_options, entry);
+			talloc_free(entry);
+			break;
+		}
+	}
+
+	entry = talloc(NULL, struct lp_stored_option);
+	if (!entry) {
+		return false;
+	}
+
+	entry->label = talloc_strdup(entry, pszParmName);
+	if (!entry->label) {
+		talloc_free(entry);
+		return false;
+	}
+
+	entry->value = talloc_strdup(entry, pszParmValue);
+	if (!entry->value) {
+		talloc_free(entry);
+		return false;
+	}
+
+	DLIST_ADD_END(stored_options, entry, struct lp_stored_option);
+
+	return true;
+}
+
+static bool apply_lp_set_cmdline(void)
+{
+	struct lp_stored_option *entry = NULL;
+	for (entry = stored_options; entry != NULL; entry = entry->next) {
+		if (!lp_set_cmdline_helper(entry->label, entry->value, false)) {
+			DEBUG(0, ("Failed to re-apply cmdline parameter %s = %s\n",
+				  entry->label, entry->value));
+			return false;
+		}
+	}
+	return true;
+}
+
 /***************************************************************************
  Initialise the global parameter structure.
 ***************************************************************************/
@@ -4971,6 +5034,10 @@ static void init_globals(bool reinit_globals)
 		free_global_parameters();
 	}
 
+	/* This memset and the free_global_parameters() above will
+	 * wipe out smb.conf options set with lp_set_cmdline().  The
+	 * apply_lp_set_cmdline() call puts these values back in the
+	 * table once the defaults are set */
 	memset((void *)&Globals, '\0', sizeof(Globals));
 
 	for (i = 0; parm_table[i].label; i++) {
@@ -5287,6 +5354,9 @@ static void init_globals(bool reinit_globals)
 	Globals.ismb2_max_read = 1024*1024;
 	Globals.ismb2_max_write = 1024*1024;
 	Globals.ismb2_max_trans = 1024*1024;
+
+	/* Now put back the settings that were set with lp_set_cmdline() */
+	apply_lp_set_cmdline();
 }
 
 /*******************************************************************
@@ -5816,7 +5886,6 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 
 /* local prototypes */
 
-static int map_parameter(const char *pszParmName);
 static int map_parameter_canonical(const char *pszParmName, bool *inverse);
 static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
@@ -6819,7 +6888,8 @@ static int getservicebyname(const char *pszServiceName, struct service *pservice
  */
 static void set_param_opt(struct param_opt_struct **opt_list,
 			  const char *opt_name,
-			  const char *opt_value)
+			  const char *opt_value,
+			  unsigned flags)
 {
 	struct param_opt_struct *new_opt, *opt;
 	bool not_added;
@@ -6835,9 +6905,16 @@ static void set_param_opt(struct param_opt_struct **opt_list,
 	while (opt) {
 		/* If we already have same option, override it */
 		if (strwicmp(opt->key, opt_name) == 0) {
+			if ((opt->flags & FLAG_CMDLINE) &&
+			    !(flags & FLAG_CMDLINE)) {
+				/* it's been marked as not to be
+				   overridden */
+				return;
+			}
 			string_free(&opt->value);
 			TALLOC_FREE(opt->list);
 			opt->value = SMB_STRDUP(opt_value);
+			opt->flags = flags;
 			not_added = false;
 			break;
 		}
@@ -6848,6 +6925,7 @@ static void set_param_opt(struct param_opt_struct **opt_list,
 	    new_opt->key = SMB_STRDUP(opt_name);
 	    new_opt->value = SMB_STRDUP(opt_value);
 	    new_opt->list = NULL;
+	    new_opt->flags = flags;
 	    DLIST_ADD(*opt_list, new_opt);
 	}
 }
@@ -6915,7 +6993,7 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 
 	data = pserviceSource->param_opt;
 	while (data) {
-		set_param_opt(&pserviceDest->param_opt, data->key, data->value);
+		set_param_opt(&pserviceDest->param_opt, data->key, data->value, data->flags);
 		data = data->next;
 	}
 }
@@ -7672,9 +7750,15 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		opt_list = (snum < 0)
 			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
-		set_param_opt(opt_list, pszParmName, pszParmValue);
+		set_param_opt(opt_list, pszParmName, pszParmValue, 0);
 
 		return (True);
+	}
+
+	/* if it's already been set by the command line, then we don't
+	   override here */
+	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+		return true;
 	}
 
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
@@ -7766,6 +7850,42 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 }
 
 /***************************************************************************
+set a parameter, marking it with FLAG_CMDLINE. Parameters marked as
+FLAG_CMDLINE won't be overridden by loads from smb.conf.
+***************************************************************************/
+
+static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values)
+{
+	int parmnum;
+	parmnum = map_parameter(pszParmName);
+	if (parmnum >= 0) {
+		parm_table[parmnum].flags &= ~FLAG_CMDLINE;
+		if (!lp_do_parameter(-1, pszParmName, pszParmValue)) {
+			return false;
+		}
+		parm_table[parmnum].flags |= FLAG_CMDLINE;
+
+		store_lp_set_cmdline(pszParmName, pszParmValue);
+		return true;
+	}
+
+	/* it might be parametric */
+	if (strchr(pszParmName, ':') != NULL) {
+		set_param_opt(&Globals.param_opt, pszParmName, pszParmValue, FLAG_CMDLINE);
+		store_lp_set_cmdline(pszParmName, pszParmValue);
+		return true;
+	}
+
+	DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",  pszParmName));
+	return true;
+}
+
+bool lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
+{
+	return lp_set_cmdline_helper(pszParmName, pszParmValue, true);
+}
+
+/***************************************************************************
  Process a parameter.
 ***************************************************************************/
 
@@ -7781,7 +7901,33 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 				pszParmName, pszParmValue));
 }
 
-/***************************************************************************
+/*
+  set a option from the commandline in 'a=b' format. Use to support --option
+*/
+bool lp_set_option(const char *option)
+{
+	char *p, *s;
+	bool ret;
+
+	s = talloc_strdup(NULL, option);
+	if (!s) {
+		return false;
+	}
+
+	p = strchr(s, '=');
+	if (!p) {
+		talloc_free(s);
+		return false;
+	}
+
+	*p = 0;
+
+	ret = lp_set_cmdline(s, p+1);
+	talloc_free(s);
+	return ret;
+}
+
+/**************************************************************************
  Print a parameter of the specified type.
 ***************************************************************************/
 
