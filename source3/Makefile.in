@@ -356,6 +356,9 @@ LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/cli_drsuapi.o \
 LIBCLI_DFS_OBJ = librpc/gen_ndr/cli_dfs.o \
 		 librpc/gen_ndr/ndr_dfs_c.o
 
+LIBCLI_ECHO_OBJ = librpc/gen_ndr/cli_echo.o \
+		  librpc/gen_ndr/ndr_echo_c.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -573,7 +576,6 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 
 DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_lsa_c.o \
-		librpc/gen_ndr/ndr_echo_c.o \
 		librpc/gen_ndr/ndr_srvsvc_c.o \
 		librpc/gen_ndr/ndr_svcctl_c.o \
 		librpc/gen_ndr/ndr_initshutdown_c.o \
@@ -584,7 +586,6 @@ DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_epmapper_c.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
-		   librpc/gen_ndr/cli_echo.o \
 		   librpc/gen_ndr/cli_srvsvc.o \
 		   librpc/gen_ndr/cli_svcctl.o \
 		   librpc/gen_ndr/cli_initshutdown.o \
@@ -993,7 +994,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_EVENTLOG_OBJ) \
 	     $(LIBCLI_NTSVCS_OBJ) \
 	     $(LIBCLI_DRSUAPI_OBJ) \
-	     $(LIBCLI_DFS_OBJ)
+	     $(LIBCLI_DFS_OBJ) \
+	     $(LIBCLI_ECHO_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
