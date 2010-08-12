@@ -7,6 +7,7 @@
 interface midltests
 {
 	long midltests_fn(
+		[in] long a[2]
 	);
 }
 
@@ -14,10 +15,11 @@ interface midltests
 
 static void midltests(void)
 {
-	cli_midltests_fn();
+	long a[2] = { 1, 2 };
+	cli_midltests_fn(a);
 }
 
-long srv_midltests_fn(void)
+long srv_midltests_fn(long a[2])
 {
 	printf("srv_midltests_fn: Start\n");
 	printf("srv_midltests_fn: End\n");
