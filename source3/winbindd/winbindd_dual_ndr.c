@@ -31,13 +31,9 @@
 #include "winbindd/winbindd_proto.h"
 #include "librpc/gen_ndr/srv_wbint.h"
 
-struct wb_ndr_transport_priv {
+struct wbint_bh_state {
 	struct winbindd_domain *domain;
 	struct winbindd_child *child;
-};
-
-struct wbint_bh_state {
-	struct rpc_pipe_client *rpc_cli;
 };
 
 static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
@@ -45,7 +41,7 @@ static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
 	struct wbint_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct wbint_bh_state);
 
-	if (!hs->rpc_cli) {
+	if (!hs->child) {
 		return false;
 	}
 
@@ -75,9 +71,6 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	struct wbint_bh_state *hs =
 		dcerpc_binding_handle_data(h,
 		struct wbint_bh_state);
-	struct wb_ndr_transport_priv *transport =
-		talloc_get_type_abort(hs->rpc_cli->transport->priv,
-		struct wb_ndr_transport_priv);
 	struct tevent_req *req;
 	struct wbint_bh_raw_call_state *state;
 	bool ok;
@@ -88,7 +81,7 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->domain = transport->domain;
+	state->domain = hs->domain;
 	state->opnum = opnum;
 	state->in_data.data = discard_const_p(uint8_t, in_data);
 	state->in_data.length = in_length;
@@ -111,7 +104,7 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	state->request.extra_data.data = (char *)state->in_data.data;
 	state->request.extra_len = state->in_data.length;
 
-	subreq = wb_child_request_send(state, ev, transport->child,
+	subreq = wb_child_request_send(state, ev, hs->child,
 				       &state->request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -209,7 +202,7 @@ static struct tevent_req *wbint_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 	 *
 	 * For now the caller needs to free rpc_cli
 	 */
-	hs->rpc_cli = NULL;
+	hs->child = NULL;
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
@@ -271,74 +264,27 @@ static const struct dcerpc_binding_handle_ops wbint_bh_ops = {
 };
 
 /* initialise a wbint binding handle */
-static struct dcerpc_binding_handle *wbint_binding_handle(struct rpc_pipe_client *rpc_cli)
+struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
+						struct winbindd_domain *domain,
+						struct winbindd_child *child)
 {
 	struct dcerpc_binding_handle *h;
 	struct wbint_bh_state *hs;
 
-	h = dcerpc_binding_handle_create(rpc_cli,
+	h = dcerpc_binding_handle_create(mem_ctx,
 					 &wbint_bh_ops,
 					 NULL,
-					 NULL, /* TODO */
+					 &ndr_table_wbint,
 					 &hs,
 					 struct wbint_bh_state,
 					 __location__);
 	if (h == NULL) {
 		return NULL;
 	}
-	hs->rpc_cli = rpc_cli;
+	hs->domain = domain;
+	hs->child = child;
 
 	return h;
-}
-
-struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
-					    struct winbindd_domain *domain,
-					    struct winbindd_child *child)
-{
-	struct rpc_pipe_client *result;
-	struct wb_ndr_transport_priv *transp;
-
-	result = talloc(mem_ctx, struct rpc_pipe_client);
-	if (result == NULL) {
-		return NULL;
-	}
-	result->abstract_syntax = ndr_table_wbint.syntax_id;
-	result->transfer_syntax = ndr_transfer_syntax;
-	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->desthost = NULL;
-	result->srv_name_slash = NULL;
-
-	/*
-	 * Initialize a fake transport. Due to our own wb_ndr_dispatch
-	 * function we don't use all the fragmentation engine in
-	 * cli_pipe, which would use all the _read and _write
-	 * functions in rpc_cli_transport. But we need a place to
-	 * store the child struct in, and we're re-using
-	 * result->transport->priv for that.
-	 */
-
-	result->transport = talloc_zero(result, struct rpc_cli_transport);
-	if (result->transport == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	transp = talloc(result->transport, struct wb_ndr_transport_priv);
-	if (transp == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	transp->domain = domain;
-	transp->child = child;
-	result->transport->priv = transp;
-
-	result->binding_handle = wbint_binding_handle(result);
-	if (result->binding_handle == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	return result;
 }
 
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,

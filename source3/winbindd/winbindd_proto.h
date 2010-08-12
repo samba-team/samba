@@ -463,9 +463,9 @@ NTSTATUS wb_ping_recv(struct tevent_req *req,
 enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state);
 
-struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
-					    struct winbindd_domain *domain,
-					    struct winbindd_child *child);
+struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
+						struct winbindd_domain *domain,
+						struct winbindd_child *child);
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state);
 
