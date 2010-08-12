@@ -437,7 +437,7 @@ wait_until_node_has_status ()
 
     echo "Waiting until node $pnn has status \"$status\"..."
 
-    if ! onnode any $CTDB_TEST_WRAPPER wait_until $timeout node_has_status "$pnn" "$status" ; then
+    if ! wait_until $timeout onnode any $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
 	for i in "onnode -q any ctdb status" "onnode -q any onnode all ctdb scriptstatus" ; do
 	    echo "$i"
 	    $i || true
