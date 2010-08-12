@@ -347,6 +347,9 @@ LIBCLI_EVENTLOG_OBJ = librpc/gen_ndr/cli_eventlog.o \
 LIBCLI_WINREG_OBJ = librpc/gen_ndr/cli_winreg.o \
                     librpc/gen_ndr/ndr_winreg_c.o
 
+LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/cli_ntsvcs.o \
+		    librpc/gen_ndr/ndr_ntsvcs_c.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -573,7 +576,6 @@ DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_netlogon_c.o \
 		librpc/gen_ndr/ndr_samr_c.o \
 		librpc/gen_ndr/ndr_dssetup_c.o \
-		librpc/gen_ndr/ndr_ntsvcs_c.o \
 		librpc/gen_ndr/ndr_epmapper_c.o \
 		librpc/gen_ndr/ndr_drsuapi_c.o
 
@@ -587,7 +589,6 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_netlogon.o \
 		   librpc/gen_ndr/cli_samr.o \
 		   librpc/gen_ndr/cli_dssetup.o \
-		   librpc/gen_ndr/cli_ntsvcs.o \
 		   librpc/gen_ndr/cli_epmapper.o \
 		   librpc/gen_ndr/cli_drsuapi.o \
 		   $(DCERPC_CLIENT_GEN_OBJ) \
@@ -987,7 +988,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
 	     $(LIBCLI_SPOOLSS_OBJ) \
-	     $(LIBCLI_EVENTLOG_OBJ)
+	     $(LIBCLI_EVENTLOG_OBJ) \
+	     $(LIBCLI_NTSVCS_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
