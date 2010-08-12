@@ -115,6 +115,10 @@ LIBCLI_WKSSVC_SRC = '''
                     librpc/gen_ndr/cli_wkssvc.c
                     librpc/gen_ndr/ndr_wkssvc_c.c'''
 
+LIBCLI_SRVSVC_SRC = '''
+                    librpc/gen_ndr/cli_srvsvc.c
+                    librpc/gen_ndr/ndr_srvsvc_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -338,13 +342,11 @@ LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
 
 DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_lsa_c.c
-                ../librpc/gen_ndr/ndr_srvsvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
-                   ../librpc/gen_ndr/cli_srvsvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
                    ../librpc/gen_ndr/cli_epmapper.c
@@ -790,6 +792,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_ECHO_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_WINREG_SRC}
+                ${LIBCLI_SRVSVC_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
@@ -851,7 +854,8 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c ${RPC_CLIENT_SRC}
                  ${RPC_CLIENT_SRC1} ${RPC_PARSE_SRC}'''
 
 CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
-                ${READLINE_SRC} ${DISPLAY_SEC_SRC}'''
+                ${READLINE_SRC} ${DISPLAY_SEC_SRC}
+                ${LIBCLI_SRVSVC_SRC}'''
 
 
 LIBS='ICONV'
