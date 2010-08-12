@@ -132,6 +132,7 @@ struct winbindd_child {
 	int sock;
 	struct tevent_queue *queue;
 	struct rpc_pipe_client *rpccli;
+	struct dcerpc_binding_handle *binding_handle;
 
 	struct timed_event *lockout_policy_event;
 	struct timed_event *machine_password_change_event;
