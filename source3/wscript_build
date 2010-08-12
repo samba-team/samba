@@ -83,6 +83,10 @@ LIBCLI_WINREG_SRC = '''
                     librpc/gen_ndr/cli_winreg.c
                     librpc/gen_ndr/ndr_winreg_c.c'''
 
+LIBCLI_NTSVCS_SRC = '''
+                    librpc/gen_ndr/cli_ntsvcs.c
+                    librpc/gen_ndr/ndr_ntsvcs_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -315,7 +319,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
                 ../librpc/gen_ndr/ndr_dssetup_c.c
-                ../librpc/gen_ndr/ndr_ntsvcs_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c
                 ../librpc/gen_ndr/ndr_drsuapi_c.c'''
 
@@ -329,7 +332,6 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
                    ../librpc/gen_ndr/cli_dssetup.c
-                   ../librpc/gen_ndr/cli_ntsvcs.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ../librpc/gen_ndr/cli_drsuapi.c
                    ${DCERPC_CLIENT_GEN_SRC}
