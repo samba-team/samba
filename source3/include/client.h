@@ -115,22 +115,6 @@ struct rpc_pipe_client {
 	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id transfer_syntax;
 
-	NTSTATUS (*dispatch) (struct rpc_pipe_client *cli,
-			TALLOC_CTX *mem_ctx,
-			const struct ndr_interface_table *table,
-			uint32_t opnum, void *r);
-
-	struct tevent_req *(*dispatch_send)(
-		TALLOC_CTX *mem_ctx,
-		struct tevent_context *ev,
-		struct rpc_pipe_client *cli,
-		const struct ndr_interface_table *table,
-		uint32_t opnum,
-		void *r);
-	NTSTATUS (*dispatch_recv)(struct tevent_req *req,
-				  TALLOC_CTX *mem_ctx);
-
-
 	char *desthost;
 	char *srv_name_slash;
 
