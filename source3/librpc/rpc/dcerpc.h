@@ -160,6 +160,15 @@ struct ndr_interface_call;
 struct ndr_push;
 struct ndr_pull;
 struct tevent_context;
+struct tstream_context;
+
+struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct tstream_context *stream);
+NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       struct ncacn_packet **pkt,
+				       DATA_BLOB *buffer);
 
 /*
  * This is just a hack this should never be used in code,
