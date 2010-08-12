@@ -75,6 +75,10 @@ LIBCLI_SPOOLSS_SRC = '''
                      rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
+LIBCLI_EVENTLOG_SRC = '''
+                      librpc/gen_ndr/cli_eventlog.c
+                      librpc/gen_ndr/ndr_eventlog_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -304,7 +308,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_svcctl_c.c
                 ../librpc/gen_ndr/ndr_winreg_c.c
                 ../librpc/gen_ndr/ndr_initshutdown_c.c
-                ../librpc/gen_ndr/ndr_eventlog_c.c
                 ../librpc/gen_ndr/ndr_wkssvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
@@ -320,7 +323,6 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_svcctl.c
                    ../librpc/gen_ndr/cli_winreg.c
                    ../librpc/gen_ndr/cli_initshutdown.c
-                   ../librpc/gen_ndr/cli_eventlog.c
                    ../librpc/gen_ndr/cli_wkssvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
