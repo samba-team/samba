@@ -91,6 +91,10 @@ LIBCLI_DRSUAPI_SRC = '''
                      librpc/gen_ndr/cli_drsuapi.c
                      librpc/gen_ndr/ndr_drsuapi_c.c'''
 
+LIBCLI_DFS_SRC = '''
+                 librpc/gen_ndr/cli_dfs.c
+                 librpc/gen_ndr/ndr_dfs_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -315,7 +319,6 @@ LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
 
 DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_lsa_c.c
-                ../librpc/gen_ndr/ndr_dfs_c.c
                 ../librpc/gen_ndr/ndr_echo_c.c
                 ../librpc/gen_ndr/ndr_srvsvc_c.c
                 ../librpc/gen_ndr/ndr_svcctl_c.c
@@ -327,7 +330,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
-                   ../librpc/gen_ndr/cli_dfs.c
                    ../librpc/gen_ndr/cli_echo.c
                    ../librpc/gen_ndr/cli_srvsvc.c
                    ../librpc/gen_ndr/cli_svcctl.c
