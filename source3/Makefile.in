@@ -350,6 +350,9 @@ LIBCLI_WINREG_OBJ = librpc/gen_ndr/cli_winreg.o \
 LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/cli_ntsvcs.o \
 		    librpc/gen_ndr/ndr_ntsvcs_c.o
 
+LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/cli_drsuapi.o \
+		     librpc/gen_ndr/ndr_drsuapi_c.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -576,8 +579,7 @@ DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_netlogon_c.o \
 		librpc/gen_ndr/ndr_samr_c.o \
 		librpc/gen_ndr/ndr_dssetup_c.o \
-		librpc/gen_ndr/ndr_epmapper_c.o \
-		librpc/gen_ndr/ndr_drsuapi_c.o
+		librpc/gen_ndr/ndr_epmapper_c.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_dfs.o \
@@ -590,7 +592,6 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_samr.o \
 		   librpc/gen_ndr/cli_dssetup.o \
 		   librpc/gen_ndr/cli_epmapper.o \
-		   librpc/gen_ndr/cli_drsuapi.o \
 		   $(DCERPC_CLIENT_GEN_OBJ) \
 		   ../librpc/rpc/dcerpc_util.o \
 		   ../librpc/rpc/binding_handle.o \
@@ -989,7 +990,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
 	     $(LIBCLI_SPOOLSS_OBJ) \
 	     $(LIBCLI_EVENTLOG_OBJ) \
-	     $(LIBCLI_NTSVCS_OBJ)
+	     $(LIBCLI_NTSVCS_OBJ) \
+	     $(LIBCLI_DRSUAPI_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
@@ -1090,7 +1092,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBNDR_NTPRINTING_OBJ) \
 	   $(LIBNDR_PREG_OBJ) \
 	   $(LIBCLI_SPOOLSS_OBJ) \
-	   $(LIBCLI_WINREG_OBJ)
+	   $(LIBCLI_WINREG_OBJ) \
+	   $(LIBCLI_DRSUAPI_OBJ)
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
