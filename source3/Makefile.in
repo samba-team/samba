@@ -362,6 +362,9 @@ LIBCLI_ECHO_OBJ = librpc/gen_ndr/cli_echo.o \
 LIBCLI_INITSHUTDOWN_OBJ = librpc/gen_ndr/cli_initshutdown.o \
 			  librpc/gen_ndr/ndr_initshutdown_c.o
 
+LIBCLI_DSSETUP_OBJ = librpc/gen_ndr/cli_dssetup.o \
+		     librpc/gen_ndr/ndr_dssetup_c.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -584,7 +587,6 @@ DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_wkssvc_c.o \
 		librpc/gen_ndr/ndr_netlogon_c.o \
 		librpc/gen_ndr/ndr_samr_c.o \
-		librpc/gen_ndr/ndr_dssetup_c.o \
 		librpc/gen_ndr/ndr_epmapper_c.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
@@ -593,7 +595,6 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_wkssvc.o \
 		   librpc/gen_ndr/cli_netlogon.o \
 		   librpc/gen_ndr/cli_samr.o \
-		   librpc/gen_ndr/cli_dssetup.o \
 		   librpc/gen_ndr/cli_epmapper.o \
 		   $(DCERPC_CLIENT_GEN_OBJ) \
 		   ../librpc/rpc/dcerpc_util.o \
@@ -996,7 +997,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_NTSVCS_OBJ) \
 	     $(LIBCLI_DRSUAPI_OBJ) \
 	     $(LIBCLI_DFS_OBJ) \
-	     $(LIBCLI_ECHO_OBJ)
+	     $(LIBCLI_ECHO_OBJ) \
+	     $(LIBCLI_DSSETUP_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
@@ -1099,7 +1101,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBCLI_SPOOLSS_OBJ) \
 	   $(LIBCLI_WINREG_OBJ) \
 	   $(LIBCLI_DRSUAPI_OBJ) \
-	   $(LIBCLI_INITSHUTDOWN_OBJ)
+	   $(LIBCLI_INITSHUTDOWN_OBJ) \
+	   $(LIBCLI_DSSETUP_OBJ)
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
@@ -1342,7 +1345,8 @@ WINBINDD_OBJ = \
 		$(RPC_NCACN_NP_INTERNAL) $(RPC_SAMR_OBJ) $(RPC_LSA_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
 		$(LIBADS_SERVER_OBJ) \
-		$(TDB_VALIDATE_OBJ)
+		$(TDB_VALIDATE_OBJ) \
+		$(LIBCLI_DSSETUP_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
