@@ -756,15 +756,21 @@ if test x$enable_cups != xno; then
 
         if test "x$CUPS_CONFIG" != x; then
 
-		ac_save_CFLAGS=$CFLAGS
 		ac_save_LDFLAGS=$LDFLAGS
 		ac_save_PRINT_LIBS=$PRINT_LIBS
-		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
-		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		PRINT_LIBS="$PRINT_LIBS -lcups"
 		AC_CHECK_HEADERS(cups/cups.h cups/language.h)
+
 		if test x"$ac_cv_header_cups_cups_h" = xyes -a \
 		        x"$ac_cv_header_cups_language_h" = xyes; then
+			# try linking with -lcups alone first. That should work unless libcups is
+			# underlinked. With cups-config --libs we pull in unwanted and unneeded
+			# dendencies including thread libraries - use cups-config only if really
+			# required. 
+			AC_CHECK_LIB_EXT(cups, ac_save_PRINT_LIBS , httpConnect,
+				[PRINT_LIBS"$ac_save_PRINT_LIBS -lcups"],
+				[AC_MSG_WARN([your cups library doesn't link with -lcups alone, it might be underlinked.]) ;
+				 PRINT_LIBS="$ac_save_PRINT_LIBS `$CUPS_CONFIG --libs`"])
+
 			AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 			samba_cv_HAVE_CUPS=yes
 			AC_CHECK_LIB_EXT(cups, PRINT_LIBS, httpConnectEncrypt)
