@@ -119,6 +119,11 @@ LIBCLI_SRVSVC_SRC = '''
                     librpc/gen_ndr/cli_srvsvc.c
                     librpc/gen_ndr/ndr_srvsvc_c.c'''
 
+LIBCLI_LSA_SRC = '''
+                 librpc/gen_ndr/cli_lsa.c
+                 librpc/gen_ndr/ndr_lsa_c.c
+                 rpc_client/cli_lsarpc.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -335,19 +340,18 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 RPC_CLIENT_SRC1 = '''rpc_client/cli_netlogon.c
                   ${SCHANNEL_SRC}'''
 
-LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
+LIBMSRPC_SRC = '''rpc_client/cli_samr.c
                ${RPC_CLIENT_SRC1}
                ${RPC_CLIENT_SRC}
                rpc_client/init_samr.c
                    ../librpc/rpc/binding.c'''
 
 DCERPC_CLIENT_GEN_SRC = '''
-                ../librpc/gen_ndr/ndr_lsa_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
-LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
+LIBMSRPC_GEN_SRC = '''
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
                    ../librpc/gen_ndr/cli_epmapper.c
@@ -717,7 +721,8 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${LIBADS_SERVER_SRC}
                   ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_SRC}
                   ${TDB_VALIDATE_SRC}
-                  ${LIBCLI_DSSETUP_SRC}'''
+                  ${LIBCLI_DSSETUP_SRC}
+                  ${LIBCLI_LSA_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
 
@@ -794,6 +799,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_WINREG_SRC}
                 ${LIBCLI_SRVSVC_SRC}
+                ${LIBCLI_LSA_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
