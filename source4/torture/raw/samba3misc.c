@@ -621,7 +621,7 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	char *fpath;
 	int fnum;
 	int counter = 0;
-	bool ret = true;
+	bool ret = false;
 
 	if (!(mem_ctx = talloc_init("torture_samba3_caseinsensitive"))) {
 		d_printf("talloc_init failed\n");
@@ -635,8 +635,8 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	smbcli_deltree(cli->tree, dirname);
 
 	status = smbcli_mkdir(cli->tree, dirname);
+	torture_assert_ntstatus_ok(torture, status, "smbcli_mkdir failed");
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
 		goto done;
 	}
 
@@ -645,7 +645,8 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	}
 	fnum = smbcli_open(cli->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("Could not create file %s: %s\n", fpath,
+		torture_result(torture, TORTURE_FAIL,
+			"Could not create file %s: %s", fpath,
 			 smbcli_errstr(cli->tree));
 		goto done;
 	}
@@ -661,7 +662,8 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 		ret = true;
 	}
 	else {
-		d_fprintf(stderr, "expected 3 entries, got %d\n", counter);
+		torture_result(torture, TORTURE_FAIL,
+			"expected 3 entries, got %d", counter);
 		ret = false;
 	}
 
