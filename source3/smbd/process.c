@@ -2349,9 +2349,12 @@ static void smbd_server_echo_handler(struct event_context *ev,
 
 	if (flags & EVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
-	} else if (flags & EVENT_FD_READ) {
+		return;
+	}
+	if (flags & EVENT_FD_READ) {
 		smbd_server_connection_read_handler(
 			conn, conn->smb1.echo_handler.trusted_fd);
+		return;
 	}
 }
 
