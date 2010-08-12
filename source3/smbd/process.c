@@ -2331,8 +2331,11 @@ static void smbd_server_connection_handler(struct event_context *ev,
 
 	if (flags & EVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
-	} else if (flags & EVENT_FD_READ) {
+		return;
+	}
+	if (flags & EVENT_FD_READ) {
 		smbd_server_connection_read_handler(conn, smbd_server_fd());
+		return;
 	}
 }
 
