@@ -440,9 +440,8 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
-	child->rpccli = wbint_rpccli_create(NULL, domain, child);
-	SMB_ASSERT(child->rpccli != NULL);
-	child->binding_handle = child->rpccli->binding_handle;
+	child->binding_handle = wbint_binding_handle(NULL, domain, child);
+	SMB_ASSERT(child->binding_handle != NULL);
 }
 
 static struct winbindd_child *winbindd_children = NULL;
