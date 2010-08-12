@@ -2668,6 +2668,8 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	bool ok;
 	bool encrypted = false;
 
+	smb_msleep(1000);
+
 	ok = smbd_lock_socket_internal(sconn);
 	if (!ok) {
 		DEBUG(0, ("%s: failed to lock socket\n",
