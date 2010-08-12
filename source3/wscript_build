@@ -69,6 +69,12 @@ LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
 LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
                   ../librpc/ndr/ndr_xattr.c'''
 
+LIBCLI_SPOOLSS_SRC = '''
+                     librpc/gen_ndr/cli_spoolss.c
+                     librpc/gen_ndr/ndr_spoolss_c.c
+                     rpc_client/cli_spoolss.c
+                     rpc_client/init_spoolss.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -287,8 +293,6 @@ RPC_CLIENT_SRC1 = '''rpc_client/cli_netlogon.c
 LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
                ${RPC_CLIENT_SRC1}
                ${RPC_CLIENT_SRC}
-               rpc_client/cli_spoolss.c
-               rpc_client/init_spoolss.c
                rpc_client/init_samr.c
                    ../librpc/rpc/binding.c'''
 
@@ -307,8 +311,7 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_dssetup_c.c
                 ../librpc/gen_ndr/ndr_ntsvcs_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c
-                ../librpc/gen_ndr/ndr_drsuapi_c.c
-                ../librpc/gen_ndr/ndr_spoolss_c.c'''
+                ../librpc/gen_ndr/ndr_drsuapi_c.c'''
 
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_dfs.c
@@ -325,7 +328,6 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_ntsvcs.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ../librpc/gen_ndr/cli_drsuapi.c
-                   ../librpc/gen_ndr/cli_spoolss.c
                    ${DCERPC_CLIENT_GEN_SRC}
                    ../librpc/rpc/dcerpc_util.c
                    librpc/rpc/dcerpc_helpers.c
@@ -765,6 +767,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SVCCTL_SRC} ${RPC_NTSVCS_SRC} ${RPC_DFS_SRC}
                 ${RPC_SPOOLSS_SRC} ${RPC_EVENTLOG_SRC}
                 ${RPC_ECHO_SRC}
+                ${LIBCLI_SPOOLSS_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
