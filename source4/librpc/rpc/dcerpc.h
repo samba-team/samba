@@ -34,6 +34,7 @@
 struct tevent_context;
 struct tevent_req;
 struct dcerpc_binding_handle;
+struct tstream_context;
 
 enum dcerpc_transport_t {
 	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
@@ -393,6 +394,14 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
+
+struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct tstream_context *stream);
+NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
+				       TALLOC_CTX *mem_ctx,
+				       struct ncacn_packet **pkt,
+				       DATA_BLOB *buffer);
 
 struct dcerpc_binding_handle_ops {
 	const char *name;
