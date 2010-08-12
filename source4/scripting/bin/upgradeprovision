@@ -43,7 +43,7 @@ from samba.auth import system_session, admin_session
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn)
-from samba import param, dsdb
+from samba import param, dsdb, Ldb
 from samba.provision import (find_setup_dir, get_domain_descriptor,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
@@ -960,7 +960,7 @@ def reload_full_schema(samdb, names):
     dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif)
 
 
-def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
+def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, prereloadfunc):
     """Check differences between the reference provision and the upgraded one.
 
     It looks for all objects which base DN is name.
@@ -976,7 +976,10 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
     :param names: List of key provision parameters
     :param schema: A Schema object
     :param provisionUSNs:  The USNs modified by provision/upgradeprovision
-                           last time"""
+                           last time
+    :param prereloadfunc: A function that must be executed just before the reload
+                  of the schema
+    """
 
     hash_new = {}
     hash = {}
@@ -1028,7 +1031,11 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs):
 
         add_missing_entries(ref_samdb, samdb, names, basedn, listMissing)
 
+        prereloadfunc()
+        message(SIMPLE, "Reloading a merged schema, it might trigger"\
+                        " reindexing so please be patient")
         reload_full_schema(samdb, names)
+        message(SIMPLE, "Schema reloaded !")
 
         changed = update_present(ref_samdb, samdb, basedn, listPresent,
                                     provisionUSNs, names.invocation)
@@ -1238,7 +1245,7 @@ def update_privilege(ref_private_path, cur_private_path):
                 os.path.join(cur_private_path, "privilege.ldb"))
 
 
-def update_samdb(ref_samdb, samdb, names, highestUSN, schema):
+def update_samdb(ref_samdb, samdb, names, highestUSN, schema, prereloadfunc):
     """Upgrade the SAM DB contents for all the provision partitions
 
     :param ref_sambdb: An LDB object conntected to the sam.ldb of the reference
@@ -1248,11 +1255,14 @@ def update_samdb(ref_samdb, samdb, names, highestUSN, schema):
     :param names: List of key provision parameters
     :param highestUSN:  The highest USN modified by provision/upgradeprovision
                         last time
-    :param schema: A Schema object that represent the schema of the provision"""
+    :param schema: A Schema object that represent the schema of the provision
+    :param prereloadfunc: A function that must be executed just before the reload
+                  of the schema
+    """
 
     message(SIMPLE, "Starting update of samdb")
     ret = update_partition(ref_samdb, samdb, str(names.rootdn), names,
-                            schema, highestUSN)
+                            schema, highestUSN, prereloadfunc)
     if ret:
         message(SIMPLE, "Update of samdb finished")
         return 1
@@ -1585,13 +1595,18 @@ if __name__ == '__main__':
         # Do some modification on sam.ldb
         ldbs.groupedCommit()
         new_ldbs.groupedCommit()
-
-        # 11)
+        deltaattr = None
+# 11)
         if re.match(".*alpha((9)|(\d\d+)).*", str(oem)):
             # 11) A
             # Starting from alpha9 we can consider that the structure is quite ok
             # and that we should do only dela
-            delta_update_basesamdb(newpaths.samdb, paths.samdb, creds, session, lp, message)
+            deltaattr = delta_update_basesamdb(newpaths.samdb,
+                                                paths.samdb,
+                                                creds,
+                                                session,
+                                                lp,
+                                                message)
         else:
             # 11) B
             simple_update_basesamdb(newpaths, paths, names)
@@ -1605,11 +1620,33 @@ if __name__ == '__main__':
         # 12)
         schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn),
                          serverdn=str(names.serverdn))
-
+        # We create a closure that will be invoked just before schema reload
+        def schemareloadclosure():
+            basesam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp,
+                            options=["modules:"])
+            doit = False
+            if deltaattr is not None and len(deltaattr) > 1:
+                doit = True
+            deltaattr.remove("dn")
+            for att in deltaattr:
+                if att.lower() == "dn":
+                    continue
+                if deltaattr.get(att) is not None \
+                    and deltaattr.get(att).flags() != FLAG_MOD_ADD:
+                    doit = False
+                elif deltaattr.get(att) is None:
+                    doit = False
+            if doit:
+                message(CHANGE, "Applying delta to @ATTRIBUTES")
+                deltaattr.dn = ldb.Dn(basesam, "@ATTRIBUTES")
+                basesam.modify(deltaattr)
+            else:
+                message(CHANGE, "Not applying delta to @ATTRIBUTES because "\
+                                "there is not only add")
         # 13)
         if opts.full:
             if not update_samdb(new_ldbs.sam, ldbs.sam, names, lastProvisionUSNs,
-                                schema):
+                                schema, schemareloadclosure):
                 message(SIMPLE, "Rollbacking every changes. Check the reason"
                                 " of the problem")
                 message(SIMPLE, "In any case your system as it was before"
@@ -1618,8 +1655,11 @@ if __name__ == '__main__':
                 new_ldbs.groupedRollback()
                 shutil.rmtree(provisiondir)
                 sys.exit(1)
-            else:
-                sync_calculated_attributes(ldbs.sam, names)
+        else:
+            # Try to reapply the change also when we do not change the sam
+            # as the delta_upgrade
+            schemareloadclosure()
+            sync_calculated_attributes(ldbs.sam, names)
         # 14)
         update_secrets(new_ldbs.secrets, ldbs.secrets, message)
         # 15)
@@ -1676,6 +1716,8 @@ if __name__ == '__main__':
             except ProvisioningError, e:
                 message(ERROR, "The policy for domain controller is missing,"
                                " you should restart upgradeprovision with --full")
+            except IOError, e:
+                message(ERROR, "Setting ACL not supported on your filesystem")
         else:
             try:
                 update_gpo(paths, ldbs.sam, names, lp, message, 0)
@@ -1686,6 +1728,16 @@ if __name__ == '__main__':
         new_ldbs.groupedCommit()
         message(SIMPLE, "Upgrade finished !")
         # remove reference provision now that everything is done !
+        # So we have reindexed first if need when the merged schema was reloaded
+        # (as new attributes could have quick in)
+        # But the second part of the update (when we update existing objects
+        # can also have an influence on indexing as some attribute might have their
+        # searchflag modificated
+        message(SIMPLE, "Reopenning samdb to trigger reindexing if needed after"\
+                        " modification")
+        samdb = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp)
+        message(SIMPLE, "Reindexing finished")
+
         shutil.rmtree(provisiondir)
     except StandardError, err:
         message(ERROR,"A problem has occured when trying to upgrade your provision,"
