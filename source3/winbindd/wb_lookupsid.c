@@ -54,8 +54,8 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = rpccli_wbint_LookupSid_send(
-		state, ev, state->lookup_domain->child.rpccli,
+	subreq = dcerpc_wbint_LookupSid_send(
+		state, ev, state->lookup_domain->child.binding_handle,
 		&state->sid, &state->type, &state->domname, &state->name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -73,7 +73,7 @@ static void wb_lookupsid_done(struct tevent_req *subreq)
 	struct winbindd_domain *forest_root;
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_LookupSid_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupSid_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -94,8 +94,8 @@ static void wb_lookupsid_done(struct tevent_req *subreq)
 	}
 	state->lookup_domain = forest_root;
 
-	subreq = rpccli_wbint_LookupSid_send(
-		state, state->ev, state->lookup_domain->child.rpccli,
+	subreq = dcerpc_wbint_LookupSid_send(
+		state, state->ev, state->lookup_domain->child.binding_handle,
 		&state->sid, &state->type, &state->domname, &state->name);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

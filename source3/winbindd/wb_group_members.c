@@ -71,8 +71,8 @@ static struct tevent_req *wb_lookupgroupmem_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = rpccli_wbint_LookupGroupMembers_send(
-		state, ev, domain->child.rpccli, &state->sid, type,
+	subreq = dcerpc_wbint_LookupGroupMembers_send(
+		state, ev, domain->child.binding_handle, &state->sid, type,
 		&state->members);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -89,7 +89,7 @@ static void wb_lookupgroupmem_done(struct tevent_req *subreq)
 		req, struct wb_lookupgroupmem_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_LookupGroupMembers_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupGroupMembers_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

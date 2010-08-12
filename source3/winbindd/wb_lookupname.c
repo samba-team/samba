@@ -68,8 +68,8 @@ struct tevent_req *wb_lookupname_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = rpccli_wbint_LookupName_send(
-		state, ev, domain->child.rpccli, state->dom_name, state->name,
+	subreq = dcerpc_wbint_LookupName_send(
+		state, ev, domain->child.binding_handle, state->dom_name, state->name,
 		flags, &state->type, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -87,7 +87,7 @@ static void wb_lookupname_done(struct tevent_req *subreq)
 	struct winbindd_domain *root_domain;
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_LookupName_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupName_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -109,8 +109,8 @@ static void wb_lookupname_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = rpccli_wbint_LookupName_send(
-		state, state->ev, root_domain->child.rpccli, state->dom_name,
+	subreq = dcerpc_wbint_LookupName_send(
+		state, state->ev, root_domain->child.binding_handle, state->dom_name,
 		state->name, state->flags, &state->type, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -126,7 +126,7 @@ static void wb_lookupname_root_done(struct tevent_req *subreq)
 		req, struct wb_lookupname_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_LookupName_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupName_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

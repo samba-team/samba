@@ -57,8 +57,8 @@ struct tevent_req *winbindd_change_machine_acct_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = rpccli_wbint_ChangeMachineAccount_send(state, ev,
-							domain->child.rpccli);
+	subreq = dcerpc_wbint_ChangeMachineAccount_send(state, ev,
+							domain->child.binding_handle);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -74,7 +74,7 @@ static void winbindd_change_machine_acct_done(struct tevent_req *subreq)
 		req, struct winbindd_change_machine_acct_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_ChangeMachineAccount_recv(subreq, state, &result);
+	status = dcerpc_wbint_ChangeMachineAccount_recv(subreq, state, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;

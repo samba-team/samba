@@ -90,8 +90,8 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
 
-		d->subreq = rpccli_wbint_QueryGroupList_send(
-			state->domains, ev, d->domain->child.rpccli,
+		d->subreq = dcerpc_wbint_QueryGroupList_send(
+			state->domains, ev, d->domain->child.binding_handle,
 			&d->groups);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);
@@ -113,7 +113,7 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 	int i;
 
-	status = rpccli_wbint_QueryGroupList_recv(subreq, state->domains,
+	status = dcerpc_wbint_QueryGroupList_recv(subreq, state->domains,
 						  &result);
 
 	for (i=0; i<state->num_domains; i++) {

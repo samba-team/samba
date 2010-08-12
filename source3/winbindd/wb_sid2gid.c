@@ -124,7 +124,7 @@ static void wb_sid2gid_lookup_done(struct tevent_req *subreq)
 
 	child = idmap_child();
 
-	subreq = rpccli_wbint_Sid2Gid_send(state, state->ev, child->rpccli,
+	subreq = dcerpc_wbint_Sid2Gid_send(state, state->ev, child->binding_handle,
 					   state->dom_name, &state->sid,
 					   &state->gid64);
 	if (tevent_req_nomem(subreq, req)) {
@@ -141,7 +141,7 @@ static void wb_sid2gid_done(struct tevent_req *subreq)
 		req, struct wb_sid2gid_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_Sid2Gid_recv(subreq, state, &result);
+	status = dcerpc_wbint_Sid2Gid_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

@@ -46,7 +46,7 @@ struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 
 	child = idmap_child();
 
-	subreq = rpccli_wbint_AllocateUid_send(state, ev, child->rpccli,
+	subreq = dcerpc_wbint_AllocateUid_send(state, ev, child->binding_handle,
 					       &state->uid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -63,7 +63,7 @@ static void winbindd_allocate_uid_done(struct tevent_req *subreq)
 		req, struct winbindd_allocate_uid_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_AllocateUid_recv(subreq, state, &result);
+	status = dcerpc_wbint_AllocateUid_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
