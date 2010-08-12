@@ -237,8 +237,8 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	prs_struct    prs_hkpd;
 
-	uint8_t *outbuf;
-	uint32_t outbuf_size;
+	uint8_t *outbuf = NULL;
+	uint32_t outbuf_size = 0;
 
 	bool free_buf = False;
 	bool free_prs = False;
