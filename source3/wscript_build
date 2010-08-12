@@ -869,6 +869,39 @@ CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
                 ${LIBCLI_SRVSVC_SRC}
 		rpc_client/init_lsa.c'''
 
+RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
+                    rpcclient/cmd_samr.c rpcclient/cmd_spoolss.c
+                    rpcclient/cmd_netlogon.c rpcclient/cmd_srvsvc.c
+                    rpcclient/cmd_dfs.c rpcclient/cmd_epmapper.c
+                    rpcclient/cmd_dssetup.c rpcclient/cmd_echo.c
+                    rpcclient/cmd_shutdown.c rpcclient/cmd_test.c
+                    rpcclient/cmd_wkssvc.c rpcclient/cmd_ntsvcs.c
+                    rpcclient/cmd_drsuapi.c rpcclient/cmd_eventlog.c
+                    rpcclient/cmd_winreg.c
+                    ${DISPLAY_SEC_SRC}'''
+
+RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
+                   ${LIBMSRPC_GEN_SRC}
+                   ${LIBMSRPC_SRC}
+                   ${READLINE_SRC}
+                   ${LIBADS_SRC}
+                   ${DCUTIL_SRC}
+                   ${LIBCLI_SPOOLSS_SRC}
+                   ${LIBCLI_EVENTLOG_SRC}
+                   ${LIBCLI_NTSVCS_SRC}
+                   ${LIBCLI_DRSUAPI_SRC}
+                   ${LIBCLI_DFS_SRC}
+                   ${LIBCLI_ECHO_SRC}
+                   ${LIBCLI_DSSETUP_SRC}
+                   ${LIBCLI_WKSSVC_SRC}
+                   ${LIBCLI_SRVSVC_SRC}
+                   ${LIBCLI_LSA_SRC}
+                   ${LIBCLI_SAMR_SRC}
+                   ${LIBCLI_WINREG_SRC}
+                   ${LIBCLI_NETLOGON_SRC}
+                   ${RPC_CLIENT_SCHANNEL_SRC}
+                   rpc_client/init_netlogon.c
+                   rpc_client/init_samr.c'''
 
 LIBS='ICONV'
 
@@ -1041,6 +1074,12 @@ bld.SAMBA_BINARY('web/swat',
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
+                 deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
+                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG PARAM KRBCLIENT''',
+                 vars=locals())
+
+bld.SAMBA_BINARY('rpcclient/rpcclient',
+                 source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG PARAM KRBCLIENT''',
                  vars=locals())
