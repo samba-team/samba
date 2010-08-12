@@ -1,0 +1,775 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Copyright (C) Stefan Metzmacher 2010
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "system/network.h"
+#include "../util/tevent_unix.h"
+#include "../lib/tsocket/tsocket.h"
+#include "../lib/tsocket/tsocket_internal.h"
+#include "cli_np_tstream.h"
+
+static const struct tstream_context_ops tstream_cli_np_ops;
+
+/*
+ * Window uses 1024 hardcoded for read size and trans max data
+ */
+#define TSTREAM_CLI_NP_BUF_SIZE 1024
+
+struct tstream_cli_np {
+	struct cli_state *cli;
+	const char *npipe;
+	uint16_t fnum;
+
+	struct {
+		off_t ofs;
+		size_t left;
+		uint8_t buf[TSTREAM_CLI_NP_BUF_SIZE];
+	} read, write;
+};
+
+static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
+{
+	NTSTATUS status;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		return 0;
+	}
+
+	/*
+	 * TODO: do not use a sync call with a destructor!!!
+	 *
+	 * This only happens, if a caller does talloc_free(),
+	 * while the everything was still ok.
+	 *
+	 * If we get an unexpected failure within a normal
+	 * operation, we already do an async cli_close_send()/_recv().
+	 *
+	 * Once we've fixed all callers to call
+	 * tstream_disconnect_send()/_recv(), this will
+	 * never be called.
+	 */
+	status = cli_close(cli_nps->cli, cli_nps->fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("tstream_cli_np_destructor: cli_close "
+			  "failed on pipe %s. Error was %s\n",
+			  cli_nps->npipe, nt_errstr(status)));
+	}
+	/*
+	 * We can't do much on failure
+	 */
+	return 0;
+};
+
+struct tstream_cli_np_open_state {
+	struct cli_state *cli;
+	uint16_t fnum;
+	const char *npipe;
+};
+
+static void tstream_cli_np_open_done(struct tevent_req *subreq);
+
+struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    const char *npipe)
+{
+	struct tevent_req *req;
+	struct tstream_cli_np_open_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_cli_np_open_state);
+	if (!req) {
+		return NULL;
+	}
+	state->cli = cli;
+
+	state->npipe = talloc_strdup(state, npipe);
+	if (tevent_req_nomem(state->npipe, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_ntcreate_send(state, ev, cli,
+				   npipe,
+				   0,
+				   DESIRED_ACCESS_PIPE,
+				   0,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE,
+				   FILE_OPEN,
+				   0,
+				   0);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tstream_cli_np_open_done, req);
+
+	return req;
+}
+
+static void tstream_cli_np_open_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct tstream_cli_np_open_state *state =
+		tevent_req_data(req, struct tstream_cli_np_open_state);
+	NTSTATUS status;
+
+	status = cli_ntcreate_recv(subreq, &state->fnum);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   struct tstream_context **_stream,
+				   const char *location)
+{
+	struct tstream_cli_np_open_state *state =
+		tevent_req_data(req, struct tstream_cli_np_open_state);
+	struct tstream_context *stream;
+	struct tstream_cli_np *cli_nps;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	stream = tstream_context_create(mem_ctx,
+					&tstream_cli_np_ops,
+					&cli_nps,
+					struct tstream_cli_np,
+					location);
+	if (!stream) {
+		tevent_req_received(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(cli_nps);
+
+	cli_nps->cli = state->cli;
+	cli_nps->npipe = talloc_move(cli_nps, &state->npipe);
+	cli_nps->fnum = state->fnum;
+
+	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
+
+	*_stream = stream;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static ssize_t tstream_cli_np_pending_bytes(struct tstream_context *stream)
+{
+	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_cli_np);
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		errno = ENOTCONN;
+		return -1;
+	}
+
+	return cli_nps->read.left;
+}
+
+struct tstream_cli_np_writev_state {
+	struct tstream_context *stream;
+	struct tevent_context *ev;
+
+	struct iovec *vector;
+	size_t count;
+
+	int ret;
+
+	struct {
+		int val;
+		const char *location;
+	} error;
+};
+
+static void tstream_cli_np_writev_write_next(struct tevent_req *req);
+
+static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *stream,
+					const struct iovec *vector,
+					size_t count)
+{
+	struct tevent_req *req;
+	struct tstream_cli_np_writev_state *state;
+	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_cli_np);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_cli_np_writev_state);
+	if (!req) {
+		return NULL;
+	}
+	state->stream = stream;
+	state->ev = ev;
+	state->ret = 0;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		tevent_req_error(req, ENOTCONN);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * we make a copy of the vector so we can change the structure
+	 */
+	state->vector = talloc_array(state, struct iovec, count);
+	if (tevent_req_nomem(state->vector, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memcpy(state->vector, vector, sizeof(struct iovec) * count);
+	state->count = count;
+
+	tstream_cli_np_writev_write_next(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void tstream_cli_np_writev_write_done(struct tevent_req *subreq);
+
+static void tstream_cli_np_writev_write_next(struct tevent_req *req)
+{
+	struct tstream_cli_np_writev_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_writev_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	struct tevent_req *subreq;
+
+	cli_nps->write.ofs = 0;
+	cli_nps->write.left = TSTREAM_CLI_NP_BUF_SIZE;
+
+	/*
+	 * copy the pending buffer first
+	 */
+	while (cli_nps->write.left > 0 && state->count > 0) {
+		uint8_t *base = (uint8_t *)state->vector[0].iov_base;
+		size_t len = MIN(cli_nps->write.left, state->vector[0].iov_len);
+
+		memcpy(cli_nps->write.buf + cli_nps->write.ofs, base, len);
+
+		base += len;
+		state->vector[0].iov_base = base;
+		state->vector[0].iov_len -= len;
+
+		cli_nps->write.ofs += len;
+		cli_nps->write.left -= len;
+
+		if (state->vector[0].iov_len == 0) {
+			state->vector += 1;
+			state->count -= 1;
+		}
+
+		state->ret += len;
+	}
+
+	if (cli_nps->write.ofs == 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = cli_write_andx_send(state, state->ev, cli_nps->cli,
+				     cli_nps->fnum,
+				     8, /* 8 means message mode. */
+				     cli_nps->write.buf, 0,
+				     cli_nps->write.ofs);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				tstream_cli_np_writev_write_done,
+				req);
+}
+
+static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
+						 int error,
+						 const char *location);
+
+static void tstream_cli_np_writev_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct tstream_cli_np_writev_state *state =
+		tevent_req_data(req, struct tstream_cli_np_writev_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	size_t written;
+	NTSTATUS status;
+
+	status = cli_write_andx_recv(subreq, &written);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tstream_cli_np_writev_disconnect_now(req, EIO, __location__);
+		return;
+	}
+
+	if (written != cli_nps->write.ofs) {
+		tstream_cli_np_writev_disconnect_now(req, EIO, __location__);
+		return;
+	}
+
+	tstream_cli_np_writev_write_next(req);
+}
+
+static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq);
+
+static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
+						 int error,
+						 const char *location)
+{
+	struct tstream_cli_np_writev_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_writev_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	struct tevent_req *subreq;
+
+	state->error.val = error;
+	state->error.location = location;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		/* return the original error */
+		_tevent_req_error(req, state->error.val, state->error.location);
+		return;
+	}
+
+	subreq = cli_close_send(state, state->ev, cli_nps->cli, cli_nps->fnum);
+	if (subreq == NULL) {
+		/* return the original error */
+		_tevent_req_error(req, state->error.val, state->error.location);
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				tstream_cli_np_writev_disconnect_done,
+				req);
+}
+
+static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct tstream_cli_np_writev_state *state =
+		tevent_req_data(req, struct tstream_cli_np_writev_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_cli_np);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	cli_nps->cli = NULL;
+
+	/* return the original error */
+	_tevent_req_error(req, state->error.val, state->error.location);
+}
+
+static int tstream_cli_np_writev_recv(struct tevent_req *req,
+				      int *perrno)
+{
+	struct tstream_cli_np_writev_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_writev_state);
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+	if (ret == 0) {
+		ret = state->ret;
+	}
+
+	tevent_req_received(req);
+	return ret;
+}
+
+struct tstream_cli_np_readv_state {
+	struct tstream_context *stream;
+	struct tevent_context *ev;
+
+	struct iovec *vector;
+	size_t count;
+
+	int ret;
+
+	struct {
+		int val;
+		const char *location;
+	} error;
+};
+
+static void tstream_cli_np_readv_read_next(struct tevent_req *req);
+
+static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *stream,
+					struct iovec *vector,
+					size_t count)
+{
+	struct tevent_req *req;
+	struct tstream_cli_np_readv_state *state;
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(stream, struct tstream_cli_np);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_cli_np_readv_state);
+	if (!req) {
+		return NULL;
+	}
+	state->stream = stream;
+	state->ev = ev;
+	state->ret = 0;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		tevent_req_error(req, ENOTCONN);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * we make a copy of the vector so we can change the structure
+	 */
+	state->vector = talloc_array(state, struct iovec, count);
+	if (tevent_req_nomem(state->vector, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memcpy(state->vector, vector, sizeof(struct iovec) * count);
+	state->count = count;
+
+	tstream_cli_np_readv_read_next(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void tstream_cli_np_readv_read_done(struct tevent_req *subreq);
+
+static void tstream_cli_np_readv_read_next(struct tevent_req *req)
+{
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_readv_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	struct tevent_req *subreq;
+
+	/*
+	 * copy the pending buffer first
+	 */
+	while (cli_nps->read.left > 0 && state->count > 0) {
+		uint8_t *base = (uint8_t *)state->vector[0].iov_base;
+		size_t len = MIN(cli_nps->read.left, state->vector[0].iov_len);
+
+		memcpy(base, cli_nps->read.buf + cli_nps->read.ofs, len);
+
+		base += len;
+		state->vector[0].iov_base = base;
+		state->vector[0].iov_len -= len;
+
+		cli_nps->read.ofs += len;
+		cli_nps->read.left -= len;
+
+		if (state->vector[0].iov_len == 0) {
+			state->vector += 1;
+			state->count -= 1;
+		}
+
+		state->ret += len;
+	}
+
+	if (state->count == 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = cli_read_andx_send(state, state->ev, cli_nps->cli,
+				    cli_nps->fnum, 0, TSTREAM_CLI_NP_BUF_SIZE);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				tstream_cli_np_readv_read_done,
+				req);
+}
+
+static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
+						int error,
+						const char *location);
+
+static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_cli_np_readv_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_cli_np);
+	uint8_t *rcvbuf;
+	ssize_t received;
+	NTSTATUS status;
+
+	/*
+	 * We must free subreq in this function as there is
+	 * a timer event attached to it.
+	 */
+
+	status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+	/*
+	 * We can't TALLOC_FREE(subreq) as usual here, as rcvbuf still is a
+	 * child of that.
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+		/*
+		 * NT_STATUS_BUFFER_TOO_SMALL means that there's
+		 * more data to read when the named pipe is used
+		 * in message mode (which is the case here).
+		 *
+		 * But we hide this from the caller.
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		return;
+	}
+
+	if (received > TSTREAM_CLI_NP_BUF_SIZE) {
+		TALLOC_FREE(subreq);
+		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
+		return;
+	}
+
+	if (received == 0) {
+		TALLOC_FREE(subreq);
+		tstream_cli_np_readv_disconnect_now(req, EPIPE, __location__);
+		return;
+	}
+
+	cli_nps->read.ofs = 0;
+	cli_nps->read.left = received;
+	memcpy(cli_nps->read.buf, rcvbuf, received);
+	TALLOC_FREE(subreq);
+
+	tstream_cli_np_readv_read_next(req);
+}
+
+static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq);
+
+static void tstream_cli_np_readv_error(struct tevent_req *req);
+
+static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
+						int error,
+						const char *location)
+{
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_readv_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	struct tevent_req *subreq;
+
+	state->error.val = error;
+	state->error.location = location;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		/* return the original error */
+		tstream_cli_np_readv_error(req);
+		return;
+	}
+
+	subreq = cli_close_send(state, state->ev, cli_nps->cli, cli_nps->fnum);
+	if (subreq == NULL) {
+		/* return the original error */
+		tstream_cli_np_readv_error(req);
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				tstream_cli_np_readv_disconnect_done,
+				req);
+}
+
+static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_cli_np_readv_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_cli_np);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	cli_nps->cli = NULL;
+
+	tstream_cli_np_readv_error(req);
+}
+
+static void tstream_cli_np_readv_error(struct tevent_req *req)
+{
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_readv_state);
+
+	/* return the original error */
+	_tevent_req_error(req, state->error.val, state->error.location);
+}
+
+static int tstream_cli_np_readv_recv(struct tevent_req *req,
+				   int *perrno)
+{
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req, struct tstream_cli_np_readv_state);
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+	if (ret == 0) {
+		ret = state->ret;
+	}
+
+	tevent_req_received(req);
+	return ret;
+}
+
+struct tstream_cli_np_disconnect_state {
+	struct tstream_context *stream;
+};
+
+static void tstream_cli_np_disconnect_done(struct tevent_req *subreq);
+
+static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct tstream_context *stream)
+{
+	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_cli_np);
+	struct tevent_req *req;
+	struct tstream_cli_np_disconnect_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_cli_np_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->stream = stream;
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		tevent_req_error(req, ENOTCONN);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_close_send(state, ev, cli_nps->cli, cli_nps->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tstream_cli_np_disconnect_done, req);
+
+	return req;
+}
+
+static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct tstream_cli_np_disconnect_state *state =
+		tevent_req_data(req, struct tstream_cli_np_disconnect_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream, struct tstream_cli_np);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+
+	cli_nps->cli = NULL;
+
+	tevent_req_done(req);
+}
+
+static int tstream_cli_np_disconnect_recv(struct tevent_req *req,
+					  int *perrno)
+{
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+
+	tevent_req_received(req);
+	return ret;
+}
+
+static const struct tstream_context_ops tstream_cli_np_ops = {
+	.name			= "cli_np",
+
+	.pending_bytes		= tstream_cli_np_pending_bytes,
+
+	.readv_send		= tstream_cli_np_readv_send,
+	.readv_recv		= tstream_cli_np_readv_recv,
+
+	.writev_send		= tstream_cli_np_writev_send,
+	.writev_recv		= tstream_cli_np_writev_recv,
+
+	.disconnect_send	= tstream_cli_np_disconnect_send,
+	.disconnect_recv	= tstream_cli_np_disconnect_recv,
+};
+
+NTSTATUS _tstream_cli_np_existing(TALLOC_CTX *mem_ctx,
+				  struct cli_state *cli,
+				  uint16_t fnum,
+				  struct tstream_context **_stream,
+				  const char *location)
+{
+	struct tstream_context *stream;
+	struct tstream_cli_np *cli_nps;
+
+	stream = tstream_context_create(mem_ctx,
+					&tstream_cli_np_ops,
+					&cli_nps,
+					struct tstream_cli_np,
+					location);
+	if (!stream) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(cli_nps);
+
+	cli_nps->cli = cli;
+	cli_nps->fnum = fnum;
+
+	*_stream = stream;
+	return NT_STATUS_OK;
+}
