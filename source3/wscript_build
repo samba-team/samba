@@ -103,6 +103,10 @@ LIBCLI_INITSHUTDOWN_SRC = '''
                           librpc/gen_ndr/cli_initshutdown.c
                           librpc/gen_ndr/ndr_initshutdown_c.c'''
 
+LIBCLI_DSSETUP_SRC = '''
+                     librpc/gen_ndr/cli_dssetup.c
+                     librpc/gen_ndr/ndr_dssetup_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -332,7 +336,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_wkssvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
-                ../librpc/gen_ndr/ndr_dssetup_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
@@ -341,7 +344,6 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_wkssvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
-                   ../librpc/gen_ndr/cli_dssetup.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ${DCERPC_CLIENT_GEN_SRC}
                    ../librpc/rpc/dcerpc_util.c
@@ -708,7 +710,8 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
                   ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_SRC}
-                  ${TDB_VALIDATE_SRC}'''
+                  ${TDB_VALIDATE_SRC}
+                  ${LIBCLI_DSSETUP_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
 
