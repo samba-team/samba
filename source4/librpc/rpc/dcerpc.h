@@ -230,7 +230,6 @@ struct rpc_request {
 	const struct GUID *object;
 	uint16_t opnum;
 	DATA_BLOB request_data;
-	bool async_call;
 	bool ignore_timeout;
 
 	/* use by the ndr level async recv call */

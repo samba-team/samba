@@ -897,7 +897,6 @@ req_done:
 static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
 					       const struct GUID *object,
 					       uint16_t opnum,
-					       bool async,
 					       DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
@@ -916,7 +915,6 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->payload = data_blob(NULL, 0);
 	req->flags = 0;
 	req->fault_code = 0;
-	req->async_call = async;
 	req->ignore_timeout = false;
 	req->async.callback = NULL;
 	req->async.private_data = NULL;
@@ -967,6 +965,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	uint32_t remaining, chunk_size;
 	bool first_packet = true;
 	size_t sig_size = 0;
+	bool need_async = false;
 
 	req = c->request_queue;
 	if (req == NULL) {
@@ -976,8 +975,8 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	p = req->p;
 	stub_data = &req->request_data;
 
-	if (!req->async_call && (c->pending != NULL)) {
-		return;
+	if (c->pending) {
+		need_async = true;
 	}
 
 	DLIST_REMOVE(c->request_queue, req);
@@ -1045,7 +1044,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 			return;
 		}
 
-		if (last_frag && !req->async_call) {
+		if (last_frag && !need_async) {
 			do_trans = true;
 		}
 
@@ -1119,7 +1118,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	req = dcerpc_request_send(p, object, opnum, false, stub_data_in);
+	req = dcerpc_request_send(p, object, opnum, stub_data_in);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1385,7 +1384,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
-	req = dcerpc_request_send(p, object, opnum, async, &request);
+	req = dcerpc_request_send(p, object, opnum, &request);
 
 	if (req != NULL) {
 		req->ndr.table = table;
