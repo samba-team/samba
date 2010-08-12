@@ -99,6 +99,10 @@ LIBCLI_ECHO_SRC = '''
                   librpc/gen_ndr/cli_echo.c
                   librpc/gen_ndr/ndr_echo_c.c'''
 
+LIBCLI_INITSHUTDOWN_SRC = '''
+                          librpc/gen_ndr/cli_initshutdown.c
+                          librpc/gen_ndr/ndr_initshutdown_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -325,7 +329,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_lsa_c.c
                 ../librpc/gen_ndr/ndr_srvsvc_c.c
                 ../librpc/gen_ndr/ndr_svcctl_c.c
-                ../librpc/gen_ndr/ndr_initshutdown_c.c
                 ../librpc/gen_ndr/ndr_wkssvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
@@ -335,7 +338,6 @@ DCERPC_CLIENT_GEN_SRC = '''
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_srvsvc.c
                    ../librpc/gen_ndr/cli_svcctl.c
-                   ../librpc/gen_ndr/cli_initshutdown.c
                    ../librpc/gen_ndr/cli_wkssvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
