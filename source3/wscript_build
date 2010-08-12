@@ -111,6 +111,10 @@ LIBCLI_SVCCTL_SRC = '''
                     librpc/gen_ndr/cli_svcctl.c
                     librpc/gen_ndr/ndr_svcctl_c.c'''
 
+LIBCLI_WKSSVC_SRC = '''
+                    librpc/gen_ndr/cli_wkssvc.c
+                    librpc/gen_ndr/ndr_wkssvc_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -335,14 +339,12 @@ LIBMSRPC_SRC = '''rpc_client/cli_lsarpc.c rpc_client/cli_samr.c
 DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_lsa_c.c
                 ../librpc/gen_ndr/ndr_srvsvc_c.c
-                ../librpc/gen_ndr/ndr_wkssvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_samr_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_srvsvc.c
-                   ../librpc/gen_ndr/cli_wkssvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_samr.c
                    ../librpc/gen_ndr/cli_epmapper.c
