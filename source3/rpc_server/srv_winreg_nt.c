@@ -220,8 +220,8 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	prs_struct    prs_hkpd;
 
-	uint8_t *outbuf;
-	uint32_t outbuf_size;
+	uint8_t *outbuf = NULL;
+	uint32_t outbuf_size = 0;
 
 	DATA_BLOB val_blob;
 	bool free_buf = False;
