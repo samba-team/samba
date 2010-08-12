@@ -4614,10 +4614,6 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
-NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
-			     struct rpc_cli_smbd_conn *conn,
-			     const struct ndr_syntax_id *syntax,
-			     struct rpc_pipe_client **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 

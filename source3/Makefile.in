@@ -706,8 +706,7 @@ RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
 		 librpc/rpc/dcerpc_spnego.o \
 		 librpc/rpc/rpc_common.o \
 		 rpc_client/rpc_transport_np.o \
-		 rpc_client/rpc_transport_sock.o \
-		 rpc_client/rpc_transport_smbd.o
+		 rpc_client/rpc_transport_sock.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
