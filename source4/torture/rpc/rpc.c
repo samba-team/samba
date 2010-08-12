@@ -151,7 +151,7 @@ static bool torture_rpc_setup_machine_workstation(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
-	return true;
+	return NT_STATUS_IS_OK(status);
 }
 
 static bool torture_rpc_setup_machine_bdc(struct torture_context *tctx,
@@ -183,7 +183,7 @@ static bool torture_rpc_setup_machine_bdc(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
-	return true;
+	return NT_STATUS_IS_OK(status);
 }
 
 _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_workstation_rpc_iface_tcase(
@@ -259,7 +259,7 @@ static bool torture_rpc_setup_anonymous(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
-	return true;
+	return NT_STATUS_IS_OK(status);
 }
 
 static bool torture_rpc_setup (struct torture_context *tctx, void **data)
@@ -278,7 +278,7 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 
 	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
 
-	return true;
+	return NT_STATUS_IS_OK(status);
 }
 
 
