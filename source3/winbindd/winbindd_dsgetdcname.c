@@ -67,8 +67,8 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 
 	child = locator_child();
 
-	subreq = rpccli_wbint_DsGetDcName_send(
-		state, ev, child->rpccli,
+	subreq = dcerpc_wbint_DsGetDcName_send(
+		state, ev, child->binding_handle,
 		request->data.dsgetdcname.domain_name, guid_ptr,
 		request->data.dsgetdcname.site_name,
 		ds_flags, &state->dc_info);
@@ -87,7 +87,7 @@ static void winbindd_dsgetdcname_done(struct tevent_req *subreq)
 		req, struct winbindd_dsgetdcname_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_DsGetDcName_recv(subreq, state, &result);
+	status = dcerpc_wbint_DsGetDcName_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

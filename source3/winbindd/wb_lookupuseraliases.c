@@ -46,8 +46,8 @@ struct tevent_req *wb_lookupuseraliases_send(TALLOC_CTX *mem_ctx,
 	state->sids.num_sids = num_sids;
 	state->sids.sids = CONST_DISCARD(struct dom_sid *, sids);
 
-	subreq = rpccli_wbint_LookupUserAliases_send(
-		state, ev, domain->child.rpccli, &state->sids, &state->rids);
+	subreq = dcerpc_wbint_LookupUserAliases_send(
+		state, ev, domain->child.binding_handle, &state->sids, &state->rids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -63,7 +63,7 @@ static void wb_lookupuseraliases_done(struct tevent_req *subreq)
 		req, struct wb_lookupuseraliases_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_LookupUserAliases_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupUserAliases_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);

@@ -40,8 +40,8 @@ struct tevent_req *wb_query_user_list_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	subreq = rpccli_wbint_QueryUserList_send(state, ev,
-						 domain->child.rpccli,
+	subreq = dcerpc_wbint_QueryUserList_send(state, ev,
+						 domain->child.binding_handle,
 						 &state->users);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -58,7 +58,7 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 		req, struct wb_query_user_list_state);
 	NTSTATUS status, result;
 
-	status = rpccli_wbint_QueryUserList_recv(subreq, state, &result);
+	status = dcerpc_wbint_QueryUserList_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -69,7 +69,7 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10, ("rpccli_wbint_QueryUserList returned %d users\n",
+	DEBUG(10, ("dcerpc_wbint_QueryUserList returned %d users\n",
 		   state->users.num_userinfos));
 
 	tevent_req_done(req);
