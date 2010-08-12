@@ -79,6 +79,10 @@ LIBCLI_EVENTLOG_SRC = '''
                       librpc/gen_ndr/cli_eventlog.c
                       librpc/gen_ndr/ndr_eventlog_c.c'''
 
+LIBCLI_WINREG_SRC = '''
+                    librpc/gen_ndr/cli_winreg.c
+                    librpc/gen_ndr/ndr_winreg_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -307,7 +311,6 @@ DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_echo_c.c
                 ../librpc/gen_ndr/ndr_srvsvc_c.c
                 ../librpc/gen_ndr/ndr_svcctl_c.c
-                ../librpc/gen_ndr/ndr_winreg_c.c
                 ../librpc/gen_ndr/ndr_initshutdown_c.c
                 ../librpc/gen_ndr/ndr_wkssvc_c.c
                 ../librpc/gen_ndr/ndr_netlogon_c.c
@@ -322,7 +325,6 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/gen_ndr/cli_echo.c
                    ../librpc/gen_ndr/cli_srvsvc.c
                    ../librpc/gen_ndr/cli_svcctl.c
-                   ../librpc/gen_ndr/cli_winreg.c
                    ../librpc/gen_ndr/cli_initshutdown.c
                    ../librpc/gen_ndr/cli_wkssvc.c
                    ../librpc/gen_ndr/cli_netlogon.c
@@ -771,6 +773,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SPOOLSS_SRC} ${RPC_EVENTLOG_SRC}
                 ${RPC_ECHO_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
+                ${LIBCLI_WINREG_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
