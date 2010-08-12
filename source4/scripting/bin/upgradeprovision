@@ -60,6 +60,7 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  delta_update_basesamdb, update_policyids,
                                  update_machine_account_password,
                                  search_constructed_attrs_stored,
+                                 int64range2str,
                                  increment_calculated_keyversion_number)
 
 replace=2**FLAG_MOD_REPLACE
@@ -107,6 +108,7 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
                         "wellKnownObjects":replace, "privilege":never,
                         "defaultSecurityDescriptor": replace,
                         "rIDAvailablePool": never,
+                        "rIDNextRID": add, "rIDUsedPool": never,
                         "defaultSecurityDescriptor": replace + add,
                         "isMemberOfPartialAttributeSet": delete,
                         "attributeDisplayNames": replace + add}
@@ -411,7 +413,13 @@ def dump_denied_change(dn, att, flagtxt, current, reference):
 
     message(CHANGE, "dn= " + str(dn)+" " + att+" with flag " + flagtxt
                 +" is not allowed to be changed/removed, I discard this change")
-    if att != "objectSid" :
+    if att == "objectSid" :
+        message(CHANGE, "old : %s" % ndr_unpack(security.dom_sid, current[0]))
+        message(CHANGE, "new : %s" % ndr_unpack(security.dom_sid, reference[0]))
+    elif att == "rIDPreviousAllocationPool" or att == "rIDAllocationPool":
+        message(CHANGE, "old : %s" % int64range2str(current[0]))
+        message(CHANGE, "new : %s" % int64range2str(reference[0]))
+    else:
         i = 0
         for e in range(0, len(current)):
             message(CHANGE, "old %d : %s" % (i, str(current[e])))
@@ -421,10 +429,6 @@ def dump_denied_change(dn, att, flagtxt, current, reference):
             for e in range(0, len(reference)):
                 message(CHANGE, "new %d : %s" % (i, str(reference[e])))
                 i+=1
-    else:
-        message(CHANGE, "old : %s" % ndr_unpack(security.dom_sid, current[0]))
-        message(CHANGE, "new : %s" % ndr_unpack(security.dom_sid, reference[0]))
-
 
 def handle_special_add(samdb, dn, names):
     """Handle special operation (like remove) on some object needed during

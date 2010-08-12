@@ -886,3 +886,14 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
                     hashAtt[att][str(ent.dn).lower()] = str(ent[att])
 
     return hashAtt
+
+def int64range2str(value):
+    """Display the int64 range stored in value as xxx-yyy
+
+    :param value: The int64 range
+    :return: A string of the representation of the range
+    """
+
+    lvalue = long(value)
+    str = "%d-%d" % (lvalue&0xFFFFFFFF, lvalue>>32)
+    return str
