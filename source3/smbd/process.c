@@ -2275,7 +2275,7 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool from_client = (smbd_server_fd() == fd)?true:false;
+	bool from_client = (smbd_server_fd() == fd);
 
 	if (from_client) {
 		smbd_lock_socket(conn);
