@@ -203,7 +203,7 @@ LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ${GPEXT_SRC}'''
 LIBGPO_SRC = '''${LIBGPO_SRC0}'''
 
-LIBADS_SRC = '''libads/ldap.c libads/ldap_printer.c
+LIBADS_SRC = '''libads/ldap.c
              libads/sasl.c libads/sasl_wrapping.c
              libads/krb5_setpw.c
              libads/kerberos_util.c
@@ -211,6 +211,8 @@ LIBADS_SRC = '''libads/ldap.c libads/ldap_printer.c
              libads/ads_struct.c libads/kerberos_keytab.c
              libads/disp_sec.c libads/ads_utils.c libads/ldap_utils.c
              libads/ldap_schema.c libads/util.c libads/ndr.c'''
+
+LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
 
 LIBADS_SERVER_SRC = '''libads/kerberos_verify.c libads/authdata.c
                     ../librpc/ndr/ndr_krb5pac.c
@@ -760,7 +762,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${LIBMSRPC_SRC}
                 ${LIBMSRPC_GEN_SRC} ${LIBADS_SRC}
-                ${LIBADS_SERVER_SRC} ${REG_FULL_SRC}
+                ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${RPC_LSA_SRC}
