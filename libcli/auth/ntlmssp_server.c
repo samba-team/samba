@@ -393,7 +393,7 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 {
 	DATA_BLOB user_session_key = state->user_session_key;
 	DATA_BLOB lm_session_key = state->lm_session_key;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
 	dump_data_pw("NT session key:\n", user_session_key.data, user_session_key.length);
