@@ -80,7 +80,7 @@ ctdb_test_exit ()
 	# leave the recovery in restart_ctdb so that future tests that
 	# might do a manual restart mid-test will benefit.
 	echo "Forcing a recovery..."
-	onnode 0 ctdb recover
+	onnode 0 $CTDB recover
     fi
 
     exit $status
@@ -336,7 +336,7 @@ _cluster_is_healthy ()
 {
     local out x count line
 
-    out=$(ctdb -Y status 2>&1) || return 1
+    out=$($CTDB -Y status 2>&1) || return 1
 
     {
         read x
@@ -359,7 +359,7 @@ cluster_is_healthy ()
 	if ! ${ctdb_test_restart_scheduled:-false} ; then
 	    echo "DEBUG:"
 	    local i
-	    for i in "onnode -q 0 ctdb status" "onnode -q 0 onnode all ctdb scriptstatus" ; do
+	    for i in "onnode -q 0 $CTDB status" "onnode -q 0 onnode all $CTDB scriptstatus" ; do
 		echo "$i"
 		$i || true
 	    done
@@ -407,7 +407,7 @@ node_has_status ()
     if [ -n "$bits" ] ; then
 	local out x line
 
-	out=$(ctdb -Y status 2>&1) || return 1
+	out=$($CTDB -Y status 2>&1) || return 1
 
 	{
             read x
@@ -420,9 +420,9 @@ node_has_status ()
 	    return 1
 	} <<<"$out" # Yay bash!
     elif [ -n "$fpat" ] ; then
-	ctdb statistics -n "$pnn" | egrep -q "$fpat"
+	$CTDB statistics -n "$pnn" | egrep -q "$fpat"
     elif [ -n "$mpat" ] ; then
-	ctdb getmonmode -n "$pnn" | egrep -q "$mpat"
+	$CTDB getmonmode -n "$pnn" | egrep -q "$mpat"
     else
 	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
 	return 1
@@ -438,7 +438,7 @@ wait_until_node_has_status ()
     echo "Waiting until node $pnn has status \"$status\"..."
 
     if ! wait_until $timeout onnode any $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
-	for i in "onnode -q any ctdb status" "onnode -q any onnode all ctdb scriptstatus" ; do
+	for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus" ; do
 	    echo "$i"
 	    $i || true
 	done
@@ -581,7 +581,7 @@ tcpdump_wait ()
     if ! wait_until 30 tcpdump_check ; then
 	echo "DEBUG:"
 	local i
-	for i in "onnode -q 0 ctdb status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
+	for i in "onnode -q 0 $CTDB status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
 	    echo "$i"
 	    $i || true
 	done
@@ -638,7 +638,7 @@ gratarp_sniff_wait_show ()
 daemons_stop ()
 {
     echo "Attempting to politely shutdown daemons..."
-    onnode 1 ctdb shutdown -n all || true
+    onnode 1 $CTDB shutdown -n all || true
 
     echo "Sleeping for a while..."
     sleep_for 1
@@ -794,16 +794,16 @@ _ctdb_start_post ()
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
     echo "Setting RerecoveryTimeout to 1"
-    onnode -pq all "ctdb setvar RerecoveryTimeout 1"
+    onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
 
     # In recent versions of CTDB, forcing a recovery like this blocks
     # until the recovery is complete.  Hopefully this will help the
     # cluster to stabilise before a subsequent test.
     echo "Forcing a recovery..."
-    onnode -q 0 ctdb recover
+    onnode -q 0 $CTDB recover
     sleep_for 1
     echo "Forcing a recovery..."
-    onnode -q 0 ctdb recover
+    onnode -q 0 $CTDB recover
 
     echo "ctdb is ready"
 }
@@ -855,16 +855,16 @@ restart_ctdb ()
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
     echo "Setting RerecoveryTimeout to 1"
-    onnode -pq all "ctdb setvar RerecoveryTimeout 1"
+    onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
 
     # In recent versions of CTDB, forcing a recovery like this blocks
     # until the recovery is complete.  Hopefully this will help the
     # cluster to stabilise before a subsequent test.
     echo "Forcing a recovery..."
-    onnode -q 0 ctdb recover
+    onnode -q 0 $CTDB recover
     sleep_for 1
     echo "Forcing a recovery..."
-    onnode -q 0 ctdb recover
+    onnode -q 0 $CTDB recover
 
     echo "ctdb is ready"
 }
@@ -984,7 +984,7 @@ ctdb_test_eventscript_install ()
 {
 
     local script='#!/bin/sh
-out=$(ctdb pnn)
+out=$($CTDB pnn)
 pnn="${out#PNN:}"
 
 rm -vf "/tmp/ctdb-test-flag-${1}.${pnn}"
@@ -1036,3 +1036,6 @@ wait_for_monitor_event ()
     wait_until 120 ! ctdb_test_eventscript_flag exists $pnn "monitor"
 
 }
+
+# Make sure that $CTDB is set.
+: ${CTDB:=ctdb}
