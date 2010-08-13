@@ -3324,8 +3324,9 @@ testenv:
 
 gdbtestenv:
 	$(MAKE) test SELFTEST_TESTENV=$(SELFTEST_TESTENV) \
-		SMBD_VALGRIND="xterm -n smbd -T smbd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
-		WINBINDD_VALGRIND="xterm -n winbindd -T winbindd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
+		NMBD_VALGRIND="xterm -n nmbd -title nmbd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
+		WINBINDD_VALGRIND="xterm -n winbindd -title winbindd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
+		SMBD_VALGRIND="xterm -n smbd -title smbd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
 		TESTS="--testenv"
 
 
