@@ -317,7 +317,8 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		    true, req->seqnum+1,
 		    IS_CONN_ENCRYPTED(req->conn) || req->encrypted,
 		    &req->pcd)) {
-		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+		exit_server_cleanly("api_dcerpc_cmd_write_done: "
+				    "srv_send_smb failed.");
 	}
 	TALLOC_FREE(req);
 }
@@ -344,8 +345,8 @@ static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted, &req->pcd)) {
-			exit_server_cleanly("construct_reply: srv_send_smb "
-					    "failed.");
+			exit_server_cleanly("api_dcerpc_cmd_read_done: "
+					    "srv_send_smb failed.");
 		}
 		TALLOC_FREE(req);
 		return;
