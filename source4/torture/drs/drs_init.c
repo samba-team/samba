@@ -28,14 +28,16 @@
 /**
  * DRSUAPI tests to be executed remotely
  */
-static struct torture_suite * torture_drs_rpc_suite(TALLOC_CTX *mem_ctx)
+static struct torture_suite * torture_drs_rpc_suite(TALLOC_CTX *mem_ctx,
+                                                    const char *suite_name)
 {
-	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"RPC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, suite_name);
 
 	torture_drs_rpc_dssync_tcase(suite);
 	torture_drs_rpc_dsintid_tcase(suite);
+
+	suite->description = talloc_strdup(suite,
+	                                   "DRSUAPI RPC Tests Suite");
 
 	return suite;
 }
@@ -43,14 +45,16 @@ static struct torture_suite * torture_drs_rpc_suite(TALLOC_CTX *mem_ctx)
 /**
  * DRSUAPI tests to be executed remotely
  */
-static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx)
+static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx,
+                                                     const char *suite_name)
 {
-	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"UNIT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, suite_name);
 
 	torture_drs_unit_prefixmap(suite);
 	torture_drs_unit_schemainfo(suite);
+
+	suite->description = talloc_strdup(suite,
+	                                   "DRSUAPI Unit Tests Suite");
 
 	return suite;
 }
@@ -60,16 +64,17 @@ static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx)
  */
 NTSTATUS torture_drs_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"DRS");
+	struct torture_suite *suite;
+	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
-	torture_suite_add_suite(suite, torture_drs_rpc_suite(suite));
-	torture_suite_add_suite(suite, torture_drs_unit_suite(suite));
+	/* register RPC related test cases */
+	suite = torture_drs_rpc_suite(mem_ctx, "DRS-RPC");
+	if (!suite) return NT_STATUS_NO_MEMORY;
+	torture_register_suite(suite);
 
-	suite->description = talloc_strdup(suite,
-					   "DRSUAPI related tests - Remote and Local");
-
+	/* register DRS Unit test cases */
+	suite = torture_drs_unit_suite(mem_ctx, "DRS-UNIT");
+	if (!suite) return NT_STATUS_NO_MEMORY;
 	torture_register_suite(suite);
 
 	return NT_STATUS_OK;
