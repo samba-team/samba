@@ -2188,7 +2188,7 @@ void chain_reply(struct smb_request *req)
 			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			  &req->pcd)) {
-		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+		exit_server_cleanly("chain_reply: srv_send_smb failed.");
 	}
 	TALLOC_FREE(req->chain_outbuf);
 	req->done = true;

@@ -361,8 +361,8 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 				true, aio_ex->smbreq->seqnum+1,
 				IS_CONN_ENCRYPTED(fsp->conn),
 				&aio_ex->smbreq->pcd)) {
-			exit_server_cleanly("handle_aio_write: srv_send_smb "
-					    "failed.");
+			exit_server_cleanly("schedule_aio_write_and_X: "
+					    "srv_send_smb failed.");
 		}
 		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write "
 			  "behind for file %s\n", fsp_str_dbg(fsp)));
@@ -725,7 +725,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 			  true, aio_ex->smbreq->seqnum+1,
 			  IS_CONN_ENCRYPTED(fsp->conn),
 			  NULL)) {
-		exit_server_cleanly("handle_aio_write: srv_send_smb failed.");
+		exit_server_cleanly("handle_aio_write_complete: "
+				    "srv_send_smb failed.");
 	}
 
 	DEBUG(10,("handle_aio_write_complete: scheduled aio_write completed "
