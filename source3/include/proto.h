@@ -2483,6 +2483,13 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint32_t max_rdata,
 		       uint8_t **rdata, uint32_t *num_rdata);
 
+struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli,
+				  uint16_t fnum);
+NTSTATUS cli_flush_recv(struct tevent_req *req);
+NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum);
+
 /* The following definitions come from libsmb/clirap2.c  */
 struct rap_group_info_1;
 struct rap_user_info_1;

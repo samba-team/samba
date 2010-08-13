@@ -5243,3 +5243,86 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	}
 	return status;
 }
+
+struct cli_flush_state {
+	uint16_t vwv[1];
+};
+
+static void cli_flush_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli,
+				  uint16_t fnum)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_flush_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_flush_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	SSVAL(state->vwv + 0, 0, fnum);
+
+	subreq = cli_smb_send(state, ev, cli, SMBflush, 0, 1, state->vwv,
+			      0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_flush_done, req);
+	return req;
+}
+
+static void cli_flush_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_flush_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_flush_send(frame, ev, cli, fnum);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_flush_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
