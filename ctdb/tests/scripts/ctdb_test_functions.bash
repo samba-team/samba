@@ -336,13 +336,15 @@ _cluster_is_healthy ()
 {
     local out x count line
 
-    out=$($CTDB -Y status 2>&1) || return 1
+    out=$($CTDB -Y status 2>/dev/null) || return 1
 
     {
         read x
 	count=0
         while read line ; do
-	    count=$(($count + 1))
+	    # We need to see valid lines if we're going to be healthy.
+	    [ "${line#:[0-9]}" != "$line" ] && count=$(($count + 1))
+	    # A line indicating a node is unhealthy causes failure.
 	    [ "${line##:*:*:*1:}" != "$line" ] && return 1
         done
 	[ $count -gt 0 ] && return $?
