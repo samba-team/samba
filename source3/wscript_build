@@ -124,6 +124,11 @@ LIBCLI_LSA_SRC = '''
                  librpc/gen_ndr/ndr_lsa_c.c
                  rpc_client/cli_lsarpc.c'''
 
+LIBCLI_SAMR_SRC = '''
+                  librpc/gen_ndr/cli_samr.c
+                  librpc/gen_ndr/ndr_samr_c.c
+                  rpc_client/cli_samr.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -339,7 +344,7 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 RPC_CLIENT_SRC1 = '''rpc_client/cli_netlogon.c
                   ${SCHANNEL_SRC}'''
 
-LIBMSRPC_SRC = '''rpc_client/cli_samr.c
+LIBMSRPC_SRC = '''
                ${RPC_CLIENT_SRC1}
                ${RPC_CLIENT_SRC}
                rpc_client/init_samr.c
@@ -347,12 +352,10 @@ LIBMSRPC_SRC = '''rpc_client/cli_samr.c
 
 DCERPC_CLIENT_GEN_SRC = '''
                 ../librpc/gen_ndr/ndr_netlogon_c.c
-                ../librpc/gen_ndr/ndr_samr_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''
                    ../librpc/gen_ndr/cli_netlogon.c
-                   ../librpc/gen_ndr/cli_samr.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ${DCERPC_CLIENT_GEN_SRC}
                    ../librpc/rpc/dcerpc_util.c
@@ -721,7 +724,8 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
-                  ${LIBCLI_LSA_SRC}'''
+                  ${LIBCLI_LSA_SRC}
+                  ${LIBCLI_SAMR_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
 
@@ -799,6 +803,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_WINREG_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 ${LIBCLI_LSA_SRC}
+                ${LIBCLI_SAMR_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
@@ -840,7 +845,8 @@ SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
            ${LOCKING_SRC}
            ${PLAINTEXT_AUTH_SRC}
            ${RPC_PARSE_SRC} ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
-           ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}'''
+           ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}
+           ${LIBCLI_SAMR_SRC}'''
 
 WBINFO_SRC = '../nsswitch/wbinfo.c ${AFS_SETTOKEN_SRC}'
 
