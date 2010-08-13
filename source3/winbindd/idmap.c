@@ -609,8 +609,8 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 	struct idmap_domain *dom;
 	struct id_map *maps[2];
 
-	 DEBUG(10, ("idmap_backends_sid_to_unixid: domain = '%s', sid = [%s]\n",
-		    domain?domain:"NULL", sid_string_dbg(id->sid)));
+	DEBUG(10, ("idmap_backends_sid_to_unixid: domain = '%s', sid = [%s]\n",
+		   domain?domain:"NULL", sid_string_dbg(id->sid)));
 
 	maps[0] = id;
 	maps[1] = NULL;
