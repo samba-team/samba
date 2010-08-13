@@ -171,7 +171,7 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "if (DEBUGLEVEL >= 10) {";
-	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, r);";
+	pidl "\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_IN, r);";
 	pidl "}";
 	pidl "";
 
@@ -190,7 +190,7 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 	pidl "if (DEBUGLEVEL >= 10) {";
-	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
+	pidl "\nNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_OUT | NDR_SET_VALUES, r);";
 	pidl "}";
 	pidl "";
 	pidl "push = ndr_push_init_ctx(r);";
