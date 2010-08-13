@@ -12,19 +12,19 @@ TDB_STLIB = libtdb.a
 TDB_LIB = $(TDB_STLIB) 
 
 bin/tdbtest$(EXEEXT): tools/tdbtest.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm $(TDB_DEPS)
 
 bin/tdbtool$(EXEEXT): tools/tdbtool.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb $(TDB_DEPS)
 
 bin/tdbtorture$(EXEEXT): tools/tdbtorture.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb $(TDB_DEPS)
 
 bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb $(TDB_DEPS)
 
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb $(TDB_DEPS)
 
 test:: abi_checks
 
@@ -48,7 +48,7 @@ pytdb.o: $(tdbdir)/pytdb.c
 	$(CC) $(PICFLAG) -c $(tdbdir)/pytdb.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
 tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) pytdb.o
-	$(SHLD) $(SHLD_FLAGS) -o $@ pytdb.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags`
+	$(SHLD) $(SHLD_FLAGS) -o $@ pytdb.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags` $(TDB_DEPS)
 
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET) installdocs
