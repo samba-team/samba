@@ -81,6 +81,9 @@ export USERNAME
 PASSWORD="\$PASSWORD"
 export PASSWORD
 
+LOCAL_PATH="\$LOCAL_PATH"
+export LOCAL_PATH
+
 (
 	shift $#
 	testitprefix="local_s3."
@@ -147,7 +150,7 @@ plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smb
 #plantest "blackbox.smbclient_s3.crypt domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "-e"
 
 plantest "blackbox.net_s3" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_s3.sh
-plantest "blackbox.testparm_s3" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_testparm_s3.sh
+plantest "blackbox.testparm_s3" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_testparm_s3.sh
 
 (
 	shift $#
