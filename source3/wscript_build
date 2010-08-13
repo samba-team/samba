@@ -92,7 +92,7 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
-RPC_PARSE_SRC2 = '''rpc_client/init_netlogon.c
+RPC_PARSE_SRC = '''rpc_client/init_netlogon.c
                  rpc_client/init_lsa.c'''
 
 LIBREPLACE_SRC = '''${LIBREPLACE_SRCS}'''
@@ -417,8 +417,6 @@ RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
 #TODO: RPC_SERVER_SRC used to include RPC_STATIC modules
 RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
-
-RPC_PARSE_SRC = '''${RPC_PARSE_SRC2}'''
 
 RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c
                     librpc/rpc/rpc_common.c
@@ -809,7 +807,7 @@ DISPLAY_SEC_SRC= '../libcli/security/display_sec.c'
 
 CLIENT_SRC1 = '''client/client.c client/clitar.c ${RPC_CLIENT_SRC}
                  ../librpc/rpc/binding.c client/dnsbrowse.c
-                 ${RPC_CLIENT_SRC1} ${RPC_PARSE_SRC2}'''
+                 ${RPC_CLIENT_SRC1} ${RPC_PARSE_SRC}'''
 
 CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
                 ${READLINE_SRC} ${DISPLAY_SEC_SRC}'''
