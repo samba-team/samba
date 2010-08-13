@@ -616,13 +616,23 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 	maps[1] = NULL;
 
 	if (sid_check_is_in_builtin(id->sid)
-	    || (sid_check_is_in_our_domain(id->sid))) {
+	    || (sid_check_is_in_our_domain(id->sid)))
+	{
+		NTSTATUS status;
+
+		DEBUG(10, ("asking passdb...\n"));
 
 		dom = idmap_init_passdb_domain(NULL);
 		if (dom == NULL) {
 			return NT_STATUS_NONE_MAPPED;
 		}
-		return dom->methods->sids_to_unixids(dom, maps);
+		status = dom->methods->sids_to_unixids(dom, maps);
+
+		if (NT_STATUS_IS_OK(status) && id->status == ID_MAPPED) {
+			return status;
+		}
+
+		DEBUG(10, ("passdb could not map, asking backends...\n"));
 	}
 
 	dom = idmap_find_domain(domain);
