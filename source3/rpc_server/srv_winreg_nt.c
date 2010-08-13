@@ -403,7 +403,7 @@ WERROR _winreg_GetVersion(struct pipes_struct *p,
 WERROR _winreg_EnumKey(struct pipes_struct *p,
 		       struct winreg_EnumKey *r)
 {
-	WERROR err;
+	WERROR err = WERR_OK;
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
 
 	if ( !key )
@@ -430,10 +430,10 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 WERROR _winreg_EnumValue(struct pipes_struct *p,
 			 struct winreg_EnumValue *r)
 {
-	WERROR err;
+	WERROR err = WERR_OK;
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
-	char *valname;
-	struct registry_value *val;
+	char *valname = NULL;
+	struct registry_value *val = NULL;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -519,8 +519,8 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	fstring str_reason;
 	fstring do_reboot;
 	fstring f;
-	int ret;
-	bool can_shutdown;
+	int ret = -1;
+	bool can_shutdown = false;
 
  	shutdown_script = talloc_strdup(p->mem_ctx, lp_shutdown_script());
 	if (!shutdown_script) {
@@ -605,11 +605,9 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 				   struct winreg_AbortSystemShutdown *r)
 {
-	const char *abort_shutdown_script;
-	int ret;
-	bool can_shutdown;
-
-	abort_shutdown_script = lp_abort_shutdown_script();
+	const char *abort_shutdown_script = lp_abort_shutdown_script();
+	int ret = -1;
+	bool can_shutdown = false;
 
 	if (!*abort_shutdown_script)
 		return WERR_ACCESS_DENIED;
@@ -643,7 +641,7 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 	char *p = NULL;
 	int num_services = lp_numservices();
 	int snum = -1;
-	const char *share_path;
+	const char *share_path = NULL;
 	char *fname = *pp_fname;
 
 	/* convert to a unix path, stripping the C:\ along the way */
@@ -684,7 +682,7 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	char *fname = NULL;
-	int             snum;
+	int snum = -1;
 
 	if ( !regkey )
 		return WERR_BADFID;
@@ -770,8 +768,8 @@ WERROR _winreg_CreateKey(struct pipes_struct *p,
 			 struct winreg_CreateKey *r)
 {
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
-	struct registry_key *new_key;
-	WERROR result;
+	struct registry_key *new_key = NULL;
+	WERROR result = WERR_OK;
 
 	if ( !parent )
 		return WERR_BADFID;
@@ -801,7 +799,7 @@ WERROR _winreg_SetValue(struct pipes_struct *p,
 			struct winreg_SetValue *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
-	struct registry_value *val;
+	struct registry_value *val = NULL;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -859,10 +857,10 @@ WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
 			      struct winreg_GetKeySecurity *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
-	WERROR err;
-	struct security_descriptor *secdesc;
-	uint8 *data;
-	size_t len;
+	WERROR err = WERR_OK;
+	struct security_descriptor *secdesc = NULL;
+	uint8 *data = NULL;
+	size_t len = 0;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -903,8 +901,8 @@ WERROR _winreg_SetKeySecurity(struct pipes_struct *p,
 			      struct winreg_SetKeySecurity *r)
 {
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
-	struct security_descriptor *secdesc;
-	WERROR err;
+	struct security_descriptor *secdesc = NULL;
+	WERROR err = WERR_OK;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -996,7 +994,7 @@ WERROR _winreg_QueryMultipleValues(struct pipes_struct *p,
 				   struct winreg_QueryMultipleValues *r)
 {
 	struct winreg_QueryMultipleValues2 r2;
-	uint32_t needed;
+	uint32_t needed = 0;
 
 	r2.in.key_handle	= r->in.key_handle;
 	r2.in.values_in		= r->in.values_in;
@@ -1049,9 +1047,9 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 	struct registry_value *vals = NULL;
 	const char **names = NULL;
 	uint32_t offset = 0, num_vals = 0;
-	DATA_BLOB result;
-	int i;
-	WERROR err;
+	DATA_BLOB result = data_blob_null;
+	int i = 0;
+	WERROR err = WERR_OK;
 
 	if (!regkey) {
 		return WERR_BADFID;
