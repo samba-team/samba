@@ -6583,7 +6583,8 @@ void reply_nttranss(struct smb_request *req);
 
 /* The following definitions come from smbd/open.c  */
 
-NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
+NTSTATUS smb1_file_se_access_check(connection_struct *conn,
+			  const struct security_descriptor *sd,
                           const NT_USER_TOKEN *token,
                           uint32_t access_desired,
                           uint32_t *access_granted);
