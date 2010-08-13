@@ -1795,7 +1795,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 	rids.ids = rid;
 
 	types.count = num_rids;
-	types.ids = type;
+	types.ids = (uint32_t *) type;
 
 	*r->out.rids = rids;
 	*r->out.types = types;
@@ -3413,7 +3413,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 	r->primary.string		= global_myname();
 	r->sequence_num			= seq_num;
 	r->domain_server_state		= DOMAIN_SERVER_ENABLED;
-	r->role				= samr_get_server_role();
+	r->role				= (enum samr_Role) samr_get_server_role();
 	r->unknown3			= 1;
 
 	return NT_STATUS_OK;
@@ -3488,7 +3488,7 @@ static NTSTATUS query_dom_info_6(TALLOC_CTX *mem_ctx,
 static NTSTATUS query_dom_info_7(TALLOC_CTX *mem_ctx,
 				 struct samr_DomInfo7 *r)
 {
-	r->role = samr_get_server_role();
+	r->role = (enum samr_Role) samr_get_server_role();
 
 	return NT_STATUS_OK;
 }
