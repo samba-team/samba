@@ -471,7 +471,8 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 			nt_errstr(status) ));
 		return status;
 	}
-	status = smb1_file_se_access_check(parent_desc,
+	status = smb1_file_se_access_check(handle->conn,
+					parent_desc,
 					handle->conn->server_info->ptok,
 					access_mask,
 					&access_granted);
@@ -535,7 +536,8 @@ static int open_acl_common(vfs_handle_struct *handle,
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
-		status = smb1_file_se_access_check(pdesc,
+		status = smb1_file_se_access_check(handle->conn,
+					pdesc,
 					handle->conn->server_info->ptok,
 					fsp->access_mask,
 					&access_granted);
