@@ -98,3 +98,55 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 
 	return NDR_ERR_SUCCESS;
 }
+
+/*
+  print a dnsp_string
+*/
+_PUBLIC_ void ndr_print_dnsp_string(struct ndr_print *ndr, const char *name,
+				    const char *dns_string)
+{
+	ndr->print(ndr, "%-25s: %s", name, dns_string);
+}
+
+/*
+  pull a dnsp_string
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_flags, const char **string)
+{
+	uint8_t len;
+	uint32_t total_len;
+	char *ret;
+
+	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &len));
+
+	ret = talloc_strdup(ndr->current_mem_ctx, "");
+	if (!ret) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+	}
+	total_len = 1;
+	ret = talloc_zero_array(ndr->current_mem_ctx, char, len+1);
+	if (!ret) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+	}
+	NDR_CHECK(ndr_pull_bytes(ndr, (uint8_t *)&ret[total_len-1], len));
+	total_len = len;
+
+	(*string) = ret;
+	NDR_PULL_ALIGN(ndr, 1);
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, int ndr_flags, const char *string)
+{
+	int total_len;
+	total_len = strlen(string) + 1;
+	if (total_len > 255) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "dns_name of length %d larger than 255", total_len);
+	}
+	NDR_CHECK(ndr_push_uint8(ndr, ndr_flags, (uint8_t)total_len));
+	NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)string, total_len - 1));
+	NDR_PUSH_ALIGN(ndr, 1);
+
+	return NDR_ERR_SUCCESS;
+}

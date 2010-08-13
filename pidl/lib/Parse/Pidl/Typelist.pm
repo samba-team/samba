@@ -59,6 +59,7 @@ my %scalars = (
 	"ipv4address"	=> "const char *",
 	"ipv6address"   => "const char *",
 	"dnsp_name"	=> "const char *",
+	"dnsp_string"	=> "const char *",
 );
 
 my %aliases = (

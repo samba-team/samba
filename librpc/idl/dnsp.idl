@@ -40,6 +40,7 @@ interface dnsp
 		DNS_TYPE_HINFO = 0xD,
 		DNS_TYPE_MINFO = 0xE,
 		DNS_TYPE_MX    = 0xF,
+		DNS_TYPE_TXT   = 0x10,
 		DNS_TYPE_RP    = 0x11,
 		DNS_TYPE_AFSDB = 0x12,
 		DNS_TYPE_X25   = 0x13,
@@ -92,6 +93,7 @@ interface dnsp
 		[case(DNS_TYPE_CNAME)]                      dnsp_name cname;
 		[case(DNS_TYPE_SOA)] [flag(NDR_BIG_ENDIAN)] dnsp_soa soa;
 		[case(DNS_TYPE_MX)] [flag(NDR_BIG_ENDIAN)]  dnsp_mx mx;
+		[case(DNS_TYPE_TXT)]                        dnsp_string txt;
 		[case(DNS_TYPE_PTR)]                        dnsp_name ptr;
 		[case(DNS_TYPE_AAAA)]                       ipv6address ip;
 		[case(DNS_TYPE_SRV)] [flag(NDR_BIG_ENDIAN)] dnsp_srv srv;
