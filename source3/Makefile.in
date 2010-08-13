@@ -3329,6 +3329,13 @@ gdbtestenv:
 		SMBD_VALGRIND="xterm -n smbd -title smbd -e $(selftestdir)/gdb_run $(S3_LD_LIBPATH_OVERRIDE)" \
 		TESTS="--testenv"
 
+valgrindtestenv:
+	$(MAKE) test SELFTEST_TESTENV=$(SELFTEST_TESTENV) \
+		NMBD_VALGRIND="xterm -n nmbd -title nmbd -e valgrind -q --db-attach=yes --num-callers=30" \
+		WINBINDD_VALGRIND="xterm -n winbindd -title winbindd -e valgrind -q --db-attach=yes --num-callers=30" \
+		SMBD_VALGRIND="xterm -n smbd -title smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+		TESTS="--testenv"
+
 
 # Check for Winbind struct 32/64bit padding
 test_wbpad:
