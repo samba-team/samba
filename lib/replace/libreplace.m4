@@ -108,7 +108,13 @@ AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror strerro
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid wait4 strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp dup2 dprintf vdprintf)
-AC_CHECK_FUNCS(isatty chown lchown link readlink symlink realpath fdatasync)
+AC_CHECK_FUNCS(isatty chown lchown link readlink symlink realpath)
+AC_CHECK_FUNCS(fdatasync,,[
+	# if we didn't find it, look in librt (Solaris hides it there...)
+	AC_CHECK_LIB(rt, fdatasync,
+		[libreplace_cv_HAVE_FDATASYNC_IN_LIBRT=yes
+		AC_DEFINE(HAVE_FDATASYNC, 1, Define to 1 if there is support for fdatasync)])
+])
 AC_CHECK_FUNCS(get_current_dir_name)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])

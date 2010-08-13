@@ -20,6 +20,12 @@ AC_SUBST(LIBREPLACEOBJ)
 TDB_LIBS=""
 AC_SUBST(TDB_LIBS)
 
+TDB_DEPS=""
+if test x$libreplace_cv_HAVE_FDATASYNC_IN_LIBRT = xyes ; then
+	TDB_DEPS="$TDB_DEPS -lrt"
+fi
+AC_SUBST(TDB_DEPS)
+
 TDB_CFLAGS="-I$tdbdir/include"
 AC_SUBST(TDB_CFLAGS)
 

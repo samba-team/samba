@@ -2137,6 +2137,7 @@ then
 	LINK_LIBTDB=STATIC
 	SMB_LIBRARY(tdb, 1)
 	LIBTDB_OBJ0=""
+	LIBTDB_LIBS="$LIBTDB_LIBS $TDB_DEPS"
 	for obj in ${TDB_OBJ}; do
 		LIBTDB_OBJ0="${LIBTDB_OBJ0} ${tdbdir}/${obj}"
 	done
