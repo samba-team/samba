@@ -378,6 +378,10 @@ LIBCLI_LSA_OBJ = librpc/gen_ndr/cli_lsa.o \
 		 librpc/gen_ndr/ndr_lsa_c.o \
 		 rpc_client/cli_lsarpc.o
 
+LIBCLI_SAMR_OBJ = librpc/gen_ndr/cli_samr.o \
+		  librpc/gen_ndr/ndr_samr_c.o \
+		  rpc_client/cli_samr.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -587,7 +591,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o \
 		  $(SCHANNEL_OBJ)
 
-LIBMSRPC_OBJ = rpc_client/cli_samr.o \
+LIBMSRPC_OBJ = \
 	       $(RPC_CLIENT_OBJ1) \
 	       $(RPC_CLIENT_OBJ) \
 	       rpc_client/init_samr.o \
@@ -595,11 +599,9 @@ LIBMSRPC_OBJ = rpc_client/cli_samr.o \
 
 DCERPC_CLIENT_GEN_OBJ = \
 		librpc/gen_ndr/ndr_netlogon_c.o \
-		librpc/gen_ndr/ndr_samr_c.o \
 		librpc/gen_ndr/ndr_epmapper_c.o
 
 LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_netlogon.o \
-		   librpc/gen_ndr/cli_samr.o \
 		   librpc/gen_ndr/cli_epmapper.o \
 		   $(DCERPC_CLIENT_GEN_OBJ) \
 		   ../librpc/rpc/dcerpc_util.o \
@@ -712,7 +714,8 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
                  $(LIBCLI_SPOOLSS_OBJ) \
 		 $(LIBCLI_WINREG_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
-		 $(LIBCLI_LSA_OBJ)
+		 $(LIBCLI_LSA_OBJ) \
+		 $(LIBCLI_SAMR_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
 		 librpc/rpc/dcerpc_gssapi.o \
@@ -936,7 +939,8 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(PRINTBASE_OBJ) $(LIBSMB_O
 	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(KRBCLIENT_OBJ) \
 	   $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	   $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) \
-           $(PASSCHANGE_OBJ) $(FNAME_UTIL_OBJ)
+           $(PASSCHANGE_OBJ) $(FNAME_UTIL_OBJ) \
+	   $(LIBCLI_SAMR_OBJ)
 
 STATUS_OBJ = utils/status.o utils/status_profile.o \
 	     $(LOCKING_OBJ) $(PARAM_OBJ) \
@@ -973,7 +977,8 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 		$(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(GROUPDB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) \
-		$(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ)
+		$(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) \
+		$(LIBCLI_SAMR_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
 		$(LIBSAMBA_OBJ) $(LIBTSOCKET_OBJ) \
@@ -1009,7 +1014,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_DSSETUP_OBJ) \
 	     $(LIBCLI_WKSSVC_OBJ) \
 	     $(LIBCLI_SRVSVC_OBJ) \
-	     $(LIBCLI_LSA_OBJ)
+	     $(LIBCLI_LSA_OBJ) \
+	     $(LIBCLI_SAMR_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
@@ -1120,7 +1126,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBCLI_SVCCTL_OBJ) \
 	   $(LIBCLI_WKSSVC_OBJ) \
 	   $(LIBCLI_SRVSVC_OBJ) \
-	   $(LIBCLI_LSA_OBJ)
+	   $(LIBCLI_LSA_OBJ) \
+	   $(LIBCLI_SAMR_OBJ)
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
@@ -1367,7 +1374,8 @@ WINBINDD_OBJ = \
 		$(LIBADS_SERVER_OBJ) \
 		$(TDB_VALIDATE_OBJ) \
 		$(LIBCLI_DSSETUP_OBJ) \
-		$(LIBCLI_LSA_OBJ)
+		$(LIBCLI_LSA_OBJ) \
+		$(LIBCLI_SAMR_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
@@ -2288,7 +2296,8 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBCLI_INITSHUTDOWN_OBJ) \
 		 $(LIBCLI_WKSSVC_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
-		 $(LIBCLI_LSA_OBJ)
+		 $(LIBCLI_LSA_OBJ) \
+		 $(LIBCLI_SAMR_OBJ)
 
 LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
 LIBNETAPI_SOVER=@LIBNETAPI_SOVER@
