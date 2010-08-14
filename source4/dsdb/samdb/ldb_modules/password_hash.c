@@ -1452,7 +1452,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 					"check_password_restrictions: "
 					"There's no old nt_hash, which is needed "
 					"in order to change your password!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
 			/* The password modify through the NT hash is encouraged
@@ -1461,7 +1461,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
 					"The old password specified doesn't match!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 		} else if (io->og.lm_hash) {
 			if (!io->o.lm_hash) {
@@ -1469,14 +1469,14 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 					"check_password_restrictions: "
 					"There's no old lm_hash, which is needed "
 					"in order to change your password!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
 			if (memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
 					"The old password specified doesn't match!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 		}
 	}
