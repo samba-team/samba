@@ -59,6 +59,7 @@ int smbd_server_fd(void)
 
 static void smbd_set_server_fd(int fd)
 {
+	smbd_server_conn->sock = fd;
 	server_fd = fd;
 }
 
