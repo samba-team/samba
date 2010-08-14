@@ -79,14 +79,34 @@ class PasswordTests(samba.tests.TestCase):
         self.ldb = ldb
         self.base_dn = self.find_basedn(ldb)
 
-        # (Re)adds the test user "testuser" with the inital password
-        # "thatsAcomplPASS1"
+        # (Re)adds the test user "testuser" with no password atm
         self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser,cn=users," + self.base_dn,
              "objectclass": ["user", "person"],
-             "sAMAccountName": "testuser",
-             "userPassword": "thatsAcomplPASS1" })
+             "sAMAccountName": "testuser"})
+
+        # Tests a password change when we don't have a password yet
+        try:
+            self.ldb.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
+userPassword: thatsAcomplPASS1
+add: userPassword
+userPassword: thatsAcomplPASS2
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # Sets the initial user password and enables the account
+        self.ldb.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+replace: userPassword
+userPassword: thatsAcomplPASS1
+""")
         self.ldb.enable_account("(sAMAccountName=testuser)")
 
         # Open a second LDB connection with the user credentials. Use the
