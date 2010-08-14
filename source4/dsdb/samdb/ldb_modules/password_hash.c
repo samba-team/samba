@@ -1443,8 +1443,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		if (!io->og.nt_hash && !io->og.lm_hash) {
 			ldb_asprintf_errstring(ldb,
 				"check_password_restrictions: "
-				"You need to provide the old password "
-				"in order to change your password!");
+				"You need to provide the old password in order "
+				"to change it!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
