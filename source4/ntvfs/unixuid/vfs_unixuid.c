@@ -184,22 +184,14 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	ids = talloc_array(req, struct id_map, token->num_sids);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
-	ZERO_STRUCT(ids[0].xid);
-	ids[0].sid = token->user_sid;
-	ids[0].status = ID_UNKNOWN;
-
-	ZERO_STRUCT(ids[1].xid);
-	ids[1].sid = token->group_sid;
-	ids[1].status = ID_UNKNOWN;
-
 	(*sec)->ngroups = token->num_sids - 2;
 	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
 	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
 
-	for (i=0;i<(*sec)->ngroups;i++) {
-		ZERO_STRUCT(ids[i+2].xid);
-		ids[i+2].sid = token->sids[i+2];
-		ids[i+2].status = ID_UNKNOWN;
+	for (i=0;i<token->num_sids;i++) {
+		ZERO_STRUCT(ids[i].xid);
+		ids[i].sid = token->sids[i];
+		ids[i].status = ID_UNKNOWN;
 	}
 
 	ctx = wbc_sids_to_xids_send(priv->wbc_ctx, ids, token->num_sids, ids);
