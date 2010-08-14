@@ -704,6 +704,7 @@ NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	struct grouplist_state *s;
 
 	if (c == NULL || mem_ctx == NULL || io == NULL) {
+		talloc_free(c);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

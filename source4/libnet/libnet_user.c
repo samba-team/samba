@@ -1171,9 +1171,10 @@ NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 	struct userlist_state *s;
 
 	if (c == NULL || mem_ctx == NULL || r == NULL) {
+		talloc_free(c);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status) ||
 	    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
