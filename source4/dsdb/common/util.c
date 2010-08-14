@@ -2147,6 +2147,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_WRONG_PASSWORD;
 	} else if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 		status = NT_STATUS_PASSWORD_RESTRICTION;
+	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		status = NT_STATUS_WRONG_PASSWORD;
 	} else if (ret != LDB_SUCCESS) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	} else {
