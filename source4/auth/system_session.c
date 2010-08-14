@@ -175,7 +175,6 @@ _PUBLIC_ struct auth_session_info *system_session(struct loadparm_context *lp_ct
 
 static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx, 
 					  struct loadparm_context *lp_ctx,
-					  bool anonymous_credentials, 
 					  struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
@@ -203,11 +202,7 @@ static NTSTATUS _auth_system_session_info(TALLOC_CTX *parent_ctx,
 
 	cli_credentials_set_conf(session_info->credentials, lp_ctx);
 
-	if (anonymous_credentials) {
-		cli_credentials_set_anonymous(session_info->credentials);
-	} else {
-		cli_credentials_set_machine_account_pending(session_info->credentials, lp_ctx);
-	}
+	cli_credentials_set_machine_account_pending(session_info->credentials, lp_ctx);
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
@@ -220,7 +215,7 @@ _PUBLIC_ struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, stru
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info = NULL;
-	nt_status = _auth_system_session_info(mem_ctx, lp_ctx, true, &session_info);
+	nt_status = _auth_system_session_info(mem_ctx, lp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -234,9 +229,8 @@ _PUBLIC_ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 					   struct auth_session_info **_session_info) 
 {
 	return _auth_system_session_info(parent_ctx, 
-			lp_ctx,
-			lpcfg_parm_bool(lp_ctx, NULL, "system", "anonymous", false),
-			_session_info);
+					 lp_ctx,
+					 _session_info);
 }
 
 NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name, 
