@@ -330,6 +330,12 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	if (!sam_ctx) {
+		DEBUG(0, ("No SAM available, cannot determine local groups\n"));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
 	if (only_childs) {
 		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
 				     DSDB_SEARCH_SHOW_EXTENDED_DN);

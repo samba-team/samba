@@ -41,7 +41,7 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
-					     struct auth_context *auth_context,
+					     struct auth_context *auth_context, /* Optional if the domain SID is in the NT AUTHORITY domain */
 					     struct auth_serversupplied_info *server_info,
 					     uint32_t session_info_flags,
 					     struct auth_session_info **_session_info)
@@ -59,15 +59,10 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	const char *filter;
 
 	struct dom_sid **groupSIDs = NULL;
-	const struct dom_sid *dom_sid;
+	const struct dom_sid *dom_sid, *anonymous_sid, *system_sid;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-
-	if (!auth_context->sam_ctx) {
-		DEBUG(0, ("No SAM available, cannot determine local groups\n"));
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
 
 	/* For now, we don't have trusted domains, so we do a very
 	 * simple check to see that the user's SID is in *this*
@@ -75,40 +70,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	 * get trusted domains, we should check it's a trusted domain
 	 * in this forest.  This elaborate check is to try and avoid a
 	 * nasty security bug if we forget about this later... */
-
-	if (server_info->acct_flags & ACB_SVRTRUST) {
-		dom_sid = samdb_domain_sid(auth_context->sam_ctx);
-		if (dom_sid) {
-			if (dom_sid_in_domain(dom_sid, server_info->account_sid)) {
-				session_info_flags |= AUTH_SESSION_INFO_ENTERPRISE_DC;
-			} else {
-				DEBUG(2, ("DC %s is not in our domain.  "
-					  "It will not have Enterprise Domain Controllers membership on this server",
-					  server_info->account_name));
-			}
-		} else {
-			DEBUG(2, ("Could not obtain local domain SID, "
-				  "so can not determine if DC %s is a DC of this domain.  "
-				  "It will not have Enterprise Domain Controllers membership",
-				  server_info->account_name));
-		}
-	}
-
-	groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
-	if (!groupSIDs) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	num_groupSIDs = server_info->n_domain_groups;
-
-	for (i=0; i < server_info->n_domain_groups; i++) {
-		groupSIDs[i] = server_info->domain_groups[i];
-	}
-
-	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
-				 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
 	session_info = talloc(tmp_ctx, struct auth_session_info);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info, tmp_ctx);
@@ -119,84 +80,130 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	 * key from the auth subsystem */ 
 	session_info->session_key = server_info->user_session_key;
 
-	/* Search for each group in the token */
+	anonymous_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(anonymous_sid, tmp_ctx);
 
-	/* Expands the account SID - this function takes in
-	 * memberOf-like values, so we fake one up with the
-	 * <SID=S-...> format of DN and then let it expand
-	 * them, as long as they meet the filter - so only
-	 * builtin groups
-	 *
-	 * We already have the primary group in the token, so set
-	 * 'only childs' flag to true
-	 */
-	account_sid_string = dom_sid_string(tmp_ctx, server_info->account_sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_string, server_info);
+	system_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_SYSTEM);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(system_sid, tmp_ctx);
 
-	account_sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", account_sid_string);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_dn, server_info);
+	if (dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+		/* Don't expand nested groups of system, anonymous etc*/
+	} else if (dom_sid_equal(system_sid, server_info->account_sid)) {
+		/* Don't expand nested groups of system, anonymous etc*/
+	} else if (auth_context) {
+		if (server_info->acct_flags & ACB_SVRTRUST) {
+			dom_sid = samdb_domain_sid(auth_context->sam_ctx);
+			if (dom_sid) {
+				if (dom_sid_in_domain(dom_sid, server_info->account_sid)) {
+				session_info_flags |= AUTH_SESSION_INFO_ENTERPRISE_DC;
+				} else {
+					DEBUG(2, ("DC %s is not in our domain.  "
+						  "It will not have Enterprise Domain Controllers membership on this server",
+						  server_info->account_name));
+				}
+			} else {
+				DEBUG(2, ("Could not obtain local domain SID, "
+					  "so can not determine if DC %s is a DC of this domain.  "
+					  "It will not have Enterprise Domain Controllers membership",
+					  server_info->account_name));
+			}
+		}
+		
+		groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
+		if (!groupSIDs) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		num_groupSIDs = server_info->n_domain_groups;
+		
+		for (i=0; i < server_info->n_domain_groups; i++) {
+			groupSIDs[i] = server_info->domain_groups[i];
+		}
+		
+		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
-	account_sid_blob = data_blob_string_const(account_sid_dn);
+		/* Search for each group in the token */
 
-	nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &account_sid_blob, true, filter,
-					      tmp_ctx, &groupSIDs, &num_groupSIDs);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return nt_status;
-	}
-
-	/* Expands the primary group - this function takes in
-	 * memberOf-like values, so we fake one up with the
-	 * <SID=S-...> format of DN and then let it expand
-	 * them, as long as they meet the filter - so only
-	 * builtin groups
-	 *
-	 * We already have the primary group in the token, so set
-	 * 'only childs' flag to true
-	 */
-	primary_group_string = dom_sid_string(tmp_ctx, server_info->primary_group_sid);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, server_info);
-
-	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_dn, server_info);
-
-	primary_group_blob = data_blob_string_const(primary_group_dn);
-
-	nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &primary_group_blob, true, filter,
-					      tmp_ctx, &groupSIDs, &num_groupSIDs);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return nt_status;
-	}
-
-	for (i = 0; i < server_info->n_domain_groups; i++) {
-		char *group_string;
-		const char *group_dn;
-		DATA_BLOB group_blob;
-
-		group_string = dom_sid_string(tmp_ctx,
-					      server_info->domain_groups[i]);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_string, server_info);
-
-		group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", group_string);
-		talloc_free(group_string);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
-		group_blob = data_blob_string_const(group_dn);
-
-		/* This function takes in memberOf values and expands
+		/* Expands the account SID - this function takes in
+		 * memberOf-like values, so we fake one up with the
+		 * <SID=S-...> format of DN and then let it expand
 		 * them, as long as they meet the filter - so only
-		 * builtin groups */
-		nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &group_blob, true, filter,
-						      tmp_ctx, &groupSIDs, &num_groupSIDs);
+		 * builtin groups
+		 *
+		 * We already have the primary group in the token, so set
+		 * 'only childs' flag to true
+		 */
+		account_sid_string = dom_sid_string(tmp_ctx, server_info->account_sid);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_string, server_info);
+		
+		account_sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", account_sid_string);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_dn, server_info);
+		
+		account_sid_blob = data_blob_string_const(account_sid_dn);
+		
+		nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &account_sid_blob, true, filter,
+							 tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
 			return nt_status;
 		}
+
+		/* Expands the primary group - this function takes in
+		 * memberOf-like values, so we fake one up with the
+		 * <SID=S-...> format of DN and then let it expand
+		 * them, as long as they meet the filter - so only
+		 * builtin groups
+		 *
+		 * We already have the primary group in the token, so set
+		 * 'only childs' flag to true
+		 */
+		primary_group_string = dom_sid_string(tmp_ctx, server_info->primary_group_sid);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, server_info);
+		
+		primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_dn, server_info);
+		
+		primary_group_blob = data_blob_string_const(primary_group_dn);
+		
+		nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &primary_group_blob, true, filter,
+							 tmp_ctx, &groupSIDs, &num_groupSIDs);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return nt_status;
+		}
+		
+		for (i = 0; i < server_info->n_domain_groups; i++) {
+			char *group_string;
+			const char *group_dn;
+			DATA_BLOB group_blob;
+			
+			group_string = dom_sid_string(tmp_ctx,
+						      server_info->domain_groups[i]);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_string, server_info);
+			
+			group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", group_string);
+			talloc_free(group_string);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
+			group_blob = data_blob_string_const(group_dn);
+			
+			/* This function takes in memberOf values and expands
+			 * them, as long as they meet the filter - so only
+			 * builtin groups */
+			nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &group_blob, true, filter,
+								 tmp_ctx, &groupSIDs, &num_groupSIDs);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(tmp_ctx);
+				return nt_status;
+			}
+		}
 	}
 
 	nt_status = security_token_create(session_info,
-					  auth_context->event_ctx,
-					  auth_context->lp_ctx,
+					  auth_context ? auth_context->event_ctx : NULL,
+					  auth_context ? auth_context->lp_ctx : NULL,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  num_groupSIDs,
@@ -209,6 +216,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	talloc_steal(mem_ctx, session_info);
 	*_session_info = session_info;
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
