@@ -573,7 +573,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	srv_send_smb(smbd_server_fd(), outbuf, false, 0, false, NULL);
+	srv_send_smb(sconn->sock, outbuf, false, 0, false, NULL);
 	return;
 }
 
