@@ -117,10 +117,11 @@ children. You can call talloc_free() on any pointer returned by
 talloc().
 
 The return value of talloc_free() indicates success or failure, with 0
-returned for success and -1 for failure. The only possible failure
-condition is if the pointer had a destructor attached to it and the
-destructor returned -1. See talloc_set_destructor() for details on
-destructors.
+returned for success and -1 for failure. A possible failure condition
+is if the pointer had a destructor attached to it and the destructor
+returned -1. See talloc_set_destructor() for details on
+destructors. Likewise, if "ptr" is NULL, then the function will make
+no modifications and returns -1.
 
 If this pointer has an additional parent when talloc_free() is called
 then the memory is not actually released, but instead the most
