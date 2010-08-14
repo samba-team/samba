@@ -610,8 +610,8 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
      */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-			client_name(get_client_fd()),
-			client_addr(get_client_fd(),addr,sizeof(addr)))) {
+			  client_name(smbd_server_fd()),
+			  client_addr(smbd_server_fd(),addr,sizeof(addr)))) {
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;
 	}

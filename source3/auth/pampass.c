@@ -479,9 +479,10 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 
 #ifdef PAM_RHOST
 	if (rhost == NULL) {
-		our_rhost = client_name(get_client_fd());
+		our_rhost = client_name(smbd_server_fd());
 		if (strequal(our_rhost,"UNKNOWN"))
-			our_rhost = client_addr(get_client_fd(),addr,sizeof(addr));
+			our_rhost = client_addr(smbd_server_fd(), addr,
+						sizeof(addr));
 	} else {
 		our_rhost = rhost;
 	}

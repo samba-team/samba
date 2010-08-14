@@ -2352,7 +2352,7 @@ static void release_ip(const char *ip, void *priv)
 	char addr[INET6_ADDRSTRLEN];
 	char *p = addr;
 
-	client_socket_addr(get_client_fd(),addr,sizeof(addr));
+	client_socket_addr(smbd_server_fd(),addr,sizeof(addr));
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
 		p = addr + 7;

@@ -981,9 +981,9 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, user);
 
-	clientname = client_name(get_client_fd());
+	clientname = client_name(smbd_server_fd());
 	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr(get_client_fd(),addr,sizeof(addr));
+		clientname = client_addr(smbd_server_fd(),addr,sizeof(addr));
 	}
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,

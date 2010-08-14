@@ -62,11 +62,6 @@ static void smbd_set_server_fd(int fd)
 	server_fd = fd;
 }
 
-int get_client_fd(void)
-{
-	return server_fd;
-}
-
 struct event_context *smbd_event_context(void)
 {
 	return server_event_context();

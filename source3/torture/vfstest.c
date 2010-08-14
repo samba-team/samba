@@ -33,11 +33,6 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
-int get_client_fd(void)
-{
-	return -1;
-}
-
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/

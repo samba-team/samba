@@ -690,7 +690,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	add_session_user(sconn, conn->server_info->unix_name);
 
 	safe_strcpy(conn->client_address,
-			client_addr(get_client_fd(),addr,sizeof(addr)), 
+			client_addr(smbd_server_fd(),addr,sizeof(addr)),
 			sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
@@ -1199,7 +1199,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 
 		DEBUG(3,("%s (%s) couldn't find service %s\n",
 			get_remote_machine_name(),
-			client_addr(get_client_fd(),addr,sizeof(addr)),
+			client_addr(smbd_server_fd(),addr,sizeof(addr)),
 			service));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;

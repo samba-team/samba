@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-int get_client_fd(void)
+int smbd_server_fd(void)
 {
 	return -1;
 }

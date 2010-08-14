@@ -1420,7 +1420,7 @@ static void setup_new_vc_session(struct messaging_context *msg_ctx)
 		char addr[INET6_ADDRSTRLEN];
 		struct shutdown_state state;
 
-		state.ip = client_addr(get_client_fd(),addr,sizeof(addr));
+		state.ip = client_addr(smbd_server_fd(),addr,sizeof(addr));
 		state.msg_ctx = msg_ctx;
 		connections_forall_read(shutdown_other_smbds, &state);
 	}

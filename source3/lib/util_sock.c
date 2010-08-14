@@ -466,7 +466,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 
 			if (readret == -1) {
 				save_errno = errno;
-				if (fd == get_client_fd()) {
+				if (fd == smbd_server_fd()) {
 					/* Try and give an error message
 					 * saying what client failed. */
 					DEBUG(0,("read_fd_with_timeout: "
@@ -505,7 +505,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 		if (selrtn == -1) {
 			save_errno = errno;
 			/* something is wrong. Maybe the socket is dead? */
-			if (fd == get_client_fd()) {
+			if (fd == smbd_server_fd()) {
 				/* Try and give an error message saying
 				 * what client failed. */
 				DEBUG(0,("read_fd_with_timeout: timeout "
@@ -539,7 +539,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 		if (readret == -1) {
 			save_errno = errno;
 			/* the descriptor is probably dead */
-			if (fd == get_client_fd()) {
+			if (fd == smbd_server_fd()) {
 				/* Try and give an error message
 				 * saying what client failed. */
 				DEBUG(0,("read_fd_with_timeout: timeout "
@@ -666,7 +666,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 		return ret;
 	}
 
-	if (fd == get_client_fd()) {
+	if (fd == smbd_server_fd()) {
 		char addr[INET6_ADDRSTRLEN];
 		/*
 		 * Try and give an error message saying what client failed.

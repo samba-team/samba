@@ -62,7 +62,7 @@ bool set_local_machine_name(const char *local_name, bool perm)
 	if (strequal(tmp_local_machine, "*SMBSERVER") ||
 			strequal(tmp_local_machine, "*SMBSERV") )  {
 		SAFE_FREE(local_machine);
-		local_machine = SMB_STRDUP(client_socket_addr(get_client_fd(),
+		local_machine = SMB_STRDUP(client_socket_addr(smbd_server_fd(),
 					addr, sizeof(addr)) );
 		SAFE_FREE(tmp_local_machine);
 		return local_machine ? true : false;
@@ -609,7 +609,7 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case 'I' : {
 			int offset = 0;
-			client_addr(get_client_fd(), addr, sizeof(addr));
+			client_addr(smbd_server_fd(), addr, sizeof(addr));
 			if (strnequal(addr,"::ffff:",7)) {
 				offset = 7;
 			}
@@ -618,8 +618,10 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		}
 		case 'i': 
-			a_string = realloc_string_sub( a_string, "%i",
-					client_socket_addr(get_client_fd(), addr, sizeof(addr)) );
+			a_string = realloc_string_sub(
+				a_string, "%i",
+				client_socket_addr(smbd_server_fd(),
+						   addr, sizeof(addr)));
 			break;
 		case 'L' : 
 			if ( StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
@@ -635,7 +637,8 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			a_string = realloc_string_sub(a_string, "%N", automount_server(smb_name));
 			break;
 		case 'M' :
-			a_string = realloc_string_sub(a_string, "%M", client_name(get_client_fd()));
+			a_string = realloc_string_sub(
+				a_string, "%M", client_name(smbd_server_fd()));
 			break;
 		case 'R' :
 			a_string = realloc_string_sub(a_string, "%R", remote_proto);

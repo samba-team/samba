@@ -70,7 +70,7 @@ static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile)
 
 		*space = '\0';
 
-		if (strncmp(client_addr(get_client_fd(),addr,sizeof(addr)),
+		if (strncmp(client_addr(smbd_server_fd(),addr,sizeof(addr)),
 				buf, strlen(buf)) == 0) {
 			found = true;
 			break;

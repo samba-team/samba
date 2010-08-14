@@ -1642,7 +1642,8 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		/* check smb.conf parameters and the the sec_desc */
 
-		if ( !check_access(get_client_fd(), lp_hostsallow(snum), lp_hostsdeny(snum)) ) {
+		if ( !check_access(smbd_server_fd(), lp_hostsallow(snum),
+				   lp_hostsdeny(snum)) ) {
 			DEBUG(3, ("access DENIED (hosts allow/deny) for printer open\n"));
 			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
