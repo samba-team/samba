@@ -393,7 +393,7 @@ ssize_t vfs_write_data(struct smb_request *req,
 		/* VFS_RECVFILE must drain the socket
 		 * before returning. */
 		req->unread_bytes = 0;
-		return SMB_VFS_RECVFILE(smbd_server_fd(),
+		return SMB_VFS_RECVFILE(req->sconn->sock,
 					fsp,
 					(SMB_OFF_T)-1,
 					N);
