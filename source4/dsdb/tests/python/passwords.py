@@ -155,6 +155,20 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
 """)
 
+        # Wrong old password
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS3\"".encode('utf-16-le')) + """
+add: unicodePwd
+unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS4\"".encode('utf-16-le')) + """
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
         # A change to the same password again will not work (password history)
         try:
             self.ldb2.modify_ldif("""
@@ -225,6 +239,20 @@ add: userPassword
 userPassword: thatsAcomplPASS2
 """)
 
+        # Wrong old password
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
+userPassword: thatsAcomplPASS3
+add: userPassword
+userPassword: thatsAcomplPASS4
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
         # A change to the same password again will not work (password history)
         try:
             self.ldb2.modify_ldif("""
@@ -273,6 +301,22 @@ clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le'
             # "NO_SUCH_ATTRIBUTE" is returned by Windows -> ignore it
             if num != ERR_NO_SUCH_ATTRIBUTE:
                 raise LdbError(num, msg)
+
+        # Wrong old password
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: clearTextPassword
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS3".encode('utf-16-le')) + """
+add: clearTextPassword
+clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS4".encode('utf-16-le')) + """
+""")
+            self.fail()
+        except LdbError, (num, _):
+            # "NO_SUCH_ATTRIBUTE" is returned by Windows -> ignore it
+            if num != ERR_NO_SUCH_ATTRIBUTE:
+                self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         # A change to the same password again will not work (password history)
         try:
