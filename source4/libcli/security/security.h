@@ -22,6 +22,9 @@
 
 #include "librpc/gen_ndr/security.h"
 
+#define PRIMARY_USER_SID_INDEX 0
+#define PRIMARY_GROUP_SID_INDEX 1
+
 enum security_user_level {
 	SECURITY_ANONYMOUS            = 0,
 	SECURITY_USER                 = 10,
