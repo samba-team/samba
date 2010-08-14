@@ -97,16 +97,14 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	
 	if (security_token_is_system(ptoken)) {
 		ptoken->privilege_mask = ~0;
-		return NT_STATUS_OK;
-	} 
-	
-	if (security_token_is_anonymous(ptoken)) {
+	} else if (security_token_is_anonymous(ptoken)) {
 		ptoken->privilege_mask = 0;
-		return NT_STATUS_OK;
+	} else if (security_token_has_builtin_administrators(ptoken)) {
+		ptoken->privilege_mask = ~0;
+	} else {
+		/* All other 'users' get a empty priv set so far */
+		ptoken->privilege_mask = 0;
 	}
-
-	/* All other 'users' get a empty priv set so far */
-	ptoken->privilege_mask = 0;
 	return NT_STATUS_OK;
 }
 
@@ -314,55 +312,6 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name,
 }
 
 
-/* Create server info for the Administrator account. This should only be used
- * during provisioning when we need to impersonate Administrator but
- * the account has not been created yet */
-
-static NTSTATUS create_admin_token(TALLOC_CTX *mem_ctx,
-				   struct dom_sid *user_sid,
-				   struct dom_sid *group_sid,
-				   unsigned int n_groupSIDs,
-				   struct dom_sid **groupSIDs,
-				   struct security_token **token)
-{
-	struct security_token *ptoken;
-	unsigned int i;
-
-	ptoken = security_token_initialise(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken);
-
-	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 3);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-	ptoken->privilege_mask = 0;
-	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
-	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
-
-	ptoken->sids[2] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[2]);
-	ptoken->num_sids = 3;
-
-
-	for (i = 0; i < n_groupSIDs; i++) {
-		size_t check_sid_idx;
-		for (check_sid_idx = 1;
-		     check_sid_idx < ptoken->num_sids;
-		     check_sid_idx++) {
-			if (dom_sid_equal(ptoken->sids[check_sid_idx], groupSIDs[i])) {
-				break;
-			}
-		}
-
-		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids[ptoken->num_sids++] = talloc_reference(ptoken->sids, groupSIDs[i]);
-		}
-	}
-
-	*token = ptoken;
-	ptoken->privilege_mask = ~0;
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS auth_domain_admin_server_info(TALLOC_CTX *mem_ctx,
 					      const char *netbios_name,
 					      const char *domain_name,
@@ -470,12 +419,13 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 	 * key from the auth subsystem */
 	session_info->session_key = server_info->user_session_key;
 
-	nt_status = create_admin_token(session_info,
-				       server_info->account_sid,
-				       server_info->primary_group_sid,
-				       server_info->n_domain_groups,
-				       server_info->domain_groups,
-				       &session_info->security_token);
+	nt_status = create_token(session_info,
+				 server_info->account_sid,
+				 server_info->primary_group_sid,
+				 server_info->n_domain_groups,
+				 server_info->domain_groups,
+				 true,
+				 &session_info->security_token);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	session_info->credentials = cli_credentials_init(session_info);
