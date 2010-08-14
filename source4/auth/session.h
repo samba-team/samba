@@ -37,13 +37,6 @@ struct auth_context;
  * the off-host credentials */
 struct auth_session_info *system_session(struct loadparm_context *lp_ctx) ;
 
-/*
- * Create a system session, but with anonymous credentials (so we do
- * not need to open secrets.ldb) 
- */
-struct auth_session_info *system_session_anon(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
-
-
 NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, 
 				    const char *netbios_name,
 				    struct auth_serversupplied_info **_server_info) ;

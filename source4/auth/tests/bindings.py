@@ -31,5 +31,3 @@ class AuthTests(samba.tests.TestCase):
     def test_system_session(self):
         auth.system_session()
 
-    def test_system_session_anon(self):
-        auth.system_session_anonymous()

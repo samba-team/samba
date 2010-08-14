@@ -25,7 +25,6 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba.auth import system_session_anonymous
 from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
@@ -717,7 +716,7 @@ class AclSearchTests(AclTests):
         self.u2 = "search_u2"
         self.u3 = "search_u3"
         self.group1 = "group1"
-        self.anonymous = SamDB(url=host, session_info=system_session_anonymous(),
+        self.anonymous = SamDB(url=host, session_info=system_session(),
                                lp=lp)
         res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
                  + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
