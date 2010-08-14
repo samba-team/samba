@@ -36,7 +36,8 @@
   This is to redirect a DFS client to a host close to it.
 ***********************************************************/
 
-static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile)
+static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile,
+			      const char *clientaddr)
 {
 	XFILE *f;
 	char buf[1024];
@@ -54,7 +55,6 @@ static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile)
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
 	while (x_fgets(buf, sizeof(buf), f) != NULL) {
-		char addr[INET6_ADDRSTRLEN];
 
 		if ((strlen(buf) > 0) && (buf[strlen(buf)-1] == '\n'))
 			buf[strlen(buf)-1] = '\0';
@@ -70,8 +70,7 @@ static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile)
 
 		*space = '\0';
 
-		if (strncmp(client_addr(smbd_server_fd(),addr,sizeof(addr)),
-				buf, strlen(buf)) == 0) {
+		if (strncmp(clientaddr, buf, strlen(buf)) == 0) {
 			found = true;
 			break;
 		}
@@ -114,6 +113,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	int filename_len = 0;
 	char *targethost = NULL;
 	char *new_target = NULL;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (filename_start == NULL) {
 		DEBUG(10, ("No filename start in %s\n", target));
@@ -136,7 +136,10 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 
 	DEBUG(10, ("Expanding from table [%s]\n", mapfilename));
 
-	if ((targethost = read_target_host(ctx, mapfilename)) == NULL) {
+	targethost = read_target_host(
+		ctx, client_addr(smbd_server_fd(), addr, sizeof(addr)),
+		mapfilename);
+	if (targethost == NULL) {
 		DEBUG(1, ("Could not expand target host from file %s\n",
 			  mapfilename));
 		return NULL;
