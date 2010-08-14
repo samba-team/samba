@@ -243,6 +243,9 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			/* 'datagram' mode - no neg packet */
 			ntlmssp_command = NTLMSSP_NEGOTIATE;
 			break;
+		default:
+			DEBUG(1, ("Invalid role: %d\n", ntlmssp_state->role));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} else {
 		if (!msrpc_parse(ntlmssp_state, &input, "Cd",
