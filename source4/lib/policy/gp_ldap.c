@@ -443,7 +443,7 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 	mem_ctx = talloc_new(gp_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	sid = dom_sid_string(mem_ctx, token->user_sid);
+	sid = dom_sid_string(mem_ctx, token->sids[PRIMARY_USER_SID_INDEX]);
 
 	/* Find the user DN and objectclass via the sid from the security token */
 	rv = ldb_search(gp_ctx->ldb_ctx,

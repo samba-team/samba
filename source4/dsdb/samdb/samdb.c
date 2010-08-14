@@ -157,8 +157,6 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->user_sid = talloc_reference(ptoken, user_sid);
-	ptoken->group_sid = talloc_reference(ptoken, group_sid);
 	ptoken->privilege_mask = 0;
 
 	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 6 /* over-allocate */);
@@ -169,8 +167,8 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->sids[0] = ptoken->user_sid;
-	ptoken->sids[1] = ptoken->group_sid;
+	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
+	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
 	ptoken->num_sids++;
 
 	/*

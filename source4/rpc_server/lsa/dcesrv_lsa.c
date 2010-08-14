@@ -338,7 +338,7 @@ static NTSTATUS dcesrv_lsa_QuerySecurity(struct dcesrv_call_state *dce_call, TAL
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	sid = dce_call->conn->auth_state.session_info->security_token->user_sid;
+	sid = dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (h->wire_handle.handle_type == LSA_HANDLE_POLICY) {
 		status = dcesrv_build_lsa_sd(mem_ctx, &sd, sid, 0);

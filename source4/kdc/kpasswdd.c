@@ -224,11 +224,11 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	DEBUG(3, ("Changing password of %s\\%s (%s)\n",
 		  session_info->server_info->domain_name,
 		  session_info->server_info->account_name,
-		  dom_sid_string(mem_ctx, session_info->security_token->user_sid)));
+		  dom_sid_string(mem_ctx, session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
 
 	/* Performs the password change */
 	status = samdb_set_password_sid(samdb, mem_ctx,
-					session_info->security_token->user_sid,
+					session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
 					password, NULL, NULL,
 					oldLmHash, oldNtHash, /* this is a user password change */
 					&reject_reason,
@@ -382,7 +382,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		DEBUG(3, ("%s\\%s (%s) is changing password of %s\n",
 			  session_info->server_info->domain_name,
 			  session_info->server_info->account_name,
-			  dom_sid_string(mem_ctx, session_info->security_token->user_sid),
+			  dom_sid_string(mem_ctx, session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
 			  set_password_on_princ));
 		ret = ldb_transaction_start(samdb);
 		if (ret != LDB_SUCCESS) {

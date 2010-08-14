@@ -36,8 +36,6 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	st->user_sid = NULL;
-	st->group_sid = NULL;
 	st->num_sids = 0;
 	st->sids = NULL;
 	st->privilege_mask = 0;
@@ -63,9 +61,7 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 		return;
 	}
 
-	DEBUG(dbg_lev, ("Security token of user %s\n",
-				    dom_sid_string(mem_ctx, token->user_sid) ));
-	DEBUGADD(dbg_lev, (" SIDs (%lu):\n", 
+	DEBUG(dbg_lev, ("Security token SIDs (%lu):\n", 
 				       (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
 		DEBUGADD(dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i, 
@@ -81,7 +77,7 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 
 bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid)
 {
-	if (dom_sid_equal(token->user_sid, sid)) {
+	if (token->sids && dom_sid_equal(token->sids[PRIMARY_USER_SID_INDEX], sid)) {
 		return true;
 	}
 	return false;

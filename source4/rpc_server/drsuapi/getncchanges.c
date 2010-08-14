@@ -774,7 +774,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)) {
 		DEBUG(3,(__location__ ": Removing WRIT_REP flag for replication by RODC %s\n",
 			 dom_sid_string(mem_ctx,
-					dce_call->conn->auth_state.session_info->security_token->user_sid)));
+					dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
 		req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
 

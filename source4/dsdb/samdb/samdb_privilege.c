@@ -93,7 +93,7 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 
 	/* Shortcuts to prevent recursion and avoid lookups */
-	if (token->user_sid == NULL) {
+	if (token->sids == NULL) {
 		token->privilege_mask = 0;
 		return NT_STATUS_OK;
 	}

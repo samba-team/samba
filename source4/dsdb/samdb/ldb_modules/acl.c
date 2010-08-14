@@ -709,7 +709,9 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 		return LDB_SUCCESS;
 	}
 	/* if we are adding/deleting ourselves, check for self membership */
-	ret = dsdb_find_dn_by_sid(ldb, mem_ctx, acl_user_token(module)->user_sid, &user_dn);
+	ret = dsdb_find_dn_by_sid(ldb, mem_ctx, 
+				  acl_user_token(module)->sids[PRIMARY_USER_SID_INDEX], 
+				  &user_dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

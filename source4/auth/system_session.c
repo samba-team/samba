@@ -51,12 +51,9 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 5);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->user_sid = talloc_reference(ptoken, user_sid);
-	ptoken->group_sid = talloc_reference(ptoken, group_sid);
+	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
+	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
 	ptoken->privilege_mask = 0;
-
-	ptoken->sids[0] = ptoken->user_sid;
-	ptoken->sids[1] = ptoken->group_sid;
 
 	/*
 	 * Finally add the "standard" SIDs.
@@ -93,7 +90,7 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	*token = ptoken;
 
 	/* Shortcuts to prevent recursion and avoid lookups */
-	if (ptoken->user_sid == NULL) {
+	if (ptoken->sids == NULL) {
 		ptoken->privilege_mask = 0;
 		return NT_STATUS_OK;
 	} 
@@ -337,12 +334,10 @@ static NTSTATUS create_admin_token(TALLOC_CTX *mem_ctx,
 	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 3);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->user_sid = talloc_reference(ptoken, user_sid);
-	ptoken->group_sid = talloc_reference(ptoken, group_sid);
 	ptoken->privilege_mask = 0;
+	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
+	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
 
-	ptoken->sids[0] = ptoken->user_sid;
-	ptoken->sids[1] = ptoken->group_sid;
 	ptoken->sids[2] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[2]);
 	ptoken->num_sids = 3;
