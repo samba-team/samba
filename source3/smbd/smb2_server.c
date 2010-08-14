@@ -111,7 +111,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	sconn->smb2.sessions.limit = 0x0000FFFE;
 	sconn->smb2.sessions.list = NULL;
 
-	ret = tstream_bsd_existing_socket(sconn, smbd_server_fd(),
+	ret = tstream_bsd_existing_socket(sconn, sconn->sock,
 					  &sconn->smb2.stream);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
@@ -119,7 +119,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	}
 
 	/* Ensure child is set to non-blocking mode */
-	set_blocking(smbd_server_fd(),false);
+	set_blocking(sconn->sock, false);
 	return NT_STATUS_OK;
 }
 
