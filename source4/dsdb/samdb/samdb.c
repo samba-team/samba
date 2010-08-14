@@ -168,8 +168,10 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
 	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
-	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
-	ptoken->num_sids++;
+	if (!dom_sid_equal(user_sid, group_sid)) {
+		ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
+		ptoken->num_sids++;
+	}
 
 	/*
 	 * Finally add the "standard" SIDs.

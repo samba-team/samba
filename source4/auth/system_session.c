@@ -190,7 +190,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_simple_session_info(parent_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, NULL, server_info, 0, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -441,7 +441,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_simple_session_info(parent_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, NULL, server_info, 0, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -470,8 +470,8 @@ _PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
 
-	/* is this correct? */
-	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_GUESTS);
+	/* The anonymous user has only one SID in it's token, but we need to fill something in here */
+	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
 
 	server_info->n_domain_groups = 0;
