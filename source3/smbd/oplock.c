@@ -364,7 +364,7 @@ static void send_break_message_smb1(files_struct *fsp, int level)
 	}
 
 	show_msg(break_msg);
-	if (!srv_send_smb(smbd_server_fd(),
+	if (!srv_send_smb(fsp->conn->sconn->sock,
 			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {
