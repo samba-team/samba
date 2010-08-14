@@ -633,7 +633,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex, int errcode)
 	}
 	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
-	if (!srv_send_smb(smbd_server_fd(),outbuf,
+	if (!srv_send_smb(aio_ex->smbreq->sconn->sock, outbuf,
 			true, aio_ex->smbreq->seqnum+1,
 			IS_CONN_ENCRYPTED(aio_ex->fsp->conn), NULL)) {
 		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
@@ -722,7 +722,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 	}
 
 	show_msg(outbuf);
-	if (!srv_send_smb(smbd_server_fd(),outbuf,
+	if (!srv_send_smb(aio_ex->smbreq->sconn->sock, outbuf,
 			  true, aio_ex->smbreq->seqnum+1,
 			  IS_CONN_ENCRYPTED(fsp->conn),
 			  NULL)) {
