@@ -312,7 +312,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 	}
 
 	reply_nterror(blr->req, status);
-	if (!srv_send_smb(smbd_server_fd(), (char *)blr->req->outbuf,
+	if (!srv_send_smb(blr->req->sconn->sock, (char *)blr->req->outbuf,
 			  true, blr->req->seqnum+1,
 			  blr->req->encrypted, NULL)) {
 		exit_server_cleanly("generic_blocking_lock_error: srv_send_smb failed.");
