@@ -1437,6 +1437,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 
 	/* First check the old password is correct, for password changes */
 	if (!io->ac->pwd_reset && !io->ac->change_old_pw_checked) {
+		bool nt_hash_checked = false;
+
 		/* we need to old nt or lm hash given by the client */
 		if (!io->og.nt_hash && !io->og.lm_hash) {
 			ldb_asprintf_errstring(ldb,
@@ -1446,6 +1448,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
+		/* The password modify through the NT hash is encouraged and
+		   has no problems at all */
 		if (io->og.nt_hash) {
 			if (!io->o.nt_hash) {
 				ldb_asprintf_errstring(ldb,
@@ -1455,16 +1459,22 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
-			/* The password modify through the NT hash is encouraged
-			   and has no problems at all */
 			if (memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
 					"The old password specified doesn't match!");
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
-		} else if (io->og.lm_hash) {
-			if (!io->o.lm_hash) {
+
+			nt_hash_checked = true;
+		}
+
+		/* But it is also possible to change a password by the LM hash
+		 * alone for compatibility reasons. This check is optional if
+		 * the NT hash was already checked - otherwise it's mandatory.
+		 * (as the SAMR operations request it). */
+		if (io->og.lm_hash) {
+			if (!io->o.lm_hash && !nt_hash_checked) {
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
 					"There's no old lm_hash, which is needed "
@@ -1472,7 +1482,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
-			if (memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
+			if (io->o.lm_hash &&
+			    memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
 				ldb_asprintf_errstring(ldb,
 					"check_password_restrictions: "
 					"The old password specified doesn't match!");
