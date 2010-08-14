@@ -1870,7 +1870,7 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 		changed = true;
 		*password = newpass;
 	} else if (!NT_STATUS_EQUAL(NT_STATUS_PASSWORD_RESTRICTION, r.out.result)) {
-		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_NT_CROSS_ENCRYPTION_REQUIRED, got %s\n", nt_errstr(r.out.result));
+		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_OK, or at least NT_STATUS_PASSWORD_RESTRICTION, got %s\n", nt_errstr(r.out.result));
 		ret = false;
 	}
 
