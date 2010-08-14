@@ -395,7 +395,7 @@ static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS
 		 */
 		SCVAL(blr->req->outbuf,smb_com,SMBtrans2);
 
-		if (!srv_send_smb(smbd_server_fd(),
+		if (!srv_send_smb(blr->req->sconn->sock,
 				  (char *)blr->req->outbuf,
 				  true, blr->req->seqnum+1,
 				  IS_CONN_ENCRYPTED(blr->fsp->conn),
