@@ -197,6 +197,7 @@ def check_for_DNS(refprivate, private):
                     provision"""
 
     spnfile = "%s/spn_update_list" % private
+    dnsfile = "%s/dns_update_list" % private
     namedfile = lp.get("dnsupdate:path")
 
     if not namedfile:
@@ -204,6 +205,9 @@ def check_for_DNS(refprivate, private):
 
     if not os.path.exists(spnfile):
         shutil.copy("%s/spn_update_list" % refprivate, "%s" % spnfile)
+
+    if not os.path.exists(dnsfile):
+        shutil.copy("%s/dns_update_list" % refprivate, "%s" % dnsfile)
 
     destdir = "%s/new_dns" % private
     dnsdir = "%s/dns" % private
