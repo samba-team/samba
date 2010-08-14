@@ -357,7 +357,8 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	        SSVAL(aio_ex->outbuf.data,smb_vwv2,numtowrite);
                 SSVAL(aio_ex->outbuf.data,smb_vwv4,(numtowrite>>16)&1);
 		show_msg((char *)aio_ex->outbuf.data);
-		if (!srv_send_smb(smbd_server_fd(),(char *)aio_ex->outbuf.data,
+		if (!srv_send_smb(aio_ex->smbreq->sconn->sock,
+				(char *)aio_ex->outbuf.data,
 				true, aio_ex->smbreq->seqnum+1,
 				IS_CONN_ENCRYPTED(fsp->conn),
 				&aio_ex->smbreq->pcd)) {
