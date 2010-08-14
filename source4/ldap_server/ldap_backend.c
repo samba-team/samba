@@ -59,7 +59,7 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 		err = WERR_DS_TIMELIMIT_EXCEEDED;
 	break;
 	case LDB_ERR_SIZE_LIMIT_EXCEEDED:
-		err = WERR_DS_SIZE_LIMIT_EXCEEDED;
+		err = WERR_DS_SIZELIMIT_EXCEEDED;
 	break;
 	case LDB_ERR_COMPARE_FALSE:
 		err = WERR_DS_COMPARE_FALSE;
