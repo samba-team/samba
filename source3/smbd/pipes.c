@@ -239,7 +239,7 @@ static void pipe_write_done(struct tevent_req *subreq)
 	DEBUG(3,("write-IPC nwritten=%d\n", (int)nwritten));
 
  send:
-	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+	if (!srv_send_smb(req->sconn->sock, (char *)req->outbuf,
 			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			  &req->pcd)) {
