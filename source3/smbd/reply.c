@@ -3874,7 +3874,7 @@ void reply_writebraw(struct smb_request *req)
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
-	if (!srv_send_smb(smbd_server_fd(),
+	if (!srv_send_smb(req->sconn->sock,
 			  buf,
 			  false, 0, /* no signing */
 			  IS_CONN_ENCRYPTED(conn),
@@ -3884,7 +3884,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Now read the raw data into the buffer and write it */
-	status = read_smb_length(smbd_server_fd(), buf, SMB_SECONDARY_WAIT,
+	status = read_smb_length(req->sconn->sock, buf, SMB_SECONDARY_WAIT,
 				 &numtowrite);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_server_cleanly("secondary writebraw failed");
@@ -3908,7 +3908,7 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		status = read_data(smbd_server_fd(), buf+4, numtowrite);
+		status = read_data(req->sconn->sock, buf+4, numtowrite);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write "
@@ -3968,7 +3968,7 @@ void reply_writebraw(struct smb_request *req)
 		 * sending a SMBkeepalive. Thanks to DaveCB at Sun for this.
 		 * JRA.
 		 */
-		if (!send_keepalive(smbd_server_fd())) {
+		if (!send_keepalive(req->sconn->sock)) {
 			exit_server_cleanly("reply_writebraw: send of "
 				"keepalive failed");
 		}
