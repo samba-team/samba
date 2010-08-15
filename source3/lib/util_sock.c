@@ -668,48 +668,6 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 }
 
 /****************************************************************************
- Read 4 bytes of a smb packet and return the smb length of the packet.
- Store the result in the buffer. This version of the function will
- never return a session keepalive (length of zero).
- Timeout is in milliseconds.
-****************************************************************************/
-
-NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
-			 size_t *len)
-{
-	uint8_t msgtype = SMBkeepalive;
-
-	while (msgtype == SMBkeepalive) {
-		NTSTATUS status;
-
-		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
-							  len);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (fd == smbd_server_fd()) {
-				char addr[INET6_ADDRSTRLEN];
-				/* Try and give an error message
-				 * saying what client failed. */
-				DEBUG(0, ("read_fd_with_timeout failed for "
-					  "client %s read error = %s.\n",
-					  get_peer_addr(fd,addr,sizeof(addr)),
-					  nt_errstr(status)));
-			} else {
-				DEBUG(0, ("read_fd_with_timeout failed, read "
-					  "error = %s.\n", nt_errstr(status)));
-			}
-			return status;
-		}
-
-		msgtype = CVAL(inbuf, 0);
-	}
-
-	DEBUG(10,("read_smb_length: got smb length of %lu\n",
-		  (unsigned long)len));
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Read an smb from a fd.
  The timeout is in milliseconds.
  This function will return on receipt of a session keepalive packet.

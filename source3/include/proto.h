@@ -1448,8 +1448,6 @@ bool send_keepalive(int client);
 NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 					  unsigned int timeout,
 					  size_t *len);
-NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
-			 size_t *len);
 NTSTATUS receive_smb_raw(int fd,
 			char *buffer,
 			size_t buflen,
