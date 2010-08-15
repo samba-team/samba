@@ -151,7 +151,12 @@ static int check_constraints(struct ldb_message *msg,
 	bool move_op = false;
 	bool rename_op = false;
 
+	/* Skip the checks if old and new DN are the same or if we relax */
+
 	if (ldb_dn_compare(olddn, newdn) == 0) {
+		return LDB_SUCCESS;
+	}
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) != NULL) {
 		return LDB_SUCCESS;
 	}
 
