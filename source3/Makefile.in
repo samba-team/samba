@@ -55,6 +55,7 @@ WINBIND_NSS_LDSHFLAGS=$(PICFLAG) @WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@ -lc @LDSHFLAG
 AWK=@AWK@
 DYNEXP=@DYNEXP@
 PERL=@PERL@
+PYTHON=@PYTHON@
 LIBDL=@LIBDL@
 
 PIDL_ARGS=@PIDL_ARGS@
@@ -3297,8 +3298,11 @@ selftestdir = ../selftest
 
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
+FILTER_XFAIL = $(PYTHON) -u $(selftestdir)/filter-subunit --expected-failures=$(srcdir)/selftest/knownfail
 SUBUNIT_FORMATTER = $(PYTHON) $(selftestdir)/format-subunit --immediate
+FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
 
+ifeq ($(RUN_FROM_BUILD_FARM),yes)
 test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
@@ -3309,9 +3313,21 @@ test:: all torture timelimit
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--exclude=$(srcdir)/selftest/skip \
 		--socket-wrapper $(TESTS) | \
-		$(PYTHON) $(selftestdir)/filter-subunit \
-		--expected-failures=$(srcdir)/selftest/knownfail | \
-		$(SUBUNIT_FORMATTER)
+		$(FILTER_XFAIL) --strip-passed-output
+	test -f ${selftest_prefix}/summary && cat ${selftest_prefix}/summary
+else
+test:: all torture timelimit
+	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
+		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
+		PERL="$(PERL)" PYTHON="$(PYTHON)" \
+		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/@WINBIND_NSS@" \
+		$(PERL) $(selftestdir)/selftest.pl \
+		--prefix=${selftest_prefix} --target=samba3 \
+		--testlist="$(srcdir)/selftest/tests.sh|" \
+		--exclude=$(srcdir)/selftest/skip \
+		--socket-wrapper $(TESTS) | \
+		$(FORMAT_TEST_OUTPUT)
+endif
 
 test-%:
 	$(MAKE) test TESTS=$*
