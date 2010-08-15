@@ -2565,8 +2565,7 @@ static void smbd_echo_writer_done(struct tevent_req *req)
 	smbd_echo_activate_writer(state);
 }
 
-static bool smbd_echo_reply(int fd,
-			    uint8_t *inbuf, size_t inbuf_len,
+static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 			    uint32_t seqnum)
 {
 	struct smb_request req;
@@ -2622,7 +2621,7 @@ static bool smbd_echo_reply(int fd,
 
 	out_len = smb_len(req.outbuf) + 4;
 
-	ok = srv_send_smb(smbd_server_fd(),
+	ok = srv_send_smb(req.sconn->sock,
 			  (char *)outbuf,
 			  true, seqnum+1,
 			  false, &req.pcd);
@@ -2717,8 +2716,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field, seqnum);
 	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field+4, NT_STATUS_V(NT_STATUS_OK));
 
-	reply = smbd_echo_reply(smbd_server_fd(),
-				(uint8_t *)state->pending[num_pending].iov_base,
+	reply = smbd_echo_reply((uint8_t *)state->pending[num_pending].iov_base,
 				state->pending[num_pending].iov_len,
 				seqnum);
 	if (reply) {
