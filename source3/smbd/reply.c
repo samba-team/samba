@@ -2810,7 +2810,8 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 			memset(buf + ret, '\0', cur_read - ret);
 		}
 
-		if (write_data(smbd_server_fd(),buf,cur_read) != cur_read) {
+		if (write_data(fsp->conn->sconn->sock, buf, cur_read)
+		    != cur_read) {
 			SAFE_FREE(buf);
 			return -1;
 		}
