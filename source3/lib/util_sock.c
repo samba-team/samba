@@ -727,18 +727,8 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
 	status = read_smb_length_return_keepalive(fd,buffer,timeout,&len);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (fd == smbd_server_fd()) {
-			char addr[INET6_ADDRSTRLEN];
-			/* Try and give an error message
-			 * saying what client failed. */
-			DEBUG(0, ("read_fd_with_timeout failed for "
-				  "client %s read error = %s.\n",
-				  get_peer_addr(fd,addr,sizeof(addr)),
-				  nt_errstr(status)));
-		} else {
-			DEBUG(0, ("read_fd_with_timeout failed, read "
-				  "error = %s.\n", nt_errstr(status)));
-		}
+		DEBUG(0, ("read_fd_with_timeout failed, read "
+			  "error = %s.\n", nt_errstr(status)));
 		return status;
 	}
 
@@ -757,19 +747,8 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
 			fd, buffer+4, len, len, timeout, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			if (fd == smbd_server_fd()) {
-				char addr[INET6_ADDRSTRLEN];
-				/* Try and give an error message
-				 * saying what client failed. */
-				DEBUG(0, ("read_fd_with_timeout failed for "
-					  "client %s read error = %s.\n",
-					  get_peer_addr(fd,addr,sizeof(addr)),
-					  nt_errstr(status)));
-			} else {
-				DEBUG(0, ("read_fd_with_timeout failed, "
-					  "read error = %s.\n",
-					  nt_errstr(status)));
-			}
+			DEBUG(0, ("read_fd_with_timeout failed, read error = "
+				  "%s.\n", nt_errstr(status)));
 			return status;
 		}
 
