@@ -2812,6 +2812,16 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 
 		if (write_data(fsp->conn->sconn->sock, buf, cur_read)
 		    != cur_read) {
+			char addr[INET6_ADDRSTRLEN];
+			/*
+			 * Try and give an error message saying what
+			 * client failed.
+			 */
+			DEBUG(0, ("write_data failed for client %s. "
+				  "Error %s\n",
+				  get_peer_addr(fsp->conn->sconn->sock, addr,
+						sizeof(addr)),
+				  strerror(errno)));
 			SAFE_FREE(buf);
 			return -1;
 		}
@@ -2874,8 +2884,19 @@ static void sendfile_short_send(files_struct *fsp,
 			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
 			if (write_data(fsp->conn->sconn->sock, buf, to_write)
 			    != to_write) {
+				char addr[INET6_ADDRSTRLEN];
+				/*
+				 * Try and give an error message saying what
+				 * client failed.
+				 */
+				DEBUG(0, ("write_data failed for client %s. "
+					  "Error %s\n",
+					  get_peer_addr(
+						  fsp->conn->sconn->sock, addr,
+						  sizeof(addr)),
+					  strerror(errno)));
 				exit_server_cleanly("sendfile_short_send: "
-					"write_data failed");
+						    "write_data failed");
 			}
 			nread += to_write;
 		}
@@ -2896,6 +2917,16 @@ static void reply_readbraw_error(struct smbd_server_connection *sconn)
 
 	smbd_lock_socket(sconn);
 	if (write_data(sconn->sock,header,4) != 4) {
+		char addr[INET6_ADDRSTRLEN];
+		/*
+		 * Try and give an error message saying what
+		 * client failed.
+		 */
+		DEBUG(0, ("write_data failed for client %s. "
+			  "Error %s\n",
+			  get_peer_addr(sconn->sock, addr, sizeof(addr)),
+			  strerror(errno)));
+
 		fail_readraw();
 	}
 	smbd_unlock_socket(sconn);
@@ -3013,8 +3044,20 @@ normal_readbraw:
 	}
 
 	_smb_setlen(outbuf,ret);
-	if (write_data(sconn->sock, outbuf, 4+ret) != 4+ret)
+	if (write_data(sconn->sock, outbuf, 4+ret) != 4+ret) {
+		char addr[INET6_ADDRSTRLEN];
+		/*
+		 * Try and give an error message saying what
+		 * client failed.
+		 */
+		DEBUG(0, ("write_data failed for client %s. "
+			  "Error %s\n",
+			  get_peer_addr(fsp->conn->sconn->sock, addr,
+					sizeof(addr)),
+			  strerror(errno)));
+
 		fail_readraw();
+	}
 
 	TALLOC_FREE(outbuf);
 }
@@ -3558,6 +3601,18 @@ normal_read:
 		/* Send out the header. */
 		if (write_data(req->sconn->sock, (char *)headerbuf,
 			       sizeof(headerbuf)) != sizeof(headerbuf)) {
+
+			char addr[INET6_ADDRSTRLEN];
+			/*
+			 * Try and give an error message saying what
+			 * client failed.
+			 */
+			DEBUG(0, ("write_data failed for client %s. "
+				  "Error %s\n",
+				  get_peer_addr(req->sconn->sock, addr,
+						sizeof(addr)),
+				  strerror(errno)));
+
 			DEBUG(0,("send_file_readX: write_data failed for file "
 				 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
 				 strerror(errno)));

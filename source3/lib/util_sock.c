@@ -660,26 +660,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 
 	iov.iov_base = CONST_DISCARD(void *, buffer);
 	iov.iov_len = N;
-
-	ret = write_data_iov(fd, &iov, 1);
-	if (ret >= 0) {
-		return ret;
-	}
-
-	if (fd == smbd_server_fd()) {
-		char addr[INET6_ADDRSTRLEN];
-		/*
-		 * Try and give an error message saying what client failed.
-		 */
-		DEBUG(0, ("write_data: write failure in writing to client %s. "
-			  "Error %s\n", get_peer_addr(fd,addr,sizeof(addr)),
-			  strerror(errno)));
-	} else {
-		DEBUG(0,("write_data: write failure. Error = %s\n",
-			 strerror(errno) ));
-	}
-
-	return -1;
+	return write_data_iov(fd, &iov, 1);
 }
 
 /****************************************************************************

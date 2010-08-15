@@ -132,8 +132,17 @@ bool srv_send_smb(int fd, char *buffer,
 
 	ret = write_data(fd,buf_out+nwritten,len - nwritten);
 	if (ret <= 0) {
-		DEBUG(0,("pid[%d] Error writing %d bytes to client. %d. (%s)\n",
-			(int)sys_getpid(), (int)len,(int)ret, strerror(errno) ));
+
+		char addr[INET6_ADDRSTRLEN];
+		/*
+		 * Try and give an error message saying what
+		 * client failed.
+		 */
+		DEBUG(0,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
+			 (int)sys_getpid(), (int)len,
+			 get_peer_addr(fd, addr, sizeof(addr)),
+			 (int)ret, strerror(errno) ));
+
 		srv_free_enc_buffer(buf_out);
 		goto out;
 	}
@@ -2416,7 +2425,15 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 	smbd_unlock_socket(smbd_server_conn);
 
 	if (!ret) {
-		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		char addr[INET6_ADDRSTRLEN];
+		/*
+		 * Try and give an error message saying what
+		 * client failed.
+		 */
+		DEBUG(0, ("send_keepalive failed for client %s. "
+			  "Error %s - exiting\n",
+			  get_peer_addr(sconn->sock, addr, sizeof(addr)),
+			  strerror(errno)));
 		return False;
 	}
 	return True;
