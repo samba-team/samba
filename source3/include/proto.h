@@ -1878,7 +1878,6 @@ bool cli_state_seqnum_persistent(struct cli_state *cli,
 bool cli_state_seqnum_remove(struct cli_state *cli,
 			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
-ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len);
 bool cli_receive_smb_readX_header(struct cli_state *cli);
 bool cli_send_smb(struct cli_state *cli);
 bool cli_send_smb_direct_writeX(struct cli_state *cli,

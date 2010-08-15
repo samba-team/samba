@@ -285,37 +285,6 @@ bool cli_receive_smb(struct cli_state *cli)
 	return true;
 }
 
-/****************************************************************************
- Read the data portion of a readX smb.
- The timeout is in milliseconds
-****************************************************************************/
-
-ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
-{
-	NTSTATUS status;
-
-	set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
-
-	status = read_fd_with_timeout(
-		cli->fd, buffer, len, len, cli->timeout, NULL);
-	if (NT_STATUS_IS_OK(status)) {
-		return len;
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-		set_smb_read_error(&cli->smb_rw_error, SMB_READ_EOF);
-		return -1;
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		set_smb_read_error(&cli->smb_rw_error, SMB_READ_TIMEOUT);
-		return -1;
-	}
-
-	set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
-	return -1;
-}
-
 static ssize_t write_socket(int fd, const char *buf, size_t len)
 {
         ssize_t ret=0;
