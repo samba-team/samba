@@ -86,7 +86,8 @@ class PasswordTests(samba.tests.TestCase):
              "objectclass": ["user", "person"],
              "sAMAccountName": "testuser"})
 
-        # Tests a password change when we don't have a password yet
+        # Tests a password change when we don't have any password yet with a
+        # wrong old password
         try:
             self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
@@ -100,13 +101,32 @@ userPassword: thatsAcomplPASS2
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        # Sets the initial user password and enables the account
+        # Sets the initial user password with a "special" password change
+        # I think that this internally is a password set operation and it can
+        # only be performed by someone which has password set privileges on the
+        # account (at least in s4 we do handle it like that).
         self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
-replace: userPassword
+delete: userPassword
+add: userPassword
 userPassword: thatsAcomplPASS1
 """)
+
+        # But in the other way around this special syntax doesn't work
+        try:
+            self.ldb.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
+userPassword: thatsAcomplPASS1
+add: userPassword
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # Enables the user account
         self.ldb.enable_account("(sAMAccountName=testuser)")
 
         # Open a second LDB connection with the user credentials. Use the
