@@ -2881,14 +2881,14 @@ void smbd_process(struct smbd_server_connection *sconn)
 	}
 
 	/* Ensure child is set to blocking mode */
-	set_blocking(smbd_server_fd(),True);
+	set_blocking(sconn->sock,True);
 
-	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), lp_socket_options());
+	set_socket_options(sconn->sock, "SO_KEEPALIVE");
+	set_socket_options(sconn->sock, lp_socket_options());
 
 	sa = (struct sockaddr *)(void *)&ss;
 	sa_len = sizeof(ss);
-	ret = getpeername(smbd_server_fd(), sa, &sa_len);
+	ret = getpeername(sconn->sock, sa, &sa_len);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
@@ -2905,7 +2905,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 	sa = (struct sockaddr *)(void *)&ss;
 	sa_len = sizeof(ss);
-	ret = getsockname(smbd_server_fd(), sa, &sa_len);
+	ret = getsockname(sconn->sock, sa, &sa_len);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
@@ -2946,7 +2946,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	 * the hosts allow list.
 	 */
 
-	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
+	if (!check_access(sconn->sock, lp_hostsallow(-1),
 			  lp_hostsdeny(-1))) {
 		/*
 		 * send a negative session response "not listening on calling
@@ -2956,7 +2956,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 		DEBUG( 1, ("Connection denied from %s to %s\n",
 			   tsocket_address_string(remote_address, talloc_tos()),
 			   tsocket_address_string(local_address, talloc_tos())));
-		(void)srv_send_smb(smbd_server_fd(),(char *)buf, false,
+		(void)srv_send_smb(sconn->sock,(char *)buf, false,
 				   0, false, NULL);
 		exit_server_cleanly("connection denied");
 	}
@@ -3095,7 +3095,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 	sconn->smb1.fde = event_add_fd(smbd_event_context(),
 						  sconn,
-						  smbd_server_fd(),
+						  sconn->sock,
 						  EVENT_FD_READ,
 						  smbd_server_connection_handler,
 						  sconn);
