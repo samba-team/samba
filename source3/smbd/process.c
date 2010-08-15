@@ -2665,7 +2665,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 		exit(1);
 	}
 
-	if (!fd_is_readable(smbd_server_fd())) {
+	if (!fd_is_readable(sconn->sock)) {
 		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
 			  (int)sys_getpid()));
 		ok = smbd_unlock_socket_internal(sconn);
@@ -2688,7 +2688,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 
 	DEBUG(10,("echo_handler[%d]: reading pdu\n", (int)sys_getpid()));
 
-	status = receive_smb_talloc(state->pending, smbd_server_fd(),
+	status = receive_smb_talloc(state->pending, sconn->sock,
 				    (char **)(void *)&state->pending[num_pending].iov_base,
 				    0 /* timeout */,
 				    &unread,
