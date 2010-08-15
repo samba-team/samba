@@ -3966,9 +3966,14 @@ void reply_writebraw(struct smb_request *req)
 		status = read_data(req->sconn->sock, buf+4, numtowrite);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("reply_writebraw: Oversize secondary write "
-				 "raw read failed (%s). Terminating\n",
-				 nt_errstr(status)));
+			char addr[INET6_ADDRSTRLEN];
+			/* Try and give an error message
+			 * saying what client failed. */
+			DEBUG(0, ("reply_writebraw: Oversize secondary write "
+				  "raw read failed (%s) for client %s. "
+				  "Terminating\n", nt_errstr(status),
+				  get_peer_addr(req->sconn->sock, addr,
+						sizeof(addr))));
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
