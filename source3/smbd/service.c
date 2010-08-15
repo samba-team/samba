@@ -650,7 +650,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
-	char addr[INET6_ADDRSTRLEN];
+	char *addr;
 	bool on_err_call_dis_hook = false;
 	bool claimed_connection = false;
 	uid_t effuid;
@@ -689,9 +689,16 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	add_session_user(sconn, conn->server_info->unix_name);
 
-	safe_strcpy(conn->client_address,
-			client_addr(smbd_server_fd(),addr,sizeof(addr)),
-			sizeof(conn->client_address)-1);
+	addr = tsocket_address_inet_addr_string(sconn->remote_address,
+						talloc_tos());
+	if (addr == NULL) {
+		*pstatus = NT_STATUS_NO_MEMORY;
+		goto err_root_exit;
+	}
+	safe_strcpy(conn->client_address, addr,
+		    sizeof(conn->client_address)-1);
+	TALLOC_FREE(addr);
+
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
 	conn->used = True;
