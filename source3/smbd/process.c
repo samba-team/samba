@@ -1526,7 +1526,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	/* does this protocol need to be run as guest? */
 	if ((flags & AS_GUEST)
 	    && (!change_to_guest() ||
-		!check_access(smbd_server_fd(), lp_hostsallow(-1),
+		!check_access(sconn->sock, lp_hostsallow(-1),
 			      lp_hostsdeny(-1)))) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return conn;
