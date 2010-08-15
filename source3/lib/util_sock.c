@@ -442,7 +442,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 	ssize_t readret;
 	size_t nread = 0;
 	struct timeval timeout;
-	char addr[INET6_ADDRSTRLEN];
 	int save_errno;
 
 	/* just checking .... */
@@ -465,19 +464,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 			}
 
 			if (readret == -1) {
-				save_errno = errno;
-				if (fd == smbd_server_fd()) {
-					/* Try and give an error message
-					 * saying what client failed. */
-					DEBUG(0,("read_fd_with_timeout: "
-						"client %s read error = %s.\n",
-						get_peer_addr(fd,addr,sizeof(addr)),
-						strerror(save_errno) ));
-				} else {
-					DEBUG(0,("read_fd_with_timeout: "
-						"read error = %s.\n",
-						strerror(save_errno) ));
-				}
 				return map_nt_error_from_unix(save_errno);
 			}
 			nread += readret;
@@ -503,20 +489,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 
 		/* Check if error */
 		if (selrtn == -1) {
-			save_errno = errno;
-			/* something is wrong. Maybe the socket is dead? */
-			if (fd == smbd_server_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("read_fd_with_timeout: timeout "
-				"read for client %s. select error = %s.\n",
-				get_peer_addr(fd,addr,sizeof(addr)),
-				strerror(save_errno) ));
-			} else {
-				DEBUG(0,("read_fd_with_timeout: timeout "
-				"read. select error = %s.\n",
-				strerror(save_errno) ));
-			}
 			return map_nt_error_from_unix(save_errno);
 		}
 
@@ -537,20 +509,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 		}
 
 		if (readret == -1) {
-			save_errno = errno;
-			/* the descriptor is probably dead */
-			if (fd == smbd_server_fd()) {
-				/* Try and give an error message
-				 * saying what client failed. */
-				DEBUG(0,("read_fd_with_timeout: timeout "
-					"read to client %s. read error = %s.\n",
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(save_errno) ));
-			} else {
-				DEBUG(0,("read_fd_with_timeout: timeout "
-					"read. read error = %s.\n",
-					strerror(save_errno) ));
-			}
 			return map_nt_error_from_unix(errno);
 		}
 
@@ -573,7 +531,25 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 
 NTSTATUS read_data(int fd, char *buffer, size_t N)
 {
-	return read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
+	NTSTATUS status;
+
+	status = read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (fd == smbd_server_fd()) {
+		char addr[INET6_ADDRSTRLEN];
+		/* Try and give an error message
+		 * saying what client failed. */
+		DEBUG(0, ("read_fd_with_timeout failed for "
+			  "client %s read error = %s.\n",
+			  get_peer_addr(fd,addr,sizeof(addr)),
+			  nt_errstr(status)));
+	} else {
+		DEBUG(0, ("read_fd_with_timeout failed, read error = %s.\n",
+			  nt_errstr(status)));
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -694,6 +670,18 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 	status = read_fd_with_timeout(fd, inbuf, 4, 4, timeout, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		if (fd == smbd_server_fd()) {
+			char addr[INET6_ADDRSTRLEN];
+			/* Try and give an error message
+			 * saying what client failed. */
+			DEBUG(0, ("read_fd_with_timeout failed for "
+				  "client %s read error = %s.\n",
+				  get_peer_addr(fd,addr,sizeof(addr)),
+				  nt_errstr(status)));
+		} else {
+			DEBUG(0, ("read_fd_with_timeout failed, read error = "
+				  "%s.\n", nt_errstr(status)));
+		}
 		return status;
 	}
 
@@ -776,6 +764,19 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
 			fd, buffer+4, len, len, timeout, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			if (fd == smbd_server_fd()) {
+				char addr[INET6_ADDRSTRLEN];
+				/* Try and give an error message
+				 * saying what client failed. */
+				DEBUG(0, ("read_fd_with_timeout failed for "
+					  "client %s read error = %s.\n",
+					  get_peer_addr(fd,addr,sizeof(addr)),
+					  nt_errstr(status)));
+			} else {
+				DEBUG(0, ("read_fd_with_timeout failed, "
+					  "read error = %s.\n",
+					  nt_errstr(status)));
+			}
 			return status;
 		}
 

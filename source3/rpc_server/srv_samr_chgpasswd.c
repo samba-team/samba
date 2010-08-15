@@ -269,6 +269,8 @@ static int expect(int master, char *issue, char *expected)
 				timeout, &len);
 
 			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(2, ("expect: read error %s\n",
+					  nt_errstr(status)));
 				break;
 			}
 			nread += len;
