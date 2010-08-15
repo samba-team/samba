@@ -82,6 +82,11 @@ struct dsdb_control_password_change_status {
 
 #define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
 
+struct dsdb_control_password_change {
+	const struct samr_Password *old_nt_pwd_hash;
+	const struct samr_Password *old_lm_pwd_hash;
+};
+
 /**
    DSDB_CONTROL_APPLY_LINKS is internal to Samba4 - a token passed between repl_meta_data and linked_attributes modules
 */
