@@ -2030,7 +2030,7 @@ void chain_reply(struct smb_request *req)
 		smb_setlen((char *)(req->chain_outbuf),
 			   talloc_get_size(req->chain_outbuf) - 4);
 
-		if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
+		if (!srv_send_smb(req->sconn->sock, (char *)req->chain_outbuf,
 				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted,
@@ -2170,7 +2170,7 @@ void chain_reply(struct smb_request *req)
 
 	show_msg((char *)(req->chain_outbuf));
 
-	if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
+	if (!srv_send_smb(req->sconn->sock, (char *)req->chain_outbuf,
 			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			  &req->pcd)) {
