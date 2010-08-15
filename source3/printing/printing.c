@@ -2371,7 +2371,7 @@ ssize_t print_job_write(struct tevent_context *ev,
 		return -1;
 	}
 
-	return_code = write_data_at_offset(pjob->fd, buf, size, (SMB_OFF_T)-1);
+	return_code = write_data(pjob->fd, buf, size);
 
 	if (return_code>0) {
 		pjob->size += size;
