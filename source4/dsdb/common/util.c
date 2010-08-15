@@ -2021,7 +2021,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_request *req;
 	struct dsdb_control_password_change_status *pwd_stat = NULL;
 	int ret;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 #define CHECK_RET(x) \
 	if (x != LDB_SUCCESS) { \
@@ -2141,18 +2141,26 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		talloc_free(pwd_stat);
 	}
 
-	/* TODO: Error results taken from "password_hash" module. Are they
-	   correct? */
-	if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
-		status = NT_STATUS_WRONG_PASSWORD;
-	} else if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
-		status = NT_STATUS_PASSWORD_RESTRICTION;
+	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+		const char *errmsg = ldb_errstring(ldb);
+		char *endptr = NULL;
+		WERROR werr = WERR_GENERAL_FAILURE;
+		status = NT_STATUS_UNSUCCESSFUL;
+		if (errmsg != NULL) {
+			werr = W_ERROR(strtol(errmsg, &endptr, 16));
+		}
+		if (endptr != errmsg) {
+			if (W_ERROR_EQUAL(werr, WERR_INVALID_PASSWORD)) {
+				status = NT_STATUS_WRONG_PASSWORD;
+			}
+			if (W_ERROR_EQUAL(werr, WERR_PASSWORD_RESTRICTION)) {
+				status = NT_STATUS_PASSWORD_RESTRICTION;				}
+		}
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* don't let the caller know if an account doesn't exist */
 		status = NT_STATUS_WRONG_PASSWORD;
 	} else if (ret != LDB_SUCCESS) {
 		status = NT_STATUS_UNSUCCESSFUL;
-	} else {
-		status = NT_STATUS_OK;
 	}
 
 	return status;
