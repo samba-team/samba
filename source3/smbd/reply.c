@@ -2872,7 +2872,8 @@ static void sendfile_short_send(files_struct *fsp,
 			size_t to_write;
 
 			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
-			if (write_data(smbd_server_fd(), buf, to_write) != to_write) {
+			if (write_data(fsp->conn->sconn->sock, buf, to_write)
+			    != to_write) {
 				exit_server_cleanly("sendfile_short_send: "
 					"write_data failed");
 			}
