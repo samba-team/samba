@@ -2154,7 +2154,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			if (W_ERROR_EQUAL(werr, WERR_PASSWORD_RESTRICTION)) {
-				status = NT_STATUS_PASSWORD_RESTRICTION;				}
+				status = NT_STATUS_PASSWORD_RESTRICTION;
+			}
 		}
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* don't let the caller know if an account doesn't exist */
