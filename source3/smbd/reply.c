@@ -2934,8 +2934,10 @@ static void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if ((sendfile_read = SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
-				&header_blob, startpos, nread)) == -1) {
+		sendfile_read = SMB_VFS_SENDFILE(sconn->sock, fsp,
+						 &header_blob, startpos,
+						 nread);
+		if (sendfile_read == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
 			if (errno == ENOSYS) {
@@ -3011,7 +3013,7 @@ normal_readbraw:
 	}
 
 	_smb_setlen(outbuf,ret);
-	if (write_data(smbd_server_fd(),outbuf,4+ret) != 4+ret)
+	if (write_data(sconn->sock, outbuf, 4+ret) != 4+ret)
 		fail_readraw();
 
 	TALLOC_FREE(outbuf);
