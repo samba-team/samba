@@ -2431,10 +2431,18 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 				++rep_attr_cnt;
 			}
 			if ((passwordAttr->num_values != 1) &&
-			    (passwordAttr->flags != LDB_FLAG_MOD_REPLACE)) {
+			    (passwordAttr->flags == LDB_FLAG_MOD_ADD)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
-						       "'%s' attributes must have exactly one value!",
+						       "'%s' attribute must have exactly one value on add operations!",
+						       *l);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+			if ((passwordAttr->num_values > 1) &&
+			    (passwordAttr->flags == LDB_FLAG_MOD_DELETE)) {
+				talloc_free(ac);
+				ldb_asprintf_errstring(ldb,
+						       "'%s' attribute must have zero or one value(s) on delete operations!",
 						       *l);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
