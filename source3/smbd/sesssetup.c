@@ -1399,9 +1399,9 @@ static int shutdown_other_smbds(const struct connections_key *key,
 		return 0;
 	}
 
-	DEBUG(0,("shutdown_other_smbds: shutting down pid %u "
-		 "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid),
-		 state->ip));
+	DEBUG(1, ("shutdown_other_smbds: shutting down pid %u "
+		  "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid),
+		  state->ip));
 
 	messaging_send(state->msg_ctx, crec->pid, MSG_SHUTDOWN,
 		       &data_blob_null);
