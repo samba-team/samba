@@ -1452,18 +1452,24 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		   has no problems at all */
 		if (io->og.nt_hash) {
 			if (!io->o.nt_hash) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
+					"%08X: %s - check_password_restrictions: "
 					"There's no old nt_hash, which is needed "
-					"in order to change your password!");
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+					"in order to change your password!",
+					W_ERROR_V(WERR_INVALID_PASSWORD),
+					ldb_strerror(ret));
+				return ret;
 			}
 
 			if (memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
-					"The old password specified doesn't match!");
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+					"%08X: %s - check_password_restrictions: "
+					"The old password specified doesn't match!",
+					W_ERROR_V(WERR_INVALID_PASSWORD),
+					ldb_strerror(ret));
+				return ret;
 			}
 
 			nt_hash_checked = true;
@@ -1475,19 +1481,25 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		 * (as the SAMR operations request it). */
 		if (io->og.lm_hash) {
 			if (!io->o.lm_hash && !nt_hash_checked) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
+					"%08X: %s - check_password_restrictions: "
 					"There's no old lm_hash, which is needed "
-					"in order to change your password!");
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+					"in order to change your password!",
+					W_ERROR_V(WERR_INVALID_PASSWORD),
+					ldb_strerror(ret));
+				return ret;
 			}
 
 			if (io->o.lm_hash &&
 			    memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
-					"The old password specified doesn't match!");
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+					"%08X: %s - check_password_restrictions: "
+					"The old password specified doesn't match!",
+					W_ERROR_V(WERR_INVALID_PASSWORD),
+					ldb_strerror(ret));
+				return ret;
 			}
 		}
 	}
@@ -1512,28 +1524,34 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			break;
 
 		case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			ldb_asprintf_errstring(ldb,
-				"check_password_restrictions: "
-				"the password is too short. It should be equal or longer than %i characters!",
+				"%08X: %s - check_password_restrictions: "
+				"the password is too short. It should be equal or longer than %u characters!",
+				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				ldb_strerror(ret),
 				io->ac->status->domain_data.minPwdLength);
-
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
-			return LDB_ERR_CONSTRAINT_VIOLATION;
+			return ret;
 
 		case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			ldb_asprintf_errstring(ldb,
-				"check_password_restrictions: "
-				"the password does not meet the complexity criterias!");
+				"%08X: %s - check_password_restrictions: "
+				"the password does not meet the complexity criterias!",
+				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				ldb_strerror(ret));
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
-
-			return LDB_ERR_CONSTRAINT_VIOLATION;
+			return ret;
 
 		default:
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			ldb_asprintf_errstring(ldb,
-				"check_password_restrictions: "
-				"the password doesn't fit by a certain reason!");
-
-			return LDB_ERR_CONSTRAINT_VIOLATION;
+				"%08X: %s - check_password_restrictions: "
+				"the password doesn't fit by a certain reason!",
+				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				ldb_strerror(ret));
+			return ret;
 		}
 	}
 
@@ -1548,13 +1566,14 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		for (i = 0; i < io->o.nt_history_len; i++) {
 			ret = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
 			if (ret == 0) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
-					"the password was already used (in history)!");
-
+					"%08X: %s - check_password_restrictions: "
+					"the password was already used (in history)!",
+					W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+					ldb_strerror(ret));
 				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+				return ret;
 			}
 		}
 	}
@@ -1566,39 +1585,49 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		for (i = 0; i < io->o.lm_history_len; i++) {
 			ret = memcmp(io->n.nt_hash, io->o.lm_history[i].hash, 16);
 			if (ret == 0) {
+				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
-					"check_password_restrictions: "
-					"the password was already used (in history)!");
-
+					"%08X: %s - check_password_restrictions: "
+					"the password was already used (in history)!",
+					W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+					ldb_strerror(ret));
 				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
-
-				return LDB_ERR_CONSTRAINT_VIOLATION;
+				return ret;
 			}
 		}
 	}
 
 	/* are all password changes disallowed? */
 	if (io->ac->status->domain_data.pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+		ret = LDB_ERR_CONSTRAINT_VIOLATION;
 		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"password changes disabled!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			"%08X: %s - check_password_restrictions: "
+			"password changes disabled!",
+			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			ldb_strerror(ret));
+		return ret;
 	}
 
 	/* can this user change the password? */
 	if (io->u.userAccountControl & UF_PASSWD_CANT_CHANGE) {
+		ret = LDB_ERR_CONSTRAINT_VIOLATION;
 		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"password can't be changed on this account!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			"%08X: %s - check_password_restrictions: "
+			"password can't be changed on this account!",
+			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			ldb_strerror(ret));
+		return ret;
 	}
 
 	/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
 	if (io->u.pwdLastSet - io->ac->status->domain_data.minPwdAge > io->g.last_set) {
+		ret = LDB_ERR_CONSTRAINT_VIOLATION;
 		ldb_asprintf_errstring(ldb,
-			"check_password_restrictions: "
-			"password is too young to change!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			"%08X: %s - check_password_restrictions: "
+			"password is too young to change!",
+			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			ldb_strerror(ret));
+		return ret;
 	}
 
 	return LDB_SUCCESS;
