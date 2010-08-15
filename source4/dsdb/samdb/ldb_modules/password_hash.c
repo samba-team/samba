@@ -95,12 +95,12 @@ struct ph_context {
 	struct ldb_reply *search_res;
 
 	struct dsdb_control_password_change_status *status;
+	struct dsdb_control_password_change *change;
 
 	bool pwd_reset;
 
 	bool change_status;
 	bool hash_values;
-	bool change;
 };
 
 
@@ -1436,7 +1436,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	ldb = ldb_module_get_ctx(io->ac->module);
 
 	/* First check the old password is correct, for password changes */
-	if (!io->ac->pwd_reset && !io->ac->change) {
+	if (!io->ac->pwd_reset) {
 		bool nt_hash_checked = false;
 
 		/* we need the old nt or lm hash given by the client */
@@ -1858,6 +1858,27 @@ static int setup_io(struct ph_context *ac,
 		       sizeof(io->og.lm_hash->hash)));
 	}
 
+	/*
+	 * Handles the password change control if it's specified. It has the
+	 * precedance and overrides already specified old password values of
+	 * change requests (but that shouldn't happen since the control is
+	 * fully internal and only used in conjunction with replace requests!).
+	 */
+	if (ac->change != NULL) {
+		io->og.nt_hash = NULL;
+		if (ac->change->old_nt_pwd_hash != NULL) {
+			io->og.nt_hash = talloc_memdup(io->ac,
+						       ac->change->old_nt_pwd_hash,
+						       sizeof(struct samr_Password));
+		}
+		io->og.lm_hash = NULL;
+		if (lpcfg_lanman_auth(lp_ctx) && (ac->change->old_lm_pwd_hash != NULL)) {
+			io->og.lm_hash = talloc_memdup(io->ac,
+						       ac->change->old_lm_pwd_hash,
+						       sizeof(struct samr_Password));
+		}
+	}
+
 	/* refuse the change if someone wants to change the clear-
 	   text and supply his own hashes at the same time... */
 	if ((io->n.cleartext_utf8 || io->n.cleartext_utf16)
@@ -1913,10 +1934,8 @@ static int setup_io(struct ph_context *ac,
 		ac->pwd_reset = true;
 	} else if (ac->req->operation == LDB_MODIFY) {
 		if (io->og.cleartext_utf8 || io->og.cleartext_utf16
-		    || io->og.nt_hash || io->og.lm_hash
-		    || ac->change) {
-			/* If we have an old password or the "change old
-			 * password checked" control specified then for sure it
+		    || io->og.nt_hash || io->og.lm_hash) {
+			/* If we have an old password specified then for sure it
 			 * is a user "password change" */
 			ac->pwd_reset = false;
 		} else {
@@ -1975,11 +1994,10 @@ static void ph_apply_controls(struct ph_context *ac)
 		ctrl->critical = false;
 	}
 
-	ac->change = false;
 	ctrl = ldb_request_get_control(ac->req,
 				       DSDB_CONTROL_PASSWORD_CHANGE_OID);
 	if (ctrl != NULL) {
-		ac->change = true;
+		ac->change = (struct dsdb_control_password_change *) ctrl->data;
 
 		/* Mark the "change" control as uncritical (done) */
 		ctrl->critical = false;
