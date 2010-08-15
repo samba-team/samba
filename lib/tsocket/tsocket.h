@@ -83,7 +83,7 @@ struct iovec;
  */
 
 /**
- * @brief Get a string representaion of the endpoint.
+ * @brief Get a string representation of the endpoint.
  *
  * This function creates a string representation of the endpoint for debugging.
  * The output will look as followed:
