@@ -2895,7 +2895,7 @@ static void reply_readbraw_error(struct smbd_server_connection *sconn)
 	SIVAL(header,0,0);
 
 	smbd_lock_socket(sconn);
-	if (write_data(smbd_server_fd(),header,4) != 4) {
+	if (write_data(sconn->sock,header,4) != 4) {
 		fail_readraw();
 	}
 	smbd_unlock_socket(sconn);
