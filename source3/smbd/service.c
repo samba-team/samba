@@ -1106,7 +1106,6 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 	fstring service;
 	fstring dev;
 	int snum = -1;
-	char addr[INET6_ADDRSTRLEN];
 
 	fstrcpy(dev, pdev);
 
@@ -1207,7 +1206,8 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 
 		DEBUG(3,("%s (%s) couldn't find service %s\n",
 			get_remote_machine_name(),
-			client_addr(smbd_server_fd(),addr,sizeof(addr)),
+			tsocket_address_string(
+				sconn->remote_address, talloc_tos()),
 			service));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
