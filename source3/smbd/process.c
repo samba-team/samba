@@ -261,7 +261,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 		if (doff > STANDARD_WRITE_AND_X_HEADER_SIZE) {
 			size_t drain = doff - STANDARD_WRITE_AND_X_HEADER_SIZE;
-			if (drain_socket(smbd_server_fd(), drain) != drain) {
+			if (drain_socket(fd, drain) != drain) {
 	                        smb_panic("receive_smb_raw_talloc_partial_read:"
 					" failed to drain pending bytes");
 	                }
