@@ -5016,7 +5016,7 @@ void reply_echo(struct smb_request *req)
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(smbd_server_fd(),
+		if (!srv_send_smb(req->sconn->sock,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn)||req->encrypted,
