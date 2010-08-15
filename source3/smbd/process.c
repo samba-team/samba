@@ -2320,7 +2320,7 @@ static void smbd_server_connection_handler(struct event_context *ev,
 		return;
 	}
 	if (flags & EVENT_FD_READ) {
-		smbd_server_connection_read_handler(conn, smbd_server_fd());
+		smbd_server_connection_read_handler(conn, conn->sock);
 		return;
 	}
 }
