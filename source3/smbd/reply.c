@@ -390,7 +390,8 @@ bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 	return true;
 }
 
-static bool netbios_session_retarget(const char *name, int name_type)
+static bool netbios_session_retarget(struct smbd_server_connection *sconn,
+				     const char *name, int name_type)
 {
 	char *trim_name;
 	char *trim_name_type;
@@ -404,7 +405,7 @@ static bool netbios_session_retarget(const char *name, int name_type)
 	bool ret = false;
 	uint8_t outbuf[10];
 
-	if (get_socket_port(smbd_server_fd()) != 139) {
+	if (get_socket_port(sconn->sock) != 139) {
 		return false;
 	}
 
@@ -467,7 +468,7 @@ static bool netbios_session_retarget(const char *name, int name_type)
 	*(uint32_t *)(outbuf+4) = in_addr->sin_addr.s_addr;
 	*(uint16_t *)(outbuf+8) = htons(retarget_port);
 
-	if (!srv_send_smb(smbd_server_fd(), (char *)outbuf, false, 0, false,
+	if (!srv_send_smb(sconn->sock, (char *)outbuf, false, 0, false,
 			  NULL)) {
 		exit_server_cleanly("netbios_session_regarget: srv_send_smb "
 				    "failed.");
@@ -522,7 +523,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
 			 name1, name_type1, name2, name_type2));
 
-		if (netbios_session_retarget(name1, name_type1)) {
+		if (netbios_session_retarget(sconn, name1, name_type1)) {
 			exit_server_cleanly("retargeted client");
 		}
 
