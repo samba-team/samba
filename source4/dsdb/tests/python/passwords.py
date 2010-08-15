@@ -93,13 +93,16 @@ class PasswordTests(samba.tests.TestCase):
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
-userPassword: thatsAcomplPASS1
+userPassword: noPassword
 add: userPassword
 userPassword: thatsAcomplPASS2
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            # Windows (2008 at least) seems to have some small bug here: it
+            # returns "0000056A" on longer (always wrong) previous passwords.
+            self.assertTrue('00000056' in msg)
 
         # Sets the initial user password with a "special" password change
         # I think that this internally is a password set operation and it can
@@ -206,8 +209,9 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS4\"".encode('utf-16-le')) + """
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertTrue('00000056' in msg)
 
         # A change to the same password again will not work (password history)
         try:
@@ -220,8 +224,9 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertTrue('0000052D' in msg)
 
     def test_dBCSPwd_hash_set(self):
         print "Performs a password hash set operation on 'dBCSPwd' which should be prevented"
@@ -290,8 +295,9 @@ add: userPassword
 userPassword: thatsAcomplPASS4
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertTrue('00000056' in msg)
 
         # A change to the same password again will not work (password history)
         try:
@@ -304,8 +310,9 @@ add: userPassword
 userPassword: thatsAcomplPASS2
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertTrue('0000052D' in msg)
 
     def test_clearTextPassword_clear_set(self):
         print "Performs a password cleartext set operation on 'clearTextPassword'"
@@ -353,10 +360,11 @@ add: clearTextPassword
 clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS4".encode('utf-16-le')) + """
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             # "NO_SUCH_ATTRIBUTE" is returned by Windows -> ignore it
             if num != ERR_NO_SUCH_ATTRIBUTE:
                 self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+                self.assertTrue('00000056' in msg)
 
         # A change to the same password again will not work (password history)
         try:
@@ -369,10 +377,11 @@ add: clearTextPassword
 clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le')) + """
 """)
             self.fail()
-        except LdbError, (num, _):
+        except LdbError, (num, msg):
             # "NO_SUCH_ATTRIBUTE" is returned by Windows -> ignore it
             if num != ERR_NO_SUCH_ATTRIBUTE:
                 self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+                self.assertTrue('0000052D' in msg)
 
     def test_failures(self):
         print "Performs some failure testing"
