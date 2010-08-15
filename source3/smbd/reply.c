@@ -3479,7 +3479,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
-		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
+		nread = SMB_VFS_SENDFILE(req->sconn->sock, fsp, &header,
+					 startpos, smb_maxcnt);
+		if (nread == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			   Do this as a normal read. */
 			if (errno == ENOSYS) {
@@ -3554,7 +3556,7 @@ normal_read:
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
-		if (write_data(smbd_server_fd(), (char *)headerbuf,
+		if (write_data(req->sconn->sock, (char *)headerbuf,
 			       sizeof(headerbuf)) != sizeof(headerbuf)) {
 			DEBUG(0,("send_file_readX: write_data failed for file "
 				 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
