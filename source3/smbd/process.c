@@ -2412,7 +2412,7 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 	}
 
 	smbd_lock_socket(smbd_server_conn);
-	ret = send_keepalive(smbd_server_fd());
+	ret = send_keepalive(sconn->sock);
 	smbd_unlock_socket(smbd_server_conn);
 
 	if (!ret) {
