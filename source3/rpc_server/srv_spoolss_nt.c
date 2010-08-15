@@ -5366,7 +5366,6 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 	buffer_written = print_job_write(server_event_context(),p->msg_ctx,
 						   snum, Printer->jobid,
 						   (const char *)r->in.data.data,
-						   (SMB_OFF_T)-1,
 						   (size_t)r->in._data_size);
 	if (buffer_written == (ssize_t)-1) {
 		*r->out.num_written = 0;

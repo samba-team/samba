@@ -2352,8 +2352,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 ssize_t print_job_write(struct tevent_context *ev,
 			struct messaging_context *msg_ctx,
-			int snum, uint32 jobid, const char *buf, SMB_OFF_T pos,
-			size_t size)
+			int snum, uint32 jobid, const char *buf, size_t size)
 {
 	const char* sharename = lp_const_servicename(snum);
 	ssize_t return_code;
@@ -2372,7 +2371,7 @@ ssize_t print_job_write(struct tevent_context *ev,
 		return -1;
 	}
 
-	return_code = write_data_at_offset(pjob->fd, buf, size, pos);
+	return_code = write_data_at_offset(pjob->fd, buf, size, (SMB_OFF_T)-1);
 
 	if (return_code>0) {
 		pjob->size += size;
