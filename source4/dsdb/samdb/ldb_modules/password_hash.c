@@ -1439,7 +1439,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	if (!io->ac->pwd_reset && !io->ac->change_old_pw_checked) {
 		bool nt_hash_checked = false;
 
-		/* we need to old nt or lm hash given by the client */
+		/* we need the old nt or lm hash given by the client */
 		if (!io->og.nt_hash && !io->og.lm_hash) {
 			ldb_asprintf_errstring(ldb,
 				"check_password_restrictions: "
@@ -1875,15 +1875,6 @@ static int setup_io(struct ph_context *ac,
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
 			"it's only allowed to provide the old cleartext password as 'unicodePwd' or as 'userPassword' or as 'clearTextPassword'");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	/* refuse the change if someone wants to compare against both
-	 * hashes at the same time for a "password modify" operation... */
-	if (io->og.nt_hash && io->og.lm_hash) {
-		ldb_asprintf_errstring(ldb,
-			"setup_io: "
-			"it's only allowed to provide the old password in hash format as 'unicodePwd' or as 'dBCSPwd'");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
