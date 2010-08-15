@@ -110,14 +110,16 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	    if(t->type == TChoice)
 		fprintf(codefile, "case %s:\n", m->label);
 
-	    asprintf (&fs, "%s(%s)->%s%s",
-		      m->optional ? "" : "&", from,
-		      t->type == TChoice ? "u." : "", m->gen_name);
+	    if (asprintf (&fs, "%s(%s)->%s%s",
+			  m->optional ? "" : "&", from,
+			  t->type == TChoice ? "u." : "", m->gen_name) < 0)
+		errx(1, "malloc");
 	    if (fs == NULL)
 		errx(1, "malloc");
-	    asprintf (&ts, "%s(%s)->%s%s",
-		      m->optional ? "" : "&", to,
-		      t->type == TChoice ? "u." : "", m->gen_name);
+	    if (asprintf (&ts, "%s(%s)->%s%s",
+			  m->optional ? "" : "&", to,
+			  t->type == TChoice ? "u." : "", m->gen_name) < 0)
+		errx(1, "malloc");
 	    if (ts == NULL)
 		errx(1, "malloc");
 	    if(m->optional){
@@ -155,8 +157,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
     }
     case TSetOf:
     case TSequenceOf: {
-	char *f;
-	char *T;
+	char *f = NULL, *T = NULL;
 
 	fprintf (codefile, "if(((%s)->val = "
 		 "malloc((%s)->len * sizeof(*(%s)->val))) == NULL && (%s)->len != 0)\n",
@@ -166,10 +167,12 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 	fprintf(codefile,
 		"for((%s)->len = 0; (%s)->len < (%s)->len; (%s)->len++){\n",
 		to, to, from, to);
-	asprintf(&f, "&(%s)->val[(%s)->len]", from, to);
+	if (asprintf(&f, "&(%s)->val[(%s)->len]", from, to) < 0)
+	    errx(1, "malloc");
 	if (f == NULL)
 	    errx(1, "malloc");
-	asprintf(&T, "&(%s)->val[(%s)->len]", to, to);
+	if (asprintf(&T, "&(%s)->val[(%s)->len]", to, to) < 0)
+	    errx(1, "malloc");
 	if (T == NULL)
 	    errx(1, "malloc");
 	copy_type(f, T, t->subtype, FALSE);
@@ -228,7 +231,7 @@ generate_type_copy (const Symbol *s)
 
   used_fail = 0;
 
-  fprintf (codefile, "int\n"
+  fprintf (codefile, "int ASN1CALL\n"
 	   "copy_%s(const %s *from, %s *to)\n"
 	   "{\n"
 	   "memset(to, 0, sizeof(*to));\n",

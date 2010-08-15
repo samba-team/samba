@@ -33,7 +33,7 @@
 
 #include "gsskrb5_locl.h"
 
-OM_uint32 _gsskrb5_release_name
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_release_name
            (OM_uint32 * minor_status,
             gss_name_t * input_name
            )

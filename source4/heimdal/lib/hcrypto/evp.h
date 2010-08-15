@@ -74,6 +74,9 @@
 #define EVP_aes_128_cbc hc_EVP_aes_128_cbc
 #define EVP_aes_192_cbc hc_EVP_aes_192_cbc
 #define EVP_aes_256_cbc hc_EVP_aes_256_cbc
+#define EVP_aes_128_cfb8 hc_EVP_aes_128_cfb8
+#define EVP_aes_192_cfb8 hc_EVP_aes_192_cfb8
+#define EVP_aes_256_cfb8 hc_EVP_aes_256_cfb8
 
 #define EVP_des_cbc hc_EVP_des_cbc
 #define EVP_des_ede3_cbc hc_EVP_des_ede3_cbc
@@ -101,6 +104,7 @@
 #define	OpenSSL_add_all_algorithms_noconf hc_OpenSSL_add_all_algorithms_noconf
 #define EVP_CIPHER_CTX_ctrl hc_EVP_CIPHER_CTX_ctrl
 #define EVP_CIPHER_CTX_rand_key hc_EVP_CIPHER_CTX_rand_key
+#define hcrypto_validate hc_hcrypto_validate
 
 /*
  *
@@ -129,6 +133,7 @@ struct hc_CIPHER {
      */
 #define EVP_CIPH_STREAM_CIPHER		0
 #define EVP_CIPH_CBC_MODE		2
+#define EVP_CIPH_CFB8_MODE              4
 #define EVP_CIPH_MODE			0x7
 
 #define EVP_CIPH_VARIABLE_LENGTH	0x008 /* variable key length */
@@ -224,6 +229,9 @@ const EVP_MD *EVP_sha256(void);
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);
 const EVP_CIPHER * EVP_aes_256_cbc(void);
+const EVP_CIPHER * EVP_aes_128_cfb8(void);
+const EVP_CIPHER * EVP_aes_192_cfb8(void);
+const EVP_CIPHER * EVP_aes_256_cfb8(void);
 HC_DEPRECATED_CRYPTO const EVP_CIPHER * EVP_des_cbc(void);
 const EVP_CIPHER * EVP_des_ede3_cbc(void);
 const EVP_CIPHER * EVP_enc_null(void);
@@ -308,6 +316,9 @@ int	EVP_BytesToKey(const EVP_CIPHER *, const EVP_MD *,
 void	OpenSSL_add_all_algorithms(void);
 void	OpenSSL_add_all_algorithms_conf(void);
 void	OpenSSL_add_all_algorithms_noconf(void);
+
+void
+hcrypto_validate(void);
 
 HC_CPP_END
 

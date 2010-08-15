@@ -33,7 +33,7 @@
 
 #include "mech_locl.h"
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_decapsulate_token(const gss_buffer_t input_token,
 		      const gss_OID oid,
 		      gss_buffer_t output_token)

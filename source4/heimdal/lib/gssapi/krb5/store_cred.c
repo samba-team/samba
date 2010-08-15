@@ -33,7 +33,7 @@
 
 #include "gsskrb5_locl.h"
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_store_cred(OM_uint32         *minor_status,
 		    gss_cred_id_t     input_cred_handle,
 		    gss_cred_usage_t  cred_usage,

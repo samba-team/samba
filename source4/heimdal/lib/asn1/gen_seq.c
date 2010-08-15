@@ -47,8 +47,8 @@ generate_type_seq (const Symbol *s)
     while(type->type == TTag)
 	type = type->subtype;
 
-    if (type->type != TSequenceOf) {
-	printf("%s not seq of %d\n", s->name, (int)type->type);
+    if (type->type != TSequenceOf && type->type != TSetOf) {
+	fprintf(stderr, "%s not seq of %d\n", s->name, (int)type->type);
 	return;
     }
 
@@ -67,12 +67,12 @@ generate_type_seq (const Symbol *s)
     subname = type->subtype->symbol->gen_name;
 
     fprintf (headerfile,
-	     "int   add_%s  (%s *, const %s *);\n"
-	     "int   remove_%s  (%s *, unsigned int);\n",
+	     "ASN1EXP int   ASN1CALL add_%s  (%s *, const %s *);\n"
+	     "ASN1EXP int   ASN1CALL remove_%s  (%s *, unsigned int);\n",
 	     s->gen_name, s->gen_name, subname,
 	     s->gen_name, s->gen_name);
 
-    fprintf (codefile, "int\n"
+    fprintf (codefile, "int ASN1CALL\n"
 	     "add_%s(%s *data, const %s *element)\n"
 	     "{\n",
 	     s->gen_name, s->gen_name, subname);
@@ -93,7 +93,7 @@ generate_type_seq (const Symbol *s)
 
     fprintf (codefile, "}\n\n");
 
-    fprintf (codefile, "int\n"
+    fprintf (codefile, "int ASN1CALL\n"
 	     "remove_%s(%s *data, unsigned int element)\n"
 	     "{\n",
 	     s->gen_name, s->gen_name);

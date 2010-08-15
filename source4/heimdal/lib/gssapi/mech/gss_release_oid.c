@@ -34,7 +34,7 @@
 #include "mech_locl.h"
 
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_release_oid(OM_uint32 *minor_status, gss_OID *oid)
 {
     gss_OID o = *oid;

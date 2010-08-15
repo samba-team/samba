@@ -143,7 +143,8 @@ _hx509_request_add_dns_name(hx509_context context,
 
     memset(&name, 0, sizeof(name));
     name.element = choice_GeneralName_dNSName;
-    name.u.dNSName = rk_UNCONST(hostname);
+    name.u.dNSName.data = rk_UNCONST(hostname);
+    name.u.dNSName.length = strlen(hostname);
 
     return add_GeneralNames(&req->san, &name);
 }
@@ -157,7 +158,8 @@ _hx509_request_add_email(hx509_context context,
 
     memset(&name, 0, sizeof(name));
     name.element = choice_GeneralName_rfc822Name;
-    name.u.dNSName = rk_UNCONST(email);
+    name.u.dNSName.data = rk_UNCONST(email);
+    name.u.dNSName.length = strlen(email);
 
     return add_GeneralNames(&req->san, &name);
 }

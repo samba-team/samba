@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_inquire_mechs_for_name(OM_uint32 *minor_status,
     const gss_name_t input_name,
     gss_OID_set *mech_types)

@@ -273,7 +273,7 @@ mic_des3
   return GSS_S_COMPLETE;
 }
 
-OM_uint32 _gsskrb5_get_mic
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_get_mic
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             gss_qop_t qop_req,

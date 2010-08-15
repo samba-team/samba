@@ -70,9 +70,28 @@ net_write(rk_socket_t sock, const void *buf, size_t nbytes)
     const char *cbuf = (const char *)buf;
     ssize_t count;
     size_t rem = nbytes;
+#ifdef SOCKET_IS_NOT_AN_FD
+    int use_write = 0;
+#endif
 
     while (rem > 0) {
+#ifdef SOCKET_IS_NOT_AN_FD
+	if (use_write)
+	    count = _write (sock, cbuf, rem);
+	else
+	    count = send (sock, cbuf, rem, 0);
+
+	if (use_write == 0 &&
+	    rk_IS_SOCKET_ERROR(count) &&
+	    (rk_SOCK_ERRNO == WSANOTINITIALISED ||
+             rk_SOCK_ERRNO == WSAENOTSOCK)) {
+	    use_write = 1;
+
+	    count = _write (sock, cbuf, rem);
+	}
+#else
 	count = send (sock, cbuf, rem, 0);
+#endif
 	if (count < 0) {
 	    if (errno == EINTR)
 		continue;

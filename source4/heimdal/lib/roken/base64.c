@@ -93,7 +93,7 @@ base64_encode(const void *data, int size, char **str)
     }
     *p = 0;
     *str = s;
-    return strlen(s);
+    return (int) strlen(s);
 }
 
 #define DECODE_ERROR 0xffffffff

@@ -181,14 +181,14 @@ int
 der_put_printable_string (unsigned char *p, size_t len,
 			  const heim_printable_string *str, size_t *size)
 {
-    return der_put_general_string(p, len, str, size);
+    return der_put_octet_string(p, len, str, size);
 }
 
 int
 der_put_ia5_string (unsigned char *p, size_t len,
 		    const heim_ia5_string *str, size_t *size)
 {
-    return der_put_general_string(p, len, str, size);
+    return der_put_octet_string(p, len, str, size);
 }
 
 int

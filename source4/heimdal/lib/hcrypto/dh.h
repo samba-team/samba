@@ -41,6 +41,8 @@
 /* symbol renaming */
 #define DH_null_method hc_DH_null_method
 #define DH_imath_method hc_DH_imath_method
+#define DH_tfm_method hc_DH_tfm_method
+#define DH_ltm_method hc_DH_ltm_method
 #define DH_new hc_DH_new
 #define DH_new_method hc_DH_new_method
 #define DH_free hc_DH_free
@@ -56,6 +58,7 @@
 #define DH_check_pubkey hc_DH_check_pubkey
 #define DH_generate_key hc_DH_generate_key
 #define DH_compute_key hc_DH_compute_key
+#define	i2d_DHparams hc_i2d_DHparams
 
 /*
  *
@@ -114,6 +117,8 @@ struct DH {
  */
 
 const DH_METHOD *DH_null_method(void);
+const DH_METHOD *DH_tfm_method(void);
+const DH_METHOD *DH_ltm_method(void);
 const DH_METHOD *DH_imath_method(void);
 
 DH *	DH_new(void);
@@ -136,6 +141,8 @@ int	DH_generate_parameters_ex(DH *, int, int, BN_GENCB *);
 int	DH_check_pubkey(const DH *, const BIGNUM *, int *);
 int	DH_generate_key(DH *);
 int	DH_compute_key(unsigned char *,const BIGNUM *,DH *);
+
+int	i2d_DHparams(DH *, unsigned char **);
 
 #endif /* _HEIM_DH_H */
 

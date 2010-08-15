@@ -33,7 +33,7 @@
 
 #include "gsskrb5_locl.h"
 
-OM_uint32 _gsskrb5_add_cred (
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_add_cred (
      OM_uint32           *minor_status,
      const gss_cred_id_t input_cred_handle,
      const gss_name_t    desired_name,
@@ -155,7 +155,7 @@ OM_uint32 _gsskrb5_add_cred (
 
 	if (cred->ccache) {
 	    const char *type, *name;
-	    char *type_name;
+	    char *type_name = NULL;
 
 	    ret = GSS_S_FAILURE;
 
@@ -187,8 +187,8 @@ OM_uint32 _gsskrb5_add_cred (
 		    goto failure;
 		}
 		
-		asprintf(&type_name, "%s:%s", type, name);
-		if (type_name == NULL) {
+		kret = asprintf(&type_name, "%s:%s", type, name);
+		if (kret < 0 || type_name == NULL) {
 		    *minor_status = ENOMEM;
 		    goto failure;
 		}

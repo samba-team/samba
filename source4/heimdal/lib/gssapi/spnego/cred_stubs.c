@@ -32,7 +32,7 @@
 
 #include "spnego_locl.h"
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gss_spnego_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 {
     OM_uint32 ret;
@@ -54,7 +54,7 @@ _gss_spnego_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
  * we support gss_{get,set}_neg_mechs() we will need to expose
  * more functionality.
  */
-OM_uint32 _gss_spnego_acquire_cred
+OM_uint32 GSSAPI_CALLCONV _gss_spnego_acquire_cred
 (OM_uint32 *minor_status,
  const gss_name_t desired_name,
  OM_uint32 time_req,
@@ -127,7 +127,7 @@ out:
     return ret;
 }
 
-OM_uint32 _gss_spnego_inquire_cred
+OM_uint32 GSSAPI_CALLCONV _gss_spnego_inquire_cred
            (OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             gss_name_t * name,
@@ -169,7 +169,7 @@ OM_uint32 _gss_spnego_inquire_cred
     return ret;
 }
 
-OM_uint32 _gss_spnego_inquire_cred_by_mech (
+OM_uint32 GSSAPI_CALLCONV _gss_spnego_inquire_cred_by_mech (
             OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             const gss_OID mech_type,
@@ -214,7 +214,7 @@ OM_uint32 _gss_spnego_inquire_cred_by_mech (
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 _gss_spnego_inquire_cred_by_oid
+OM_uint32 GSSAPI_CALLCONV _gss_spnego_inquire_cred_by_oid
            (OM_uint32 * minor_status,
             const gss_cred_id_t cred_handle,
             const gss_OID desired_object,
@@ -235,7 +235,7 @@ OM_uint32 _gss_spnego_inquire_cred_by_oid
     return ret;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gss_spnego_set_cred_option (OM_uint32 *minor_status,
 			     gss_cred_id_t *cred_handle,
 			     const gss_OID object,
@@ -253,7 +253,7 @@ _gss_spnego_set_cred_option (OM_uint32 *minor_status,
 }
 
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gss_spnego_export_cred (OM_uint32 *minor_status,
 			 gss_cred_id_t cred_handle,
 			 gss_buffer_t value)
@@ -261,7 +261,7 @@ _gss_spnego_export_cred (OM_uint32 *minor_status,
     return gss_export_cred(minor_status, cred_handle, value);
 }
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gss_spnego_import_cred (OM_uint32 *minor_status,
 			 gss_buffer_t value,
 			 gss_cred_id_t *cred_handle)

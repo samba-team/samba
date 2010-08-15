@@ -167,17 +167,24 @@ der_get_utf8string (const unsigned char *p, size_t len,
 }
 
 int
-der_get_printable_string (const unsigned char *p, size_t len,
-			  heim_printable_string *str, size_t *size)
+der_get_printable_string(const unsigned char *p, size_t len,
+			 heim_printable_string *str, size_t *size)
 {
-    return der_get_general_string(p, len, str, size);
+    str->length = len;
+    str->data = malloc(len + 1);
+    if (str->data == NULL)
+	return ENOMEM;
+    memcpy(str->data, p, len);
+    ((char *)str->data)[len] = '\0';
+    if(size) *size = len;
+    return 0;
 }
 
 int
-der_get_ia5_string (const unsigned char *p, size_t len,
-		    heim_ia5_string *str, size_t *size)
+der_get_ia5_string(const unsigned char *p, size_t len,
+		   heim_ia5_string *str, size_t *size)
 {
-    return der_get_general_string(p, len, str, size);
+    return der_get_printable_string(p, len, str, size);
 }
 
 int

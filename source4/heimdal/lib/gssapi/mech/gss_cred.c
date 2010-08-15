@@ -42,7 +42,7 @@
  *     cred-data char * (not alligned)
 */
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_export_cred(OM_uint32 * minor_status,
 		gss_cred_id_t cred_handle,
 		gss_buffer_t token)
@@ -107,7 +107,7 @@ gss_export_cred(OM_uint32 * minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_import_cred(OM_uint32 * minor_status,
 		gss_buffer_t token,
 		gss_cred_id_t * cred_handle)

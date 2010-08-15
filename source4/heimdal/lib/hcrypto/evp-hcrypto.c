@@ -83,7 +83,10 @@ aes_do_cipher(EVP_CIPHER_CTX *ctx,
 	      unsigned int size)
 {
     AES_KEY *k = ctx->cipher_data;
-    AES_cbc_encrypt(in, out, size, k, ctx->iv, ctx->encrypt);
+    if (ctx->flags & EVP_CIPH_CFB8_MODE)
+        AES_cfb8_encrypt(in, out, size, k, ctx->iv, ctx->encrypt);
+    else
+        AES_cbc_encrypt(in, out, size, k, ctx->iv, ctx->encrypt);
     return 1;
 }
 
@@ -173,6 +176,94 @@ EVP_hcrypto_aes_256_cbc(void)
 	NULL
     };
     return &aes_256_cbc;
+}
+
+/**
+ * The AES-128 CFB8 cipher type (hcrypto)
+ *
+ * @return the AES-128 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_CIPHER *
+EVP_hcrypto_aes_128_cfb8(void)
+{
+    static const EVP_CIPHER aes_128_cfb8 = {
+	0,
+	1,
+	16,
+	16,
+	EVP_CIPH_CFB8_MODE,
+	aes_init,
+	aes_do_cipher,
+	NULL,
+	sizeof(AES_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+
+    return &aes_128_cfb8;
+}
+
+/**
+ * The AES-192 CFB8 cipher type (hcrypto)
+ *
+ * @return the AES-192 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_CIPHER *
+EVP_hcrypto_aes_192_cfb8(void)
+{
+    static const EVP_CIPHER aes_192_cfb8 = {
+	0,
+	1,
+	24,
+	16,
+	EVP_CIPH_CFB8_MODE,
+	aes_init,
+	aes_do_cipher,
+	NULL,
+	sizeof(AES_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &aes_192_cfb8;
+}
+
+/**
+ * The AES-256 CFB8 cipher type (hcrypto)
+ *
+ * @return the AES-256 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_CIPHER *
+EVP_hcrypto_aes_256_cfb8(void)
+{
+    static const EVP_CIPHER aes_256_cfb8 = {
+	0,
+	1,
+	32,
+	16,
+	EVP_CIPH_CFB8_MODE,
+	aes_init,
+	aes_do_cipher,
+	NULL,
+	sizeof(AES_KEY),
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    };
+    return &aes_256_cfb8;
 }
 
 /**

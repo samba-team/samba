@@ -104,8 +104,6 @@ krb5_error_code
 _krb5_get_default_principal_local(krb5_context context,
 				  krb5_principal *princ)
 {
-    krb5_error_code ret = 0;
-
     /* See if we can get the principal first.  We only expect this to
        work if logged into a domain. */
     {

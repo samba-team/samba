@@ -125,20 +125,21 @@ _gsskrb5_set_status (int ret, const char *fmt, ...)
     krb5_context context;
     va_list args;
     char *str;
+    int e;
 
     if (_gsskrb5_init (&context) != 0)
 	return;
 
     va_start(args, fmt);
-    vasprintf(&str, fmt, args);
+    e = vasprintf(&str, fmt, args);
     va_end(args);
-    if (str) {
+    if (e >= 0 && str) {
 	krb5_set_error_message(context, ret, "%s", str);
 	free(str);
     }
 }
 
-OM_uint32 _gsskrb5_display_status
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_display_status
 (OM_uint32		*minor_status,
  OM_uint32		 status_value,
  int			 status_type,
@@ -147,7 +148,8 @@ OM_uint32 _gsskrb5_display_status
  gss_buffer_t	 status_string)
 {
     krb5_context context;
-    char *buf;
+    char *buf = NULL;
+    int e = 0;
 
     GSSAPI_KRB5_INIT (&context);
 
@@ -162,27 +164,27 @@ OM_uint32 _gsskrb5_display_status
 
     if (status_type == GSS_C_GSS_CODE) {
 	if (GSS_SUPPLEMENTARY_INFO(status_value))
-	    asprintf(&buf, "%s",
-		     supplementary_error(GSS_SUPPLEMENTARY_INFO(status_value)));
+	    e = asprintf(&buf, "%s",
+			 supplementary_error(GSS_SUPPLEMENTARY_INFO(status_value)));
 	else
-	    asprintf (&buf, "%s %s",
-		      calling_error(GSS_CALLING_ERROR(status_value)),
-		      routine_error(GSS_ROUTINE_ERROR(status_value)));
+	    e = asprintf (&buf, "%s %s",
+			  calling_error(GSS_CALLING_ERROR(status_value)),
+			  routine_error(GSS_ROUTINE_ERROR(status_value)));
     } else if (status_type == GSS_C_MECH_CODE) {
 	const char *buf2 = krb5_get_error_message(context, status_value);
 	if (buf2) {
 	    buf = strdup(buf2);
 	    krb5_free_error_message(context, buf2);
 	} else {
-	    asprintf(&buf, "unknown mech error-code %u",
-		     (unsigned)status_value);
+	    e = asprintf(&buf, "unknown mech error-code %u",
+			 (unsigned)status_value);
 	}
     } else {
 	*minor_status = EINVAL;
 	return GSS_S_BAD_STATUS;
     }
 
-    if (buf == NULL) {
+    if (e < 0 || buf == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }

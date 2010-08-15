@@ -240,13 +240,13 @@ SHA1_Update (struct sha *m, const void *v, size_t len)
     if(offset == 64){
 #if !defined(WORDS_BIGENDIAN) || defined(_CRAY)
       int i;
-      uint32_t current[16];
-      struct x32 *u = (struct x32*)m->save;
+      uint32_t SHA1current[16];
+      struct x32 *us = (struct x32*)m->save;
       for(i = 0; i < 8; i++){
-	current[2*i+0] = swap_uint32_t(u[i].a);
-	current[2*i+1] = swap_uint32_t(u[i].b);
+	SHA1current[2*i+0] = swap_uint32_t(us[i].a);
+	SHA1current[2*i+1] = swap_uint32_t(us[i].b);
       }
-      calc(m, current);
+      calc(m, SHA1current);
 #else
       calc(m, (uint32_t*)m->save);
 #endif

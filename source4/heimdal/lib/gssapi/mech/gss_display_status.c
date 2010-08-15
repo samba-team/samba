@@ -135,7 +135,7 @@ supplementary_error(OM_uint32 v)
 }
 
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_display_status(OM_uint32 *minor_status,
     OM_uint32 status_value,
     int status_type,
@@ -160,17 +160,18 @@ gss_display_status(OM_uint32 *minor_status,
 	*minor_status = 0;
 	switch (status_type) {
 	case GSS_C_GSS_CODE: {
-		char *buf;
+	    	char *buf = NULL;
+		int e;
 
 		if (GSS_SUPPLEMENTARY_INFO(status_value))
-		    asprintf(&buf, "%s", supplementary_error(
+		    e = asprintf(&buf, "%s", supplementary_error(
 		        GSS_SUPPLEMENTARY_INFO(status_value)));
 		else
-		    asprintf (&buf, "%s %s",
+		    e = asprintf (&buf, "%s %s",
 		        calling_error(GSS_CALLING_ERROR(status_value)),
 			routine_error(GSS_ROUTINE_ERROR(status_value)));
 
-		if (buf == NULL)
+		if (e < 0 || buf == NULL)
 		    break;
 
 		status_string->length = strlen(buf);
@@ -181,21 +182,22 @@ gss_display_status(OM_uint32 *minor_status,
 	case GSS_C_MECH_CODE: {
 		OM_uint32 maj_junk, min_junk;
 		gss_buffer_desc oid;
-		char *buf;
+		char *buf = NULL;
+		int e;
 
 		maj_junk = gss_oid_to_str(&min_junk, mech_type, &oid);
 		if (maj_junk != GSS_S_COMPLETE) {
 		    oid.value = rk_UNCONST("unknown");
 		    oid.length = 7;
 		}
-
-		asprintf (&buf, "unknown mech-code %lu for mech %.*s",
+		
+		e = asprintf (&buf, "unknown mech-code %lu for mech %.*s",
 			  (unsigned long)status_value,
 			  (int)oid.length, (char *)oid.value);
 		if (maj_junk == GSS_S_COMPLETE)
 		    gss_release_buffer(&min_junk, &oid);
 
-		if (buf == NULL)
+		if (e < 0 || buf == NULL)
 		    break;
 
 		status_string->length = strlen(buf);

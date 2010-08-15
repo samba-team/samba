@@ -33,10 +33,24 @@
 
 #include "mech_locl.h"
 
-int GSSAPI_LIB_FUNCTION
+/**
+ * Compare two GSS-API OIDs with each other.
+ *
+ * GSS_C_NO_OID matches nothing, not even it-self.
+ *
+ * @param a first oid to compare
+ * @param b second oid to compare
+ *
+ * @return non-zero when both oid are the same OID, zero when they are
+ *         not the same.
+ *         
+ * @ingroup gssapi
+ */
+
+GSSAPI_LIB_FUNCTION int GSSAPI_LIB_CALL
 gss_oid_equal(const gss_OID a, const gss_OID b)
 {
-    if (a == b)
+    if (a == b && a != GSS_C_NO_OID)
 	return 1;
     if (a == GSS_C_NO_OID || b == GSS_C_NO_OID || a->length != b->length)
 	return 0;

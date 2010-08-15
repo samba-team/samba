@@ -35,7 +35,7 @@
 
 #include "mech_locl.h"
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_pseudo_random(OM_uint32 *minor_status,
 		  gss_ctx_id_t context,
 		  int prf_key,

@@ -73,8 +73,28 @@ net_read(rk_socket_t sock, void *buf, size_t nbytes)
     ssize_t count;
     size_t rem = nbytes;
 
+#ifdef SOCKET_IS_NOT_AN_FD
+    int use_read = 0;
+#endif
+
     while (rem > 0) {
+#ifdef SOCKET_IS_NOT_AN_FD
+	if (use_read)
+	    count = _read (sock, cbuf, rem);
+	else
+	    count = recv (sock, cbuf, rem, 0);
+
+	if (use_read == 0 &&
+	    rk_IS_SOCKET_ERROR(count) &&
+            (rk_SOCK_ERRNO == WSANOTINITIALISED ||
+             rk_SOCK_ERRNO == WSAENOTSOCK)) {
+	    use_read = 1;
+
+	    count = _read (sock, cbuf, rem);
+	}
+#else
 	count = recv (sock, cbuf, rem, 0);
+#endif
 	if (count < 0) {
 
 	    /* With WinSock, the error EINTR (WSAEINTR), is used to

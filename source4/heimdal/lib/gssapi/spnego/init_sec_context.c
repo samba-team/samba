@@ -609,7 +609,8 @@ spnego_reply
     return ret;
 }
 
-OM_uint32 _gss_spnego_init_sec_context
+OM_uint32 GSSAPI_CALLCONV
+_gss_spnego_init_sec_context
            (OM_uint32 * minor_status,
             const gss_cred_id_t initiator_cred_handle,
             gss_ctx_id_t * context_handle,

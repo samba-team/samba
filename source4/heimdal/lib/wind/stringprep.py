@@ -46,7 +46,8 @@ ldap_error = ['A.1', 'C.3', 'C.4', 'C.5', 'C.8', 'rfc4518-error' ]
 sasl_error = ['C.1.2', 'C.2.1', 'C.2.2', 'C.3', 'C.4', 'C.5', 'C.6', 'C.7', 'C.8', 'C.9']
 
 name_map = ['B.1', 'B.2']
-ldap_map = ['rfc4518-map', 'B.2']
+ldap_map = ['rfc4518-map']
+ldap_case_map = ['rfc4518-map', 'B.2']
 sasl_map = ['C.1.2', 'B.1']
 
 def symbols(tabledict, tables):
@@ -69,6 +70,7 @@ def get_maplist():
     d = dict()
     _merge_table(d, dict(map(lambda x: [x, ['name']], name_map)))
     _merge_table(d, dict(map(lambda x: [x, ['ldap']], ldap_map)))
+    _merge_table(d, dict(map(lambda x: [x, ['ldap_case']], ldap_case_map)))
     _merge_table(d, dict(map(lambda x: [x, ['sasl']], sasl_map)))
     return d
 

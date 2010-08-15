@@ -77,7 +77,7 @@ read_string(const char *preprompt, const char *prompt,
     p = buf;
     while(intr_flag == 0){
 	c = ((echo)? _getche(): _getch());
-	if(c == '\n')
+	if(c == '\n' || c == '\r')
 	    break;
 	if(of == 0)
 	    *p++ = c;

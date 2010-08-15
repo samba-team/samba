@@ -910,7 +910,7 @@ _kdc_as_rep(krb5_context context,
     const char *e_text = NULL;
     krb5_crypto crypto;
     Key *ckey, *skey;
-    EncryptionKey *reply_key, session_key;
+    EncryptionKey *reply_key = NULL, session_key;
     int flags = 0;
 #ifdef PKINIT
     pk_client_params *pkp = NULL;

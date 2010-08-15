@@ -46,7 +46,8 @@ GSSAPI_CPP_START
  *  negotiation token is identified by the Object Identifier
  *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
  */
-extern GSSAPI_LIB_VARIABLE gss_OID GSS_SPNEGO_MECHANISM;
+extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_spnego_mechanism_oid_desc;
+#define GSS_SPNEGO_MECHANISM (&__gss_spnego_mechanism_oid_desc)
 #define gss_mech_spnego GSS_SPNEGO_MECHANISM
 
 GSSAPI_CPP_END

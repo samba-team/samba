@@ -165,7 +165,7 @@ struct _heimdal_syslog_data{
     int priority;
 };
 
-static void
+static void KRB5_CALLCONV
 log_syslog(const char *timestr,
 	   const char *msg,
 	   void *data)
@@ -175,7 +175,7 @@ log_syslog(const char *timestr,
     syslog(s->priority, "%s", msg);
 }
 
-static void
+static void KRB5_CALLCONV
 close_syslog(void *data)
 {
     free(data);
@@ -215,7 +215,7 @@ struct file_data{
     int keep_open;
 };
 
-static void
+static void KRB5_CALLCONV
 log_file(const char *timestr,
 	 const char *msg,
 	 void *data)
@@ -241,7 +241,7 @@ log_file(const char *timestr,
     }
 }
 
-static void
+static void KRB5_CALLCONV
 close_file(void *data)
 {
     struct file_data *f = data;
@@ -428,8 +428,8 @@ krb5_vlog_msg(krb5_context context,
 		krb5_format_time(context, t, buf, sizeof(buf), TRUE);
 	    }
 	    if(actual == NULL) {
-		vasprintf(&msg, fmt, ap);
-		if(msg == NULL)
+		int ret = vasprintf(&msg, fmt, ap);
+		if(ret < 0 || msg == NULL)
 		    actual = fmt;
 		else
 		    actual = msg;

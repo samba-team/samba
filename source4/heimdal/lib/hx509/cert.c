@@ -1510,6 +1510,65 @@ hx509_cert_get_SPKI_AlgorithmIdentifier(hx509_context context,
     return ret;
 }
 
+static int
+get_x_unique_id(hx509_context context, const char *name, 
+		const heim_bit_string *cert, heim_bit_string *subject)
+{
+    int ret;
+
+    if (cert == NULL) {
+	ret = HX509_EXTENSION_NOT_FOUND;
+	hx509_set_error_string(context, 0, ret, "%s unique id doesn't exists", name);
+	return ret;
+    }
+    ret = der_copy_bit_string(cert, subject);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "malloc out of memory", name);
+	return ret;
+    }
+    return 0;
+}
+
+/**
+ * Get a copy of the Issuer Unique ID
+ *
+ * @param context a hx509_context
+ * @param p a hx509 certificate
+ * @param issuer the issuer id returned, free with der_free_bit_string()
+ *
+ * @return An hx509 error code, see hx509_get_error_string(). The
+ * error code HX509_EXTENSION_NOT_FOUND is returned if the certificate
+ * doesn't have a issuerUniqueID
+ *
+ * @ingroup hx509_cert
+ */
+
+int
+hx509_cert_get_issuer_unique_id(hx509_context context, hx509_cert p, heim_bit_string *issuer)
+{
+    return get_x_unique_id(context, "issuer", p->data->tbsCertificate.issuerUniqueID, issuer);
+}
+
+/**
+ * Get a copy of the Subect Unique ID
+ *
+ * @param context a hx509_context
+ * @param p a hx509 certificate
+ * @param subject the subject id returned, free with der_free_bit_string()
+ *
+ * @return An hx509 error code, see hx509_get_error_string(). The
+ * error code HX509_EXTENSION_NOT_FOUND is returned if the certificate
+ * doesn't have a subjectUniqueID
+ *
+ * @ingroup hx509_cert
+ */
+
+int
+hx509_cert_get_subject_unique_id(hx509_context context, hx509_cert p, heim_bit_string *subject)
+{
+    return get_x_unique_id(context, "subject", p->data->tbsCertificate.subjectUniqueID, subject);
+}
+
 
 hx509_private_key
 _hx509_cert_private_key(hx509_cert p)
@@ -1696,19 +1755,20 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
     case choice_GeneralName_rfc822Name: {
 	const char *s;
 	size_t len1, len2;
-	s = strchr(c->u.rfc822Name, '@');
+	s = memchr(c->u.rfc822Name.data, '@', c->u.rfc822Name.length);
 	if (s) {
-	    if (strcasecmp(c->u.rfc822Name, n->u.rfc822Name) != 0)
+	    if (der_printable_string_cmp(&c->u.rfc822Name, &n->u.rfc822Name) != 0)
 		return HX509_NAME_CONSTRAINT_ERROR;
 	} else {
-	    s = strchr(n->u.rfc822Name, '@');
+	    s = memchr(n->u.rfc822Name.data, '@', n->u.rfc822Name.length);
 	    if (s == NULL)
 		return HX509_NAME_CONSTRAINT_ERROR;
-	    len1 = strlen(c->u.rfc822Name);
-	    len2 = strlen(s + 1);
+	    len1 = c->u.rfc822Name.length;
+	    len2 = n->u.rfc822Name.length -
+		(s - ((char *)n->u.rfc822Name.data));
 	    if (len1 > len2)
 		return HX509_NAME_CONSTRAINT_ERROR;
-	    if (strcasecmp(s + 1 + len2 - len1, c->u.rfc822Name) != 0)
+	    if (memcmp(s + 1 + len2 - len1, c->u.rfc822Name.data, len1) != 0)
 		return HX509_NAME_CONSTRAINT_ERROR;
 	    if (len1 < len2 && s[len2 - len1 + 1] != '.')
 		return HX509_NAME_CONSTRAINT_ERROR;
@@ -1718,14 +1778,16 @@ match_general_name(const GeneralName *c, const GeneralName *n, int *match)
     }
     case choice_GeneralName_dNSName: {
 	size_t lenc, lenn;
+	char *ptr;
 
-	lenc = strlen(c->u.dNSName);
-	lenn = strlen(n->u.dNSName);
+	lenc = c->u.dNSName.length;
+	lenn = n->u.dNSName.length;
 	if (lenc > lenn)
 	    return HX509_NAME_CONSTRAINT_ERROR;
-	if (strcasecmp(&n->u.dNSName[lenn - lenc], c->u.dNSName) != 0)
+	ptr = n->u.dNSName.data;
+	if (memcmp(&ptr[lenn - lenc], c->u.dNSName.data, lenc) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
-	if (lenc != lenn && n->u.dNSName[lenn - lenc - 1] != '.')
+	if (lenn != lenc && ptr[lenn - lenc - 1] != '.')
 	    return HX509_NAME_CONSTRAINT_ERROR;
 	*match = 1;
 	return 0;
@@ -2405,12 +2467,17 @@ hx509_verify_hostname(hx509_context context,
 
 	for (j = 0; j < san.len; j++) {
 	    switch (san.val[j].element) {
-	    case choice_GeneralName_dNSName:
-		if (strcasecmp(san.val[j].u.dNSName, hostname) == 0) {
+	    case choice_GeneralName_dNSName: {
+		heim_printable_string hn;
+		hn.data = rk_UNCONST(hostname);
+		hn.length = strlen(hostname);
+		
+		if (der_printable_string_cmp(&san.val[j].u.dNSName, &hn) == 0) {
 		    free_GeneralNames(&san);
 		    return 0;
 		}
 		break;
+	    }
 	    default:
 		break;
 	    }
@@ -2428,14 +2495,24 @@ hx509_verify_hostname(hx509_context context,
 	    if (der_heim_oid_cmp(&n->type, &asn1_oid_id_at_commonName) == 0) {
 		DirectoryString *ds = &n->value;
 		switch (ds->element) {
-		case choice_DirectoryString_printableString:
-		    if (strcasecmp(ds->u.printableString, hostname) == 0)
+		case choice_DirectoryString_printableString: {
+		    heim_printable_string hn;
+		    hn.data = rk_UNCONST(hostname);
+		    hn.length = strlen(hostname);
+
+		    if (der_printable_string_cmp(&ds->u.printableString, &hn) == 0)
 			return 0;
 		    break;
-		case choice_DirectoryString_ia5String:
-		    if (strcasecmp(ds->u.ia5String, hostname) == 0)
-		    return 0;
+		}
+		case choice_DirectoryString_ia5String: {
+		    heim_ia5_string hn;
+		    hn.data = rk_UNCONST(hostname);
+		    hn.length = strlen(hostname);
+
+		    if (der_ia5_string_cmp(&ds->u.ia5String, &hn) == 0)
+			return 0;
 		    break;
+		}
 		case choice_DirectoryString_utf8String:
 		    if (strcasecmp(ds->u.utf8String, hostname) == 0)
 			return 0;

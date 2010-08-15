@@ -320,14 +320,13 @@ decode_type (const char *name, const Type *t, int optional,
 	    break;
 
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
-	    char *s;
+	    char *s = NULL;
 
 	    if (m->ellipsis)
 		continue;
 
-	    asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&",
-		      name, m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&",
+			  name, m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    decode_type (s, m->type, m->optional, forwstr, m->gen_name, NULL);
 	    free (s);
@@ -363,8 +362,7 @@ decode_type (const char *name, const Type *t, int optional,
 		    is_primitive_type(m->type->subtype->type) ? "PRIM" : "CONS",
 		    valuename(m->type->tag.tagclass, m->type->tag.tagvalue));
 
-	    asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    if(m->optional)
 		fprintf(codefile,
@@ -388,8 +386,7 @@ decode_type (const char *name, const Type *t, int optional,
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
 	    char *s;
 
-	    asprintf (&s, "%s->%s", name, m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s->%s", name, m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    fprintf(codefile, "if((members & (1 << %d)) == 0)\n", memno);
 	    if(m->optional)
@@ -406,8 +403,8 @@ decode_type (const char *name, const Type *t, int optional,
     }
     case TSetOf:
     case TSequenceOf: {
-	char *n;
-	char *sname;
+	char *n = NULL;
+	char *sname = NULL;
 
 	fprintf (codefile,
 		 "{\n"
@@ -441,11 +438,9 @@ decode_type (const char *name, const Type *t, int optional,
 		 tmpstr, forwstr,
 		 name, tmpstr);
 
-	asprintf (&n, "&(%s)->val[(%s)->len]", name, name);
-	if (n == NULL)
+	if (asprintf (&n, "&(%s)->val[(%s)->len]", name, name) < 0 || n == NULL)
 	    errx(1, "malloc");
-	asprintf (&sname, "%s_s_of", tmpstr);
-	if (sname == NULL)
+	if (asprintf (&sname, "%s_s_of", tmpstr) < 0 || sname == NULL)
 	    errx(1, "malloc");
 	decode_type (n, t->subtype, 0, forwstr, sname, NULL);
 	fprintf (codefile,
@@ -472,10 +467,11 @@ decode_type (const char *name, const Type *t, int optional,
 	decode_primitive ("general_string", name, forwstr);
 	break;
     case TTag:{
-    	char *tname, *typestring;
+    	char *tname = NULL, *typestring = NULL;
 	char *ide = NULL;
 
-	asprintf(&typestring, "%s_type", tmpstr);
+	if (asprintf(&typestring, "%s_type", tmpstr) < 0 || typestring == NULL)
+	    errx(1, "malloc");
 
 	fprintf(codefile,
 		"{\n"
@@ -528,8 +524,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    fprintf(codefile,
 		    "if (%s_datalen > len) { e = ASN1_OVERRUN; %s; }\n"
 		    "len = %s_datalen;\n", tmpstr, forwstr, tmpstr);
-	asprintf (&tname, "%s_Tag", tmpstr);
-	if (tname == NULL)
+	if (asprintf (&tname, "%s_Tag", tmpstr) < 0 || tname == NULL)
 	    errx(1, "malloc");
 	decode_type (name, t->subtype, 0, forwstr, tname, ide);
 	if(support_ber)
@@ -568,7 +563,7 @@ decode_type (const char *name, const Type *t, int optional,
 
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
 	    const Type *tt = m->type;
-	    char *s;
+	    char *s = NULL;
 	    Der_class cl;
 	    Der_type  ty;
 	    unsigned  tag;
@@ -586,9 +581,8 @@ decode_type (const char *name, const Type *t, int optional,
 		    classname(cl),
 		    ty ? "CONS" : "PRIM",
 		    valuename(cl, tag));
-	    asprintf (&s, "%s(%s)->u.%s", m->optional ? "" : "&",
-		      name, m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s(%s)->u.%s", m->optional ? "" : "&",
+			  name, m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    decode_type (s, m->type, m->optional, forwstr, m->gen_name, NULL);
 	    fprintf(codefile,
@@ -667,7 +661,7 @@ generate_type_decode (const Symbol *s)
 {
     int preserve = preserve_type(s->name) ? TRUE : FALSE;
 
-    fprintf (codefile, "int\n"
+    fprintf (codefile, "int ASN1CALL\n"
 	     "decode_%s(const unsigned char *p,"
 	     " size_t len, %s *data, size_t *size)\n"
 	     "{\n",

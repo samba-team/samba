@@ -222,8 +222,6 @@ ret_string(krb5_storage *sp, int ucs2, struct sec_buffer *desc, char **s)
     ret = 0;
 out:
     return ret;
-
-    return 0;
 }
 
 static krb5_error_code
@@ -485,6 +483,10 @@ heim_ntlm_encode_type1(const struct ntlm_type1 *type1, struct ntlm_buf *data)
 	domain.offset = base;
 	domain.length = len_string(0, type1->domain);
 	domain.allocated = domain.length;
+    } else {
+	domain.offset = 0;
+	domain.length = 0;
+	domain.allocated = 0;
     }
     if (type1->hostname) {
 	hostname.offset = domain.allocated + domain.offset;

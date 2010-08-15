@@ -259,13 +259,12 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	    break;
 
 	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
-	    char *s;
+	    char *s = NULL;
 
 	    if (m->ellipsis)
 		continue;
 
-	    asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    fprintf(codefile, "/* %s */\n", m->name);
 	    if (m->optional)
@@ -289,8 +288,8 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	fprintf(codefile,
 		"{\n"
 		"struct heim_octet_string *val;\n"
-		"size_t elen, totallen = 0;\n"
-		"int eret;\n");
+		"size_t elen = 0, totallen = 0;\n"
+		"int eret = 0;\n");
 
 	fprintf(codefile,
 		"if ((%s)->len > UINT_MAX/sizeof(val[0]))\n"
@@ -352,19 +351,17 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	break;
     }
     case TSequenceOf: {
-	char *n;
-	char *sname;
+	char *sname = NULL;
+	char *n = NULL;
 
 	fprintf (codefile,
 		 "for(i = (%s)->len - 1; i >= 0; --i) {\n"
 		 "size_t %s_for_oldret = ret;\n"
 		 "ret = 0;\n",
 		 name, tmpstr);
-	asprintf (&n, "&(%s)->val[i]", name);
-	if (n == NULL)
+	if (asprintf (&n, "&(%s)->val[i]", name) < 0 || n == NULL)
 	    errx(1, "malloc");
-	asprintf (&sname, "%s_S_Of", tmpstr);
-	if (sname == NULL)
+	if (asprintf (&sname, "%s_S_Of", tmpstr) < 0 || sname == NULL)
 	    errx(1, "malloc");
 	encode_type (n, t->subtype, sname);
 	fprintf (codefile,
@@ -388,10 +385,9 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	constructed = 0;
 	break;
     case TTag: {
-    	char *tname;
+    	char *tname = NULL;
 	int c;
-	asprintf (&tname, "%s_tag", tmpstr);
-	if (tname == NULL)
+	if (asprintf (&tname, "%s_tag", tmpstr) < 0 || tname == NULL)
 	    errx(1, "malloc");
 	c = encode_type (name, t->subtype, tname);
 	fprintf (codefile,
@@ -405,20 +401,19 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
     }
     case TChoice:{
 	Member *m, *have_ellipsis = NULL;
-	char *s;
+	char *s = NULL;
 
 	if (t->members == NULL)
 	    break;
 
 	fprintf(codefile, "\n");
 
-	asprintf (&s, "(%s)", name);
-	if (s == NULL)
+	if (asprintf (&s, "(%s)", name) < 0 || s == NULL)
 	    errx(1, "malloc");
 	fprintf(codefile, "switch(%s->element) {\n", s);
 
 	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
-	    char *s2;
+	    char *s2 = NULL;
 
 	    if (m->ellipsis) {
 		have_ellipsis = m;
@@ -426,9 +421,8 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	    }
 
 	    fprintf (codefile, "case %s: {", m->label);
-	    asprintf(&s2, "%s(%s)->u.%s", m->optional ? "" : "&",
-		     s, m->gen_name);
-	    if (s2 == NULL)
+	    if (asprintf(&s2, "%s(%s)->u.%s", m->optional ? "" : "&",
+			 s, m->gen_name) < 0 || s2 == NULL)
 		errx(1, "malloc");
 	    if (m->optional)
 		fprintf (codefile, "if(%s) {\n", s2);
@@ -508,7 +502,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 void
 generate_type_encode (const Symbol *s)
 {
-    fprintf (codefile, "int\n"
+    fprintf (codefile, "int ASN1CALL\n"
 	     "encode_%s(unsigned char *p, size_t len,"
 	     " const %s *data, size_t *size)\n"
 	     "{\n",

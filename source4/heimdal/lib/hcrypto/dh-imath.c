@@ -31,13 +31,13 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <dh.h>
+
+#ifdef USE_HCRYPTO_IMATH
 
 #include <roken.h>
 
@@ -233,6 +233,7 @@ const DH_METHOD _hc_dh_imath_method = {
     NULL,
     dh_generate_params
 };
+#endif /* USE_HCRYPTO_DH_IMATH */
 
 /**
  * DH implementation using libimath.
@@ -245,5 +246,9 @@ const DH_METHOD _hc_dh_imath_method = {
 const DH_METHOD *
 DH_imath_method(void)
 {
+#ifdef USE_HCRYPTO_DH_IMATH
     return &_hc_dh_imath_method;
+#else
+    return NULL;
+#endif
 }

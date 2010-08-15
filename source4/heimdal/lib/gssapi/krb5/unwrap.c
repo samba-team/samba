@@ -379,7 +379,7 @@ unwrap_des3
   return GSS_S_COMPLETE;
 }
 
-OM_uint32 _gsskrb5_unwrap
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_unwrap
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             const gss_buffer_t input_message_buffer,

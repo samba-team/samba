@@ -227,10 +227,7 @@ generate_dh_keyblock(krb5_context context,
 	    goto out;
 	}
 
-	dh_gen_keylen = DH_size(client_params->u.dh.key);
-	size = BN_num_bytes(client_params->u.dh.key->p);
-	if (size < dh_gen_keylen)
-	    size = dh_gen_keylen;
+	size = DH_size(client_params->u.dh.key);
 
 	dh_gen_key = malloc(size);
 	if (dh_gen_key == NULL) {
@@ -238,17 +235,20 @@ generate_dh_keyblock(krb5_context context,
 	    krb5_set_error_message(context, ret, "malloc: out of memory");
 	    goto out;
 	}
-	memset(dh_gen_key, 0, size - dh_gen_keylen);
 
-	dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
-				       client_params->u.dh.public_key,
-				       client_params->u.dh.key);
+	dh_gen_keylen = DH_compute_key(dh_gen_key,client_params->u.dh.public_key, client_params->u.dh.key);
 	if (dh_gen_keylen == -1) {
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
 				   "Can't compute Diffie-Hellman key");
 	    goto out;
 	}
+	if (dh_gen_keylen < size) {
+	    size -= dh_gen_keylen;
+	    memmove(dh_gen_key + size, dh_gen_key, dh_gen_keylen);
+	    memset(dh_gen_key, 0, size);
+	}
+
 	ret = 0;
 #ifdef HAVE_OPENSSL
     } else if (client_params->keyex == USE_ECDH) {

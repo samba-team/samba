@@ -103,7 +103,7 @@ generate_units (const Type *t, const char *gen_name)
 		 gen_name, gen_name);
     } else {
 	fprintf (headerfile,
-		 "const struct units * asn1_%s_units(void);",
+		 "const struct units * asn1_%s_units(void);\n",
 		 gen_name);
     }
 

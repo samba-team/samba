@@ -52,6 +52,9 @@ id-rsadsi-des-ede3-cbc OBJECT IDENTIFIER ::=	{ id-rsadsi-encalg 7 }
 id-secsig-sha-1 OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
 	oiw(14) secsig(3) algorithm(2) 26 }
 
+id-secsig-sha-1WithRSAEncryption OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
+	oiw(14) secsig(3) algorithm(2) 29 }
+
 id-nistAlgorithm OBJECT IDENTIFIER ::= {
    joint-iso-itu-t(2) country(16) us(840) organization(1) gov(101) csor(3) 4 }
   
@@ -239,6 +242,13 @@ DomainParameters ::= SEQUENCE {
 	q		INTEGER, -- factor of p-1
 	j		INTEGER OPTIONAL, -- subgroup factor
 	validationParms	ValidationParms OPTIONAL -- ValidationParms
+}
+
+-- As defined by PKCS3
+DHParameter ::= SEQUENCE {
+	prime		INTEGER, -- odd prime, p=jq +1
+	base		INTEGER, -- generator, g
+	privateValueLength INTEGER OPTIONAL
 }
 
 DHPublicKey ::= INTEGER

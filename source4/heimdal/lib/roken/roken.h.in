@@ -68,7 +68,8 @@ typedef SOCKET rk_socket_t;
 #define rk_IS_BAD_SOCKET(s) ((s) == INVALID_SOCKET)
 #define rk_IS_SOCKET_ERROR(rv) ((rv) == SOCKET_ERROR)
 #define rk_SOCK_ERRNO WSAGetLastError()
-#define rk_SOCK_IOCTL(s,c,a) ioctlsocket((s),(c),(a))
+
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL rk_SOCK_IOCTL(SOCKET s, long cmd, int * argp);
 
 #define ETIMEDOUT               WSAETIMEDOUT
 #define EWOULDBLOCK             WSAEWOULDBLOCK
@@ -123,6 +124,32 @@ typedef uint64_t           u_int64_t;
 
 #define UNREACHABLE(x) x
 #define UNUSED_ARGUMENT(x) ((void) x)
+
+#define RETSIGTYPE void
+
+#define VOID_RETSIGTYPE 1
+
+#ifdef VOID_RETSIGTYPE
+#define SIGRETURN(x) return
+#else
+#define SIGRETURN(x) return (RETSIGTYPE)(x)
+#endif
+
+#ifndef CPP_ONLY
+
+typedef int pid_t;
+
+typedef unsigned int gid_t;
+
+typedef unsigned int uid_t;
+
+typedef unsigned short mode_t;
+
+#endif
+
+#ifndef __cplusplus
+#define inline __inline
+#endif
 
 #else
 
@@ -314,6 +341,32 @@ rk_vsnprintf (char *str, size_t sz, const char *format, va_list args);
 */
 
 #endif  /* _MSC_VER */
+
+#ifdef HAVE_WINSOCK
+
+/* While we are at it, define WinSock specific scatter gather socket
+   I/O. */
+
+#define iovec    _WSABUF
+#define iov_base buf
+#define iov_len  len
+
+struct msghdr {
+    void           *msg_name;
+    socklen_t       msg_namelen;
+    struct iovec   *msg_iov;
+    size_t          msg_iovlen;
+    void           *msg_control;
+    socklen_t       msg_controllen;
+    int             msg_flags;
+};
+
+#define sendmsg sendmsg_w32
+
+ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
+sendmsg_w32(rk_socket_t s, const struct msghdr * msg, int flags);
+
+#endif	/* HAVE_WINSOCK */
 
 #ifndef HAVE_PUTENV
 #define putenv rk_putenv
@@ -561,6 +614,12 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL initgroups(const char *, gid_t);
 #ifndef HAVE_FCHOWN
 #define fchown rk_fchown
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL fchown(int, uid_t, gid_t);
+#endif
+
+#ifdef RENAME_DOES_NOT_UNLINK
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL rk_rename(const char *, const char *);
+#else
+#define rk_rename(__rk_rn_from,__rk_rn_to) rename(__rk_rn_from,__rk_rn_to)
 #endif
 
 #if !defined(HAVE_DAEMON) || defined(NEED_DAEMON_PROTO)
@@ -824,32 +883,6 @@ ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL
 gai_strerror(int);
 #endif
 
-#ifdef HAVE_WINSOCK
-
-/* While we are at it, define WinSock specific scatter gather socket
-   I/O. */
-
-#define iovec    _WSABUF
-#define iov_base buf
-#define iov_len  len
-
-struct msghdr {
-    void           *msg_name;
-    socklen_t       msg_namelen;
-    struct iovec   *msg_iov;
-    size_t          msg_iovlen;
-    void           *msg_control;
-    socklen_t       msg_controllen;
-    int             msg_flags;
-};
-
-#define sendmsg sendmsg_w32
-
-ROKEN_LIB_FUNCTION ssize_t ROKEN_LIB_CALL
-sendmsg_w32(rk_socket_t s, const struct msghdr * msg, int flags);
-
-#endif
-
 #ifdef NO_SLEEP
 
 ROKEN_LIB_FUNCTION unsigned int ROKEN_LIB_CALL
@@ -1039,7 +1072,7 @@ void
 rk_qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 #endif
 
-#if defined(__linux__) && SOCK_CLOEXEC && !defined(SOCKET_WRAPPER_REPLACE) 
+#if defined(__linux__) && defined(SOCK_CLOEXEC) && !defined(SOCKET_WRAPPER_REPLACE) 
 #undef socket
 #define socket(_fam,_type,_prot) rk_socket(_fam,_type,_prot)
 int ROKEN_LIB_FUNCTION rk_socket(int, int, int);

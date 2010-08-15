@@ -63,6 +63,12 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#define KRB5_CALLCONV __stdcall
+#else
+#define KRB5_CALLCONV
+#endif
+
 /* simple constants */
 
 #ifndef TRUE
@@ -404,6 +410,10 @@ typedef union {
 #define KRB5_TC_MATCH_2ND_TKT		(1 << 23)
 #define KRB5_TC_MATCH_IS_SKEY		(1 << 22)
 
+/* constants for get_flags and set_flags */
+#define KRB5_TC_OPENCLOSE 0x00000001
+#define KRB5_TC_NOTICKET  0x00000002
+
 typedef AuthorizationData krb5_authdata;
 
 typedef KRB_ERROR krb5_error;
@@ -427,33 +437,34 @@ typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
 typedef struct krb5_cc_ops {
     int version;
     const char *prefix;
-    const char* (*get_name)(krb5_context, krb5_ccache);
-    krb5_error_code (*resolve)(krb5_context, krb5_ccache *, const char *);
-    krb5_error_code (*gen_new)(krb5_context, krb5_ccache *);
-    krb5_error_code (*init)(krb5_context, krb5_ccache, krb5_principal);
-    krb5_error_code (*destroy)(krb5_context, krb5_ccache);
-    krb5_error_code (*close)(krb5_context, krb5_ccache);
-    krb5_error_code (*store)(krb5_context, krb5_ccache, krb5_creds*);
-    krb5_error_code (*retrieve)(krb5_context, krb5_ccache,
-				krb5_flags, const krb5_creds*, krb5_creds *);
-    krb5_error_code (*get_princ)(krb5_context, krb5_ccache, krb5_principal*);
-    krb5_error_code (*get_first)(krb5_context, krb5_ccache, krb5_cc_cursor *);
-    krb5_error_code (*get_next)(krb5_context, krb5_ccache,
-				krb5_cc_cursor*, krb5_creds*);
-    krb5_error_code (*end_get)(krb5_context, krb5_ccache, krb5_cc_cursor*);
-    krb5_error_code (*remove_cred)(krb5_context, krb5_ccache,
-				   krb5_flags, krb5_creds*);
-    krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
-    int (*get_version)(krb5_context, krb5_ccache);
-    krb5_error_code (*get_cache_first)(krb5_context, krb5_cc_cursor *);
-    krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
-    krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
-    krb5_error_code (*move)(krb5_context, krb5_ccache, krb5_ccache);
-    krb5_error_code (*get_default_name)(krb5_context, char **);
-    krb5_error_code (*set_default)(krb5_context, krb5_ccache);
-    krb5_error_code (*lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
-    krb5_error_code (*set_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat);
-    krb5_error_code (*get_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat *);
+    const char* (KRB5_CALLCONV * get_name)(krb5_context, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * resolve)(krb5_context, krb5_ccache *, const char *);
+    krb5_error_code (KRB5_CALLCONV * gen_new)(krb5_context, krb5_ccache *);
+    krb5_error_code (KRB5_CALLCONV * init)(krb5_context, krb5_ccache, krb5_principal);
+    krb5_error_code (KRB5_CALLCONV * destroy)(krb5_context, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * close)(krb5_context, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * store)(krb5_context, krb5_ccache, krb5_creds*);
+    krb5_error_code (KRB5_CALLCONV * retrieve)(krb5_context, krb5_ccache,
+					       krb5_flags, const krb5_creds*, krb5_creds *);
+    krb5_error_code (KRB5_CALLCONV * get_princ)(krb5_context, krb5_ccache, krb5_principal*);
+    krb5_error_code (KRB5_CALLCONV * get_first)(krb5_context, krb5_ccache, krb5_cc_cursor *);
+    krb5_error_code (KRB5_CALLCONV * get_next)(krb5_context, krb5_ccache,
+					       krb5_cc_cursor*, krb5_creds*);
+    krb5_error_code (KRB5_CALLCONV * end_get)(krb5_context, krb5_ccache, krb5_cc_cursor*);
+    krb5_error_code (KRB5_CALLCONV * remove_cred)(krb5_context, krb5_ccache,
+						  krb5_flags, krb5_creds*);
+    krb5_error_code (KRB5_CALLCONV * set_flags)(krb5_context, krb5_ccache, krb5_flags);
+    int (KRB5_CALLCONV * get_version)(krb5_context, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * get_cache_first)(krb5_context, krb5_cc_cursor *);
+    krb5_error_code (KRB5_CALLCONV * get_cache_next)(krb5_context, krb5_cc_cursor,
+						     krb5_ccache *);
+    krb5_error_code (KRB5_CALLCONV * end_cache_get)(krb5_context, krb5_cc_cursor);
+    krb5_error_code (KRB5_CALLCONV * move)(krb5_context, krb5_ccache, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * get_default_name)(krb5_context, char **);
+    krb5_error_code (KRB5_CALLCONV * set_default)(krb5_context, krb5_ccache);
+    krb5_error_code (KRB5_CALLCONV * lastchange)(krb5_context, krb5_ccache, krb5_timestamp *);
+    krb5_error_code (KRB5_CALLCONV * set_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat);
+    krb5_error_code (KRB5_CALLCONV * get_kdc_offset)(krb5_context, krb5_ccache, krb5_deltat *);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
@@ -523,18 +534,18 @@ typedef struct krb5_keytab_data *krb5_keytab;
 
 struct krb5_keytab_data {
     const char *prefix;
-    krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
-    krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
-    krb5_error_code (*close)(krb5_context, krb5_keytab);
-    krb5_error_code (*destroy)(krb5_context, krb5_keytab);
-    krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal,
-			   krb5_kvno, krb5_enctype, krb5_keytab_entry*);
-    krb5_error_code (*start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
-    krb5_error_code (*next_entry)(krb5_context, krb5_keytab,
-				  krb5_keytab_entry*, krb5_kt_cursor*);
-    krb5_error_code (*end_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
-    krb5_error_code (*add)(krb5_context, krb5_keytab, krb5_keytab_entry*);
-    krb5_error_code (*remove)(krb5_context, krb5_keytab, krb5_keytab_entry*);
+    krb5_error_code (KRB5_CALLCONV * resolve)(krb5_context, const char*, krb5_keytab);
+    krb5_error_code (KRB5_CALLCONV * get_name)(krb5_context, krb5_keytab, char*, size_t);
+    krb5_error_code (KRB5_CALLCONV * close)(krb5_context, krb5_keytab);
+    krb5_error_code (KRB5_CALLCONV * destroy)(krb5_context, krb5_keytab);
+    krb5_error_code (KRB5_CALLCONV * get)(krb5_context, krb5_keytab, krb5_const_principal,
+					  krb5_kvno, krb5_enctype, krb5_keytab_entry*);
+    krb5_error_code (KRB5_CALLCONV * start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
+    krb5_error_code (KRB5_CALLCONV * next_entry)(krb5_context, krb5_keytab,
+						 krb5_keytab_entry*, krb5_kt_cursor*);
+    krb5_error_code (KRB5_CALLCONV * end_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
+    krb5_error_code (KRB5_CALLCONV * add)(krb5_context, krb5_keytab, krb5_keytab_entry*);
+    krb5_error_code (KRB5_CALLCONV * remove)(krb5_context, krb5_keytab, krb5_keytab_entry*);
     void *data;
     int32_t version;
 };
@@ -606,8 +617,8 @@ typedef struct {
 
 extern const char *heimdal_version, *heimdal_long_version;
 
-typedef void (*krb5_log_log_func_t)(const char*, const char*, void*);
-typedef void (*krb5_log_close_func_t)(void*);
+typedef void (KRB5_CALLCONV * krb5_log_log_func_t)(const char*, const char*, void*);
+typedef void (KRB5_CALLCONV * krb5_log_close_func_t)(void*);
 
 typedef struct krb5_log_facility {
     char *program;
@@ -642,28 +653,28 @@ typedef struct _krb5_prompt {
     krb5_prompt_type type;
 } krb5_prompt;
 
-typedef int (*krb5_prompter_fct)(krb5_context /*context*/,
-				 void * /*data*/,
-				 const char * /*name*/,
-				 const char * /*banner*/,
-				 int /*num_prompts*/,
-				 krb5_prompt /*prompts*/[]);
-typedef krb5_error_code (*krb5_key_proc)(krb5_context /*context*/,
-					 krb5_enctype /*type*/,
-					 krb5_salt /*salt*/,
-					 krb5_const_pointer /*keyseed*/,
-					 krb5_keyblock ** /*key*/);
-typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context /*context*/,
-					     krb5_keyblock * /*key*/,
-					     krb5_key_usage /*usage*/,
-					     krb5_const_pointer /*decrypt_arg*/,
-					     krb5_kdc_rep * /*dec_rep*/);
-typedef krb5_error_code (*krb5_s2k_proc)(krb5_context /*context*/,
-					 krb5_enctype /*type*/,
-					 krb5_const_pointer /*keyseed*/,
-					 krb5_salt /*salt*/,
-					 krb5_data * /*s2kparms*/,
-					 krb5_keyblock ** /*key*/);
+typedef int (KRB5_CALLCONV * krb5_prompter_fct)(krb5_context /*context*/,
+						void * /*data*/,
+						const char * /*name*/,
+						const char * /*banner*/,
+						int /*num_prompts*/,
+						krb5_prompt /*prompts*/[]);
+typedef krb5_error_code (KRB5_CALLCONV * krb5_key_proc)(krb5_context /*context*/,
+							krb5_enctype /*type*/,
+							krb5_salt /*salt*/,
+							krb5_const_pointer /*keyseed*/,
+							krb5_keyblock ** /*key*/);
+typedef krb5_error_code (KRB5_CALLCONV * krb5_decrypt_proc)(krb5_context /*context*/,
+							    krb5_keyblock * /*key*/,
+							    krb5_key_usage /*usage*/,
+							    krb5_const_pointer /*decrypt_arg*/,
+							    krb5_kdc_rep * /*dec_rep*/);
+typedef krb5_error_code (KRB5_CALLCONV * krb5_s2k_proc)(krb5_context /*context*/,
+							krb5_enctype /*type*/,
+							krb5_const_pointer /*keyseed*/,
+							krb5_salt /*salt*/,
+							krb5_data * /*s2kparms*/,
+							krb5_keyblock ** /*key*/);
 
 struct _krb5_get_init_creds_opt_private;
 
@@ -697,6 +708,9 @@ typedef struct _krb5_get_init_creds_opt krb5_get_init_creds_opt;
 #define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080 /* no supported */
 #define KRB5_GET_INIT_CREDS_OPT_ANONYMOUS	0x0100
 #define KRB5_GET_INIT_CREDS_OPT_DISABLE_TRANSITED_CHECK	0x0200
+
+/* krb5_init_creds_step flags argument */
+#define KRB5_INIT_CREDS_STEP_FLAG_CONTINUE	0x0001
 
 typedef struct _krb5_verify_init_creds_opt {
     krb5_flags flags;
@@ -757,12 +771,9 @@ enum {
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
 
-typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
-						 void *,
-						 krb5_krbhst_info *,
-						 time_t,
-						 const krb5_data *,
-						 krb5_data *);
+typedef krb5_error_code
+(KRB5_CALLCONV * krb5_send_to_kdc_func)(krb5_context, void *, krb5_krbhst_info *, time_t,
+					const krb5_data *, krb5_data *);
 
 /** flags for krb5_parse_name_flags */
 enum {
@@ -784,7 +795,9 @@ typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
 #define KRB5_SENDTO_RESTART	1
 #define KRB5_SENDTO_CONTINUE	2
 
-typedef krb5_error_code (*krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *, const krb5_data *, int *);
+typedef krb5_error_code
+(KRB5_CALLCONV * krb5_sendto_ctx_func)(krb5_context, krb5_sendto_ctx, void *,
+				       const krb5_data *, int *);
 
 struct krb5_plugin;
 enum krb5_plugin_type {
@@ -828,7 +841,7 @@ typedef struct {
 } krb5_last_req_entry;
 
 typedef krb5_error_code
-(*krb5_gic_process_last_req)(krb5_context, krb5_last_req_entry **, void *);
+(KRB5_CALLCONV * krb5_gic_process_last_req)(krb5_context, krb5_last_req_entry **, void *);
 
 /*
  *
@@ -854,8 +867,6 @@ extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_wrfkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_javakt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_mkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_akf_ops;
-extern KRB5_LIB_VARIABLE const krb5_kt_ops krb4_fkt_ops;
-extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_srvtab_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
 
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_api;

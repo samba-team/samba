@@ -116,7 +116,7 @@ get_filename (void)
 void
 init_generate (const char *filename, const char *base)
 {
-    char *fn;
+    char *fn = NULL;
 
     orig_filename = filename;
     if (base != NULL) {
@@ -126,34 +126,30 @@ init_generate (const char *filename, const char *base)
     }
 
     /* public header file */
-    asprintf(&header, "%s.h", headerbase);
-    if (header == NULL)
+    if (asprintf(&header, "%s.h", headerbase) < 0 || header == NULL)
 	errx(1, "malloc");
-    asprintf(&fn, "%s.hx", headerbase);
-    if (fn == NULL)
+    if (asprintf(&fn, "%s.hx", headerbase) < 0 || fn == NULL)
 	errx(1, "malloc");
     headerfile = fopen (fn, "w");
     if (headerfile == NULL)
 	err (1, "open %s", fn);
     free(fn);
+    fn = NULL;
 
     /* private header file */
-    asprintf(&privheader, "%s-priv.h", headerbase);
-    if (privheader == NULL)
+    if (asprintf(&privheader, "%s-priv.h", headerbase) < 0 || privheader == NULL)
 	errx(1, "malloc");
-    asprintf(&fn, "%s-priv.hx", headerbase);
-    if (fn == NULL)
+    if (asprintf(&fn, "%s-priv.hx", headerbase) < 0 || fn == NULL)
 	errx(1, "malloc");
     privheaderfile = fopen (fn, "w");
     if (privheaderfile == NULL)
 	err (1, "open %s", fn);
     free(fn);
+    fn = NULL;
 
     /* template file */
-    asprintf(&template, "%s-template.c", headerbase);
-    if (template == NULL)
+    if (asprintf(&template, "%s-template.c", headerbase) < 0 || template == NULL)
 	errx(1, "malloc");
-
     fprintf (headerfile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
@@ -185,10 +181,10 @@ init_generate (const char *filename, const char *base)
 	     "typedef char *heim_utf8_string;\n\n"
 	     );
     fprintf (headerfile,
-	     "typedef char *heim_printable_string;\n\n"
+	     "typedef struct heim_octet_string heim_printable_string;\n\n"
 	     );
     fprintf (headerfile,
-	     "typedef char *heim_ia5_string;\n\n"
+	     "typedef struct heim_octet_string heim_ia5_string;\n\n"
 	     );
     fprintf (headerfile,
 	     "typedef struct heim_bmp_string {\n"
@@ -232,10 +228,21 @@ init_generate (const char *filename, const char *base)
 	  "    }                                                          \\\n"
 	  "  } while (0)\n\n",
 	  headerfile);
+    fputs("#ifdef _WIN32\n"
+	  "#ifndef ASN1_LIB\n"
+	  "#define ASN1EXP  __declspec(dllimport)\n"
+	  "#else\n"
+	  "#define ASN1EXP\n"
+	  "#endif\n"
+	  "#define ASN1CALL __stdcall\n"
+	  "#else\n"
+	  "#define ASN1EXP\n"
+	  "#define ASN1CALL\n"
+	  "#endif\n",
+	  headerfile);
     fprintf (headerfile, "struct units;\n\n");
     fprintf (headerfile, "#endif\n\n");
-    asprintf(&fn, "%s_files", base);
-    if (fn == NULL)
+    if (asprintf(&fn, "%s_files", base) < 0 || fn == NULL)
 	errx(1, "malloc");
     logfile = fopen(fn, "w");
     if (logfile == NULL)
@@ -333,22 +340,23 @@ gen_compare_defval(const char *var, struct value *val)
 void
 generate_header_of_codefile(const char *name)
 {
-    char *filename;
+    char *filename = NULL;
 
     if (codefile != NULL)
 	abort();
 
-    asprintf (&filename, "%s_%s.x", STEM, name);
-    if (filename == NULL)
+    if (asprintf (&filename, "%s_%s.x", STEM, name) < 0 || filename == NULL)
 	errx(1, "malloc");
     codefile = fopen (filename, "w");
     if (codefile == NULL)
 	err (1, "fopen %s", filename);
     fprintf(logfile, "%s ", filename);
     free(filename);
+    filename = NULL;
     fprintf (codefile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n"
+	     "#define  ASN1_LIB\n\n"
 	     "#include <stdio.h>\n"
 	     "#include <stdlib.h>\n"
 	     "#include <time.h>\n"
@@ -399,6 +407,7 @@ generate_constant (const Symbol *s)
     case objectidentifiervalue: {
 	struct objid *o, **list;
 	unsigned int i, len;
+	char *gen_upper;
 
 	if (!one_code_file)
 	    generate_header_of_codefile(s->gen_name);
@@ -424,12 +433,6 @@ generate_constant (const Symbol *s)
 		    o->label ? o->label : "label-less", o->value);
 	}
 
-	fprintf (headerfile, "} */\n");
-	fprintf (headerfile,
-		 "extern const heim_oid asn1_oid_%s;\n\n",
-		 s->gen_name);
-
-
 	fprintf (codefile, "static unsigned oid_%s_variable_num[%d] =  {",
 		 s->gen_name, len);
 	for (i = len ; i > 0; i--) {
@@ -442,6 +445,23 @@ generate_constant (const Symbol *s)
 		 s->gen_name, len, s->gen_name);
 
 	free(list);
+
+	/* header file */
+
+	gen_upper = strdup(s->gen_name);
+	len = strlen(gen_upper);
+	for (i = 0; i < len; i++)
+	    gen_upper[i] = toupper((int)s->gen_name[i]);
+
+	fprintf (headerfile, "} */\n");
+	fprintf (headerfile,
+		 "extern ASN1EXP const heim_oid asn1_oid_%s;\n"
+		 "#define ASN1_OID_%s (&asn1_oid_%s)\n\n",
+		 s->gen_name,
+		 gen_upper,
+		 s->gen_name);
+
+	free(gen_upper);
 
 	if (!one_code_file)
 	    close_codefile();
@@ -673,7 +693,8 @@ getnewbasename(char **newbasename, int typedefp, const char *basename, const cha
     else {
 	if (name[0] == '*')
 	    name++;
-	asprintf(newbasename, "%s_%s", basename, name);
+	if (asprintf(newbasename, "%s_%s", basename, name) < 0)
+	    errx(1, "malloc");
     }
     if (*newbasename == NULL)
 	err(1, "malloc");
@@ -739,27 +760,30 @@ define_type (int level, const char *name, const char *basename, Type *t, int typ
 
 	    fprintf (headerfile, "struct %s {\n", newbasename);
 	    ASN1_TAILQ_FOREACH(m, t->members, members) {
-		char *n;
+		char *n = NULL;
 	
 		/* pad unused */
 		while (pos < m->val) {
-		    asprintf (&n, "_unused%d:1", pos);
+		    if (asprintf (&n, "_unused%d:1", pos) < 0 || n == NULL)
+			errx(1, "malloc");
 		    define_type (level + 1, n, newbasename, &i, FALSE, FALSE);
 		    free(n);
 		    pos++;
 		}
 
-		asprintf (&n, "%s:1", m->gen_name);
-		if (n == NULL)
+		n = NULL;
+		if (asprintf (&n, "%s:1", m->gen_name) < 0 || n == NULL)
 		    errx(1, "malloc");
 		define_type (level + 1, n, newbasename, &i, FALSE, FALSE);
 		free (n);
+		n = NULL;
 		pos++;
 	    }
 	    /* pad to 32 elements */
 	    while (pos < 32) {
-		char *n;
-		asprintf (&n, "_unused%d:1", pos);
+		char *n = NULL;
+		if (asprintf (&n, "_unused%d:1", pos) < 0 || n == NULL)
+		    errx(1, "malloc");
 		define_type (level + 1, n, newbasename, &i, FALSE, FALSE);
 		free(n);
 		pos++;
@@ -803,10 +827,9 @@ define_type (int level, const char *name, const char *basename, Type *t, int typ
 	    if (m->ellipsis) {
 		;
 	    } else if (m->optional) {
-		char *n;
+		char *n = NULL;
 
-		asprintf (&n, "*%s", m->gen_name);
-		if (n == NULL)
+		if (asprintf (&n, "*%s", m->gen_name) < 0 || n == NULL)
 		    errx(1, "malloc");
 		define_type (level + 1, n, newbasename, m->type, FALSE, FALSE);
 		free (n);
@@ -891,10 +914,9 @@ define_type (int level, const char *name, const char *basename, Type *t, int typ
 		space(level + 2);
 		fprintf(headerfile, "heim_octet_string asn1_ellipsis;\n");
 	    } else if (m->optional) {
-		char *n;
+		char *n = NULL;
 
-		asprintf (&n, "*%s", m->gen_name);
-		if (n == NULL)
+		if (asprintf (&n, "*%s", m->gen_name) < 0 || n == NULL)
 		    errx(1, "malloc");
 		define_type (level + 2, n, newbasename, m->type, FALSE, FALSE);
 		free (n);
@@ -970,6 +992,7 @@ void
 generate_type (const Symbol *s)
 {
     FILE *h;
+    const char * exp;
 
     if (!one_code_file)
 	generate_header_of_codefile(s->gen_name);
@@ -991,30 +1014,37 @@ generate_type (const Symbol *s)
 
     /* generate prototypes */
 
-    if (is_export(s->name))
+    if (is_export(s->name)) {
 	h = headerfile;
-    else
+	exp = "ASN1EXP ";
+    } else {
 	h = privheaderfile;
+	exp = "";
+    }
    
     fprintf (h,
-	     "int    "
+	     "%sint    ASN1CALL "
 	     "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
+	     exp,
 	     s->gen_name, s->gen_name);
     fprintf (h,
-	     "int    "
+	     "%sint    ASN1CALL "
 	     "encode_%s(unsigned char *, size_t, const %s *, size_t *);\n",
+	     exp,
 	     s->gen_name, s->gen_name);
     fprintf (h,
-	     "size_t length_%s(const %s *);\n",
+	     "%ssize_t ASN1CALL length_%s(const %s *);\n",
+	     exp,
 	     s->gen_name, s->gen_name);
     fprintf (h,
-	     "int    copy_%s  (const %s *, %s *);\n",
+	     "%sint    ASN1CALL copy_%s  (const %s *, %s *);\n",
+	     exp,
 	     s->gen_name, s->gen_name, s->gen_name);
     fprintf (h,
-	     "void   free_%s  (%s *);\n",
+	     "%svoid   ASN1CALL free_%s  (%s *);\n",
+	     exp,
 	     s->gen_name, s->gen_name);
    
-
     fprintf(h, "\n\n");
 
     if (!one_code_file) {

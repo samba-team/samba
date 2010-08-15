@@ -481,7 +481,7 @@ static krb5_error_code
 fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 		   const char *serv_string, int port, int proto)
 {
-    char *host;
+    char *host = NULL;
     int ret;
     struct addrinfo *ai;
     struct addrinfo hints;
@@ -500,12 +500,12 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     }
 
     if(kd->fallback_count == 0)
-	asprintf(&host, "%s.%s.", serv_string, kd->realm);
+	ret = asprintf(&host, "%s.%s.", serv_string, kd->realm);
     else
-	asprintf(&host, "%s-%d.%s.",
-		 serv_string, kd->fallback_count, kd->realm);	
+	ret = asprintf(&host, "%s-%d.%s.",
+		       serv_string, kd->fallback_count, kd->realm);	
 
-    if (host == NULL)
+    if (ret < 0 || host == NULL)
 	return ENOMEM;
 
     make_hints(&hints, proto);

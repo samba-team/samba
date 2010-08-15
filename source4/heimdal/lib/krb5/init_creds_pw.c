@@ -94,7 +94,7 @@ free_paid(krb5_context context, struct pa_info_data *ppaid)
 	krb5_free_data(context, ppaid->s2kparams);
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 default_s2k_func(krb5_context context, krb5_enctype type,
 		 krb5_const_pointer keyseed,
 		 krb5_salt salt, krb5_data *s2kparms,
@@ -234,11 +234,12 @@ report_expiration (krb5_context context,
 		   const char *str,
 		   time_t now)
 {
-    char *p;
+    char *p = NULL;
 
-    asprintf (&p, "%s%s", str, ctime(&now));
-    (*prompter) (context, data, NULL, p, 0, NULL);
-    free (p);
+    if (asprintf(&p, "%s%s", str, ctime(&now)) < 0 || p == NULL)
+	return;
+    (*prompter)(context, data, NULL, p, 0, NULL);
+    free(p);
 }
 
 /*
@@ -562,10 +563,14 @@ change_password (krb5_context context,
 			     &result_string);
     if (ret)
 	goto out;
-    asprintf (&p, "%s: %.*s\n",
-	      result_code ? "Error" : "Success",
-	      (int)result_string.length,
-	      result_string.length > 0 ? (char*)result_string.data : "");
+    if (asprintf(&p, "%s: %.*s\n",
+		 result_code ? "Error" : "Success",
+		 (int)result_string.length,
+		 result_string.length > 0 ? (char*)result_string.data : "") < 0)
+    {
+	ret = ENOMEM;
+	goto out;
+    }
 
     /* return the result */
     (*prompter) (context, data, NULL, p, 0, NULL);
@@ -1454,7 +1459,7 @@ krb5_init_creds_set_password(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 keytab_key_proc(krb5_context context, krb5_enctype enctype,
 		krb5_const_pointer keyseed,
 		krb5_salt salt, krb5_data *s2kparms,
@@ -1581,7 +1586,7 @@ krb5_init_creds_set_keytab(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 keyblock_key_proc(krb5_context context, krb5_enctype enctype,
 		  krb5_const_pointer keyseed,
 		  krb5_salt salt, krb5_data *s2kparms,
@@ -1613,7 +1618,8 @@ krb5_init_creds_set_keyblock(krb5_context context,
  * @param in input data from KDC, first round it should be reset by krb5_data_zer().
  * @param out reply to KDC.
  * @param hostinfo KDC address info, first round it can be NULL.
- * @param flags status of the round, if 1 is set, continue one more round.
+ * @param flags status of the round, if
+ *        KRB5_INIT_CREDS_STEP_FLAG_CONTINUE is set, continue one more round.
  *
  * @return 0 for success, or an Kerberos 5 error code, see
  *     krb5_get_error_message().
@@ -1816,7 +1822,7 @@ krb5_init_creds_step(krb5_context context,
     out->data = ctx->req_buffer.data;
     out->length = ctx->req_buffer.length;
 
-    *flags = 1;
+    *flags = KRB5_INIT_CREDS_STEP_FLAG_CONTINUE;
 
     return 0;
  out:

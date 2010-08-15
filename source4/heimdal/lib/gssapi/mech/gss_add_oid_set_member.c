@@ -51,7 +51,7 @@
  * @ingroup gssapi
  */
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_add_oid_set_member (OM_uint32 * minor_status,
 			const gss_OID member_oid,
 			gss_OID_set * oid_set)

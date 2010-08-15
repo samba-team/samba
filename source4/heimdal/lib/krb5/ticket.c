@@ -602,7 +602,7 @@ noreferral:
 }
 
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 decrypt_tkt (krb5_context context,
 	     krb5_keyblock *key,
 	     krb5_key_usage usage,

@@ -38,7 +38,11 @@
 #include <krb5-types.h>
 #include <rfc2459_asn1.h>
 
+#include <der.h>
+
 #include <rsa.h>
+
+#include "common.h"
 
 #include <roken.h>
 
@@ -47,6 +51,20 @@
  *
  * RSA is named by its inventors (Ron Rivest, Adi Shamir, and Leonard
  * Adleman) (published in 1977), patented expired in 21 September 2000.
+ *
+ *
+ * Speed for RSA in seconds
+ *   no key blinding
+ *   1000 iteration, 
+ *   same rsa key
+ *   operation performed each eteration sign, verify, encrypt, decrypt on a random bit pattern
+ *
+ * gmp: 	 0.733615
+ * tfm: 	 2.450173
+ * ltm:		 3.79 (default in hcrypto)
+ * openssl:	 4.04
+ * cdsa:	15.89
+ * imath: 	40.62
  *
  * See the library functions here: @ref hcrypto_rsa
  */
@@ -237,7 +255,7 @@ RSA_set_app_data(RSA *rsa, void *arg)
  */
 
 void *
-RSA_get_app_data(RSA *rsa)
+RSA_get_app_data(const RSA *rsa)
 {
     return rsa->ex_data.sk;
 }
@@ -303,19 +321,136 @@ RSAFUNC(RSA_public_decrypt, (r)->meth->rsa_pub_dec(flen, f, t, r, p))
 RSAFUNC(RSA_private_encrypt, (r)->meth->rsa_priv_enc(flen, f, t, r, p))
 RSAFUNC(RSA_private_decrypt, (r)->meth->rsa_priv_dec(flen, f, t, r, p))
 
-/* XXX */
+static const heim_octet_string null_entry_oid = { 2, rk_UNCONST("\x05\x00") };
+
+static const unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
+static const AlgorithmIdentifier _signature_sha1_data = {
+    { 6, rk_UNCONST(sha1_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+static const unsigned sha256_oid_tree[] = { 2, 16, 840, 1, 101, 3, 4, 2, 1 };
+static const AlgorithmIdentifier _signature_sha256_data = {
+    { 9, rk_UNCONST(sha256_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+static const unsigned md5_oid_tree[] = { 1, 2, 840, 113549, 2, 5 };
+static const AlgorithmIdentifier _signature_md5_data = {
+    { 6, rk_UNCONST(md5_oid_tree) }, rk_UNCONST(&null_entry_oid)
+};
+
+
 int
 RSA_sign(int type, const unsigned char *from, unsigned int flen,
 	 unsigned char *to, unsigned int *tlen, RSA *rsa)
 {
-    return -1;
+    if (rsa->meth->rsa_sign)
+	return rsa->meth->rsa_sign(type, from, flen, to, tlen, rsa);
+
+    if (rsa->meth->rsa_priv_enc) {
+	heim_octet_string indata;
+	DigestInfo di;
+	size_t size;
+	int ret;
+
+	memset(&di, 0, sizeof(di));
+
+	if (type == NID_sha1) {
+	    di.digestAlgorithm = _signature_sha1_data;
+	} else if (type == NID_md5) {
+	    di.digestAlgorithm = _signature_md5_data;
+	} else if (type == NID_sha256) {
+	    di.digestAlgorithm = _signature_sha256_data;
+	} else
+	    return -1;
+
+	di.digest.data = rk_UNCONST(from);
+	di.digest.length = flen;
+
+	ASN1_MALLOC_ENCODE(DigestInfo,
+			   indata.data,
+			   indata.length,
+			   &di,
+			   &size,
+			   ret);
+	if (ret)
+	    return ret;
+	if (indata.length != size)
+	    abort();
+
+	ret = rsa->meth->rsa_priv_enc(indata.length, indata.data, to,
+				      rsa, RSA_PKCS1_PADDING);
+	free(indata.data);
+	if (ret > 0) {
+	    *tlen = ret;
+	    ret = 1;
+	} else
+	    ret = 0;
+
+	return ret;
+    }
+
+    return 0;
 }
 
 int
 RSA_verify(int type, const unsigned char *from, unsigned int flen,
-	   unsigned char *to, unsigned int tlen, RSA *rsa)
+	   unsigned char *sigbuf, unsigned int siglen, RSA *rsa)
 {
-    return -1;
+    if (rsa->meth->rsa_verify)
+	return rsa->meth->rsa_verify(type, from, flen, sigbuf, siglen, rsa);
+
+    if (rsa->meth->rsa_pub_dec) {
+	const AlgorithmIdentifier *digest_alg;
+	void *data;
+	DigestInfo di;
+	size_t size;
+	int ret, ret2;
+
+	data = malloc(RSA_size(rsa));
+	if (data == NULL)
+	    return -1;
+
+	memset(&di, 0, sizeof(di));
+
+	ret = rsa->meth->rsa_pub_dec(siglen, sigbuf, data, rsa, RSA_PKCS1_PADDING);
+	if (ret <= 0) {
+	    free(data);
+	    return -2;
+	}
+
+	ret2 = decode_DigestInfo(data, ret, &di, &size);
+	free(data);
+	if (ret2 != 0)
+	    return -3;
+	if (ret != size) {
+	    free_DigestInfo(&di);
+	    return -4;
+	}
+
+	if (flen != di.digest.length || memcmp(di.digest.data, from, flen) != 0) {
+	    free_DigestInfo(&di);
+	    return -5;
+	}
+
+	if (type == NID_sha1) {
+	    digest_alg = &_signature_sha1_data;
+	} else if (type == NID_md5) {
+	    digest_alg = &_signature_md5_data;
+	} else if (type == NID_sha256) {
+	    digest_alg = &_signature_sha256_data;
+	} else {
+	    free_DigestInfo(&di);
+	    return -1;
+	}
+	
+	ret = der_heim_oid_cmp(&digest_alg->algorithm,
+			       &di.digestAlgorithm.algorithm);
+	free_DigestInfo(&di);
+	
+	if (ret != 0)
+	    return 0;
+	return 1;
+    }
+
+    return 0;
 }
 
 /*
@@ -380,12 +515,12 @@ RSA_null_method(void)
     return &rsa_null_method;
 }
 
+extern const RSA_METHOD hc_rsa_gmp_method;
 extern const RSA_METHOD hc_rsa_imath_method;
-#ifdef HAVE_GMP
-static const RSA_METHOD *default_rsa_method = &hc_rsa_gmp_method;
-#else
-static const RSA_METHOD *default_rsa_method = &hc_rsa_imath_method;
-#endif
+extern const RSA_METHOD hc_rsa_tfm_method;
+extern const RSA_METHOD hc_rsa_ltm_method;
+static const RSA_METHOD *default_rsa_method = &hc_rsa_ltm_method;
+
 
 const RSA_METHOD *
 RSA_get_default_method(void)
@@ -402,32 +537,6 @@ RSA_set_default_method(const RSA_METHOD *meth)
 /*
  *
  */
-
-static BIGNUM *
-heim_int2BN(const heim_integer *i)
-{
-    BIGNUM *bn;
-
-    bn = BN_bin2bn(i->data, i->length, NULL);
-    if (bn)
-	BN_set_negative(bn, i->negative);
-    return bn;
-}
-
-static int
-bn2heim_int(BIGNUM *bn, heim_integer *integer)
-{
-    integer->length = BN_num_bytes(bn);
-    integer->data = malloc(integer->length);
-    if (integer->data == NULL) {
-	integer->length = 0;
-	return ENOMEM;
-    }
-    BN_bn2bin(bn, integer->data);
-    integer->negative = BN_is_negative(bn);
-    return 0;
-}
-
 
 RSA *
 d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
@@ -451,14 +560,14 @@ d2i_RSAPrivateKey(RSA *rsa, const unsigned char **pp, size_t len)
 	}
     }
 
-    k->n = heim_int2BN(&data.modulus);
-    k->e = heim_int2BN(&data.publicExponent);
-    k->d = heim_int2BN(&data.privateExponent);
-    k->p = heim_int2BN(&data.prime1);
-    k->q = heim_int2BN(&data.prime2);
-    k->dmp1 = heim_int2BN(&data.exponent1);
-    k->dmq1 = heim_int2BN(&data.exponent2);
-    k->iqmp = heim_int2BN(&data.coefficient);
+    k->n = _hc_integer_to_BN(&data.modulus, NULL);
+    k->e = _hc_integer_to_BN(&data.publicExponent, NULL);
+    k->d = _hc_integer_to_BN(&data.privateExponent, NULL);
+    k->p = _hc_integer_to_BN(&data.prime1, NULL);
+    k->q = _hc_integer_to_BN(&data.prime2, NULL);
+    k->dmp1 = _hc_integer_to_BN(&data.exponent1, NULL);
+    k->dmq1 = _hc_integer_to_BN(&data.exponent2, NULL);
+    k->iqmp = _hc_integer_to_BN(&data.coefficient, NULL);
     free_RSAPrivateKey(&data);
 
     if (k->n == NULL || k->e == NULL || k->d == NULL || k->p == NULL ||
@@ -485,14 +594,14 @@ i2d_RSAPrivateKey(RSA *rsa, unsigned char **pp)
 
     memset(&data, 0, sizeof(data));
 
-    ret  = bn2heim_int(rsa->n, &data.modulus);
-    ret |= bn2heim_int(rsa->e, &data.publicExponent);
-    ret |= bn2heim_int(rsa->d, &data.privateExponent);
-    ret |= bn2heim_int(rsa->p, &data.prime1);
-    ret |= bn2heim_int(rsa->q, &data.prime2);
-    ret |= bn2heim_int(rsa->dmp1, &data.exponent1);
-    ret |= bn2heim_int(rsa->dmq1, &data.exponent2);
-    ret |= bn2heim_int(rsa->iqmp, &data.coefficient);
+    ret  = _hc_BN_to_integer(rsa->n, &data.modulus);
+    ret |= _hc_BN_to_integer(rsa->e, &data.publicExponent);
+    ret |= _hc_BN_to_integer(rsa->d, &data.privateExponent);
+    ret |= _hc_BN_to_integer(rsa->p, &data.prime1);
+    ret |= _hc_BN_to_integer(rsa->q, &data.prime2);
+    ret |= _hc_BN_to_integer(rsa->dmp1, &data.exponent1);
+    ret |= _hc_BN_to_integer(rsa->dmq1, &data.exponent2);
+    ret |= _hc_BN_to_integer(rsa->iqmp, &data.coefficient);
     if (ret) {
 	free_RSAPrivateKey(&data);
 	return -1;
@@ -530,8 +639,8 @@ i2d_RSAPublicKey(RSA *rsa, unsigned char **pp)
 
     memset(&data, 0, sizeof(data));
 
-    if (bn2heim_int(rsa->n, &data.modulus) ||
-	bn2heim_int(rsa->e, &data.publicExponent))
+    if (_hc_BN_to_integer(rsa->n, &data.modulus) ||
+	_hc_BN_to_integer(rsa->e, &data.publicExponent))
     {
 	free_RSAPublicKey(&data);
 	return -1;
@@ -582,8 +691,8 @@ d2i_RSAPublicKey(RSA *rsa, const unsigned char **pp, size_t len)
 	}
     }
 
-    k->n = heim_int2BN(&data.modulus);
-    k->e = heim_int2BN(&data.publicExponent);
+    k->n = _hc_integer_to_BN(&data.modulus, NULL);
+    k->e = _hc_integer_to_BN(&data.publicExponent, NULL);
 
     free_RSAPublicKey(&data);
 

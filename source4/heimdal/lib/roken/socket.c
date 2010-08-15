@@ -316,6 +316,19 @@ socket_to_fd(rk_socket_t sock, int flags)
 #endif
 }
 
+#ifdef HAVE_WINSOCK
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+rk_SOCK_IOCTL(SOCKET s, long cmd, int * argp) {
+    u_long ul = (argp)? *argp : 0;
+    int rv;
+
+    rv = ioctlsocket(s, cmd, &ul);
+    if (argp)
+	*argp = (int) ul;
+    return rv;
+}
+#endif
+
 #ifndef HEIMDAL_SMALLER
 #undef socket
 

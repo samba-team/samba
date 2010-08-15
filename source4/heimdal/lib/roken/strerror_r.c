@@ -72,7 +72,7 @@ rk_strerror_r(int eno, char *strerrbuf, size_t buflen)
     return 0;
 #else
     int ret;
-    ret = strlcpy(strerrbuf, buflen, strerror(eno));
+    ret = strlcpy(strerrbuf, strerror(eno), buflen);
     if (ret > buflen)
 	return ERANGE;
     return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2010 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -53,11 +53,15 @@ struct hx509_ca_tbs {
 	unsigned int key:1;
 	unsigned int serial:1;
 	unsigned int domaincontroller:1;
+	unsigned int xUniqueID:1;
     } flags;
     time_t notBefore;
     time_t notAfter;
     int pathLenConstraint; /* both for CA and Proxy */
     CRLDistributionPoints crldp;
+    heim_bit_string subjectUniqueID;
+    heim_bit_string issuerUniqueID;
+
 };
 
 /**
@@ -79,15 +83,6 @@ hx509_ca_tbs_init(hx509_context context, hx509_ca_tbs *tbs)
     *tbs = calloc(1, sizeof(**tbs));
     if (*tbs == NULL)
 	return ENOMEM;
-
-    (*tbs)->subject = NULL;
-    (*tbs)->san.len = 0;
-    (*tbs)->san.val = NULL;
-    (*tbs)->eku.len = 0;
-    (*tbs)->eku.val = NULL;
-    (*tbs)->pathLenConstraint = 0;
-    (*tbs)->crldp.len = 0;
-    (*tbs)->crldp.val = NULL;
 
     return 0;
 }
@@ -111,7 +106,8 @@ hx509_ca_tbs_free(hx509_ca_tbs *tbs)
     free_ExtKeyUsage(&(*tbs)->eku);
     der_free_heim_integer(&(*tbs)->serial);
     free_CRLDistributionPoints(&(*tbs)->crldp);
-
+    der_free_bit_string(&(*tbs)->subjectUniqueID);
+    der_free_bit_string(&(*tbs)->issuerUniqueID);
     hx509_name_free(&(*tbs)->subject);
 
     memset(*tbs, 0, sizeof(**tbs));
@@ -485,7 +481,8 @@ hx509_ca_tbs_add_crl_dp_uri(hx509_context context,
 	name.u.fullName.val = &gn;
 
 	gn.element = choice_GeneralName_uniformResourceIdentifier;
-	gn.u.uniformResourceIdentifier = rk_UNCONST(uri);
+	gn.u.uniformResourceIdentifier.data = rk_UNCONST(uri);
+	gn.u.uniformResourceIdentifier.length = strlen(uri);
 
 	ASN1_MALLOC_ENCODE(DistributionPointName,
 			   dp.distributionPoint->data,
@@ -785,7 +782,8 @@ hx509_ca_tbs_add_san_hostname(hx509_context context,
 
     memset(&gn, 0, sizeof(gn));
     gn.element = choice_GeneralName_dNSName;
-    gn.u.dNSName = rk_UNCONST(dnsname);
+    gn.u.dNSName.data = rk_UNCONST(dnsname);
+    gn.u.dNSName.length = strlen(dnsname);
 
     return add_GeneralNames(&tbs->san, &gn);
 }
@@ -812,7 +810,8 @@ hx509_ca_tbs_add_san_rfc822name(hx509_context context,
 
     memset(&gn, 0, sizeof(gn));
     gn.element = choice_GeneralName_rfc822Name;
-    gn.u.rfc822Name = rk_UNCONST(rfc822Name);
+    gn.u.rfc822Name.data = rk_UNCONST(rfc822Name);
+    gn.u.rfc822Name.length = strlen(rfc822Name);
 
     return add_GeneralNames(&tbs->san, &gn);
 }
@@ -840,6 +839,50 @@ hx509_ca_tbs_set_subject(hx509_context context,
 }
 
 /**
+ * Set the issuerUniqueID and subjectUniqueID
+ *
+ * These are only supposed to be used considered with version 2
+ * certificates, replaced by the two extensions SubjectKeyIdentifier
+ * and IssuerKeyIdentifier. This function is to allow application
+ * using legacy protocol to issue them.
+ *
+ * @param context A hx509 context.
+ * @param tbs object to be signed.
+ * @param issuerUniqueID to be set
+ * @param subjectUniqueID to be set
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_ca
+ */
+
+int
+hx509_ca_tbs_set_unique(hx509_context context,
+			hx509_ca_tbs tbs,
+			const heim_bit_string *subjectUniqueID,
+			const heim_bit_string *issuerUniqueID)
+{
+    int ret;
+
+    der_free_bit_string(&tbs->subjectUniqueID);
+    der_free_bit_string(&tbs->issuerUniqueID);
+    
+    if (subjectUniqueID) {
+	ret = der_copy_bit_string(subjectUniqueID, &tbs->subjectUniqueID);
+	if (ret)
+	    return ret;
+    }
+
+    if (issuerUniqueID) {
+	ret = der_copy_bit_string(issuerUniqueID, &tbs->issuerUniqueID);
+	if (ret)
+	    return ret;
+    }
+
+    return 0;
+}
+
+/**
  * Expand the the subject name in the to-be-signed certificate object
  * using hx509_name_expand().
  *
@@ -860,6 +903,10 @@ hx509_ca_tbs_subject_expand(hx509_context context,
 {
     return hx509_name_expand(context, tbs->subject, env);
 }
+
+/*
+ *
+ */
 
 static int
 add_extension(hx509_context context,
@@ -1090,7 +1137,35 @@ ca_sign(hx509_context context,
 	goto out;
     }
     /* issuerUniqueID  [1]  IMPLICIT BIT STRING OPTIONAL */
+    if (tbs->issuerUniqueID.length) {
+	tbsc->issuerUniqueID = calloc(1, sizeof(*tbsc->issuerUniqueID));
+	if (tbsc->issuerUniqueID == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+	ret = der_copy_bit_string(&tbs->issuerUniqueID, tbsc->issuerUniqueID);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+    }
     /* subjectUniqueID [2]  IMPLICIT BIT STRING OPTIONAL */
+    if (tbs->subjectUniqueID.length) {
+	tbsc->subjectUniqueID = calloc(1, sizeof(*tbsc->subjectUniqueID));
+	if (tbsc->subjectUniqueID == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+
+	ret = der_copy_bit_string(&tbs->subjectUniqueID, tbsc->subjectUniqueID);
+	if (ret) {
+	    hx509_set_error_string(context, 0, ret, "Out of memory");
+	    goto out;
+	}
+    }
+
     /* extensions      [3]  EXPLICIT Extensions OPTIONAL */
     tbsc->extensions = calloc(1, sizeof(*tbsc->extensions));
     if (tbsc->extensions == NULL) {

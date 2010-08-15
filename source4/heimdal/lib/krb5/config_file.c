@@ -239,7 +239,12 @@ parse_binding(struct fileptr *f, unsigned *lineno, char *p,
     return ret;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#define HAVE_CFPROPERTYLISTCREATEWITHSTREAM 1
+#endif
+
 static char *
 cfstring2cstring(CFStringRef string)
 {
@@ -293,7 +298,6 @@ parse_plist_config(krb5_context context, const char *path, krb5_config_section *
 {
     CFReadStreamRef s;
     CFDictionaryRef d;
-    CFErrorRef e;
     CFURLRef url;
     
     url = CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (UInt8 *)path, strlen(path), FALSE);
@@ -315,7 +319,11 @@ parse_plist_config(krb5_context context, const char *path, krb5_config_section *
 	return ENOENT;
     }
 
-    d = (CFDictionaryRef)CFPropertyListCreateWithStream (kCFAllocatorDefault, s, 0, kCFPropertyListImmutable, NULL, &e);
+#ifdef HAVE_CFPROPERTYLISTCREATEWITHSTREAM
+    d = (CFDictionaryRef)CFPropertyListCreateWithStream(NULL, s, 0, kCFPropertyListImmutable, NULL, NULL);
+#else 
+    d = (CFDictionaryRef)CFPropertyListCreateFromStream(NULL, s, 0, kCFPropertyListImmutable, NULL, NULL);
+#endif
     CFRelease(s);
     if (d == NULL) {
 	krb5_clear_error_message(context);
@@ -447,8 +455,9 @@ krb5_config_parse_file_multi (krb5_context context,
 	    fname = newfname;
 	}
 #else  /* KRB5_USE_PATH_TOKENS */
-	asprintf(&newfname, "%%{USERCONFIG}/%s", &fname[1]);
-	if (newfname == NULL) {
+	if (asprintf(&newfname, "%%{USERCONFIG}%s", &fname[1]) < 0 || 
+	    newfname == NULL)
+	{
 	    krb5_set_error_message(context, ENOMEM,
 				   N_("malloc: out of memory", ""));
 	    return ENOMEM;

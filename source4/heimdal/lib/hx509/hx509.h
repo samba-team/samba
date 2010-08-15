@@ -71,6 +71,11 @@ enum {
     HX509_VALIDATE_F_VERBOSE = 2
 };
 
+enum {
+    HX509_CRYPTO_PADDING_PKCS7 = 0,
+    HX509_CRYPTO_PADDING_NONE = 1
+};
+
 struct hx509_cert_attribute_data {
     heim_oid oid;
     heim_octet_string data;
@@ -157,6 +162,8 @@ typedef enum {
 #define HX509_CMS_SIGNATURE_DETACHED			0x01
 #define HX509_CMS_SIGNATURE_ID_NAME			0x02
 #define HX509_CMS_SIGNATURE_NO_SIGNER			0x04
+#define HX509_CMS_SIGNATURE_LEAF_ONLY			0x08
+#define HX509_CMS_SIGNATURE_NO_CERTS			0x10
 
 /* hx509_verify_hostname nametype */
 typedef enum  {

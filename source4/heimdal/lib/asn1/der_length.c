@@ -161,13 +161,13 @@ der_length_utf8string (const heim_utf8_string *data)
 size_t
 der_length_printable_string (const heim_printable_string *data)
 {
-    return strlen(*data);
+    return data->length;
 }
 
 size_t
 der_length_ia5_string (const heim_ia5_string *data)
 {
-    return strlen(*data);
+    return data->length;
 }
 
 size_t

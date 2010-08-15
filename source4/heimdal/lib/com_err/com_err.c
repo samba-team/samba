@@ -43,7 +43,7 @@
 struct et_list *_et_list = NULL;
 
 
-const char *
+KRB5_LIB_FUNCTION const char * KRB5_LIB_CALL
 error_message (long code)
 {
     static char msg[128];
@@ -61,18 +61,18 @@ error_message (long code)
     return msg;
 }
 
-int
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
 init_error_table(const char **msgs, long base, int count)
 {
     initialize_error_table_r(&_et_list, msgs, count, base);
     return 0;
 }
 
-static void
+static void KRB5_CALLCONV
 default_proc (const char *whoami, long code, const char *fmt, va_list args)
     __attribute__((__format__(__printf__, 3, 0)));
 
-static void
+static void KRB5_CALLCONV
 default_proc (const char *whoami, long code, const char *fmt, va_list args)
 {
     if (whoami)
@@ -86,7 +86,7 @@ default_proc (const char *whoami, long code, const char *fmt, va_list args)
 
 static errf com_err_hook = default_proc;
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 com_err_va (const char *whoami,
 	    long code,
 	    const char *fmt,
@@ -95,7 +95,7 @@ com_err_va (const char *whoami,
     (*com_err_hook) (whoami, code, fmt, args);
 }
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 com_err (const char *whoami,
 	 long code,
 	 const char *fmt,
@@ -107,7 +107,7 @@ com_err (const char *whoami,
     va_end(ap);
 }
 
-errf
+KRB5_LIB_FUNCTION errf KRB5_LIB_CALL
 set_com_err_hook (errf new)
 {
     errf old = com_err_hook;
@@ -120,7 +120,7 @@ set_com_err_hook (errf new)
     return old;
 }
 
-errf
+KRB5_LIB_FUNCTION errf KRB5_LIB_CALL
 reset_com_err_hook (void)
 {
     return set_com_err_hook(NULL);
@@ -134,7 +134,7 @@ static const char char_set[] =
 
 static char buf[6];
 
-const char *
+KRB5_LIB_FUNCTION const char * KRB5_LIB_CALL
 error_table_name(int num)
 {
     int ch;
@@ -156,7 +156,7 @@ error_table_name(int num)
     return(buf);
 }
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 add_to_error_table(struct et_list *new_table)
 {
     struct et_list *et;

@@ -55,10 +55,10 @@ _gsskrb5_register_acceptor_identity (const char *identity)
     if (identity == NULL) {
 	ret = krb5_kt_default(context, &_gsskrb5_keytab);
     } else {
-	char *p;
+	char *p = NULL;
 
-	asprintf(&p, "FILE:%s", identity);
-	if(p == NULL) {
+	ret = asprintf(&p, "FILE:%s", identity);
+	if(ret < 0 || p == NULL) {
 	    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
 	    return GSS_S_FAILURE;
 	}
@@ -462,6 +462,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
     /*
      * We need to get the flags out of the 8003 checksum.
      */
+
     {
 	krb5_authenticator authenticator;
 
@@ -472,6 +473,12 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	    ret = GSS_S_FAILURE;
 	    *minor_status = kret;
 	    return ret;
+	}
+
+	if (authenticator->cksum == NULL) {
+	    krb5_free_authenticator(context, &authenticator);
+	    *minor_status = 0;
+	    return GSS_S_BAD_BINDINGS;
 	}
 
         if (authenticator->cksum->cksumtype == CKSUMTYPE_GSSAPI) {
@@ -793,7 +800,7 @@ acceptor_wait_for_dcestyle(OM_uint32 * minor_status,
 }
 
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_accept_sec_context(OM_uint32 * minor_status,
 			    gss_ctx_id_t * context_handle,
 			    const gss_cred_id_t acceptor_cred_handle,

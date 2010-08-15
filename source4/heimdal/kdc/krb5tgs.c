@@ -314,6 +314,7 @@ check_PAC(krb5_context context,
 	for (j = 0; j < child.len; j++) {
 
 	    if (child.val[j].ad_type == KRB5_AUTHDATA_WIN2K_PAC) {
+		int signed_pac = 0;
 		krb5_pac pac;
 
 		/* Found PAC */
@@ -334,19 +335,26 @@ check_PAC(krb5_context context,
 		}
 
 		ret = _kdc_pac_verify(context, client_principal,
-				      client, server, krbtgt, &pac);
+				      client, server, krbtgt, &pac, &signed_pac);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
 		}
-		*signedpath = 1;
 
-		ret = _krb5_pac_sign(context, pac, tkt->authtime,
-				     client_principal,
-				     server_key, krbtgt_sign_key, rspac);
-
+		/*
+		 * Only re-sign PAC if we could verify it with the PAC
+		 * function. The no-verify case happens when we get in
+		 * a PAC from cross realm from a Windows domain and
+		 * that there is no PAC verification function.
+		 */
+		if (signed_pac) {
+		    *signedpath = 1;
+		    ret = _krb5_pac_sign(context, pac, tkt->authtime,
+					 client_principal,
+					 server_key, krbtgt_key, rspac);
+		}
 		krb5_pac_free(context, pac);
-
+		
 		return ret;
 	    }
 	}
@@ -449,7 +457,7 @@ check_tgs_flags(krb5_context context,
     }
 
     if(f.renewable){
-	if(!tgt->flags.renewable){
+	if(!tgt->flags.renewable || tgt->renew_till == NULL){
 	    kdc_log(context, config, 0,
 		    "Bad request for renewable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
@@ -802,7 +810,9 @@ tgs_make_reply(krb5_context context,
 	et.endtime = *et.starttime + life;
     }
     if(f.renewable_ok && tgt->flags.renewable &&
-       et.renew_till == NULL && et.endtime < *b->till){
+       et.renew_till == NULL && et.endtime < *b->till &&
+       tgt->renew_till != NULL)
+    {
 	et.flags.renewable = 1;
 	ALLOC(et.renew_till);
 	*et.renew_till = *b->till;

@@ -926,7 +926,7 @@ krb5_rd_req_ctx(krb5_context context,
 				  &o->keyblock);
 	if (ret) {
 	    /* If caller specified a server, fail. */
-	    if (service == NULL)
+	    if (service == NULL && (context->flags & KRB5_CTX_F_RD_REQ_IGNORE) == 0)
 		goto out;
 	    /* Otherwise, fall back to iterating over the keytab. This
 	     * have serious performace issues for larger keytab.

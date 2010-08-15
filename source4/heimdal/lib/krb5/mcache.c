@@ -56,26 +56,27 @@ static struct krb5_mcache *mcc_head;
 
 #define MISDEAD(X)	((X)->dead)
 
-static const char*
+static const char* KRB5_CALLCONV
 mcc_get_name(krb5_context context,
 	     krb5_ccache id)
 {
     return MCACHE(id)->name;
 }
 
-static krb5_mcache *
+static krb5_mcache * KRB5_CALLCONV
 mcc_alloc(const char *name)
 {
     krb5_mcache *m, *m_c;
+    int ret = 0;
 
     ALLOC(m, 1);
     if(m == NULL)
 	return NULL;
     if(name == NULL)
-	asprintf(&m->name, "%p", m);
+	ret = asprintf(&m->name, "%p", m);
     else
 	m->name = strdup(name);
-    if(m->name == NULL) {
+    if(ret < 0 || m->name == NULL) {
 	free(m);
 	return NULL;
     }
@@ -103,7 +104,7 @@ mcc_alloc(const char *name)
     return m;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 {
     krb5_mcache *m;
@@ -135,7 +136,7 @@ mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 }
 
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_gen_new(krb5_context context, krb5_ccache *id)
 {
     krb5_mcache *m;
@@ -154,7 +155,7 @@ mcc_gen_new(krb5_context context, krb5_ccache *id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_initialize(krb5_context context,
 	       krb5_ccache id,
 	       krb5_principal primary_principal)
@@ -180,7 +181,7 @@ mcc_close_internal(krb5_mcache *m)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_close(krb5_context context,
 	  krb5_ccache id)
 {
@@ -189,7 +190,7 @@ mcc_close(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
@@ -230,7 +231,7 @@ mcc_destroy(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_store_cred(krb5_context context,
 	       krb5_ccache id,
 	       krb5_creds *creds)
@@ -261,7 +262,7 @@ mcc_store_cred(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_principal(krb5_context context,
 		  krb5_ccache id,
 		  krb5_principal *principal)
@@ -275,7 +276,7 @@ mcc_get_principal(krb5_context context,
 				principal);
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_first (krb5_context context,
 	       krb5_ccache id,
 	       krb5_cc_cursor *cursor)
@@ -289,7 +290,7 @@ mcc_get_first (krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_next (krb5_context context,
 	      krb5_ccache id,
 	      krb5_cc_cursor *cursor,
@@ -311,7 +312,7 @@ mcc_get_next (krb5_context context,
 	return KRB5_CC_END;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
@@ -319,7 +320,7 @@ mcc_end_get (krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_remove_cred(krb5_context context,
 		 krb5_ccache id,
 		 krb5_flags which,
@@ -339,7 +340,7 @@ mcc_remove_cred(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_set_flags(krb5_context context,
 	      krb5_ccache id,
 	      krb5_flags flags)
@@ -351,7 +352,7 @@ struct mcache_iter {
     krb5_mcache *cache;
 };
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 {
     struct mcache_iter *iter;
@@ -373,7 +374,7 @@ mcc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
 {
     struct mcache_iter *iter = cursor;
@@ -400,7 +401,7 @@ mcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
 {
     struct mcache_iter *iter = cursor;
@@ -412,7 +413,7 @@ mcc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
     krb5_mcache *mfrom = MCACHE(from), *mto = MCACHE(to);
@@ -447,7 +448,7 @@ mcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_default_name(krb5_context context, char **str)
 {
     *str = strdup("MEMORY:");
@@ -459,14 +460,14 @@ mcc_default_name(krb5_context context, char **str)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
 {
     *mtime = MCACHE(id)->mtime;
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat kdc_offset)
 {
     krb5_mcache *m = MCACHE(id);
@@ -474,7 +475,7 @@ mcc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat kdc_offset)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mcc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset)
 {
     krb5_mcache *m = MCACHE(id);

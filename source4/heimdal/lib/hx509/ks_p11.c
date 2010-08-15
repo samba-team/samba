@@ -835,7 +835,7 @@ p11_init(hx509_context context,
 	goto out;
     }
 
-    getFuncs = dlsym(p->dl_handle, "C_GetFunctionList");
+    getFuncs = (CK_C_GetFunctionList) dlsym(p->dl_handle, "C_GetFunctionList");
     if (getFuncs == NULL) {
 	ret = HX509_PKCS11_LOAD;
 	hx509_set_error_string(context, 0, ret,
@@ -1139,7 +1139,6 @@ p11_printinfo(hx509_context context,
 		MECHNAME(CKM_SHA256, "sha256");
 		MECHNAME(CKM_SHA_1, "sha1");
 		MECHNAME(CKM_MD5, "md5");
-		MECHNAME(CKM_MD2, "md2");
 		MECHNAME(CKM_RIPEMD160, "ripemd-160");
 		MECHNAME(CKM_DES_ECB, "des-ecb");
 		MECHNAME(CKM_DES_CBC, "des-cbc");

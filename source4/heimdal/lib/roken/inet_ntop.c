@@ -83,6 +83,7 @@ inet_ntop_v6 (const void *src, char *dst, size_t size)
     const struct in6_addr *addr = (struct in6_addr *)src;
     const u_char *ptr = addr->s6_addr;
     const char *orig_dst = dst;
+    int compressed = 0;
 
     if (size < INET6_ADDRSTRLEN) {
 	errno = ENOSPC;
@@ -90,6 +91,26 @@ inet_ntop_v6 (const void *src, char *dst, size_t size)
     }
     for (i = 0; i < 8; ++i) {
 	int non_zerop = 0;
+
+        if (compressed == 0 &&
+            ptr[0] == 0 && ptr[1] == 0 &&
+            i <= 5 &&
+            ptr[2] == 0 && ptr[3] == 0 &&
+            ptr[4] == 0 && ptr[5] == 0) {
+
+            compressed = 1;
+
+            if (i == 0)
+                *dst++ = ':';
+            *dst++ = ':';
+
+            for (ptr += 6, i += 3;
+                 i < 8 && ptr[0] == 0 && ptr[1] == 0;
+                 ++i, ptr += 2);
+
+            if (i >= 8)
+                break;
+        }
 
 	if (non_zerop || (ptr[0] >> 4)) {
 	    *dst++ = xdigits[ptr[0] >> 4];

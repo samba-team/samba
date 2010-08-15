@@ -56,6 +56,23 @@ struct hc_engine {
     const RAND_METHOD *rand;
 };
 
+ENGINE	*
+ENGINE_new(void)
+{
+    ENGINE *engine;
+
+    engine = calloc(1, sizeof(*engine));
+    engine->references = 1;
+
+    return engine;
+}
+
+int
+ENGINE_free(ENGINE *engine)
+{
+    return ENGINE_finish(engine);
+}
+
 int
 ENGINE_finish(ENGINE *engine)
 {
@@ -195,10 +212,8 @@ add_engine(ENGINE *engine)
     ENGINE **d, *dup;
 
     dup = ENGINE_by_id(engine->id);
-    if (dup) {
-	ENGINE_finish(dup);
+    if (dup)
 	return 0;
-    }
 
     d = realloc(engines, (num_engines + 1) * sizeof(*engines));
     if (d == NULL)
@@ -215,19 +230,98 @@ ENGINE_load_builtin_engines(void)
     ENGINE *engine;
     int ret;
 
-    engine = calloc(1, sizeof(*engine));
+    engine = ENGINE_new();
     if (engine == NULL)
 	return;
 
     ENGINE_set_id(engine, "builtin");
     ENGINE_set_name(engine,
-		    "Heimdal crypto builtin engine version " PACKAGE_VERSION);
+		    "Heimdal crypto builtin (ltm) engine version " PACKAGE_VERSION);
+    ENGINE_set_RSA(engine, RSA_ltm_method());
+    ENGINE_set_DH(engine, DH_ltm_method());
+
+    ret = add_engine(engine);
+    if (ret != 1)
+	ENGINE_finish(engine);
+
+#ifdef USE_HCRYPTO_TFM
+    /*
+     * TFM
+     */
+
+    engine = ENGINE_new();
+    if (engine == NULL)
+	return;
+
+    ENGINE_set_id(engine, "tfm");
+    ENGINE_set_name(engine,
+		    "Heimdal crypto tfm engine version " PACKAGE_VERSION);
+    ENGINE_set_RSA(engine, RSA_tfm_method());
+    ENGINE_set_DH(engine, DH_tfm_method());
+
+    ret = add_engine(engine);
+    if (ret != 1)
+	ENGINE_finish(engine);
+#endif /* USE_HCRYPTO_TFM */
+
+#ifdef USE_HCRYPTO_LTM
+    /*
+     * ltm
+     */
+
+    engine = ENGINE_new();
+    if (engine == NULL)
+	return;
+
+    ENGINE_set_id(engine, "ltm");
+    ENGINE_set_name(engine,
+		    "Heimdal crypto ltm engine version " PACKAGE_VERSION);
+    ENGINE_set_RSA(engine, RSA_ltm_method());
+    ENGINE_set_DH(engine, DH_ltm_method());
+
+    ret = add_engine(engine);
+    if (ret != 1)
+	ENGINE_finish(engine);
+#endif
+
+#ifdef USE_HCRYPTO_IMATH
+    /*
+     * imath
+     */
+
+    engine = ENGINE_new();
+    if (engine == NULL)
+	return;
+
+    ENGINE_set_id(engine, "imath");
+    ENGINE_set_name(engine,
+		    "Heimdal crypto imath engine version " PACKAGE_VERSION);
     ENGINE_set_RSA(engine, RSA_imath_method());
     ENGINE_set_DH(engine, DH_imath_method());
 
     ret = add_engine(engine);
     if (ret != 1)
 	ENGINE_finish(engine);
+#endif
+
+#ifdef HAVE_GMP
+    /*
+     * gmp
+     */
+
+    engine = ENGINE_new();
+    if (engine == NULL)
+	return;
+
+    ENGINE_set_id(engine, "gmp");
+    ENGINE_set_name(engine,
+		    "Heimdal crypto gmp engine version " PACKAGE_VERSION);
+    ENGINE_set_RSA(engine, RSA_gmp_method());
+
+    ret = add_engine(engine);
+    if (ret != 1)
+	ENGINE_finish(engine);
+#endif
 }
 
 ENGINE *

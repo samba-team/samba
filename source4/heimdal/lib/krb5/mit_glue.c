@@ -378,6 +378,12 @@ krb5_c_prf(krb5_context context,
     return ret;
 }
 
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_c_random_make_octets(krb5_context context, krb5_data * data)
+{
+    return krb5_generate_random_keyblock(context, data->length, data->data);
+}
+
 /**
  * MIT compat glue
  *
@@ -390,6 +396,40 @@ krb5_cc_copy_creds(krb5_context context,
 		   krb5_ccache to)
 {
     return krb5_cc_copy_cache(context, from, to);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_getsendsubkey(krb5_context context, krb5_auth_context auth_context,
+                            krb5_keyblock **keyblock)
+{
+    return krb5_auth_con_getlocalsubkey(context, auth_context, keyblock);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_getrecvsubkey(krb5_context context, krb5_auth_context auth_context,
+                            krb5_keyblock **keyblock)
+{
+    return krb5_auth_con_getremotesubkey(context, auth_context, keyblock);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_setsendsubkey(krb5_context context, krb5_auth_context auth_context,
+                            krb5_keyblock *keyblock)
+{
+    return krb5_auth_con_setlocalsubkey(context, auth_context, keyblock);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_auth_con_setrecvsubkey(krb5_context context, krb5_auth_context auth_context,
+                            krb5_keyblock *keyblock)
+{
+    return krb5_auth_con_setremotesubkey(context, auth_context, keyblock);
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_free_default_realm(krb5_context context, krb5_realm realm)
+{
+    return krb5_xfree(realm);
 }
 
 #endif /* HEIMDAL_SMALLER */

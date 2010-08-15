@@ -98,7 +98,7 @@ rk_dns_type_to_string(int type)
     return NULL;
 }
 
-#if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
+#if ((defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)) || defined(HAVE_WINDNS)
 
 static void
 dns_free_rr(struct rk_resource_record *rr)
@@ -123,6 +123,8 @@ rk_dns_free_data(struct rk_dns_reply *r)
     }
     free (r);
 }
+
+#ifndef HAVE_WINDNS
 
 static int
 parse_record(const unsigned char *data, const unsigned char *end_data,
@@ -605,6 +607,8 @@ rk_dns_lookup(const char *domain, const char *type_name)
     return dns_lookup_int(domain, rk_ns_c_in, type);
 }
 
+#endif	/* !HAVE_WINDNS */
+
 static int
 compare_srv(const void *a, const void *b)
 {
@@ -707,6 +711,218 @@ rk_dns_srv_order(struct rk_dns_reply *r)
     free(srvs);
     return;
 }
+
+#ifdef HAVE_WINDNS
+
+#include <WinDNS.h>
+
+static struct rk_resource_record *
+parse_dns_record(PDNS_RECORD pRec)
+{
+    struct rk_resource_record * rr;
+
+    if (pRec == NULL)
+	return NULL;
+
+    rr = calloc(1, sizeof(*rr));
+
+    rr->domain = strdup(pRec->pName);
+    rr->type = pRec->wType;
+    rr->class = 0;
+    rr->ttl = pRec->dwTtl;
+    rr->size = 0;
+
+    switch (rr->type) {
+    case rk_ns_t_ns:
+    case rk_ns_t_cname:
+    case rk_ns_t_ptr:
+	rr->u.txt = strdup(pRec->Data.NS.pNameHost);
+	if(rr->u.txt == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+	break;
+
+    case rk_ns_t_mx:
+    case rk_ns_t_afsdb:{
+	size_t hostlen = strnlen(pRec->Data.MX.pNameExchange, DNS_MAX_NAME_LENGTH);
+
+	rr->u.mx = (struct mx_record *)malloc(sizeof(struct mx_record) +
+					      hostlen);
+	if (rr->u.mx == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	strcpy_s(rr->u.mx->domain, hostlen + 1, pRec->Data.MX.pNameExchange);
+	rr->u.mx->preference = pRec->Data.MX.wPreference;
+	break;
+    }
+
+    case rk_ns_t_srv:{
+	size_t hostlen = strnlen(pRec->Data.SRV.pNameTarget, DNS_MAX_NAME_LENGTH);
+
+	rr->u.srv =
+	    (struct srv_record*)malloc(sizeof(struct srv_record) +
+				       hostlen);
+	if(rr->u.srv == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	rr->u.srv->priority = pRec->Data.SRV.wPriority;
+	rr->u.srv->weight = pRec->Data.SRV.wWeight;
+	rr->u.srv->port = pRec->Data.SRV.wPort;
+	strcpy_s(rr->u.srv->target, hostlen + 1, pRec->Data.SRV.pNameTarget);
+
+	break;
+    }
+
+    case rk_ns_t_txt:{
+	size_t len;
+
+	if (pRec->Data.TXT.dwStringCount == 0) {
+	    rr->u.txt = strdup("");
+	    break;
+	}
+
+	len = strnlen(pRec->Data.TXT.pStringArray[0], DNS_MAX_TEXT_STRING_LENGTH);
+
+	rr->u.txt = (char *)malloc(len + 1);
+	strcpy_s(rr->u.txt, len + 1, pRec->Data.TXT.pStringArray[0]);
+
+	break;
+    }
+
+    case rk_ns_t_key : {
+	size_t key_len;
+
+	if (pRec->wDataLength < 4) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	key_len = pRec->wDataLength - 4;
+	rr->u.key = malloc (sizeof(*rr->u.key) + key_len - 1);
+	if (rr->u.key == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	rr->u.key->flags     = pRec->Data.KEY.wFlags;
+	rr->u.key->protocol  = pRec->Data.KEY.chProtocol;
+	rr->u.key->algorithm = pRec->Data.KEY.chAlgorithm;
+	rr->u.key->key_len   = key_len;
+	memcpy_s (rr->u.key->key_data, key_len,
+		  pRec->Data.KEY.Key, key_len);
+	break;
+    }
+
+    case rk_ns_t_sig : {
+	size_t sig_len, hostlen;
+
+	if(pRec->wDataLength <= 18) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	sig_len = pRec->wDataLength;
+
+	hostlen = strnlen(pRec->Data.SIG.pNameSigner, DNS_MAX_NAME_LENGTH);
+
+	rr->u.sig = malloc(sizeof(*rr->u.sig)
+			      + hostlen + sig_len);
+	if (rr->u.sig == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+	rr->u.sig->type           = pRec->Data.SIG.wTypeCovered;
+	rr->u.sig->algorithm      = pRec->Data.SIG.chAlgorithm;
+	rr->u.sig->labels         = pRec->Data.SIG.chLabelCount;
+	rr->u.sig->orig_ttl       = pRec->Data.SIG.dwOriginalTtl;
+	rr->u.sig->sig_expiration = pRec->Data.SIG.dwExpiration;
+	rr->u.sig->sig_inception  = pRec->Data.SIG.dwTimeSigned;
+	rr->u.sig->key_tag        = pRec->Data.SIG.wKeyTag;
+	rr->u.sig->sig_len        = sig_len;
+	memcpy_s (rr->u.sig->sig_data, sig_len,
+		  pRec->Data.SIG.Signature, sig_len);
+	rr->u.sig->signer         = &rr->u.sig->sig_data[sig_len];
+	strcpy_s(rr->u.sig->signer, hostlen + 1, pRec->Data.SIG.pNameSigner);
+	break;
+    }
+
+#ifdef DNS_TYPE_DS
+    case rk_ns_t_ds: {
+	rr->u.ds = malloc (sizeof(*rr->u.ds) + pRec->Data.DS.wDigestLength - 1);
+	if (rr->u.ds == NULL) {
+	    dns_free_rr(rr);
+	    return NULL;
+	}
+
+	rr->u.ds->key_tag     = pRec->Data.DS.wKeyTag;
+	rr->u.ds->algorithm   = pRec->Data.DS.chAlgorithm;
+	rr->u.ds->digest_type = pRec->Data.DS.chDigestType;
+	rr->u.ds->digest_len  = pRec->Data.DS.wDigestLength;
+	memcpy_s (rr->u.ds->digest_data, pRec->Data.DS.wDigestLength,
+		  pRec->Data.DS.Digest, pRec->Data.DS.wDigestLength);
+	break;
+    }
+#endif
+
+    default:
+	dns_free_rr(rr);
+	return NULL;
+    }
+
+    rr->next = parse_dns_record(pRec->pNext);
+    return rr;
+}
+
+ROKEN_LIB_FUNCTION struct rk_dns_reply * ROKEN_LIB_CALL
+rk_dns_lookup(const char *domain, const char *type_name)
+{
+    DNS_STATUS status;
+    int type;
+    PDNS_RECORD pRec = NULL;
+    struct rk_dns_reply * r = NULL;
+
+    __try {
+
+	type = rk_dns_string_to_type(type_name);
+	if(type == -1) {
+	    if(_resolve_debug)
+		fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n",
+			type_name);
+	    return NULL;
+	}
+
+	status = DnsQuery_UTF8(domain, type, DNS_QUERY_STANDARD, NULL,
+			       &pRec, NULL);
+	if (status != ERROR_SUCCESS)
+	    return NULL;
+
+	r = calloc(1, sizeof(*r));
+	r->q.domain = strdup(domain);
+	r->q.type = type;
+	r->q.class = 0;
+
+	r->head = parse_dns_record(pRec);
+
+	if (r->head == NULL) {
+	    rk_dns_free_data(r);
+	    return NULL;
+	} else {
+	    return r;
+	}
+
+    } __finally {
+
+	if (pRec)
+	    DnsRecordListFree(pRec, DnsFreeRecordList);
+
+    }
+}
+#endif	/* HAVE_WINDNS */
 
 #else /* NOT defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
 

@@ -1007,7 +1007,8 @@ static void fix_labels1(struct memhead *members, const char *prefix)
     if(members == NULL)
 	return;
     ASN1_TAILQ_FOREACH(m, members, members) {
-	asprintf(&m->label, "%s_%s", prefix, m->gen_name);
+	if (asprintf(&m->label, "%s_%s", prefix, m->gen_name) < 0)
+	    errx(1, "malloc");
 	if (m->label == NULL)
 	    errx(1, "malloc");
 	if(m->type != NULL)
@@ -1024,9 +1025,8 @@ static void fix_labels2(Type *t, const char *prefix)
 static void
 fix_labels(Symbol *s)
 {
-    char *p;
-    asprintf(&p, "choice_%s", s->gen_name);
-    if (p == NULL)
+    char *p = NULL;
+    if (asprintf(&p, "choice_%s", s->gen_name) < 0 || p == NULL)
 	errx(1, "malloc");
     fix_labels2(s->type, p);
     free(p);

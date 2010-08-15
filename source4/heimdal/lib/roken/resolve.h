@@ -153,7 +153,7 @@ struct rk_sig_record {
     unsigned sig_inception;
     unsigned key_tag;
     char     *signer;
-    unsigned sig_len;
+    size_t   sig_len;
     char     sig_data[1];	/* also includes signer */
 };
 
@@ -176,7 +176,7 @@ struct rk_ds_record {
     unsigned key_tag;
     unsigned algorithm;
     unsigned digest_type;
-    unsigned digest_len;
+    size_t digest_len;
     u_char digest_data[1];
 };
 

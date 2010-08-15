@@ -37,9 +37,11 @@
 
 #if defined(HAVE_GDBM_NDBM_H)
 #include <gdbm/ndbm.h>
+#define WRITE_SUPPORT 1
 #elif defined(HAVE_NDBM_H)
 #include <ndbm.h>
 #elif defined(HAVE_DBM_H)
+#define WRITE_SUPPORT 1
 #include <dbm.h>
 #endif
 
@@ -243,6 +245,7 @@ static krb5_error_code
 NDBM__put(krb5_context context, HDB *db, int replace,
 	krb5_data key, krb5_data value)
 {
+#ifdef WRITE_SUPPORT
     struct ndbm_db *d = (struct ndbm_db *)db->hdb_db;
     datum k, v;
     int code;
@@ -262,6 +265,9 @@ NDBM__put(krb5_context context, HDB *db, int replace,
     if (code < 0)
 	return code;
     return 0;
+#else
+    return HDB_ERR_NO_WRITE_SUPPORT;
+#endif
 }
 
 static krb5_error_code

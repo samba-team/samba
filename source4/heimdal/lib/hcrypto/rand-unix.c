@@ -47,7 +47,7 @@
  */
 
 int
-_hc_unix_device_fd(int flags, char **fn)
+_hc_unix_device_fd(int flags, const char **fn)
 {
     static const char *rnd_devices[] = {
 	"/dev/urandom",

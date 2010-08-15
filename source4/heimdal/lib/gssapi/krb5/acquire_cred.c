@@ -288,7 +288,7 @@ end:
     return (ret);
 }
 
-OM_uint32 _gsskrb5_acquire_cred
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_acquire_cred
 (OM_uint32 * minor_status,
  const gss_name_t desired_name,
  OM_uint32 time_req,

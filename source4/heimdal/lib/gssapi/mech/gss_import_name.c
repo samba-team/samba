@@ -163,7 +163,7 @@ _gss_import_export_name(OM_uint32 *minor_status,
  * @ingroup gssapi
  */
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_import_name(OM_uint32 *minor_status,
     const gss_buffer_t input_name_buffer,
     const gss_OID input_name_type,

@@ -52,7 +52,7 @@ struct hdb_cursor {
  * HDB:[HDBFORMAT:database-specific-data[:mkey=mkey-file]]
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 {
     struct hdb_data *d;
@@ -99,7 +99,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 hdb_close(krb5_context context, krb5_keytab id)
 {
     struct hdb_data *d = id->data;
@@ -110,7 +110,7 @@ hdb_close(krb5_context context, krb5_keytab id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 hdb_get_name(krb5_context context,
 	     krb5_keytab id,
 	     char *name,
@@ -169,7 +169,7 @@ find_db (krb5_context context,
  * it in `entry'.  return 0 or an error code
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 hdb_get_entry(krb5_context context,
 	      krb5_keytab id,
 	      krb5_const_principal principal,
@@ -256,7 +256,7 @@ hdb_get_entry(krb5_context context,
  * it in `entry'.  return 0 or an error code
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 hdb_start_seq_get(krb5_context context,
 		  krb5_keytab id,
 		  krb5_kt_cursor *cursor)
@@ -309,7 +309,7 @@ hdb_start_seq_get(krb5_context context,
     return ret;
 }
 
-static int
+static int KRB5_CALLCONV
 hdb_next_entry(krb5_context context,
 	       krb5_keytab id,
 	       krb5_keytab_entry *entry,
@@ -391,7 +391,7 @@ hdb_next_entry(krb5_context context,
 }
 
 
-static int
+static int KRB5_CALLCONV
 hdb_end_seq_get(krb5_context context,
 		krb5_keytab id,
 		krb5_kt_cursor *cursor)

@@ -46,6 +46,10 @@
 #define O_BINARY 0
 #endif
 
+#ifdef _WIN32
+#include<shlobj.h>
+#endif
+
 /**
  * @page page_rand RAND - random number
  *
@@ -342,7 +346,7 @@ RAND_write_file(const char *filename)
 const char *
 RAND_file_name(char *filename, size_t size)
 {
-    char *e = NULL;
+    const char *e = NULL;
     int pathp = 0, ret;
 
     if (!issuid()) {
@@ -352,6 +356,8 @@ RAND_file_name(char *filename, size_t size)
 	if (e)
 	    pathp = 1;
     }
+
+#ifndef _WIN32
     /*
      * Here we really want to call getpwuid(getuid()) but this will
      * cause recursive lookups if the nss library uses
@@ -359,7 +365,6 @@ RAND_file_name(char *filename, size_t size)
      *
      * So at least return the unix /dev/random if we have one
      */
-#ifndef _WIN32
     if (e == NULL) {
 	int fd;
 
@@ -367,7 +372,22 @@ RAND_file_name(char *filename, size_t size)
 	if (fd >= 0)
 	    close(fd);
     }
+#else  /* Win32 */
+
+    if (e == NULL) {
+	char profile[MAX_PATH];
+
+	if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL,
+			    SHGFP_TYPE_CURRENT, profile) == S_OK) {
+	    ret = snprintf(filename, size, "%s\\.rnd", profile);
+
+	    if (ret > 0 && ret < size)
+		return filename;
+	}
+    }
+
 #endif
+
     if (e == NULL)
 	return NULL;
 

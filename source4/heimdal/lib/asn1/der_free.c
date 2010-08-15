@@ -79,15 +79,13 @@ der_free_utf8string (heim_utf8_string *str)
 void
 der_free_printable_string (heim_printable_string *str)
 {
-    free(*str);
-    *str = NULL;
+    der_free_octet_string(str);
 }
 
 void
 der_free_ia5_string (heim_ia5_string *str)
 {
-    free(*str);
-    *str = NULL;
+    der_free_octet_string(str);
 }
 
 void

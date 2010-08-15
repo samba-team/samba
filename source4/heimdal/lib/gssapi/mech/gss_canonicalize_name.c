@@ -52,7 +52,7 @@
  *  @ingroup gssapi
  */
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_canonicalize_name(OM_uint32 *minor_status,
     const gss_name_t input_name,
     const gss_OID mech_type,

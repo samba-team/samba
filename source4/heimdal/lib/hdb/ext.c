@@ -316,7 +316,7 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
 	str = pw.data;
 	if (str[pw.length - 1] != '\0') {
-	    krb5_set_error_message(context, EINVAL, "password malformated");
+	    krb5_set_error_message(context, EINVAL, "malformed password");
 	    return EINVAL;
 	}
 
@@ -332,7 +332,8 @@ hdb_entry_get_password(krb5_context context, HDB *db,
 
     ret = krb5_unparse_name(context, entry->principal, &str);
     if (ret == 0) {
-	krb5_set_error_message(context, ENOENT, "no password attributefor %s", str);
+	krb5_set_error_message(context, ENOENT,
+			       "no password attribute for %s", str);
 	free(str);
     } else
 	krb5_clear_error_message(context);

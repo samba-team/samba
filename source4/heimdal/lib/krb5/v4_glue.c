@@ -120,7 +120,7 @@ get_krb4_cc_name(const char *tkfile, char **cc)
 	}
 #ifdef HAVE_GETUID
 	if(*cc == NULL)
-	    if (asprintf(cc, "%s%u", TKT_ROOT, (unsigned)getuid()) < 0)
+	    if (asprintf(cc, "%s%u", TKT_ROOT, (unsigned)getuid()) < 0 || *cc == NULL)
 		return errno;
 #elif defined(KRB5_USE_PATH_TOKENS)
 	if(*cc == NULL)

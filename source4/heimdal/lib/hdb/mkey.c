@@ -146,7 +146,7 @@ read_master_keytab(krb5_context context, const char *filename,
 /* read a MIT master keyfile */
 static krb5_error_code
 read_master_mit(krb5_context context, const char *filename,
-		hdb_master_key *mkey)
+		int byteorder, hdb_master_key *mkey)
 {
     int fd;
     krb5_error_code ret;
@@ -166,20 +166,16 @@ read_master_mit(krb5_context context, const char *filename,
 	close(fd);
 	return errno;
     }
-    krb5_storage_set_flags(sp, KRB5_STORAGE_HOST_BYTEORDER);
+    krb5_storage_set_flags(sp, byteorder);
     /* could possibly use ret_keyblock here, but do it with more
        checks for now */
     {
 	ret = krb5_ret_int16(sp, &enctype);
 	if (ret)
 	    goto out;
-	if((htons(enctype) & 0xff00) == 0x3000) {
-	    ret = HEIM_ERR_BAD_MKEY;
-	    krb5_set_error_message(context, ret, "unknown keytype in %s: "
-				   "%#x, expected %#x",
-				   filename, htons(enctype), 0x3000);
-	    goto out;
-	}
+	ret = krb5_enctype_valid(context, enctype);
+	if (ret)
+	   goto out;
 	key.keytype = enctype;
 	ret = krb5_ret_data(sp, &key.keyvalue);
 	if(ret)
@@ -330,7 +326,14 @@ hdb_read_master_key(krb5_context context, const char *filename,
     } else if(buf[0] == 5 && buf[1] >= 1 && buf[1] <= 2) {
 	ret = read_master_keytab(context, filename, mkey);
     } else {
-	ret = read_master_mit(context, filename, mkey);
+      /*
+       * Check both LittleEndian and BigEndian since they key file
+       * might be moved from a machine with diffrent byte order, or
+       * its running on MacOS X that always uses BE master keys.
+       */
+      ret = read_master_mit(context, filename, KRB5_STORAGE_BYTEORDER_LE, mkey);
+      if (ret)
+          ret = read_master_mit(context, filename, KRB5_STORAGE_BYTEORDER_BE, mkey);
     }
     return ret;
 }

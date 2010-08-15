@@ -182,11 +182,6 @@ _gsskrb5_verify_8003_checksum(
     int DlgOpt;
     static unsigned char zeros[16];
 
-    if (cksum == NULL) {
-	*minor_status = 0;
-	return GSS_S_BAD_BINDINGS;
-    }
-
     /* XXX should handle checksums > 24 bytes */
     if(cksum->cksumtype != CKSUMTYPE_GSSAPI || cksum->checksum.length < 24) {
 	*minor_status = 0;

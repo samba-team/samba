@@ -38,8 +38,15 @@
 #ifdef HAVE_WINSOCK
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-inet_pton(int af, const char *src, void *dst)
+inet_pton(int af, const char *csrc, void *dst)
 {
+    char * src;
+
+    if (csrc == NULL || (src = strdup(csrc)) == NULL) {
+	_set_errno( ENOMEM );
+	return 0;
+    }
+
     switch (af) {
     case AF_INET:
 	{
@@ -49,6 +56,8 @@ inet_pton(int af, const char *src, void *dst)
 
 	    si4.sin_family = AF_INET;
 	    r = WSAStringToAddress(src, AF_INET, NULL, (LPSOCKADDR) &si4, &s);
+	    free(src);
+	    src = NULL;
 
 	    if (r == 0) {
 		memcpy(dst, &si4.sin_addr, sizeof(si4.sin_addr));
@@ -65,6 +74,8 @@ inet_pton(int af, const char *src, void *dst)
 
 	    si6.sin6_family = AF_INET6;
 	    r = WSAStringToAddress(src, AF_INET6, NULL, (LPSOCKADDR) &si6, &s);
+	    free(src);
+	    src = NULL;
 
 	    if (r == 0) {
 		memcpy(dst, &si6.sin6_addr, sizeof(si6.sin6_addr));

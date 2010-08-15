@@ -50,7 +50,7 @@ static HEIMDAL_MUTEX mkt_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static struct mkt_data *mkt_head;
 
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_resolve(krb5_context context, const char *name, krb5_keytab id)
 {
     struct mkt_data *d;
@@ -95,7 +95,7 @@ mkt_resolve(krb5_context context, const char *name, krb5_keytab id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_close(krb5_context context, krb5_keytab id)
 {
     struct mkt_data *d = id->data, **dp;
@@ -126,7 +126,7 @@ mkt_close(krb5_context context, krb5_keytab id)
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_get_name(krb5_context context,
 	     krb5_keytab id,
 	     char *name,
@@ -137,7 +137,7 @@ mkt_get_name(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_start_seq_get(krb5_context context,
 		  krb5_keytab id,
 		  krb5_kt_cursor *c)
@@ -147,7 +147,7 @@ mkt_start_seq_get(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_next_entry(krb5_context context,
 	       krb5_keytab id,
 	       krb5_keytab_entry *entry,
@@ -159,7 +159,7 @@ mkt_next_entry(krb5_context context,
     return krb5_kt_copy_entry_contents(context, &d->entries[c->fd++], entry);
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_end_seq_get(krb5_context context,
 		krb5_keytab id,
 		krb5_kt_cursor *cursor)
@@ -167,7 +167,7 @@ mkt_end_seq_get(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_add_entry(krb5_context context,
 	      krb5_keytab id,
 	      krb5_keytab_entry *entry)
@@ -185,7 +185,7 @@ mkt_add_entry(krb5_context context,
 				       &d->entries[d->num_entries++]);
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 mkt_remove_entry(krb5_context context,
 		 krb5_keytab id,
 		 krb5_keytab_entry *entry)

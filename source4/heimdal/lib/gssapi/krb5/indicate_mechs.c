@@ -33,7 +33,7 @@
 
 #include "gsskrb5_locl.h"
 
-OM_uint32 _gsskrb5_indicate_mechs
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_indicate_mechs
            (OM_uint32 * minor_status,
             gss_OID_set * mech_set
            )

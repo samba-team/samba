@@ -87,7 +87,7 @@ krb5_free_data(krb5_context context,
 /**
  * Allocate data of and krb5_data.
  *
- * @param p krb5_data to free.
+ * @param p krb5_data to allocate.
  * @param len size to allocate.
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et

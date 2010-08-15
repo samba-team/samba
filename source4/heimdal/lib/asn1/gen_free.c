@@ -93,10 +93,9 @@ free_type (const char *name, const Type *t, int preserve)
 
 	    if(t->type == TChoice)
 		fprintf(codefile, "case %s:\n", m->label);
-	    asprintf (&s, "%s(%s)->%s%s",
-		      m->optional ? "" : "&", name,
-		      t->type == TChoice ? "u." : "", m->gen_name);
-	    if (s == NULL)
+	    if (asprintf (&s, "%s(%s)->%s%s",
+			  m->optional ? "" : "&", name,
+			  t->type == TChoice ? "u." : "", m->gen_name) < 0 || s == NULL)
 		errx(1, "malloc");
 	    if(m->optional)
 		fprintf(codefile, "if(%s) {\n", s);
@@ -128,8 +127,7 @@ free_type (const char *name, const Type *t, int preserve)
 	char *n;
 
 	fprintf (codefile, "while((%s)->len){\n", name);
-	asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
-	if (n == NULL)
+	if (asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name) < 0 || n == NULL)
 	    errx(1, "malloc");
 	free_type(n, t->subtype, FALSE);
 	fprintf(codefile,
@@ -182,7 +180,7 @@ generate_type_free (const Symbol *s)
 {
     int preserve = preserve_type(s->name) ? TRUE : FALSE;
    
-    fprintf (codefile, "void\n"
+    fprintf (codefile, "void ASN1CALL\n"
 	     "free_%s(%s *data)\n"
 	     "{\n",
 	     s->gen_name, s->gen_name);

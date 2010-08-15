@@ -183,16 +183,16 @@ send_and_recv_http(krb5_socket_t fd,
 		   const krb5_data *req,
 		   krb5_data *rep)
 {
-    char *request;
+    char *request = NULL;
     char *str;
     int ret;
     int len = base64_encode(req->data, req->length, &str);
 
     if(len < 0)
 	return -1;
-    asprintf(&request, "GET %s%s HTTP/1.0\r\n\r\n", prefix, str);
+    ret = asprintf(&request, "GET %s%s HTTP/1.0\r\n\r\n", prefix, str);
     free(str);
-    if (request == NULL)
+    if (ret < 0 || request == NULL)
 	return -1;
     ret = net_write (fd, request, strlen(request));
     free (request);
@@ -261,7 +261,7 @@ send_via_proxy (krb5_context context,
 {
     char *proxy2 = strdup(context->http_proxy);
     char *proxy  = proxy2;
-    char *prefix;
+    char *prefix = NULL;
     char *colon;
     struct addrinfo hints;
     struct addrinfo *ai, *a;
@@ -304,8 +304,8 @@ send_via_proxy (krb5_context context,
     }
     freeaddrinfo (ai);
 
-    asprintf(&prefix, "http://%s/", hi->hostname);
-    if(prefix == NULL) {
+    ret = asprintf(&prefix, "http://%s/", hi->hostname);
+    if(ret < 0 || prefix == NULL) {
 	close(s);
 	return 1;
     }
@@ -648,7 +648,7 @@ krb5_sendto_context(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_CALLCONV
 _krb5_kdc_retry(krb5_context context, krb5_sendto_ctx ctx, void *data,
 		const krb5_data *reply, int *action)
 {

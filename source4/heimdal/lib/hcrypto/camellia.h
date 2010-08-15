@@ -66,7 +66,7 @@ void CAMELLIA_decrypt(const unsigned char *, unsigned char *,
 		      const CAMELLIA_KEY *);
 
 void CAMELLIA_cbc_encrypt(const unsigned char *, unsigned char *,
-			  const unsigned long, const CAMELLIA_KEY *,
+			  unsigned long, const CAMELLIA_KEY *,
 			  unsigned char *, int);
 
 #endif /* HEIM_CAMELLIA_H */

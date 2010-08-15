@@ -314,7 +314,7 @@ _krb5_get_krbtgt(krb5_context context,
 }
 
 /* DCE compatible decrypt proc */
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 decrypt_tkt_with_subkey (krb5_context context,
 			 krb5_keyblock *key,
 			 krb5_key_usage usage,
@@ -939,9 +939,9 @@ get_cred_kdc_referral(krb5_context context,
 	    ret = EINVAL;
 
 	if (ret) {
-	    ret = get_cred_kdc_address (context, ccache, flags, NULL,
-					&referral, &tgt, impersonate_principal,
-					second_ticket, &ticket);
+	    ret = get_cred_kdc_address(context, ccache, flags, NULL,
+				       &referral, &tgt, impersonate_principal,
+				       second_ticket, &ticket);
 	    if (ret)
 		goto out;
 	}
@@ -956,8 +956,8 @@ get_cred_kdc_referral(krb5_context context,
 	    krb5_set_error_message(context, KRB5KRB_AP_ERR_NOT_US,
 				   N_("Got back an non krbtgt "
 				      "ticket referrals", ""));
-	    krb5_free_cred_contents(context, &ticket);
-	    return KRB5KRB_AP_ERR_NOT_US;
+	    ret = KRB5KRB_AP_ERR_NOT_US;
+	    goto out;
 	}
 
 	referral_realm = ticket.server->name.name_string.val[1];
@@ -979,8 +979,8 @@ get_cred_kdc_referral(krb5_context context,
 					  "loops back to realm %s", ""),
 				       tgt.server->realm,
 				       referral_realm);
-		krb5_free_cred_contents(context, &ticket);
-		return KRB5_GET_IN_TKT_LOOP;
+		ret = KRB5_GET_IN_TKT_LOOP;
+                goto out;
 	    }
 	    tickets++;
 	}	
@@ -996,10 +996,8 @@ get_cred_kdc_referral(krb5_context context,
 	}
 
 	ret = add_cred(context, &ticket, ret_tgts);
-	if (ret) {
-	    krb5_free_cred_contents(context, &ticket);
+	if (ret)
 	    goto out;
-	}
 
 	/* try realm in the referral */
 	ret = krb5_principal_set_realm(context,
@@ -1017,6 +1015,7 @@ get_cred_kdc_referral(krb5_context context,
 out:
     krb5_free_principal(context, referral.server);
     krb5_free_cred_contents(context, &tgt);
+    krb5_free_cred_contents(context, &ticket);
     return ret;
 }
 

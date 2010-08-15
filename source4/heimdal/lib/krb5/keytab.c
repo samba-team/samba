@@ -73,11 +73,6 @@
  *   store the keytab in a AFS keyfile (usually /usr/afs/etc/KeyFile ),
  *   the type's name is AFSKEYFILE. The residual part is a filename.
  *
- * - krb4
- *   the keytab is a Kerberos 4 srvtab that is on-the-fly converted to
- *   a keytab. The type's name is krb4 The residual part is a
- *   filename.
- *
  * - memory
  *   The keytab is stored in a memory segment. This allows sensitive
  *   and/or temporary data not to be stored on disk. The type's name
@@ -113,7 +108,7 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_start_seq_get");
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
-	krb5_unparse_name_short(context, entry.principal, &principal);
+	krb5_unparse_name(context, entry.principal, &principal);
 	printf("principal: %s\n", principal);
 	free(principal);
 	krb5_kt_free_entry(context, &entry);

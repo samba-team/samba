@@ -838,7 +838,7 @@ repl_mutual
  * gss_init_sec_context
  */
 
-OM_uint32 _gsskrb5_init_sec_context
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_init_sec_context
 (OM_uint32 * minor_status,
  const gss_cred_id_t cred_handle,
  gss_ctx_id_t * context_handle,

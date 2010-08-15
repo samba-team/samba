@@ -46,7 +46,7 @@ static int
 doit(const char *fn)
 {
     char buf[2048];
-    char *fnout;
+    char *fnout = NULL;
     const char *bname;
     unsigned long line = 0;
     FILE *f, *fout;
@@ -62,8 +62,7 @@ doit(const char *fn)
     else
 	bname = fn;
 
-    asprintf(&fnout, "%s.out", bname);
-    if (fnout == NULL)
+    if (asprintf(&fnout, "%s.out", bname) < 0 || fnout == NULL)
 	errx(1, "malloc");
 
     fout = fopen(fnout, "w");

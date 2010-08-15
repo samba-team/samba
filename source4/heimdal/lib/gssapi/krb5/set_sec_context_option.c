@@ -98,7 +98,7 @@ set_int32(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32
+OM_uint32 GSSAPI_CALLCONV
 _gsskrb5_set_sec_context_option
            (OM_uint32 *minor_status,
             gss_ctx_id_t *context_handle,

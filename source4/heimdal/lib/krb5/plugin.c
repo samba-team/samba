@@ -201,8 +201,19 @@ load_plugins(krb5_context context)
 	dirs = rk_UNCONST(sysplugin_dirs);
 
     for (di = dirs; *di != NULL; di++) {
+#ifdef KRB5_USE_PATH_TOKENS
+	{
+	    char * dir = NULL;
 
+	    if (_krb5_expand_path_tokens(context, *di, &dir))
+		continue;
+	    d = opendir(dir);
+
+	    free(dir);
+	}
+#else
 	d = opendir(*di);
+#endif
 	if (d == NULL)
 	    continue;
 	rk_cloexec_dir(d);
@@ -215,17 +226,18 @@ load_plugins(krb5_context context)
 		continue;
 
 	    path = NULL;
+	    ret = 0;
 #ifdef __APPLE__
 	    { /* support loading bundles on MacOS */
 		size_t len = strlen(n);
 		if (len > 7 && strcmp(&n[len - 7],  ".bundle") == 0)
-		    asprintf(&path, "%s/%s/Contents/MacOS/%.*s", *di, n, (int)(len - 7), n);
+		    ret = asprintf(&path, "%s/%s/Contents/MacOS/%.*s", *di, n, (int)(len - 7), n);
 	    }
 #endif
-	    if (path == NULL)
-		asprintf(&path, "%s/%s", *di, n);
+	    if (ret < 0 || path == NULL)
+		ret = asprintf(&path, "%s/%s", *di, n);
 
-	    if (path == NULL) {
+	    if (ret < 0 || path == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "malloc: out of memory");
 		return ret;

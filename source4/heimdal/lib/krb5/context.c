@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2010 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -215,6 +215,14 @@ init_context_from_config_file(krb5_context context)
 	krb5_config_free_strings(s);
     }
 
+    tmp = krb5_config_get_string(context, NULL, "libdefaults",
+				 "check-rd-req-server", NULL);
+    if (tmp == NULL && !issuid())
+	tmp = getenv("KRB5_CHECK_RD_REQ_SERVER");
+    if(tmp) {
+	if (strcasecmp(tmp, "ignore") == 0)
+	    context->flags |= KRB5_CTX_F_RD_REQ_IGNORE;
+    }
 
     return 0;
 }
@@ -239,6 +247,7 @@ cc_ops_register(krb5_context context)
 #endif
     krb5_cc_register(context, &krb5_kcm_ops, TRUE);
 #endif
+    _krb5_load_ccache_plugins(context);
     return 0;
 }
 
@@ -379,6 +388,13 @@ out:
 }
 
 #ifndef HEIMDAL_SMALLER
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_permitted_enctypes(krb5_context context,
+			    krb5_enctype **etypes)
+{
+    return krb5_get_default_in_tkt_etypes(context, etypes);
+}
 
 /*
  *

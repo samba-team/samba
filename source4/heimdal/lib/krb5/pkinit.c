@@ -1416,10 +1416,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	}
 
 
-	dh_gen_keylen = DH_size(ctx->u.dh);
-	size = BN_num_bytes(ctx->u.dh->p);
-	if (size < dh_gen_keylen)
-	    size = dh_gen_keylen;
+	size = DH_size(ctx->u.dh);
 
 	dh_gen_key = malloc(size);
 	if (dh_gen_key == NULL) {
@@ -1427,10 +1424,8 @@ pk_rd_pa_reply_dh(krb5_context context,
 	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	    goto out;
 	}
-	memset(dh_gen_key, 0, size - dh_gen_keylen);
 	
-	dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
-				       kdc_dh_pubkey, ctx->u.dh);
+	dh_gen_keylen = DH_compute_key(dh_gen_key, kdc_dh_pubkey, ctx->u.dh);
 	if (dh_gen_keylen == -1) {
 	    ret = KRB5KRB_ERR_GENERIC;
 	    dh_gen_keylen = 0;
@@ -1438,6 +1433,12 @@ pk_rd_pa_reply_dh(krb5_context context,
 				   N_("PKINIT: Can't compute Diffie-Hellman key", ""));
 	    goto out;
 	}
+	if (dh_gen_keylen < size) {
+	    size -= dh_gen_keylen;
+	    memmove(dh_gen_key + size, dh_gen_key, dh_gen_keylen);
+	    memset(dh_gen_key, 0, size);
+	}
+
     } else {
 #ifdef HAVE_OPENSSL
 	const EC_GROUP *group;

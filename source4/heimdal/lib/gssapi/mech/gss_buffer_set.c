@@ -32,7 +32,7 @@
 
 #include "mech_locl.h"
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_create_empty_buffer_set
 	   (OM_uint32 * minor_status,
 	    gss_buffer_set_t *buffer_set)
@@ -54,7 +54,7 @@ gss_create_empty_buffer_set
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_add_buffer_set_member
 	   (OM_uint32 * minor_status,
 	    const gss_buffer_t member_buffer,
@@ -96,7 +96,7 @@ gss_add_buffer_set_member
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 GSSAPI_LIB_FUNCTION
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_release_buffer_set(OM_uint32 * minor_status,
 		       gss_buffer_set_t *buffer_set)
 {

@@ -3016,7 +3016,7 @@ STATIC mp_result s_embar(mp_int a, mp_int b, mp_int m, mp_int mu, mp_int c)
 {
   mp_digit  *db, *dbt, umu, d;
   mpz_t     temp[3]; 
-  mp_result res;
+  mp_result res = 0;
   int       last = 0;
 
   umu = MP_USED(mu); db = MP_DIGITS(b); dbt = db + MP_USED(b) - 1;

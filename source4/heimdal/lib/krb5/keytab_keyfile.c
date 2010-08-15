@@ -128,7 +128,7 @@ get_cell_and_realm (krb5_context context, struct akf_data *d)
  * init and get filename
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_resolve(krb5_context context, const char *name, krb5_keytab id)
 {
     int ret;
@@ -164,7 +164,7 @@ akf_resolve(krb5_context context, const char *name, krb5_keytab id)
  * cleanup
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_close(krb5_context context, krb5_keytab id)
 {
     struct akf_data *d = id->data;
@@ -179,7 +179,7 @@ akf_close(krb5_context context, krb5_keytab id)
  * Return filename
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_get_name(krb5_context context,
 	     krb5_keytab id,
 	     char *name,
@@ -195,7 +195,7 @@ akf_get_name(krb5_context context,
  * Init
  */
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_start_seq_get(krb5_context context,
 		  krb5_keytab id,
 		  krb5_kt_cursor *c)
@@ -226,7 +226,7 @@ akf_start_seq_get(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_next_entry(krb5_context context,
 	       krb5_keytab id,
 	       krb5_keytab_entry *entry,
@@ -281,7 +281,7 @@ akf_next_entry(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_end_seq_get(krb5_context context,
 		krb5_keytab id,
 		krb5_kt_cursor *cursor)
@@ -291,7 +291,7 @@ akf_end_seq_get(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
+static krb5_error_code KRB5_CALLCONV
 akf_add_entry(krb5_context context,
 	      krb5_keytab id,
 	      krb5_keytab_entry *entry)

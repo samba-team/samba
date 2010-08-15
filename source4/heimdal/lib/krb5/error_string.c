@@ -96,11 +96,17 @@ krb5_vset_error_message (krb5_context context, krb5_error_code ret,
 			 const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)))
 {
+    int r;
 
-    krb5_clear_error_message(context);
     HEIMDAL_MUTEX_lock(context->mutex);
+    if (context->error_string) {
+	free(context->error_string);
+	context->error_string = NULL;
+    }
     context->error_code = ret;
-    vasprintf(&context->error_string, fmt, args);
+    r = vasprintf(&context->error_string, fmt, args);
+    if (r < 0)
+	context->error_string = NULL;
     HEIMDAL_MUTEX_unlock(context->mutex);
 }
 
@@ -144,19 +150,22 @@ krb5_vprepend_error_message(krb5_context context, krb5_error_code ret,
 			    const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)))
 {
-    char *str, *str2;
+    char *str = NULL, *str2 = NULL;
     HEIMDAL_MUTEX_lock(context->mutex);
     if (context->error_code != ret) {
 	HEIMDAL_MUTEX_unlock(context->mutex);
 	return;
     }
-    vasprintf(&str, fmt, args);
+    if (vasprintf(&str, fmt, args) < 0 || str == NULL) {
+	HEIMDAL_MUTEX_unlock(context->mutex);
+	return;
+    }
     if (context->error_string) {
 	int e;
 
 	e = asprintf(&str2, "%s: %s", str, context->error_string);
 	free(context->error_string);
-	if (e < 0)
+	if (e < 0 || str2 == NULL)
 	    context->error_string = NULL;
 	else
 	    context->error_string = str2;
@@ -241,7 +250,7 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
 	    return strdup(msg);
     }
 
-    if (asprintf(&str, "<unknown error: %d>", (int)code) == -1)
+    if (asprintf(&str, "<unknown error: %d>", (int)code) == -1 || str == NULL)
 	return NULL;
 
     return str;

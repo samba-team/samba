@@ -104,7 +104,7 @@ arg_printusage_i18n (struct getargs *args,
 		     const char *usage,
 		     const char *progname,
 		     const char *extra_string,
-		     char *(i18n)(const char *));
+		     char *(*i18n)(const char *));
 
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 free_getarg_strings (getarg_strings *);

@@ -33,15 +33,15 @@
 
 #include "gsskrb5_locl.h"
 
-static gss_OID *name_list[] = {
-    &GSS_C_NT_HOSTBASED_SERVICE,
-    &GSS_C_NT_USER_NAME,
-    &GSS_KRB5_NT_PRINCIPAL_NAME,
-    &GSS_C_NT_EXPORT_NAME,
+static gss_OID name_list[] = {
+    GSS_C_NT_HOSTBASED_SERVICE,
+    GSS_C_NT_USER_NAME,
+    GSS_KRB5_NT_PRINCIPAL_NAME,
+    GSS_C_NT_EXPORT_NAME,
     NULL
 };
 
-OM_uint32 _gsskrb5_inquire_names_for_mech (
+OM_uint32 GSSAPI_CALLCONV _gsskrb5_inquire_names_for_mech (
             OM_uint32 * minor_status,
             const gss_OID mechanism,
             gss_OID_set * name_types
@@ -64,7 +64,7 @@ OM_uint32 _gsskrb5_inquire_names_for_mech (
 
     for (i = 0; name_list[i] != NULL; i++) {
 	ret = gss_add_oid_set_member(minor_status,
-				     *(name_list[i]),
+				     name_list[i],
 				     name_types);
 	if (ret != GSS_S_COMPLETE)
 	    break;
