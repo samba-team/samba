@@ -45,6 +45,19 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 {
 	WERROR err;
 
+	/* Certain LDB modules need to return very special WERROR codes. Proof
+	 * for them here and if they exist skip the rest of the mapping. */
+	if (add_err_string != NULL) {
+		char *endptr;
+		strtol(add_err_string, &endptr, 16);
+		if (endptr != add_err_string) {
+			*errstring = add_err_string;
+			return ldb_err;
+		}
+	}
+
+	/* Otherwise we calculate here a generic, but appropriate WERROR. */
+
 	switch (ldb_err) {
 	case LDB_SUCCESS:
 		err = WERR_OK;
