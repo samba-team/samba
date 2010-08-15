@@ -377,7 +377,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 			status = samdb_set_password(samdb, mem_ctx,
 						    set_password_on_dn, NULL,
 						    &password, NULL, NULL,
-						    false, /* this is not a user password change */
+						    NULL, NULL, /* this is not a user password change */
 						    &reject_reason, &dominfo);
 		}
 

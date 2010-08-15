@@ -501,7 +501,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				  account_dn, domain_dn, 
 				  &new_password,
 				  NULL, NULL,
-				  false, /* This is a password set, not change */
+				  NULL, NULL, /* This is a password set, not change */
 				  NULL, NULL);
 }
 
@@ -550,7 +550,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 				  account_dn, domain_dn, 
 				  &new_password,
 				  NULL, NULL,
-				  false, /* This is a password set, not change */
+				  NULL, NULL, /* This is a password set, not change */
 				  NULL, NULL);
 }
 
@@ -596,7 +596,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 		nt_status = samdb_set_password(sam_ctx, mem_ctx, account_dn,
 					       domain_dn, NULL,
 					       d_lm_pwd_hash, d_nt_pwd_hash,
-					       false, /* this is a password set */
+					       NULL, NULL, /* this is a password set */
 					       NULL, NULL);
 	}
 
