@@ -1408,7 +1408,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 	return 0;
 }
 
-static void setup_new_vc_session(struct messaging_context *msg_ctx)
+static void setup_new_vc_session(struct smbd_server_connection *sconn)
 {
 	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x "
 		"compatible we would close all old resources.\n"));
@@ -1417,12 +1417,18 @@ static void setup_new_vc_session(struct messaging_context *msg_ctx)
 	invalidate_all_vuids();
 #endif
 	if (lp_reset_on_zero_vc()) {
-		char addr[INET6_ADDRSTRLEN];
+		char *addr;
 		struct shutdown_state state;
 
-		state.ip = client_addr(smbd_server_fd(),addr,sizeof(addr));
-		state.msg_ctx = msg_ctx;
+		addr = tsocket_address_inet_addr_string(
+			sconn->remote_address, talloc_tos());
+		if (addr == NULL) {
+			return;
+		}
+		state.ip = addr;
+		state.msg_ctx = sconn->msg_ctx;
 		connections_forall_read(shutdown_other_smbds, &state);
+		TALLOC_FREE(addr);
 	}
 }
 
@@ -1477,7 +1483,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		if (SVAL(req->vwv+4, 0) == 0) {
-			setup_new_vc_session(req->sconn->msg_ctx);
+			setup_new_vc_session(req->sconn);
 		}
 
 		reply_sesssetup_and_X_spnego(req);
@@ -1674,7 +1680,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	if (SVAL(req->vwv+4, 0) == 0) {
-		setup_new_vc_session(req->sconn->msg_ctx);
+		setup_new_vc_session(req->sconn);
 	}
 
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n",
