@@ -1571,7 +1571,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
-		if (drain_socket(smbd_server_fd(), req->unread_bytes) !=
+		if (drain_socket(req->sconn->sock, req->unread_bytes) !=
 				req->unread_bytes) {
 			smb_panic("failed to drain pending bytes");
 		}
@@ -1591,7 +1591,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		show_msg((char *)req->outbuf);
 	}
 
-	if (!srv_send_smb(smbd_server_fd(),
+	if (!srv_send_smb(req->sconn->sock,
 			(char *)req->outbuf,
 			true, req->seqnum+1,
 			IS_CONN_ENCRYPTED(conn)||req->encrypted,
