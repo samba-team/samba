@@ -2261,12 +2261,12 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool from_client = (smbd_server_fd() == fd);
+	bool from_client = (conn->sock == fd);
 
 	if (from_client) {
 		smbd_lock_socket(conn);
 
-		if (!fd_is_readable(smbd_server_fd())) {
+		if (!fd_is_readable(fd)) {
 			DEBUG(10,("the echo listener was faster\n"));
 			smbd_unlock_socket(conn);
 			return;
