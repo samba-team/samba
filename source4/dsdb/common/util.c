@@ -997,7 +997,7 @@ int samdb_msg_add_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
   add a samr_Password element to a message
 */
 int samdb_msg_add_hash(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-		       const char *attr_name, struct samr_Password *hash)
+		       const char *attr_name, const struct samr_Password *hash)
 {
 	struct ldb_val val;
 	val.data = talloc_memdup(mem_ctx, hash->hash, 16);
@@ -2010,8 +2010,8 @@ int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
 NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
 			    const DATA_BLOB *new_password,
-			    struct samr_Password *lmNewHash,
-			    struct samr_Password *ntNewHash,
+			    const struct samr_Password *lmNewHash,
+			    const struct samr_Password *ntNewHash,
 			    const struct samr_Password *lmOldHash,
 			    const struct samr_Password *ntOldHash,
 			    enum samPwdChangeReason *reject_reason,
@@ -2200,8 +2200,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
 				const DATA_BLOB *new_password,
-				struct samr_Password *lmNewHash, 
-				struct samr_Password *ntNewHash,
+				const struct samr_Password *lmNewHash,
+				const struct samr_Password *ntNewHash,
 				const struct samr_Password *lmOldHash,
 				const struct samr_Password *ntOldHash,
 				enum samPwdChangeReason *reject_reason,
