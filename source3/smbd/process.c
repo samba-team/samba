@@ -2757,7 +2757,7 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 		TALLOC_FREE(state);
 		return;
 	}
-	state->read_fde = tevent_add_fd(state->ev, state, smbd_server_fd(),
+	state->read_fde = tevent_add_fd(state->ev, state, sconn->sock,
 					TEVENT_FD_READ, smbd_echo_reader,
 					state);
 	if (state->read_fde == NULL) {
