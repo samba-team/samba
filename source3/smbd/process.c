@@ -367,11 +367,6 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 
 	status = read_smb_length_return_keepalive(fd, lenbuf, timeout, &len);
 	if (!NT_STATUS_IS_OK(status)) {
-		char addr[INET6_ADDRSTRLEN];
-		DEBUG(0, ("read_smb_length_return_keepalive failed for "
-			  "client %s read error = %s.\n",
-			  get_peer_addr(fd, addr, sizeof(addr)),
-			  nt_errstr(status)));
 		return status;
 	}
 
@@ -427,6 +422,11 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 	status = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout,
 					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
+		char addr[INET6_ADDRSTRLEN];
+		DEBUG(0, ("read_smb_length_return_keepalive failed for "
+			  "client %s read error = %s.\n",
+			  get_peer_addr(fd, addr, sizeof(addr)),
+			  nt_errstr(status)));
 		return status;
 	}
 
