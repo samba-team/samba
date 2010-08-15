@@ -32,6 +32,7 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "../libcli/ldap/ldap_ndr.h"
 #include "cldap_server/cldap_server.h"
 #include "lib/tsocket/tsocket.h"
 
@@ -384,7 +385,11 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 {
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
+	const char * const attrs[] = { "unicodePwd", NULL };
+	struct ldb_message **res;
+	struct samr_Password *oldNtHash;
 	NTSTATUS nt_status;
+	int ret;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -400,12 +405,28 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 
 	netlogon_creds_des_decrypt(creds, r->in.new_password);
 
+	/* fetch the old password hashes (the NT hash has to exist) */
+
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "(&(objectClass=user)(objectSid=%s))",
+			   ldap_encode_ndr_dom_sid(mem_ctx, creds->sid));
+	if (ret != 1) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	nt_status = samdb_result_passwords(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   res[0], NULL, &oldNtHash);
+	if (!NT_STATUS_IS_OK(nt_status) || !oldNtHash) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
 					   NULL, /* Don't have plaintext */
 					   NULL, r->in.new_password,
-					   true, /* Password change */
+					   NULL, oldNtHash, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }
@@ -419,8 +440,12 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 {
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
+	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
+	struct ldb_message **res;
+	struct samr_Password *oldLmHash, *oldNtHash;
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
+	int ret;
 
 	struct samr_CryptPassword password_buf;
 
@@ -445,12 +470,28 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
+	/* fetch the old password hashes (at least one of both has to exist) */
+
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "(&(objectClass=user)(objectSid=%s))",
+			   ldap_encode_ndr_dom_sid(mem_ctx, creds->sid));
+	if (ret != 1) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	nt_status = samdb_result_passwords(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   res[0], &oldLmHash, &oldNtHash);
+	if (!NT_STATUS_IS_OK(nt_status) || (!oldLmHash && !oldNtHash)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
 					   &new_password, /* we have plaintext */
 					   NULL, NULL,
-					   true, /* Password change */
+					   oldLmHash, oldNtHash, /* Password change */
 					   NULL, NULL);
 	return nt_status;
 }
