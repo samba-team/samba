@@ -667,7 +667,7 @@ void reply_negprot(struct smb_request *req)
 	}
  
 	/* possibly reload - change of architecture */
-	reload_services(sconn->msg_ctx, True);
+	reload_services(sconn->msg_ctx, sconn->sock, True);
 	
 	/* moved from the netbios session setup code since we don't have that 
 	   when the client connects to port 445.  Of course there is a small
@@ -693,7 +693,7 @@ void reply_negprot(struct smb_request *req)
   
 	if(choice != -1) {
 		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
-		reload_services(sconn->msg_ctx, True);
+		reload_services(sconn->msg_ctx, sconn->sock, True);
 		supported_protocols[protocol].proto_reply_fn(req, choice);
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {

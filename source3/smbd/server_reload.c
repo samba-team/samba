@@ -88,7 +88,8 @@ void reload_printers(struct messaging_context *msg_ctx)
  Reload the services file.
 **************************************************************************/
 
-bool reload_services(struct messaging_context *msg_ctx, bool test)
+bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
+		     bool test)
 {
 	bool ret;
 
@@ -114,15 +115,15 @@ bool reload_services(struct messaging_context *msg_ctx, bool test)
 
 	/* perhaps the config filename is now set */
 	if (!test)
-		reload_services(msg_ctx, True);
+		reload_services(msg_ctx, smb_sock, True);
 
 	reopen_logs();
 
 	load_interfaces();
 
-	if (smbd_server_fd() != -1) {
-		set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-		set_socket_options(smbd_server_fd(), lp_socket_options());
+	if (smb_sock != -1) {
+		set_socket_options(smb_sock,"SO_KEEPALIVE");
+		set_socket_options(smb_sock, lp_socket_options());
 	}
 
 	mangle_reset_cache();

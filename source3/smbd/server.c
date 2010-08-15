@@ -81,7 +81,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(msg, False);
+	reload_services(msg, smbd_server_fd(), False);
 }
 
 
@@ -982,7 +982,8 @@ extern void build_options(bool screen);
 	 * Reloading of the printers will not work here as we don't have a
 	 * server info and rpc services set up. It will be called later.
 	 */
-	if (!reload_services(smbd_messaging_context(), False)) {
+	if (!reload_services(smbd_messaging_context(), smbd_server_fd(),
+			     False)) {
 		exit(1);
 	}
 
