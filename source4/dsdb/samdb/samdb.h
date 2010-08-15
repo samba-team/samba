@@ -80,7 +80,7 @@ struct dsdb_control_password_change_status {
 
 #define DSDB_CONTROL_PASSWORD_HASH_VALUES_OID "1.3.6.1.4.1.7165.4.3.9"
 
-#define DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID "1.3.6.1.4.1.7165.4.3.10"
+#define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
 
 /**
    DSDB_CONTROL_APPLY_LINKS is internal to Samba4 - a token passed between repl_meta_data and linked_attributes modules

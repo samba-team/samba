@@ -100,7 +100,7 @@ struct ph_context {
 
 	bool change_status;
 	bool hash_values;
-	bool change_old_pw_checked;
+	bool change;
 };
 
 
@@ -1436,7 +1436,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	ldb = ldb_module_get_ctx(io->ac->module);
 
 	/* First check the old password is correct, for password changes */
-	if (!io->ac->pwd_reset && !io->ac->change_old_pw_checked) {
+	if (!io->ac->pwd_reset && !io->ac->change) {
 		bool nt_hash_checked = false;
 
 		/* we need the old nt or lm hash given by the client */
@@ -1914,7 +1914,7 @@ static int setup_io(struct ph_context *ac,
 	} else if (ac->req->operation == LDB_MODIFY) {
 		if (io->og.cleartext_utf8 || io->og.cleartext_utf16
 		    || io->og.nt_hash || io->og.lm_hash
-		    || ac->change_old_pw_checked) {
+		    || ac->change) {
 			/* If we have an old password or the "change old
 			 * password checked" control specified then for sure it
 			 * is a user "password change" */
@@ -1975,14 +1975,13 @@ static void ph_apply_controls(struct ph_context *ac)
 		ctrl->critical = false;
 	}
 
-	ac->change_old_pw_checked = false;
+	ac->change = false;
 	ctrl = ldb_request_get_control(ac->req,
-				       DSDB_CONTROL_PASSWORD_CHANGE_OLD_PW_CHECKED_OID);
+				       DSDB_CONTROL_PASSWORD_CHANGE_OID);
 	if (ctrl != NULL) {
-		ac->change_old_pw_checked = true;
+		ac->change = true;
 
-		/* Mark the "change old password checked" control as uncritical
-		 * (done) */
+		/* Mark the "change" control as uncritical (done) */
 		ctrl->critical = false;
 	}
 }
