@@ -476,6 +476,8 @@ RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c
                     rpc_client/rpc_transport_np.c
                     rpc_client/rpc_transport_sock.c'''
 
+RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
+
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
 
 PRIVILEGES_BASIC_SRC = '''lib/privileges_basic.c'''
@@ -804,6 +806,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_SRVSVC_SRC}
                 ${LIBCLI_LSA_SRC}
                 ${LIBCLI_SAMR_SRC}
+                ${RPC_CLIENT_SCHANNEL_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
 
