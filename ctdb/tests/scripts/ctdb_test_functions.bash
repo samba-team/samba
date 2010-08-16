@@ -359,7 +359,7 @@ cluster_is_healthy ()
     else
 	echo "Cluster is UNHEALTHY"
 	if ! ${ctdb_test_restart_scheduled:-false} ; then
-	    echo "DEBUG:"
+	    echo "DEBUG AT $(date '+%F %T'):"
 	    local i
 	    for i in "onnode -q 0 $CTDB status" "onnode -q 0 onnode all $CTDB scriptstatus" ; do
 		echo "$i"
@@ -581,7 +581,7 @@ tcpdump_wait ()
 
     echo "Waiting for tcpdump to capture some packets..."
     if ! wait_until 30 tcpdump_check ; then
-	echo "DEBUG:"
+	echo "DEBUG AT $(date '+%F %T'):"
 	local i
 	for i in "onnode -q 0 $CTDB status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
 	    echo "$i"
