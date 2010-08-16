@@ -1446,8 +1446,10 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	 * index entry */
 	list.dn = NULL;
 	list.count = 0;
-	v.data = key.dptr;
-	v.length = strnlen((char *)key.dptr, key.dsize);
+
+	/* the offset of 3 is to remove the DN= prefix. */
+	v.data = key.dptr + 3;
+	v.length = strnlen((char *)key.dptr, key.dsize) - 3;
 
 	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
 	ret = ltdb_dn_list_store(module, dn, &list);
