@@ -427,78 +427,6 @@ static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
-static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_tree_delete_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_show_recycled_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_show_deactivated_link_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void *_out)
-{
-	if (in.length != 0) {
-		return false;
-	}
-
-	return true;
-}
-
 static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	void **out = (void **)_out;
@@ -958,86 +886,6 @@ static bool encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
-static bool encode_domain_scope_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_notification_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_tree_delete_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_show_deleted_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_show_recycled_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_show_deactivated_link_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_permissive_modify_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
-static bool encode_manageDSAIT_request(void *mem_ctx, void *in, DATA_BLOB *out)
-{
-	if (in) {
-		return false;
-	}
-
-	*out = data_blob(NULL, 0);
-	return true;
-}
-
 static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	struct ldb_vlv_req_control *lvrc = talloc_get_type(in, struct ldb_vlv_req_control);
@@ -1270,7 +1118,7 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 	return true;
 }
 
-static bool encode_relax_request(void *mem_ctx, void *in, DATA_BLOB *out)
+static bool encode_flag_request(void *mem_ctx, void *in, DATA_BLOB *out)
 {
 	if (in) {
 		return false;
@@ -1280,7 +1128,7 @@ static bool encode_relax_request(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
-static bool decode_relax_request(void *mem_ctx, DATA_BLOB in, void *_out)
+static bool decode_flag_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -1296,16 +1144,16 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.474", decode_server_sort_response, encode_server_sort_response },
 	{ "1.2.840.113556.1.4.1504", decode_asq_control, encode_asq_control },
 	{ "1.2.840.113556.1.4.841", decode_dirsync_request, encode_dirsync_request },
-	{ "1.2.840.113556.1.4.528", decode_notification_request, encode_notification_request },
-	{ "1.2.840.113556.1.4.805", decode_tree_delete_request, encode_tree_delete_request },
-	{ "1.2.840.113556.1.4.417", decode_show_deleted_request, encode_show_deleted_request },
-	{ "1.2.840.113556.1.4.2064", decode_show_recycled_request, encode_show_recycled_request },
-	{ "1.2.840.113556.1.4.2065", decode_show_deactivated_link_request, encode_show_deactivated_link_request },
-	{ "1.2.840.113556.1.4.1413", decode_permissive_modify_request, encode_permissive_modify_request },
+	{ "1.2.840.113556.1.4.528", decode_flag_request, encode_flag_request },
+	{ "1.2.840.113556.1.4.805", decode_flag_request, encode_flag_request },
+	{ "1.2.840.113556.1.4.417", decode_flag_request, encode_flag_request },
+	{ "1.2.840.113556.1.4.2064", decode_flag_request, encode_flag_request },
+	{ "1.2.840.113556.1.4.2065", decode_flag_request, encode_flag_request },
+	{ "1.2.840.113556.1.4.1413", decode_flag_request, encode_flag_request },
 	{ "1.2.840.113556.1.4.801", decode_sd_flags_request, encode_sd_flags_request },
-	{ "1.2.840.113556.1.4.1339", decode_domain_scope_request, encode_domain_scope_request },
+	{ "1.2.840.113556.1.4.1339", decode_flag_request, encode_flag_request },
 	{ "1.2.840.113556.1.4.1340", decode_search_options_request, encode_search_options_request },
-	{ "2.16.840.1.113730.3.4.2", decode_manageDSAIT_request, encode_manageDSAIT_request },
+	{ "2.16.840.1.113730.3.4.2", decode_flag_request, encode_flag_request },
 	{ "2.16.840.1.113730.3.4.9", decode_vlv_request, encode_vlv_request },
 	{ "2.16.840.1.113730.3.4.10", decode_vlv_response, encode_vlv_response },
 /* DSDB_CONTROL_CURRENT_PARTITION_OID is internal only, and has no network representation */
@@ -1321,7 +1169,7 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},
-	{ LDB_CONTROL_RELAX_OID, decode_relax_request, encode_relax_request },
+	{ LDB_CONTROL_RELAX_OID, decode_flag_request, encode_flag_request },
 	{ NULL, NULL, NULL }
 };
 
