@@ -295,15 +295,15 @@ sub HeaderProperties($$)
 	}
 }
 
-sub ParseCopyInArgument($$$$$$)
+sub ParseCopyArgument($$$$$)
 {
-	my ($self, $fn, $e, $r, $i, $invalid_response_type) = @_;
+	my ($self, $fn, $e, $r, $i) = @_;
 	my $l = $e->{LEVELS}[0];
 
 	if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED} == 1) {
-		$self->pidl("memcpy(${r}in.$e->{NAME}, ${i}$e->{NAME}, sizeof(${r}in.$e->{NAME}));");
+		$self->pidl("memcpy(${r}$e->{NAME}, ${i}$e->{NAME}, sizeof(${r}$e->{NAME}));");
 	} else {
-		$self->pidl("${r}in.$e->{NAME} = ${i}$e->{NAME};");
+		$self->pidl("${r}$e->{NAME} = ${i}$e->{NAME};");
 	}
 }
 
@@ -449,17 +449,17 @@ sub ParseFunction_Send($$$$)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
 
-		$self->ParseCopyInArgument($fn, $e, "state->orig.", "_", "async");
+		$self->ParseCopyArgument($fn, $e, "state->orig.in.", "_");
 	}
 	$self->pidl("");
 
 	my $out_params = 0;
 	$self->pidl("/* Out parameters */");
-	foreach (@{$fn->{ELEMENTS}}) {
-		if (grep(/out/, @{$_->{DIRECTION}})) {
-			$self->pidl("state->orig.out.$_->{NAME} = _$_->{NAME};");
-			$out_params++;
-		}
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless grep(/out/, @{$e->{DIRECTION}});
+
+		$self->ParseCopyArgument($fn, $e, "state->orig.out.", "_");
+		$out_params++;
 	}
 	$self->pidl("");
 
@@ -639,15 +639,15 @@ sub ParseFunction_Sync($$$$)
 	$self->pidl("struct $name r;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
-	$self->pidl("/* In parameters */");
 
+	$self->pidl("/* In parameters */");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
 
-		$self->ParseCopyInArgument($fn, $e, "r.", "_", "sync");
+		$self->ParseCopyArgument($fn, $e, "r.in.", "_");
 	}
-
 	$self->pidl("");
+
 	$self->pidl("status = dcerpc_$name\_r(h, mem_ctx, &r);");
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 	$self->indent;
