@@ -2845,21 +2845,16 @@ static int cmd_symlink(void)
 	char *newname = NULL;
 	char *buf = NULL;
 	char *buf2 = NULL;
-	char *targetname = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *newcli;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
 	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("symlink <oldname> <newname>\n");
 		return 1;
 	}
-	oldname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			buf);
-	if (!oldname) {
-		return 1;
-	}
+	/* Oldname (link target) must be an untouched blob. */
+	oldname = buf;
+
 	newname = talloc_asprintf(ctx,
 			"%s%s",
 			client_get_cur_dir(),
@@ -2868,19 +2863,20 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", auth_info, cli, oldname, &targetcli, &targetname)) {
+	/* New name must be present in share namespace. */
+	if (!cli_resolve_path(ctx, "", auth_info, cli, newname, &newcli, &newname)) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
 
-	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+	if (!SERVER_HAS_UNIX_CIFS(newcli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_symlink(targetcli, targetname, newname))) {
+	if (!NT_STATUS_IS_OK(cli_posix_symlink(newcli, oldname, newname))) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(targetcli), newname, targetname);
+			cli_errstr(newcli), newname, newname);
 		return 1;
 	}
 
