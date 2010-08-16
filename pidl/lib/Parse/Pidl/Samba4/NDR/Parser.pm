@@ -1688,6 +1688,10 @@ sub ParseUnionPushPrimitives($$$$)
 
 	$self->pidl("uint32_t level = ndr_push_get_switch_value($ndr, $varname);");
 
+	if (defined($e->{ALIGN})) {
+		$self->pidl("NDR_CHECK(ndr_push_union_align($ndr, $e->{ALIGN}));");
+	}
+
 	if (defined($e->{SWITCH_TYPE})) {
 		$self->pidl("NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}($ndr, NDR_SCALARS, level));");
 	}
@@ -1832,6 +1836,10 @@ sub ParseUnionPullPrimitives($$$$$)
 {
 	my ($self,$e,$ndr,$varname,$switch_type) = @_;
 	my $have_default = 0;
+
+	if (defined($e->{ALIGN})) {
+		$self->pidl("NDR_CHECK(ndr_pull_union_align($ndr, $e->{ALIGN}));");
+	}
 
 	if (defined($switch_type)) {
 		$self->pidl("NDR_CHECK(ndr_pull_$switch_type($ndr, NDR_SCALARS, &_level));");
