@@ -134,6 +134,10 @@ LIBCLI_NETLOGON_SRC = '''
                       librpc/gen_ndr/ndr_netlogon_c.c
                       rpc_client/cli_netlogon.c'''
 
+LIBCLI_EPMAPPER_SRC = '''
+                      librpc/gen_ndr/cli_epmapper.c
+                      librpc/gen_ndr/ndr_epmapper_c.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -354,12 +358,8 @@ LIBMSRPC_SRC = '''
                rpc_client/init_samr.c
                    ../librpc/rpc/binding.c'''
 
-DCERPC_CLIENT_GEN_SRC = '''
-                ../librpc/gen_ndr/ndr_epmapper_c.c'''
-
 LIBMSRPC_GEN_SRC = '''
-                   ../librpc/gen_ndr/cli_epmapper.c
-                   ${DCERPC_CLIENT_GEN_SRC}
+                   ${LIBCLI_EPMAPPER_SRC}
                    ../librpc/rpc/dcerpc_util.c
                    librpc/rpc/dcerpc_helpers.c
                    ../librpc/rpc/binding_handle.c
