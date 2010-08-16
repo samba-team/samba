@@ -86,6 +86,9 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
                  ${LIBNDR_SPOOLSS_SRC}'''
 
+LIBNDR_NTPRINTING_SRC = '''../librpc/gen_ndr/ndr_ntprinting.c
+                           ../librpc/ndr/ndr_ntprinting.c'''
+
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
@@ -776,8 +779,7 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing_tdb.c
                       printing/nt_printing_migrate.c
                       printing/nt_printing_ads.c
-                      librpc/gen_ndr/ndr_ntprinting.c
-                      ../librpc/ndr/ndr_ntprinting.c
+                      ${LIBNDR_NTPRINTING_SRC}
                       ${PRINTBASE_SRC}'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
