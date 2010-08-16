@@ -4916,7 +4916,7 @@ bool torture_ioctl_test(int dummy)
 	printf("ioctl job info: %s\n", nt_errstr(status));
 
 	for (device=0;device<0x100;device++) {
-		printf("testing device=0x%x\n", device);
+		printf("ioctl test with device = 0x%x\n", device);
 		for (function=0;function<0x100;function++) {
 			uint32 code = (device<<16) | function;
 
