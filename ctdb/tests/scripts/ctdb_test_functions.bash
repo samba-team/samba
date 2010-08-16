@@ -66,7 +66,7 @@ ctdb_test_exit ()
     # now complete.
     set +e
 
-    echo "*** TEST COMPLETE (RC=$status), CLEANING UP..."
+    echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
 
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
