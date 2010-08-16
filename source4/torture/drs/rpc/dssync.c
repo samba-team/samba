@@ -332,7 +332,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	int i, j, ret;
 	struct dsdb_extended_replicated_objects *objs;
 	struct ldb_extended_dn_control *extended_dn_ctrl;
-	const char *err_msg;
 	struct dsdb_schema *ldap_schema;
 
 	/* load dsdb_schema using remote prefixMap */
