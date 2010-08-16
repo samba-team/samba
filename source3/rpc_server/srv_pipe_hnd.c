@@ -537,6 +537,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
+		 struct client_address *client_id,
 		 struct auth_serversupplied_info *server_info,
 		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle)
@@ -564,26 +565,13 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	} else {
 		struct pipes_struct *p;
 		struct ndr_syntax_id syntax;
-		const char *client_address;
 
 		if (!is_known_pipename(name, &syntax)) {
 			TALLOC_FREE(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		if (tsocket_address_is_inet(remote_address, "ip")) {
-			client_address = tsocket_address_inet_addr_string(
-						remote_address,
-						talloc_tos());
-			if (client_address == NULL) {
-				TALLOC_FREE(handle);
-				return NT_STATUS_NO_MEMORY;
-			}
-		} else {
-			client_address = "";
-		}
-
-		p = make_internal_rpc_pipe_p(handle, &syntax, client_address,
+		p = make_internal_rpc_pipe_p(handle, &syntax, client_id,
 					     server_info, msg_ctx);
 
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
@@ -930,6 +918,7 @@ NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
 		status = rpc_pipe_open_internal(conn,
 						&ndr_table_spoolss.syntax_id,
 						conn->server_info,
+						&conn->sconn->client_id,
 						conn->sconn->msg_ctx,
 						&conn->spoolss_pipe);
 		if (!NT_STATUS_IS_OK(status)) {

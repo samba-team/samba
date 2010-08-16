@@ -114,7 +114,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
-					      const char *client_address,
+					      struct client_address *client_id,
 					      struct auth_serversupplied_info *server_info,
 					      struct messaging_context *msg_ctx)
 {
@@ -157,7 +157,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD(InternalPipes, p);
 
-	strlcpy(p->client_address, client_address, sizeof(p->client_address));
+	p->client_id = client_id;
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
@@ -469,6 +469,7 @@ static struct dcerpc_binding_handle *rpcint_binding_handle(struct pipes_struct *
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				struct auth_serversupplied_info *serversupplied_info,
+				struct client_address *client_id,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult)
 {
@@ -482,8 +483,16 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 
+	if (client_id == NULL) {
+		static struct client_address unknown;
+		strlcpy(unknown.addr, "<UNKNOWN>", sizeof(unknown.addr));
+		unknown.name = "<UNKNOWN>";
+		client_id = &unknown;
+	}
+
 	result->pipes_struct = make_internal_rpc_pipe_p(
-		result, abstract_syntax, "", serversupplied_info, msg_ctx);
+		result, abstract_syntax, client_id, serversupplied_info,
+		msg_ctx);
 	if (result->pipes_struct == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;

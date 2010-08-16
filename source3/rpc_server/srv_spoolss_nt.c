@@ -2451,9 +2451,9 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		return WERR_BADFID;
 
 	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
-		"client_address is %s\n", p->client_address));
+		"client_address is %s\n", p->client_id->addr));
 
-	if (!interpret_string_addr(&client_ss, p->client_address,
+	if (!interpret_string_addr(&client_ss, p->client_id->addr,
 				   AI_NUMERICHOST)) {
 		return WERR_SERVER_UNAVAILABLE;
 	}
@@ -6111,7 +6111,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	{
 		/* add_printer_hook() will call reload_services() */
 		if (!add_printer_hook(tmp_ctx, p->server_info->ptok,
-				      printer, p->client_address,
+				      printer, p->client_id->addr,
 				      p->msg_ctx)) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
@@ -7420,7 +7420,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 
 	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
-				       info2, p->client_address,
+				       info2, p->client_id->addr,
 				       p->msg_ctx) ) {
 			return WERR_ACCESS_DENIED;
 		}

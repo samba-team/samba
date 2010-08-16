@@ -613,6 +613,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	status = rpc_pipe_open_internal(tmp_ctx,
 					&ndr_table_spoolss.syntax_id,
 					server_info,
+					NULL,
 					msg_ctx,
 					&spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {

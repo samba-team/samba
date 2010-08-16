@@ -61,6 +61,7 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_samr.syntax_id,
 					server_info,
+					NULL,
 					winbind_messaging_context(),
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -133,6 +134,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
 					server_info,
+					NULL,
 					winbind_messaging_context(),
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {

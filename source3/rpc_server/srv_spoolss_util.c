@@ -262,6 +262,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_winreg.syntax_id,
 					server_info,
+					NULL,
 					msg_ctx,
 					&pipe_handle);
 	if (!NT_STATUS_IS_OK(status)) {

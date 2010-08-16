@@ -131,7 +131,7 @@ struct pipe_auth_data {
 struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
-	char client_address[INET6_ADDRSTRLEN];
+	struct client_address *client_id;
 
 	struct auth_serversupplied_info *server_info;
 	struct messaging_context *msg_ctx;

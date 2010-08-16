@@ -406,6 +406,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 
 	status = rpc_pipe_open_internal(p->mem_ctx, &ndr_table_lsarpc.syntax_id,
 					p->server_info,
+					p->client_id,
 					p->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -631,7 +632,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info, msg_ctx,
+					server_info, NULL, msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1035,7 +1036,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_handle);
 
 	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info, msg_ctx,
+					server_info, NULL, msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;

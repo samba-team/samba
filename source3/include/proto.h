@@ -4535,12 +4535,13 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 			       struct rpc_pipe_client **presult);
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
-					      const char *client_address,
+					      struct client_address *client_id,
 					      struct auth_serversupplied_info *server_info,
 					      struct messaging_context *msg_ctx);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				struct auth_serversupplied_info *serversupplied_info,
+				struct client_address *client_id,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult);
 NTSTATUS rpc_connect_spoolss_pipe(connection_struct *conn,
@@ -4752,6 +4753,7 @@ struct tsocket_address;
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
+		 struct client_address *client_id,
 		 struct auth_serversupplied_info *server_info,
 		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle);
