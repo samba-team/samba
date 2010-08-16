@@ -95,6 +95,11 @@ static int ltdb_dn_list_find_str(struct dn_list *list, const char *dn)
 	return ltdb_dn_list_find_val(list, &v);
 }
 
+/*
+  this is effectively a cast function, but with lots of paranoia
+  checks and also copes with CPUs that are fussy about pointer
+  alignment
+ */
 static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec, bool check_parent)
 {
 	struct dn_list *list;
@@ -103,6 +108,9 @@ static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec
 				       "Bad data size for idxptr %u", (unsigned)rec.dsize);
 		return NULL;
 	}
+	/* note that we can't just use a cast here, as rec.dptr may
+	   not be aligned sufficiently for a pointer. A cast would cause
+	   platforms like some ARM CPUs to crash */
 	memcpy(&list, rec.dptr, sizeof(void *));
 	list = talloc_get_type(list, struct dn_list);
 	if (list == NULL) {
