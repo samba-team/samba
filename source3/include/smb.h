@@ -247,11 +247,6 @@ typedef struct unix_user_token {
 	gid_t *groups;
 } UNIX_USER_TOKEN;
 
-/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef struct time_info {
-	uint32 time;
-} UTIME;
-
 typedef struct write_cache {
 	SMB_OFF_T file_size;
 	SMB_OFF_T offset;
