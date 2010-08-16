@@ -33,8 +33,9 @@
  called when a session is created
 ********************************************************************/
 
-bool session_claim(struct server_id pid, user_struct *vuser)
+bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 {
+	struct server_id pid = sconn_server_id(sconn);
 	TDB_DATA data;
 	int i = 0;
 	struct sessionid sessionid;
@@ -131,9 +132,9 @@ bool session_claim(struct server_id pid, user_struct *vuser)
 	   client_name() handles this case internally.
 	*/
 
-	hostname = client_name(smbd_server_fd());
+	hostname = client_name(sconn->sock);
 	if (strcmp(hostname, "UNKNOWN") == 0) {
-		hostname = client_addr(smbd_server_fd(),addr,sizeof(addr));
+		hostname = client_addr(sconn->sock, addr, sizeof(addr));
 	}
 
 	fstrcpy(sessionid.username, vuser->server_info->unix_name);
@@ -144,7 +145,7 @@ bool session_claim(struct server_id pid, user_struct *vuser)
 	sessionid.gid = vuser->server_info->utok.gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr_str,
-		client_addr(smbd_server_fd(),addr,sizeof(addr)));
+		client_addr(sconn->sock, addr, sizeof(addr)));
 	sessionid.connect_start = time(NULL);
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str,
