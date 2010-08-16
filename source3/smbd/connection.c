@@ -147,7 +147,7 @@ bool claim_connection(connection_struct *conn, const char *name)
 	crec.start = time(NULL);
 
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr, conn->client_address, sizeof(crec.addr));
+	strlcpy(crec.addr, conn->sconn->client_id.addr, sizeof(crec.addr));
 
 	dbuf.dptr = (uint8 *)&crec;
 	dbuf.dsize = sizeof(crec);

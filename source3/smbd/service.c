@@ -690,16 +690,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	add_session_user(sconn, conn->server_info->unix_name);
 
-	addr = tsocket_address_inet_addr_string(sconn->remote_address,
-						talloc_tos());
-	if (addr == NULL) {
-		*pstatus = NT_STATUS_NO_MEMORY;
-		goto err_root_exit;
-	}
-	safe_strcpy(conn->client_address, addr,
-		    sizeof(conn->client_address)-1);
-	TALLOC_FREE(addr);
-
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
 	conn->used = True;
@@ -1060,7 +1050,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
-			 conn->client_address );
+			 conn->sconn->client_id.addr );
 		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ",
@@ -1245,7 +1235,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 get_remote_machine_name(),
-				 conn->client_address,
+				 conn->sconn->client_id.addr,
 				 lp_servicename(SNUM(conn))));
 
 	/* Call VFS disconnect hook */    

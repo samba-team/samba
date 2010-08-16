@@ -522,8 +522,6 @@ typedef struct connection_struct {
 	 */
 	gid_t force_group_gid;
 
-	char client_address[INET6_ADDRSTRLEN]; /* String version of client IP address. */
-
 	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
 	time_t lastused;
