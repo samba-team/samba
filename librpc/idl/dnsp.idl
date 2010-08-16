@@ -81,6 +81,11 @@ interface dnsp
 	} dnsp_mx;
 
 	typedef [public] struct {
+		dnsp_string     cpu;
+		dnsp_string     os;
+	} dnsp_hinfo;
+
+	typedef [public] struct {
 		uint16          wPriority;
 		uint16          wWeight;
 		uint16          wPort;
@@ -95,6 +100,7 @@ interface dnsp
 		[case(DNS_TYPE_MX)] [flag(NDR_BIG_ENDIAN)]  dnsp_mx mx;
 		[case(DNS_TYPE_TXT)]                        dnsp_string txt;
 		[case(DNS_TYPE_PTR)]                        dnsp_name ptr;
+		[case(DNS_TYPE_HINFO)]                      dnsp_hinfo hinfo;
 		[case(DNS_TYPE_AAAA)]                       ipv6address ip;
 		[case(DNS_TYPE_SRV)] [flag(NDR_BIG_ENDIAN)] dnsp_srv srv;
 		[default] [flag(NDR_REMAINING)] DATA_BLOB data;
