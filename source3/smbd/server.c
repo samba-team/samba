@@ -59,8 +59,28 @@ int smbd_server_fd(void)
 
 static void smbd_set_server_fd(int fd)
 {
-	smbd_server_conn->sock = fd;
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	const char *name;
+
 	server_fd = fd;
+
+	sconn->sock = fd;
+
+	/*
+	 * Initialize sconn->client_id: If we can't find the client's
+	 * name, default to its address.
+	 */
+
+	client_addr(fd, sconn->client_id.addr, sizeof(sconn->client_id.addr));
+
+	name = client_name(sconn->sock);
+	if (strcmp(name, "UNKNOWN") != 0) {
+		name = talloc_strdup(sconn, name);
+	} else {
+		name = NULL;
+	}
+	sconn->client_id.name =
+		(name != NULL) ? name : sconn->client_id.addr;
 }
 
 struct event_context *smbd_event_context(void)
