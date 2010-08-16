@@ -375,7 +375,7 @@ int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 	if ( !buf || !pjob )
 		return -1;
 
-	len += tdb_unpack(buf+len, buflen-len, "dddddddddffff",
+	len += tdb_unpack(buf+len, buflen-len, "dddddddddfffff",
 				&pjpid,
 				&pjsysjob,
 				&pjfd,
@@ -388,6 +388,7 @@ int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 				pjob->filename,
 				pjob->jobname,
 				pjob->user,
+				pjob->clientmachine,
 				pjob->queuename);
 
 	if ( len == -1 )
@@ -641,7 +642,7 @@ static bool pjob_store(struct tevent_context *ev,
 	do {
 		len = 0;
 		buflen = newlen;
-		len += tdb_pack(buf+len, buflen-len, "dddddddddffff",
+		len += tdb_pack(buf+len, buflen-len, "dddddddddfffff",
 				(uint32)pjob->pid,
 				(uint32)pjob->sysjob,
 				(uint32)pjob->fd,
@@ -654,6 +655,7 @@ static bool pjob_store(struct tevent_context *ev,
 				pjob->filename,
 				pjob->jobname,
 				pjob->user,
+				pjob->clientmachine,
 				pjob->queuename);
 
 		len += pack_devicemode(pjob->devmode, buf+len, buflen-len);
@@ -2810,6 +2812,8 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	SMB_STRUCT_STAT sbuf;
 	struct printif *current_printif = get_printer_fns( snum );
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	const char *clientname;
+	char addr[INET6_ADDRSTRLEN];
 
 	pjob = print_job_find(sharename, jobid);
 
@@ -2871,6 +2875,12 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
 		return NT_STATUS_OK;
 	}
+
+	clientname = client_name(smbd_server_fd());
+	if (strcmp(clientname, "UNKNOWN") == 0) {
+		clientname = client_addr(smbd_server_fd(),addr,sizeof(addr));
+	}
+	fstrcpy(pjob->clientmachine, clientname);
 
 	ret = (*(current_printif->job_submit))(snum, pjob);
 

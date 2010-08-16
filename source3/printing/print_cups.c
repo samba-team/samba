@@ -912,7 +912,6 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	ipp_attribute_t *attr_job_id = NULL;	/* IPP Attribute "job-id" */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
-	const char 	*clientname = NULL; 	/* hostname of client for job-originating-host attribute */
 	char *new_jobname = NULL;
 	int		num_options = 0;
 	cups_option_t 	*options = NULL;
@@ -923,7 +922,6 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	char *filename = NULL;
 	size_t size;
 	uint32_t jobid = (uint32_t)-1;
-	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(5,("cups_job_submit(%d, %p)\n", snum, pjob));
 
@@ -981,14 +979,9 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, user);
 
-	clientname = client_name(smbd_server_fd());
-	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr(smbd_server_fd(),addr,sizeof(addr));
-	}
-
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
 	             "job-originating-host-name", NULL,
-		      clientname);
+		     pjob->clientmachine);
 
 	/* Get the jobid from the filename. */
 	jobid = print_parse_jobid(pjob->filename);

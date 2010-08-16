@@ -39,6 +39,7 @@ struct printjob {
 	fstring filename; /* the filename used to spool the file */
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
+	fstring clientmachine; /* The client machine which started this job */
 	fstring queuename; /* service number of printer for this job */
 	struct spoolss_DeviceMode *devmode;
 };
@@ -82,7 +83,7 @@ extern struct printif	iprint_printif;
 #ifndef PRINT_SPOOL_PREFIX
 #define PRINT_SPOOL_PREFIX "smbprn."
 #endif
-#define PRINT_DATABASE_VERSION 5
+#define PRINT_DATABASE_VERSION 6
 
 /* There can be this many printing tdb's open, plus any locked ones. */
 #define MAX_PRINT_DBS_OPEN 1
