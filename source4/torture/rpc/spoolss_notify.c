@@ -500,15 +500,6 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 #endif
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	/*
-	 * FIXME:
-	 * This test is currently broken, as the started dcerpc server
-	 * does not accept anonyous connection, because it is not provisioned.
-	 *
-	 * See https://bugzilla.samba.org/show_bug.cgi?id=7486.
-	 */
-	torture_skip(tctx, "skipping test_RFFPCNEx tests\n");
-
 	received_packets = NULL;
 
 	/* Start DCE/RPC server */
