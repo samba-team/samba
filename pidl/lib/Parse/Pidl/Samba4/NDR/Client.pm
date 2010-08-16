@@ -593,7 +593,7 @@ sub ParseFunction_Recv($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("/* Steal possbile out parameters to the callers context */");
+	$self->pidl("/* Steal possible out parameters to the callers context */");
 	$self->pidl("talloc_steal(mem_ctx, state->out_mem_ctx);");
 	$self->pidl("");
 

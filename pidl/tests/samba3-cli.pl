@@ -99,7 +99,7 @@ NTSTATUS rpccli_bar_recv(struct tevent_req *req,
 		return status;
 	}
 
-	/* Steal possbile out parameters to the callers context */
+	/* Steal possible out parameters to the callers context */
 	talloc_steal(mem_ctx, state->out_mem_ctx);
 
 	tevent_req_received(req);
@@ -200,7 +200,7 @@ NTSTATUS rpccli_bar_recv(struct tevent_req *req,
 		return status;
 	}
 
-	/* Steal possbile out parameters to the callers context */
+	/* Steal possible out parameters to the callers context */
 	talloc_steal(mem_ctx, state->out_mem_ctx);
 
 	/* Return result */
