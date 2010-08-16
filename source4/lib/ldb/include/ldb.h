@@ -679,6 +679,12 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
 
+/**
+   control for RODC join
+   See [MS-ADTS] section 3.1.1.3.4.1.23
+*/
+#define LDB_CONTROL_RODC_DCPROMO_OID "1.2.840.113556.1.4.1341"
+
 /*
    OID for LDAP Extended Operation PASSWORD_CHANGE.
 

@@ -348,6 +348,65 @@ static int samldb_allocate_sid(struct samldb_ctx *ac)
 }
 
 /*
+  see if a krbtgt_number is available
+ */
+static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac, unsigned krbtgt_number)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ac);
+	struct ldb_result *res;
+	const char *attrs[] = { NULL };
+	int ret;
+
+	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 attrs, DSDB_FLAG_NEXT_MODULE,
+				 "msDC-SecondaryKrbTgtNumber=%u", krbtgt_number);
+	if (ret == LDB_SUCCESS && res->count == 0) {
+		talloc_free(tmp_ctx);
+		return true;
+	}
+	talloc_free(tmp_ctx);
+	return false;
+}
+
+/* special handling for add in RODC join */
+static int samldb_rodc_add(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	unsigned krbtgt_number, i_start, i;
+
+	/* find a unused msDC-SecondaryKrbTgtNumber */
+	i_start = generate_random() & 0xFFFF;
+	if (i_start == 0) {
+		i_start = 1;
+	}
+
+	for (i=i_start; i<=0xFFFF; i++) {
+		if (samldb_krbtgtnumber_available(ac, i)) {
+			krbtgt_number = i;
+			goto found;
+		}
+	}
+	for (i=1; i<i_start; i++) {
+		if (samldb_krbtgtnumber_available(ac, i)) {
+			krbtgt_number = i;
+			goto found;
+		}
+	}
+
+	ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+			       "%08X: Unable to find available msDS-SecondaryKrbTgtNumber",
+			       W_ERROR_V(WERR_NO_SYSTEM_RESOURCES));
+	return LDB_ERR_OTHER;
+
+found:
+	if ( ! ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number)) {
+		return ldb_operr(ldb);
+	}
+
+	return samldb_next_step(ac);
+}
+
+/*
  * samldb_dn_from_sid (async)
  */
 
@@ -744,6 +803,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	struct loadparm_context *lp_ctx;
 	enum sid_generator sid_generator;
 	int ret;
+	struct ldb_control *rodc_control;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -956,6 +1016,15 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 			if (ret != LDB_SUCCESS) return ret;
 		}
 	}
+
+	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
+	if (rodc_control) {
+		/* see [MS-ADTS] 3.1.1.3.4.1.23 LDAP_SERVER_RODC_DCPROMO_OID */
+		rodc_control->critical = false;
+		ret = samldb_add_step(ac, samldb_rodc_add);
+		if (ret != LDB_SUCCESS) return ret;
+	}
+
 
 	/* finally proceed with adding the entry */
 	ret = samldb_add_step(ac, samldb_add_entry);

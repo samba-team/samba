@@ -1170,6 +1170,7 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},
 	{ LDB_CONTROL_RELAX_OID, decode_flag_request, encode_flag_request },
+	{ LDB_CONTROL_RODC_DCPROMO_OID, decode_flag_request, encode_flag_request },
 	{ NULL, NULL, NULL }
 };
 
