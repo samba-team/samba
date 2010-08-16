@@ -54,8 +54,6 @@ LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              librpc/ndr/util.c
              ../librpc/gen_ndr/ndr_dcerpc.c'''
 
-RPCCLIENT_NDR_SRC = '''rpc_client/ndr.c'''
-
 LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c
                   ../librpc/gen_ndr/ndr_lsa.c'''
 
@@ -329,8 +327,7 @@ LIBMSRPC_GEN_SRC = '''../librpc/gen_ndr/cli_lsa.c
                    ../librpc/rpc/dcerpc_util.c
                    librpc/rpc/dcerpc_helpers.c
                    ../librpc/rpc/binding_handle.c
-                   ${LIBNDR_GEN_SRC}
-                   ${RPCCLIENT_NDR_SRC}'''
+                   ${LIBNDR_GEN_SRC}'''
 
 #
 # registry-related objects
@@ -443,8 +440,7 @@ RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c
                     librpc/rpc/dcerpc_gssapi.c
                     librpc/rpc/dcerpc_spnego.c
                     rpc_client/rpc_transport_np.c
-		    rpc_client/rpc_transport_sock.c
-		    rpc_client/rpc_transport_smbd.c'''
+                    rpc_client/rpc_transport_sock.c'''
 
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
 
