@@ -294,9 +294,10 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
-static int ldb_add_with_context(struct ldb_context *ldb,
-				const struct ldb_message *message,
-				void *context)
+static int ldb_add_with_controls(struct ldb_context *ldb,
+				 const struct ldb_message *message,
+				 struct ldb_control **controls,
+				 void *context)
 {
 	struct ldb_request *req;
 	int ret;
@@ -308,7 +309,7 @@ static int ldb_add_with_context(struct ldb_context *ldb,
 
 	ret = ldb_build_add_req(&req, ldb, ldb,
 					message,
-					NULL,
+					controls,
 					context,
 					ldb_modify_default_callback,
 					NULL);
@@ -421,10 +422,11 @@ static int ldb_del_req_with_controls(struct ldb_context *ldb,
 	return ret;
 }
 
-int ldb_rename_with_context(struct ldb_context *ldb,
-	       struct ldb_dn *olddn,
-	       struct ldb_dn *newdn,
-	       void *context)
+int ldb_rename_with_controls(struct ldb_context *ldb,
+			     struct ldb_dn *olddn,
+			     struct ldb_dn *newdn,
+			     struct ldb_control **controls,
+			     void *context)
 {
 	struct ldb_request *req;
 	int ret;
@@ -851,7 +853,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_add_with_context(samdb, msg, res);
+		ldb_ret = ldb_add_with_controls(samdb, msg, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
@@ -1015,7 +1017,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_rename_with_context(samdb, olddn, newdn, res);
+		ldb_ret = ldb_rename_with_controls(samdb, olddn, newdn, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
