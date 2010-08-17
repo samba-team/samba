@@ -185,13 +185,13 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 
 /* get single value from an SMB buffer */
 #define SVAL(buf,pos) (*(const uint16_t *)((const char *)(buf) + (pos)))
-#define SVAL_NC(buf,pos) (*(uint16_t *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define SVAL_NC(buf,pos) (*(uint16_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
 #define IVAL(buf,pos) (*(const uint32_t *)((const char *)(buf) + (pos)))
-#define IVAL_NC(buf,pos) (*(uint32_t *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define IVAL_NC(buf,pos) (*(uint32_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
 #define SVALS(buf,pos) (*(const int16_t *)((const char *)(buf) + (pos)))
-#define SVALS_NC(buf,pos) (*(int16_t *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define SVALS_NC(buf,pos) (*(int16_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
 #define IVALS(buf,pos) (*(const int32_t *)((const char *)(buf) + (pos)))
-#define IVALS_NC(buf,pos) (*(int32_t *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define IVALS_NC(buf,pos) (*(int32_t *)((void *)((char *)(buf) + (pos)))) /* Non const version of above. */
 
 /* store single value in an SMB buffer */
 #define SSVAL(buf,pos,val) SVAL_NC(buf,pos)=((uint16_t)(val))
