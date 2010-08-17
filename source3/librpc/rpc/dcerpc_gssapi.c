@@ -610,7 +610,8 @@ bool gse_require_more_processing(struct gse_context *gse_ctx)
 	return false;
 }
 
-DATA_BLOB gse_get_session_key(struct gse_context *gse_ctx)
+DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
+			      struct gse_context *gse_ctx)
 {
 	return data_blob_null;
 }
