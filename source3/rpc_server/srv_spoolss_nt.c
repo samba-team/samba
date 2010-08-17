@@ -5291,7 +5291,8 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	werr = print_job_start(p->server_info, p->msg_ctx, snum,
+	werr = print_job_start(p->server_info, p->msg_ctx,
+			        p->client_id->name, snum,
 				info_1->document_name, info_1->output_file,
 				Printer->devmode, &Printer->jobid);
 
