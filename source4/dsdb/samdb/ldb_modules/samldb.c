@@ -1482,7 +1482,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		el2 = ldb_msg_find_element(msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 
-		if (user_account_control & UF_SERVER_TRUST_ACCOUNT) {
+		if (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
 			ret = samdb_msg_add_string(ldb, msg, msg,
 						   "isCriticalSystemObject", "TRUE");
 			if (ret != LDB_SUCCESS) {
@@ -1493,8 +1493,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 			/* DCs have primaryGroupID of DOMAIN_RID_DCS */
 			if (!ldb_msg_find_element(msg, "primaryGroupID")) {
+				uint32_t rid;
+				if (user_account_control & UF_SERVER_TRUST_ACCOUNT) {
+					rid = DOMAIN_RID_DCS;
+				} else {
+					/* read-only DC */
+					rid = DOMAIN_RID_READONLY_DCS;
+				}
 				ret = samdb_msg_add_uint(ldb, msg, msg,
-							 "primaryGroupID", DOMAIN_RID_DCS);
+							 "primaryGroupID", rid);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
