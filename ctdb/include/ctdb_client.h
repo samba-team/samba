@@ -52,12 +52,12 @@ struct ctdb_client_notify_deregister {
 	uint64_t srvid;
 };
 
-struct event_context;
+struct tevent_context;
 
 /*
   initialise ctdb subsystem
 */
-struct ctdb_context *ctdb_init(struct event_context *ev);
+struct ctdb_context *ctdb_init(struct tevent_context *ev);
 
 /*
   choose the transport
@@ -193,7 +193,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 
-struct ctdb_context *ctdb_cmdline_client(struct event_context *ev);
+struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev);
 
 struct ctdb_statistics;
 int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);

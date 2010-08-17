@@ -18,7 +18,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
@@ -2408,8 +2408,9 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 
 	if (killtcp->fde == NULL) {
 		killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->capture_fd, 
-					    EVENT_FD_READ | EVENT_FD_AUTOCLOSE, 
+					    EVENT_FD_READ,
 					    capture_tcp_handler, killtcp);
+		tevent_fd_set_auto_close(killtcp->fde);
 
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset

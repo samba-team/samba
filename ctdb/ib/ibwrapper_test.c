@@ -37,7 +37,7 @@
 #include <time.h>
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "ib/ibwrapper.h"
 
 struct ibwtest_ctx {
@@ -546,7 +546,7 @@ int main(int argc, char *argv[])
 {
 	int	rc, op;
 	int	result = 1;
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct ibwtest_ctx *tcx = NULL;
 	float	usec;
 

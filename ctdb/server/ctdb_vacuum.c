@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -26,7 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 
@@ -801,6 +801,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	struct ctdb_db_context *ctdb_db = vacuum_handle->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_vacuum_child_context *child_ctx;
+	struct tevent_fd *fde;
 	int ret;
 
 	/* we dont vacuum if we are in recovery mode */
@@ -869,10 +870,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
 
-	event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
-		EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		vacuum_child_handler,
-		child_ctx);
+	fde = event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
+			   EVENT_FD_READ, vacuum_child_handler, child_ctx);
+	tevent_fd_set_auto_close(fde);
 
 	vacuum_handle->child_ctx = child_ctx;
 	child_ctx->vacuum_handle = vacuum_handle;

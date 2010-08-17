@@ -1,40 +1,43 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    main select loop and event handling
    wrapper for http://liboop.org/
 
    Copyright (C) Stefan Metzmacher 2005
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
+
+     ** NOTE! The following LGPL license applies to the tevent
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
+#include "events.h"
+#include "events_internal.h"
 
 #include <oop.h>
 
 /*
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- NOTE: this code compiles fine, but is completly *UNTESTED*
-       and is only commited as example
+ NOTE: this code compiles fine, but is completely *UNTESTED*
+       and is only committed as an example
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 */
 
-static int oop_event_context_destructor(struct event_context *ev)
+static int oop_event_context_destructor(struct tevent_context *ev)
 {
 	oop_source_sys *oop_sys = ev->additional_data;
 
@@ -46,7 +49,7 @@ static int oop_event_context_destructor(struct event_context *ev)
 /*
   create a oop_event_context structure.
 */
-static int oop_event_context_init(struct event_context *ev, void *private_data)
+static int oop_event_context_init(struct tevent_context *ev, void *private_data)
 {
 	oop_source_sys *oop_sys = private_data;
 
@@ -66,7 +69,7 @@ static int oop_event_context_init(struct event_context *ev, void *private_data)
 
 static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, void *ptr)
 {
-	struct fd_event *fde = ptr;
+	struct tevent_fd *fde = ptr;
 
 	if (fd != fde->fd) return OOP_ERROR;
 
@@ -76,7 +79,7 @@ static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, v
 			return OOP_CONTINUE;
 		case OOP_WRITE:
 			fde->handler(fde->event_ctx, fde, EVENT_FD_WRITE, fde->private_data);
-			return OOP_CONTINUE;			
+			return OOP_CONTINUE;
 		case OOP_EXCEPTION:
 			return OOP_ERROR;
 		case OOP_NUM_EVENTS:
@@ -89,9 +92,9 @@ static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, v
 /*
   destroy an fd_event
 */
-static int oop_event_fd_destructor(struct fd_event *fde)
+static int oop_event_fd_destructor(struct tevent_fd *fde)
 {
-	struct event_context *ev = fde->event_ctx;
+	struct tevent_context *ev = fde->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
 
@@ -112,16 +115,16 @@ static int oop_event_fd_destructor(struct fd_event *fde)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+static struct tevent_fd *oop_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					 int fd, uint16_t flags,
 					 event_fd_handler_t handler,
 					 void *private_data)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
-	
-	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
+
+	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
 	fde->event_ctx		= ev;
@@ -145,7 +148,7 @@ static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 /*
   return the fd event flags
 */
-static uint16_t oop_event_get_fd_flags(struct fd_event *fde)
+static uint16_t oop_event_get_fd_flags(struct tevent_fd *fde)
 {
 	return fde->flags;
 }
@@ -153,7 +156,7 @@ static uint16_t oop_event_get_fd_flags(struct fd_event *fde)
 /*
   set the fd event flags
 */
-static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+static void oop_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	oop_source_sys *oop_sys;
 	oop_source *oop;
@@ -176,16 +179,16 @@ static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	fde->flags = flags;
 }
 
-static int oop_event_timed_destructor(struct timed_event *te);
+static int oop_event_timed_destructor(struct tevent_timer *te);
 
-static int oop_event_timed_deny_destructor(struct timed_event *te)
+static int oop_event_timed_deny_destructor(struct tevent_timer *te)
 {
 	return -1;
 }
 
 static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *ptr)
 {
-	struct timed_event *te = ptr;
+	struct tevent_timer *te = ptr;
 
 	/* deny the handler to free the event */
 	talloc_set_destructor(te, oop_event_timed_deny_destructor);
@@ -200,9 +203,9 @@ static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *pt
 /*
   destroy a timed event
 */
-static int oop_event_timed_destructor(struct timed_event *te)
+static int oop_event_timed_destructor(struct tevent_timer *te)
 {
-	struct event_context *ev = te->event_ctx;
+	struct tevent_context *ev = te->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
 
@@ -215,16 +218,16 @@ static int oop_event_timed_destructor(struct timed_event *te)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-static struct timed_event *oop_event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
-					       struct timeval next_event, 
-					       event_timed_handler_t handler, 
-					       void *private_data) 
+static struct tevent_timer *oop_event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
+					       struct timeval next_event,
+					       event_timed_handler_t handler,
+					       void *private_data)
 {
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
-	struct timed_event *te;
+	struct tevent_timer *te;
 
-	te = talloc(mem_ctx?mem_ctx:ev, struct timed_event);
+	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
 	if (te == NULL) return NULL;
 
 	te->event_ctx		= ev;
@@ -241,9 +244,9 @@ static struct timed_event *oop_event_add_timed(struct event_context *ev, TALLOC_
 }
 
 /*
-  do a single event loop using the events defined in ev 
+  do a single event loop using the events defined in ev
 */
-static int oop_event_loop_once(struct event_context *ev)
+static int oop_event_loop_once(struct tevent_context *ev)
 {
 	void *oop_ret;
 	oop_source_sys *oop_sys = ev->additional_data;
@@ -259,7 +262,7 @@ static int oop_event_loop_once(struct event_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int oop_event_loop_wait(struct event_context *ev)
+static int oop_event_loop_wait(struct tevent_context *ev)
 {
 	void *oop_ret;
 	oop_source_sys *oop_sys = ev->additional_data;
@@ -277,7 +280,7 @@ static const struct event_ops event_oop_ops = {
 	.add_fd		= oop_event_add_fd,
 	.get_fd_flags	= oop_event_get_fd_flags,
 	.set_fd_flags	= oop_event_set_fd_flags,
-	.add_timed	= oop_event_add_timed,
+	.add_timer	= oop_event_add_timed,
 	.add_signal	= common_event_add_signal,
 	.loop_once	= oop_event_loop_once,
 	.loop_wait	= oop_event_loop_wait,

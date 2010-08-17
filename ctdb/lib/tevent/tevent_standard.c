@@ -1,21 +1,25 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    main select loop and event handling
    Copyright (C) Andrew Tridgell	2003-2005
-   Copyright (C) Stefan Metzmacher	2005
-   
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful,
+   Copyright (C) Stefan Metzmacher	2005-2009
+
+     ** NOTE! The following LGPL license applies to the tevent
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-   
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -27,23 +31,16 @@
     at runtime we fallback to select()
 */
 
-#include "includes.h"
-#include "system/time.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "system/network.h"
-#include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
-#include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/events/events_internal.h"
-
-extern pid_t ctdbd_pid;
+#include "system/select.h"
+#include "tevent.h"
+#include "tevent_util.h"
+#include "tevent_internal.h"
 
 struct std_event_context {
 	/* a pointer back to the generic event_context */
-	struct event_context *ev;
-
-	/* list of filedescriptor events */
-	struct fd_event *fd_events;
+	struct tevent_context *ev;
 
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
@@ -59,27 +56,29 @@ struct std_event_context {
 };
 
 /* use epoll if it is available */
-#if HAVE_EVENTS_EPOLL
+#if HAVE_EPOLL
 /*
   called when a epoll call fails, and we should fallback
   to using select
 */
 static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
 {
-	DEBUG(0,("%s (%s) - falling back to select()\n", reason, strerror(errno)));
+	tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+		     "%s (%s) - falling back to select()\n",
+		     reason, strerror(errno));
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	talloc_set_destructor(std_ev, NULL);
 }
 
 /*
-  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+  map from TEVENT_FD_* to EPOLLIN/EPOLLOUT
 */
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -105,16 +104,16 @@ static void epoll_init_ctx(struct std_event_context *std_ev)
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
 
-static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde);
+static void epoll_add_event(struct std_event_context *std_ev, struct tevent_fd *fde);
 
 /*
   reopen the epoll handle when our pid changes
-  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
+  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an
   demonstration of why this is needed
  */
 static void epoll_check_reopen(struct std_event_context *std_ev)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	if (std_ev->pid == getpid()) {
 		return;
@@ -123,11 +122,12 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = epoll_create(64);
 	if (std_ev->epoll_fd == -1) {
-		DEBUG(0,("Failed to recreate epoll handle after fork\n"));
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	std_ev->pid = getpid();
-	for (fde=std_ev->fd_events;fde;fde=fde->next) {
+	for (fde=std_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(std_ev, fde);
 	}
 }
@@ -139,7 +139,7 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 /*
  add the epoll event to the given fd_event
 */
-static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_add_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -158,7 +158,7 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -166,7 +166,7 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 /*
  delete the epoll event for given fd_event
 */
-static void epoll_del_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_del_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -186,7 +186,7 @@ static void epoll_del_event(struct std_event_context *std_ev, struct fd_event *f
 /*
  change the epoll event to the given fd_event
 */
-static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_mod_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -201,16 +201,16 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *f
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
 
-static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_change_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (std_ev->epoll_fd == -1) return;
 
@@ -222,7 +222,7 @@ static void epoll_change_event(struct std_event_context *std_ev, struct fd_event
 			epoll_mod_event(std_ev, fde);
 			return;
 		}
-		/* 
+		/*
 		 * if we want to match the select behavior, we need to remove the epoll_event
 		 * when the caller isn't interested in events.
 		 *
@@ -245,7 +245,7 @@ static void epoll_change_event(struct std_event_context *std_ev, struct fd_event
 static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tvalp)
 {
 	int ret, i;
-#define MAXEVENTS 8
+#define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
 	int timeout = -1;
 
@@ -256,15 +256,15 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
-	if (std_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(std_ev->ev)) {
+	if (std_ev->ev->signal_events &&
+	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
 
-	if (ret == -1 && errno == EINTR && std_ev->ev->num_signal_handlers) {
-		if (common_event_check_signal(std_ev->ev)) {
+	if (ret == -1 && errno == EINTR && std_ev->ev->signal_events) {
+		if (tevent_common_check_signal(std_ev->ev)) {
 			return 0;
 		}
 	}
@@ -276,13 +276,13 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(std_ev->ev);
+		tevent_common_loop_timer_delay(std_ev->ev);
 		return 0;
 	}
 
 	for (i=0;i<ret;i++) {
-		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
-						       struct fd_event);
+		struct tevent_fd *fde = talloc_get_type(events[i].data.ptr,
+						       struct tevent_fd);
 		uint16_t flags = 0;
 
 		if (fde == NULL) {
@@ -292,7 +292,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
 			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
 			/*
-			 * if we only wait for EVENT_FD_WRITE, we should not tell the
+			 * if we only wait for TEVENT_FD_WRITE, we should not tell the
 			 * event handler about it, and remove the epoll_event,
 			 * as we only report errors when waiting for read events,
 			 * to match the select() behavior
@@ -301,10 +301,10 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 				epoll_del_event(std_ev, fde);
 				continue;
 			}
-			flags |= EVENT_FD_READ;
+			flags |= TEVENT_FD_READ;
 		}
-		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
-		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(std_ev->ev, fde, flags, fde->private_data);
 			break;
@@ -314,7 +314,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	return 0;
 }
 #else
-#define epoll_init_ctx(std_ev) 
+#define epoll_init_ctx(std_ev)
 #define epoll_add_event(std_ev,fde)
 #define epoll_del_event(std_ev,fde)
 #define epoll_change_event(std_ev,fde)
@@ -325,7 +325,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 /*
   create a std_event_context structure.
 */
-static int std_event_context_init(struct event_context *ev)
+static int std_event_context_init(struct tevent_context *ev)
 {
 	struct std_event_context *std_ev;
 
@@ -345,10 +345,10 @@ static int std_event_context_init(struct event_context *ev)
 */
 static void calc_maxfd(struct std_event_context *std_ev)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	std_ev->maxfd = 0;
-	for (fde = std_ev->fd_events; fde; fde = fde->next) {
+	for (fde = std_ev->ev->fd_events; fde; fde = fde->next) {
 		if (fde->fd > std_ev->maxfd) {
 			std_ev->maxfd = fde->fd;
 		}
@@ -364,57 +364,49 @@ static void calc_maxfd(struct std_event_context *std_ev)
 /*
   destroy an fd_event
 */
-static int std_event_fd_destructor(struct fd_event *fde)
+static int std_event_fd_destructor(struct tevent_fd *fde)
 {
-	struct event_context *ev = fde->event_ctx;
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
+	struct tevent_context *ev = fde->event_ctx;
+	struct std_event_context *std_ev = NULL;
 
-	epoll_check_reopen(std_ev);
+	if (ev) {
+		std_ev = talloc_get_type(ev->additional_data,
+					 struct std_event_context);
 
-	if (std_ev->maxfd == fde->fd) {
-		std_ev->maxfd = EVENT_INVALID_MAXFD;
+		epoll_check_reopen(std_ev);
+
+		if (std_ev->maxfd == fde->fd) {
+			std_ev->maxfd = EVENT_INVALID_MAXFD;
+		}
+
+		epoll_del_event(std_ev, fde);
 	}
 
-	DLIST_REMOVE(std_ev->fd_events, fde);
-
-	epoll_del_event(std_ev, fde);
-
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
-		close(fde->fd);
-		fde->fd = -1;
-	}
-
-	return 0;
+	return tevent_common_fd_destructor(fde);
 }
 
 /*
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+static struct tevent_fd *std_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
+					  int fd, uint16_t flags,
+					  tevent_fd_handler_t handler,
+					  void *private_data,
+					  const char *handler_name,
+					  const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	epoll_check_reopen(std_ev);
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
+	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
+				   handler, private_data,
+				   handler_name, location);
 	if (!fde) return NULL;
 
-	fde->event_ctx		= ev;
-	fde->fd			= fd;
-	fde->flags		= flags;
-	fde->handler		= handler;
-	fde->private_data	= private_data;
-	fde->additional_flags	= 0;
-	fde->additional_data	= NULL;
-
-	DLIST_ADD(std_ev->fd_events, fde);
 	if ((std_ev->maxfd != EVENT_INVALID_MAXFD)
 	    && (fde->fd > std_ev->maxfd)) {
 		std_ev->maxfd = fde->fd;
@@ -426,21 +418,12 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 	return fde;
 }
 
-
-/*
-  return the fd event flags
-*/
-static uint16_t std_event_get_fd_flags(struct fd_event *fde)
-{
-	return fde->flags;
-}
-
 /*
   set the fd event flags
 */
-static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+static void std_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct std_event_context *std_ev;
 
 	if (fde->flags == flags) return;
@@ -461,7 +444,7 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 static int std_event_loop_select(struct std_event_context *std_ev, struct timeval *tvalp)
 {
 	fd_set r_fds, w_fds;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int selrtn;
 
 	/* we maybe need to recalculate the maxfd */
@@ -473,25 +456,25 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	FD_ZERO(&w_fds);
 
 	/* setup any fd events */
-	for (fde = std_ev->fd_events; fde; fde = fde->next) {
-		if (fde->flags & EVENT_FD_READ) {
+	for (fde = std_ev->ev->fd_events; fde; fde = fde->next) {
+		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
-		if (fde->flags & EVENT_FD_WRITE) {
+		if (fde->flags & TEVENT_FD_WRITE) {
 			FD_SET(fde->fd, &w_fds);
 		}
 	}
 
-	if (std_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(std_ev->ev)) {
+	if (std_ev->ev->signal_events &&
+	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
 	selrtn = select(std_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
 
-	if (selrtn == -1 && errno == EINTR && 
-	    std_ev->ev->num_signal_handlers) {
-		common_event_check_signal(std_ev->ev);
+	if (selrtn == -1 && errno == EINTR &&
+	    std_ev->ev->signal_events) {
+		tevent_common_check_signal(std_ev->ev);
 		return 0;
 	}
 
@@ -501,14 +484,15 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-		DEBUG(0,("ERROR: EBADF on std_event_loop_once\n"));
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "ERROR: EBADF on std_event_loop_once\n");
 		std_ev->exit_code = EBADF;
 		return -1;
 	}
 
 	if (selrtn == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(std_ev->ev);
+		tevent_common_loop_timer_delay(std_ev->ev);
 		return 0;
 	}
 
@@ -516,11 +500,11 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		/* at least one file descriptor is ready - check
 		   which ones and call the handler, being careful to allow
 		   the handler to remove itself when called */
-		for (fde = std_ev->fd_events; fde; fde = fde->next) {
+		for (fde = std_ev->ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= EVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
+			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(std_ev->ev, fde, flags, fde->private_data);
 				break;
@@ -529,19 +513,29 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	}
 
 	return 0;
-}		
+}
 
 /*
-  do a single event loop using the events defined in ev 
+  do a single event loop using the events defined in ev
 */
-static int std_event_loop_once(struct event_context *ev)
+static int std_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-		 					   struct std_event_context);
+							   struct std_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
-	if (timeval_is_zero(&tval)) {
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return 0;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return 0;
+	}
+
+	tval = tevent_common_loop_timer_delay(ev);
+	if (tevent_timeval_is_zero(&tval)) {
 		return 0;
 	}
 
@@ -554,62 +548,21 @@ static int std_event_loop_once(struct event_context *ev)
 	return std_event_loop_select(std_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int std_event_loop_wait(struct event_context *ev)
-{
-	static time_t t=0;
-	time_t new_t;
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
-	std_ev->exit_code = 0;
-
-	while (std_ev->fd_events && std_ev->exit_code == 0) {
-		if (std_event_loop_once(ev) != 0) {
-			break;
-		}
-		if (getpid() == ctdbd_pid) {
-			new_t=time(NULL);
-			if (t != 0) {
-				if (t > new_t) {
-					DEBUG(0,(__location__ " ERROR Time skipped backward by %d seconds\n", (int)(t-new_t)));
-				}
-				/* We assume here that we get at least one event every 5 seconds */
-				if (new_t > (t+5)) {
-					DEBUG(0,(__location__ " ERROR Time jumped forward by %d seconds\n", (int)(new_t-t)));
-				}
-			}
-			t=new_t;
-		}
-	}
-
-	return std_ev->exit_code;
-}
-
-static const struct event_ops std_event_ops = {
-	.context_init	= std_event_context_init,
-	.add_fd		= std_event_add_fd,
-	.get_fd_flags	= std_event_get_fd_flags,
-	.set_fd_flags	= std_event_set_fd_flags,
-	.add_timed	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
-	.loop_once	= std_event_loop_once,
-	.loop_wait	= std_event_loop_wait,
+static const struct tevent_ops std_event_ops = {
+	.context_init		= std_event_context_init,
+	.add_fd			= std_event_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= std_event_set_fd_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= std_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 
-bool events_standard_init(void)
+_PRIVATE_ bool tevent_standard_init(void)
 {
-	return event_register_backend("standard", &std_event_ops);
+	return tevent_register_backend("standard", &std_event_ops);
 }
-
-#if _SAMBA_BUILD_
-NTSTATUS s4_events_standard_init(void)
-{
-	if (!events_standard_init()) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
-}
-#endif
