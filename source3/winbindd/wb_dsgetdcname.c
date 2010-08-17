@@ -97,6 +97,10 @@ static void wb_dsgetdcname_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		tevent_req_nterror(req, result);
+		return;
+	}
 	tevent_req_done(req);
 }
 
