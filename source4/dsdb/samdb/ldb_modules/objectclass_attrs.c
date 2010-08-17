@@ -79,6 +79,7 @@ static int attr_handler(struct oc_context *ac)
 	unsigned int i;
 	int ret;
 	WERROR werr;
+	struct dsdb_syntax_ctx syntax_ctx;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -90,6 +91,9 @@ static int attr_handler(struct oc_context *ac)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
+
+	/* initialize syntax checking context */
+	dsdb_syntax_ctx_init(&syntax_ctx, ldb, ac->schema);
 
 	/* Check if attributes exist in the schema, if the values match,
 	 * if they're not operational and fix the names to the match the schema
@@ -114,7 +118,7 @@ static int attr_handler(struct oc_context *ac)
 		}
 		
 		if (!(msg->elements[i].flags & LDB_FLAG_INTERNAL_DISABLE_VALIDATION)) {
-			werr = attr->syntax->validate_ldb(ldb, ac->schema, attr,
+			werr = attr->syntax->validate_ldb(&syntax_ctx, attr,
 							  &msg->elements[i]);
 			if (!W_ERROR_IS_OK(werr)) {
 				ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' contains at least one invalid value!",

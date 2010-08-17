@@ -88,8 +88,7 @@ static WERROR dsdb_syntax_FOOBAR_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_FOOBAR;
 }
 
-static WERROR dsdb_syntax_FOOBAR_validate_ldb(struct ldb_context *ldb,
-					      const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_FOOBAR_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					      const struct dsdb_attribute *attr,
 					      const struct ldb_message_element *in)
 {
@@ -183,8 +182,7 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_BOOL_validate_ldb(struct ldb_context *ldb,
-					    const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_BOOL_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					    const struct dsdb_attribute *attr,
 					    const struct ldb_message_element *in)
 {
@@ -294,8 +292,7 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_INT32_validate_ldb(struct ldb_context *ldb,
-					     const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_INT32_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					     const struct dsdb_attribute *attr,
 					     const struct ldb_message_element *in)
 {
@@ -421,8 +418,7 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_INT64_validate_ldb(struct ldb_context *ldb,
-					     const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_INT64_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					     const struct dsdb_attribute *attr,
 					     const struct ldb_message_element *in)
 {
@@ -561,8 +557,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(struct ldb_context *ldb,
-						  const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 						  const struct dsdb_attribute *attr,
 						  const struct ldb_message_element *in)
 {
@@ -699,8 +694,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_NTTIME_validate_ldb(struct ldb_context *ldb,
-					      const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_NTTIME_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					      const struct dsdb_attribute *attr,
 					      const struct ldb_message_element *in)
 {
@@ -803,8 +797,7 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_DATA_BLOB_validate_one_val(struct ldb_context *ldb,
-						     const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DATA_BLOB_validate_one_val(const struct dsdb_syntax_ctx *ctx,
 						     const struct dsdb_attribute *attr,
 						     const struct ldb_val *val)
 {
@@ -827,8 +820,7 @@ static WERROR dsdb_syntax_DATA_BLOB_validate_one_val(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(struct ldb_context *ldb,
-						 const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
@@ -844,8 +836,7 @@ static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(struct ldb_context *ldb,
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
-		status = dsdb_syntax_DATA_BLOB_validate_one_val(ldb,
-								schema,
+		status = dsdb_syntax_DATA_BLOB_validate_one_val(ctx,
 								attr,
 								&in->values[i]);
 		if (!W_ERROR_IS_OK(status)) {
@@ -1264,7 +1255,7 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(struct ldb_context *ldb,
 	return werr;
 }
 
-static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb, 
+static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb,
 					     const struct dsdb_schema *schema,
 					     const struct dsdb_attribute *attr,
 					     const struct ldb_message_element *in,
@@ -1302,8 +1293,7 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(struct ldb_context *ldb,
 	return _dsdb_syntax_auto_OID_ldb_to_drsuapi(ldb, schema, attr, in, mem_ctx, out);
 }
 
-static WERROR dsdb_syntax_OID_validate_ldb(struct ldb_context *ldb,
-					   const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_OID_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					   const struct dsdb_attribute *attr,
 					   const struct ldb_message_element *in)
 {
@@ -1320,13 +1310,13 @@ static WERROR dsdb_syntax_OID_validate_ldb(struct ldb_context *ldb,
 	 * TODO: optimize and verify this code
 	 */
 
-	tmp_ctx = talloc_new(ldb);
+	tmp_ctx = talloc_new(ctx->ldb);
 	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
 
-	status = dsdb_syntax_OID_ldb_to_drsuapi(ldb,
-						schema,
+	status = dsdb_syntax_OID_ldb_to_drsuapi(ctx->ldb,
+						ctx->schema,
 						attr,
 						in,
 						tmp_ctx,
@@ -1336,8 +1326,8 @@ static WERROR dsdb_syntax_OID_validate_ldb(struct ldb_context *ldb,
 		return status;
 	}
 
-	status = dsdb_syntax_OID_drsuapi_to_ldb(ldb,
-						schema,
+	status = dsdb_syntax_OID_drsuapi_to_ldb(ctx->ldb,
+						ctx->schema,
 						attr,
 						&drs_tmp,
 						tmp_ctx,
@@ -1431,8 +1421,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_UNICODE_validate_one_val(struct ldb_context *ldb,
-						   const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_UNICODE_validate_one_val(const struct dsdb_syntax_ctx *ctx,
 						   const struct dsdb_attribute *attr,
 						   const struct ldb_val *val)
 {
@@ -1444,7 +1433,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	ok = convert_string_talloc(ldb,
+	ok = convert_string_talloc(ctx->ldb,
 					       CH_UNIX, CH_UTF16,
 					       val->data,
 					       val->length,
@@ -1470,8 +1459,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_UNICODE_validate_ldb(struct ldb_context *ldb,
-					       const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_UNICODE_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					       const struct dsdb_attribute *attr,
 					       const struct ldb_message_element *in)
 {
@@ -1487,8 +1475,7 @@ static WERROR dsdb_syntax_UNICODE_validate_ldb(struct ldb_context *ldb,
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
-		status = dsdb_syntax_UNICODE_validate_one_val(ldb,
-							      schema,
+		status = dsdb_syntax_UNICODE_validate_one_val(ctx,
 							      attr,
 							      &in->values[i]);
 		if (!W_ERROR_IS_OK(status)) {
@@ -1679,8 +1666,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_DN_validate_one_val(struct ldb_context *ldb,
-					      const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DN_validate_one_val(const struct dsdb_syntax_ctx *ctx,
 					      const struct dsdb_attribute *attr,
 					      const struct ldb_val *val,
 					      TALLOC_CTX *mem_ctx,
@@ -1706,7 +1692,7 @@ static WERROR dsdb_syntax_DN_validate_one_val(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, val,
+	dsdb_dn = dsdb_dn_parse(tmp_ctx, ctx->ldb, val,
 				attr->syntax->ldap_oid);
 	if (!dsdb_dn) {
 		talloc_free(tmp_ctx);
@@ -1779,8 +1765,7 @@ static WERROR dsdb_syntax_DN_validate_one_val(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_DN_validate_ldb(struct ldb_context *ldb,
-					  const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DN_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					  const struct dsdb_attribute *attr,
 					  const struct ldb_message_element *in)
 {
@@ -1793,11 +1778,10 @@ static WERROR dsdb_syntax_DN_validate_ldb(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		WERROR status;
 		struct dsdb_dn *dsdb_dn;
-		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		TALLOC_CTX *tmp_ctx = talloc_new(ctx->ldb);
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-		status = dsdb_syntax_DN_validate_one_val(ldb,
-							 schema,
+		status = dsdb_syntax_DN_validate_one_val(ctx,
 							 attr,
 							 &in->values[i],
 							 tmp_ctx, &dsdb_dn);
@@ -2002,8 +1986,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_DN_BINARY_validate_ldb(struct ldb_context *ldb,
-						 const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DN_BINARY_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
@@ -2016,11 +1999,10 @@ static WERROR dsdb_syntax_DN_BINARY_validate_ldb(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		WERROR status;
 		struct dsdb_dn *dsdb_dn;
-		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		TALLOC_CTX *tmp_ctx = talloc_new(ctx->ldb);
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-		status = dsdb_syntax_DN_validate_one_val(ldb,
-							 schema,
+		status = dsdb_syntax_DN_validate_one_val(ctx,
 							 attr,
 							 &in->values[i],
 							 tmp_ctx, &dsdb_dn);
@@ -2034,8 +2016,7 @@ static WERROR dsdb_syntax_DN_BINARY_validate_ldb(struct ldb_context *ldb,
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
-		status = dsdb_syntax_DATA_BLOB_validate_one_val(ldb,
-								schema,
+		status = dsdb_syntax_DATA_BLOB_validate_one_val(ctx,
 								attr,
 								&dsdb_dn->extra_part);
 		if (!W_ERROR_IS_OK(status)) {
@@ -2079,8 +2060,7 @@ static WERROR dsdb_syntax_DN_STRING_ldb_to_drsuapi(struct ldb_context *ldb,
 						    out);
 }
 
-static WERROR dsdb_syntax_DN_STRING_validate_ldb(struct ldb_context *ldb,
-						 const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_DN_STRING_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 						 const struct dsdb_attribute *attr,
 						 const struct ldb_message_element *in)
 {
@@ -2093,11 +2073,10 @@ static WERROR dsdb_syntax_DN_STRING_validate_ldb(struct ldb_context *ldb,
 	for (i=0; i < in->num_values; i++) {
 		WERROR status;
 		struct dsdb_dn *dsdb_dn;
-		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		TALLOC_CTX *tmp_ctx = talloc_new(ctx->ldb);
 		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-		status = dsdb_syntax_DN_validate_one_val(ldb,
-							 schema,
+		status = dsdb_syntax_DN_validate_one_val(ctx,
 							 attr,
 							 &in->values[i],
 							 tmp_ctx, &dsdb_dn);
@@ -2111,8 +2090,7 @@ static WERROR dsdb_syntax_DN_STRING_validate_ldb(struct ldb_context *ldb,
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
-		status = dsdb_syntax_UNICODE_validate_one_val(ldb,
-							      schema,
+		status = dsdb_syntax_UNICODE_validate_one_val(ctx,
 							      attr,
 							      &dsdb_dn->extra_part);
 		if (!W_ERROR_IS_OK(status)) {
@@ -2225,13 +2203,11 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 	return WERR_OK;
 }
 
-static WERROR dsdb_syntax_PRESENTATION_ADDRESS_validate_ldb(struct ldb_context *ldb,
-							    const struct dsdb_schema *schema,
+static WERROR dsdb_syntax_PRESENTATION_ADDRESS_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 							    const struct dsdb_attribute *attr,
 							    const struct ldb_message_element *in)
 {
-	return dsdb_syntax_UNICODE_validate_ldb(ldb,
-						schema,
+	return dsdb_syntax_UNICODE_validate_ldb(ctx,
 						attr,
 						in);
 }
