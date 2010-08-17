@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../lib/crypto/md5.h"
+#include "smb_signing.h"
 
 /* Used by the SMB signing functions. */
 

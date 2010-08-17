@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-
+#include "smb_signing.h"
 
 /***********************************************************
  Called to validate an incoming packet from the client.

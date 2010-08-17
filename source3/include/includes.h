@@ -639,7 +639,6 @@ extern void *cmdline_lp_ctx;
 #include "messages.h"
 #include "locking.h"
 #include "smb_perfcount.h"
-#include "smb_signing.h"
 #include "smb.h"
 #include "nameserv.h"
 #include "../lib/util/byteorder.h"
