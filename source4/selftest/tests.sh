@@ -106,16 +106,16 @@ $smb4torture -V
 
 bbdir=../testprogs/blackbox
 
-prefix_abs="$SELFTEST_PREFIX/s4client"
 CONFIGURATION="--configfile=\$SMB_CONF_PATH"
 
-test -d "$prefix_abs" || mkdir "$prefix_abs"
+rm -rf $SELFTEST_PREFIX/s4client
+mkdir -p $SELFTEST_PREFIX/s4client
 
 TORTURE_OPTIONS=""
 TORTURE_OPTIONS="$TORTURE_OPTIONS $CONFIGURATION"
 TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
 TORTURE_OPTIONS="$TORTURE_OPTIONS --target=$SELFTEST_TARGET"
-TORTURE_OPTIONS="$TORTURE_OPTIONS --basedir=$prefix_abs"
+TORTURE_OPTIONS="$TORTURE_OPTIONS --basedir=$SELFTEST_PREFIX/s4client"
 if [ -z "$SELFTEST_VERBOSE" ]; then
 	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:progress=no"
 fi
