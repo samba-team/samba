@@ -760,7 +760,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	werr = drs_security_level_check(dce_call, "DsGetNCChanges", SECURITY_RO_DOMAIN_CONTROLLER);
+	werr = drs_security_level_check(dce_call, "DsGetNCChanges", SECURITY_RO_DOMAIN_CONTROLLER,
+					samdb_domain_sid(b_state->sam_ctx));
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}

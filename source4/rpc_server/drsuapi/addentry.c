@@ -171,7 +171,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
-	status = drs_security_level_check(dce_call, "DsAddEntry", SECURITY_DOMAIN_CONTROLLER);
+	status = drs_security_level_check(dce_call, "DsAddEntry", SECURITY_DOMAIN_CONTROLLER, NULL);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}

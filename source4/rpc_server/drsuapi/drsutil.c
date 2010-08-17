@@ -103,7 +103,8 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 
 WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 				const char* call,
-				enum security_user_level minimum_level)
+				enum security_user_level minimum_level,
+				const struct dom_sid *domain_sid)
 {
 	enum security_user_level level;
 
@@ -112,7 +113,7 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 		return WERR_OK;
 	}
 
-	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+	level = security_session_user_level(dce_call->conn->auth_state.session_info, domain_sid);
 	if (level < minimum_level) {
 		if (call) {
 			DEBUG(0,("%s refused for security token (level=%u)\n",
