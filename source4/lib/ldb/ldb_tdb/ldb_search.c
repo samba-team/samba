@@ -78,6 +78,7 @@ static int msg_add_element(struct ldb_message *ret,
 	}
 
 	elnew->num_values = el->num_values;
+	elnew->flags = el->flags;
 
 	ret->num_elements++;
 
@@ -97,6 +98,7 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
 	el.name = "distinguishedName";
 	el.num_values = 1;
 	el.values = &val;
+	el.flags = 0;
 	val.data = (uint8_t *)ldb_dn_alloc_linearized(msg, msg->dn);
 	val.length = strlen((char *)val.data);
 	
