@@ -248,6 +248,21 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 		return NULL;
 	}
 
+	if (session_info) {
+		/* take a reference to the session_info, as it is
+		 * possible for the ldb to live longer than the
+		 * session_info. This happens when a DRS DsBind call
+		 * reuses a handle, but the original connection is
+		 * shutdown. The token for the new connection is still
+		 * valid, so we need the session_info to remain valid for
+		 * ldb modules to use
+		 */
+		if (talloc_reference(w, session_info) == NULL) {
+			talloc_free(ldb);
+			return NULL;
+		}
+	}
+
 	w->ldb = ldb;
 
 	DLIST_ADD(ldb_wrap_list, w);
