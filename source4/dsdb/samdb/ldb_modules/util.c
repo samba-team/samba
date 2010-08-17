@@ -906,7 +906,7 @@ bool dsdb_module_am_system(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		= talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"), struct auth_session_info);
 	return security_session_user_level(session_info, NULL) == SECURITY_SYSTEM;
 }
 
@@ -914,7 +914,7 @@ bool dsdb_module_am_administrator(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
+		= talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"), struct auth_session_info);
 	return security_session_user_level(session_info, NULL) == SECURITY_ADMINISTRATOR;
 }
 
