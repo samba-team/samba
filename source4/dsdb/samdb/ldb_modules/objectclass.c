@@ -432,6 +432,27 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(ac->module, search_req);
 }
 
+
+/*
+  check if this is a special RODC nTDSDSA add
+ */
+static bool check_rodc_ntdsdsa_add(struct oc_context *ac,
+				   const struct dsdb_class *objectclass)
+{
+	struct ldb_control *rodc_control;
+
+	if (strcasecmp(objectclass->lDAPDisplayName, "nTDSDSA") != 0) {
+		return false;
+	}
+	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
+	if (!rodc_control) {
+		return false;
+	}
+
+	rodc_control->critical = false;
+	return true;
+}
+
 static int objectclass_do_add(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
@@ -566,7 +587,9 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_NAMING_VIOLATION;
 		}
 
-		if (objectclass->systemOnly && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		if (objectclass->systemOnly &&
+		    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+		    !check_rodc_ntdsdsa_add(ac, objectclass)) {
 			ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
 						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
