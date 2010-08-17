@@ -25,6 +25,7 @@ from samba.netcmd import Command, CommandError, Option
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba import gensec
 
 class cmd_setpassword(Command):
     """(Re)sets the password on a user account"""
@@ -63,6 +64,8 @@ class cmd_setpassword(Command):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
+
+        creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
