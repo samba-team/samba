@@ -142,7 +142,7 @@ if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
     done
 fi
 for options in "" "-U\$USERNAME%\$PASSWORD"; do
-    plantestsuite "ldb.ldapi with options $options" dc $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
+    plantestsuite "ldb.ldapi with options $options" dc:local $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
 done
 for t in `$smb4torture --list | grep "^LDAP-"`
 do
