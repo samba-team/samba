@@ -166,14 +166,14 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 		return SECURITY_ADMINISTRATOR;
 	}
 
-	if (domain_sid &&
-	    dom_sid_in_domain(domain_sid, session_info->security_token->user_sid)) {
-		uint32_t rid;
-		NTSTATUS status = dom_sid_split_rid(NULL, session_info->security_token->user_sid,
-						    NULL, &rid);
-		if (NT_STATUS_IS_OK(status) && rid == DOMAIN_RID_ENTERPRISE_READONLY_DCS) {
+	if (domain_sid) {
+		struct dom_sid *rodc_dcs;
+		rodc_dcs = dom_sid_add_rid(session_info, domain_sid, DOMAIN_RID_READONLY_DCS);
+		if (security_token_has_sid(session_info->security_token, rodc_dcs)) {
+			talloc_free(rodc_dcs);
 			return SECURITY_RO_DOMAIN_CONTROLLER;
 		}
+		talloc_free(rodc_dcs);
 	}
 
 	if (security_token_has_enterprise_dcs(session_info->security_token)) {
