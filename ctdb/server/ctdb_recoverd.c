@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "system/network.h"
@@ -2804,7 +2804,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 	}
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
-				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+				EVENT_FD_READ,
 				reclock_child_handler,
 				(void *)state);
 
@@ -2813,6 +2813,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 		talloc_free(state);
 		return -1;
 	}
+	tevent_fd_set_auto_close(state->fde);
 
 	while (state->status == RECLOCK_CHECKING) {
 		event_loop_once(ctdb->ev);
@@ -3558,6 +3559,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
 	int fd[2];
 	struct signal_event *se;
+	struct tevent_fd *fde;
 
 	if (pipe(fd) != 0) {
 		return -1;
@@ -3589,8 +3591,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
 
-	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ,
 		     ctdb_recoverd_parent, &fd[0]);	
+	tevent_fd_set_auto_close(fde);
 
 	/* set up a handler to pick up sigchld */
 	se = event_add_signal(ctdb->ev, ctdb,

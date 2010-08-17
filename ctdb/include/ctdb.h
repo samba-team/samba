@@ -72,7 +72,7 @@ typedef void (*ctdb_log_fn_t)(void *log_priv,
  * @log: the logging function
  * @log_priv: the private argument to the logging function.
  *
- * Returns a ctdb context if successful or NULL.  Use ctdb_free() to
+ * Returns a ctdb context if successful or NULL.  Use ctdb_disconnect() to
  * release the returned ctdb_connection when finished.
  *
  * See Also:
@@ -99,6 +99,14 @@ void ctdb_log_file(FILE *, int, const char *, va_list);
  * Set it to LOG_DEBUG to receive all messages.
  */
 extern int ctdb_log_level;
+
+/**
+ * ctdb_disconnect - close down a connection to ctdbd.
+ * @ctdb: the ctdb connectio returned from ctdb_connect.
+ *
+ * The @ctdb arg will be freed by this call, and must not be used again.
+ */
+void ctdb_disconnect(struct ctdb_connection *ctdb);
 
 /***
  *
@@ -185,7 +193,7 @@ typedef void (*ctdb_callback_t)(struct ctdb_connection *ctdb,
  * This represents a particular open database: you receive it from
  * ctdb_attachdb or ctdb_attachdb_recv to manipulate a database.
  *
- * You have to free the handle with ctdb_detach_db() when finished with it.
+ * You have to free the handle with ctdb_detachdb() when finished with it.
  */
 struct ctdb_db;
 
@@ -299,8 +307,9 @@ typedef void (*ctdb_message_fn_t)(struct ctdb_connection *,
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @srvid: the 64 bit identifier for our messages.
  * @handler: the callback when we receive such a message (typesafe)
+ * @handler_data: the argument to handler()
  * @callback: the callback when ctdb replies to our message (typesafe)
- * @cbdata: the argument to callback() and handler()
+ * @cbdata: the argument to callback()
  *
  * Note: our callback will always be called before handler.
  *
@@ -310,6 +319,7 @@ typedef void (*ctdb_message_fn_t)(struct ctdb_connection *,
 struct ctdb_request *
 ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 			      ctdb_message_fn_t handler,
+			      void *handler_data,
 			      ctdb_callback_t callback,
 			      void *cbdata);
 
@@ -328,6 +338,8 @@ bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
  * ctdb_remove_message_handler_send - unregister for messages to a srvid
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @srvid: the 64 bit identifier for our messages.
+ * @handler: the callback when we receive such a message (typesafe)
+ * @handler_data: the argument to handler()
  * @callback: the callback when ctdb replies to our message (typesafe)
  * @cbdata: the argument to callback()
  *
@@ -336,6 +348,7 @@ bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
  */
 struct ctdb_request *
 ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
+				 ctdb_message_fn_t handler, void *handler_data,
 				 ctdb_callback_t callback, void *cbdata);
 
 /**
@@ -346,7 +359,8 @@ ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
  * After this returns true, the registered handler will no longer be called.
  * If this returns false, the de-registration failed.
  */
-bool ctdb_remove_message_handler_recv(struct ctdb_request *handle);
+bool ctdb_remove_message_handler_recv(struct ctdb_connection *ctdb,
+				      struct ctdb_request *req);
 
 
 /**
@@ -457,7 +471,17 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			      uint32_t tdb_flags);
 
 /**
+ * ctdb_detachdb - close a clustered TDB.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @db: the database from ctdb_attachdb/ctdb_attachdb_send
+ *
+ * Closes a clustered tdb.
+ */
+void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db);
+
+/**
  * ctdb_readrecordlock - read and lock a record (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
  * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
  * @key: the key of the record to lock.
  * @req: a pointer to the request, if one is needed.
@@ -465,7 +489,8 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
  * Do a ctdb_readrecordlock_send and wait for it to complete.
  * Returns NULL on failure.
  */
-struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
+struct ctdb_lock *ctdb_readrecordlock(struct ctdb_connection *ctdb,
+				      struct ctdb_db *ctdb_db, TDB_DATA key,
 				      TDB_DATA *data);
 
 
@@ -482,18 +507,21 @@ struct ctdb_lock *ctdb_readrecordlock(struct ctdb_db *ctdb_db, TDB_DATA key,
  * failed.
  */
 bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
-			     ctdb_message_fn_t handler, void *cbdata);
+			      ctdb_message_fn_t handler, void *cbdata);
 
 
 /**
  * ctdb_remove_message_handler - deregister for messages (synchronous)
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @srvid: the 64 bit identifier for our messages.
+ * @handler: the callback when we receive such a message (typesafe)
+ * @handler_data: the argument to handler()
  *
  * If this returns true, the message handler will no longer be called.
  * If this returns false, the deregistration failed.
  */
-bool ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid);
+bool ctdb_remove_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
+				 ctdb_message_fn_t handler, void *handler_data);
 
 /**
  * ctdb_getpnn - read the pnn number of a node (synchronous)
@@ -533,12 +561,23 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 	 typesafe_cb_preargs(void, (cb), (cbdata),			\
 			     struct ctdb_connection *, struct ctdb_request *)
 
+#define ctdb_msgcb(cb, cbdata)						\
+	typesafe_cb_preargs(void, (cb), (cbdata),			\
+			    struct ctdb_connection *, uint64_t, TDB_DATA)
+
 #define ctdb_connect(addr, log, logpriv)				\
 	ctdb_connect((addr),						\
 		     typesafe_cb_postargs(void, (log), (logpriv),	\
 					  int, const char *, va_list),	\
 		     (logpriv))
 
+#define ctdb_set_message_handler(ctdb, srvid, handler, hdata)		\
+	ctdb_set_message_handler((ctdb), (srvid),			\
+				 ctdb_msgcb((handler), (hdata)), (hdata))
+
+#define ctdb_remove_message_handler(ctdb, srvid, handler, hdata)	\
+	ctdb_remove_message_handler((ctdb), (srvid),			\
+				    ctdb_msgcb((handler), (hdata)), (hdata))
 
 #define ctdb_attachdb_send(ctdb, name, persistent, tdb_flags, cb, cbdata) \
 	ctdb_attachdb_send((ctdb), (name), (persistent), (tdb_flags),	\
@@ -550,12 +589,14 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 				    struct ctdb_db *, struct ctdb_lock *, \
 				    TDB_DATA), (cbdata))
 
-#define ctdb_set_message_handler_send(ctdb, srvid, handler, cb, cbdata)	\
-	ctdb_set_message_handler_send((ctdb), (srvid), (handler),	\
-	      ctdb_sendcb((cb), (cbdata)), (cbdata))
+#define ctdb_set_message_handler_send(ctdb, srvid, handler, hdata, cb, cbdata) \
+	ctdb_set_message_handler_send((ctdb), (srvid),			\
+				      ctdb_msgcb((handler), (hdata)), (hdata), \
+				      ctdb_sendcb((cb), (cbdata)), (cbdata))
 
-#define ctdb_remove_message_handler_send(ctdb, srvid, cb, cbdata)	\
+#define ctdb_remove_message_handler_send(ctdb, srvid, handler, hdata, cb, cbdata) \
 	ctdb_remove_message_handler_send((ctdb), (srvid),		\
+	      ctdb_msgcb((handler), (hdata)), (hdata),			\
 	      ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_getpnn_send(ctdb, destnode, cb, cbdata)			\

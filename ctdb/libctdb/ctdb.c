@@ -50,6 +50,17 @@ struct ctdb_lock {
 	ctdb_rrl_callback_t callback;
 };
 
+struct ctdb_db {
+	struct ctdb_connection *ctdb;
+	bool persistent;
+	uint32_t tdb_flags;
+	uint32_t id;
+	struct tdb_context *tdb;
+
+	ctdb_callback_t callback;
+	void *private_data;
+};
+
 static void remove_lock(struct ctdb_connection *ctdb, struct ctdb_lock *lock)
 {
 	DLIST_REMOVE(ctdb->locks, lock);
@@ -65,6 +76,19 @@ static bool holding_lock(struct ctdb_connection *ctdb)
 static void add_lock(struct ctdb_connection *ctdb, struct ctdb_lock *lock)
 {
 	DLIST_ADD(ctdb->locks, lock);
+}
+
+static void cleanup_locks(struct ctdb_connection *ctdb, struct ctdb_db *db)
+{
+	struct ctdb_lock *i, *next;
+
+	for (i = ctdb->locks; i; i = next) {
+		/* Grab next pointer, as release_lock will free i */
+		next = i->next;
+		if (i->ctdb_db == db) {
+			ctdb_release_lock(db, i);
+		}
+	}
 }
 
 /* FIXME: Could be in shared util code with rest of ctdb */
@@ -165,6 +189,33 @@ fail:
 	return NULL;
 }
 
+void ctdb_disconnect(struct ctdb_connection *ctdb)
+{
+	struct ctdb_request *i;
+
+	DEBUG(ctdb, LOG_DEBUG, "ctdb_disconnect");
+
+	while ((i = ctdb->outq) != NULL) {
+		DLIST_REMOVE(ctdb->outq, i);
+		ctdb_request_free(ctdb, i);
+	}
+
+	while ((i = ctdb->doneq) != NULL) {
+		DLIST_REMOVE(ctdb->doneq, i);
+		ctdb_request_free(ctdb, i);
+	}
+
+	if (ctdb->in)
+		free_io_elem(ctdb->in);
+
+	remove_message_handlers(ctdb);
+
+	close(ctdb->fd);
+	/* Just in case they try to reuse */
+	ctdb->fd = -1;
+	free(ctdb);
+}
+
 int ctdb_get_fd(struct ctdb_connection *ctdb)
 {
 	return ctdb->fd;
@@ -201,6 +252,13 @@ struct ctdb_request *new_ctdb_request(size_t len,
 
 void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
+	if (req->next || req->prev) {
+		DEBUG(ctdb, LOG_ALERT,
+		      "ctdb_request_free: request not complete! ctdb_cancel? %p (id %u)",
+		      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
+		ctdb_cancel(ctdb, req);
+		return;
+	}
 	if (req->extra_destructor) {
 		req->extra_destructor(ctdb, req);
 	}
@@ -456,6 +514,14 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 
 void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 {
+	if (!req->next && !req->prev) {
+		DEBUG(ctdb, LOG_ALERT,
+		      "ctdb_cancel: request completed! ctdb_request_free? %p (id %u)",
+		      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
+		ctdb_request_free(ctdb, req);
+		return;
+	}
+
 	DEBUG(ctdb, LOG_DEBUG, "ctdb_cancel: %p (id %u)",
 	      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
 
@@ -463,19 +529,12 @@ void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 	req->callback = ctdb_cancel_callback;
 }
 
-struct ctdb_db {
-	struct ctdb_connection *ctdb;
-	bool persistent;
-	uint32_t tdb_flags;
-	uint32_t id;
-	struct tdb_context *tdb;
-
-	/* The lock we are holding, if any (we can only have one!) */
-	struct ctdb_lock *lock;
-
-	ctdb_callback_t callback;
-	void *private_data;
-};
+void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db)
+{
+	cleanup_locks(ctdb, db);
+	tdb_close(db->tdb);
+	free(db);
+}
 
 static void attachdb_getdbpath_done(struct ctdb_connection *ctdb,
 				    struct ctdb_request *req,
@@ -613,7 +672,7 @@ ctdb_attachdb_send(struct ctdb_connection *ctdb,
 	req = new_ctdb_control_request(ctdb, opcode, CTDB_CURRENT_NODE, name,
 				       strlen(name) + 1, attachdb_done, db);
 	if (!req) {
-		DEBUG(db->ctdb, LOG_ERR,
+		DEBUG(ctdb, LOG_ERR,
 		      "ctdb_attachdb_send: failed allocating DB_ATTACH");
 		free(db);
 		return NULL;
@@ -735,6 +794,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 		/* Now it's their responsibility to free lock & request! */
 		req->extra_destructor = NULL;
 		lock->callback(lock->ctdb_db, lock, data, private);
+		ctdb_request_free(ctdb, req);
 		return;
 	}
 

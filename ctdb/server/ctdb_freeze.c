@@ -17,7 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -231,7 +231,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 	h->fd = fd[0];
 
 
-	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ,
 			   ctdb_freeze_lock_handler, h);
 	if (fde == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to setup fd event for ctdb_freeze_lock\n"));
@@ -239,6 +239,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		talloc_free(h);
 		return NULL;
 	}
+	tevent_fd_set_auto_close(fde);
 
 	return h;
 }

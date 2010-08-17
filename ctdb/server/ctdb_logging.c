@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "system/syslog.h"
@@ -85,6 +85,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 {
 	struct sockaddr_in syslog_sin;
 	struct ctdb_syslog_state *state;
+	struct tevent_fd *fde;
 
 	state = talloc(ctdb, struct ctdb_syslog_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -122,8 +123,9 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 
 	close(state->fd[0]);
 	set_close_on_exec(state->fd[1]);
-	event_add_fd(ctdb->ev, state, state->fd[1], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+	fde = event_add_fd(ctdb->ev, state, state->fd[1], EVENT_FD_READ,
 		     ctdb_syslog_terminate_handler, state);
+	tevent_fd_set_auto_close(fde);
 
 	state->syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (state->syslog_fd == -1) {
@@ -147,8 +149,9 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	}
 
 
-	event_add_fd(ctdb->ev, state, state->syslog_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+	fde = event_add_fd(ctdb->ev, state, state->syslog_fd, EVENT_FD_READ,
 		     ctdb_syslog_handler, state);
+	tevent_fd_set_auto_close(fde);
 
 	event_loop_wait(ctdb->ev);
 
@@ -434,6 +437,7 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 {
 	int p[2];
 	struct ctdb_log_state *log;
+	struct tevent_fd *fde;
 
 	log = talloc_zero(mem_ctx, struct ctdb_log_state);
 	CTDB_NO_MEMORY_NULL(ctdb, log);
@@ -470,9 +474,10 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 	log->pfd = p[0];
 	set_close_on_exec(log->pfd);
 	talloc_set_destructor(log, log_context_destructor);
-	event_add_fd(ctdb->ev, log, log->pfd,
-		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
-		     ctdb_log_handler, log);
+	fde = event_add_fd(ctdb->ev, log, log->pfd,
+			   EVENT_FD_READ, ctdb_log_handler, log);
+	tevent_fd_set_auto_close(fde);
+
 	return log;
 
 free_log:
@@ -487,6 +492,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 {
 	int p[2];
 	int old_stdout, old_stderr;
+	struct tevent_fd *fde;
 
 	if (ctdb->log->fd == STDOUT_FILENO) {
 		/* not needed for stdout logging */
@@ -525,9 +531,10 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	set_close_on_exec(STDERR_FILENO);
 	set_close_on_exec(p[0]);
 
-	event_add_fd(ctdb->ev, ctdb->log, p[0],
-		     EVENT_FD_READ | EVENT_FD_AUTOCLOSE,
-		     ctdb_log_handler, ctdb->log);
+	fde = event_add_fd(ctdb->ev, ctdb->log, p[0],
+			   EVENT_FD_READ, ctdb_log_handler, ctdb->log);
+	tevent_fd_set_auto_close(fde);
+
 	ctdb->log->pfd = p[0];
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for logging\n", p[0]));

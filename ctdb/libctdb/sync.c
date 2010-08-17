@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include "libctdb_private.h"
 
+/* Remove type-safety macros. */
+#undef ctdb_set_message_handler
+
 /* On failure, frees req and returns NULL. */
 static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 					struct ctdb_request *req,
@@ -41,12 +44,16 @@ static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 			/* Signalled is OK, other error is bad. */
 			if (errno == EINTR)
 				continue;
-			ctdb_request_free(ctdb, req);
+			ctdb_cancel(ctdb, req);
 			DEBUG(ctdb, LOG_ERR, "ctdb_synchronous: poll failed");
 			return NULL;
 		}
-		if (ctdb_service(ctdb, fds.revents) < 0) {
-			ctdb_request_free(ctdb, req);
+		if (!ctdb_service(ctdb, fds.revents)) {
+			/* It can have failed after it completed request. */
+			if (!*done)
+				ctdb_cancel(ctdb, req);
+			else
+				ctdb_request_free(ctdb, req);
 			return NULL;
 		}
 	}
@@ -110,4 +117,75 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 		ctdb_request_free(ctdb, req);
 	}
 	return ret;
+}
+
+bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
+			      ctdb_message_fn_t handler, void *cbdata)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_set_message_handler_send(ctdb, srvid, handler,
+							cbdata, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_set_message_handler_recv(ctdb, req);
+		ctdb_request_free(ctdb, req);
+	}
+	return ret;
+}
+
+struct rrl_info {
+	bool done;
+	struct ctdb_lock *lock;
+	TDB_DATA *data;
+};
+
+static void rrl_callback(struct ctdb_db *ctdb_db,
+			 struct ctdb_lock *lock,
+			 TDB_DATA data,
+			 struct rrl_info *rrl)
+{
+	rrl->done = true;
+	rrl->lock = lock;
+	*rrl->data = data;
+}
+
+struct ctdb_lock *ctdb_readrecordlock(struct ctdb_connection *ctdb,
+				      struct ctdb_db *ctdb_db, TDB_DATA key,
+				      TDB_DATA *data)
+{
+	struct pollfd fds;
+	struct rrl_info rrl;
+
+	rrl.done = false;
+	rrl.lock = NULL;
+	rrl.data = data;
+
+	/* Immediate failure is easy. */
+	if (!ctdb_readrecordlock_async(ctdb_db, key, rrl_callback, &rrl))
+		return NULL;
+
+	/* Immediate success is easy. */
+	if (!rrl.done) {
+		/* Otherwise wait until callback called. */
+		fds.fd = ctdb_get_fd(ctdb);
+		while (!rrl.done) {
+			fds.events = ctdb_which_events(ctdb);
+			if (poll(&fds, 1, -1) < 0) {
+				/* Signalled is OK, other error is bad. */
+				if (errno == EINTR)
+					continue;
+				DEBUG(ctdb, LOG_ERR,
+				      "ctdb_readrecordlock: poll failed");
+				return NULL;
+			}
+			if (!ctdb_service(ctdb, fds.revents)) {
+				break;
+			}
+		}
+	}
+	return rrl.lock;
 }

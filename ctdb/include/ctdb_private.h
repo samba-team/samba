@@ -382,7 +382,7 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define NUM_DB_PRIORITIES 3
 /* main state of the ctdb daemon */
 struct ctdb_context {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct timeval ctdbd_start_time;
 	struct timeval last_recovery_started;
 	struct timeval last_recovery_finished;

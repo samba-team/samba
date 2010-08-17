@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "lib/tdb/include/tdb.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -357,11 +357,12 @@ int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 	queue->fde = NULL;
 
 	if (fd != -1) {
-		queue->fde = event_add_fd(queue->ctdb->ev, queue, fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+		queue->fde = event_add_fd(queue->ctdb->ev, queue, fd, EVENT_FD_READ,
 					  queue_io_handler, queue);
 		if (queue->fde == NULL) {
 			return -1;
 		}
+		tevent_fd_set_auto_close(queue->fde);
 
 		if (queue->out_queue) {
 			EVENT_FD_WRITEABLE(queue->fde);		

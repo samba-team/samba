@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -280,6 +280,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	struct flock lock;
 	int one = 1;
 	int sock_size;
+	struct tevent_fd *fde;
 
 	/* in order to ensure that we don't get two nodes with the
 	   same adddress, we must make the bind() and listen() calls
@@ -395,8 +396,9 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
-		     ctdb_listen_event, ctdb);	
+	fde = event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ,
+			   ctdb_listen_event, ctdb);
+	tevent_fd_set_auto_close(fde);
 
 	close(lock_fd);
 	return 0;
@@ -419,6 +421,7 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
         ctdb_sock_addr sock;
 	int sock_size;
 	int one = 1;
+	struct tevent_fd *fde;
 
 	/* we can either auto-bind to the first available address, or we can
 	   use a specified address */
@@ -469,8 +472,9 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+	fde = event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ,
 		     ctdb_listen_event, ctdb);	
+	tevent_fd_set_auto_close(fde);
 
 	return 0;
 

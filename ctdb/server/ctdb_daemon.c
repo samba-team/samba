@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -822,8 +822,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	/* now start accepting clients, only can do this once frozen */
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
-			   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+			   EVENT_FD_READ,
 			   ctdb_accept_client, ctdb);
+	tevent_fd_set_auto_close(fde);
 
 	/* release any IPs we hold from previous runs of the daemon */
 	ctdb_release_all_ips(ctdb);
