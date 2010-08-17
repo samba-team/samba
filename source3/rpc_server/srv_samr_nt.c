@@ -1795,7 +1795,11 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 	rids.ids = rid;
 
 	types.count = num_rids;
-	types.ids = (uint32_t *) type;
+	types.ids = talloc_array(p->mem_ctx, uint32_t, num_rids);
+	NT_STATUS_HAVE_NO_MEMORY(type);
+	for (i = 0; i < num_rids; i++) {
+		types.ids[i] = (type[i] & 0xffffffff);
+	}
 
 	*r->out.rids = rids;
 	*r->out.types = types;
