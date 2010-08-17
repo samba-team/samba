@@ -38,6 +38,12 @@
 struct ldb_context;
 struct ldb_module;
 
+/**
+   internal flag bits on message elements. Must be within LDB_FLAG_INTERNAL_MASK
+ */
+#define LDB_FLAG_INTERNAL_DISABLE_VALIDATION 0x10
+
+
 /*
    these function pointers define the operations that a ldb module can intercept
 */

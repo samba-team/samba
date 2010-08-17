@@ -113,13 +113,15 @@ static int attr_handler(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		
-		werr = attr->syntax->validate_ldb(ldb, ac->schema, attr,
-						  &msg->elements[i]);
-		if (!W_ERROR_IS_OK(werr)) {
-			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' contains at least one invalid value!",
-					       msg->elements[i].name,
-					       ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		if (!(msg->elements[i].flags & LDB_FLAG_INTERNAL_DISABLE_VALIDATION)) {
+			werr = attr->syntax->validate_ldb(ldb, ac->schema, attr,
+							  &msg->elements[i]);
+			if (!W_ERROR_IS_OK(werr)) {
+				ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' contains at least one invalid value!",
+						       msg->elements[i].name,
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+			}
 		}
 
 		if ((attr->systemFlags & DS_FLAG_ATTR_IS_CONSTRUCTED) != 0) {
