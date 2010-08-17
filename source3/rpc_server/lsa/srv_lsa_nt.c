@@ -1437,6 +1437,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 	uint32_t acc_granted;
 	struct security_descriptor *psd;
 	size_t sd_size;
+	struct pdb_trusted_domain td;
 
 	if (!IS_DC) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -1478,10 +1479,22 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!pdb_set_trusteddom_pw(r->in.info->netbios_name.string,
-				   generate_random_str(p->mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH),
-				   r->in.info->sid)) {
-		return NT_STATUS_ACCESS_DENIED;
+	ZERO_STRUCT(td);
+
+	td.domain_name = r->in.info->domain_name.string;
+	td.netbios_name = r->in.info->netbios_name.string;
+	sid_copy(&td.security_identifier, r->in.info->sid);
+	td.trust_auth_incoming.data = NULL;
+	td.trust_auth_incoming.length = 0;
+	td.trust_auth_outgoing.data = NULL;
+	td.trust_auth_outgoing.length = 0;
+	td.trust_direction = r->in.info->trust_direction;
+	td.trust_type = r->in.info->trust_type;
+	td.trust_attributes = r->in.info->trust_attributes;
+
+	status = pdb_set_trusted_domain(r->in.info->domain_name.string, &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = create_lsa_policy_handle(p->mem_ctx, p,
