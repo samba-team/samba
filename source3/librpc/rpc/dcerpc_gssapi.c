@@ -384,7 +384,7 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 		    gse_sesskeytype_oid.length) != 0)) {
 		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
 			  "OID for data in results:\n"));
-		dump_data(1, set->elements[1].value,
+		dump_data(1, (uint8_t *)set->elements[1].value,
 			     set->elements[1].length);
 		return data_blob_null;
 	}
