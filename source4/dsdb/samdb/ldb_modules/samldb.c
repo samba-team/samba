@@ -373,6 +373,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	unsigned krbtgt_number, i_start, i;
+	int ret;
 
 	/* find a unused msDC-SecondaryKrbTgtNumber */
 	i_start = generate_random() & 0xFFFF;
@@ -399,7 +400,13 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	return LDB_ERR_OTHER;
 
 found:
-	if (ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number) != LDB_SUCCESS) {
+	ret = ldb_msg_add_empty(ac->msg, "msDS-SecondaryKrbTgtNumber", LDB_FLAG_INTERNAL_DISABLE_VALIDATION, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
+	}
+
+	ret = ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number);
+	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
