@@ -766,6 +766,24 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 	talloc_free(tmp_ctx);
 }
 
+/*
+  check that the element flags don't have any internal bits set
+ */
+static int ldb_msg_check_element_flags(struct ldb_context *ldb,
+				       const struct ldb_message *message)
+{
+	unsigned i;
+	for (i=0; i<message->num_elements; i++) {
+		if (message->elements[i].flags & LDB_FLAG_INTERNAL_MASK) {
+			ldb_asprintf_errstring(ldb, "Invalid element flags 0x%08x on element %s in %s\n",
+					       message->elements[i].flags, message->elements[i].name,
+					       ldb_dn_get_linearized(message->dn));
+			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
 
 /*
   start an ldb request
@@ -806,11 +824,19 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		ret = ldb_msg_check_element_flags(ldb, req->op.add.message);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 		FIRST_OP(ldb, add);
 		ret = module->ops->add(module, req);
 		break;
 	case LDB_MODIFY:
 		FIRST_OP(ldb, modify);
+		ret = ldb_msg_check_element_flags(ldb, req->op.mod.message);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 		ret = module->ops->modify(module, req);
 		break;
 	case LDB_DELETE:

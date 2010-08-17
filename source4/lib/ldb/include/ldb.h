@@ -139,6 +139,11 @@ struct ldb_dn;
 #define LDB_FLAG_MOD_DELETE  3
 
 /**
+    flag bits on an element usable only by the internal implementation
+*/
+#define LDB_FLAG_INTERNAL_MASK 0xFFFFFFF0
+
+/**
   OID for logic AND comaprison.
 
   This is the well known object ID for a logical AND comparitor.
