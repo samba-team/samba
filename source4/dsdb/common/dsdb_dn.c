@@ -340,6 +340,10 @@ WERROR dsdb_dn_la_to_blob(struct ldb_context *sam_ctx,
 	WERROR werr;
 	struct ldb_message_element val_el;
 	struct drsuapi_DsReplicaAttribute drs;
+	struct dsdb_syntax_ctx syntax_ctx;
+
+	/* use default syntax conversion context */
+	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 
 	/* we need a message_element with just one value in it */
 	v = data_blob_string_const(dsdb_dn_get_extended_linearized(mem_ctx, dsdb_dn, 1));
@@ -348,7 +352,7 @@ WERROR dsdb_dn_la_to_blob(struct ldb_context *sam_ctx,
 	val_el.values = &v;
 	val_el.num_values = 1;
 
-	werr = schema_attrib->syntax->ldb_to_drsuapi(sam_ctx, schema, schema_attrib, &val_el, mem_ctx, &drs);
+	werr = schema_attrib->syntax->ldb_to_drsuapi(&syntax_ctx, schema_attrib, &val_el, mem_ctx, &drs);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (drs.value_ctr.num_values != 1) {

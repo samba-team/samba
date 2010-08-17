@@ -101,6 +101,10 @@ static bool torture_test_syntax(struct torture_context *torture,
 	struct ldb_message_element el;
 	struct ldb_context *ldb = priv->ldb;
 	struct dsdb_schema *schema = priv->schema;
+	struct dsdb_syntax_ctx syntax_ctx;
+
+	/* use default syntax conversion context */
+	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
 
 	drs.value_ctr.num_values = 1;
 	drs.value_ctr.values = &val;
@@ -115,7 +119,7 @@ static bool torture_test_syntax(struct torture_context *torture,
 
 	torture_assert_data_blob_equal(torture, el.values[0], ldb_blob, "Incorrect conversion from DRS to ldb format");
 
-	torture_assert_werr_ok(torture, syntax->ldb_to_drsuapi(ldb, schema, attr, &el, tmp_ctx, &drs2), "Failed to convert from ldb to DRS format");
+	torture_assert_werr_ok(torture, syntax->ldb_to_drsuapi(&syntax_ctx, attr, &el, tmp_ctx, &drs2), "Failed to convert from ldb to DRS format");
 	
 	torture_assert(torture, drs2.value_ctr.values[0].blob, "No blob returned from conversion");
 
