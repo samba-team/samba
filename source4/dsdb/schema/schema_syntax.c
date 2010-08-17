@@ -1223,7 +1223,7 @@ static WERROR dsdb_syntax_OID_drsuapi_to_ldb(const struct dsdb_syntax_ctx *ctx,
 	}
 
 	/* When we are doing the vampire of a schema, we don't want
-	 * the inablity to reference an OID to get in the way.
+	 * the inability to reference an OID to get in the way.
 	 * Otherwise, we won't get the new schema with which to
 	 * understand this */
 	if (!W_ERROR_IS_OK(werr) && ctx->schema->relax_OID_conversions) {
