@@ -217,6 +217,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", user_account_control));
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	} else if (r->in.secure_channel_type == SEC_CHAN_RODC) {
+		if (!(user_account_control & UF_PARTIAL_SECRETS_ACCOUNT)) {
+			DEBUG(1, ("Client asked for a RODC secure channel, but is not a RODC: acb flags: 0x%x\n", user_account_control));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	} else {
 		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  r->in.secure_channel_type));
