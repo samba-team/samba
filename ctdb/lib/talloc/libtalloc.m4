@@ -1,10 +1,10 @@
 dnl find the talloc sources. This is meant to work both for 
 dnl talloc standalone builds, and builds of packages using talloc
 tallocdir=""
-tallocpaths="$srcdir $srcdir/lib/talloc $srcdir/talloc $srcdir/../talloc"
+tallocpaths=". lib/talloc talloc ../talloc ../lib/talloc"
 for d in $tallocpaths; do
-	if test -f "$d/talloc.c"; then
-		tallocdir="$d"		
+	if test -f "$srcdir/$d/talloc.c"; then
+		tallocdir="$d"
 		AC_SUBST(tallocdir)
 		break;
 	fi
@@ -15,7 +15,7 @@ fi
 TALLOC_OBJ="talloc.o"
 AC_SUBST(TALLOC_OBJ)
 
-TALLOC_CFLAGS="-I$tallocdir"
+TALLOC_CFLAGS="-I$srcdir/$tallocdir"
 AC_SUBST(TALLOC_CFLAGS)
 
 TALLOC_LIBS=""
@@ -30,4 +30,9 @@ if test $ac_cv_sizeof_size_t -lt $ac_cv_sizeof_void_p; then
 	AC_WARN([sizeof(size_t) = $ac_cv_sizeof_size_t])
 	AC_WARN([sizeof(void *) = $ac_cv_sizeof_void_p])
 	AC_ERROR([sizeof(size_t) < sizeof(void *)])
+fi
+
+if test x"$VERSIONSCRIPT" != "x"; then
+    EXPORTSFILE=talloc.exports
+    AC_SUBST(EXPORTSFILE)
 fi
