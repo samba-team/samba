@@ -3395,7 +3395,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 {
 	struct pipe_auth_data *a = cli->auth;
 	DATA_BLOB sk = data_blob_null;
-	bool make_dup;
+	bool make_dup = false;
 
 	if (!session_key || !cli) {
 		return NT_STATUS_INVALID_PARAMETER;
