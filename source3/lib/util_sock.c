@@ -655,7 +655,6 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 
 ssize_t write_data(int fd, const char *buffer, size_t N)
 {
-	ssize_t ret;
 	struct iovec iov;
 
 	iov.iov_base = CONST_DISCARD(void *, buffer);
