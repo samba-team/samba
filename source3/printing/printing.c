@@ -2695,6 +2695,8 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	int njobs;
 	WERROR werr;
+	const char *clientname;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (!pdb) {
 		return WERR_INTERNAL_DB_CORRUPTION;
@@ -2732,6 +2734,12 @@ WERROR print_job_start(struct auth_serversupplied_info *server_info,
 	pjob.devmode = devmode;
 
 	fstrcpy(pjob.jobname, docname);
+
+	clientname = client_name(smbd_server_fd());
+	if (strcmp(clientname, "UNKNOWN") == 0) {
+		clientname = client_addr(smbd_server_fd(),addr,sizeof(addr));
+	}
+	fstrcpy(pjob.clientmachine, clientname);
 
 	fstrcpy(pjob.user, lp_printjob_username(snum));
 	standard_sub_advanced(sharename, server_info->sanitized_username,
@@ -2811,8 +2819,6 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	SMB_STRUCT_STAT sbuf;
 	struct printif *current_printif = get_printer_fns( snum );
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	const char *clientname;
-	char addr[INET6_ADDRSTRLEN];
 
 	pjob = print_job_find(sharename, jobid);
 
@@ -2874,12 +2880,6 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
 		return NT_STATUS_OK;
 	}
-
-	clientname = client_name(smbd_server_fd());
-	if (strcmp(clientname, "UNKNOWN") == 0) {
-		clientname = client_addr(smbd_server_fd(),addr,sizeof(addr));
-	}
-	fstrcpy(pjob->clientmachine, clientname);
 
 	ret = (*(current_printif->job_submit))(snum, pjob);
 
