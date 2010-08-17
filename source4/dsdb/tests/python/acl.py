@@ -173,6 +173,22 @@ url: www.example.com
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.add_ldif(ldif)
 
+    def create_security_group(self, _ldb, group_dn, desc=None):
+        ldif = """
+dn: """ + group_dn + """
+objectClass: group
+sAMAccountName: """ + group_dn.split(",")[0][3:] + """
+groupType: -2147483646
+url: www.example.com
+"""
+        if desc:
+            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
+            if isinstance(desc, str):
+                ldif += "nTSecurityDescriptor: %s" % desc
+            elif isinstance(desc, security.descriptor):
+                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
+        _ldb.add_ldif(ldif)
+
     def read_desc(self, object_dn):
         res = self.ldb_admin.search(object_dn, SCOPE_BASE, None, ["nTSecurityDescriptor"])
         desc = res[0]["nTSecurityDescriptor"][0]
@@ -697,6 +713,10 @@ class AclSearchTests(AclTests):
 
     def setUp(self):
         super(AclSearchTests, self).setUp()
+        self.u1 = "search_u1"
+        self.u2 = "search_u2"
+        self.u3 = "search_u3"
+        self.group1 = "group1"
         self.anonymous = SamDB(url=host, session_info=system_session_anonymous(),
                                lp=lp)
         res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
@@ -705,12 +725,64 @@ class AclSearchTests(AclTests):
             self.dsheuristics = res[0]["dSHeuristics"][0]
         else:
             self.dsheuristics = None
+        self.create_enable_user(self.u1)
+        self.create_enable_user(self.u2)
+        self.create_enable_user(self.u3)
+        self.create_security_group(self.ldb_admin, self.get_user_dn(self.group1))
+        self.add_group_member(self.ldb_admin, self.get_user_dn(self.group1), \
+                self.get_user_dn(self.u2))
+        self.ldb_user = self.get_ldb_connection(self.u1, self.user_pass)
+        self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
+        self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
+        self.full_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin,  "OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin,  "OU=ou4,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                          Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+        self.user_sid = self.get_object_sid(self.get_user_dn(self.u1))
+        self.group_sid = self.get_object_sid(self.get_user_dn(self.group1))
+
+    def create_clean_ou(self, object_dn):
+        """ Base repeating setup for unittests to follow """
+        res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
+                expression="distinguishedName=%s" % object_dn)
+        # Make sure top testing OU has been deleted before starting the test
+        self.assertEqual(res, [])
+        self.create_ou(self.ldb_admin, object_dn)
+        desc_sddl = self.get_desc_sddl(object_dn)
+        # Make sure there are inheritable ACEs initially
+        self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
+        # Find and remove all inherit ACEs
+        res = re.findall("\(.*?\)", desc_sddl)
+        res = [x for x in res if ("CI" in x) or ("OI" in x)]
+        for x in res:
+            desc_sddl = desc_sddl.replace(x, "")
+        # Add flag 'protected' in both DACL and SACL so no inherit ACEs
+        # can propagate from above
+        # remove SACL, we are not interested
+        desc_sddl = desc_sddl.replace(":AI", ":AIP")
+        self.modify_desc(object_dn, desc_sddl)
+        # Verify all inheritable ACEs are gone
+        desc_sddl = self.get_desc_sddl(object_dn)
+        self.assertFalse("CI" in desc_sddl)
+        self.assertFalse("OI" in desc_sddl)
 
     def tearDown(self):
         super(AclSearchTests, self).tearDown()
         self.set_dsheuristics(self.dsheuristics)
         self.delete_force(self.ldb_admin, "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "OU=ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, self.get_user_dn("search_u1"))
+        self.delete_force(self.ldb_admin, self.get_user_dn("search_u2"))
+        self.delete_force(self.ldb_admin, self.get_user_dn("search_u3"))
+        self.delete_force(self.ldb_admin, self.get_user_dn("group1"))
 
     def test_search_anonymous1(self):
         """Verify access of rootDSE with the correct request"""
@@ -767,6 +839,152 @@ class AclSearchTests(AclTests):
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
+
+    def test_search1(self):
+        """Make sure users can see ous if given LC to user and group"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+
+        #regular users must see only ou1 and ou2
+        res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 2)
+        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        #these users should see all ous
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 6)
+        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        self.assertEquals(sorted(res_list), sorted(self.full_list))
+
+        res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 6)
+        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        self.assertEquals(sorted(res_list), sorted(self.full_list))
+
+    def test_search2(self):
+        """Make sure users can't see ous if access is explicitly denied"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
+        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid)) 
+        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        #this user should see all ous
+        res_list = [ x["dn"] for x in res if x["dn"] in self.full_list ]
+        self.assertEquals(sorted(res_list), sorted(self.full_list))
+
+        #these users should see ou1, 2, 5 and 6 but not 3 and 4
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 4)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+    def test_search3(self):
+        """Make sure users can't see ous if access is explicitly denied - 2"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;CI;LC;;;%s)(A;CI;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+
+        mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
+        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+
+        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+
+        res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
+
+        #should not see ou3 and ou4, but should see ou5 and ou6
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 4)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 4)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+    def test_search4(self):
+        """There is no difference in visibility if the user is also creator"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;CI;CC;;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.create_ou(self.ldb_user, "OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_user, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_user, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_user, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.create_ou(self.ldb_user, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+
+        ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
+                   Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
+        res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 2)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 2)
+        res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
 
 #tests on ldap delete operations
 class AclDeleteTests(AclTests):
