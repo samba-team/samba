@@ -399,7 +399,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	return LDB_ERR_OTHER;
 
 found:
-	if ( ! ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number)) {
+	if (ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number) != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
