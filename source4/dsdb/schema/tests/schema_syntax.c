@@ -115,7 +115,7 @@ static bool torture_test_syntax(struct torture_context *torture,
 	torture_assert_str_equal(torture, attr->syntax->name, syntax->name, "Syntax from schema not as expected");
 	
 
-	torture_assert_werr_ok(torture, syntax->drsuapi_to_ldb(ldb, schema, attr, &drs, tmp_ctx, &el), "Failed to convert from DRS to ldb format");
+	torture_assert_werr_ok(torture, syntax->drsuapi_to_ldb(&syntax_ctx, attr, &drs, tmp_ctx, &el), "Failed to convert from DRS to ldb format");
 
 	torture_assert_data_blob_equal(torture, el.values[0], ldb_blob, "Incorrect conversion from DRS to ldb format");
 

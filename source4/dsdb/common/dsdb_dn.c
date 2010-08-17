@@ -379,12 +379,16 @@ WERROR dsdb_dn_la_from_blob(struct ldb_context *sam_ctx,
 	struct ldb_message_element new_el;
 	struct drsuapi_DsReplicaAttribute drs;
 	struct drsuapi_DsAttributeValue val;
+	struct dsdb_syntax_ctx syntax_ctx;
+
+	/* use default syntax conversion context */
+	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 
 	drs.value_ctr.num_values = 1;
 	drs.value_ctr.values = &val;
 	val.blob = blob;
 
-	werr = schema_attrib->syntax->drsuapi_to_ldb(sam_ctx, schema, schema_attrib, &drs, mem_ctx, &new_el);
+	werr = schema_attrib->syntax->drsuapi_to_ldb(&syntax_ctx, schema_attrib, &drs, mem_ctx, &new_el);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (new_el.num_values != 1) {

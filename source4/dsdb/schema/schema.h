@@ -45,8 +45,7 @@ struct dsdb_syntax {
 	const char *comment;
 	const char *ldb_syntax;
 
-	WERROR (*drsuapi_to_ldb)(struct ldb_context *ldb, 
-				 const struct dsdb_schema *schema,
+	WERROR (*drsuapi_to_ldb)(const struct dsdb_syntax_ctx *ctx,
 				 const struct dsdb_attribute *attr,
 				 const struct drsuapi_DsReplicaAttribute *in,
 				 TALLOC_CTX *mem_ctx,
