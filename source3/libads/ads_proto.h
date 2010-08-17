@@ -9,8 +9,6 @@ ADS_STRUCT *ads_init(const char *realm,
 bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, int flags);
 void ads_destroy(ADS_STRUCT **ads);
 
-const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
-
 /* The following definitions come from libads/disp_sec.c  */
 
 void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descriptor *sd);
