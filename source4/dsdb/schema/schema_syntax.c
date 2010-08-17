@@ -31,6 +31,19 @@
 #include "../lib/util/charset/charset.h"
 #include "librpc/ndr/libndr.h"
 
+/**
+ * Initialize dsdb_syntax_ctx with default values
+ * for common cases.
+ */
+void dsdb_syntax_ctx_init(struct dsdb_syntax_ctx *ctx,
+			  struct ldb_context *ldb,
+			  const struct dsdb_schema *schema)
+{
+	ctx->ldb 	= ldb;
+	ctx->schema 	= schema;
+}
+
+
 static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(struct ldb_context *ldb, 
 						const struct dsdb_schema *schema,
 						const struct dsdb_attribute *attr,

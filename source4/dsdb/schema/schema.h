@@ -28,6 +28,12 @@ struct dsdb_attribute;
 struct dsdb_class;
 struct dsdb_schema;
 
+struct dsdb_syntax_ctx {
+	struct ldb_context *ldb;
+	const struct dsdb_schema *schema;
+};
+
+
 struct dsdb_syntax {
 	const char *name;
 	const char *ldap_oid;
