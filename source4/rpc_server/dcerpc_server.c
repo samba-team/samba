@@ -978,6 +978,12 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* unravel the NDR for the packet */
 	status = context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (call->fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+			/* we got an unknown call */
+			DEBUG(3,(__location__ ": Unknown RPC call %u on %s\n",
+				 call->pkt.u.request.opnum, context->iface->name));
+			dump_data(3, pull->data, pull->data_size);
+		}
 		return dcesrv_fault(call, call->fault_code);
 	}
 
