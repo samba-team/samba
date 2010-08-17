@@ -766,7 +766,7 @@ int samdb_msg_find_old_and_new_ldb_val(const struct ldb_message *msg,
 
 	for (i = 0; i < msg->num_elements; i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
-			if (msg->elements[i].flags == LDB_FLAG_MOD_DELETE) {
+			if (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_DELETE) {
 				*old_val = &msg->elements[i].values[0];
 			} else {
 				*new_val = &msg->elements[i].values[0];
@@ -874,7 +874,7 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < msg->num_elements; i++) {
 		el = &msg->elements[i];
 		if ((ldb_attr_cmp(el->name, attr_name) == 0) &&
-		    (el->flags == LDB_FLAG_MOD_ADD)) {
+		    (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD)) {
 			found = true;
 			break;
 		}
@@ -930,7 +930,7 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < msg->num_elements; i++) {
 		el = &msg->elements[i];
 		if ((ldb_attr_cmp(el->name, attr_name) == 0) &&
-		    (el->flags == LDB_FLAG_MOD_DELETE)) {
+		    (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
 			found = true;
 			break;
 		}

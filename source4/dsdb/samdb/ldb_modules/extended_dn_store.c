@@ -425,7 +425,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			 * element, only do a lookup if
 			 * extended_store_replace determines it's an
 			 * input of an extended DN */
-			bool is_delete = ((el->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_DELETE);
+			bool is_delete = (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE);
 
 			ret = extended_store_replace(ac, req->op.mod.message->elements, &el->values[j],
 						     is_delete, schema_attr->syntax->ldap_oid);

@@ -830,7 +830,7 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		i = 0;
 		while (i < msg->num_elements) {
-			if (msg->elements[i].flags == LDB_FLAG_MOD_DELETE) {
+			if (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_DELETE) {
 				ldb_msg_remove_element(msg, &msg->elements[i]);
 			} else {
 				++i;

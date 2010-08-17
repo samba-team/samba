@@ -2600,7 +2600,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	msg->dn = ldb_dn_new(msg, state->pdb, dnstr);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
 
-	if (ldb_flag == LDB_FLAG_MOD_ADD) {
+	if (LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_ADD) {
 		NTSTATUS status;
 
 		r2.in.handle = &state->handle->wire_handle;
@@ -2619,7 +2619,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 
-		if (ldb_flag == LDB_FLAG_MOD_ADD) {
+		if (LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_ADD) {
 			uint32_t j;
 			for (j=0;j<r2.out.rights->count;j++) {
 				if (strcasecmp_m(r2.out.rights->names[j].string, 
@@ -2655,12 +2655,12 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		ret = ldb_add(state->pdb, msg);		
 	}
 	if (ret != LDB_SUCCESS) {
-		if (ldb_flag == LDB_FLAG_MOD_DELETE && ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		if (LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_DELETE && ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 			talloc_free(msg);
 			return NT_STATUS_OK;
 		}
 		DEBUG(3, ("Could not %s attributes from %s: %s", 
-			  ldb_flag == LDB_FLAG_MOD_DELETE ? "delete" : "add",
+			  LDB_FLAG_MOD_TYPE(ldb_flag) == LDB_FLAG_MOD_DELETE ? "delete" : "add",
 			  ldb_dn_get_linearized(msg->dn), ldb_errstring(state->pdb)));
 		talloc_free(msg);
 		return NT_STATUS_UNEXPECTED_IO_ERROR;

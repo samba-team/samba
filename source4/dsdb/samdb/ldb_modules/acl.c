@@ -761,13 +761,13 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	}
 	for (l = passwordAttrs; *l != NULL; l++) {
 		while ((el = ldb_msg_find_element(msg, *l)) != NULL) {
-			if (el->flags == LDB_FLAG_MOD_DELETE) {
+			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
 			}
-			if (el->flags == LDB_FLAG_MOD_ADD) {
+			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
 				++add_attr_cnt;
 			}
-			if (el->flags == LDB_FLAG_MOD_REPLACE) {
+			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) {
 				++rep_attr_cnt;
 			}
 			ldb_msg_remove_element(msg, el);

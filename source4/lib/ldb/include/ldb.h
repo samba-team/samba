@@ -110,6 +110,11 @@ struct ldb_dn;
 #define LDB_FLAG_MOD_MASK  0x3
 
 /**
+  use this to extract the mod type from the operation
+ */
+#define LDB_FLAG_MOD_TYPE(flags) ((flags) & LDB_FLAG_MOD_MASK)
+
+/**
    Flag value used in ldap_modify() to indicate that attributes are
    being added.
 

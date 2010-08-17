@@ -2450,17 +2450,17 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	rep_attr_cnt = 0;
 	for (l = passwordAttrs; *l != NULL; l++) {
 		while ((passwordAttr = ldb_msg_find_element(msg, *l)) != NULL) {
-			if (passwordAttr->flags == LDB_FLAG_MOD_DELETE) {
+			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
 			}
-			if (passwordAttr->flags == LDB_FLAG_MOD_ADD) {
+			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_ADD) {
 				++add_attr_cnt;
 			}
-			if (passwordAttr->flags == LDB_FLAG_MOD_REPLACE) {
+			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_REPLACE) {
 				++rep_attr_cnt;
 			}
 			if ((passwordAttr->num_values != 1) &&
-			    (passwordAttr->flags == LDB_FLAG_MOD_ADD)) {
+			    (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_ADD)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have exactly one value on add operations!",
@@ -2468,7 +2468,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 			if ((passwordAttr->num_values > 1) &&
-			    (passwordAttr->flags == LDB_FLAG_MOD_DELETE)) {
+			    (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_DELETE)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have zero or one value(s) on delete operations!",

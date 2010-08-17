@@ -1421,7 +1421,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	/* TODO: do not modify original request, create a new one */
 
 	el = ldb_msg_find_element(req->op.mod.message, "groupType");
-	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t group_type;
 
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
@@ -1438,12 +1438,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		el2 = ldb_msg_find_element(msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 	}
-	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
-	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
 			req->op.mod.message);
 
@@ -1452,12 +1452,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 	}
-	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	el = ldb_msg_find_element(req->op.mod.message, "userAccountControl");
-	if (el && (el->flags == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t user_account_control;
 
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
@@ -1496,7 +1496,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 			}
 		}
 	}
-	if (el && (el->flags == LDB_FLAG_MOD_DELETE)) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
