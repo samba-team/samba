@@ -25,6 +25,7 @@
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
+#include "rpc_client/init_lsa.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -631,6 +632,54 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
+				struct netr_SamInfo3 *info3)
+{
+	const char *guest_account = lp_guestaccount();
+	struct dom_sid domain_sid;
+	struct passwd *pwd;
+	const char *tmp;
+	NTSTATUS status;
+
+	pwd = getpwnam_alloc(mem_ctx, guest_account);
+	if (pwd == NULL) {
+		DEBUG(0,("SamInfo3_for_guest: Unable to locate guest "
+			 "account [%s]!\n", guest_account));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* Set acount name */
+	tmp = talloc_strdup(mem_ctx, pwd->pw_name);
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	init_lsa_String(&info3->base.account_name, tmp);
+
+	/* Set domain name */
+	tmp = talloc_strdup(mem_ctx, get_global_sam_name());
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	init_lsa_StringLarge(&info3->base.domain, tmp);
+
+	/* Domain sid */
+	sid_copy(&domain_sid, get_global_sam_sid());
+
+	info3->base.domain_sid = sid_dup_talloc(mem_ctx, &domain_sid);
+	if (info3->base.domain_sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Guest rid */
+	info3->base.rid = DOMAIN_RID_GUEST;
+
+	/* Primary gid */
+	info3->base.primary_gid = BUILTIN_RID_GUESTS;
+
+	TALLOC_FREE(pwd);
+	return status;
+}
+
 /***************************************************************************
  Make (and fill) a user_info struct for a guest login.
  This *must* succeed for smbd to start. If there is no mapping entry for
@@ -639,35 +688,34 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 
 static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **server_info)
 {
+	static const char zeros[16] = {0};
+	const char *guest_account = lp_guestaccount();
+	const char *domain = global_myname();
+	struct netr_SamInfo3 info3;
+	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
-	struct samu *sampass = NULL;
-	struct dom_sid guest_sid;
-	bool ret;
-	static const char zeros[16] = {0, };
 	fstring tmp;
 
-	if ( !(sampass = samu_new( NULL )) ) {
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sid_compose(&guest_sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
+	ZERO_STRUCT(info3);
 
-	become_root();
-	ret = pdb_getsampwsid(sampass, &guest_sid);
-	unbecome_root();
-
-	if (!ret) {
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	status = make_server_info_sam(server_info, sampass);
+	status = get_guest_info3(tmp_ctx, &info3);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(sampass);
-		return status;
+		goto done;
 	}
 
-	TALLOC_FREE(sampass);
+	status = make_server_info_info3(tmp_ctx,
+					guest_account,
+					domain,
+					server_info,
+					&info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	(*server_info)->guest = True;
 
@@ -675,7 +723,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("create_local_token failed: %s\n",
 			   nt_errstr(status)));
-		return status;
+		goto done;
 	}
 
 	/* annoying, but the Guest really does have a session key, and it is
@@ -687,6 +735,9 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ser
 		     ". _-$", sizeof(tmp));
 	(*server_info)->sanitized_username = talloc_strdup(*server_info, tmp);
 
+	status = NT_STATUS_OK;
+done:
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
