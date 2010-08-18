@@ -757,13 +757,15 @@ int ads_keytab_list(const char *keytab_name)
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("ads_keytab_list: could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
+			  error_message(ret)));
 		return ret;
 	}
 
 	ret = smb_krb5_open_keytab(context, keytab_name, False, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_list: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+			  error_message(ret)));
 		goto out;
 	}
 
@@ -775,12 +777,13 @@ int ads_keytab_list(const char *keytab_name)
 	printf("Vno  Type        Principal\n");
 
 	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
-	
+
 		char *princ_s = NULL;
 		char *etype_s = NULL;
 		krb5_enctype enctype = 0;
 
-		ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal, &princ_s);
+		ret = smb_krb5_unparse_name(talloc_tos(), context,
+					    kt_entry.principal, &princ_s);
 		if (ret) {
 			goto out;
 		}
@@ -788,12 +791,10 @@ int ads_keytab_list(const char *keytab_name)
 		enctype = smb_get_enctype_from_kt_entry(&kt_entry);
 
 		ret = smb_krb5_enctype_to_string(context, enctype, &etype_s);
-		if (ret) {
-			if (asprintf(&etype_s, "UNKNOWN: %d\n", enctype) == -1)
-			{
-				TALLOC_FREE(princ_s);
-				goto out;
-			}
+		if (ret &&
+		    (asprintf(&etype_s, "UNKNOWN: %d\n", enctype) == -1)) {
+			TALLOC_FREE(princ_s);
+			goto out;
 		}
 
 		printf("%3d  %s\t\t %s\n", kt_entry.vno, etype_s, princ_s);
@@ -820,15 +821,17 @@ out:
 	{
 		krb5_keytab_entry zero_kt_entry;
 		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+		if (memcmp(&zero_kt_entry, &kt_entry,
+				sizeof(krb5_keytab_entry))) {
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
 	{
 		krb5_kt_cursor zero_csr;
 		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		if ((memcmp(&cursor, &zero_csr,
+				sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);
 		}
 	}
 
