@@ -157,6 +157,8 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 		data->msg_flags &= ~msg_flags;
 	}
 
+	ZERO_STRUCT(tdbdata);
+
 	status = rec->store(rec, tdbdata, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Storing serverid.tdb record failed: %s\n",
