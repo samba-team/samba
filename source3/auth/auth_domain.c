@@ -342,22 +342,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			(*server_info)->nss_token |= user_info->was_mapped;
-
-			if ( ! (*server_info)->guest) {
-				/* if a real user check pam account restrictions */
-				/* only really perfomed if "obey pam restriction" is true */
-				nt_status = smb_pam_accountcheck((*server_info)->unix_name);
-				if (  !NT_STATUS_IS_OK(nt_status)) {
-					DEBUG(1, ("PAM account restriction prevents user login\n"));
-					cli_shutdown(cli);
-					TALLOC_FREE(info3);
-					return nt_status;
-				}
-			}
+			netsamlogon_cache_store(user_info->client.account_name, info3);
+			TALLOC_FREE(info3);
 		}
-
-		netsamlogon_cache_store(user_info->client.account_name, info3);
-		TALLOC_FREE(info3);
 	}
 
 	/* Note - once the cli stream is shutdown the mem_ctx used
