@@ -40,10 +40,8 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 	int i = 0;
 	struct sessionid sessionid;
 	fstring keystr;
-	const char * hostname;
 	struct db_record *rec;
 	NTSTATUS status;
-	char addr[INET6_ADDRSTRLEN];
 
 	vuser->session_keystr = NULL;
 
@@ -132,20 +130,14 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 	   client_name() handles this case internally.
 	*/
 
-	hostname = client_name(sconn->sock);
-	if (strcmp(hostname, "UNKNOWN") == 0) {
-		hostname = client_addr(sconn->sock, addr, sizeof(addr));
-	}
-
 	fstrcpy(sessionid.username, vuser->server_info->unix_name);
-	fstrcpy(sessionid.hostname, hostname);
+	fstrcpy(sessionid.hostname, sconn->client_id.name);
 	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
 	sessionid.uid = vuser->server_info->utok.uid;
 	sessionid.gid = vuser->server_info->utok.gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
-	fstrcpy(sessionid.ip_addr_str,
-		client_addr(sconn->sock, addr, sizeof(addr)));
+	fstrcpy(sessionid.ip_addr_str, sconn->client_id.addr);
 	sessionid.connect_start = time(NULL);
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str,
