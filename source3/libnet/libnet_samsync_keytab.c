@@ -23,6 +23,7 @@
 #include "ads.h"
 #include "libnet/libnet_keytab.h"
 #include "libnet/libnet_samsync.h"
+#include "krb5_env.h"
 
 #if defined(HAVE_ADS)
 

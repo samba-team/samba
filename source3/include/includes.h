@@ -626,7 +626,6 @@ extern void *cmdline_lp_ctx;
 #include "../lib/util/time.h"
 #include "../lib/util/asn1.h"
 
-#include "krb5_env.h"
 #include "libads/ads_status.h"
 #include "interfaces.h"
 #include "trans2.h"

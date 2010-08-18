@@ -25,6 +25,7 @@
 #include "nt_printing.h"
 #include "ads.h"
 #include "secrets.h"
+#include "krb5_env.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************

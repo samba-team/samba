@@ -21,6 +21,7 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "secrets.h"
+#include "krb5_env.h"
 
 extern bool AllowDebugChange;
 

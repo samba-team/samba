@@ -33,6 +33,7 @@
 #include "libnet/libnet_join.h"
 #include "smb_krb5.h"
 #include "secrets.h"
+#include "krb5_env.h"
 
 #ifdef HAVE_ADS
 

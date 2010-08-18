@@ -25,6 +25,7 @@
 #include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "libads/kerberos_proto.h"
+#include "krb5_env.h"
 
 static const struct {
 	int prot;
