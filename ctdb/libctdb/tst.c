@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
 
 	pfd.fd = ctdb_get_fd(ctdb_connection);
 
-	handle = ctdb_set_message_handler_send(ctdb_connection, 55, msg_h,
+	handle = ctdb_set_message_handler_send(ctdb_connection, 55,
+					       msg_h, NULL,
 					       message_handler_cb, NULL);
 	if (handle == NULL) {
 		printf("Failed to register message port\n");
