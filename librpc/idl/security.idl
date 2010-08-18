@@ -292,6 +292,8 @@ interface security
 	const int DOMAIN_RID_POLICY_ADMINS           = 520;
 	const int DOMAIN_RID_READONLY_DCS            = 521;
 	const int DOMAIN_RID_RAS_SERVERS             = 553;
+	const int DOMAIN_RID_RODC_ALLOW              = 571;
+	const int DOMAIN_RID_RODC_DENY               = 572;
 
 	/* well-known builtin RIDs */
 	const int BUILTIN_RID_ADMINISTRATORS		= 544;
