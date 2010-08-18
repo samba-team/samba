@@ -95,7 +95,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  DATA_BLOB *session_key,
 					  uint64_t highest_usn,
 					  uint32_t replica_flags,
-					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
+					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
+					  enum drsuapi_DsExtendedOperation extended_op)
 {
 	const struct ldb_val *md_value;
 	unsigned int i, n;
@@ -177,9 +178,12 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
 		const struct dsdb_attribute *sa;
+		bool force_attribute = false;
+
 		/* if the attribute has not changed, and it is not the
 		   instanceType then don't include it */
 		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
+		    extended_op != DRSUAPI_EXOP_REPL_SECRET &&
 		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) continue;
 
 		/* don't include the rDN */
@@ -202,8 +206,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			}
 		}
 
+		if (extended_op == DRSUAPI_EXOP_REPL_SECRET &&
+		    !dsdb_attr_in_rodc_fas(sa)) {
+			force_attribute = true;
+			DEBUG(4,("Forcing attribute %s in %s\n",
+				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
+		}
+
 		/* filter by uptodateness_vector */
 		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType &&
+		    !force_attribute &&
 		    udv_filter(uptodateness_vector,
 			       &md.ctr.ctr1.array[i].originating_invocation_id, 
 			       md.ctr.ctr1.array[i].originating_usn)) {
@@ -211,15 +223,20 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 
 		/*
-		 * If the recipient is a RODC, then we should not add any
-		 * RODC filtered attribute
+		 * If the recipient is a RODC, then we should only give
+		 * attributes from the RODC filtered attribute set
 		 *
 		 * TODO: This is not strictly correct, as it doesn't allow for administrators
 		 * to setup some users to transfer passwords to specific RODCs. To support that
 		 * we would instead remove this check and rely on extended ACL checking in the dsdb
 		 * acl module.
 		 */
-		if (dsdb_attr_in_rodc_fas(replica_flags, sa)) {
+		if (!(replica_flags & DRSUAPI_DRS_WRIT_REP) &&
+		    !force_attribute &&
+		    !dsdb_attr_in_rodc_fas(sa)) {
+			DEBUG(4,("Skipping non-FAS attr %s in %s\n",
+				 sa->lDAPDisplayName,
+				 ldb_dn_get_linearized(msg->dn)));
 			continue;
 		}
 
@@ -718,9 +735,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct ldb_dn *search_dn = NULL;
 	bool am_rodc;
 	enum security_user_level security_level;
+	struct ldb_context *sam_ctx;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
+
+	sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 
 	*r->out.level_out = 6;
 	/* TODO: linked attributes*/
@@ -733,7 +753,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.uptodateness_vector = NULL;
 
 	/* a RODC doesn't allow for any replication */
-	ret = samdb_rodc(b_state->sam_ctx, &am_rodc);
+	ret = samdb_rodc(sam_ctx, &am_rodc);
 	if (ret == LDB_SUCCESS && am_rodc) {
 		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
 		return WERR_DS_DRA_SOURCE_DISABLED;
@@ -759,7 +779,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
-	if (samdb_ntds_options(b_state->sam_ctx, &options) != LDB_SUCCESS) {
+	if (samdb_ntds_options(sam_ctx, &options) != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 	
@@ -769,7 +789,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	werr = drs_security_level_check(dce_call, "DsGetNCChanges", SECURITY_RO_DOMAIN_CONTROLLER,
-					samdb_domain_sid(b_state->sam_ctx));
+					samdb_domain_sid(sam_ctx));
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -777,9 +797,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	/* for non-administrator replications, check that they have
 	   given the correct source_dsa_invocation_id */
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
-						     samdb_domain_sid(b_state->sam_ctx));
+						     samdb_domain_sid(sam_ctx));
 	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER &&
-	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP)) {
+	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP) &&
+	    req8->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
 		DEBUG(3,(__location__ ": Removing WRIT_REP flag for replication by RODC %s\n",
 			 dom_sid_string(mem_ctx,
 					dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
@@ -800,15 +821,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 		werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 		W_ERROR_NOT_OK_RETURN(werr);
-		search_dn = ldb_get_default_basedn(b_state->sam_ctx);
+		search_dn = ldb_get_default_basedn(sam_ctx);
 		break;
 
+	case DRSUAPI_EXOP_REPL_SECRET:
+		DEBUG(0,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op\n"));
+		r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+		req8->highwatermark.highest_usn = 0;
+		break;
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
 	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
 	case DRSUAPI_EXOP_FSMO_REQ_PDC:
 	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
 	case DRSUAPI_EXOP_REPL_OBJ:
-	case DRSUAPI_EXOP_REPL_SECRET:
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
 			 (unsigned)req8->extended_op));
 		return WERR_DS_DRA_NOT_SUPPORTED;
@@ -818,7 +843,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* see if a previous replication has been abandoned */
 	if (getnc_state) {
-		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, sam_ctx, ncRoot->dn);
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
 			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s (last_dn %s)\n",
 				 ldb_dn_get_linearized(new_dn),
@@ -835,7 +860,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_NOMEM;
 		}
 		b_state->getncchanges_state = getnc_state;
-		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, sam_ctx, ncRoot->dn);
 
 		/* find out if we are to replicate Schema NC */
 		ret = ldb_dn_compare(getnc_state->ncRoot_dn,
@@ -894,7 +919,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		DEBUG(1,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
-		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, &getnc_state->site_res,
+		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &getnc_state->site_res,
 						      search_dn, scope, attrs,
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
@@ -921,7 +946,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Prefix mapping */
-	schema = dsdb_get_schema(b_state->sam_ctx, mem_ctx);
+	schema = dsdb_get_schema(sam_ctx, mem_ctx);
 	if (!schema) {
 		DEBUG(0,("No schema in sam_ctx\n"));
 		return WERR_DS_DRA_INTERNAL_ERROR;
@@ -930,7 +955,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 	*r->out.ctr->ctr6.naming_context = *ncRoot;
 
-	if (dsdb_find_guid_by_dn(b_state->sam_ctx, getnc_state->ncRoot_dn, 
+	if (dsdb_find_guid_by_dn(sam_ctx, getnc_state->ncRoot_dn,
 				 &r->out.ctr->ctr6.naming_context->guid) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
@@ -938,13 +963,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* find the SID if there is one */
-	dsdb_find_sid_by_dn(b_state->sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
+	dsdb_find_sid_by_dn(sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
 
 	dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, &ctr);
 	r->out.ctr->ctr6.mapping_ctr = *ctr;
 
-	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(b_state->sam_ctx));
-	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(b_state->sam_ctx));
+	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(sam_ctx));
+	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 
 	r->out.ctr->ctr6.old_highwatermark = req8->highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = req8->highwatermark;
@@ -975,15 +1000,16 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 
 		werr = get_nc_changes_build_object(obj, msg,
-						   b_state->sam_ctx, getnc_state->ncRoot_dn,
+						   sam_ctx, getnc_state->ncRoot_dn,
 						   getnc_state->is_schema_nc,
 						   schema, &session_key, getnc_state->min_usn,
-						   req8->replica_flags, getnc_state->uptodateness_vector);
+						   req8->replica_flags, getnc_state->uptodateness_vector,
+						   req8->extended_op);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
 
-		werr = get_nc_changes_add_links(b_state->sam_ctx, getnc_state,
+		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
 						getnc_state->ncRoot_dn,
 						schema, getnc_state->min_usn,
 						req8->replica_flags,
@@ -1071,7 +1097,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		/* sort the whole array the first time */
 		if (!getnc_state->la_sorted) {
 			LDB_TYPESAFE_QSORT(getnc_state->la_list, getnc_state->la_count,
-					   b_state->sam_ctx, linked_attribute_compare);
+					   sam_ctx, linked_attribute_compare);
 			getnc_state->la_sorted = true;
 		}
 
@@ -1095,7 +1121,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
 
-		werr = get_nc_changes_udv(b_state->sam_ctx, getnc_state->ncRoot_dn, 
+		werr = get_nc_changes_udv(sam_ctx, getnc_state->ncRoot_dn,
 					  r->out.ctr->ctr6.uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;

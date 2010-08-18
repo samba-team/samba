@@ -3940,29 +3940,43 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-const char *rodc_fas_list[] = {"ms-PKI-DPAPIMasterKeys",
-			       "ms-PKI-AccountCredentials",
-			       "ms-PKI-RoamingTimeStamp",
-			       "ms-FVE-KeyPackage",
-			       "ms-FVE-RecoveryGuid",
-			       "ms-FVE-RecoveryInformation",
-			       "ms-FVE-RecoveryPassword",
-			       "ms-FVE-VolumeGuid",
-			       "ms-TPM-OwnerInformation",
-			       NULL};
+static const char *secret_attributes[] = {
+	"currentValue",
+	"dBCSPwd",
+	"initialAuthIncoming",
+	"initialAuthOutgoing",
+	"lmPwdHistory",
+	"ntPwdHistory",
+	"priorValue",
+	"supplementalCredentials",
+	"trustAuthIncoming",
+	"trustAuthOutgoing",
+	"unicodePwd",
+	NULL
+};
+
 /*
   check if the attribute belongs to the RODC filtered attribute set
+  Note that attributes that are in the filtered attribute set are the
+  ones that _are_ always sent to a RODC
 */
-bool dsdb_attr_in_rodc_fas(uint32_t replica_flags, const struct dsdb_attribute *sa)
+bool dsdb_attr_in_rodc_fas(const struct dsdb_attribute *sa)
 {
-	int rodc_filtered_flags = SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL;
-	bool drs_write_replica = ((replica_flags & DRSUAPI_DRS_WRIT_REP) == 0);
+	/* they never get secret attributes */
+	if (is_attr_in_list(secret_attributes, sa->lDAPDisplayName)) {
+		return false;
+	}
 
-	if (drs_write_replica && (sa->searchFlags & rodc_filtered_flags)) {
+	/* they do get non-secret critical attributes */
+	if (sa->schemaFlagsEx & SCHEMA_FLAG_ATTR_IS_CRITICAL) {
 		return true;
 	}
-	if (drs_write_replica && is_attr_in_list(rodc_fas_list, sa->cn)) {
+
+	/* they do get non-secret attributes marked as being in the FAS  */
+	if (sa->searchFlags & SEARCH_FLAG_RODC_ATTRIBUTE) {
 		return true;
 	}
+
+	/* other attributes are denied */
 	return false;
 }
