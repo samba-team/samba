@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "reg_parse_prs.h"
+#include "rpc_dce.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE

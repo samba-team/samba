@@ -26,6 +26,7 @@
 #include "rpc_server.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
+#include "rpc_dce.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

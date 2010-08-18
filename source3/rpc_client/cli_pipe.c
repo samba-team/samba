@@ -31,6 +31,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_gssapi.h"
 #include "librpc/rpc/dcerpc_spnego.h"
+#include "rpc_dce.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
