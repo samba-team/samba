@@ -1,1 +1,0 @@
-samba3.posix_s3.rpc.spoolss.notify # currently broken, see https://bugzilla.samba.org/show_bug.cgi?id=7486
