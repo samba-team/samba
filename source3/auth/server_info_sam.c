@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "nsswitch/winbind_client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

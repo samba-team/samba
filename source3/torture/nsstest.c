@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_client.h"
 
 #ifdef malloc
 #undef malloc

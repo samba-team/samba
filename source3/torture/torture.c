@@ -26,6 +26,7 @@
 #include "tldap_util.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "memcache.h"
+#include "nsswitch/winbind_client.h"
 
 extern char *optarg;
 extern int optind;

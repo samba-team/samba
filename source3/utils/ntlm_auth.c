@@ -33,6 +33,7 @@
 #include <iniparser.h>
 #include "../lib/crypto/arcfour.h"
 #include "libads/kerberos_proto.h"
+#include "nsswitch/winbind_client.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"

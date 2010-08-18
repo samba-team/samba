@@ -19,6 +19,8 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_nss.h"
+
 #ifdef HAVE_NS_API_H
 
 #include <ns_daemon.h>
