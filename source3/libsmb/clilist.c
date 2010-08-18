@@ -618,10 +618,10 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	int ff_searchcount;
 	bool ff_eos;
 	char *p, *p2;
-	uint32_t resume_key;
+	uint32_t resume_key = 0;
 	int i;
 	DATA_BLOB last_name_raw;
-	struct file_info *finfo;
+	struct file_info *finfo = NULL;
 	size_t nlen, param_len;
 
 	min_param = (state->first ? 6 : 4);
