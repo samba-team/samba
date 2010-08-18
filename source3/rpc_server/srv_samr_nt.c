@@ -1952,6 +1952,7 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 	 */
 
 	status = pass_oem_change(user_name,
+				 p->client_id->name,
 				 r->in.lm_password->data,
 				 r->in.lm_verifier->hash,
 				 r->in.nt_password->data,
@@ -2004,6 +2005,7 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 	}
 
 	status = pass_oem_change(user_name,
+				 p->client_id->name,
 				 r->in.password->data,
 				 r->in.hash->hash,
 				 0,
@@ -2056,6 +2058,7 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	 */
 
 	status = pass_oem_change(user_name,
+				 p->client_id->name,
 				 r->in.lm_password->data,
 				 r->in.lm_verifier->hash,
 				 r->in.nt_password->data,
@@ -4749,6 +4752,7 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 
 static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo23 *id23,
+				 const char *rhost,
 				 struct samu *pwd)
 {
 	char *plaintext_buf = NULL;
@@ -4811,7 +4815,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 
-			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
+			if(!chgpasswd(pdb_get_username(pwd), rhost,
+				      passwd, "", plaintext_buf, True)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			TALLOC_FREE(passwd);
@@ -4839,7 +4844,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
  set_user_info_pw
  ********************************************************************/
 
-static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
+static bool set_user_info_pw(uint8 *pass, const char *rhost, struct samu *pwd)
 {
 	size_t len = 0;
 	char *plaintext_buf = NULL;
@@ -4882,7 +4887,8 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 
-			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
+			if(!chgpasswd(pdb_get_username(pwd), rhost, passwd,
+				      "", plaintext_buf, True)) {
 				return False;
 			}
 			TALLOC_FREE(passwd);
@@ -4901,6 +4907,7 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
  ********************************************************************/
 
 static NTSTATUS set_user_info_24(TALLOC_CTX *mem_ctx,
+				 const char *rhost,
 				 struct samr_UserInfo24 *id24,
 				 struct samu *pwd)
 {
@@ -4911,7 +4918,7 @@ static NTSTATUS set_user_info_24(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!set_user_info_pw(id24->password.data, pwd)) {
+	if (!set_user_info_pw(id24->password.data, rhost, pwd)) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -4930,6 +4937,7 @@ static NTSTATUS set_user_info_24(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
+				 const char *rhost,
 				 struct samr_UserInfo25 *id25,
 				 struct samu *pwd)
 {
@@ -4951,7 +4959,7 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 	if ((id25->info.fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
 	    (id25->info.fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)) {
 
-		if (!set_user_info_pw(id25->password.data, pwd)) {
+		if (!set_user_info_pw(id25->password.data, rhost, pwd)) {
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 	}
@@ -4986,6 +4994,7 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static NTSTATUS set_user_info_26(TALLOC_CTX *mem_ctx,
+				 const char *rhost,
 				 struct samr_UserInfo26 *id26,
 				 struct samu *pwd)
 {
@@ -4996,7 +5005,7 @@ static NTSTATUS set_user_info_26(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!set_user_info_pw(id26->password.data, pwd)) {
+	if (!set_user_info_pw(id26->password.data, rhost, pwd)) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -5272,7 +5281,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info23.password.data, 516);
 
 			status = set_user_info_23(p->mem_ctx,
-						  &info->info23, pwd);
+						  &info->info23,
+						  p->client_id->name,
+						  pwd);
 			break;
 
 		case 24:
@@ -5286,6 +5297,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info24.password.data, 516);
 
 			status = set_user_info_24(p->mem_ctx,
+						  p->client_id->name,
 						  &info->info24, pwd);
 			break;
 
@@ -5300,6 +5312,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info25.password.data, 532);
 
 			status = set_user_info_25(p->mem_ctx,
+						  p->client_id->name,
 						  &info->info25, pwd);
 			break;
 
@@ -5314,6 +5327,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info26.password.data, 516);
 
 			status = set_user_info_26(p->mem_ctx,
+						  p->client_id->name,
 						  &info->info26, pwd);
 			break;
 

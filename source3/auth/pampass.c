@@ -863,7 +863,8 @@ NTSTATUS smb_pam_passcheck(const char * user, const char * password)
  * PAM Password Change Suite
  */
 
-bool smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword)
+bool smb_pam_passchange(const char *user, const char *rhost,
+			const char *oldpassword, const char *newpassword)
 {
 	/* Appropriate quantities of root should be obtained BEFORE calling this function */
 	struct pam_conv *pconv = NULL;
@@ -872,7 +873,7 @@ bool smb_pam_passchange(const char * user, const char * oldpassword, const char 
 	if ((pconv = smb_setup_pam_conv(smb_pam_passchange_conv, user, oldpassword, newpassword)) == NULL)
 		return False;
 
-	if(!smb_pam_start(&pamh, user, NULL, pconv))
+	if(!smb_pam_start(&pamh, user, rhost, pconv))
 		return False;
 
 	if (!smb_pam_chauthtok(pamh, user)) {

@@ -64,9 +64,9 @@ void copy_id26_to_sam_passwd(struct samu *to,
 
 /* The following definitions come from rpc_server/srv_samr_chgpasswd.c  */
 
-bool chgpasswd(const char *name, const struct passwd *pass,
+bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root);
-NTSTATUS pass_oem_change(char *user,
+NTSTATUS pass_oem_change(char *user, const char *rhost,
 			 uchar password_encrypted_with_lm_hash[516],
 			 const uchar old_lm_hash_encrypted[16],
 			 uchar password_encrypted_with_nt_hash[516],

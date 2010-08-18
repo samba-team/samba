@@ -486,7 +486,7 @@ while we were waiting\n", WTERMSIG(wstat)));
 	return (chstat);
 }
 
-bool chgpasswd(const char *name, const struct passwd *pass,
+bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root)
 {
 	char *passwordprogram = NULL;
@@ -546,9 +546,11 @@ bool chgpasswd(const char *name, const struct passwd *pass,
 			become_root();
 
 		if (pass) {
-			ret = smb_pam_passchange(pass->pw_name, oldpass, newpass);
+			ret = smb_pam_passchange(pass->pw_name, rhost,
+						 oldpass, newpass);
 		} else {
-			ret = smb_pam_passchange(name, oldpass, newpass);
+			ret = smb_pam_passchange(name, rhost, oldpass,
+						 newpass);
 		}
 
 		if (as_root)
@@ -961,7 +963,10 @@ NTSTATUS check_password_complexity(const char *username,
  is correct before calling. JRA.
 ************************************************************/
 
-static NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passwd, bool as_root, enum samPwdChangeReason *samr_reject_reason)
+static NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
+				    char *old_passwd, char *new_passwd,
+				    bool as_root,
+				    enum samPwdChangeReason *samr_reject_reason)
 {
 	uint32 min_len;
 	uint32 refuse;
@@ -1054,7 +1059,8 @@ static NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *ne
 	 */
 
 	if(lp_unix_password_sync() &&
-		!chgpasswd(username, pass, old_passwd, new_passwd, as_root)) {
+	   !chgpasswd(username, rhost, pass, old_passwd, new_passwd,
+		      as_root)) {
 		TALLOC_FREE(pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1073,7 +1079,7 @@ static NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *ne
  Code to check and change the OEM hashed password.
 ************************************************************/
 
-NTSTATUS pass_oem_change(char *user,
+NTSTATUS pass_oem_change(char *user, const char *rhost,
 			 uchar password_encrypted_with_lm_hash[516],
 			 const uchar old_lm_hash_encrypted[16],
 			 uchar password_encrypted_with_nt_hash[516],
@@ -1114,7 +1120,8 @@ NTSTATUS pass_oem_change(char *user,
 
 	/* We've already checked the old password here.... */
 	become_root();
-	nt_status = change_oem_password(sampass, NULL, new_passwd, True, reject_reason);
+	nt_status = change_oem_password(sampass, rhost, NULL, new_passwd,
+					True, reject_reason);
 	unbecome_root();
 
 	memset(new_passwd, 0, strlen(new_passwd));

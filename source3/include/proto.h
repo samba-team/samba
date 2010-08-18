@@ -223,7 +223,8 @@ bool smb_pam_claim_session(char *user, char *tty, char *rhost);
 bool smb_pam_close_session(char *user, char *tty, char *rhost);
 NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost);
 NTSTATUS smb_pam_passcheck(const char * user, const char * password);
-bool smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword);
+bool smb_pam_passchange(const char *user, const char *rhost,
+			const char *oldpassword, const char *newpassword);
 bool smb_pam_claim_session(char *user, char *tty, char *rhost);
 bool smb_pam_close_session(char *in_user, char *tty, char *rhost);
 
