@@ -442,7 +442,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 	ssize_t readret;
 	size_t nread = 0;
 	struct timeval timeout;
-	int save_errno;
 
 	/* just checking .... */
 	if (maxcnt <= 0)
@@ -464,7 +463,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 			}
 
 			if (readret == -1) {
-				return map_nt_error_from_unix(save_errno);
+				return map_nt_error_from_unix(errno);
 			}
 			nread += readret;
 		}
@@ -489,7 +488,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 
 		/* Check if error */
 		if (selrtn == -1) {
-			return map_nt_error_from_unix(save_errno);
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* Did we timeout ? */
