@@ -907,10 +907,6 @@ void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;
 void exit_server_fault(void) _NORETURN_;
 
-#ifdef HAVE_LIBNSCD
-#include "libnscd.h"
-#endif
-
 #if defined(HAVE_IPV6)
 void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 				  struct in6_addr ip);

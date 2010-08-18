@@ -19,6 +19,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_LIBNSCD
+#include <libnscd.h>
+#endif
+
 static void smb_nscd_flush_cache(const char *service)
 {
 #ifdef HAVE_NSCD_FLUSH_CACHE
