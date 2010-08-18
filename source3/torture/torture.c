@@ -28,6 +28,7 @@
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "dbwrap.h"
+#include "talloc_dict.h"
 
 extern char *optarg;
 extern int optind;

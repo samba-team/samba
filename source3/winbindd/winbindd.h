@@ -27,6 +27,8 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "librpc/gen_ndr/wbint.h"
 
+#include "talloc_dict.h"
+
 #ifdef HAVE_LIBNSCD
 #include <libnscd.h>
 #endif
