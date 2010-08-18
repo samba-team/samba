@@ -41,6 +41,30 @@ void dsdb_syntax_ctx_init(struct dsdb_syntax_ctx *ctx,
 {
 	ctx->ldb 	= ldb;
 	ctx->schema 	= schema;
+
+	/*
+	 * 'true' will keep current behavior,
+	 * i.e. attributeID_id will be returned by default
+	 */
+	ctx->is_schema_nc = true;
+}
+
+
+/**
+ * Returns ATTID for DRS attribute.
+ *
+ * ATTID depends on whether we are replicating
+ * Schema NC or msDs-IntId is set for schemaAttribute
+ * for the attribute.
+ */
+static uint32_t dsdb_attribute_get_attid(const struct dsdb_attribute *attr,
+					 bool for_schema_nc)
+{
+	if (!for_schema_nc && attr->msDS_IntId) {
+		return attr->msDS_IntId;
+	}
+
+	return attr->attributeID_id;
 }
 
 
@@ -150,7 +174,8 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -258,7 +283,8 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -384,7 +410,8 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -518,7 +545,8 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_syntax_ctx
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -649,7 +677,8 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ct
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -763,7 +792,8 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -1024,7 +1054,8 @@ static WERROR _dsdb_syntax_auto_OID_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
         unsigned int i;
         DATA_BLOB *blobs;
 
-        out->attid= attr->attributeID_id;
+        out->attid= dsdb_attribute_get_attid(attr,
+					     ctx->is_schema_nc);
         out->value_ctr.num_values= in->num_values;
         out->value_ctr.values= talloc_array(mem_ctx,
                                             struct drsuapi_DsAttributeValue,
@@ -1077,7 +1108,8 @@ static WERROR _dsdb_syntax_OID_obj_ldb_to_drsuapi(const struct dsdb_syntax_ctx *
         unsigned int i;
         DATA_BLOB *blobs;
 
-        out->attid= attr->attributeID_id;
+        out->attid= dsdb_attribute_get_attid(attr,
+					     ctx->is_schema_nc);
         out->value_ctr.num_values= in->num_values;
         out->value_ctr.values= talloc_array(mem_ctx,
                                             struct drsuapi_DsAttributeValue,
@@ -1118,7 +1150,8 @@ static WERROR _dsdb_syntax_OID_attr_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
         unsigned int i;
         DATA_BLOB *blobs;
 
-        out->attid= attr->attributeID_id;
+        out->attid= dsdb_attribute_get_attid(attr,
+					     ctx->is_schema_nc);
         out->value_ctr.num_values= in->num_values;
         out->value_ctr.values= talloc_array(mem_ctx,
                                             struct drsuapi_DsAttributeValue,
@@ -1156,7 +1189,8 @@ static WERROR _dsdb_syntax_OID_oid_ldb_to_drsuapi(const struct dsdb_syntax_ctx *
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	out->attid= attr->attributeID_id;
+	out->attid= dsdb_attribute_get_attid(attr,
+					     ctx->is_schema_nc);
 	out->value_ctr.num_values= in->num_values;
 	out->value_ctr.values= talloc_array(mem_ctx,
 					    struct drsuapi_DsAttributeValue,
@@ -1369,7 +1403,8 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_syntax_ctx *c
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -1581,7 +1616,8 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -1886,7 +1922,8 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,
@@ -2128,7 +2165,8 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 		return WERR_FOOBAR;
 	}
 
-	out->attid			= attr->attributeID_id;
+	out->attid			= dsdb_attribute_get_attid(attr,
+								   ctx->is_schema_nc);
 	out->value_ctr.num_values	= in->num_values;
 	out->value_ctr.values		= talloc_array(mem_ctx,
 						       struct drsuapi_DsAttributeValue,

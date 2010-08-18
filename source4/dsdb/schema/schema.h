@@ -31,6 +31,9 @@ struct dsdb_schema;
 struct dsdb_syntax_ctx {
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
+
+	/* set when converting objects under Schema NC */
+	bool is_schema_nc;
 };
 
 
