@@ -659,7 +659,6 @@ struct ntlmssp_state;
 #include "session.h"
 #include "mangle.h"
 #include "module.h"
-#include "nsswitch/winbind_client.h"
 #include "dbwrap.h"
 #include "packet.h"
 #include "ctdbd_conn.h"
@@ -670,8 +669,6 @@ struct ntlmssp_state;
 #include "talloc_dict.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
-
-#include "nsswitch/winbind_nss.h"
 
 /* forward declarations from smbldap.c */
 
