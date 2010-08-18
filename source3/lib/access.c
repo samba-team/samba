@@ -11,6 +11,7 @@
 */
 
 #include "includes.h"
+#include "memcache.h"
 
 #define NAME_INDEX 0
 #define ADDR_INDEX 1

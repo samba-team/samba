@@ -28,6 +28,7 @@
 #include "registry.h"
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
+#include "memcache.h"
 
 static_decl_rpc;
 

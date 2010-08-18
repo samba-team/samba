@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "memcache.h"
 
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) 
 {
