@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING

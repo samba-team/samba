@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "serverid.h"
+#include "dbwrap.h"
 
 struct serverid_key {
 	pid_t pid;

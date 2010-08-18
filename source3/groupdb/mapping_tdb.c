@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "groupdb/mapping.h"
+#include "dbwrap.h"
 
 static struct db_context *db; /* used for driver files */
 

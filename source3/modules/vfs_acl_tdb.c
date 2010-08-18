@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../lib/crypto/crypto.h"
+#include "dbwrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

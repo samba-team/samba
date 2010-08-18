@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 #if 0 /* when made a module use this */
 

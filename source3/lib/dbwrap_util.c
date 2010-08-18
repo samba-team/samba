@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr)
 {

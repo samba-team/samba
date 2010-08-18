@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 extern bool AllowDebugChange;
 

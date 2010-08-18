@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "dbwrap.h"
 
 /****************************************************************************
  Delete a connection record.

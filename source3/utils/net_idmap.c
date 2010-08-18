@@ -22,6 +22,7 @@
 #include "utils/net.h"
 #include "secrets.h"
 #include "idmap.h"
+#include "dbwrap.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \

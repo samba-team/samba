@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 static struct db_context *session_db_ctx(void)
 {

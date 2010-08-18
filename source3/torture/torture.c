@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
+#include "dbwrap.h"
 
 extern char *optarg;
 extern int optind;

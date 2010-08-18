@@ -35,6 +35,7 @@
 #include "winbindd.h"
 #include "idmap.h"
 #include "idmap_rw.h"
+#include "dbwrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

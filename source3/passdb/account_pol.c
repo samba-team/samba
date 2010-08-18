@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "dbwrap.h"
 static struct db_context *db;
 
 /* cache all entries for 60 seconds for to save ldap-queries (cache is updated

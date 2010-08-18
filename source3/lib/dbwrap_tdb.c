@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_private.h"
 #endif

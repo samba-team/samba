@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
+#include "dbwrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

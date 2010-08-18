@@ -48,6 +48,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
+#include "dbwrap.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;

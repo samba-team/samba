@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "dbwrap.h"
 
 /*******************************************************************
  Create the share security tdb.

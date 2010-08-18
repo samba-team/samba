@@ -32,6 +32,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
+#include "dbwrap.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */

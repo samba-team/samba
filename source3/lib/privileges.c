@@ -22,6 +22,7 @@
 
 
 #include "includes.h"
+#include "dbwrap.h"
 
 #define PRIVPREFIX              "PRIV_"
 
