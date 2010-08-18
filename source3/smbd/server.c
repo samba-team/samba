@@ -28,6 +28,7 @@
 #include "registry.h"
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
+#include "memcache.h"
 
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"

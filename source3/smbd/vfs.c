@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "memcache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

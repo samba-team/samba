@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "memcache.h"
 
 /****************************************************************************
  Get a port number in host byte order from a sockaddr_storage.

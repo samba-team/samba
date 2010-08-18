@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "memcache.h"
 
 #if defined(WITH_AIO)
 struct aio_extra *aio_list_head = NULL;

@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "secrets.h"
+#include "memcache.h"
 
 #include "../librpc/gen_ndr/netlogon.h"
 
