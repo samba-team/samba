@@ -3112,7 +3112,7 @@ NTSTATUS dsdb_get_extended_dn_sid(struct ldb_dn *dn, struct dom_sid *sid, const 
 	struct TALLOC_CTX *tmp_ctx;
 	enum ndr_err_code ndr_err;
 
-	sid_blob = ldb_dn_get_extended_component(dn, "SID");
+	sid_blob = ldb_dn_get_extended_component(dn, component_name);
 	if (!sid_blob) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
