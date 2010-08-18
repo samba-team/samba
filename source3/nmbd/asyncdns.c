@@ -18,6 +18,7 @@
    */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 /***************************************************************************
   Add a DNS result to the name cache.

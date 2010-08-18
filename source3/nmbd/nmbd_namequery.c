@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 /****************************************************************************
  Deal with a response packet when querying a name.
