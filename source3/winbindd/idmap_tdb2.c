@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "idmap.h"
 #include "idmap_rw.h"
 
 #undef DBGC_CLASS

@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
 #include "memcache.h"
+#include "idmap_cache.h"
 
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.

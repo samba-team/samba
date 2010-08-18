@@ -31,6 +31,7 @@
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
+#include "idmap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

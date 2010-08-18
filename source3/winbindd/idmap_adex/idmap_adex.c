@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "ads.h"
+#include "idmap.h"
 #include "idmap_adex.h"
 #include "nss_info.h"
 #include "secrets.h"

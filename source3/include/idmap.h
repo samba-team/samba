@@ -30,6 +30,8 @@
 
 #define SMB_IDMAP_INTERFACE_VERSION 5
 
+#include "librpc/gen_ndr/idmap.h"
+
 struct idmap_domain {
 	const char *name;
 	struct idmap_methods *methods;
@@ -59,5 +61,7 @@ struct idmap_methods {
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(struct idmap_domain *dom);
 };
+
+#include "winbindd/idmap_proto.h"
 
 #endif /* _IDMAP_H_ */
