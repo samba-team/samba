@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -113,7 +114,6 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	int filename_len = 0;
 	char *targethost = NULL;
 	char *new_target = NULL;
-	char addr[INET6_ADDRSTRLEN];
 
 	if (filename_start == NULL) {
 		DEBUG(10, ("No filename start in %s\n", target));
@@ -137,8 +137,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	DEBUG(10, ("Expanding from table [%s]\n", mapfilename));
 
 	targethost = read_target_host(
-		ctx, client_addr(smbd_server_fd(), addr, sizeof(addr)),
-		mapfilename);
+		ctx, conn->sconn->client_id.addr, mapfilename);
 	if (targethost == NULL) {
 		DEBUG(1, ("Could not expand target host from file %s\n",
 			  mapfilename));
