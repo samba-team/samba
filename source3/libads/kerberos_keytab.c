@@ -35,6 +35,151 @@
 /**********************************************************************
 **********************************************************************/
 
+static krb5_error_code seek_and_delete_old_entries(krb5_context context,
+						   krb5_keytab keytab,
+						   krb5_kvno kvno,
+						   const char *princ_s,
+						   krb5_principal princ,
+						   bool flush,
+						   bool keep_old_entries)
+{
+	krb5_error_code ret;
+	krb5_kt_cursor cursor;
+	krb5_kt_cursor zero_csr;
+	krb5_keytab_entry kt_entry;
+	krb5_keytab_entry zero_kt_entry;
+	char *ktprinc = NULL;
+
+	ZERO_STRUCT(cursor);
+	ZERO_STRUCT(zero_csr);
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(zero_kt_entry);
+
+	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+	if (ret == KRB5_KT_END && ret == ENOENT ) {
+		/* no entries */
+		return 0;
+	}
+
+	DEBUG(3, (__location__ ": Will try to delete old keytab entries\n"));
+	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
+		bool name_ok = False;
+
+		if (!flush && (princ_s != NULL)) {
+			ret = smb_krb5_unparse_name(talloc_tos(), context,
+						    kt_entry.principal,
+						    &ktprinc);
+			if (ret) {
+				DEBUG(1, (__location__
+					  ": smb_krb5_unparse_name failed "
+					  "(%s)\n", error_message(ret)));
+				goto out;
+			}
+
+#ifdef HAVE_KRB5_KT_COMPARE
+			name_ok = krb5_kt_compare(context, &kt_entry,
+						  princ, 0, 0);
+#else
+			name_ok = (strcmp(ktprinc, princ_s) == 0);
+#endif
+
+			if (!name_ok) {
+				DEBUG(10, (__location__ ": ignoring keytab "
+					   "entry principal %s, kvno = %d\n",
+					   ktprinc, kt_entry.vno));
+
+				/* Not a match,
+				 * just free this entry and continue. */
+				ret = smb_krb5_kt_free_entry(context,
+							     &kt_entry);
+				ZERO_STRUCT(kt_entry);
+				if (ret) {
+					DEBUG(1, (__location__
+						  ": smb_krb5_kt_free_entry "
+						  "failed (%s)\n",
+						  error_message(ret)));
+					goto out;
+				}
+
+				TALLOC_FREE(ktprinc);
+				continue;
+			}
+
+			TALLOC_FREE(ktprinc);
+		}
+
+		/*------------------------------------------------------------
+		 * Save the entries with kvno - 1. This is what microsoft does
+		 * to allow people with existing sessions that have kvno - 1
+		 * to still work. Otherwise, when the password for the machine
+		 * changes, all kerberizied sessions will 'break' until either
+		 * the client reboots or the client's session key expires and
+		 * they get a new session ticket with the new kvno.
+		 */
+
+		if (!flush && (kt_entry.vno == kvno - 1)) {
+			DEBUG(5, (__location__ ": Saving previous (kvno %d) "
+				  "entry for principal: %s.\n",
+				  kvno - 1, princ_s));
+			continue;
+		}
+
+		if (keep_old_entries) {
+			DEBUG(5, (__location__ ": Saving old (kvno %d) "
+				  "entry for principal: %s.\n",
+				  kvno, princ_s));
+			continue;
+		}
+
+		DEBUG(5, (__location__ ": Found old entry for principal: %s "
+			  "(kvno %d) - trying to remove it.\n",
+			  princ_s, kt_entry.vno));
+
+		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+		ZERO_STRUCT(cursor);
+		if (ret) {
+			DEBUG(1, (__location__ ": krb5_kt_end_seq_get() "
+				  "failed (%s)\n", error_message(ret)));
+			goto out;
+		}
+		ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
+		if (ret) {
+			DEBUG(1, (__location__ ": krb5_kt_remove_entry() "
+				  "failed (%s)\n", error_message(ret)));
+			goto out;
+		}
+
+		DEBUG(5, (__location__ ": removed old entry for principal: "
+			  "%s (kvno %d).\n", princ_s, kt_entry.vno));
+
+		ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+		if (ret) {
+			DEBUG(1, (__location__ ": krb5_kt_start_seq() failed "
+				  "(%s)\n", error_message(ret)));
+			goto out;
+		}
+		ret = smb_krb5_kt_free_entry(context, &kt_entry);
+		ZERO_STRUCT(kt_entry);
+		if (ret) {
+			DEBUG(1, (__location__ ": krb5_kt_remove_entry() "
+				  "failed (%s)\n", error_message(ret)));
+			goto out;
+		}
+	}
+
+out:
+	if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+		smb_krb5_kt_free_entry(context, &kt_entry);
+	}
+	if (keytab) {
+		if (memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);
+		}
+	}
+
+	return ret;
+}
+
 int smb_krb5_kt_add_entry_ext(krb5_context context,
 			      krb5_keytab keytab,
 			      krb5_kvno kvno,
@@ -44,121 +189,30 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 			      bool no_salt,
 			      bool keep_old_entries)
 {
-	krb5_error_code ret = 0;
-	krb5_kt_cursor cursor;
+	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
 	krb5_principal princ = NULL;
 	int i;
-	char *ktprinc = NULL;
 
 	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
-	
+
 	ret = smb_krb5_parse_name(context, princ_s, &princ);
 	if (ret) {
-		DEBUG(1,("smb_krb5_kt_add_entry_ext: smb_krb5_parse_name(%s) failed (%s)\n", princ_s, error_message(ret)));
+		DEBUG(1, (__location__ ": smb_krb5_parse_name(%s) "
+			  "failed (%s)\n", princ_s, error_message(ret)));
 		goto out;
 	}
 
 	/* Seek and delete old keytab entries */
-	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		DEBUG(3,("smb_krb5_kt_add_entry_ext: Will try to delete old keytab entries\n"));
-		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
-			bool compare_name_ok = False;
-
-			ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal, &ktprinc);
-			if (ret) {
-				DEBUG(1,("smb_krb5_kt_add_entry_ext: smb_krb5_unparse_name failed (%s)\n",
-					error_message(ret)));
-				goto out;
-			}
-
-			/*---------------------------------------------------------------------------
-			 * Save the entries with kvno - 1.   This is what microsoft does
-			 * to allow people with existing sessions that have kvno - 1 to still
-			 * work.   Otherwise, when the password for the machine changes, all
-			 * kerberizied sessions will 'break' until either the client reboots or
-			 * the client's session key expires and they get a new session ticket
-			 * with the new kvno.
-			 */
-
-#ifdef HAVE_KRB5_KT_COMPARE
-			compare_name_ok = (krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True);
-#else
-			compare_name_ok = (strcmp(ktprinc, princ_s) == 0);
-#endif
-
-			if (!compare_name_ok) {
-				DEBUG(10,("smb_krb5_kt_add_entry_ext: ignoring keytab entry principal %s, kvno = %d\n",
-					ktprinc, kt_entry.vno));
-			}
-
-			TALLOC_FREE(ktprinc);
-
-			if (compare_name_ok) {
-				if (kt_entry.vno == kvno - 1) {
-					DEBUG(5,("smb_krb5_kt_add_entry_ext: Saving previous (kvno %d) entry for principal: %s.\n",
-						kvno - 1, princ_s));
-				} else if (!keep_old_entries) {
-					DEBUG(5,("smb_krb5_kt_add_entry_ext: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
-						princ_s, kt_entry.vno));
-					ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-					ZERO_STRUCT(cursor);
-					if (ret) {
-						DEBUG(1,("smb_krb5_kt_add_entry_ext: krb5_kt_end_seq_get() failed (%s)\n",
-							error_message(ret)));
-						goto out;
-					}
-					ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
-					if (ret) {
-						DEBUG(1,("smb_krb5_kt_add_entry_ext: krb5_kt_remove_entry failed (%s)\n",
-							error_message(ret)));
-						goto out;
-					}
-
-					DEBUG(5,("smb_krb5_kt_add_entry_ext: removed old entry for principal: %s (kvno %d).\n",
-						princ_s, kt_entry.vno));
-
-					ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-					if (ret) {
-						DEBUG(1,("smb_krb5_kt_add_entry_ext: krb5_kt_start_seq failed (%s)\n",
-							error_message(ret)));
-						goto out;
-					}
-					ret = smb_krb5_kt_free_entry(context, &kt_entry);
-					ZERO_STRUCT(kt_entry);
-					if (ret) {
-						DEBUG(1,("smb_krb5_kt_add_entry_ext: krb5_kt_remove_entry failed (%s)\n",
-							error_message(ret)));
-						goto out;
-					}
-					continue;
-				}
-			}
-
-			/* Not a match, just free this entry and continue. */
-			ret = smb_krb5_kt_free_entry(context, &kt_entry);
-			ZERO_STRUCT(kt_entry);
-			if (ret) {
-				DEBUG(1,("smb_krb5_kt_add_entry_ext: smb_krb5_kt_free_entry failed (%s)\n", error_message(ret)));
-				goto out;
-			}
-		}
-
-		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-		ZERO_STRUCT(cursor);
-		if (ret) {
-			DEBUG(1,("smb_krb5_kt_add_entry_ext: krb5_kt_end_seq_get failed (%s)\n",error_message(ret)));
-			goto out;
-		}
+	ret = seek_and_delete_old_entries(context, keytab, kvno,
+					  princ_s, princ, false,
+					  keep_old_entries);
+	if (ret) {
+		goto out;
 	}
 
-	/* Ensure we don't double free. */
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
-
-	/* If we get here, we have deleted all the old entries with kvno's not equal to the current kvno-1. */
+	/* If we get here, we have deleted all the old entries with kvno's
+	 * not equal to the current kvno-1. */
 
 	/* Now add keytab entries for all encryption types */
 	for (i = 0; enctypes[i]; i++) {
@@ -166,45 +220,33 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 
 		keyp = KRB5_KT_KEY(&kt_entry);
 
-		if (create_kerberos_key_from_string(context, princ, &password, keyp, enctypes[i], no_salt)) {
+		if (create_kerberos_key_from_string(context, princ,
+						    &password, keyp,
+						    enctypes[i], no_salt)) {
 			continue;
 		}
 
 		kt_entry.principal = princ;
 		kt_entry.vno       = kvno;
 
-		DEBUG(3,("smb_krb5_kt_add_entry_ext: adding keytab entry for (%s) with encryption type (%d) and version (%d)\n",
-			princ_s, enctypes[i], kt_entry.vno));
+		DEBUG(3, (__location__ ": adding keytab entry for (%s) with "
+			  "encryption type (%d) and version (%d)\n",
+			  princ_s, enctypes[i], kt_entry.vno));
 		ret = krb5_kt_add_entry(context, keytab, &kt_entry);
 		krb5_free_keyblock_contents(context, keyp);
 		ZERO_STRUCT(kt_entry);
 		if (ret) {
-			DEBUG(1,("smb_krb5_kt_add_entry_ext: adding entry to keytab failed (%s)\n", error_message(ret)));
+			DEBUG(1, (__location__ ": adding entry to keytab "
+				  "failed (%s)\n", error_message(ret)));
 			goto out;
 		}
 	}
 
-
 out:
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(context, &kt_entry);
-		}
-	}
 	if (princ) {
 		krb5_free_principal(context, princ);
 	}
-	
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);	
-		}
-	}
-	
+
 	return (int)ret;
 }
 
@@ -388,85 +430,46 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry kt_entry;
 	krb5_kvno kvno;
-
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
+	ADS_STATUS aderr;
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("ads_keytab_flush: could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
+			  error_message(ret)));
 		return ret;
 	}
 
 	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_flush: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+			  error_message(ret)));
 		goto out;
 	}
 
-	kvno = (krb5_kvno) ads_get_machine_kvno(ads, global_myname());
-	if (kvno == -1) {       /* -1 indicates a failure */
-		DEBUG(1,("ads_keytab_flush: Error determining the system's kvno.\n"));
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, global_myname());
+	if (kvno == -1) {
+		/* -1 indicates a failure */
+		DEBUG(1, (__location__ ": Error determining the kvno.\n"));
 		goto out;
 	}
 
-	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret != KRB5_KT_END && ret != ENOENT) {
-		while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
-			ret = krb5_kt_end_seq_get(context, keytab, &cursor);
-			ZERO_STRUCT(cursor);
-			if (ret) {
-				DEBUG(1,("ads_keytab_flush: krb5_kt_end_seq_get() failed (%s)\n",error_message(ret)));
-				goto out;
-			}
-			ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
-			if (ret) {
-				DEBUG(1,("ads_keytab_flush: krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
-				goto out;
-			}
-			ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-			if (ret) {
-				DEBUG(1,("ads_keytab_flush: krb5_kt_start_seq failed (%s)\n",error_message(ret)));
-				goto out;
-			}
-			ret = smb_krb5_kt_free_entry(context, &kt_entry);
-			ZERO_STRUCT(kt_entry);
-			if (ret) {
-				DEBUG(1,("ads_keytab_flush: krb5_kt_remove_entry failed (%s)\n",error_message(ret)));
-				goto out;
-			}
-		}
+	/* Seek and delete old keytab entries */
+	ret = seek_and_delete_old_entries(context, keytab, kvno,
+					  NULL, NULL, true, false);
+	if (ret) {
+		goto out;
 	}
 
-	/* Ensure we don't double free. */
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
-
-	if (!ADS_ERR_OK(ads_clear_service_principal_names(ads, global_myname()))) {
-		DEBUG(1,("ads_keytab_flush: Error while clearing service principal listings in LDAP.\n"));
+	aderr = ads_clear_service_principal_names(ads, global_myname());
+	if (!ADS_ERR_OK(aderr)) {
+		DEBUG(1, (__location__ ": Error while clearing service "
+			  "principal listings in LDAP.\n"));
 		goto out;
 	}
 
 out:
-
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(context, &kt_entry);
-		}
-	}
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);	
-		}
-	}
 	if (keytab) {
 		krb5_kt_close(context, keytab);
 	}
