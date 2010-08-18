@@ -673,11 +673,6 @@ struct ntlmssp_state;
 
 #include "nsswitch/winbind_nss.h"
 
-/* forward declaration from printing.h to get around 
-   header file dependencies */
-
-struct printjob;
-
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
