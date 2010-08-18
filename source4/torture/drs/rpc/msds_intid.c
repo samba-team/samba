@@ -86,8 +86,8 @@ struct DsIntIdTestCtx {
 		"objectClass: attributeSchema\n" \
 		"cn: msds-intid-%1$d\n" \
 		"attributeID: 1.2.840.%1$d.1.5.9940\n" \
-		"attributeSyntax: 2.5.5.12\n" \
-		"omSyntax: 64\n" \
+		"attributeSyntax: 2.5.5.10\n" \
+		"omSyntax: 4\n" \
 		"instanceType: 4\n" \
 		"isSingleValued: TRUE\n" \
 		"systemOnly: FALSE\n" \
@@ -125,7 +125,7 @@ struct DsIntIdTestCtx {
 		"name: dsIntId_usr_%1$d\n" \
 		"displayName: dsIntId_usr_%1$d\n" \
 		"sAMAccountName: dsIntId_usr_%1$d\n" \
-		"msdsIntid%1$d: msDS-IntId attribute value\n" \
+		"msdsIntid%1$d: msDS-IntId-%1$d attribute value\n" \
 		"\n"
 
 
