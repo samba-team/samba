@@ -351,7 +351,6 @@ bool allow_access(const char **deny_list,
 		const char **allow_list,
 		const char *cname,
 		const char *caddr);
-bool check_access(int sock, const char **allow_list, const char **deny_list);
 
 /* The following definitions come from passdb/account_pol.c  */
 
