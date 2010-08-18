@@ -648,8 +648,6 @@ extern void *cmdline_lp_ctx;
 #include "passdb.h"
 #include "msdfs.h"
 
-struct ntlmssp_state;
-
 #include "auth.h"
 #include "ntdomain.h"
 #include "librpc/rpc/dcerpc.h"
