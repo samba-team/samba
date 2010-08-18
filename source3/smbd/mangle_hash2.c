@@ -66,6 +66,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "memcache.h"
+#include "mangle.h"
 
 #if 1
 #define M_DEBUG(level, x) DEBUG(level, x)

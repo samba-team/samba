@@ -653,7 +653,6 @@ extern void *cmdline_lp_ctx;
 #include "client.h"
 
 #include "session.h"
-#include "mangle.h"
 #include "module.h"
 #include "dbwrap.h"
 #include "packet.h"

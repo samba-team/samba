@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "mangle.h"
 
 /* -------------------------------------------------------------------------- **
  * Other stuff...

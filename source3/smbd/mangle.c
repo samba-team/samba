@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "mangle.h"
 
 /* this allows us to add more mangling backends */
 static const struct {
