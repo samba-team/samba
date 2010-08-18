@@ -1554,8 +1554,9 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	/* does this protocol need to be run as guest? */
 	if ((flags & AS_GUEST)
 	    && (!change_to_guest() ||
-		!check_access(sconn->sock, lp_hostsallow(-1),
-			      lp_hostsdeny(-1)))) {
+		!allow_access(lp_hostsdeny(-1), lp_hostsallow(-1),
+			      sconn->client_id.name,
+			      sconn->client_id.addr))) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return conn;
 	}
@@ -2982,8 +2983,9 @@ void smbd_process(struct smbd_server_connection *sconn)
 	 * the hosts allow list.
 	 */
 
-	if (!check_access(sconn->sock, lp_hostsallow(-1),
-			  lp_hostsdeny(-1))) {
+	if (!allow_access(lp_hostsdeny(-1), lp_hostsallow(-1),
+			  sconn->client_id.name,
+			  sconn->client_id.addr)) {
 		/*
 		 * send a negative session response "not listening on calling
 		 * name"

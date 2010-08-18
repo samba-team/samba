@@ -424,11 +424,12 @@ int find_service(fstring service)
  This function modifies dev, ecode.
 ****************************************************************************/
 
-static NTSTATUS share_sanity_checks(int server_sock, int snum, fstring dev)
+static NTSTATUS share_sanity_checks(struct client_address *client_id, int snum,
+				    fstring dev)
 {
 	if (!lp_snum_ok(snum) || 
-	    !check_access(server_sock,
-			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
+	    !allow_access(lp_hostsdeny(snum), lp_hostsallow(snum),
+			  client_id->name, client_id->addr)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -658,7 +659,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	fstrcpy(dev, pdev);
 
-	*pstatus = share_sanity_checks(sconn->sock, snum, dev);
+	*pstatus = share_sanity_checks(&sconn->client_id, snum, dev);
 	if (NT_STATUS_IS_ERR(*pstatus)) {
 		goto err_root_exit;
 	}

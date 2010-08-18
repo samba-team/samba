@@ -328,6 +328,10 @@ bool allow_access(const char **deny_list,
 
 	ret = allow_access_internal(deny_list, allow_list, nc_cname, nc_caddr);
 
+	DEBUG(ret ? 3 : 0,
+	      ("%s connection from %s (%s)\n",
+	       ret ? "Allowed" : "Denied", nc_cname, nc_caddr));
+
 	SAFE_FREE(nc_cname);
 	SAFE_FREE(nc_caddr);
 	return ret;
