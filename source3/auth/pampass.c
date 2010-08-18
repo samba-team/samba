@@ -773,7 +773,7 @@ bool smb_pam_close_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Account handler
  */
 
-NTSTATUS smb_pam_accountcheck(const char * user)
+NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost)
 {
 	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 	pam_handle_t *pamh = NULL;
@@ -787,7 +787,7 @@ NTSTATUS smb_pam_accountcheck(const char * user)
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, NULL, NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (!smb_pam_start(&pamh, user, NULL, pconv))
+	if (!smb_pam_start(&pamh, user, rhost, pconv))
 		return NT_STATUS_ACCOUNT_DISABLED;
 
 	if (!NT_STATUS_IS_OK(nt_status = smb_pam_account(pamh, user)))
@@ -869,7 +869,7 @@ bool smb_pam_passchange(const char * user, const char * oldpassword, const char 
 #else
 
 /* If PAM not used, no PAM restrictions on accounts. */
-NTSTATUS smb_pam_accountcheck(const char * user)
+NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost)
 {
 	return NT_STATUS_OK;
 }

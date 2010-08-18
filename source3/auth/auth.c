@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -284,7 +285,9 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		if (!(*server_info)->guest) {
 			/* We might not be root if we are an RPC call */
 			become_root();
-			nt_status = smb_pam_accountcheck(unix_username);
+			nt_status = smb_pam_accountcheck(
+				unix_username,
+				smbd_server_conn->client_id.name);
 			unbecome_root();
 
 			if (NT_STATUS_IS_OK(nt_status)) {

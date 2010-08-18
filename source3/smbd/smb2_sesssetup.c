@@ -294,7 +294,8 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		/* if a real user check pam account restrictions */
 		/* only really perfomed if "obey pam restriction" is true */
 		/* do this before an eventual mapping to guest occurs */
-		status = smb_pam_accountcheck(pw->pw_name);
+		status = smb_pam_accountcheck(
+			pw->pw_name, smb2req->sconn->client_id.name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1,("smb2: PAM account restriction "
 				"prevents user login\n"));
