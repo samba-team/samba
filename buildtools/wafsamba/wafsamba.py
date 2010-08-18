@@ -349,50 +349,30 @@ def SAMBA_MODULE(bld, modname, source,
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
         return
 
-    if not SET_TARGET_TYPE(bld, modname, 'MODULE'):
-        return
-
     obj_target = modname + '.objlist'
 
-    bld.SAMBA_SUBSYSTEM(obj_target, source,
-                    deps=deps,
-                    includes=includes,
-                    autoproto=autoproto,
-                    autoproto_extra_source=autoproto_extra_source,
-                    cflags=cflags,
-                    local_include=local_include,
-                    enabled=enabled)
-
-    deps = TO_LIST(deps)
-    deps.append(obj_target)
     realname = modname 
     if subsystem is not None:
-        deps.append(subsystem)
+        deps += ' ' + subsystem
         while realname.startswith("lib"+subsystem+"_"):
             realname = realname[len("lib"+subsystem+"_"):]
         while realname.startswith(subsystem+"_"):
             realname = realname[len(subsystem+"_"):]
-        while realname.startswith("lib"):
-            realname = realname[len("lib"):]
 
-    bld.SET_BUILD_GROUP('main')
-    t = bld(
-        features       = 'cc cshlib install_lib',
-        source         = [],
-        target         = realname,
-        name           = modname,
-        link_name      = "modules/%s/%s.${SHLIBEXT}" % (subsystem, realname),
-        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
-        samba_includes = includes,
-        local_include  = local_include,
-        samba_deps     = deps,
-        install_path   = None,
-        samba_inst_path= "${MODULESDIR}/%s" % subsystem,
-        samba_realname = realname+ ".${SHLIBEXT}",
-        vnum           = None,
-        samba_install  = True,
-        is_bundled     = False,
-        )
+    realname = bld.env.shlib_PATTERN % realname
+    while realname.startswith("lib"):
+        realname = realname[len("lib"):]
+
+    bld.SAMBA_LIBRARY(modname,
+                      source,
+                      deps=deps,
+                      cflags=cflags,
+                      realname = realname,
+                      autoproto = autoproto,
+                      local_include=local_include,
+                      vars=vars,
+                      install_path="${MODULESDIR}/%s" % subsystem
+                      )
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
