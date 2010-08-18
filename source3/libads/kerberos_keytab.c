@@ -180,14 +180,14 @@ out:
 	return ret;
 }
 
-int smb_krb5_kt_add_entry_ext(krb5_context context,
-			      krb5_keytab keytab,
-			      krb5_kvno kvno,
-			      const char *princ_s,
-			      krb5_enctype *enctypes,
-			      krb5_data password,
-			      bool no_salt,
-			      bool keep_old_entries)
+static int smb_krb5_kt_add_entry(krb5_context context,
+				 krb5_keytab keytab,
+				 krb5_kvno kvno,
+				 const char *princ_s,
+				 krb5_enctype *enctypes,
+				 krb5_data password,
+				 bool no_salt,
+				 bool keep_old_entries)
 {
 	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
@@ -248,23 +248,6 @@ out:
 	}
 
 	return (int)ret;
-}
-
-static int smb_krb5_kt_add_entry(krb5_context context,
-				 krb5_keytab keytab,
-				 krb5_kvno kvno,
-				 const char *princ_s,
-				 krb5_enctype *enctypes,
-				 krb5_data password)
-{
-	return smb_krb5_kt_add_entry_ext(context,
-					 keytab,
-					 kvno,
-					 princ_s,
-					 enctypes,
-					 password,
-					 false,
-					 false);
 }
 
 /**********************************************************************
@@ -415,7 +398,8 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 	/* add the fqdn principal to the keytab */
 	ret = smb_krb5_kt_add_entry(context, keytab, kvno,
-				    princ_s, enctypes, password);
+				    princ_s, enctypes, password,
+				    false, false);
 	if (ret) {
 		DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
 		goto out;
@@ -424,7 +408,8 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	/* add the short principal name if we have one */
 	if (short_princ_s) {
 		ret = smb_krb5_kt_add_entry(context, keytab, kvno,
-					    short_princ_s, enctypes, password);
+					    short_princ_s, enctypes, password,
+					    false, false);
 		if (ret) {
 			DEBUG(1, (__location__
 				  ": Failed to add short entry to keytab\n"));
