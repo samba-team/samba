@@ -28,6 +28,8 @@
 #ifndef __TEVENT_H__
 #define __TEVENT_H__
 
+#define TEVENT_DEPRECATED
+
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>

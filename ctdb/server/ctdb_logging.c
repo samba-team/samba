@@ -118,6 +118,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 
 	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(NULL);
+	tevent_loop_allow_nesting(ctdb->ev);
 
 	syslog(LOG_ERR, "Starting SYSLOG daemon with pid:%d", (int)getpid());
 

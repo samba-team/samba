@@ -773,6 +773,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	}
 
 	ctdb->ev = event_context_init(NULL);
+	tevent_loop_allow_nesting(ctdb->ev);
 
 	ctdb_set_child_logging(ctdb);
 

@@ -178,6 +178,7 @@ int main(int argc, const char *argv[])
 	fault_setup("ctdbd");
 
 	ev = event_context_init(NULL);
+	tevent_loop_allow_nesting(ev);
 
 	ctdb = ctdb_cmdline_init(ev);
 

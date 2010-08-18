@@ -3839,6 +3839,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 	/* get a new event context */
 	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(ctdb);
+	tevent_loop_allow_nesting(ctdb->ev);
 
 	close(ctdb->daemon.sd);
 	ctdb->daemon.sd = -1;
