@@ -63,12 +63,12 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 
-		talloc_free(call->conn->session_info);
+		talloc_unlink(call->conn, call->conn->session_info);
 		call->conn->session_info = session_info;
 		talloc_steal(call->conn, session_info);
 
 		/* don't leak the old LDB */
-		talloc_free(call->conn->ldb);
+		talloc_unlink(call->conn, call->conn->ldb);
 
 		status = ldapsrv_backend_Init(call->conn);		
 		
@@ -234,11 +234,11 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 							 "SASL:[%s]: Failed to get session info: %s", 
 							 req->creds.SASL.mechanism, nt_errstr(status));
 			} else {
-				talloc_free(old_session_info);
+				talloc_unlink(conn, old_session_info);
 				talloc_steal(conn, conn->session_info);
 				
 				/* don't leak the old LDB */
-				talloc_free(conn->ldb);
+				talloc_unlink(conn, conn->ldb);
 				
 				status = ldapsrv_backend_Init(conn);		
 				
