@@ -24,13 +24,13 @@
 
 static_decl_auth;
 
-static struct auth_init_function_entry *backends = NULL;
+static struct auth_init_function_entry *auth_backends = NULL;
 
 static struct auth_init_function_entry *auth_find_backend_entry(const char *name);
 
 NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init)
 {
-	struct auth_init_function_entry *entry = backends;
+	struct auth_init_function_entry *entry = auth_backends;
 
 	if (version != AUTH_INTERFACE_VERSION) {
 		DEBUG(0,("Can't register auth_method!\n"
@@ -54,14 +54,14 @@ NTSTATUS smb_register_auth(int version, const char *name, auth_init_function ini
 	entry->name = smb_xstrdup(name);
 	entry->init = init;
 
-	DLIST_ADD(backends, entry);
+	DLIST_ADD(auth_backends, entry);
 	DEBUG(5,("Successfully added auth method '%s'\n", name));
 	return NT_STATUS_OK;
 }
 
 static struct auth_init_function_entry *auth_find_backend_entry(const char *name)
 {
-	struct auth_init_function_entry *entry = backends;
+	struct auth_init_function_entry *entry = auth_backends;
 
 	while(entry) {
 		if (strcmp(entry->name, name)==0) return entry;
