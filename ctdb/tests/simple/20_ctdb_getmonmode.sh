@@ -18,7 +18,7 @@ Steps:
 
 1. Verify that the status on all of the ctdb nodes is 'OK'.
 2. Use 'ctdb getmodmode -n <node>' to get the current monitoring mode.
-3. Verify that it shows monitoring as 'active'.
+3. Verify that it looks sane.
 4. Verify that the command prints the output in colon-separated format
    when run with the '-Y' option.
 5. Disable monitoring on the node using 'ctdb disablemonitor'.
@@ -47,19 +47,12 @@ try_command_on_node -v 0 $CTDB getmonmode -n $test_node
 
 sanity_check_output \
     1 \
-    '^Monitoring mode:ACTIVE \(0\)$' \
+    '^Monitoring mode:(ACTIVE \(0\)|DISABLED \(1\))$' \
     "$out"
-
-colons=$(printf ':mode:\n:0:')
 
 try_command_on_node -v 0 $CTDB -Y getmonmode -n $test_node
 
-if [ "$out" = "$colons" ] ; then
-    echo "Looks OK"
-else
-    echo "BAD: -Y output isn't what was expected"
-    testfailures=1
-fi
+sanity_check_output 2 '^(:mode:|:0:|:1:)$' "$out"
 
 try_command_on_node -v 0 $CTDB disablemonitor -n $test_node
 
