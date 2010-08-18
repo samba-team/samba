@@ -278,38 +278,44 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	krb5_keytab keytab = NULL;
 	krb5_data password;
 	krb5_kvno kvno;
-        krb5_enctype enctypes[4] = { ENCTYPE_DES_CBC_CRC, 
-				     ENCTYPE_DES_CBC_MD5, 
-				     ENCTYPE_ARCFOUR_HMAC, 
-				     0 };
-	char *princ_s = NULL, *short_princ_s = NULL;
+        krb5_enctype enctypes[4] = {
+		ENCTYPE_DES_CBC_CRC,
+		ENCTYPE_DES_CBC_MD5,
+		ENCTYPE_ARCFOUR_HMAC,
+		0
+	};
+	char *princ_s = NULL;
+	char *short_princ_s = NULL;
 	char *password_s = NULL;
 	char *my_fqdn;
-	TALLOC_CTX *ctx = NULL;
+	TALLOC_CTX *tmpctx = NULL;
 	char *machine_name;
+	ADS_STATUS aderr;
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
+			  error_message(ret)));
 		return -1;
 	}
 
 	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+			  error_message(ret)));
 		goto out;
 	}
 
 	/* retrieve the password */
 	if (!secrets_init()) {
-		DEBUG(1,("ads_keytab_add_entry: secrets_init failed\n"));
+		DEBUG(1, (__location__ ": secrets_init failed\n"));
 		ret = -1;
 		goto out;
 	}
 	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	if (!password_s) {
-		DEBUG(1,("ads_keytab_add_entry: failed to fetch machine password\n"));
+		DEBUG(1, (__location__ ": failed to fetch machine password\n"));
 		ret = -1;
 		goto out;
 	}
@@ -318,38 +324,44 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	password.length = strlen(password_s);
 
 	/* we need the dNSHostName value here */
-	
-	if ( (ctx = talloc_init("ads_keytab_add_entry")) == NULL ) {
-		DEBUG(0,("ads_keytab_add_entry: talloc() failed!\n"));
+	tmpctx = talloc_init(__location__);
+	if (!tmpctx) {
+		DEBUG(0, (__location__ ": talloc_init() failed!\n"));
 		ret = -1;
 		goto out;
 	}
-	
-	if ( (my_fqdn = ads_get_dnshostname( ads, ctx, global_myname())) == NULL ) {
-		DEBUG(0,("ads_keytab_add_entry: unable to determine machine account's dns name in AD!\n"));
+
+	my_fqdn = ads_get_dnshostname(ads, tmpctx, global_myname());
+	if (!my_fqdn) {
+		DEBUG(0, (__location__ ": unable to determine machine "
+			  "account's dns name in AD!\n"));
 		ret = -1;
-		goto out;	
+		goto out;
 	}
-	
-	if ( (machine_name = ads_get_samaccountname( ads, ctx, global_myname())) == NULL ) {
-		DEBUG(0,("ads_keytab_add_entry: unable to determine machine account's short name in AD!\n"));
+
+	machine_name = ads_get_samaccountname(ads, tmpctx, global_myname());
+	if (!machine_name) {
+		DEBUG(0, (__location__ ": unable to determine machine "
+			  "account's short name in AD!\n"));
 		ret = -1;
-		goto out;	
+		goto out;
 	}
 	/*strip the trailing '$' */
 	machine_name[strlen(machine_name)-1] = '\0';
-		
-	/* Construct our principal */
 
+	/* Construct our principal */
 	if (strchr_m(srvPrinc, '@')) {
 		/* It's a fully-named principal. */
-		if (asprintf(&princ_s, "%s", srvPrinc) == -1) {
+		princ_s = talloc_asprintf(tmpctx, "%s", srvPrinc);
+		if (!princ_s) {
 			ret = -1;
 			goto out;
 		}
 	} else if (srvPrinc[strlen(srvPrinc)-1] == '$') {
 		/* It's the machine account, as used by smbclient clients. */
-		if (asprintf(&princ_s, "%s@%s", srvPrinc, lp_realm()) == -1) {
+		princ_s = talloc_asprintf(tmpctx, "%s@%s",
+					  srvPrinc, lp_realm());
+		if (!princ_s) {
 			ret = -1;
 			goto out;
 		}
@@ -357,61 +369,72 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		/* It's a normal service principal.  Add the SPN now so that we
 		 * can obtain credentials for it and double-check the salt value
 		 * used to generate the service's keys. */
-		 
-		if (asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm()) == -1) {
+
+		princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
+					  srvPrinc, my_fqdn, lp_realm());
+		if (!princ_s) {
 			ret = -1;
 			goto out;
 		}
-		if (asprintf(&short_princ_s, "%s/%s@%s", srvPrinc, machine_name, lp_realm()) == -1) {
+		short_princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
+						srvPrinc, machine_name,
+						lp_realm());
+		if (!princ_s) {
 			ret = -1;
 			goto out;
 		}
-		
-		/* According to http://support.microsoft.com/kb/326985/en-us, 
-		   certain principal names are automatically mapped to the host/...
-		   principal in the AD account.  So only create these in the 
-		   keytab, not in AD.  --jerry */
-		   
-		if ( !strequal( srvPrinc, "cifs" ) && !strequal(srvPrinc, "host" ) ) {
-			DEBUG(3,("ads_keytab_add_entry: Attempting to add/update '%s'\n", princ_s));
-			
-			if (!ADS_ERR_OK(ads_add_service_principal_name(ads, global_myname(), my_fqdn, srvPrinc))) {
-				DEBUG(1,("ads_keytab_add_entry: ads_add_service_principal_name failed.\n"));
+
+		/* According to http://support.microsoft.com/kb/326985/en-us,
+		   certain principal names are automatically mapped to the
+		   host/... principal in the AD account.
+		   So only create these in the keytab, not in AD.  --jerry */
+
+		if (!strequal(srvPrinc, "cifs") &&
+		    !strequal(srvPrinc, "host")) {
+			DEBUG(3, (__location__ ": Attempting to add/update "
+				  "'%s'\n", princ_s));
+
+			aderr = ads_add_service_principal_name(ads,
+					global_myname(), my_fqdn, srvPrinc);
+			if (!ADS_ERR_OK(aderr)) {
+				DEBUG(1, (__location__ ": failed to "
+					 "ads_add_service_principal_name.\n"));
 				goto out;
 			}
 		}
 	}
 
-	kvno = (krb5_kvno) ads_get_machine_kvno(ads, global_myname());
-	if (kvno == -1) {       /* -1 indicates failure, everything else is OK */
-		DEBUG(1,("ads_keytab_add_entry: ads_get_machine_kvno failed to determine the system's kvno.\n"));
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, global_myname());
+	if (kvno == -1) {
+		/* -1 indicates failure, everything else is OK */
+		DEBUG(1, (__location__ ": ads_get_machine_kvno failed to "
+			 "determine the system's kvno.\n"));
 		ret = -1;
 		goto out;
 	}
-	
+
 	/* add the fqdn principal to the keytab */
-	
-	ret = smb_krb5_kt_add_entry( context, keytab, kvno, princ_s, enctypes, password );
-	if ( ret ) {
-		DEBUG(1,("ads_keytab_add_entry: Failed to add entry to keytab file\n"));
+	ret = smb_krb5_kt_add_entry(context, keytab, kvno,
+				    princ_s, enctypes, password);
+	if (ret) {
+		DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
 		goto out;
 	}
-	
+
 	/* add the short principal name if we have one */
-	
-	if ( short_princ_s ) {
-		ret = smb_krb5_kt_add_entry( context, keytab, kvno, short_princ_s, enctypes, password );
-		if ( ret ) {
-			DEBUG(1,("ads_keytab_add_entry: Failed to add short entry to keytab file\n"));
+	if (short_princ_s) {
+		ret = smb_krb5_kt_add_entry(context, keytab, kvno,
+					    short_princ_s, enctypes, password);
+		if (ret) {
+			DEBUG(1, (__location__
+				  ": Failed to add short entry to keytab\n"));
 			goto out;
 		}
 	}
 
 out:
-	SAFE_FREE( princ_s );
-	SAFE_FREE( short_princ_s );
-	TALLOC_FREE( ctx );
-	
+	TALLOC_FREE(tmpctx);
+
 	if (keytab) {
 		krb5_kt_close(context, keytab);
 	}
