@@ -311,6 +311,11 @@ struct tevent_req *dcerpc_binding_handle_call_send(TALLOC_CTX *mem_ctx,
 		state->push->flags |= LIBNDR_FLAG_NDR64;
 	}
 
+	if (h->ops->do_ndr_print) {
+		h->ops->do_ndr_print(h, NDR_IN | NDR_SET_VALUES,
+				     state->r_ptr, state->call);
+	}
+
 	/* push the structure into a blob */
 	ndr_err = state->call->ndr_push(state->push, NDR_IN, state->r_ptr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -399,6 +404,11 @@ static void dcerpc_binding_handle_call_done(struct tevent_req *subreq)
 		}
 		tevent_req_nterror(req, error);
 		return;
+	}
+
+	if (h->ops->do_ndr_print) {
+		h->ops->do_ndr_print(h, NDR_OUT,
+				     state->r_ptr, state->call);
 	}
 
 	if (h->ops->ndr_validate_out) {
