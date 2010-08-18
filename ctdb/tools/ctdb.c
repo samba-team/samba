@@ -1078,11 +1078,19 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		return -1;
 	}
 
-	printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
-	printf("Num tickles:%u\n", list->tickles.num);
-	for (i=0;i<list->tickles.num;i++) {
-		printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
-		printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+	if (options.machinereadable){
+		printf(":source ip:port:destination ip:port:\n");
+		for (i=0;i<list->tickles.num;i++) {
+			printf(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+			printf(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+		}
+	} else {
+		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
+		printf("Num tickles:%u\n", list->tickles.num);
+		for (i=0;i<list->tickles.num;i++) {
+			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+		}
 	}
 
 	talloc_free(list);
