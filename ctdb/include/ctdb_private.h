@@ -46,6 +46,7 @@ extern pid_t ctdbd_pid;
 
 /*
   a tcp connection description
+  also used by tcp_add and tcp_remove controls
  */
 struct ctdb_tcp_connection {
 	ctdb_sock_addr src_addr;
@@ -539,14 +540,6 @@ struct ctdb_control_gratious_arp {
 	uint32_t mask;
 	uint32_t len;
 	char iface[1];
-};
-
-/*
-  struct for tcp_add and tcp_remove controls
- */
-struct ctdb_control_tcp_vnn {
-	ctdb_sock_addr src;
-	ctdb_sock_addr dest;
 };
 
 /*
@@ -1120,7 +1113,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
 				TDB_DATA indata);
-int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);

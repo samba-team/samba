@@ -981,11 +981,11 @@ static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
-  add a list of all tickle to a public address
+  add a tickle to a public address
  */
 static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_control_tcp_vnn t;
+	struct ctdb_tcp_connection t;
 	TDB_DATA data;
 	int ret;
 
@@ -993,11 +993,11 @@ static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 
-	if (parse_ip_port(argv[0], &t.src) == 0) {
+	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
-	if (parse_ip_port(argv[1], &t.dest) == 0) {
+	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
 		return -1;
 	}
@@ -1006,10 +1006,47 @@ static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **
 	data.dsize = sizeof(t);
 
 	/* tell all nodes about this tcp connection */
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_TCP_ADD,
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE,
 			   0, data, ctdb, NULL, NULL, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to add tickle\n"));
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+/*
+  delete a tickle from a node
+ */
+static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	struct ctdb_tcp_connection t;
+	TDB_DATA data;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
+		return -1;
+	}
+
+	data.dptr = (uint8_t *)&t;
+	data.dsize = sizeof(t);
+
+	/* tell all nodes about this tcp connection */
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_TCP_REMOVE,
+			   0, data, ctdb, NULL, NULL, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to remove tickle\n"));
 		return -1;
 	}
 	
@@ -4424,6 +4461,8 @@ static const struct {
 	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip>" },
 	{ "addtickle",       control_add_tickle,        false,	false, "add a tickle for this ip", "<ip>:<port> <ip>:<port>" },
+
+	{ "deltickle",       control_del_tickle,        false,	false, "delete a tickle from this ip", "<ip>:<port> <ip>:<port>" },
 
 	{ "regsrvid",        regsrvid,			false,	false, "register a server id", "<pnn> <type> <id>" },
 	{ "unregsrvid",      unregsrvid,		false,	false, "unregister a server id", "<pnn> <type> <id>" },
