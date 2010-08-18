@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1

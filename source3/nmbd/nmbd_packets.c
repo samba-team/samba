@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;

@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/svcctl.h"
+#include "nmbd/nmbd.h"
 
 struct sync_record {
 	struct sync_record *next, *prev;

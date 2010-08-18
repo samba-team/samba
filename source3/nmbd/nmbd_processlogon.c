@@ -29,6 +29,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/dom_sid.h"
 #include "secrets.h"
+#include "nmbd/nmbd.h"
 
 struct sam_database_info {
         uint32 index;

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 #include "../librpc/gen_ndr/svcctl.h"
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */

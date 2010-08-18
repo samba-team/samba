@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 /* This is our local master browser list database. */
 extern struct browse_cache_record *lmb_browserlist;

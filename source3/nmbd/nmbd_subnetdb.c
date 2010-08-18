@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "nmbd/nmbd.h"
 
 extern int global_nmb_port;
 
