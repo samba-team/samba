@@ -1493,9 +1493,9 @@ static WERROR dsdb_syntax_UNICODE_validate_ldb(const struct dsdb_syntax_ctx *ctx
 	return WERR_OK;
 }
 
-WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
-					 const struct dsdb_syntax *syntax,
-					 const DATA_BLOB *in, DATA_BLOB *out)
+static WERROR dsdb_syntax_one_DN_drsuapi_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+						const struct dsdb_syntax *syntax,
+						const DATA_BLOB *in, DATA_BLOB *out)
 {
 	struct drsuapi_DsReplicaObjectIdentifier3 id3;
 	enum ndr_err_code ndr_err;
