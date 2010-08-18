@@ -517,98 +517,109 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	int i, found = 0;
 	char *sam_account_name, *upn;
 	char **oldEntries = NULL, *princ_s[26];
-	TALLOC_CTX *ctx = NULL;
-	fstring machine_name;
-
-	memset(princ_s, '\0', sizeof(princ_s));
-
-	fstrcpy( machine_name, global_myname() );
+	TALLOC_CTX *tmpctx = NULL;
+	char *machine_name;
 
 	/* these are the main ones we need */
-	
-	if ( (ret = ads_keytab_add_entry(ads, "host") ) != 0 ) {
-		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'host'.\n"));
+	ret = ads_keytab_add_entry(ads, "host");
+	if (ret != 0) {
+		DEBUG(1, (__location__ ": ads_keytab_add_entry failed while "
+			  "adding 'host' principal.\n"));
 		return ret;
 	}
 
 
-#if 0	/* don't create the CIFS/... keytab entries since no one except smbd 
-	   really needs them and we will fall back to verifying against secrets.tdb */
-	   
-	if ( (ret = ads_keytab_add_entry(ads, "cifs")) != 0 ) {
-		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding 'cifs'.\n"));
+#if 0	/* don't create the CIFS/... keytab entries since no one except smbd
+	   really needs them and we will fall back to verifying against
+	   secrets.tdb */
+
+	ret = ads_keytab_add_entry(ads, "cifs"));
+	if (ret != 0 ) {
+		DEBUG(1, (__location__ ": ads_keytab_add_entry failed while "
+			  "adding 'cifs'.\n"));
 		return ret;
 	}
 #endif
 
-	if ( (ctx = talloc_init("ads_keytab_create_default")) == NULL ) {
-		DEBUG(0,("ads_keytab_create_default: talloc() failed!\n"));
-		return -1;
-	}
-
-	/* now add the userPrincipalName and sAMAccountName entries */
-
-	if ( (sam_account_name = ads_get_samaccountname( ads, ctx, machine_name)) == NULL ) {
-		DEBUG(0,("ads_keytab_add_entry: unable to determine machine account's name in AD!\n"));
-		TALLOC_FREE( ctx );
-		return -1;	
-	}
-
-	/* upper case the sAMAccountName to make it easier for apps to 
-	   know what case to use in the keytab file */
-
-	strupper_m( sam_account_name );	
-
-	if ( (ret = ads_keytab_add_entry(ads, sam_account_name )) != 0 ) {
-		DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding sAMAccountName (%s)\n",
-			sam_account_name));
-		return ret;
-	}
-	
-	/* remember that not every machine account will have a upn */
-		
-	upn = ads_get_upn( ads, ctx, machine_name);
-	if ( upn ) {
-		if ( (ret = ads_keytab_add_entry(ads, upn)) != 0 ) {
-			DEBUG(1,("ads_keytab_create_default: ads_keytab_add_entry failed while adding UPN (%s)\n",
-				upn));
-			TALLOC_FREE( ctx );
-			return ret;
-		}
-	}
-
-	/* Now loop through the keytab and update any other existing entries... */
-	
-	kvno = (krb5_kvno) ads_get_machine_kvno(ads, machine_name);
-	if (kvno == -1) {
-		DEBUG(1,("ads_keytab_create_default: ads_get_machine_kvno failed to determine the system's kvno.\n"));
-		TALLOC_FREE(ctx);
-		return -1;
-	}
-	
-	DEBUG(3,("ads_keytab_create_default: Searching for keytab entries to "
-		"preserve and update.\n"));
-
+	memset(princ_s, '\0', sizeof(princ_s));
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("ads_keytab_create_default: could not krb5_init_context: %s\n",error_message(ret)));
-		TALLOC_FREE(ctx);
+		DEBUG(1, (__location__ ": could not krb5_init_context: %s\n",
+			  error_message(ret)));
 		return ret;
 	}
 
+	tmpctx = talloc_init(__location__);
+	if (!tmpctx) {
+		DEBUG(0, (__location__ ": talloc_init() failed!\n"));
+		ret = -1;
+		goto done;
+	}
+
+	machine_name = talloc_strdup(tmpctx, global_myname());
+	if (!machine_name) {
+		ret = -1;
+		goto done;
+	}
+
+	/* now add the userPrincipalName and sAMAccountName entries */
+	sam_account_name = ads_get_samaccountname(ads, tmpctx, machine_name);
+	if (!sam_account_name) {
+		DEBUG(0, (__location__ ": unable to determine machine "
+			  "account's name in AD!\n"));
+		ret = -1;
+		goto done;
+	}
+
+	/* upper case the sAMAccountName to make it easier for apps to
+	   know what case to use in the keytab file */
+	strupper_m(sam_account_name);
+
+	ret = ads_keytab_add_entry(ads, sam_account_name);
+	if (ret != 0) {
+		DEBUG(1, (__location__ ": ads_keytab_add_entry() failed "
+			  "while adding sAMAccountName (%s)\n",
+			  sam_account_name));
+		goto done;
+	}
+
+	/* remember that not every machine account will have a upn */
+	upn = ads_get_upn(ads, tmpctx, machine_name);
+	if (upn) {
+		ret = ads_keytab_add_entry(ads, upn);
+		if (ret != 0) {
+			DEBUG(1, (__location__ ": ads_keytab_add_entry() "
+				  "failed while adding UPN (%s)\n", upn));
+			goto done;
+		}
+	}
+
+	/* Now loop through the keytab and update any other existing entries */
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, machine_name);
+	if (kvno == -1) {
+		DEBUG(1, (__location__ ": ads_get_machine_kvno() failed to "
+			  "determine the system's kvno.\n"));
+		goto done;
+	}
+
+	DEBUG(3, (__location__ ": Searching for keytab entries to preserve "
+		  "and update.\n"));
+
 	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1,("ads_keytab_create_default: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
+		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+			  error_message(ret)));
 		goto done;
 	}
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while ((ret = krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) == 0) {
+		while ((ret = krb5_kt_next_entry(context, keytab,
+						 &kt_entry, &cursor)) == 0) {
 			smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 			found++;
@@ -618,93 +629,105 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	ZERO_STRUCT(cursor);
 
 	/*
-	 * Hmmm. There is no "rewind" function for the keytab. This means we have a race condition
-	 * where someone else could add entries after we've counted them. Re-open asap to minimise
-	 * the race. JRA.
+	 * Hmmm. There is no "rewind" function for the keytab. This means we
+	 * have a race condition where someone else could add entries after
+	 * we've counted them. Re-open asap to minimise the race. JRA.
 	 */
-	
-	DEBUG(3, ("ads_keytab_create_default: Found %d entries in the keytab.\n", found));
+	DEBUG(3, (__location__ ": Found %d entries in the keytab.\n", found));
 	if (!found) {
 		goto done;
 	}
-	oldEntries = talloc_array(ctx, char *, found );
+
+	oldEntries = talloc_array(tmpctx, char *, found);
 	if (!oldEntries) {
-		DEBUG(1,("ads_keytab_create_default: Failed to allocate space to store the old keytab entries (malloc failed?).\n"));
+		DEBUG(1, (__location__ ": Failed to allocate space to store "
+			  "the old keytab entries (talloc failed?).\n"));
 		ret = -1;
 		goto done;
 	}
 	memset(oldEntries, '\0', found * sizeof(char *));
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
-			if (kt_entry.vno != kvno) {
-				char *ktprinc = NULL;
-				char *p;
+	if (ret == KRB5_KT_END || ret == ENOENT) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);
+		ZERO_STRUCT(cursor);
+		goto done;
+	}
 
-				/* This returns a malloc'ed string in ktprinc. */
-				ret = smb_krb5_unparse_name(oldEntries, context, kt_entry.principal, &ktprinc);
-				if (ret) {
-					DEBUG(1,("smb_krb5_unparse_name failed (%s)\n", error_message(ret)));
-					goto done;
-				}
-				/*
-				 * From looking at the krb5 source they don't seem to take locale
-				 * or mb strings into account. Maybe this is because they assume utf8 ?
-				 * In this case we may need to convert from utf8 to mb charset here ? JRA.
-				 */
-				p = strchr_m(ktprinc, '@');
-				if (p) {
-					*p = '\0';
-				}
+	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
+		if (kt_entry.vno != kvno) {
+			char *ktprinc = NULL;
+			char *p;
 
-				p = strchr_m(ktprinc, '/');
-				if (p) {
-					*p = '\0';
+			/* This returns a malloc'ed string in ktprinc. */
+			ret = smb_krb5_unparse_name(oldEntries, context,
+						    kt_entry.principal,
+						    &ktprinc);
+			if (ret) {
+				DEBUG(1, (__location__
+					 ": smb_krb5_unparse_name failed "
+					 "(%s)\n", error_message(ret)));
+				goto done;
+			}
+			/*
+			 * From looking at the krb5 source they don't seem to
+			 * take locale or mb strings into account.
+			 * Maybe this is because they assume utf8 ?
+			 * In this case we may need to convert from utf8 to
+			 * mb charset here ? JRA.
+			 */
+			p = strchr_m(ktprinc, '@');
+			if (p) {
+				*p = '\0';
+			}
+
+			p = strchr_m(ktprinc, '/');
+			if (p) {
+				*p = '\0';
+			}
+			for (i = 0; i < found; i++) {
+				if (!oldEntries[i]) {
+					oldEntries[i] = ktprinc;
+					break;
 				}
-				for (i = 0; i < found; i++) {
-					if (!oldEntries[i]) {
-						oldEntries[i] = ktprinc;
-						break;
-					}
-					if (!strcmp(oldEntries[i], ktprinc)) {
-						TALLOC_FREE(ktprinc);
-						break;
-					}
-				}
-				if (i == found) {
+				if (!strcmp(oldEntries[i], ktprinc)) {
 					TALLOC_FREE(ktprinc);
+					break;
 				}
 			}
-			smb_krb5_kt_free_entry(context, &kt_entry);
-			ZERO_STRUCT(kt_entry);
+			if (i == found) {
+				TALLOC_FREE(ktprinc);
+			}
 		}
-		ret = 0;
-		for (i = 0; oldEntries[i]; i++) {
-			ret |= ads_keytab_add_entry(ads, oldEntries[i]);
-			TALLOC_FREE(oldEntries[i]);
-		}
-		krb5_kt_end_seq_get(context, keytab, &cursor);
+		smb_krb5_kt_free_entry(context, &kt_entry);
+		ZERO_STRUCT(kt_entry);
 	}
+	ret = 0;
+	for (i = 0; oldEntries[i]; i++) {
+		ret |= ads_keytab_add_entry(ads, oldEntries[i]);
+		TALLOC_FREE(oldEntries[i]);
+	}
+	krb5_kt_end_seq_get(context, keytab, &cursor);
 	ZERO_STRUCT(cursor);
 
 done:
-
 	TALLOC_FREE(oldEntries);
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(tmpctx);
 
 	{
 		krb5_keytab_entry zero_kt_entry;
 		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+		if (memcmp(&zero_kt_entry, &kt_entry,
+				sizeof(krb5_keytab_entry))) {
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
 	}
 	{
 		krb5_kt_cursor zero_csr;
 		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);	
+		if ((memcmp(&cursor, &zero_csr,
+				sizeof(krb5_kt_cursor)) != 0) && keytab) {
+			krb5_kt_end_seq_get(context, keytab, &cursor);
 		}
 	}
 	if (keytab) {
