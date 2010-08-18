@@ -57,6 +57,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	int ret;
 	struct auth_session_info *auth_info;
 	WERROR werr;
+	bool connected_as_system = false;
 
 	r->out.bind_info = NULL;
 	ZERO_STRUCTP(r->out.bind_handle);
@@ -69,6 +70,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	if (W_ERROR_IS_OK(werr)) {
 		DEBUG(3,(__location__ ": doing DsBind with system_session\n"));
 		auth_info = system_session(dce_call->conn->dce_ctx->lp_ctx);
+		connected_as_system = true;
 	} else {
 		auth_info = dce_call->conn->auth_state.session_info;
 	}
@@ -80,6 +82,23 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 					 dce_call->conn->dce_ctx->lp_ctx, auth_info);
 	if (!b_state->sam_ctx) {
 		return WERR_FOOBAR;
+	}
+
+	if (connected_as_system) {
+		b_state->sam_ctx_system = b_state->sam_ctx;
+	} else {
+		/* an RODC also needs system samdb access for secret
+		   attribute replication */
+		werr = drs_security_level_check(dce_call, NULL, SECURITY_RO_DOMAIN_CONTROLLER,
+						samdb_domain_sid(b_state->sam_ctx));
+		if (W_ERROR_IS_OK(werr)) {
+			b_state->sam_ctx_system = samdb_connect(b_state, dce_call->event_ctx,
+								dce_call->conn->dce_ctx->lp_ctx,
+								system_session(dce_call->conn->dce_ctx->lp_ctx));
+			if (!b_state->sam_ctx_system) {
+				return WERR_FOOBAR;
+			}
+		}
 	}
 
 	/*
