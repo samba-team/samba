@@ -25,6 +25,7 @@
  */
 
 #include "includes.h"
+#include "fake_file.h"
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,

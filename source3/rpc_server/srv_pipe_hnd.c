@@ -25,6 +25,7 @@
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "rpc_server.h"
 #include "smbd/globals.h"
+#include "fake_file.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -255,8 +255,6 @@ typedef struct write_cache {
 	char *data;
 } write_cache;
 
-#include "fake_file.h"
-
 struct fd_handle {
 	size_t ref_count;
 	int fd;
