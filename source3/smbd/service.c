@@ -650,7 +650,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
-	char *addr;
 	bool on_err_call_dis_hook = false;
 	bool claimed_connection = false;
 	uid_t effuid;
