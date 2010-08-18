@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "winbindd/winbindd.h"
+#include "idmap.h"
 #include "idmap_hash.h"
 #include "ads.h"
 #include "nss_info.h"

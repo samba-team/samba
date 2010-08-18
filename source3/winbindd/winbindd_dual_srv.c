@@ -25,6 +25,7 @@
 #include "winbindd/winbindd_proto.h"
 #include "librpc/gen_ndr/srv_wbint.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
+#include "idmap.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {

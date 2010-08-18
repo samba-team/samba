@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/cli_wbint.h"
+#include "idmap_cache.h"
 
 struct wb_sid2uid_state {
 	struct tevent_context *ev;

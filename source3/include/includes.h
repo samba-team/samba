@@ -653,7 +653,6 @@ struct ntlmssp_state;
 #include "auth.h"
 #include "ntdomain.h"
 #include "librpc/rpc/dcerpc.h"
-#include "idmap.h"
 #include "client.h"
 
 #include "session.h"

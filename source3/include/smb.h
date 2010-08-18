@@ -174,7 +174,6 @@ typedef union unid_t {
 					|LOOKUP_NAME_WKN\
 					|LOOKUP_NAME_DOMAIN)
 
-#include "librpc/gen_ndr/idmap.h"
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/gen_ndr/dcerpc.h"
 

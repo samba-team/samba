@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "winbindd_proto.h"
+#include "idmap.h"
+#include "idmap_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
