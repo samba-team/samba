@@ -90,6 +90,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct ldb_message *msg,
 					  struct ldb_context *sam_ctx,
 					  struct ldb_dn *ncRoot_dn,
+					  bool   is_schema_nc,
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
 					  uint64_t highest_usn,
@@ -105,6 +106,11 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	const char *rdn;
 	const struct dsdb_attribute *rdn_sa;
 	unsigned int instanceType;
+	struct dsdb_syntax_ctx syntax_ctx;
+
+	/* make dsdb sytanx context for conversions */
+	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
+	syntax_ctx.is_schema_nc = is_schema_nc;
 
 	instanceType = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
 	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
@@ -265,8 +271,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			ZERO_STRUCT(obj->object.attribute_ctr.attributes[i]);
 			obj->object.attribute_ctr.attributes[i].attid = attids[i];
 		} else {
-			werr = dsdb_attribute_ldb_to_drsuapi(sam_ctx, schema, el, obj,
-							     &obj->object.attribute_ctr.attributes[i]);
+			werr = sa->syntax->ldb_to_drsuapi(&syntax_ctx, sa, el, obj,
+			                                  &obj->object.attribute_ctr.attributes[i]);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("Unable to convert %s to DRS object - %s\n", 
 					 sa->lDAPDisplayName, win_errstr(werr)));
@@ -660,6 +666,7 @@ struct drsuapi_getncchanges_state {
 	struct ldb_result *site_res;
 	uint32_t num_sent;
 	struct ldb_dn *ncRoot_dn;
+	bool is_schema_nc;
 	uint64_t min_usn;
 	uint64_t highest_usn;
 	struct ldb_dn *last_dn;
@@ -828,6 +835,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 		b_state->getncchanges_state = getnc_state;
 		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, b_state->sam_ctx, ncRoot->dn);
+
+		/* find out if we are to replicate Schema NC */
+		ret = ldb_dn_compare(getnc_state->ncRoot_dn,
+				     ldb_get_schema_basedn(b_state->sam_ctx));
+		getnc_state->is_schema_nc = (0 == ret);
 	}
 
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
@@ -962,7 +974,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 
 		werr = get_nc_changes_build_object(obj, msg,
-						   b_state->sam_ctx, getnc_state->ncRoot_dn, 
+						   b_state->sam_ctx, getnc_state->ncRoot_dn,
+						   getnc_state->is_schema_nc,
 						   schema, &session_key, getnc_state->min_usn,
 						   req8->replica_flags, getnc_state->uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
