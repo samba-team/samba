@@ -26,6 +26,7 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "rpc_server/dcerpc_server_proto.h"
 #include "../libcli/drsuapi/drsuapi.h"
@@ -33,6 +34,7 @@
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
 #include "auth/session.h"
+#include "dsdb/common/util.h"
 
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
@@ -677,6 +679,228 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	return WERR_OK;
 }
 
+/*
+  return an array of SIDs from a ldb_message given an attribute name
+  assumes the SIDs are in extended DN format
+ */
+static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
+					struct ldb_message *msg,
+					TALLOC_CTX *mem_ctx,
+					const char *attr,
+					const struct dom_sid ***sids)
+{
+	struct ldb_message_element *el;
+	int i;
+
+	el = ldb_msg_find_element(msg, attr);
+	if (!el) {
+		*sids = NULL;
+		return WERR_OK;
+	}
+
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 1);
+	W_ERROR_HAVE_NO_MEMORY(*sids);
+
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, sam_ctx, &el->values[i]);
+		NTSTATUS status;
+		struct dom_sid *sid;
+
+		sid = talloc(*sids, struct dom_sid);
+		W_ERROR_HAVE_NO_MEMORY(sid);
+		status = dsdb_get_extended_dn_sid(dn, sid, "SID");
+		if (!NT_STATUS_IS_OK(status)) {
+			return WERR_INTERNAL_DB_CORRUPTION;
+		}
+		(*sids)[i] = sid;
+	}
+	(*sids)[i] = NULL;
+
+	return WERR_OK;
+}
+
+
+/*
+  return an array of SIDs from a ldb_message given an attribute name
+  assumes the SIDs are in NDR form
+ */
+static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
+					 struct ldb_message *msg,
+					 TALLOC_CTX *mem_ctx,
+					 const char *attr,
+					 const struct dom_sid ***sids)
+{
+	struct ldb_message_element *el;
+	int i;
+
+	el = ldb_msg_find_element(msg, attr);
+	if (!el) {
+		*sids = NULL;
+		return WERR_OK;
+	}
+
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 1);
+	W_ERROR_HAVE_NO_MEMORY(*sids);
+
+	for (i=0; i<el->num_values; i++) {
+		enum ndr_err_code ndr_err;
+		struct dom_sid *sid;
+
+		sid = talloc(*sids, struct dom_sid);
+		W_ERROR_HAVE_NO_MEMORY(sid);
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], sid, sid,
+					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return WERR_INTERNAL_DB_CORRUPTION;
+		}
+		(*sids)[i] = sid;
+	}
+	(*sids)[i] = NULL;
+
+	return WERR_OK;
+}
+
+/*
+  see if any SIDs in list1 are in list2
+ */
+static bool sid_list_match(const struct dom_sid **list1, const struct dom_sid **list2)
+{
+	int i, j;
+	/* do we ever have enough SIDs here to worry about O(n^2) ? */
+	for (i=0; list1[i]; i++) {
+		for (j=0; list2[j]; j++) {
+			if (dom_sid_equal(list1[i], list2[j])) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/*
+  handle a DRSUAPI_EXOP_REPL_SECRET call
+ */
+static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
+				       TALLOC_CTX *mem_ctx,
+				       struct drsuapi_DsGetNCChangesRequest8 *req8,
+				       struct dom_sid *user_sid,
+				       struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+{
+	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req8->naming_context;
+	struct ldb_dn *obj_dn, *rodc_dn, *krbtgt_link_dn;
+	int ret;
+	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", NULL };
+	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
+	struct ldb_result *rodc_res, *obj_res;
+	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
+	WERROR werr;
+
+	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n", ncRoot->dn));
+
+	/*
+	 * we need to work out if we will allow this RODC to
+	 * replicate the secrets for this object
+	 *
+	 * see 4.1.10.5.14 GetRevealSecretsPolicyForUser for details
+	 * of this function
+	 */
+
+	if (b_state->sam_ctx_system == NULL) {
+		/* this operation needs system level access */
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
+		return WERR_DS_DRA_SOURCE_DISABLED;
+	}
+
+	obj_dn = ldb_dn_new(mem_ctx, b_state->sam_ctx_system, ncRoot->dn);
+	if (!ldb_dn_validate(obj_dn)) goto failed;
+
+	rodc_dn = ldb_dn_new_fmt(mem_ctx, b_state->sam_ctx_system, "<SID=%s>",
+				 dom_sid_string(mem_ctx, user_sid));
+	if (!ldb_dn_validate(rodc_dn)) goto failed;
+
+	/* do the two searches we need */
+	ret = dsdb_search_dn(b_state->sam_ctx_system, mem_ctx, &rodc_res, rodc_dn, rodc_attrs,
+			     DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS || rodc_res->count != 1) goto failed;
+
+	ret = dsdb_search_dn(b_state->sam_ctx_system, mem_ctx, &obj_res, obj_dn, obj_attrs, 0);
+	if (ret != LDB_SUCCESS || obj_res->count != 1) goto failed;
+
+	/* if the object SID is equal to the user_sid, allow */
+	if (dom_sid_equal(user_sid,
+			  samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid"))) {
+		goto allowed;
+	}
+
+	/* an RODC is allowed to get its own krbtgt account secrets */
+	krbtgt_link_dn = samdb_result_dn(b_state->sam_ctx_system, mem_ctx,
+					 rodc_res->msgs[0], "msDS-KrbTgtLink", NULL);
+	if (krbtgt_link_dn != NULL &&
+	    ldb_dn_compare(obj_dn, krbtgt_link_dn) == 0) {
+		goto allowed;
+	}
+
+	/* but it isn't allowed to get anyone elses krbtgt secrets */
+	if (samdb_result_dn(b_state->sam_ctx_system, mem_ctx,
+			    obj_res->msgs[0], "msDS-KrbTgtLinkBL", NULL)) {
+		goto denied;
+	}
+
+	if (samdb_result_uint(obj_res->msgs[0], "UserAccountControl", 0) &
+	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
+		goto denied;
+	}
+
+	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
+					 mem_ctx, "msDS-NeverRevealGroup", &never_reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto denied;
+	}
+
+	werr = samdb_result_sid_array_dn(b_state->sam_ctx_system, rodc_res->msgs[0],
+					 mem_ctx, "msDS-RevealOnDemandGroup", &reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto denied;
+	}
+
+	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
+					 mem_ctx, "tokenGroups", &token_sids);
+	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		goto denied;
+	}
+
+	if (never_reveal_sids &&
+	    sid_list_match(token_sids, never_reveal_sids)) {
+		goto denied;
+	}
+
+	if (reveal_sids &&
+	    sid_list_match(token_sids, reveal_sids)) {
+		goto allowed;
+	}
+
+	/* default deny */
+denied:
+	DEBUG(2,(__location__ ": Denied RODC secret replication for %s by RODC %s\n",
+		 ncRoot->dn, ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
+	return WERR_ACCESS_DENIED;
+
+allowed:
+	DEBUG(2,(__location__ ": Allowed RODC secret replication for %s by RODC %s\n",
+		 ncRoot->dn, ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+	req8->highwatermark.highest_usn = 0;
+	return WERR_OK;
+
+failed:
+	DEBUG(2,(__location__ ": Failed RODC secret replication for %s by RODC %s\n",
+		 ncRoot->dn, dom_sid_string(mem_ctx, user_sid)));
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_DIR_ERROR;
+	return WERR_DS_DRA_SOURCE_DISABLED;
+}
+
 
 
 /* state of a partially completed getncchanges call */
@@ -733,9 +957,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t link_total = 0;
 	uint32_t link_given = 0;
 	struct ldb_dn *search_dn = NULL;
-	bool am_rodc;
+	bool am_rodc, null_scope=false;
 	enum security_user_level security_level;
 	struct ldb_context *sam_ctx;
+	struct dom_sid *user_sid;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -794,6 +1019,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 
+	user_sid = dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+
 	/* for non-administrator replications, check that they have
 	   given the correct source_dsa_invocation_id */
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
@@ -802,8 +1030,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP) &&
 	    req8->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
 		DEBUG(3,(__location__ ": Removing WRIT_REP flag for replication by RODC %s\n",
-			 dom_sid_string(mem_ctx,
-					dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
+			 dom_sid_string(mem_ctx, user_sid)));
 		req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
 
@@ -825,10 +1052,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		break;
 
 	case DRSUAPI_EXOP_REPL_SECRET:
-		DEBUG(0,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op\n"));
-		r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
-		req8->highwatermark.highest_usn = 0;
+		werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
+		if (W_ERROR_EQUAL(werr, WERR_ACCESS_DENIED)) {
+			null_scope = true;
+		} else {
+			W_ERROR_NOT_OK_RETURN(werr);
+		}
 		break;
+
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
 	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
 	case DRSUAPI_EXOP_FSMO_REQ_PDC:
@@ -989,9 +1220,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	 */
 	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
-	for(i=getnc_state->num_sent; 
-	    i<getnc_state->site_res->count && 
-		    (r->out.ctr->ctr6.object_count < max_objects);
+	for (i=getnc_state->num_sent;
+	     i<getnc_state->site_res->count &&
+		     !null_scope &&
+		     (r->out.ctr->ctr6.object_count < max_objects);
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
