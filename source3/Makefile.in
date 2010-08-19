@@ -598,7 +598,6 @@ RPC_CLIENT_OBJ1 = $(SCHANNEL_OBJ)
 LIBMSRPC_OBJ = \
 	       $(RPC_CLIENT_OBJ1) \
 	       $(RPC_CLIENT_OBJ) \
-	       rpc_client/init_samr.o \
 		   ../librpc/rpc/binding.o
 
 LIBMSRPC_GEN_OBJ = $(LIBCLI_EPMAPPER_OBJ) \
@@ -716,7 +715,8 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
 		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
-		 rpc_client/init_netlogon.o
+		 rpc_client/init_netlogon.o \
+		 rpc_client/init_samr.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
 		 librpc/rpc/dcerpc_gssapi.o \
@@ -1023,7 +1023,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_SAMR_OBJ) \
 	     $(LIBCLI_NETLOGON_OBJ) \
 	     $(RPC_CLIENT_SCHANNEL_OBJ) \
-	     rpc_client/init_netlogon.o
+	     rpc_client/init_netlogon.o \
+	     rpc_client/init_samr.o
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
@@ -1137,7 +1138,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBCLI_SAMR_OBJ) \
 	   $(LIBCLI_NETLOGON_OBJ) \
 	   $(RPC_CLIENT_SCHANNEL_OBJ) \
-	   rpc_client/init_netlogon.o
+	   rpc_client/init_netlogon.o \
+	   rpc_client/init_samr.o
 
 
 # these are not processed by make proto
@@ -1388,7 +1390,8 @@ WINBINDD_OBJ = \
 		$(LIBCLI_LSA_OBJ) \
 		$(LIBCLI_SAMR_OBJ) \
 		$(LIBCLI_NETLOGON_OBJ) \
-		rpc_client/init_netlogon.o
+		rpc_client/init_netlogon.o \
+		rpc_client/init_samr.o
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
@@ -2312,7 +2315,8 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
 		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
-		 rpc_client/init_netlogon.o
+		 rpc_client/init_netlogon.o \
+		 rpc_client/init_samr.o
 
 LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
 LIBNETAPI_SOVER=@LIBNETAPI_SOVER@
