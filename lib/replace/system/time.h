@@ -66,4 +66,10 @@ int rep_utime(const char *filename, const struct utimbuf *buf);
 int rep_utimes(const char *filename, const struct timeval tv[2]);
 #endif
 
+#ifndef HAVE_CLOCK_GETTIME
+#define CLOCK_REALTIME 0
+typedef int clockid_t;
+int rep_clock_gettime(clockid_t clk_id, struct timespec *tp);
+#endif
+
 #endif
