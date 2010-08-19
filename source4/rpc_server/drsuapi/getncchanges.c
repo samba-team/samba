@@ -269,7 +269,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			DEBUG(5,("No element '%s' for attributeID %u in message\n",
 				 sa->lDAPDisplayName, attids[i]));
 			ZERO_STRUCT(obj->object.attribute_ctr.attributes[i]);
-			obj->object.attribute_ctr.attributes[i].attid = attids[i];
+			obj->object.attribute_ctr.attributes[i].attid =
+					dsdb_attribute_get_attid(sa, syntax_ctx.is_schema_nc);
 		} else {
 			werr = sa->syntax->ldb_to_drsuapi(&syntax_ctx, sa, el, obj,
 			                                  &obj->object.attribute_ctr.attributes[i]);

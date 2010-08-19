@@ -57,8 +57,8 @@ void dsdb_syntax_ctx_init(struct dsdb_syntax_ctx *ctx,
  * Schema NC or msDs-IntId is set for schemaAttribute
  * for the attribute.
  */
-static uint32_t dsdb_attribute_get_attid(const struct dsdb_attribute *attr,
-					 bool for_schema_nc)
+uint32_t dsdb_attribute_get_attid(const struct dsdb_attribute *attr,
+				  bool for_schema_nc)
 {
 	if (!for_schema_nc && attr->msDS_IntId) {
 		return attr->msDS_IntId;
