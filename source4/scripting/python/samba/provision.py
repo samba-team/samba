@@ -1234,8 +1234,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
 
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    setntacl(root_policy_path, dsacl2fsacl(POLICIES_ACL, str(domainsid)),
-        lp, str(domainsid))
+    setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid))
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                         attrs=["cn", "nTSecurityDescriptor"],
