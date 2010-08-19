@@ -562,7 +562,7 @@ interface drsuapi
 		[flag(NDR_REMAINING)] DATA_BLOB binary;
 	} drsuapi_DsReplicaObjectIdentifier3Binary;
 
-	typedef [public] struct {
+	typedef [public,noprint] struct {
 		drsuapi_DsAttributeId attid;
 		drsuapi_DsAttributeValueCtr value_ctr;
 	} drsuapi_DsReplicaAttribute;
