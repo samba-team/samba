@@ -802,7 +802,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	struct event_context *ev;
 	struct tevent_req *req;
 	int i, num_finfo;
-	struct file_info *finfo;
+	struct file_info *finfo = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (cli_has_async_calls(cli)) {
