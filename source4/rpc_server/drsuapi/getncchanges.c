@@ -884,8 +884,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 denied:
 	DEBUG(2,(__location__ ": Denied RODC secret replication for %s by RODC %s\n",
 		 ncRoot->dn, ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
-	ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
-	return WERR_ACCESS_DENIED;
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
+	return WERR_DS_DRA_ACCESS_DENIED;
 
 allowed:
 	DEBUG(2,(__location__ ": Allowed RODC secret replication for %s by RODC %s\n",
@@ -897,8 +897,8 @@ allowed:
 failed:
 	DEBUG(2,(__location__ ": Failed RODC secret replication for %s by RODC %s\n",
 		 ncRoot->dn, dom_sid_string(mem_ctx, user_sid)));
-	ctr6->extended_ret = DRSUAPI_EXOP_ERR_DIR_ERROR;
-	return WERR_DS_DRA_SOURCE_DISABLED;
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
+	return WERR_DS_DRA_BAD_DN;
 }
 
 
@@ -1053,11 +1053,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	case DRSUAPI_EXOP_REPL_SECRET:
 		werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
-		if (W_ERROR_EQUAL(werr, WERR_ACCESS_DENIED)) {
-			null_scope = true;
-		} else {
-			W_ERROR_NOT_OK_RETURN(werr);
-		}
+		r->out.result = werr;
+		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
+		W_ERROR_NOT_OK_RETURN(werr);
 		break;
 
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
@@ -1379,7 +1377,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	       link_given, link_total));
 
 #if 0
-	if (!r->out.ctr->ctr6.more_data) {
+	if (!r->out.ctr->ctr6.more_data && req8->extended_op != DRSUAPI_EXOP_NONE) {
 		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
 	}
 #endif
