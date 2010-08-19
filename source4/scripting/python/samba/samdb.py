@@ -428,7 +428,7 @@ accountExpires: %u
         """Read the domain SID used by this LDB.
 
         """
-        dsdb._samdb_get_domain_sid(self)
+        return dsdb._samdb_get_domain_sid(self)
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
