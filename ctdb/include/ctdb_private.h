@@ -457,6 +457,8 @@ struct ctdb_context {
 
 	TALLOC_CTX *banning_ctx;
 
+	struct ctdb_vacuum_child_context *vacuumers;
+
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
 
@@ -1305,6 +1307,7 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
+void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
