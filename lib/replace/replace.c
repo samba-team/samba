@@ -760,3 +760,24 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen)
 	return 0;
 }
 #endif
+
+#ifndef HAVE_CLOCK_GETTIME
+int rep_clock_gettime(clockid_t clk_id, struct timespec *tp)
+{
+	struct timeval tval;
+	switch (clk_id) {
+		case 0: /* CLOCK_REALTIME :*/
+#ifdef HAVE_GETTIMEOFDAY_TZ
+			gettimeofday(&tval,NULL);
+#else
+			gettimeofday(&tval);
+#endif
+			tp->tv_sec = tval.tv_sec;
+			tp->tv_nsec = tval.tv_usec * 1000;
+			break;
+		default:
+			return EINVAL;
+	}
+	return 0;
+}
+#endif

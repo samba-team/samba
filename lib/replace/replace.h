@@ -517,6 +517,10 @@ char *rep_get_current_dir_name(void);
 int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #endif
 
+#if !defined(HAVE_CLOCK_GETTIME)
+#define clock_gettime rep_clock_gettime
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif

@@ -33,6 +33,7 @@ opendir
 readdir
 telldir
 seekdir
+clock_gettime
 closedir
 dlopen
 dlclose
