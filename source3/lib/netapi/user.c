@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/init_samr.h"
 #include "../libds/common/flags.h"
+#include "rpc_client/init_lsa.h"
 
 /****************************************************************
 ****************************************************************/

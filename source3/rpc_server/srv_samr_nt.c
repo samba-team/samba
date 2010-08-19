@@ -38,6 +38,7 @@
 #include "rpc_server/srv_samr_util.h"
 #include "../lib/crypto/arcfour.h"
 #include "secrets.h"
+#include "rpc_client/init_lsa.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

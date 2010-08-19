@@ -37,6 +37,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "rpc_client/init_lsa.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
