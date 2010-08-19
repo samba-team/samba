@@ -2368,23 +2368,8 @@ if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
     AC_DEFINE(HAVE_FUNCTION_MACRO,1,[Whether there is a __FUNCTION__ macro])
 fi
 
-
-if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
-
-    # On some systems (eg. Linux) librt can pull in libpthread. We
-    # don't want this to happen because libpthreads changes signal delivery
-    # semantics in ways we are not prepared for. This breaks Linux oplocks
-    # which rely on signals.
-
-    AC_LIBTESTFUNC(rt, clock_gettime,
-	    [
-			    AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
-				[Whether clock_gettime is available])
-			    SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
-			    SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
-			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
-			])
-
+if test x"$libreplace_cv_HAVE_CLOCK_GETTIME_IN_LIBRT" = xyes ; then
+	LIBS="$LIBS -lrt"
 fi
 
 AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[

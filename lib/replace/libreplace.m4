@@ -115,6 +115,12 @@ AC_CHECK_FUNCS(fdatasync,,[
 		[libreplace_cv_HAVE_FDATASYNC_IN_LIBRT=yes
 		AC_DEFINE(HAVE_FDATASYNC, 1, Define to 1 if there is support for fdatasync)])
 ])
+AC_CHECK_FUNCS(clock_gettime,libreplace_cv_have_clock_gettime=yes,[
+	AC_CHECK_LIB(rt, clock_gettime,
+		[libreplace_cv_HAVE_CLOCK_GETTIME_IN_LIBRT=yes
+		libreplace_cv_have_clock_gettime=yes
+		AC_DEFINE(HAVE_CLOCK_GETTIME, 1, Define to 1 if there is support for clock_gettime)])
+])
 AC_CHECK_FUNCS(get_current_dir_name)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -288,6 +294,12 @@ m4_include(timegm.m4)
 m4_include(repdir.m4)
 m4_include(crypt.m4)
 
+if test x$libreplace_cv_have_clock_gettime = xyes ; then
+	SMB_CHECK_CLOCK_ID(CLOCK_MONOTONIC)
+	SMB_CHECK_CLOCK_ID(CLOCK_PROCESS_CPUTIME_ID)
+	SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
+fi
+
 AC_CHECK_FUNCS([printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
@@ -316,4 +328,35 @@ m4_include(libreplace_ld.m4)
 m4_include(libreplace_network.m4)
 m4_include(libreplace_macros.m4)
 
+
+dnl SMB_CHECK_CLOCK_ID(clockid)
+dnl Test whether the specified clock_gettime clock ID is available. If it
+dnl is, we define HAVE_clockid
+AC_DEFUN([SMB_CHECK_CLOCK_ID],
+[
+    AC_MSG_CHECKING(for $1)
+    AC_TRY_LINK([
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+    ],
+    [
+clockid_t clk = $1;
+    ],
+    [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_$1, 1,
+	    [Whether the clock_gettime clock ID $1 is available])
+    ],
+    [
+	AC_MSG_RESULT(no)
+    ])
+])
 m4_ifndef([AC_USE_SYSTEM_EXTENSIONS],[m4_include(autoconf-2.60.m4)])
