@@ -4681,13 +4681,6 @@ struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p);
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
 
-/* The following definitions come from rpc_client/init_lsa.c  */
-
-void init_lsa_String(struct lsa_String *name, const char *s);
-void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s);
-void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s);
-void init_lsa_AsciiStringLarge(struct lsa_AsciiStringLarge *name, const char *s);
-
 /* The following definitions come from rpc_client/ndr.c  */
 
 struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,

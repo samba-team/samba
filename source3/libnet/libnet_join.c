@@ -33,6 +33,7 @@
 #include "lib/smbconf/smbconf_reg.h"
 #include "../libds/common/flags.h"
 #include "secrets.h"
+#include "rpc_client/init_lsa.h"
 
 /****************************************************************
 ****************************************************************/

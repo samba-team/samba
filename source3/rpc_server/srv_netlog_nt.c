@@ -34,6 +34,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/crypto/md4.h"
+#include "rpc_client/init_lsa.h"
 
 extern userdom_struct current_user_info;
 

@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
+#include "rpc_client/init_lsa.h"
 
 extern struct dom_sid domain_sid;
 
