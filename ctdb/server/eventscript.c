@@ -386,6 +386,9 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	if (state->child == 0) {
 		int rt;
 
+		debug_extra = talloc_asprintf(NULL, "eventscript-%s-%s:",
+					      current->name,
+					      ctdb_eventscript_call_names[state->call]);
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 

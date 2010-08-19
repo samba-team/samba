@@ -136,6 +136,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	if (result->child == 0) {
 		char c = 0;
 		close(result->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "chainlock-%s:", ctdb_db->db_name);
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
 		write(result->fd[1], &c, 1);
 		/* make sure we die when our parent dies */

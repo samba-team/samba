@@ -853,7 +853,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 
 		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
 	
-		if (switch_from_server_to_client(ctdb) != 0) {
+		if (switch_from_server_to_client(ctdb, "vacuum-%s", ctdb_db->db_name) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch vacuum daemon into client mode. Shutting down.\n"));
 			_exit(1);
 		}

@@ -3827,9 +3827,15 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
  * to the daemon as a client process, this function can be used to change
  * the ctdb context from daemon into client mode
  */
-int switch_from_server_to_client(struct ctdb_context *ctdb)
+int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...)
 {
 	int ret;
+	va_list ap;
+
+	/* Add extra information so we can identify this in the logs */
+	va_start(ap, fmt);
+	debug_extra = talloc_append_string(NULL, talloc_vasprintf(NULL, fmt, ap), ":");
+	va_end(ap);
 
 	/* shutdown the transport */
 	if (ctdb->methods) {

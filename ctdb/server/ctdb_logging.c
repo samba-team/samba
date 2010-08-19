@@ -116,6 +116,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		return 0;
 	}
 
+	debug_extra = talloc_asprintf(NULL, "syslogd:");
 	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(NULL);
 	tevent_loop_allow_nesting(ctdb->ev);
@@ -217,15 +218,16 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 		break;		
 	}
 
-	len = offsetof(struct syslog_message, message) + strlen(s) + 1;
+	len = offsetof(struct syslog_message, message) + strlen(debug_extra) + strlen(s) + 1;
 	msg = malloc(len);
 	if (msg == NULL) {
 		free(s);
 		return;
 	}
 	msg->level = level;
-	msg->len   = strlen(s);
-	strcpy(msg->message, s);
+	msg->len   = strlen(debug_extra) + strlen(s);
+	strcpy(msg->message, debug_extra);
+	strcat(msg->message, s);
 
 	if (syslogd_is_started == 0) {
 		syslog(msg->level, "%s", msg->message);
@@ -279,8 +281,9 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-	ret = asprintf(&s2, "%s.%06u [%5u]: %s",
-		 tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
+	ret = asprintf(&s2, "%s.%06u [%s%5u]: %s",
+		       tbuf, (unsigned)t.tv_usec,
+		       debug_extra, (unsigned)getpid(), s);
 	free(s);
 	if (ret == -1) {
 		const char *errstr = "asprintf failed\n";

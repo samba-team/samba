@@ -171,6 +171,8 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 	if (h->child == 0) {
 		/* start the traverse in the child */
 		close(h->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "traverse_local-%s:",
+					      ctdb_db->db_name);
 		tdb_traverse_read(ctdb_db->ltdb->tdb, ctdb_traverse_local_fn, h);
 		_exit(0);
 	}
