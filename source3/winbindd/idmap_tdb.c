@@ -848,7 +848,7 @@ static NTSTATUS idmap_tdb_sids_to_unixids_action(struct db_context *db,
 {
 	struct idmap_tdb_sids_to_unixids_context *state;
 	int i;
-	NTSTATUS ret;
+	NTSTATUS ret = NT_STATUS_OK;
 
 	state = (struct idmap_tdb_sids_to_unixids_context *)private_data;
 
