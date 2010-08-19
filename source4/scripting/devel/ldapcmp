@@ -42,11 +42,13 @@ summary = {}
 
 class LDAPBase(object):
 
-    def __init__(self, host, creds, lp):
+    def __init__(self, host, cmd_opts, creds, lp):
         if not "://" in host:
             self.host = "ldap://" + host + ":389"
         self.ldb = Ldb(self.host, credentials=creds, lp=lp,
                              options=["modules:paged_searches"])
+        self.two_domains = cmd_opts.two
+        self.quiet = cmd_opts.quiet
         self.host = host
         self.base_dn = self.find_basedn()
         self.domain_netbios = self.find_netbios()
@@ -56,11 +58,12 @@ class LDAPBase(object):
         #
         # Log some domain controller specific place-holers that are being used
         # when compare content of two DCs. Uncomment for DEBUG purposes.
-        #print "\n@ %s" % self.host
-        #print "${DOMAIN_DN}: %s" % self.base_dn
-        #print "${DOMAIN_NETBIOS}: %s" % self.domain_netbios
-        #print "${SERVERNAME}: %s" % self.server_names
-        #print "${DOMAIN_NAME}: %s" % self.domain_name
+        if self.two_domains and not self.quiet:
+            print "\n* Place-holders for %s:" % self.host
+            print 4*" " + "${DOMAIN_DN}      => %s" % self.base_dn
+            print 4*" " + "${DOMAIN_NETBIOS} => %s" % self.domain_netbios
+            print 4*" " + "${SERVERNAME}     => %s" % self.server_names
+            print 4*" " + "${DOMAIN_NAME}    => %s" % self.domain_name
 
     def find_servers(self):
         """
@@ -209,24 +212,32 @@ class LDAPObject(object):
 
     def fix_dn(self, s):
         res = "%s" % s
+        if not self.two_domains:
+            return res
         if res.upper().endswith(self.con.base_dn.upper()):
             res = res[:len(res)-len(self.con.base_dn)] + "${DOMAIN_DN}"
         return res
 
     def fix_domain_name(self, s):
         res = "%s" % s
+        if not self.two_domains:
+            return res
         res = res.replace(self.con.domain_name.lower(), self.con.domain_name.upper())
         res = res.replace(self.con.domain_name.upper(), "${DOMAIN_NAME}")
         return res
 
     def fix_domain_netbios(self, s):
         res = "%s" % s
+        if not self.two_domains:
+            return res
         res = res.replace(self.con.domain_netbios.lower(), self.con.domain_netbios.upper())
         res = res.replace(self.con.domain_netbios.upper(), "${DOMAIN_NETBIOS}")
         return res
 
     def fix_server_name(self, s):
         res = "%s" % s
+        if not self.two_domains or len(self.con.server_names) > 1:
+            return res
         for x in self.con.server_names:
             res = res.upper().replace(x, "${SERVERNAME}")
         return res
@@ -368,13 +379,14 @@ class LDAPBundel(object):
         else:
             raise Exception("Unknown initialization data for LDAPBundel().")
         counter = 0
-        while counter < len(self.dn_list):
+        while counter < len(self.dn_list) and self.two_domains:
             # Use alias reference
             tmp = self.dn_list[counter]
             tmp = tmp[:len(tmp)-len(self.con.base_dn)] + "${DOMAIN_DN}"
             tmp = tmp.replace("CN=%s" % self.con.domain_netbios, "CN=${DOMAIN_NETBIOS}")
-            for x in self.con.server_names:
-                tmp = tmp.replace("CN=%s" % x, "CN=${SERVERNAME}")
+            if len(self.con.server_names) == 1:
+                for x in self.con.server_names:
+                    tmp = tmp.replace("CN=%s" % x, "CN=${SERVERNAME}")
             self.dn_list[counter] = tmp
             counter += 1
         self.dn_list = list(set(self.dn_list))
@@ -404,6 +416,7 @@ class LDAPBundel(object):
                 if title:
                     self.log( title )
                     title = None
+                    res = False
                 self.log( 4*" " + x )
                 self.dn_list[self.dn_list.index(x)] = ""
         self.dn_list = [x for x in self.dn_list if x]
@@ -414,6 +427,7 @@ class LDAPBundel(object):
                 if title:
                     self.log( title )
                     title = None
+                    res = False
                 self.log( 4*" " + x )
                 other.dn_list[other.dn_list.index(x)] = ""
         other.dn_list = [x for x in other.dn_list if x]
@@ -521,29 +535,29 @@ if __name__ == "__main__":
                               help="Do not print anything but relay on just exit code",)
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                               help="Print all DN pairs that have been compared",)
-    (options, args) = parser.parse_args()
+    (opts, args) = parser.parse_args()
 
     if not (len(args) == 1 and args[0].upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]):
         parser.error("Incorrect arguments")
 
-    if options.verbose and options.quiet:
+    if opts.verbose and opts.quiet:
         parser.error("You cannot set --verbose and --quiet together")
 
-    con1 = LDAPBase(options.host, creds, lp)
+    con1 = LDAPBase(opts.host, opts, creds, lp)
     assert len(con1.base_dn) > 0
 
-    con2 = LDAPBase(options.host2, creds2, lp)
+    con2 = LDAPBase(opts.host2, opts, creds2, lp)
     assert len(con2.base_dn) > 0
 
-    b1 = LDAPBundel(con1, context=args[0], cmd_opts=options)
-    b2 = LDAPBundel(con2, context=args[0], cmd_opts=options)
+    b1 = LDAPBundel(con1, context=args[0], cmd_opts=opts)
+    b2 = LDAPBundel(con2, context=args[0], cmd_opts=opts)
 
     if b1 == b2:
-        if not options.quiet:
+        if not opts.quiet:
             print "\n* Final result: SUCCESS"
         status = 0
     else:
-        if not options.quiet:
+        if not opts.quiet:
             print "\n* Final result: FAILURE"
             print "\nSUMMARY"
             print "---------"
@@ -552,7 +566,7 @@ if __name__ == "__main__":
     assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
     b2.summary["df_value_attrs"] = []
 
-    if not options.quiet:
+    if not opts.quiet:
         b1.print_summary()
         b2.print_summary()
 
