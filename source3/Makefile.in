@@ -597,6 +597,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       rpc_client/cli_pipe.o \
+	       librpc/rpc/dcerpc_krb5.o \
 	       librpc/rpc/dcerpc_gssapi.o \
 	       librpc/rpc/dcerpc_spnego.o \
 	       librpc/rpc/rpc_common.o \
