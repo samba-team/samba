@@ -56,7 +56,7 @@ static krb5_error_code seek_and_delete_old_entries(krb5_context context,
 	ZERO_STRUCT(zero_kt_entry);
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	if (ret == KRB5_KT_END && ret == ENOENT ) {
+	if (ret == KRB5_KT_END || ret == ENOENT ) {
 		/* no entries */
 		return 0;
 	}

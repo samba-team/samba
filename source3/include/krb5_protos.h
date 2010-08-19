@@ -137,6 +137,8 @@ krb5_error_code smb_krb5_get_creds(const char *server_s,
 				   krb5_creds **creds_p);
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal);
+
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
