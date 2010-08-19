@@ -799,37 +799,6 @@ AC_DEFUN([SMB_CHECK_DMAPI],
 
 ])
 
-dnl SMB_CHECK_CLOCK_ID(clockid)
-dnl Test whether the specified clock_gettime clock ID is available. If it
-dnl is, we define HAVE_clockid
-AC_DEFUN([SMB_CHECK_CLOCK_ID],
-[
-    AC_MSG_CHECKING(for $1)
-    AC_TRY_LINK([
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
-#endif
-    ],
-    [
-clockid_t clk = $1;
-    ],
-    [
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_$1, 1,
-	    [Whether the clock_gettime clock ID $1 is available])
-    ],
-    [
-	AC_MSG_RESULT(no)
-    ])
-])
-
 dnl SMB_IF_RTSIGNAL_BUG([actions if true],
 dnl			[actions if false],
 dnl			[actions if cross compiling])
