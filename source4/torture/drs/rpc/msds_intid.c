@@ -459,6 +459,22 @@ static bool _test_GetNCChanges(struct torture_context *tctx,
 	return true;
 }
 
+static char * _make_error_message(TALLOC_CTX *mem_ctx,
+                                  const struct dsdb_attribute *dsdb_attr,
+                                  const struct drsuapi_DsReplicaAttribute *drs_attr,
+                                  const struct drsuapi_DsReplicaObjectListItemEx *drs_obj)
+{
+	return talloc_asprintf(mem_ctx, "\nInvalid ATTID for %1$s (%2$s)\n"
+			       " drs_attid:      %3$11d (0x%3$08X)\n"
+			       " msDS_IntId:     %4$11d (0x%4$08X)\n"
+			       " attributeId_id: %5$11d (0x%5$08X)",
+			       dsdb_attr->lDAPDisplayName,
+			       drs_obj->object.identifier->dn,
+			       drs_attr->attid,
+			       dsdb_attr->msDS_IntId,
+			       dsdb_attr->attributeID_id);
+}
+
 /**
  * Fetch Schema NC and check ATTID values returned.
  * When Schema partition is replicated, ATTID
@@ -502,11 +518,11 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 
 			torture_assert(tctx,
 				       drs_attr->attid == dsdb_attr->attributeID_id,
-				       "ATTID must be based on prefixMap")
+				       _make_error_message(ctx, dsdb_attr, drs_attr, cur))
 			if (dsdb_attr->msDS_IntId) {
 				torture_assert(tctx,
 				               drs_attr->attid != dsdb_attr->msDS_IntId,
-				               "ATTID must not be msDS-IntId value")
+				               _make_error_message(ctx, dsdb_attr, drs_attr, cur))
 			}
 		}
 	}
@@ -560,11 +576,11 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 			if (dsdb_attr->msDS_IntId) {
 				torture_assert(tctx,
 				               drs_attr->attid == dsdb_attr->msDS_IntId,
-				               "ATTID must be msDS-IntId value")
+				               _make_error_message(ctx, dsdb_attr, drs_attr, cur))
 			} else {
 				torture_assert(tctx,
 					       drs_attr->attid == dsdb_attr->attributeID_id,
-					       "ATTID must be based on prefixMap")
+					       _make_error_message(ctx, dsdb_attr, drs_attr, cur))
 			}
 		}
 	}
