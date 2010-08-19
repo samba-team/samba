@@ -33,7 +33,7 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import (ProvisionNames, provision_paths_from_lp,
-                            getpolicypath, set_gpo_acl, create_gpo_struct,
+                            getpolicypath, set_gpos_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
                             setsysvolacl, secretsdb_self_join)
 from samba.dcerpc import misc, security, xattr
@@ -701,7 +701,7 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     # We always reinforce acls on GPO folder because they have to be in sync
     # with the one in DS
     try:
-        set_gpo_acl(paths.sysvol, names.dnsdomain, names.domainsid,
+        set_gpos_acl(paths.sysvol, names.dnsdomain, names.domainsid,
             names.domaindn, samdb, lp)
     except TypeError, e:
         message(ERROR, "Unable to set ACLs on policies related objects,"

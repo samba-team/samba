@@ -943,6 +943,14 @@ def setup_self_join(samdb, names,
               })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
+    """Return the physical path of policy given its guid.
+
+    :param sysvolpath: Path to the sysvol folder
+    :param dnsdomain: DNS name of the AD domain
+    :param guid: The GUID of the policy
+    :return: A string with the complete path to the policy folder
+    """
+
     if guid[0] != "{":
         guid = "{%s}" % guid
     policy_path = os.path.join(sysvolpath, dnsdomain, "Policies", guid)
@@ -961,7 +969,15 @@ def create_gpo_struct(policy_path):
         os.makedirs(p, 0755)
 
 
-def setup_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
+def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
+    """Create the default GPO for a domain
+
+        :param sysvolpath: Physical path for the sysvol folder
+        :param dnsdomain: DNS domain name of the AD domain
+        :param policyguid: GUID of the default domain policy
+        :param policyguid_dc: GUID of the default domain controler policy
+    """
+
     policy_path = getpolicypath(sysvolpath,dnsdomain,policyguid)
     create_gpo_struct(policy_path)
 
@@ -1204,23 +1220,47 @@ def set_dir_acl(path, acl, lp, domsid):
             setntacl(lp, os.path.join(root, name), acl, domsid)
 
 
-def set_gpo_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
-    # Set ACL for GPO
-    policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    set_dir_acl(policy_path,dsacl2fsacl(POLICIES_ACL, str(domainsid)), 
+def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
+    """Set ACL on the sysvol/<dnsname>/Policies folder and the policy
+    folders beneath.
+
+    :param sysvol: Physical path for the sysvol folder
+    :param dnsdomain: The DNS name of the domain
+    :param domainsid: The SID of the domain
+    :param domaindn: The DN of the domain (ie. DC=...)
+    :param samdb: An LDB object on the SAM db
+    :param lp: an LP object
+    """
+
+    # Set ACL for GPO root folder
+    root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
+    setntacl(root_policy_path, dsacl2fsacl(POLICIES_ACL, str(domainsid)),
         lp, str(domainsid))
+
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                         attrs=["cn", "nTSecurityDescriptor"],
                         expression="", scope=ldb.SCOPE_ONELEVEL)
+
     for policy in res:
         acl = ndr_unpack(security.descriptor, 
                          str(policy["nTSecurityDescriptor"])).as_sddl()
-        policy_path = getpolicypath(sysvol,dnsdomain,str(policy["cn"]))
+        policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         set_dir_acl(policy_path, dsacl2fsacl(acl, str(domainsid)), lp, 
                     str(domainsid))
 
 def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     lp):
+    """Set the ACL for the sysvol share and the subfolders
+
+    :param samdb: An LDB object on the SAM db
+    :param netlogon: Physical path for the netlogon folder
+    :param sysvol: Physical path for the sysvol folder
+    :param gid: The GID of the "Domain adminstrators" group
+    :param domainsid: The SID of the domain
+    :param dnsdomain: The DNS name of the domain
+    :param domaindn: The DN of the domain (ie. DC=...)
+    """
+
     try:
         os.chown(sysvol,-1,gid)
     except:
@@ -1228,17 +1268,20 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     else:
         canchown = True
 
-    setntacl(lp,sysvol,SYSVOL_ACL,str(domainsid))
+    # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
+    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid))
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
             if canchown:
-                os.chown(os.path.join(root, name),-1,gid)
-            setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
+                os.chown(os.path.join(root, name), -1, gid)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid))
         for name in dirs:
             if canchown:
-                os.chown(os.path.join(root, name),-1,gid)
-            setntacl(lp,os.path.join(root, name),SYSVOL_ACL,str(domainsid))
-    set_gpo_acl(sysvol,dnsdomain,domainsid,domaindn,samdb,lp)
+                os.chown(os.path.join(root, name), -1, gid)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid))
+
+    # Set acls on Policy folder and policies folders
+    set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp)
 
 
 def provision(setup_dir, logger, session_info, 
@@ -1498,7 +1541,7 @@ def provision(setup_dir, logger, session_info,
 
             if serverrole == "domain controller":
                 # Set up group policies (domain policy and domain controller policy)
-                setup_gpo(paths.sysvol, names.dnsdomain, policyguid, policyguid_dc)
+                create_default_gpo(paths.sysvol, names.dnsdomain, policyguid, policyguid_dc)
                 setsysvolacl(samdb, paths.netlogon, paths.sysvol, wheel_gid, 
                              domainsid, names.dnsdomain, names.domaindn, lp)
 
