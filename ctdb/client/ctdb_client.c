@@ -18,6 +18,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+/* for talloc_append_string() */
+#define TALLOC_DEPRECATED 1
+
 #include "includes.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
