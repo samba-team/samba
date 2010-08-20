@@ -947,7 +947,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
  the username if we fallback to the username only.
  ****************************************************************************/
 
-struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
+struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 			     fstring save_username, bool create )
 {
 	struct passwd *pw = NULL;
