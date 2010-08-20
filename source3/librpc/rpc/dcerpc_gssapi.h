@@ -57,6 +57,8 @@ NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx);
 bool gse_require_more_processing(struct gse_context *gse_ctx);
 DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 				struct gse_context *gse_ctx);
+NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
+			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac);
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size);

@@ -36,15 +36,29 @@
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"
 #endif
 
+gss_OID_desc gse_sesskey_inq_oid = {
+	GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH,
+	(void *)GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
+};
+
 #ifndef GSS_KRB5_SESSION_KEY_ENCTYPE_OID
 #define GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH 10
 #define GSS_KRB5_SESSION_KEY_ENCTYPE_OID  "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x04"
 #endif
 
-gss_OID_desc gse_sesskey_inq_oid = { GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH,
-				(void *)GSS_KRB5_INQ_SSPI_SESSION_KEY_OID };
-gss_OID_desc gse_sesskeytype_oid = { GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH,
-				(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID };
+gss_OID_desc gse_sesskeytype_oid = {
+	GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH,
+	(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID
+};
+
+#define GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID_LENGTH 12
+/*					    EXTRACTION OID				   AUTHZ ID */
+#define GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x0a" "\x01"
+
+gss_OID_desc gse_authz_data_oid = {
+	GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID_LENGTH,
+	(void *)GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID
+};
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
@@ -605,6 +619,42 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+
+NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
+			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
+
+	if (!gse_ctx->authenticated) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	gss_maj = gss_inquire_sec_context_by_oid(
+				&gss_min, gse_ctx->gss_ctx,
+				&gse_authz_data_oid, &set);
+	if (gss_maj) {
+		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	if (set == GSS_C_NO_BUFFER_SET) {
+		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
+			  "data in results.\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/* for now we just hope it is the first value */
+	*pac = data_blob_talloc(mem_ctx,
+				set->elements[0].value,
+				set->elements[0].length);
+
+	gss_maj = gss_release_buffer_set(&gss_min, &set);
+
+	return NT_STATUS_OK;
+}
+
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size)
 {
@@ -847,6 +897,13 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 			      struct gse_context *gse_ctx)
 {
 	return data_blob_null;
+}
+
+
+NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
+			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
