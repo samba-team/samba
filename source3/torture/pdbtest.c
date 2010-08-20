@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 
 	load_case_tables();
 
-	pc = poptGetContext("vfstest", argc, (const char **) argv,
+	pc = poptGetContext("pdbtest", argc, (const char **) argv,
 			    long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "backend[:settings] username");
