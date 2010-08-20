@@ -44,6 +44,7 @@ static struct {
 	int timelimit;
 	uint32_t pnn;
 	int machinereadable;
+	int verbose;
 	int maxruntime;
 } options;
 
@@ -4529,6 +4530,7 @@ static void usage(void)
 "Options:\n" \
 "   -n <node>          choose node number, or 'all' (defaults to local node)\n"
 "   -Y                 generate machinereadable output\n"
+"   -v                 generate verbose output\n"
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
@@ -4560,6 +4562,7 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
 		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
+		{ "verbose",    'v', POPT_ARG_NONE, &options.verbose, 0, "enable verbose output", NULL },
 		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
 		POPT_TABLEEND
 	};
