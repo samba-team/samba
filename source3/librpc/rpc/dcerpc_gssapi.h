@@ -36,11 +36,23 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 			  const char *password,
 			  uint32_t add_gss_c_flags,
 			  struct gse_context **_gse_ctx);
-
 NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				   struct gse_context *gse_ctx,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out);
+
+NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
+			 enum dcerpc_AuthType auth_type,
+			 enum dcerpc_AuthLevel auth_level,
+			 uint32_t add_gss_c_flags,
+			 const char *server,
+			 const char *keytab,
+			 struct gse_context **_gse_ctx);
+NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
+				   struct gse_context *gse_ctx,
+				   DATA_BLOB *token_in,
+				   DATA_BLOB *token_out);
+NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx);
 
 bool gse_require_more_processing(struct gse_context *gse_ctx);
 DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,

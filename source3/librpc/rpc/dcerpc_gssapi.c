@@ -1,6 +1,6 @@
 /*
  *  GSSAPI Security Extensions
- *  RPC Pipe client routines
+ *  RPC Pipe client and server routines
  *  Copyright (C) Simo Sorce 2010.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,10 @@
 #include "includes.h"
 #include "dcerpc_gssapi.h"
 
-#if defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
+#if defined(HAVE_KRB5) && defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
+
+#include "smb_krb5.h"
+#include "dcerpc_krb5.h"
 
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
@@ -48,18 +51,23 @@ static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 struct gse_context {
 	krb5_context k5ctx;
 	krb5_ccache ccache;
-
-	bool spnego_wrap;
+	krb5_keytab keytab;
 
 	gss_ctx_id_t gss_ctx;
 
-	OM_uint32 gss_c_flags;
 	gss_OID_desc gss_mech;
-
+	OM_uint32 gss_c_flags;
+	gss_cred_id_t creds;
 	gss_name_t server_name;
-	gss_cred_id_t cli_creds;
 
+	gss_OID ret_mech;
+	OM_uint32 ret_flags;
+	gss_cred_id_t delegated_creds;
+	gss_name_t client_name;
+
+	bool spnego_wrap;
 	bool more_processing;
+	bool authenticated;
 };
 
 /* free non talloc dependent contexts */
@@ -74,6 +82,10 @@ static int gse_context_destructor(void *ptr)
 			krb5_cc_close(gse_ctx->k5ctx, gse_ctx->ccache);
 			gse_ctx->ccache = NULL;
 		}
+		if (gse_ctx->keytab) {
+			krb5_kt_close(gse_ctx->k5ctx, gse_ctx->keytab);
+			gse_ctx->keytab = NULL;
+		}
 		krb5_free_context(gse_ctx->k5ctx);
 		gse_ctx->k5ctx = NULL;
 	}
@@ -86,7 +98,22 @@ static int gse_context_destructor(void *ptr)
 		gss_maj = gss_release_name(&gss_min,
 					   &gse_ctx->server_name);
 	}
-
+	if (gse_ctx->client_name) {
+		gss_maj = gss_release_name(&gss_min,
+					   &gse_ctx->client_name);
+	}
+	if (gse_ctx->creds) {
+		gss_maj = gss_release_cred(&gss_min,
+					   &gse_ctx->creds);
+	}
+	if (gse_ctx->delegated_creds) {
+		gss_maj = gss_release_cred(&gss_min,
+					   &gse_ctx->delegated_creds);
+	}
+	if (gse_ctx->ret_mech) {
+		gss_maj = gss_release_oid(&gss_min,
+					  &gse_ctx->ret_mech);
+	}
 	return 0;
 }
 
@@ -231,7 +258,7 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				   GSS_C_INDEFINITE,
 				   &mech_set,
 				   GSS_C_INITIATE,
-				   &gse_ctx->cli_creds,
+				   &gse_ctx->creds,
 				   NULL, NULL);
 	if (gss_maj) {
 		DEBUG(0, ("gss_acquire_creds failed for %s, with [%s]\n",
@@ -266,7 +293,7 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	in_data.length = token_in->length;
 
 	gss_maj = gss_init_sec_context(&gss_min,
-					gse_ctx->cli_creds,
+					gse_ctx->creds,
 					&gse_ctx->gss_ctx,
 					gse_ctx->server_name,
 					&gse_ctx->gss_mech,
@@ -303,6 +330,160 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 done:
 	*token_out = blob;
 	return status;
+}
+
+NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
+			 enum dcerpc_AuthType auth_type,
+			 enum dcerpc_AuthLevel auth_level,
+			 uint32_t add_gss_c_flags,
+			 const char *server,
+			 const char *keytab_name,
+			 struct gse_context **_gse_ctx)
+{
+	struct gse_context *gse_ctx;
+	OM_uint32 gss_maj, gss_min;
+	gss_OID_set_desc mech_set;
+	krb5_error_code ret;
+	const char *ktname;
+	NTSTATUS status;
+
+	status = gse_context_init(mem_ctx, auth_type, auth_level,
+				  NULL, add_gss_c_flags, &gse_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!keytab_name) {
+		ret = smb_krb5_get_server_keytab(gse_ctx->k5ctx,
+						 &gse_ctx->keytab);
+		if (ret) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+		ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
+					   gse_ctx->keytab, &ktname);
+		if (ret) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
+	} else {
+		ktname = keytab_name;
+	}
+
+	/* FIXME!!!
+	 * This call sets the default keytab for the whole server, not
+	 * just for this context. Need to find a way that does not alter
+	 * the state of the whole server ... */
+	ret = gsskrb5_register_acceptor_identity(ktname);
+	if (ret) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	mech_set.count = 1;
+	mech_set.elements = &gse_ctx->gss_mech;
+
+	gss_maj = gss_acquire_cred(&gss_min,
+				   GSS_C_NO_NAME,
+				   GSS_C_INDEFINITE,
+				   &mech_set,
+				   GSS_C_ACCEPT,
+				   &gse_ctx->creds,
+				   NULL, NULL);
+	if (gss_maj) {
+		DEBUG(0, ("gss_acquire_creds failed with [%s]\n",
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(gse_ctx);
+	}
+
+	*_gse_ctx = gse_ctx;
+	return status;
+}
+
+NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
+				   struct gse_context *gse_ctx,
+				   DATA_BLOB *token_in,
+				   DATA_BLOB *token_out)
+{
+	OM_uint32 gss_maj, gss_min;
+	gss_buffer_desc in_data;
+	gss_buffer_desc out_data;
+	DATA_BLOB blob = data_blob_null;
+	NTSTATUS status;
+
+	in_data.value = token_in->data;
+	in_data.length = token_in->length;
+
+	gss_maj = gss_accept_sec_context(&gss_min,
+					 &gse_ctx->gss_ctx,
+					 gse_ctx->creds,
+					 &in_data,
+					 GSS_C_NO_CHANNEL_BINDINGS,
+					 &gse_ctx->client_name,
+					 &gse_ctx->ret_mech,
+					 &out_data,
+					 &gse_ctx->ret_flags, NULL,
+					 &gse_ctx->delegated_creds);
+	switch (gss_maj) {
+	case GSS_S_COMPLETE:
+		/* we are done with it */
+		gse_ctx->more_processing = false;
+		gse_ctx->authenticated = true;
+		status = NT_STATUS_OK;
+		break;
+	case GSS_S_CONTINUE_NEEDED:
+		/* we will need a third leg */
+		gse_ctx->more_processing = true;
+		/* status = NT_STATUS_MORE_PROCESSING_REQUIRED; */
+		status = NT_STATUS_OK;
+		break;
+	default:
+		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+
+		if (gse_ctx->gss_ctx) {
+			gss_delete_sec_context(&gss_min,
+						&gse_ctx->gss_ctx,
+						GSS_C_NO_BUFFER);
+		}
+
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	/* we may be told to return nothing */
+	if (out_data.length) {
+		blob = data_blob_talloc(mem_ctx, out_data.value, out_data.length);
+		if (!blob.data) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		gss_maj = gss_release_buffer(&gss_min, &out_data);
+	}
+
+
+done:
+	*token_out = blob;
+	return status;
+}
+
+NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
+{
+	if (!gse_ctx->authenticated) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* TODO: verify the mech oid identifies KRB5 */
+
+	/* FIXME: implement checks */
+	return NT_STATUS_OK;
 }
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
@@ -605,6 +786,30 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
+			 enum dcerpc_AuthType auth_type,
+			 enum dcerpc_AuthLevel auth_level,
+			 uint32_t add_gss_c_flags,
+			 const char *server,
+			 const char *keytab,
+			 struct gse_context **_gse_ctx)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
+				   struct gse_context *gse_ctx,
+				   DATA_BLOB *token_in,
+				   DATA_BLOB *token_out)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 bool gse_require_more_processing(struct gse_context *gse_ctx)
 {
 	return false;
@@ -646,4 +851,4 @@ NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-#endif /* HAVE_GSSAPI_EXT_H && HAVE_GSS_WRAP_IOV */
+#endif /* HAVE_KRB5 && HAVE_GSSAPI_EXT_H && HAVE_GSS_WRAP_IOV */
