@@ -1653,8 +1653,9 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!pdb_del_trusteddom_pw(info->name)) {
-		return NT_STATUS_NO_TRUST_LSA_SECRET;
+	status = pdb_del_trusted_domain(info->name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	return NT_STATUS_OK;
