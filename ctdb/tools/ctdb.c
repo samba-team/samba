@@ -1062,9 +1062,14 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	struct ctdb_control_tcp_tickle_list *list;
 	ctdb_sock_addr addr;
 	int i, ret;
+	unsigned port = 0;
 
 	if (argc < 1) {
 		usage();
+	}
+
+	if (argc == 2) {
+		port = atoi(argv[1]);
 	}
 
 	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
@@ -1081,6 +1086,9 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	if (options.machinereadable){
 		printf(":source ip:port:destination ip:port:\n");
 		for (i=0;i<list->tickles.num;i++) {
+			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+				continue;
+			}
 			printf(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
 			printf(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
 		}
@@ -1088,6 +1096,9 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
 		printf("Num tickles:%u\n", list->tickles.num);
 		for (i=0;i<list->tickles.num;i++) {
+			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+				continue;
+			}
 			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
 			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
 		}
@@ -4467,7 +4478,7 @@ static const struct {
 	{ "killtcp",         kill_tcp,                  false,	false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "gratiousarp",     control_gratious_arp,      false,	false, "send a gratious arp", "<ip> <interface>" },
 	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip>" },
+	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip> [<port>]" },
 	{ "addtickle",       control_add_tickle,        false,	false, "add a tickle for this ip", "<ip>:<port> <ip>:<port>" },
 
 	{ "deltickle",       control_del_tickle,        false,	false, "delete a tickle from this ip", "<ip>:<port> <ip>:<port>" },
