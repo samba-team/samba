@@ -48,11 +48,11 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 5);
+	ptoken->sids = talloc_array(ptoken, struct dom_sid, n_groupSIDs + 5);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
-	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
+	ptoken->sids[PRIMARY_USER_SID_INDEX] = *user_sid;
+	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = *group_sid;
 	ptoken->privilege_mask = 0;
 
 	/*
@@ -60,15 +60,19 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 	 * The only difference between guest and "anonymous"
 	 * is the addition of Authenticated_Users.
 	 */
-	ptoken->sids[2] = dom_sid_parse_talloc(ptoken->sids, SID_WORLD);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[2]);
-	ptoken->sids[3] = dom_sid_parse_talloc(ptoken->sids, SID_NT_NETWORK);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[3]);
+
+	if (!dom_sid_parse(SID_WORLD, &ptoken->sids[2])) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (!dom_sid_parse(SID_NT_NETWORK, &ptoken->sids[3])) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	ptoken->num_sids = 4;
 
 	if (is_authenticated) {
-		ptoken->sids[4] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[4]);
+		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &ptoken->sids[4])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		ptoken->num_sids++;
 	}
 
@@ -77,13 +81,13 @@ static NTSTATUS create_token(TALLOC_CTX *mem_ctx,
 		for (check_sid_idx = 1; 
 		     check_sid_idx < ptoken->num_sids; 
 		     check_sid_idx++) {
-			if (dom_sid_equal(ptoken->sids[check_sid_idx], groupSIDs[i])) {
+			if (dom_sid_equal(&ptoken->sids[check_sid_idx], groupSIDs[i])) {
 				break;
 			}
 		}
 
 		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids[ptoken->num_sids++] = talloc_reference(ptoken->sids, groupSIDs[i]);
+			ptoken->sids[ptoken->num_sids++] = *groupSIDs[i];
 		}
 	}
 

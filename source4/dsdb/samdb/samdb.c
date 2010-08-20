@@ -159,17 +159,17 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 
 	ptoken->privilege_mask = 0;
 
-	ptoken->sids = talloc_array(ptoken, struct dom_sid *, n_groupSIDs + 6 /* over-allocate */);
+	ptoken->sids = talloc_array(ptoken, struct dom_sid, n_groupSIDs + 6 /* over-allocate */);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
 	ptoken->num_sids = 1;
 
-	ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
+	ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->sids[PRIMARY_USER_SID_INDEX] = talloc_reference(ptoken, user_sid);
+	ptoken->sids[PRIMARY_USER_SID_INDEX] = *user_sid;
 	if (!dom_sid_equal(user_sid, group_sid)) {
-		ptoken->sids[PRIMARY_GROUP_SID_INDEX] = talloc_reference(ptoken, group_sid);
+		ptoken->sids[PRIMARY_GROUP_SID_INDEX] = *group_sid;
 		ptoken->num_sids++;
 	}
 
@@ -180,38 +180,37 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
+		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 2);
 		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_WORLD);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[ptoken->num_sids]);
+		if (!dom_sid_parse(SID_WORLD, &ptoken->sids[ptoken->num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		ptoken->num_sids++;
 
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_NT_NETWORK);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[ptoken->num_sids]);
+		if (!dom_sid_parse(SID_NT_NETWORK, &ptoken->sids[ptoken->num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		ptoken->num_sids++;
-
-
 	}
 
 	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
+		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[ptoken->num_sids]);
+		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &ptoken->sids[ptoken->num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		ptoken->num_sids++;
 	}
 
 	if (session_info_flags & AUTH_SESSION_INFO_ENTERPRISE_DC) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
+		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-		ptoken->sids[ptoken->num_sids] = dom_sid_parse_talloc(ptoken->sids, SID_NT_ENTERPRISE_DCS);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[ptoken->num_sids]);
+		if (!dom_sid_parse(SID_NT_ENTERPRISE_DCS, &ptoken->sids[ptoken->num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		ptoken->num_sids++;
 	}
 
@@ -220,19 +219,17 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		for (check_sid_idx = 1; 
 		     check_sid_idx < ptoken->num_sids; 
 		     check_sid_idx++) {
-			if (dom_sid_equal(ptoken->sids[check_sid_idx], groupSIDs[i])) {
+			if (dom_sid_equal(&ptoken->sids[check_sid_idx], groupSIDs[i])) {
 				break;
 			}
 		}
 
 		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid *, ptoken->num_sids + 1);
+			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
 			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-			ptoken->sids[ptoken->num_sids] = talloc_reference(ptoken->sids, groupSIDs[i]);
-			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[ptoken->num_sids]);
+			ptoken->sids[ptoken->num_sids] = *groupSIDs[i];
 			ptoken->num_sids++;
-
 		}
 	}
 

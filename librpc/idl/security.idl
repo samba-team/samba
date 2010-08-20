@@ -470,7 +470,7 @@ interface security
 
 	typedef [public] struct {
 		uint32 num_sids;
-		[size_is(num_sids)] dom_sid *sids[*];
+		[size_is(num_sids)] dom_sid sids[*];
 		udlong privilege_mask;
 	} security_token;
 

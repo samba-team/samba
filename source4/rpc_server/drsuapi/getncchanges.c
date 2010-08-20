@@ -1019,7 +1019,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 
-	user_sid = dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 
 	/* for non-administrator replications, check that they have

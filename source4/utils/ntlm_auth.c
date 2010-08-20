@@ -617,7 +617,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		for (i=0; i<session_info->security_token->num_sids; i++) {
 			struct security_token *token = session_info->security_token; 
 			const char *sidstr = dom_sid_string(session_info, 
-							    token->sids[i]);
+							    &token->sids[i]);
 			grouplist = talloc_asprintf_append_buffer(grouplist, "%s,", sidstr);
 		}
 

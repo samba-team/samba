@@ -181,7 +181,7 @@ static int construct_token_groups(struct ldb_module *module,
 	for (i = 1; i < session_info->security_token->num_sids; i++) {
 		ret = samdb_msg_add_dom_sid(ldb, msg, msg,
 					    "tokenGroups",
-					    session_info->security_token->sids[i]);
+					    &session_info->security_token->sids[i]);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;

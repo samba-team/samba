@@ -65,7 +65,7 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 				       (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
 		DEBUGADD(dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i, 
-			   dom_sid_string(mem_ctx, token->sids[i])));
+			   dom_sid_string(mem_ctx, &token->sids[i])));
 	}
 
 	security_token_debug_privileges(dbg_lev, token);
@@ -77,7 +77,7 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 
 bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid)
 {
-	if (token->sids && dom_sid_equal(token->sids[PRIMARY_USER_SID_INDEX], sid)) {
+	if (token->sids && dom_sid_equal(&token->sids[PRIMARY_USER_SID_INDEX], sid)) {
 		return true;
 	}
 	return false;
@@ -109,7 +109,7 @@ bool security_token_has_sid(const struct security_token *token, const struct dom
 {
 	int i;
 	for (i = 0; i < token->num_sids; i++) {
-		if (dom_sid_equal(token->sids[i], sid)) {
+		if (dom_sid_equal(&token->sids[i], sid)) {
 			return true;
 		}
 	}

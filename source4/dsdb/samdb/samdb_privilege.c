@@ -119,7 +119,7 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 	
 	for (i=0;i<token->num_sids;i++) {
 		status = samdb_privilege_setup_sid(pdb, mem_ctx,
-						   token, token->sids[i]);
+						   token, &token->sids[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;

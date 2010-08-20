@@ -215,11 +215,11 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		/* check that they are using an DSA objectGUID that they own */
 		ret = dsdb_validate_dsa_guid(b_state->sam_ctx,
 		                             &req->dest_dsa_guid,
-		                             dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]);
+		                             &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Refusing DsReplicaUpdateRefs for sid %s with GUID %s\n",
 				 dom_sid_string(mem_ctx,
-						dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
+						&dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
 				 GUID_string(mem_ctx, &req->dest_dsa_guid)));
 			return WERR_DS_DRA_ACCESS_DENIED;
 		}

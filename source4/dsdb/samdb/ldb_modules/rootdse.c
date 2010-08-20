@@ -392,7 +392,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			for (i = 0; i < session_info->security_token->num_sids; i++) {
 				if (samdb_msg_add_dom_sid(ldb, msg, msg,
 							  "tokenGroups",
-							  session_info->security_token->sids[i]) != 0) {
+							  &session_info->security_token->sids[i]) != 0) {
 					goto failed;
 				}
 			}

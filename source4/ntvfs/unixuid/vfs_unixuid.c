@@ -190,7 +190,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 
 	for (i=0;i<token->num_sids;i++) {
 		ZERO_STRUCT(ids[i].xid);
-		ids[i].sid = token->sids[i];
+		ids[i].sid = &token->sids[i];
 		ids[i].status = ID_UNKNOWN;
 	}
 

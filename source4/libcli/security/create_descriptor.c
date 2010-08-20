@@ -367,7 +367,7 @@ struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
 		if ((inherit_flags & SEC_OWNER_FROM_PARENT) && parent_sd) {
 			new_owner = parent_sd->owner_sid;
 		} else if (!default_owner) {
-			new_owner = token->sids[PRIMARY_USER_SID_INDEX];
+			new_owner = &token->sids[PRIMARY_USER_SID_INDEX];
 		} else {
 			new_owner = default_owner;
 			new_sd->type |= SEC_DESC_OWNER_DEFAULTED;
@@ -379,11 +379,11 @@ struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
 	if (!creator_sd || !creator_sd->group_sid){
 		if ((inherit_flags & SEC_GROUP_FROM_PARENT) && parent_sd) {
 			new_group = parent_sd->group_sid;
-		} else if (!default_group && token->sids[PRIMARY_GROUP_SID_INDEX]) {
-			new_group = token->sids[PRIMARY_GROUP_SID_INDEX];
+		} else if (!default_group && token->num_sids > PRIMARY_GROUP_SID_INDEX) {
+			new_group = &token->sids[PRIMARY_GROUP_SID_INDEX];
 		} else if (!default_group) {
 			/* This will happen only for anonymous, which has no other groups */
-			new_group = token->sids[PRIMARY_USER_SID_INDEX];
+			new_group = &token->sids[PRIMARY_USER_SID_INDEX];
 		} else {
 			new_group = default_group;
 			new_sd->type |= SEC_DESC_GROUP_DEFAULTED;
