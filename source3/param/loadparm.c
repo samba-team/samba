@@ -4947,14 +4947,14 @@ static void free_global_parameters(void)
  Initialise the global parameter structure.
 ***************************************************************************/
 
-static void init_globals(bool first_time_only)
+static void init_globals(bool reinit_globals)
 {
 	static bool done_init = False;
 	char *s = NULL;
 	int i;
 
         /* If requested to initialize only once and we've already done it... */
-        if (first_time_only && done_init) {
+        if (!reinit_globals && done_init) {
                 /* ... then we have nothing more to do */
                 return;
         }
@@ -9181,7 +9181,7 @@ static bool lp_load_ex(const char *pszFname,
 	bGlobalOnly = global_only;
 	bAllowIncludeRegistry = allow_include_registry;
 
-	init_globals(! initialize_globals);
+	init_globals(initialize_globals);
 	debug_init();
 
 	free_file_list();
@@ -9229,7 +9229,7 @@ static bool lp_load_ex(const char *pszFname,
 			/* start over */
 			DEBUG(1, ("lp_load_ex: changing to config backend "
 				  "registry\n"));
-			init_globals(false);
+			init_globals(true);
 			lp_kill_all_services();
 			return lp_load_ex(pszFname, global_only, save_defaults,
 					  add_ipc, initialize_globals,
