@@ -18,9 +18,6 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-/* for talloc_append_string() */
-#define TALLOC_DEPRECATED 1
-
 #include "includes.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
@@ -3837,7 +3834,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 
 	/* Add extra information so we can identify this in the logs */
 	va_start(ap, fmt);
-	debug_extra = talloc_append_string(NULL, talloc_vasprintf(NULL, fmt, ap), ":");
+	debug_extra = talloc_strdup_append(talloc_vasprintf(NULL, fmt, ap), ":");
 	va_end(ap);
 
 	/* shutdown the transport */
