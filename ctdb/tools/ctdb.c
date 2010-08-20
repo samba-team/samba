@@ -1821,7 +1821,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (options.machinereadable){
-		printf(":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:\n");
+		printf(":Public IP:Node:");
+		if (options.verbose){
+			printf("ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:");
+		}
+		printf("\n");
 	} else {
 		if (options.pnn == CTDB_BROADCAST_ALL) {
 			printf("Public IPs on ALL nodes\n");
@@ -1881,19 +1885,29 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 		}
 
 		if (options.machinereadable){
-			printf(":%s:%d:%s:%s:%s:\n",
-			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
-			       ips->ips[ips->num-i].pnn,
-			       aciface?aciface:"",
-			       avifaces?avifaces:"",
-			       cifaces?cifaces:"");
+			printf(":%s:%d:",
+				ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+				ips->ips[ips->num-i].pnn);
+			if (options.verbose){
+				printf("%s:%s:%s:",
+					aciface?aciface:"",
+					avifaces?avifaces:"",
+					cifaces?cifaces:"");
+			}
+			printf("\n");
 		} else {
-			printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
-			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
-			       ips->ips[ips->num-i].pnn,
-			       aciface?aciface:"",
-			       avifaces?avifaces:"",
-			       cifaces?cifaces:"");
+			if (options.verbose) {
+				printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
+					ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+					ips->ips[ips->num-i].pnn,
+					aciface?aciface:"",
+					avifaces?avifaces:"",
+					cifaces?cifaces:"");
+			} else {
+				printf("%s %d\n",
+					ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+					ips->ips[ips->num-i].pnn);
+			}
 		}
 		talloc_free(info);
 	}
