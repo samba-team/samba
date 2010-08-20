@@ -480,9 +480,37 @@ NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	/* TODO: verify the mech oid identifies KRB5 */
+	if (memcmp(gse_ctx->ret_mech,
+		   gss_mech_krb5, sizeof(gss_OID_desc)) != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
-	/* FIXME: implement checks */
+	/* GSS_C_MUTUAL_FLAG */
+	if (gse_ctx->gss_c_flags & GSS_C_MUTUAL_FLAG) {
+		if (!(gse_ctx->ret_flags & GSS_C_MUTUAL_FLAG)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	/* GSS_C_DELEG_FLAG */
+	/* GSS_C_DELEG_POLICY_FLAG */
+	/* GSS_C_REPLAY_FLAG */
+	/* GSS_C_SEQUENCE_FLAG */
+
+	/* GSS_C_INTEG_FLAG */
+	if (gse_ctx->gss_c_flags & GSS_C_INTEG_FLAG) {
+		if (!(gse_ctx->ret_flags & GSS_C_INTEG_FLAG)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	/* GSS_C_CONF_FLAG */
+	if (gse_ctx->gss_c_flags & GSS_C_CONF_FLAG) {
+		if (!(gse_ctx->ret_flags & GSS_C_CONF_FLAG)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
