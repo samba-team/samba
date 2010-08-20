@@ -25,6 +25,7 @@
 #include "registry/reg_parse_prs.h"
 #include "registry.h"
 #include "registry/reg_perfcount.h"
+#include "rpc_misc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

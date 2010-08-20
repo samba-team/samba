@@ -23,8 +23,6 @@
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
 
-#define SMB_RPC_INTERFACE_VERSION 1
-
 /********************************************************************** 
  * RPC policy handle used pretty much everywhere
  **********************************************************************/

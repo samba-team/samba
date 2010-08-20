@@ -641,7 +641,6 @@ extern void *cmdline_lp_ctx;
 #include "smb.h"
 #include "nameserv.h"
 #include "../lib/util/byteorder.h"
-#include "rpc_misc.h"
 #include "mapping.h"
 #include "passdb.h"
 #include "msdfs.h"
