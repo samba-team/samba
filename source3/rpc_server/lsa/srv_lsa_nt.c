@@ -1447,11 +1447,13 @@ static NTSTATUS lsa_lookup_trusted_domain_by_name(TALLOC_CTX *mem_ctx,
 						  const char *netbios_domain_name,
 						  struct trustdom_info **info_p)
 {
-	struct dom_sid sid;
+	NTSTATUS status;
 	struct trustdom_info *info;
+	struct pdb_trusted_domain *td;
 
-	if (!pdb_get_trusteddom_pw(netbios_domain_name, NULL, &sid, NULL)) {
-		return NT_STATUS_INVALID_PARAMETER;
+	status = pdb_get_trusted_domain(mem_ctx, netbios_domain_name, &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	info = talloc(mem_ctx, struct trustdom_info);
@@ -1461,7 +1463,8 @@ static NTSTATUS lsa_lookup_trusted_domain_by_name(TALLOC_CTX *mem_ctx,
 
 	info->name	= talloc_strdup(info, netbios_domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(info->name);
-	info->sid	= sid;
+
+	sid_copy(&info->sid, &td->security_identifier);
 
 	*info_p = info;
 
