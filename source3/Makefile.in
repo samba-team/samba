@@ -3295,7 +3295,7 @@ selftestdir = ../selftest
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
 FILTER_XFAIL = $(PYTHON) -u $(selftestdir)/filter-subunit --expected-failures=$(srcdir)/selftest/knownfail
-SUBUNIT_FORMATTER = $(PYTHON) $(selftestdir)/format-subunit --immediate
+SUBUNIT_FORMATTER = $(PYTHON) -u $(selftestdir)/format-subunit --immediate
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
 
 ifeq ($(RUN_FROM_BUILD_FARM),yes)
