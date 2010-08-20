@@ -4016,13 +4016,6 @@ int load_usershare_shares(void);
 void gfree_loadparm(void);
 void lp_set_in_client(bool b);
 bool lp_is_in_client(void);
-bool lp_load_ex(const char *pszFname,
-		bool global_only,
-		bool save_defaults,
-		bool add_ipc,
-		bool initialize_globals,
-		bool allow_include_registry,
-		bool allow_registry_shares);
 bool lp_load(const char *pszFname,
 	     bool global_only,
 	     bool save_defaults,

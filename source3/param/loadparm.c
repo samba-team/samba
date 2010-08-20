@@ -9162,13 +9162,13 @@ bool lp_is_in_client(void)
  False on failure.
 ***************************************************************************/
 
-bool lp_load_ex(const char *pszFname,
-		bool global_only,
-		bool save_defaults,
-		bool add_ipc,
-		bool initialize_globals,
-		bool allow_include_registry,
-		bool allow_registry_shares)
+static bool lp_load_ex(const char *pszFname,
+		       bool global_only,
+		       bool save_defaults,
+		       bool add_ipc,
+		       bool initialize_globals,
+		       bool allow_include_registry,
+		       bool allow_registry_shares)
 {
 	char *n2 = NULL;
 	bool bRetval;
