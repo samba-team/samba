@@ -23,7 +23,7 @@
 /* We want PKINIT */
 #define PKINIT 1
 
-#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4 0.8pre"}
+#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4"}
 
 #define VERSION "Samba"
 
