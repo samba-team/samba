@@ -410,6 +410,11 @@ found:
 		return ldb_operr(ldb);
 	}
 
+	ret = ldb_msg_add_fmt(ac->msg, "samAccountName", "krbtgt_%u", krbtgt_number);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
+	}
+
 	return samldb_next_step(ac);
 }
 
@@ -986,6 +991,14 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
+	if (rodc_control) {
+		/* see [MS-ADTS] 3.1.1.3.4.1.23 LDAP_SERVER_RODC_DCPROMO_OID */
+		rodc_control->critical = false;
+		ret = samldb_add_step(ac, samldb_rodc_add);
+		if (ret != LDB_SUCCESS) return ret;
+	}
+
 	/* check if we have a valid samAccountName */
 	ret = samldb_add_step(ac, samldb_check_samAccountName);
 	if (ret != LDB_SUCCESS) return ret;
@@ -1023,15 +1036,6 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 			if (ret != LDB_SUCCESS) return ret;
 		}
 	}
-
-	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
-	if (rodc_control) {
-		/* see [MS-ADTS] 3.1.1.3.4.1.23 LDAP_SERVER_RODC_DCPROMO_OID */
-		rodc_control->critical = false;
-		ret = samldb_add_step(ac, samldb_rodc_add);
-		if (ret != LDB_SUCCESS) return ret;
-	}
-
 
 	/* finally proceed with adding the entry */
 	ret = samldb_add_step(ac, samldb_add_entry);
