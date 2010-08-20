@@ -252,6 +252,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dlong(struct ndr_pull *ndr, int ndr_flags, i
 _PUBLIC_ enum ndr_err_code ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 8);
+	if (NDR_BE(ndr)) {
+		return ndr_pull_udlongr(ndr, ndr_flags, v);
+	}
 	return ndr_pull_udlong(ndr, ndr_flags, v);
 }
 
@@ -549,6 +552,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_dlong(struct ndr_push *ndr, int ndr_flags, i
 _PUBLIC_ enum ndr_err_code ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 8);
+	if (NDR_BE(ndr)) {
+		return ndr_push_udlongr(ndr, NDR_SCALARS, v);
+	}
 	return ndr_push_udlong(ndr, NDR_SCALARS, v);
 }
 
