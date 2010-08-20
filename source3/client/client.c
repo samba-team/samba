@@ -4687,7 +4687,7 @@ static int process(const char *base_directory)
 static int do_host_query(const char *query_host)
 {
 	cli = cli_cm_open(talloc_tos(), NULL,
-			query_host, "IPC$", auth_info, true, smb_encrypt,
+			have_ip ? dest_ss_str : query_host, "IPC$", auth_info, true, smb_encrypt,
 			max_protocol, port, name_type);
 	if (!cli)
 		return 1;
@@ -4713,7 +4713,8 @@ static int do_host_query(const char *query_host)
 
 		cli_shutdown(cli);
 		cli = cli_cm_open(talloc_tos(), NULL,
-				query_host, "IPC$", auth_info, true, smb_encrypt,
+				have_ip ? dest_ss_str : query_host, "IPC$",
+				auth_info, true, smb_encrypt,
 				max_protocol, 139, name_type);
 	}
 
