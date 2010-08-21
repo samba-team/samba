@@ -553,7 +553,14 @@ core of password checking routine
 static NTSTATUS password_check(const char *password, void *private_data)
 {
 #ifdef WITH_PAM
-	return smb_pam_passcheck(get_this_user(), password);
+	const char *rhost;
+	char addr[INET6_ADDRSTRLEN];
+
+	rhost = client_name(smbd_server_fd());
+	if (strequal(rhost,"UNKNOWN"))
+		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
+
+	return smb_pam_passcheck(get_this_user(), rhost, password);
 #else
 
 	bool ret;

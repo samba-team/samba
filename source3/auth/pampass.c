@@ -806,13 +806,12 @@ NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost)
  * PAM Password Validation Suite
  */
 
-NTSTATUS smb_pam_passcheck(const char * user, const char * password)
+NTSTATUS smb_pam_passcheck(const char * user, const char * password,
+			   const char * rhost)
 {
 	pam_handle_t *pamh = NULL;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	struct pam_conv *pconv = NULL;
-	const char *rhost;
-	char addr[INET6_ADDRSTRLEN];
 
 	/*
 	 * Note we can't ignore PAM here as this is the only
@@ -822,10 +821,6 @@ NTSTATUS smb_pam_passcheck(const char * user, const char * password)
 
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, password, NULL)) == NULL)
 		return NT_STATUS_LOGON_FAILURE;
-
-	rhost = client_name(smbd_server_fd());
-	if (strequal(rhost,"UNKNOWN"))
-		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
 
 	if (!smb_pam_start(&pamh, user, rhost, pconv))
 		return NT_STATUS_LOGON_FAILURE;
