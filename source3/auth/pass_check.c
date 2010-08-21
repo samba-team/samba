@@ -660,6 +660,7 @@ return NT_STATUS_OK on correct match, appropriate error otherwise
 
 NTSTATUS pass_check(const struct passwd *pass,
 		    const char *user,
+		    const char *rhost,
 		    const char *password,
 		    bool run_cracker)
 {
@@ -667,13 +668,6 @@ NTSTATUS pass_check(const struct passwd *pass,
 	int level = lp_passwordlevel();
 
 	NTSTATUS nt_status;
-
-	const char *rhost;
-	char addr[INET6_ADDRSTRLEN];
-
-	rhost = client_name(smbd_server_fd());
-	if (strequal(rhost,"UNKNOWN"))
-		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("checking user=[%s] pass=[%s]\n", user, password));

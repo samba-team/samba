@@ -232,7 +232,10 @@ bool smb_pam_close_session(char *in_user, char *tty, char *rhost);
 /* The following definitions come from auth/pass_check.c  */
 
 void dfs_unlogin(void);
-NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
+NTSTATUS pass_check(const struct passwd *pass,
+		    const char *user,
+		    const char *rhost,
+		    const char *password,
 		    bool run_cracker);
 
 /* The following definitions come from auth/token_util.c  */

@@ -339,6 +339,8 @@ static bool cgi_handle_authorization(char *line)
 	char *p;
 	fstring user, user_pass;
 	struct passwd *pass = NULL;
+	const char *rhost;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (!strnequal(line,"Basic ", 6)) {
 		goto err;
@@ -369,11 +371,15 @@ static bool cgi_handle_authorization(char *line)
 
 	pass = getpwnam_alloc(talloc_autofree_context(), user);
 
+	rhost = client_name(1);
+	if (strequal(rhost,"UNKNOWN"))
+		rhost = client_addr(1, addr, sizeof(addr));
+
 	/*
 	 * Validate the password they have given.
 	 */
 
-	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, false)) {
+	if NT_STATUS_IS_OK(pass_check(pass, user, rhost, user_pass, false)) {
 		if (pass) {
 			/*
 			 * Password was ok.
