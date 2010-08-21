@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password checking
    Copyright (C) Andrew Tridgell 1992-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -576,7 +576,7 @@ static NTSTATUS password_check(const char *password, void *private_data)
 #endif /* WITH_DFS */
 
 #ifdef OSF1_ENH_SEC
-	
+
 	ret = (strcmp(osf1_bigcrypt(password, get_this_salt()),
 		      get_this_crypted()) == 0);
 	if (!ret) {
@@ -589,9 +589,9 @@ static NTSTATUS password_check(const char *password, void *private_data)
 	} else {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-	
+
 #endif /* OSF1_ENH_SEC */
-	
+
 #ifdef ULTRIX_AUTH
 	ret = (strcmp((char *)crypt16(password, get_this_salt()), get_this_crypted()) == 0);
 	if (ret) {
@@ -599,9 +599,9 @@ static NTSTATUS password_check(const char *password, void *private_data)
         } else {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-	
+
 #endif /* ULTRIX_AUTH */
-	
+
 #ifdef LINUX_BIGCRYPT
 	ret = (linux_bigcrypt(password, get_this_salt(), get_this_crypted()));
         if (ret) {
@@ -610,9 +610,9 @@ static NTSTATUS password_check(const char *password, void *private_data)
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 #endif /* LINUX_BIGCRYPT */
-	
+
 #if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
-	
+
 	/*
 	 * Some systems have bigcrypt in the C library but might not
 	 * actually use it for the password hashes (HPUX 10.20) is
@@ -630,7 +630,7 @@ static NTSTATUS password_check(const char *password, void *private_data)
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 #else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
-	
+
 #ifdef HAVE_BIGCRYPT
 	ret = (strcmp(bigcrypt(password, get_this_salt()), get_this_crypted()) == 0);
         if (ret) {
@@ -639,7 +639,7 @@ static NTSTATUS password_check(const char *password, void *private_data)
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 #endif /* HAVE_BIGCRYPT */
-	
+
 #ifndef HAVE_CRYPT
 	DEBUG(1, ("Warning - no crypt available\n"));
 	return NT_STATUS_LOGON_FAILURE;
@@ -878,11 +878,11 @@ NTSTATUS pass_check(const struct passwd *pass,
 
 	/* last chance - all combinations of up to level chars upper! */
 	strlower_m(pass2);
- 
+
 	nt_status = string_combinations(pass2, password_check, level, NULL);
         if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-        
+
 	return NT_STATUS_WRONG_PASSWORD;
 }
