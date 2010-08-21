@@ -553,13 +553,7 @@ core of password checking routine
 static NTSTATUS password_check(const char *password, void *private_data)
 {
 #ifdef WITH_PAM
-	const char *rhost;
-	char addr[INET6_ADDRSTRLEN];
-
-	rhost = client_name(smbd_server_fd());
-	if (strequal(rhost,"UNKNOWN"))
-		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
-
+	const char *rhost = (const char *)private_data;
 	return smb_pam_passcheck(get_this_user(), rhost, password);
 #else
 
@@ -673,6 +667,13 @@ NTSTATUS pass_check(const struct passwd *pass,
 	int level = lp_passwordlevel();
 
 	NTSTATUS nt_status;
+
+	const char *rhost;
+	char addr[INET6_ADDRSTRLEN];
+
+	rhost = client_name(smbd_server_fd());
+	if (strequal(rhost,"UNKNOWN"))
+		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("checking user=[%s] pass=[%s]\n", user, password));
@@ -837,7 +838,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 #endif /* defined(WITH_PAM) */
 
 	/* try it as it came to us */
-	nt_status = password_check(password, NULL);
+	nt_status = password_check(password, (void *)rhost);
         if NT_STATUS_IS_OK(nt_status) {
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -865,8 +866,8 @@ NTSTATUS pass_check(const struct passwd *pass,
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(pass2)) {
 		strlower_m(pass2);
-		nt_status = password_check(pass2, NULL);
-		if NT_STATUS_IS_OK(nt_status) {
+		nt_status = password_check(pass2, (void *)rhost);
+		if (NT_STATUS_IS_OK(nt_status)) {
 			return (nt_status);
 		}
 	}
@@ -879,7 +880,8 @@ NTSTATUS pass_check(const struct passwd *pass,
 	/* last chance - all combinations of up to level chars upper! */
 	strlower_m(pass2);
 
-	nt_status = string_combinations(pass2, password_check, level, NULL);
+	nt_status = string_combinations(pass2, password_check, level,
+					(void *)rhost);
         if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
