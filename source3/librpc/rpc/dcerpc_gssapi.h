@@ -59,6 +59,7 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 				struct gse_context *gse_ctx);
 NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac);
+NTSTATUS gse_get_authtime(struct gse_context *gse_ctx, time_t *authtime);
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size);
