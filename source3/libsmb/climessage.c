@@ -63,8 +63,10 @@ static struct tevent_req *cli_message_start_send(TALLOC_CTX *mem_ctx,
 
 	*p++ = 4;
 	memcpy(p, utmp, ulen);
+	p += ulen;
 	*p++ = 4;
 	memcpy(p, htmp, hlen);
+	p += hlen;
 	TALLOC_FREE(htmp);
 	TALLOC_FREE(utmp);
 
@@ -163,8 +165,8 @@ static struct tevent_req *cli_message_text_send(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(tmp);
 		return tevent_req_post(req, ev);
 	}
-	SCVAL(bytes, 0, 0);	/* pad */
-	SSVAL(bytes, 1, msglen);
+	SCVAL(bytes, 0, 1);	/* pad */
+	SSVAL(bytes+1, 0, msglen);
 	memcpy(bytes+3, msg, msglen);
 	TALLOC_FREE(tmp);
 
