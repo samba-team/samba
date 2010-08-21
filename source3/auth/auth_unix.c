@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -37,23 +38,17 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
-	const char *rhost;
-	char addr[INET6_ADDRSTRLEN];
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
 	become_root();
 	pass = Get_Pwnam_alloc(talloc_tos(), user_info->mapped.account_name);
 
-	rhost = client_name(smbd_server_fd());
-	if (strequal(rhost,"UNKNOWN"))
-		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
-
 	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->mapped.account_name,
-			       rhost,
+			       smbd_server_conn->client_id.name,
 				user_info->password.plaintext,
 				true);
 
