@@ -479,10 +479,6 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
-#if HAVE_PAM_RHOST
-	const char *our_rhost;
-	char addr[INET6_ADDRSTRLEN];
-#endif
 
 	*pamh = (pam_handle_t *)NULL;
 
@@ -495,17 +491,8 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 	}
 
 #if HAVE_PAM_RHOST
-	if (rhost == NULL) {
-		our_rhost = client_name(smbd_server_fd());
-		if (strequal(our_rhost,"UNKNOWN"))
-			our_rhost = client_addr(smbd_server_fd(), addr,
-						sizeof(addr));
-	} else {
-		our_rhost = rhost;
-	}
-
-	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", our_rhost));
-	pam_error = pam_set_item(*pamh, PAM_RHOST, our_rhost);
+	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", rhost));
+	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
 	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
 		smb_pam_end(*pamh, pconv);
 		*pamh = (pam_handle_t *)NULL;
@@ -824,6 +811,8 @@ NTSTATUS smb_pam_passcheck(const char * user, const char * password)
 	pam_handle_t *pamh = NULL;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	struct pam_conv *pconv = NULL;
+	const char *rhost;
+	char addr[INET6_ADDRSTRLEN];
 
 	/*
 	 * Note we can't ignore PAM here as this is the only
@@ -834,7 +823,11 @@ NTSTATUS smb_pam_passcheck(const char * user, const char * password)
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, password, NULL)) == NULL)
 		return NT_STATUS_LOGON_FAILURE;
 
-	if (!smb_pam_start(&pamh, user, NULL, pconv))
+	rhost = client_name(smbd_server_fd());
+	if (strequal(rhost,"UNKNOWN"))
+		rhost = client_addr(smbd_server_fd(), addr, sizeof(addr));
+
+	if (!smb_pam_start(&pamh, user, rhost, pconv))
 		return NT_STATUS_LOGON_FAILURE;
 
 	if (!NT_STATUS_IS_OK(nt_status = smb_pam_auth(pamh, user))) {
