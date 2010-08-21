@@ -492,8 +492,10 @@ try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (const char *),
-				 int N)
+static NTSTATUS string_combinations2(char *s, int offset,
+				     NTSTATUS (*fn)(const char *s,
+						    void *private_data),
+				     int N, void *private_data)
 {
 	int len = strlen(s);
 	int i;
@@ -504,15 +506,17 @@ static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (const 
 #endif
 
 	if (N <= 0 || offset >= len)
-		return (fn(s));
+		return (fn(s, private_data));
 
 	for (i = offset; i < (len - (N - 1)); i++) {
 		char c = s[i];
 		if (!islower_ascii(c))
 			continue;
 		s[i] = toupper_ascii(c);
-		if (!NT_STATUS_EQUAL(nt_status = string_combinations2(s, i + 1, fn, N - 1),NT_STATUS_WRONG_PASSWORD)) {
-			return (nt_status);
+		nt_status = string_combinations2(s, i + 1, fn, N - 1,
+						 private_data);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+			return nt_status;
 		}
 		s[i] = c;
 	}
@@ -526,13 +530,19 @@ try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (const char *), int N)
+static NTSTATUS string_combinations(char *s,
+				    NTSTATUS (*fn)(const char *s,
+						   void *private_data),
+				    int N, void *private_data)
 {
 	int n;
 	NTSTATUS nt_status;
-	for (n = 1; n <= N; n++)
-		if (!NT_STATUS_EQUAL(nt_status = string_combinations2(s, 0, fn, n), NT_STATUS_WRONG_PASSWORD))
+	for (n = 1; n <= N; n++) {
+		nt_status = string_combinations2(s, 0, fn, n, private_data);
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
 			return nt_status;
+		}
+	}
 	return NT_STATUS_WRONG_PASSWORD;
 }
 
@@ -540,7 +550,7 @@ static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (const char *), int 
 /****************************************************************************
 core of password checking routine
 ****************************************************************************/
-static NTSTATUS password_check(const char *password)
+static NTSTATUS password_check(const char *password, void *private_data)
 {
 #ifdef WITH_PAM
 	return smb_pam_passcheck(get_this_user(), password);
@@ -820,7 +830,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 #endif /* defined(WITH_PAM) */
 
 	/* try it as it came to us */
-	nt_status = password_check(password);
+	nt_status = password_check(password, NULL);
         if NT_STATUS_IS_OK(nt_status) {
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -848,7 +858,8 @@ NTSTATUS pass_check(const struct passwd *pass,
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(pass2)) {
 		strlower_m(pass2);
-		if NT_STATUS_IS_OK(nt_status = password_check(pass2)) {
+		nt_status = password_check(pass2, NULL);
+		if NT_STATUS_IS_OK(nt_status) {
 			return (nt_status);
 		}
 	}
@@ -861,7 +872,8 @@ NTSTATUS pass_check(const struct passwd *pass,
 	/* last chance - all combinations of up to level chars upper! */
 	strlower_m(pass2);
  
-        if (NT_STATUS_IS_OK(nt_status = string_combinations(pass2, password_check, level))) {
+	nt_status = string_combinations(pass2, password_check, level, NULL);
+        if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
         
