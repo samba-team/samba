@@ -3298,8 +3298,7 @@ FILTER_XFAIL = $(PYTHON) -u $(selftestdir)/filter-subunit --expected-failures=$(
 SUBUNIT_FORMATTER = $(PYTHON) -u $(selftestdir)/format-subunit --immediate
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
 
-ifeq ($(RUN_FROM_BUILD_FARM),yes)
-test:: all torture timelimit
+test-buildfarm:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
@@ -3311,7 +3310,7 @@ test:: all torture timelimit
 		--socket-wrapper $(TESTS) | \
 		$(FILTER_XFAIL) --strip-passed-output
 	test -f ${selftest_prefix}/summary && cat ${selftest_prefix}/summary
-else
+
 test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
@@ -3323,7 +3322,6 @@ test:: all torture timelimit
 		--exclude=$(srcdir)/selftest/skip \
 		--socket-wrapper $(TESTS) | \
 		$(FORMAT_TEST_OUTPUT)
-endif
 
 test-%:
 	$(MAKE) test TESTS=$*
