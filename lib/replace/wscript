@@ -202,8 +202,9 @@ def configure(conf):
         conf.DEFINE('HAVE_EPOLL', 1)
 
     if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-		       #include "$libreplacedir/test/strptime.c"''',
+		       #include "test/strptime.c"''',
                            define='HAVE_STRPTIME',
+                           addmain=False,
                            msg='Checking for working strptime'):
         conf.DEFINE('REPLACE_STRPTIME', 1)
 
@@ -287,13 +288,6 @@ def configure(conf):
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR')
-
-    if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-		       #include "$libreplacedir/test/strptime.c"''',
-                           define='HAVE_STRPTIME',
-                           msg='Checking for working strptime'):
-        conf.DEFINE('REPLACE_STRPTIME', 1)
-
 
     # look for a method of finding the list of network interfaces
     for method in ['HAVE_IFACE_GETIFADDRS', 'HAVE_IFACE_AIX', 'HAVE_IFACE_IFCONF', 'HAVE_IFACE_IFREQ']:
