@@ -24,7 +24,7 @@
 
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!PyObject_TypeCheck(var, type)) {\
-		PyErr_Format(PyExc_TypeError, "Expected type %s", (type)->tp_name); \
+		PyErr_Format(PyExc_TypeError, "Expected type %s for %s", (type)->tp_name, #var); \
 		fail; \
 	}
 
