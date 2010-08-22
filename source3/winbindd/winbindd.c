@@ -36,6 +36,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 
 static bool opt_nocache = False;
@@ -95,8 +96,9 @@ static void winbindd_status(void)
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
-			DEBUGADD(2, ("\t\tpid %lu, sock %d\n",
-				  (unsigned long)tmp->pid, tmp->sock));
+			DEBUGADD(2, ("\t\tpid %lu, sock %d (%s)\n",
+				     (unsigned long)tmp->pid, tmp->sock,
+				     client_is_idle(tmp) ? "idle" : "active"));
 		}
 	}
 }
@@ -858,6 +860,13 @@ static void remove_client(struct winbindd_cli_state *state)
 	TALLOC_FREE(state);
 }
 
+/* Is a client idle? */
+
+static bool client_is_idle(struct winbindd_cli_state *state) {
+  return (state->response == NULL &&
+	  !state->pwent_state && !state->grent_state);
+}
+
 /* Shutdown client connection which has been idle for the longest time */
 
 static bool remove_idle_client(void)
@@ -867,8 +876,7 @@ static bool remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->response == NULL &&
-		    !state->pwent_state && !state->grent_state) {
+		if (client_is_idle(state)) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
 				last_access = state->last_access;
