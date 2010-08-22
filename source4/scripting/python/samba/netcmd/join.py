@@ -22,7 +22,7 @@ import samba.getopt as options
 
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.netcmd import Command, CommandError
-from samba.dcerpc.netr import SEC_CHAN_WKSTA, SEC_CHAN_BDC
+from samba.dcerpc.misc import SEC_CHAN_WKSTA, SEC_CHAN_BDC
 
 
 class cmd_join(Command):
@@ -54,6 +54,6 @@ class cmd_join(Command):
             raise CommandError("Invalid role %s (possible values: MEMBER, BDC)" % role)
 
         (join_password, sid, domain_name) = net.join(domain,
-            lp.get("netbios name"), SEC_CHAN_WKSTA, LIBNET_JOIN_AUTOMATIC)
+            lp.get("netbios name"), secure_channel_type, LIBNET_JOIN_AUTOMATIC)
 
         self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))

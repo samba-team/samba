@@ -164,3 +164,5 @@ from samba.netcmd.spn import cmd_spn
 commands["spn"] = cmd_spn()
 from samba.netcmd.group import cmd_group
 commands["group"] = cmd_group()
+from samba.netcmd.join import cmd_join
+commands["join"] = cmd_join()
