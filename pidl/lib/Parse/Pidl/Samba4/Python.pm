@@ -303,9 +303,9 @@ sub PythonStruct($$$$$$)
 		$py_methods = "py_$name\_methods";
 		$self->pidl("static PyMethodDef $py_methods\[] = {");
 		$self->indent;
-		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
-		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
-		$self->pidl("{ \"__ndr_print__\", (PyCFunction)py_$name\_ndr_print, METH_VARARGS, \"S.print(blob) -> None\\nNDR print\" },");
+		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.ndr_pack(object) -> blob\\nNDR pack\" },");
+		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.ndr_unpack(class, blob) -> None\\nNDR unpack\" },");
+		$self->pidl("{ \"__ndr_print__\", (PyCFunction)py_$name\_ndr_print, METH_VARARGS, \"S.ndr_print(object) -> None\\nNDR print\" },");
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
 		$self->pidl("};");
