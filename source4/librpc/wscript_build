@@ -783,6 +783,12 @@ bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	realname='samba/dcerpc/xattr.so'
 	)
 
+bld.SAMBA_PYTHON('python_netlogon',
+	source='../../librpc/gen_ndr/py_netlogon.c',
+	deps='RPC_NDR_NETLOGON PYTALLOC pyparam_util pycredentials python_dcerpc',
+	realname='samba/dcerpc/netlogon.so'
+	)
+
 bld.SAMBA_SCRIPT('python_dcerpc_init',
                  pattern='rpc/dcerpc.py',
                  installdir='python/samba/dcerpc',
