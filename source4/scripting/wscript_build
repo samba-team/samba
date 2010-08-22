@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate bin/testparm',
+bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate',
                   chmod=0755, python_fixup=True, flat=True)
 bld.INSTALL_FILES('${BINDIR}','bin/testparm',
                   chmod=0755, python_fixup=True, flat=True)
