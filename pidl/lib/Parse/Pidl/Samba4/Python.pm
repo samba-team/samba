@@ -986,7 +986,15 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$var_name = get_pointer_to($var_name);
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
-		$self->assign($var_name, "py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var)");
+		my $switch_ptr = "$e->{NAME}_switch_$l->{LEVEL_INDEX}";
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("void *$switch_ptr;");
+		$self->pidl("$switch_ptr = py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
+		$self->pidl("if ($switch_ptr == NULL) { $fail }");
+		$self->assign($var_name, "$switch_ptr");
+		$self->deindent;
+		$self->pidl("}");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
 		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), $var_name, $fail);
 	} else {
