@@ -392,4 +392,8 @@ void initnet(void)
 
 	Py_INCREF(&py_net_Type);
 	PyModule_AddObject(m, "Net", (PyObject *)&py_net_Type);
+	PyModule_AddObject(m, "LIBNET_JOINDOMAIN_AUTOMATIC", PyInt_FromLong(LIBNET_JOINDOMAIN_AUTOMATIC));
+	PyModule_AddObject(m, "LIBNET_JOINDOMAIN_SPECIFIED", PyInt_FromLong(LIBNET_JOINDOMAIN_SPECIFIED));
+	PyModule_AddObject(m, "LIBNET_JOIN_AUTOMATIC", PyInt_FromLong(LIBNET_JOIN_AUTOMATIC));
+	PyModule_AddObject(m, "LIBNET_JOIN_SPECIFIED", PyInt_FromLong(LIBNET_JOIN_SPECIFIED));
 }
