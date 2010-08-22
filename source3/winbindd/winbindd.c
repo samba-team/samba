@@ -99,13 +99,6 @@ static void winbindd_status(void)
 	}
 }
 
-/* Print winbindd status to log file */
-
-static void print_winbindd_status(void)
-{
-	winbindd_status();
-}
-
 /* Flush client cache */
 
 static void flush_caches(void)
@@ -325,7 +318,7 @@ static void winbindd_sig_usr2_handler(struct tevent_context *ev,
 				      void *siginfo,
 				      void *private_data)
 {
-	print_winbindd_status();
+	winbindd_status();
 }
 
 static bool winbindd_setup_sig_usr2_handler(void)
