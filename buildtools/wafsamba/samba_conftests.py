@@ -313,21 +313,14 @@ def CHECK_INLINE(conf):
 def CHECK_XSLTPROC_MANPAGES(conf):
     '''check if xsltproc can run with the given stylesheets'''
 
-    stylesheets='http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
 
     if not conf.CONFIG_SET('XSLTPROC'):
         conf.find_program('xsltproc', var='XSLTPROC')
     if not conf.CONFIG_SET('XSLTPROC'):
         return False
 
-    for s in TO_LIST(stylesheets):
-        if not conf.CONFIG_SET('XSLTPROC_%s' % s):
-            ret = conf.CHECK_COMMAND('%s --nonet %s 2> /dev/null' % (conf.env.XSLTPROC, s),
-                                     msg='Checking for stylesheet %s' % s,
-                                     define=None, on_target=False,
-                                     boolean=True)
-            if not ret:
-                return False
-            conf.env['XSLTPROC_%s' % s] = True
-    conf.env['XSLTPROC_MANPAGES'] = True
-    return True
+    s='http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+    conf.CHECK_COMMAND('%s --nonet %s 2> /dev/null' % (conf.env.XSLTPROC, s),
+                             msg='Checking for stylesheet %s' % s,
+                             define='XSLTPROC_MANPAGES', on_target=False,
+                             boolean=True)
