@@ -288,11 +288,24 @@ sub PythonStruct($$$$$$)
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
+
+		$self->pidl("static PyObject *py_$name\_ndr_print(PyObject *py_obj)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
+		$self->pidl("char *retstr;");
+		$self->pidl("retstr = ndr_print_struct_string(py_talloc_get_mem_ctx(py_obj), (ndr_print_fn_t)ndr_print_$name, \"$name\", object);");
+		$self->pidl("return PyString_FromString(retstr);");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+
 		$py_methods = "py_$name\_methods";
 		$self->pidl("static PyMethodDef $py_methods\[] = {");
 		$self->indent;
 		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
 		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
+		$self->pidl("{ \"__ndr_print__\", (PyCFunction)py_$name\_ndr_print, METH_VARARGS, \"S.print(blob) -> None\\nNDR print\" },");
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
 		$self->pidl("};");
