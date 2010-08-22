@@ -26,3 +26,6 @@ def ndr_unpack(cls, data):
     object = cls()
     object.__ndr_unpack__(data)
     return object
+
+def ndr_print(object):
+    return object.__ndr_print__()
