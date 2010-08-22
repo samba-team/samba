@@ -1691,6 +1691,12 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		for (i = 0; i < me->num_values; i++) {
 			PyObject *obj = PySequence_GetItem(set_obj, i);
+			if (!PyString_Check(obj)) {
+				PyErr_Format(PyExc_TypeError,
+					     "Expected string as element %d in list", i);
+				talloc_free(me);
+				return NULL;
+			}
 
 			me->values[i].length = PyString_Size(obj);
 			me->values[i].data = talloc_memdup(me, 
