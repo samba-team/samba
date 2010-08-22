@@ -92,7 +92,7 @@ NTSTATUS pam_to_nt_status(int pam_error)
 {
 	int i;
 	if (pam_error == 0) return NT_STATUS_OK;
-	
+
 	for (i=0; NT_STATUS_V(pam_to_nt_status_map[i].ntstatus); i++) {
 		if (pam_error == pam_to_nt_status_map[i].pam_code)
 			return pam_to_nt_status_map[i].ntstatus;
@@ -107,7 +107,7 @@ int nt_status_to_pam(NTSTATUS nt_status)
 {
 	int i;
 	if NT_STATUS_IS_OK(nt_status) return PAM_SUCCESS;
-	
+
 	for (i=0; NT_STATUS_V(nt_status_to_pam_map[i].ntstatus); i++) {
 		if (NT_STATUS_EQUAL(nt_status,nt_status_to_pam_map[i].ntstatus))
 			return nt_status_to_pam_map[i].pam_code;

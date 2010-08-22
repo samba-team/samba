@@ -5,17 +5,17 @@
    Copyright (C) John H Terpsta 1999-2001
    Copyright (C) Andrew Bartlett 2001
    Copyright (C) Jeremy Allison 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -75,7 +75,6 @@ static bool smb_pam_error_handler(pam_handle_t *pamh, int pam_error, const char 
 	if( pam_error != PAM_SUCCESS) {
 		DEBUG(dbglvl, ("smb_pam_error_handler: PAM: %s : %s\n",
 				msg, pam_strerror(pamh, pam_error)));
-		
 		return False;
 	}
 	return True;
@@ -280,7 +279,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	struct chat_struct *t;
 	bool found; 
 	*resp = NULL;
-	
+
 	DEBUG(10,("smb_pam_passchange_conv: starting converstation for %d messages\n", num_msg));
 
 	if (num_msg <= 0)
@@ -365,7 +364,7 @@ static int smb_pam_passchange_conv(int num_msg,
 				}
 			}
 			/* PAM frees resp */
-			
+
 			if (!found) {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				free_pw_chat(pw_chat);
@@ -382,7 +381,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			reply[replies].resp_retcode = PAM_SUCCESS;
 			reply[replies].resp = NULL;
 			break;
-			
+
 		default:
 			/* Must be an error of some sort... */
 			free_pw_chat(pw_chat);
@@ -390,7 +389,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			return PAM_CONV_ERR;
 		}
 	}
-		
+
 	free_pw_chat(pw_chat);
 	if (reply)
 		*resp = reply;
@@ -443,7 +442,7 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 	int pam_error;
 
 	smb_free_pam_conv(smb_pam_conv_ptr);
-       
+
 	if( pamh != NULL ) {
 		pam_error = pam_end(pamh, 0);
 		if(smb_pam_error_handler(pamh, pam_error, "End Cleanup Failed", 2) == True) {
@@ -520,7 +519,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, const char *user)
 	 * To enable debugging set in /etc/pam.d/samba:
 	 *	auth required /lib/security/pam_pwdb.so nullok shadow audit
 	 */
-	
+
 	DEBUG(4,("smb_pam_auth: PAM: Authenticate User: %s\n", user));
 	pam_error = pam_authenticate(pamh, PAM_SILENT | lp_null_passwords() ? 0 : PAM_DISALLOW_NULL_AUTHTOK);
 	switch( pam_error ){
