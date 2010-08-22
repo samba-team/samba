@@ -26,6 +26,7 @@ from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba import gensec
+import ldb
 
 class cmd_setpassword(Command):
     """(Re)sets the password on a user account"""
@@ -74,6 +75,7 @@ class cmd_setpassword(Command):
             samdb.setpassword(filter, password,
                               force_change_at_next_login=must_change_at_next_login,
                               username=username)
-        except:
-            raise CommandError('Failed to set password for user "%s"' %
-                username)
+        except ldb.LdbError, (num, msg):
+            raise CommandError('Failed to set password for user "%s" - %s' %
+                               (username, msg))
+        print "Changed password OK"
