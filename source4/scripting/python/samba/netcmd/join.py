@@ -53,7 +53,10 @@ class cmd_join(Command):
             site = "Default-First-Site-Name"
 
         netbios_name = lp.get("netbios name")
-        
+
+        if not role is None:
+            role = role.upper()
+
         if role is None:
             secure_channel_type = SEC_CHAN_WKSTA
         elif role == "BDC":
