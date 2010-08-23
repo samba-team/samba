@@ -21,14 +21,14 @@
 import samba.getopt as options
 
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
-from samba.netcmd import Command, CommandError
+from samba.netcmd import Command, CommandError, Option
 from samba.dcerpc.misc import SEC_CHAN_WKSTA, SEC_CHAN_BDC
-
+from samba.join import join_rodc
 
 class cmd_join(Command):
     """Joins domain as either member or backup domain controller [server connection needed]"""
 
-    synopsis = "%prog join <domain> [BDC | MEMBER] [options]"
+    synopsis = "%prog join <domain> [BDC | MEMBER | RODC] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -36,13 +36,23 @@ class cmd_join(Command):
         "credopts": options.CredentialsOptions,
     }
 
+    takes_options = [
+        Option("--server", help="DC to join", type=str),
+        Option("--site", help="site to join", type=str),
+        ]
+
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
-            versionopts=None):
+            versionopts=None, server=None, site=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp)
+
+        if site is None:
+            site = "Default-First-Site-Name"
+
+        netbios_name = lp.get("netbios name")
         
         if role is None:
             secure_channel_type = SEC_CHAN_WKSTA
@@ -50,10 +60,16 @@ class cmd_join(Command):
             secure_channel_type = SEC_CHAN_BDC
         elif role == "MEMBER":
             secure_channel_type = SEC_CHAN_WKSTA
+        elif role == "RODC":
+            join_rodc(server=server, creds=creds, lp=lp,
+                      site=site, netbios_name=netbios_name)
+            return
         else:
-            raise CommandError("Invalid role %s (possible values: MEMBER, BDC)" % role)
+            raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
 
         (join_password, sid, domain_name) = net.join(domain,
-            lp.get("netbios name"), secure_channel_type, LIBNET_JOIN_AUTOMATIC)
+                                                     netbios_name,
+                                                     secure_channel_type,
+                                                     LIBNET_JOIN_AUTOMATIC)
 
         self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))
