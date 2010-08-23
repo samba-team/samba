@@ -494,7 +494,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 		return False;
 	}
 
-#ifdef PAM_RHOST
+#if HAVE_PAM_RHOST
 	if (rhost == NULL) {
 		our_rhost = client_name(smbd_server_fd());
 		if (strequal(our_rhost,"UNKNOWN"))
@@ -512,7 +512,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 		return False;
 	}
 #endif
-#ifdef PAM_TTY
+#if HAVE_PAM_TTY
 	DEBUG(4,("smb_pam_start: PAM: setting tty\n"));
 	pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
 	if (!smb_pam_error_handler(*pamh, pam_error, "set tty failed", 0)) {
@@ -657,7 +657,7 @@ static bool smb_internal_pam_session(pam_handle_t *pamh, const char *user, const
 {
 	int pam_error;
 
-#ifdef PAM_TTY
+#if HAVE_PAM_TTY
 	DEBUG(4,("smb_internal_pam_session: PAM: tty set to: %s\n", tty));
 	pam_error = pam_set_item(pamh, PAM_TTY, tty);
 	if (!smb_pam_error_handler(pamh, pam_error, "set tty failed", 0))
