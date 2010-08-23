@@ -36,6 +36,22 @@ struct libnet_Vampire {
 	} out;
 };
 
+struct libnet_Replicate {
+	struct {
+		const char *domain_name;
+		const char *netbios_name;
+		const char *targetdir; /* optional, may be NULL */
+		struct dom_sid *domain_sid;
+		const char *realm;
+		const char *server;
+		const char *join_password;
+		uint32_t kvno;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
+};
+
 /* Private context for the default callbacks */
 struct libnet_vampire_cb_state;
 

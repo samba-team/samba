@@ -757,13 +757,7 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			struct libnet_Vampire *r)
 {
 	struct libnet_JoinDomain *join;
-	struct provision_store_self_join_settings *set_secrets;
-	struct libnet_BecomeDC b;
-	struct libnet_vampire_cb_state *s;
-	struct ldb_message *msg;
-	const char *error_string;
-	int ldb_ret;
-	uint32_t i;
+	struct libnet_Replicate rep;
 	NTSTATUS status;
 
 	const char *account_name;
@@ -811,14 +805,64 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		talloc_free(join);
 		return status;
 	}
+
+	rep.in.domain_name   = join->out.domain_name;
+	rep.in.netbios_name  = netbios_name;
+	rep.in.targetdir     = r->in.targetdir;
+	rep.in.domain_sid    = join->out.domain_sid;
+	rep.in.realm         = join->out.realm;
+	rep.in.server        = join->out.samr_binding->host;
+	rep.in.join_password = join->out.join_password;
+	rep.in.kvno          = join->out.kvno;
+
+	status = libnet_Replicate(ctx, mem_ctx, &rep);
+
+	r->out.domain_sid   = join->out.domain_sid;
+	r->out.domain_name  = join->out.domain_name;
+	r->out.error_string = rep.out.error_string;
+
+	return status;
+}
+
+
+
+NTSTATUS libnet_Replicate(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			  struct libnet_Replicate *r)
+{
+	struct provision_store_self_join_settings *set_secrets;
+	struct libnet_BecomeDC b;
+	struct libnet_vampire_cb_state *s;
+	struct ldb_message *msg;
+	const char *error_string;
+	int ldb_ret;
+	uint32_t i;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *account_name;
+	const char *netbios_name;
+
+	r->out.error_string = NULL;
+
+	netbios_name = r->in.netbios_name;
+	account_name = talloc_asprintf(tmp_ctx, "%s$", netbios_name);
+	if (!account_name) {
+		talloc_free(tmp_ctx);
+		r->out.error_string = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
 	
+	/* Re-use the domain we are joining as the domain for the user
+	 * to be authenticated with, unless they specified
+	 * otherwise */
+	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
+
 	s = libnet_vampire_cb_state_init(mem_ctx, ctx->lp_ctx, ctx->event_ctx,
-					 netbios_name, join->out.domain_name, join->out.realm,
+					 netbios_name, r->in.domain_name, r->in.realm,
 					 r->in.targetdir);
 	if (!s) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_steal(s, join);
+	talloc_steal(s, tmp_ctx);
 
 	ZERO_STRUCT(b);
 
@@ -826,19 +870,19 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	 * We now know the domain and realm for sure - if they didn't
 	 * put one on the command line, use this for the rest of the
 	 * join */
-	cli_credentials_set_realm(ctx->cred, join->out.realm, CRED_GUESS_ENV);
-	cli_credentials_set_domain(ctx->cred, join->out.domain_name, CRED_GUESS_ENV);
+	cli_credentials_set_realm(ctx->cred, r->in.realm, CRED_GUESS_ENV);
+	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
 
 	/* Now set these values into the smb.conf - we probably had
 	 * empty or useless defaults here from whatever smb.conf we
 	 * started with */
-	lpcfg_set_cmdline(s->lp_ctx, "realm", join->out.realm);
-	lpcfg_set_cmdline(s->lp_ctx, "workgroup", join->out.domain_name);
+	lpcfg_set_cmdline(s->lp_ctx, "realm", r->in.realm);
+	lpcfg_set_cmdline(s->lp_ctx, "workgroup", r->in.domain_name);
 
-	b.in.domain_dns_name		= join->out.realm;
-	b.in.domain_netbios_name	= join->out.domain_name;
-	b.in.domain_sid			= join->out.domain_sid;
-	b.in.source_dsa_address		= join->out.samr_binding->host;
+	b.in.domain_dns_name		= r->in.realm;
+	b.in.domain_netbios_name	= r->in.domain_name;
+	b.in.domain_sid			= r->in.domain_sid;
+	b.in.source_dsa_address		= r->in.server;
 	b.in.dest_dsa_netbios_name	= netbios_name;
 
 	b.in.callbacks.private_data	= s;
@@ -914,13 +958,13 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	}
 	
 	ZERO_STRUCTP(set_secrets);
-	set_secrets->domain_name = join->out.domain_name;
-	set_secrets->realm = join->out.realm;
+	set_secrets->domain_name = r->in.domain_name;
+	set_secrets->realm = r->in.realm;
 	set_secrets->netbios_name = netbios_name;
 	set_secrets->secure_channel_type = SEC_CHAN_BDC;
-	set_secrets->machine_password = join->out.join_password;
-	set_secrets->key_version_number = join->out.kvno;
-	set_secrets->domain_sid = join->out.domain_sid;
+	set_secrets->machine_password = r->in.join_password;
+	set_secrets->key_version_number = r->in.kvno;
+	set_secrets->domain_sid = r->in.domain_sid;
 	
 	status = provision_store_self_join(ctx, s->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -929,9 +973,6 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	r->out.domain_name = talloc_steal(mem_ctx, join->out.domain_name);
-	r->out.domain_sid = dom_sid_dup(mem_ctx, join->out.domain_sid);
-	
 	/* commit the transaction now we know the secrets were written
 	 * out properly
 	*/
@@ -943,5 +984,4 @@ NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	talloc_free(s);
 
 	return NT_STATUS_OK;
-
 }
