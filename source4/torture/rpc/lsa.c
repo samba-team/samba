@@ -2436,7 +2436,17 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		generate_random_buffer(auth_struct.confounder, sizeof(auth_struct.confounder));
 
 		auth_struct.outgoing.count = 0;
+		auth_struct.outgoing.current.count = 0;
+		auth_struct.outgoing.current.array = NULL;
+		auth_struct.outgoing.previous.count = 0;
+		auth_struct.outgoing.previous.array = NULL;
+
 		auth_struct.incoming.count = 0;
+		auth_struct.incoming.current.count = 0;
+		auth_struct.incoming.current.array = NULL;
+		auth_struct.incoming.previous.count = 0;
+		auth_struct.incoming.previous.array = NULL;
+
 
 		ndr_err = ndr_push_struct_blob(&auth_blob, tctx, &auth_struct,
 					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
