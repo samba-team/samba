@@ -403,9 +403,6 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	nt_pw = pdb_get_nt_passwd(sampass);
 	lm_pw = pdb_get_lanman_passwd(sampass);
 
-	/* see if autolock flag needs to be updated */
-	if (pdb_get_acct_ctrl(sampass) & ACB_NORMAL)
-		pdb_update_autolock_flag(sampass, &updated_autolock);
 	/* Quit if the account was locked out. */
 	if (pdb_get_acct_ctrl(sampass) & ACB_AUTOLOCK) {
 		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", username));
@@ -441,7 +438,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 			pdb_update_bad_password_count(sampass,
 						      &updated_badpw);
 		}
-		if (updated_autolock || updated_badpw){
+		if (updated_badpw){
 			NTSTATUS status;
 
 			become_root();
@@ -463,7 +460,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		updated_badpw = True;
 	}
 
-	if (updated_autolock || updated_badpw){
+	if (updated_badpw){
 		NTSTATUS status;
 
 		become_root();
