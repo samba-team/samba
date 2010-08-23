@@ -97,7 +97,7 @@ struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
 		ev = default_tevent_context;
 	}
 	if (ev == NULL) {
-		ev = tevent_context_init(mem_ctx);
+		ev = s4_event_context_init(mem_ctx);
 	}
 	return ev;
 }
