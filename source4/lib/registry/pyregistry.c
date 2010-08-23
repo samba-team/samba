@@ -19,10 +19,10 @@
 
 #include <Python.h>
 #include "includes.h"
-#include <tevent.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "lib/talloc/pytalloc.h"
+#include "lib/events/events.h"
 #include "auth/credentials/pycredentials.h"
 #include "param/pyparam.h"
 
@@ -361,7 +361,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	session_info = NULL; /* FIXME */
 
 	result = reg_open_ldb_file(NULL, location, session_info, credentials,
-				   tevent_context_init(NULL), lp_ctx, &key);
+				   s4_event_context_init(NULL), lp_ctx, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	return py_talloc_steal(&PyHiveKey, key);
