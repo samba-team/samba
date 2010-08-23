@@ -2016,30 +2016,30 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 /**********************************************************************
 ***********************************************************************/
 
-static bool cm_get_schannel_creds(struct winbindd_domain *domain,
+static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 				   struct netlogon_creds_CredentialState **ppdc)
 {
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct rpc_pipe_client *netlogon_pipe;
 
 	if (lp_client_schannel() == False) {
-		return False;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;;
 	}
 
 	result = cm_connect_netlogon(domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
-		return False;
+		return result;
 	}
 
 	/* Return a pointer to the struct netlogon_creds_CredentialState from the
 	   netlogon pipe. */
 
 	if (!domain->conn.netlogon_pipe->dc) {
-		return false;
+		return NT_STATUS_INTERNAL_ERROR; /* This shouldn't happen. */
 	}
 
 	*ppdc = domain->conn.netlogon_pipe->dc;
-	return True;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
@@ -2136,10 +2136,13 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
-	if (!cm_get_schannel_creds(domain, &p_creds)) {
+	result = cm_get_schannel_creds(domain, &p_creds);
+	if (!NT_STATUS_IS_OK(result)) {
 		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", domain->name));
+			   "for domain %s (error %s), trying anon\n",
+			domain->name,
+			nt_errstr(result) ));
 		goto anonymous;
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
@@ -2252,7 +2255,8 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	TALLOC_FREE(conn->lsa_pipe_tcp);
 
-	if (!cm_get_schannel_creds(domain, &creds)) {
+	status = cm_get_schannel_creds(domain, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -2344,10 +2348,13 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
-	if (!cm_get_schannel_creds(domain, &p_creds)) {
+	result = cm_get_schannel_creds(domain, &p_creds);
+	if (!NT_STATUS_IS_OK(result)) {
 		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
-			   "for domain %s, trying anon\n", domain->name));
+			   "for domain %s (error %s), trying anon\n",
+			domain->name,
+			nt_errstr(result) ));
 		goto anonymous;
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
