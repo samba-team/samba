@@ -31,6 +31,10 @@ static void add_auto_printers(void)
 	char *saveptr;
 
 	if (pnum < 0)
+		if (process_registry_service(PRINTERS_NAME))
+			pnum = lp_servicenumber(PRINTERS_NAME);
+
+	if (pnum < 0)
 		return;
 
 	if ((str = SMB_STRDUP(lp_auto_services())) == NULL)
