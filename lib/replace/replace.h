@@ -81,13 +81,13 @@
 #ifndef PRIi8
 # define PRIi8		"i"
 #endif
-#ifndef PRIi8
+#ifndef PRIi16
 # define PRIi16		"i"
 #endif
-#ifndef PRIi8
+#ifndef PRIi32
 # define PRIi32		"i"
 #endif
-#ifndef PRIi8
+#ifndef PRIi64
 # define PRIi64		__PRI64_PREFIX "i"
 #endif
 
