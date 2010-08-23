@@ -220,6 +220,80 @@ struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx)
 	return pdb->get_domain_info(pdb, mem_ctx);
 }
 
+/**
+ * @brief Check if the user account has been locked out and try to unlock it.
+ *
+ * If the user has been automatically locked out and a lockout duration is set,
+ * then check if we can unlock the account and reset the bad password values.
+ *
+ * @param[in]  sampass  The sam user to check.
+ *
+ * @return              True if the function was successfull, false on an error.
+ */
+static bool pdb_try_account_unlock(struct samu *sampass)
+{
+	uint32_t acb_info = pdb_get_acct_ctrl(sampass);
+
+	if (acb_info & (ACB_NORMAL|ACB_AUTOLOCK)) {
+		uint32_t lockout_duration;
+		time_t bad_password_time;
+		time_t now = time(NULL);
+		bool ok;
+
+		ok = pdb_get_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION,
+					    &lockout_duration);
+		if (!ok) {
+			DEBUG(0, ("pdb_try_account_unlock: "
+				  "pdb_get_account_policy failed.\n"));
+			return false;
+		}
+
+		if (lockout_duration == (uint32_t) -1 ||
+		    lockout_duration == 0) {
+			DEBUG(9, ("pdb_try_account_unlock: No reset duration, "
+				  "can't reset autolock\n"));
+			return false;
+		}
+		lockout_duration *= 60;
+
+		bad_password_time = pdb_get_bad_password_time(sampass);
+		if (bad_password_time == (time_t) 0) {
+			DEBUG(2, ("pdb_try_account_unlock: Account %s "
+				  "administratively locked out "
+				  "with no bad password "
+				  "time. Leaving locked out.\n",
+				  pdb_get_username(sampass)));
+			return true;
+		}
+
+		if ((bad_password_time +
+		     convert_uint32_t_to_time_t(lockout_duration)) < now) {
+			NTSTATUS status;
+
+			pdb_set_acct_ctrl(sampass, acb_info & ~ACB_AUTOLOCK,
+					  PDB_CHANGED);
+			pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
+			pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
+
+			become_root();
+			status = pdb_update_sam_account(sampass);
+			unbecome_root();
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("_samr_OpenUser: Couldn't "
+					  "update account %s - %s\n",
+					  pdb_get_username(sampass),
+					  nt_errstr(status)));
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/**********************************************************************
+**********************************************************************/
+
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
