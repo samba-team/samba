@@ -827,7 +827,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	status = dcerpc_pull_ncacn_packet(state,
+	status = dcerpc_pull_ncacn_packet(state->pkt,
 					  &state->incoming_frag,
 					  state->pkt,
 					  !state->endianess);
