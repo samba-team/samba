@@ -3034,8 +3034,73 @@ NTSTATUS _lsa_SetTrustedDomainInfoByName(struct pipes_struct *p,
 NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 				   struct lsa_EnumTrustedDomainsEx *r)
 {
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct lsa_info *info;
+	uint32_t count;
+	struct pdb_trusted_domain **domains;
+	struct lsa_TrustDomainInfoInfoEx *entries;
+	int i;
+	NTSTATUS nt_status;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check if the user has enough rights */
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+		return NT_STATUS_ACCESS_DENIED;
+
+	become_root();
+	nt_status = pdb_enum_trusted_domains(p->mem_ctx, &count, &domains);
+	unbecome_root();
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TrustDomainInfoInfoEx,
+				    count);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<count; i++) {
+		init_lsa_StringLarge(&entries[i].netbios_name,
+				     domains[i]->netbios_name);
+		entries[i].sid = &domains[i]->security_identifier;
+	}
+
+	if (*r->in.resume_handle >= count) {
+		*r->out.resume_handle = -1;
+		TALLOC_FREE(entries);
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+
+	/* return the rest, limit by max_size. Note that we
+	   use the w2k3 element size value of 60 */
+	r->out.domains->count = count - *r->in.resume_handle;
+	r->out.domains->count = MIN(r->out.domains->count,
+				    (r->in.max_size/LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER));
+
+	r->out.domains->domains = entries + *r->in.resume_handle;
+
+	if (r->out.domains->count < count - *r->in.resume_handle) {
+		*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	/* according to MS-LSAD 3.1.4.7.8 output resume handle MUST
+	 * always be larger than the previous input resume handle, in
+	 * particular when hitting the last query it is vital to set the
+	 * resume handle correctly to avoid infinite client loops, as
+	 * seen e.g. with Windows XP SP3 when resume handle is 0 and
+	 * status is NT_STATUS_OK - gd */
+
+	*r->out.resume_handle = (uint32_t)-1;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS _lsa_QueryDomainInformationPolicy(struct pipes_struct *p,
