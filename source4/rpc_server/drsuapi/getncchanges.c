@@ -1366,13 +1366,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	DEBUG(r->out.ctr->ctr6.more_data?2:1,
-	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u)\n",
+	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req8->highwatermark.highest_usn+1),
 	       req8->replica_flags, ncRoot->dn,
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
-	       link_given, link_total));
+	       link_given, link_total,
+	       dom_sid_string(mem_ctx, user_sid)));
 
 #if 0
 	if (!r->out.ctr->ctr6.more_data && req8->extended_op != DRSUAPI_EXOP_NONE) {
