@@ -1027,10 +1027,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
 						     samdb_domain_sid(sam_ctx));
 	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER &&
-	    (req8->replica_flags & DRSUAPI_DRS_WRIT_REP) &&
-	    req8->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
-		DEBUG(3,(__location__ ": Removing WRIT_REP flag for replication by RODC %s\n",
-			 dom_sid_string(mem_ctx, user_sid)));
+	    req8->replica_flags & DRSUAPI_DRS_WRIT_REP) {
+		/* we rely on this flag being unset for RODC requests */
 		req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
 
