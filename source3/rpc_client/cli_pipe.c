@@ -383,7 +383,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 	NTSTATUS ret = NT_STATUS_OK;
 	size_t pad_len = 0;
 
-	ret = dcerpc_pull_ncacn_packet(cli, pdu, pkt, false);
+	ret = dcerpc_pull_ncacn_packet(pkt, pdu, pkt, false);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
