@@ -35,6 +35,8 @@ void netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *
 				struct netr_Authenticator *next);
 bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials);
+struct netlogon_creds_CredentialState *netlogon_creds_copy(TALLOC_CTX *mem_ctx,
+							   struct netlogon_creds_CredentialState *creds_in);
 
 /*****************************************************************
 The above functions are common to the client and server interface
