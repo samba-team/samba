@@ -9,9 +9,6 @@ Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
 URL: http://ctdb.samba.org/
-%package devel
-Summary: CTDB developmnet libraries
-Group: Development
 
 Source: ctdb-%{version}.tar.gz
 
@@ -26,9 +23,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 %description
 ctdb is the clustered database used by samba
-
-%description devel
-development libraries for ctdb
 
 
 #######################################################################
@@ -131,6 +125,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/ctdb.pc
 
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
+
+%package devel
+Summary: CTDB developmnet libraries
+Group: Development
+
+%description devel
+development libraries for ctdb
 
 %files devel
 %defattr(-,root,root)
