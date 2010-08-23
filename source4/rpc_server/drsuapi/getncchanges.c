@@ -690,7 +690,7 @@ static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 					const struct dom_sid ***sids)
 {
 	struct ldb_message_element *el;
-	int i;
+	unsigned int i;
 
 	el = ldb_msg_find_element(msg, attr);
 	if (!el) {
@@ -731,7 +731,7 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 					 const struct dom_sid ***sids)
 {
 	struct ldb_message_element *el;
-	int i;
+	unsigned int i;
 
 	el = ldb_msg_find_element(msg, attr);
 	if (!el) {
@@ -766,7 +766,7 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
  */
 static bool sid_list_match(const struct dom_sid **list1, const struct dom_sid **list2)
 {
-	int i, j;
+	unsigned int i, j;
 	/* do we ever have enough SIDs here to worry about O(n^2) ? */
 	for (i=0; list1[i]; i++) {
 		for (j=0; list2[j]; j++) {
