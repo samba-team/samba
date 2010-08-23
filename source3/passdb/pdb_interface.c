@@ -291,17 +291,36 @@ static bool pdb_try_account_unlock(struct samu *sampass)
 	return true;
 }
 
-/**********************************************************************
-**********************************************************************/
-
+/**
+ * @brief Get a sam user structure by the given username.
+ *
+ * This functions also checks if the account has been automatically locked out
+ * and unlocks it if a lockout duration time has been defined and the time has
+ * elapsed.
+ *
+ * @param[in]  sam_acct  The sam user structure to fill.
+ *
+ * @param[in]  username  The username to look for.
+ *
+ * @return               True on success, false on error.
+ */
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct samu *for_cache;
 	const struct dom_sid *user_sid;
+	NTSTATUS status;
+	bool ok;
 
-	if (!NT_STATUS_IS_OK(pdb->getsampwnam(pdb, sam_acct, username))) {
-		return False;
+	status = pdb->getsampwnam(pdb, sam_acct, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ok = pdb_try_account_unlock(sam_acct);
+	if (!ok) {
+		DEBUG(1, ("pdb_getsampwnam: Failed to unlock account %s\n",
+			  username));
 	}
 
 	for_cache = samu_new(NULL);
@@ -345,14 +364,26 @@ static bool guest_user_info( struct samu *user )
 	return NT_STATUS_IS_OK( result );
 }
 
-/**********************************************************************
-**********************************************************************/
-
+/**
+ * @brief Get a sam user structure by the given username.
+ *
+ * This functions also checks if the account has been automatically locked out
+ * and unlocks it if a lockout duration time has been defined and the time has
+ * elapsed.
+ *
+ *
+ * @param[in]  sam_acct  The sam user structure to fill.
+ *
+ * @param[in]  sid       The user SDI to look up.
+ *
+ * @return               True on success, false on error.
+ */
 bool pdb_getsampwsid(struct samu *sam_acct, const struct dom_sid *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	uint32_t rid;
 	void *cache_data;
+	bool ok = false;
 
 	/* hard code the Guest RID of 501 */
 
@@ -373,10 +404,22 @@ bool pdb_getsampwsid(struct samu *sam_acct, const struct dom_sid *sid)
 		struct samu *cache_copy = talloc_get_type_abort(
 			cache_data, struct samu);
 
-		return pdb_copy_sam_account(sam_acct, cache_copy);
+		ok = pdb_copy_sam_account(sam_acct, cache_copy);
+	} else {
+		ok = NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 	}
 
-	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
+	if (!ok) {
+		return false;
+	}
+
+	ok = pdb_try_account_unlock(sam_acct);
+	if (!ok) {
+		DEBUG(1, ("pdb_getsampwsid: Failed to unlock account %s\n",
+			  sam_acct->username));
+	}
+
+	return true;
 }
 
 static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
