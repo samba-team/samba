@@ -56,14 +56,6 @@ static bool ipasam_del_trusteddom_pw(struct pdb_methods *methods,
 	return false;
 }
 
-static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
-					TALLOC_CTX *mem_ctx,
-					uint32_t *num_domains,
-					struct trustdom_info ***domains)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static char *trusted_domain_dn(struct ldapsam_privates *ldap_state,
 			       const char *domain)
 {
@@ -555,6 +547,49 @@ static NTSTATUS ipasam_enum_trusted_domains(struct pdb_methods *methods,
 	}
 
 	DEBUG(5, ("ipasam_enum_trusted_domains: got %d domains\n", *num_domains));
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
+					TALLOC_CTX *mem_ctx,
+					uint32_t *num_domains,
+					struct trustdom_info ***domains)
+{
+	NTSTATUS status;
+	struct pdb_trusted_domain **td;
+	int i;
+
+	status = ipasam_enum_trusted_domains(methods, talloc_tos(),
+					     num_domains, &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (*num_domains == 0) {
+		return NT_STATUS_OK;
+	}
+
+	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *,
+				      *num_domains))) {
+		DEBUG(1, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < *num_domains; i++) {
+		struct trustdom_info *dom_info;
+
+		dom_info = TALLOC_P(*domains, struct trustdom_info);
+		if (dom_info == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		dom_info->name = talloc_steal(mem_ctx, td[i]->netbios_name);
+		sid_copy(&dom_info->sid, &td[i]->security_identifier);
+
+		(*domains)[i] = dom_info;
+	}
+
 	return NT_STATUS_OK;
 }
 
