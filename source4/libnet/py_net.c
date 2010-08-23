@@ -306,8 +306,67 @@ static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *k
 	return ret;
 }
 
+
+static PyObject *py_net_replicate(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "domain", "netbios_name",
+				  "domain_sid", "realm", "server", "join_password",
+				  "kvno", "target_dir", NULL };
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct libnet_Replicate r;
+	unsigned kvno;
+	const char *sidstr;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssssssI|z",
+					 discard_const_p(char *, kwnames),
+	                                 &r.in.domain_name,
+					 &r.in.netbios_name,
+					 &sidstr,
+					 &r.in.realm,
+					 &r.in.server,
+					 &r.in.join_password,
+					 &kvno,
+					 &r.in.targetdir)) {
+		return NULL;
+	}
+
+	r.out.error_string = NULL;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	r.in.kvno       = kvno;
+	r.in.domain_sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+
+	if (!r.in.domain_sid) {
+		PyErr_Format(PyExc_RuntimeError, "Bad domain_sid %s", sidstr);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	status = libnet_Replicate(self->libnet_ctx, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_RuntimeError,
+		                r.out.error_string ? r.out.error_string : nt_errstr(status));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	return Py_None;
+}
+
 static const char py_net_vampire_doc[] = "vampire(domain, target_dir=None)\n"
 					 "Vampire a domain.";
+
+static const char py_net_replicate_doc[] = "replicate(domain, netbios_name, domain_sid, realm, server, join_password, kvno, target_dir=None)\n"
+					 "Replicate a domain.";
 
 static PyMethodDef net_obj_methods[] = {
 	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
@@ -317,6 +376,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
 	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
 	{"vampire", (PyCFunction)py_net_vampire, METH_VARARGS|METH_KEYWORDS, py_net_vampire_doc},
+	{"replicate", (PyCFunction)py_net_replicate, METH_VARARGS|METH_KEYWORDS, py_net_replicate_doc},
 	{ NULL }
 };
 
