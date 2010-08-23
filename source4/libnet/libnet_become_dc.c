@@ -2287,8 +2287,9 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				return;
 			}
 
-			DEBUG(0,("DsAddEntry (R3) failed: "
+			DEBUG(0,("DsAddEntry (R3) of '%s' failed: "
 				 "Errors: dir_err = %d, status = %s;\n",
+				 r->in.req->req3.first_object.object.identifier->dn,
 				 err_data->v1.dir_err,
 				 win_errstr(err_data->v1.status)));
 
