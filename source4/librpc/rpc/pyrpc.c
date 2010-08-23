@@ -339,7 +339,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	ret = PyObject_New(dcerpc_InterfaceObject, type);
 	ret->mem_ctx = mem_ctx;
 
-	event_ctx = event_context_init(ret->mem_ctx);
+	event_ctx = s4_event_context_init(ret->mem_ctx);
 
 	if (py_basis != Py_None) {
 		struct dcerpc_pipe *base_pipe;
