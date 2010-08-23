@@ -3213,7 +3213,7 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 	result->a_u.schannel_auth->state = SCHANNEL_STATE_START;
 	result->a_u.schannel_auth->seq_num = 0;
 	result->a_u.schannel_auth->initiator = true;
-	result->a_u.schannel_auth->creds = creds;
+	result->a_u.schannel_auth->creds = netlogon_creds_copy(result, creds);
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -4044,9 +4044,13 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	/*
 	 * The credentials on a new netlogon pipe are the ones we are passed
-	 * in - reference them in
+	 * in - copy them over
 	 */
-	result->dc = talloc_move(result, pdc);
+	result->dc = netlogon_creds_copy(result, *pdc);
+	if (result->dc == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",

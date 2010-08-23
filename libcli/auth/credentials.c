@@ -24,6 +24,7 @@
 #include "system/time.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "../libcli/security/dom_sid.h"
 
 static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
 				      const struct netr_Credential *in,
@@ -202,7 +203,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 								  struct netr_Credential *initial_credential,
 								  uint32_t negotiate_flags)
 {
-	struct netlogon_creds_CredentialState *creds = talloc(mem_ctx, struct netlogon_creds_CredentialState);
+	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
 	
 	if (!creds) {
 		return NULL;
@@ -453,3 +454,46 @@ void netlogon_creds_decrypt_samlogon(struct netlogon_creds_CredentialState *cred
 	}
 }	
 
+/*
+  copy a netlogon_creds_CredentialState struct
+*/
+
+struct netlogon_creds_CredentialState *netlogon_creds_copy(TALLOC_CTX *mem_ctx,
+							   struct netlogon_creds_CredentialState *creds_in)
+{
+	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+
+	if (!creds) {
+		return NULL;
+	}
+
+	creds->sequence			= creds_in->sequence;
+	creds->negotiate_flags		= creds_in->negotiate_flags;
+	creds->secure_channel_type	= creds_in->secure_channel_type;
+
+	creds->computer_name = talloc_strdup(creds, creds_in->computer_name);
+	if (!creds->computer_name) {
+		talloc_free(creds);
+		return NULL;
+	}
+	creds->account_name = talloc_strdup(creds, creds_in->account_name);
+	if (!creds->account_name) {
+		talloc_free(creds);
+		return NULL;
+	}
+
+	if (creds_in->sid) {
+		creds->sid = dom_sid_dup(creds, creds_in->sid);
+		if (!creds->sid) {
+			talloc_free(creds);
+			return NULL;
+		}
+	}
+
+	memcpy(creds->session_key, creds_in->session_key, sizeof(creds->session_key));
+	memcpy(creds->seed.data, creds_in->seed.data, sizeof(creds->seed.data));
+	memcpy(creds->client.data, creds_in->client.data, sizeof(creds->client.data));
+	memcpy(creds->server.data, creds_in->server.data, sizeof(creds->server.data));
+
+	return creds;
+}
