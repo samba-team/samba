@@ -2239,6 +2239,7 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	TALLOC_FREE(conn->lsa_pipe_tcp);
 
 	if (!cm_get_schannel_dcinfo(domain, &dcinfo)) {
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		goto done;
 	}
 
