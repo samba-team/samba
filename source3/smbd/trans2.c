@@ -800,7 +800,7 @@ void send_trans2_replies(connection_struct *conn,
 	if(params_to_send == 0 && data_to_send == 0) {
 		reply_outbuf(req, 10, 0);
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(sconn->sock,
+		if (!srv_send_smb(sconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
@@ -939,7 +939,7 @@ void send_trans2_replies(connection_struct *conn,
 
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
-		if (!srv_send_smb(sconn->sock,
+		if (!srv_send_smb(sconn,
 				(char *)req->outbuf,
 				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),

@@ -5590,7 +5590,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 void smbd_setup_sig_term_handler(void);
 void smbd_setup_sig_hup_handler(struct tevent_context *ev,
 				struct messaging_context *msg_ctx);
-bool srv_send_smb(int fd, char *buffer,
+bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);

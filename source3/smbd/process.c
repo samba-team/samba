@@ -101,7 +101,7 @@ void smbd_unlock_socket(struct smbd_server_connection *sconn)
  Send an smb to a fd.
 ****************************************************************************/
 
-bool srv_send_smb(int fd, char *buffer,
+bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  bool do_signing, uint32_t seqnum,
 		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd)
@@ -111,11 +111,11 @@ bool srv_send_smb(int fd, char *buffer,
 	ssize_t ret;
 	char *buf_out = buffer;
 
-	smbd_lock_socket(smbd_server_conn);
+	smbd_lock_socket(sconn);
 
 	if (do_signing) {
 		/* Sign the outgoing packet if required. */
-		srv_calculate_sign_mac(smbd_server_conn, buf_out, seqnum);
+		srv_calculate_sign_mac(sconn, buf_out, seqnum);
 	}
 
 	if (do_encrypt) {
@@ -130,7 +130,7 @@ bool srv_send_smb(int fd, char *buffer,
 
 	len = smb_len(buf_out) + 4;
 
-	ret = write_data(fd,buf_out+nwritten,len - nwritten);
+	ret = write_data(sconn->sock, buf_out+nwritten, len - nwritten);
 	if (ret <= 0) {
 
 		char addr[INET6_ADDRSTRLEN];
@@ -140,7 +140,7 @@ bool srv_send_smb(int fd, char *buffer,
 		 */
 		DEBUG(0,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
 			 (int)sys_getpid(), (int)len,
-			 get_peer_addr(fd, addr, sizeof(addr)),
+			 get_peer_addr(sconn->sock, addr, sizeof(addr)),
 			 (int)ret, strerror(errno) ));
 
 		srv_free_enc_buffer(buf_out);
@@ -152,7 +152,7 @@ bool srv_send_smb(int fd, char *buffer,
 out:
 	SMB_PERFCOUNT_END(pcd);
 
-	smbd_unlock_socket(smbd_server_conn);
+	smbd_unlock_socket(sconn);
 	return true;
 }
 
@@ -1620,7 +1620,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		show_msg((char *)req->outbuf);
 	}
 
-	if (!srv_send_smb(req->sconn->sock,
+	if (!srv_send_smb(req->sconn,
 			(char *)req->outbuf,
 			true, req->seqnum+1,
 			IS_CONN_ENCRYPTED(conn)||req->encrypted,
@@ -2059,7 +2059,7 @@ void chain_reply(struct smb_request *req)
 		smb_setlen((char *)(req->chain_outbuf),
 			   talloc_get_size(req->chain_outbuf) - 4);
 
-		if (!srv_send_smb(req->sconn->sock, (char *)req->chain_outbuf,
+		if (!srv_send_smb(req->sconn, (char *)req->chain_outbuf,
 				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted,
@@ -2199,7 +2199,7 @@ void chain_reply(struct smb_request *req)
 
 	show_msg((char *)(req->chain_outbuf));
 
-	if (!srv_send_smb(req->sconn->sock, (char *)req->chain_outbuf,
+	if (!srv_send_smb(req->sconn, (char *)req->chain_outbuf,
 			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			  &req->pcd)) {
@@ -2658,7 +2658,7 @@ static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 
 	out_len = smb_len(req.outbuf) + 4;
 
-	ok = srv_send_smb(req.sconn->sock,
+	ok = srv_send_smb(req.sconn,
 			  (char *)outbuf,
 			  true, seqnum+1,
 			  false, &req.pcd);
@@ -2994,7 +2994,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 		DEBUG( 1, ("Connection denied from %s to %s\n",
 			   tsocket_address_string(remote_address, talloc_tos()),
 			   tsocket_address_string(local_address, talloc_tos())));
-		(void)srv_send_smb(sconn->sock,(char *)buf, false,
+		(void)srv_send_smb(sconn,(char *)buf, false,
 				   0, false, NULL);
 		exit_server_cleanly("connection denied");
 	}
