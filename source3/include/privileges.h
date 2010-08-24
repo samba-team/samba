@@ -29,38 +29,33 @@
 
 /* privilege bitmask */
 
-#define SE_PRIV_MASKSIZE 4
-
-typedef struct {
-	uint32 mask[SE_PRIV_MASKSIZE];
-} SE_PRIV;
-
+typedef uint64_t SE_PRIV;
 
 /* common privilege defines */
 
-#define SE_END				{ { 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_NONE				{ { 0x00000000, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_ALL_PRIVS                    { { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF } }
+#define SE_END				0x0
+#define SE_NONE				0x0
+#define SE_ALL_PRIVS                    (SE_PRIV)-1
 
 
 /* 
  * We will use our own set of privileges since it makes no sense
  * to implement all of the Windows set when only a portion will
- * be used.  Use 128-bit mask to give room to grow.
+ * be used.  Use 64-bit mask to give room to grow.
  */
 
-#define SE_NETWORK_LOGON		{ { 0x00000001, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_INTERACTIVE_LOGON		{ { 0x00000002, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_BATCH_LOGON			{ { 0x00000004, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_SERVICE_LOGON		{ { 0x00000008, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_MACHINE_ACCOUNT		{ { 0x00000010, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_PRINT_OPERATOR		{ { 0x00000020, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_ADD_USERS			{ { 0x00000040, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_DISK_OPERATOR		{ { 0x00000080, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_REMOTE_SHUTDOWN		{ { 0x00000100, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_BACKUP			{ { 0x00000200, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_RESTORE			{ { 0x00000400, 0x00000000, 0x00000000, 0x00000000 } }
-#define SE_TAKE_OWNERSHIP		{ { 0x00000800, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_NETWORK_LOGON		0x00000001
+#define SE_INTERACTIVE_LOGON		0x00000002
+#define SE_BATCH_LOGON			0x00000004
+#define SE_SERVICE_LOGON		0x00000008
+#define SE_MACHINE_ACCOUNT		0x00000010
+#define SE_PRINT_OPERATOR		0x00000020
+#define SE_ADD_USERS			0x00000040
+#define SE_DISK_OPERATOR		0x00000080
+#define SE_REMOTE_SHUTDOWN		0x00000100
+#define SE_BACKUP			0x00000200
+#define SE_RESTORE			0x00000400
+#define SE_TAKE_OWNERSHIP		0x00000800
 
 /* defined in lib/privilegs_basic.c */
 

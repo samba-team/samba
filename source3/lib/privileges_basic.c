@@ -148,11 +148,7 @@ bool se_priv_put_all_privileges(SE_PRIV *mask)
 
 void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
 {
-	int i;
-
-	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
-		mask->mask[i] |= addpriv->mask[i];
-	}
+	*mask |= *addpriv;
 }
 
 /***************************************************************************
@@ -162,11 +158,7 @@ void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
 
 void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
 {
-	int i;
-
-	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
-		mask->mask[i] &= ~removepriv->mask[i];
-	}
+	*mask &= ~*removepriv;
 }
 
 /***************************************************************************
@@ -188,7 +180,7 @@ static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
 
 bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 {
-	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
+	return *mask1 == *mask2;
 }
 
 /***************************************************************************
@@ -198,13 +190,10 @@ bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 static bool se_priv_empty( const SE_PRIV *mask )
 {
 	SE_PRIV p1;
-	int i;
 
 	se_priv_copy( &p1, mask );
 
-	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
-		p1.mask[i] &= se_priv_all.mask[i];
-	}
+	p1 &= se_priv_all;
 
 	return se_priv_equal( &p1, &se_priv_none );
 }
@@ -233,15 +222,7 @@ bool se_priv_from_name( const char *name, SE_PRIV *mask )
 
 void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask )
 {
-	int i;
-
-	DEBUGADDC( dbg_cl, dbg_lvl,("SE_PRIV "));
-
-	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
-		DEBUGADDC( dbg_cl, dbg_lvl,(" 0x%x", mask->mask[i] ));
-	}
-
-	DEBUGADDC( dbg_cl, dbg_lvl, ("\n"));
+	DEBUGADDC( dbg_cl, dbg_lvl,("SE_PRIV 0x%llx\n", (unsigned long long)*mask));
 }
 
 /****************************************************************************
