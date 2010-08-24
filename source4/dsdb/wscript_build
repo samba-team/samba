@@ -25,7 +25,7 @@ bld.SAMBA_SUBSYSTEM('SAMDB_SCHEMA',
 
 
 bld.SAMBA_MODULE('DREPL_SRV',
-	source='repl/drepl_service.c repl/drepl_periodic.c repl/drepl_partitions.c repl/drepl_out_pull.c repl/drepl_out_helpers.c repl/drepl_notify.c repl/drepl_ridalloc.c',
+	source='repl/drepl_service.c repl/drepl_periodic.c repl/drepl_partitions.c repl/drepl_out_pull.c repl/drepl_out_helpers.c repl/drepl_notify.c repl/drepl_ridalloc.c repl/drepl_fsmo.c',
 	autoproto='repl/drepl_service_proto.h',
 	subsystem='service',
 	init_function='server_service_drepl_init',

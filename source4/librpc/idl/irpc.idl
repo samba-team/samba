@@ -157,4 +157,20 @@ import "misc.idl", "security.idl", "nbt.idl";
 	 *                     If empy/NULL, refresh all partitions.
 	 */
 	WERROR dreplsrv_refresh();
+
+	/*
+	  called when role transfer is requested via LDAP
+	*/
+	typedef [v1_enum] enum {
+               DREPL_SCHEMA_MASTER,
+               DREPL_RID_MASTER,
+               DREPL_INFRASTRUCTURE_MASTER,
+               DREPL_NAMING_MASTER,
+               DREPL_PDC_MASTER
+	} drepl_role_master;
+
+	NTSTATUS drepl_takeFSMORole(
+		[in] uint32 role
+		);
+
 }
