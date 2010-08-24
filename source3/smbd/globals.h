@@ -54,15 +54,12 @@ extern const struct mangle_fns *mangle_fns;
 extern unsigned char *chartest;
 extern TDB_CONTEXT *tdb_mangled_cache;
 
-/* these tables are used to provide fast tests for characters */
-extern unsigned char char_flags[256];
 /*
   this determines how many characters are used from the original filename
   in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
   The largest possible value is 6.
 */
 extern unsigned mangle_prefix;
-extern unsigned char base_reverse[256];
 
 struct msg_state;
 extern struct msg_state *smbd_msg_state;
