@@ -74,7 +74,6 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 	if (!ntds_guid) {
 		return WERR_DS_UNAVAILABLE;
 	}
-
 	service->ntds_guid = *ntds_guid;
 
 	bind_info28				= &service->bind_info28;
@@ -343,6 +342,15 @@ static NTSTATUS dreplsrv_refresh(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
+				     struct drepl_takeFSMORole *r)
+{
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+	r->out.result = werror_to_ntstatus(dreplsrv_fsmo_role_check(service, r->in.role));
+	return NT_STATUS_OK;
+}
+
 /*
   startup the dsdb replicator service task
 */
@@ -432,6 +440,7 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPLSRV_REFRESH, dreplsrv_refresh, service);
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
+	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TAKEFSMOROLE, drepl_take_FSMO_role, service);
 	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
 }
 
