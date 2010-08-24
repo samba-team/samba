@@ -218,8 +218,8 @@ struct dreplsrv_service {
 
 	struct {
 		bool in_progress;
-		struct dreplsrv_partition_source_dsa *rid_manager_source_dsa;
-	} ridalloc;
+		struct dreplsrv_partition_source_dsa *role_owner_source_dsa;
+	} ncchanges_extended;
 
 	bool syncall_workaround;
 };
