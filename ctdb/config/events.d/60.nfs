@@ -78,7 +78,12 @@ case "$1" in
 
 	# check that NFS responds to rpc requests
 	[ "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" = "yes" ] || {
-	    ctdb_check_rpc "NFS" 100003 3
+	    (ctdb_check_rpc "NFS" 100003 3)
+	    [ $? = "0" ] || {
+		echo "Trying to restart NFS service"
+		startstop_nfs restart
+		exit 1
+	    }
 	}
 
 	# and that its directories are available

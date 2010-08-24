@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "db_wrap.h"
@@ -136,6 +136,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	if (result->child == 0) {
 		char c = 0;
 		close(result->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "chainlock-%s:", ctdb_db->db_name);
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
 		write(result->fd[1], &c, 1);
 		/* make sure we die when our parent dies */
@@ -153,13 +154,14 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	talloc_set_destructor(result, lockwait_destructor);
 
 	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
-				   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, lockwait_handler,
+				   EVENT_FD_READ, lockwait_handler,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
 		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
 		return NULL;
 	}
+	tevent_fd_set_auto_close(result->fde);
 
 	result->start_time = timeval_current();
 

@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
@@ -91,6 +91,7 @@ void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
 	if (child == 0) {
 		int ret;
 
+		debug_extra = talloc_asprintf(NULL, "notification-%s:", event);
 		ret = ctdb_run_notification_script_child(ctdb, event);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Notification script failed\n"));
@@ -202,7 +203,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	} else if (status == 0) {
 		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
 		ctdb->done_startup = true;
-		ctdb->monitor->next_interval = 0;
+		ctdb->monitor->next_interval = 2;
 		ctdb_run_notification_script(ctdb, "startup");
 	}
 

@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "../include/ctdb_private.h"
@@ -164,7 +164,7 @@ int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
 	}
 
 	if (child == 0) {
-		if (switch_from_server_to_client(ctdb) != 0) {
+		if (switch_from_server_to_client(ctdb, "log-collector") != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch log collector child into client mode.\n"));
 			_exit(1);
 		}

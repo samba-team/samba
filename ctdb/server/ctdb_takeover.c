@@ -18,7 +18,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/util/dlinklist.h"
 #include "system/network.h"
@@ -1562,7 +1562,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_control_tcp_addr new_addr;
 	struct ctdb_control_tcp_addr *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
-	struct ctdb_control_tcp_vnn t;
+	struct ctdb_tcp_connection t;
 	int ret;
 	TDB_DATA data;
 	struct ctdb_client_ip *ip;
@@ -1642,8 +1642,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	DLIST_ADD(client->tcp_list, tcp);
 
-	t.src  = tcp_sock->src;
-	t.dest = tcp_sock->dest;
+	t.src_addr = tcp_sock->src;
+	t.dst_addr = tcp_sock->dest;
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
@@ -1699,22 +1699,24 @@ static struct ctdb_tcp_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
 	return NULL;
 }
 
+
+
 /*
   called by a daemon to inform us of a TCP connection that one of its
   clients managing that should tickled with an ACK when IP takeover is
   done
  */
-int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed)
 {
-	struct ctdb_control_tcp_vnn *p = (struct ctdb_control_tcp_vnn *)indata.dptr;
+	struct ctdb_tcp_connection *p = (struct ctdb_tcp_connection *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_tcp_connection tcp;
 	struct ctdb_vnn *vnn;
 
-	vnn = find_public_ip_vnn(ctdb, &p->dest);
+	vnn = find_public_ip_vnn(ctdb, &p->dst_addr);
 	if (vnn == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
-			ctdb_addr_to_str(&p->dest)));
+			ctdb_addr_to_str(&p->dst_addr)));
 
 		return -1;
 	}
@@ -1734,16 +1736,20 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 		tcparray->connections = talloc_size(tcparray, sizeof(struct ctdb_tcp_connection));
 		CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-		tcparray->connections[tcparray->num].src_addr = p->src;
-		tcparray->connections[tcparray->num].dst_addr = p->dest;
+		tcparray->connections[tcparray->num].src_addr = p->src_addr;
+		tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
 		tcparray->num++;
+
+		if (tcp_update_needed) {
+			vnn->tcp_update_needed = true;
+		}
 		return 0;
 	}
 
 
 	/* Do we already have this tickle ?*/
-	tcp.src_addr = p->src;
-	tcp.dst_addr = p->dest;
+	tcp.src_addr = p->src_addr;
+	tcp.dst_addr = p->dst_addr;
 	if (ctdb_tcp_find(vnn->tcp_array, &tcp) != NULL) {
 		DEBUG(DEBUG_DEBUG,("Already had tickle info for %s:%u for vnn:%u\n",
 			ctdb_addr_to_str(&tcp.dst_addr),
@@ -1759,14 +1765,18 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
 	vnn->tcp_array = tcparray;
-	tcparray->connections[tcparray->num].src_addr = p->src;
-	tcparray->connections[tcparray->num].dst_addr = p->dest;
+	tcparray->connections[tcparray->num].src_addr = p->src_addr;
+	tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
 	tcparray->num++;
 				
 	DEBUG(DEBUG_INFO,("Added tickle info for %s:%u from vnn %u\n",
 		ctdb_addr_to_str(&tcp.dst_addr),
 		ntohs(tcp.dst_addr.ip.sin_port),
 		vnn->pnn));
+
+	if (tcp_update_needed) {
+		vnn->tcp_update_needed = true;
+	}
 
 	return 0;
 }
@@ -1832,6 +1842,20 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	DEBUG(DEBUG_INFO,("Removed tickle info for %s:%u\n",
 		ctdb_addr_to_str(&conn->src_addr),
 		ntohs(conn->src_addr.ip.sin_port)));
+}
+
+
+/*
+  called by a daemon to inform us of a TCP connection that one of its
+  clients used are no longer needed in the tickle database
+ */
+int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_tcp_connection *conn = (struct ctdb_tcp_connection *)indata.dptr;
+
+	ctdb_remove_tcp_connection(ctdb, conn);
+
+	return 0;
 }
 
 
@@ -2259,7 +2283,8 @@ static void tickle_connection_traverse(void *param, void *data)
 
 	/* have tried too many times, just give up */
 	if (con->count >= 5) {
-		talloc_free(con);
+		/* can't delete in traverse: reparent to delete_cons */
+		talloc_steal(param, con);
 		return;
 	}
 
@@ -2279,11 +2304,13 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 					      struct timeval t, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-
+	void *delete_cons = talloc_new(NULL);
 
 	/* loop over all connections sending tickle ACKs */
-	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, NULL);
+	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, delete_cons);
 
+	/* now we've finished traverse, it's safe to do deletion. */
+	talloc_free(delete_cons);
 
 	/* If there are no more connections to kill we can remove the
 	   entire killtcp structure
@@ -2408,8 +2435,9 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 
 	if (killtcp->fde == NULL) {
 		killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->capture_fd, 
-					    EVENT_FD_READ | EVENT_FD_AUTOCLOSE, 
+					    EVENT_FD_READ,
 					    capture_tcp_handler, killtcp);
+		tevent_fd_set_auto_close(killtcp->fde);
 
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset

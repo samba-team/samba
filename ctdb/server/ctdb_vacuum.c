@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -26,7 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 
@@ -36,7 +36,9 @@
 enum vacuum_child_status { VACUUM_RUNNING, VACUUM_OK, VACUUM_ERROR, VACUUM_TIMEOUT};
 
 struct ctdb_vacuum_child_context {
+	struct ctdb_vacuum_child_context *next, *prev;
 	struct ctdb_vacuum_handle *vacuum_handle;
+	/* fd child writes status to */
 	int fd[2];
 	pid_t child_pid;
 	enum vacuum_child_status status;
@@ -634,6 +636,7 @@ static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 	vdata->vacuum_limit = vacuum_limit;
 	vdata->repack_limit = repack_limit;
 	vdata->delete_tree = trbt_create(vdata, 0);
+	vdata->ctdb_db = ctdb_db;
 	if (vdata->delete_tree == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		talloc_free(vdata);
@@ -743,6 +746,8 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 		kill(child_ctx->child_pid, SIGKILL);
 	}
 
+	DLIST_REMOVE(ctdb->vacuumers, child_ctx);
+
 	event_add_timed(ctdb->ev, child_ctx->vacuum_handle,
 			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0), 
 			ctdb_vacuum_event, child_ctx->vacuum_handle);
@@ -801,10 +806,17 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	struct ctdb_db_context *ctdb_db = vacuum_handle->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_vacuum_child_context *child_ctx;
+	struct tevent_fd *fde;
 	int ret;
 
-	/* we dont vacuum if we are in recovery mode */
-	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+	/* we dont vacuum if we are in recovery mode, or db frozen */
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
+	    ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_NONE) {
+		DEBUG(DEBUG_INFO, ("Not vacuuming %s (%s)\n", ctdb_db->db_name,
+				   ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ? "in recovery"
+				   : ctdb->freeze_mode[ctdb_db->priority] == CTDB_FREEZE_PENDING
+				   ? "freeze pending"
+				   : "frozen"));
 		event_add_timed(ctdb->ev, vacuum_handle, timeval_current_ofs(ctdb->tunable.vacuum_default_interval, 0), ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
@@ -841,7 +853,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 
 		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
 	
-		if (switch_from_server_to_client(ctdb) != 0) {
+		if (switch_from_server_to_client(ctdb, "vacuum-%s", ctdb_db->db_name) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch vacuum daemon into client mode. Shutting down.\n"));
 			_exit(1);
 		}
@@ -861,6 +873,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	child_ctx->status = VACUUM_RUNNING;
 	child_ctx->start_time = timeval_current();
 
+	DLIST_ADD(ctdb->vacuumers, child_ctx);
 	talloc_set_destructor(child_ctx, vacuum_child_destructor);
 
 	event_add_timed(ctdb->ev, child_ctx,
@@ -869,15 +882,25 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
 
-	event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
-		EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		vacuum_child_handler,
-		child_ctx);
+	fde = event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
+			   EVENT_FD_READ, vacuum_child_handler, child_ctx);
+	tevent_fd_set_auto_close(fde);
 
 	vacuum_handle->child_ctx = child_ctx;
 	child_ctx->vacuum_handle = vacuum_handle;
 }
 
+void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
+{
+	/* Simply free them all. */
+	while (ctdb->vacuumers) {
+		DEBUG(DEBUG_INFO, ("Aborting vacuuming for %s (%i)\n",
+			   ctdb->vacuumers->vacuum_handle->ctdb_db->db_name,
+			   (int)ctdb->vacuumers->child_pid));
+		/* vacuum_child_destructor kills it, removes from list */
+		talloc_free(ctdb->vacuumers);
+	}
+}
 
 /* this function initializes the vacuuming context for a database
  * starts the vacuuming events

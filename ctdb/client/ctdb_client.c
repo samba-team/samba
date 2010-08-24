@@ -22,7 +22,7 @@
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/util/dlinklist.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
@@ -3827,9 +3827,15 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
  * to the daemon as a client process, this function can be used to change
  * the ctdb context from daemon into client mode
  */
-int switch_from_server_to_client(struct ctdb_context *ctdb)
+int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...)
 {
 	int ret;
+	va_list ap;
+
+	/* Add extra information so we can identify this in the logs */
+	va_start(ap, fmt);
+	debug_extra = talloc_strdup_append(talloc_vasprintf(NULL, fmt, ap), ":");
+	va_end(ap);
 
 	/* shutdown the transport */
 	if (ctdb->methods) {
@@ -3839,6 +3845,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb)
 	/* get a new event context */
 	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(ctdb);
+	tevent_loop_allow_nesting(ctdb->ev);
 
 	close(ctdb->daemon.sd);
 	ctdb->daemon.sd = -1;

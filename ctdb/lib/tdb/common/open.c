@@ -51,7 +51,6 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	struct tdb_header *newdb;
 	size_t size;
 	int ret = -1;
-	ssize_t written;
 
 	/* We make it up in memory, then write it out if not internal */
 	size = sizeof(struct tdb_header) + (hash_size+1)*sizeof(tdb_off_t);
@@ -83,22 +82,8 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	/* Don't endian-convert the magic food! */
 	memcpy(newdb->magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
 	/* we still have "ret == -1" here */
-	written = write(tdb->fd, newdb, size);
-	if (written == size) {
+	if (tdb_write_all(tdb->fd, newdb, size))
 		ret = 0;
-	} else if (written != -1) {
-		/* call write once again, this usually should return -1 and
-		 * set errno appropriately */
-		size -= written;
-		written = write(tdb->fd, newdb+written, size);
-		if (written == size) {
-			ret = 0;
-		} else if (written >= 0) {
-			/* a second incomplete write - we give up.
-			 * guessing the errno... */
-			errno = ENOSPC;
-		}
-	}
 
   fail:
 	SAFE_FREE(newdb);

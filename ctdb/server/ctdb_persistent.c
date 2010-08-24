@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "db_wrap.h"
@@ -543,6 +543,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 		char c = 0;
 
 		close(result->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "childwrite-%s:", ctdb_db->db_name);
 		ret = ctdb_persistent_store(state);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write persistent data\n"));
@@ -566,13 +567,14 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for ctdb_childwrite\n", result->fd[0]));
 
 	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
-				   EVENT_FD_READ|EVENT_FD_AUTOCLOSE, childwrite_handler,
+				   EVENT_FD_READ, childwrite_handler,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
 		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
 		return NULL;
 	}
+	tevent_fd_set_auto_close(result->fde);
 
 	result->start_time = timeval_current();
 

@@ -18,7 +18,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "system/network.h"
@@ -725,6 +725,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		char cc = 0;
 		close(state->fd[0]);
 
+		debug_extra = talloc_asprintf(NULL, "set_recmode:");
 		/* we should not be able to get the lock on the reclock file, 
 		  as it should  be held by the recovery master 
 		*/
@@ -754,7 +755,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				    ctdb_set_recmode_timeout, state);
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
-				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+				EVENT_FD_READ,
 				set_recmode_handler,
 				(void *)state);
 
@@ -762,6 +763,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		talloc_free(state);
 		return -1;
 	}
+	tevent_fd_set_auto_close(state->fde);
 
 	state->ctdb    = ctdb;
 	state->recmode = recmode;

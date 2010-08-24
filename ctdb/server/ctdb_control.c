@@ -17,7 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -334,8 +334,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_startup(ctdb, srcnode);
 
 	case CTDB_CONTROL_TCP_ADD: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_vnn));
-		return ctdb_control_tcp_add(ctdb, indata);
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		return ctdb_control_tcp_add(ctdb, indata, false);
+
+	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		return ctdb_control_tcp_add(ctdb, indata, true);
+
+	case CTDB_CONTROL_TCP_REMOVE: 
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		return ctdb_control_tcp_remove(ctdb, indata);
 
 	case CTDB_CONTROL_SET_TUNABLE:
 		return ctdb_control_set_tunable(ctdb, indata);

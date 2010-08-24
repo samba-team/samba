@@ -46,6 +46,7 @@ extern pid_t ctdbd_pid;
 
 /*
   a tcp connection description
+  also used by tcp_add and tcp_remove controls
  */
 struct ctdb_tcp_connection {
 	ctdb_sock_addr src_addr;
@@ -382,7 +383,7 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define NUM_DB_PRIORITIES 3
 /* main state of the ctdb daemon */
 struct ctdb_context {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct timeval ctdbd_start_time;
 	struct timeval last_recovery_started;
 	struct timeval last_recovery_finished;
@@ -455,6 +456,8 @@ struct ctdb_context {
 	struct ctdb_scripts_wire *last_status[CTDB_EVENT_MAX];
 
 	TALLOC_CTX *banning_ctx;
+
+	struct ctdb_vacuum_child_context *vacuumers;
 
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
@@ -539,14 +542,6 @@ struct ctdb_control_gratious_arp {
 	uint32_t mask;
 	uint32_t len;
 	char iface[1];
-};
-
-/*
-  struct for tcp_add and tcp_remove controls
- */
-struct ctdb_control_tcp_vnn {
-	ctdb_sock_addr src;
-	ctdb_sock_addr dest;
 };
 
 /*
@@ -1120,7 +1115,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
 				TDB_DATA indata);
-int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1312,6 +1307,7 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
+void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);

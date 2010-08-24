@@ -24,7 +24,7 @@
 #include "system/dir.h"
 #include "system/locale.h"
 #include "../include/ctdb_private.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "../common/rb_tree.h"
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
@@ -363,6 +363,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
 {
 	int r;
+	struct tevent_fd *fde;
 	struct ctdb_script_wire *current = get_current_script(state);
 
 	current->start = timeval_current();
@@ -385,6 +386,9 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	if (state->child == 0) {
 		int rt;
 
+		debug_extra = talloc_asprintf(NULL, "eventscript-%s-%s:",
+					      current->name,
+					      ctdb_eventscript_call_names[state->call]);
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
 
@@ -402,8 +406,10 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child eventscript process\n", state->fd[0]));
 
 	/* Set ourselves up to be called when that's done. */
-	event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-		     ctdb_event_script_handler, state);
+	fde = event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ,
+			   ctdb_event_script_handler, state);
+	tevent_fd_set_auto_close(fde);
+
 	return 0;
 }
 

@@ -17,7 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -202,6 +202,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		/* in the child */
 		close(fd[0]);
 
+		debug_extra = talloc_asprintf(NULL, "freeze_lock-%u:", priority);
 		ret = ctdb_lock_all_databases(ctdb, priority);
 		if (ret != 0) {
 			_exit(0);
@@ -231,7 +232,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 	h->fd = fd[0];
 
 
-	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ,
 			   ctdb_freeze_lock_handler, h);
 	if (fde == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to setup fd event for ctdb_freeze_lock\n"));
@@ -239,6 +240,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		talloc_free(h);
 		return NULL;
 	}
+	tevent_fd_set_auto_close(fde);
 
 	return h;
 }
@@ -271,6 +273,9 @@ int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		/* we're already frozen */
 		return 0;
 	}
+
+	/* Stop any vacuuming going on: we don't want to wait. */
+	ctdb_stop_vacuuming(ctdb);
 
 	/* if there isn't a freeze lock child then create one */
 	if (ctdb->freeze_handles[priority] == NULL) {

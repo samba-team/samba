@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include "lib/tevent/tevent.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
@@ -44,6 +44,7 @@ static struct {
 	int timelimit;
 	uint32_t pnn;
 	int machinereadable;
+	int verbose;
 	int maxruntime;
 } options;
 
@@ -981,6 +982,80 @@ static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  add a tickle to a public address
+ */
+static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	struct ctdb_tcp_connection t;
+	TDB_DATA data;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
+		return -1;
+	}
+
+	data.dptr = (uint8_t *)&t;
+	data.dsize = sizeof(t);
+
+	/* tell all nodes about this tcp connection */
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE,
+			   0, data, ctdb, NULL, NULL, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to add tickle\n"));
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+/*
+  delete a tickle from a node
+ */
+static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	struct ctdb_tcp_connection t;
+	TDB_DATA data;
+	int ret;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
+		return -1;
+	}
+
+	data.dptr = (uint8_t *)&t;
+	data.dsize = sizeof(t);
+
+	/* tell all nodes about this tcp connection */
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_TCP_REMOVE,
+			   0, data, ctdb, NULL, NULL, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to remove tickle\n"));
+		return -1;
+	}
+	
+	return 0;
+}
+
+
+/*
   get a list of all tickles for this pnn
  */
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -988,9 +1063,14 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	struct ctdb_control_tcp_tickle_list *list;
 	ctdb_sock_addr addr;
 	int i, ret;
+	unsigned port = 0;
 
 	if (argc < 1) {
 		usage();
+	}
+
+	if (argc == 2) {
+		port = atoi(argv[1]);
 	}
 
 	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
@@ -1004,11 +1084,25 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		return -1;
 	}
 
-	printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
-	printf("Num tickles:%u\n", list->tickles.num);
-	for (i=0;i<list->tickles.num;i++) {
-		printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
-		printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+	if (options.machinereadable){
+		printf(":source ip:port:destination ip:port:\n");
+		for (i=0;i<list->tickles.num;i++) {
+			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+				continue;
+			}
+			printf(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+			printf(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+		}
+	} else {
+		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
+		printf("Num tickles:%u\n", list->tickles.num);
+		for (i=0;i<list->tickles.num;i++) {
+			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+				continue;
+			}
+			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+		}
 	}
 
 	talloc_free(list);
@@ -1727,7 +1821,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (options.machinereadable){
-		printf(":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:\n");
+		printf(":Public IP:Node:");
+		if (options.verbose){
+			printf("ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:");
+		}
+		printf("\n");
 	} else {
 		if (options.pnn == CTDB_BROADCAST_ALL) {
 			printf("Public IPs on ALL nodes\n");
@@ -1787,19 +1885,29 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 		}
 
 		if (options.machinereadable){
-			printf(":%s:%d:%s:%s:%s:\n",
-			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
-			       ips->ips[ips->num-i].pnn,
-			       aciface?aciface:"",
-			       avifaces?avifaces:"",
-			       cifaces?cifaces:"");
+			printf(":%s:%d:",
+				ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+				ips->ips[ips->num-i].pnn);
+			if (options.verbose){
+				printf("%s:%s:%s:",
+					aciface?aciface:"",
+					avifaces?avifaces:"",
+					cifaces?cifaces:"");
+			}
+			printf("\n");
 		} else {
-			printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
-			       ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
-			       ips->ips[ips->num-i].pnn,
-			       aciface?aciface:"",
-			       avifaces?avifaces:"",
-			       cifaces?cifaces:"");
+			if (options.verbose) {
+				printf("%s node[%d] active[%s] available[%s] configured[%s]\n",
+					ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+					ips->ips[ips->num-i].pnn,
+					aciface?aciface:"",
+					avifaces?avifaces:"",
+					cifaces?cifaces:"");
+			} else {
+				printf("%s %d\n",
+					ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
+					ips->ips[ips->num-i].pnn);
+			}
 		}
 		talloc_free(info);
 	}
@@ -4385,7 +4493,10 @@ static const struct {
 	{ "killtcp",         kill_tcp,                  false,	false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
 	{ "gratiousarp",     control_gratious_arp,      false,	false, "send a gratious arp", "<ip> <interface>" },
 	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip>" },
+	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip> [<port>]" },
+	{ "addtickle",       control_add_tickle,        false,	false, "add a tickle for this ip", "<ip>:<port> <ip>:<port>" },
+
+	{ "deltickle",       control_del_tickle,        false,	false, "delete a tickle from this ip", "<ip>:<port> <ip>:<port>" },
 
 	{ "regsrvid",        regsrvid,			false,	false, "register a server id", "<pnn> <type> <id>" },
 	{ "unregsrvid",      unregsrvid,		false,	false, "unregister a server id", "<pnn> <type> <id>" },
@@ -4433,6 +4544,7 @@ static void usage(void)
 "Options:\n" \
 "   -n <node>          choose node number, or 'all' (defaults to local node)\n"
 "   -Y                 generate machinereadable output\n"
+"   -v                 generate verbose output\n"
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
@@ -4464,6 +4576,7 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
 		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
+		{ "verbose",    'v', POPT_ARG_NONE, &options.verbose, 0, "enable verbose output", NULL },
 		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
 		POPT_TABLEEND
 	};
@@ -4534,6 +4647,7 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_ERR, ("Failed to initialize event system\n"));
 		exit(1);
 	}
+	tevent_loop_allow_nesting(ev);
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {

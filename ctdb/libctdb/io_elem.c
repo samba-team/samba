@@ -110,11 +110,13 @@ int read_io_elem(int fd, struct io_elem *io)
 		/* Finished.  But maybe this was just header? */
 		if (io->len == sizeof(*hdr) && hdr->length > io->len) {
 			int reret;
+			void *newdata;
 			/* Enlarge and re-read. */
 			io->len = hdr->length;
-			io->data = realloc(io->data, io->len);
-			if (!io->data)
+			newdata = realloc(io->data, io->len);
+			if (!newdata)
 				return -1;
+			io->data = newdata;
 			/* Try reading again immediately. */
 			reret = read_io_elem(fd, io);
 			if (reret >= 0)

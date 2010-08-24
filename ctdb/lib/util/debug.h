@@ -18,6 +18,7 @@
 */
 
 void (*do_debug_v)(const char *, va_list ap);
+const char *debug_extra;
 void (*do_debug_add_v)(const char *, va_list ap);
 void log_ringbuffer(const char *format, ...);
 void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);

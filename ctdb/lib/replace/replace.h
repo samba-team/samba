@@ -546,4 +546,7 @@ typedef int bool;
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+/* These should be properly defined for libraries to control visibility. */
+#define _PRIVATE_
+#define _PUBLIC_
 #endif /* _LIBREPLACE_REPLACE_H */
