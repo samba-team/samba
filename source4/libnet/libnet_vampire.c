@@ -92,6 +92,23 @@ struct libnet_vampire_cb_state {
 	const char *server_dn_str;
 };
 
+/* initialise a state structure ready for replication of chunks */
+void *libnet_vampire_replicate_init(TALLOC_CTX *mem_ctx,
+				    struct ldb_context *samdb,
+				    struct loadparm_context *lp_ctx)
+{
+	struct libnet_vampire_cb_state *s = talloc_zero(mem_ctx, struct libnet_vampire_cb_state);
+	if (!s) {
+		return NULL;
+	}
+
+	s->ldb              = samdb;
+	s->lp_ctx           = lp_ctx;
+	s->provision_schema = dsdb_get_schema(s->ldb, s);
+
+	return s;
+}
+
 /* Caller is expected to keep supplied pointers around for the lifetime of the structure */
 void *libnet_vampire_cb_state_init(TALLOC_CTX *mem_ctx,
 				   struct loadparm_context *lp_ctx, struct tevent_context *event_ctx,
