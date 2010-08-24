@@ -1787,7 +1787,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *handle;
 	union lsa_TrustedDomainInfo *info;
-	struct trustdom_info *trust_info;
+	struct pdb_trusted_domain *td;
 	uint32_t acc_required;
 
 	/* find the connection policy handle. */
@@ -1853,9 +1853,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = lsa_lookup_trusted_domain_by_sid(p->mem_ctx,
-						  &handle->sid,
-						  &trust_info);
+	status = pdb_get_trusted_domain_by_sid(p->mem_ctx, &handle->sid, &td);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1867,7 +1865,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 
 	switch (r->in.level) {
 	case LSA_TRUSTED_DOMAIN_INFO_NAME:
-		init_lsa_StringLarge(&info->name.netbios_name, trust_info->name);
+		init_lsa_StringLarge(&info->name.netbios_name, td->netbios_name);
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1878,15 +1876,15 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
 		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
-		init_lsa_StringLarge(&info->info_ex.domain_name, trust_info->name);
-		init_lsa_StringLarge(&info->info_ex.netbios_name, trust_info->name);
-		info->info_ex.sid = dom_sid_dup(info, &trust_info->sid);
+		init_lsa_StringLarge(&info->info_ex.domain_name, td->domain_name);
+		init_lsa_StringLarge(&info->info_ex.netbios_name, td->netbios_name);
+		info->info_ex.sid = dom_sid_dup(info, &td->security_identifier);
 		if (!info->info_ex.sid) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		info->info_ex.trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
-		info->info_ex.trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
-		info->info_ex.trust_attributes = 0;
+		info->info_ex.trust_direction = td->trust_direction;
+		info->info_ex.trust_type = td->trust_type;
+		info->info_ex.trust_attributes = td->trust_attributes;
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
 		return NT_STATUS_INVALID_INFO_CLASS;
