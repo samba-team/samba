@@ -2913,7 +2913,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (argc == 3) {
-		fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC);
+	  fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
 		if (fd == -1) {
 			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
 			talloc_free(tmp_ctx);
