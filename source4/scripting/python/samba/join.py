@@ -133,6 +133,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
                                      expression="objectClass=attributeSchema",
                                      attrs=["lDAPDisplayName", "systemFlags",
                                             "searchFlags"])
+
         for r in res:
             ldap_display_name = r["lDAPDisplayName"][0]
             if "systemFlags" in r:
@@ -189,11 +190,183 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         while True:
             if not schema:
                 req8.partial_attribute_set = get_rodc_partial_attribute_set(ctx)
+
             (level, ctr) = ctx.drs.DsGetNCChanges(ctx.drs_handle, 8, req8)
-            net.replicate_chunk(ctx.replication_state, level, ctr, schema=schema)
+            ctx.net.replicate_chunk(ctx.replication_state, level, ctr, schema=schema)
             if ctr.more_data == 0:
                 break
             req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
+
+
+    def join_add_objects(ctx):
+        '''add the various objects needed for the join'''
+        print "Adding %s" % ctx.acct_dn
+        rec = {
+            "dn" : ctx.acct_dn,
+            "objectClass": "computer",
+            "displayname": ctx.samname,
+            "samaccountname" : ctx.samname,
+            "useraccountcontrol" : str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
+                                       samba.dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION |
+                                       samba.dsdb.UF_PARTIAL_SECRETS_ACCOUNT),
+            "managedby" : ctx.admin_dn,
+            "dnshostname" : ctx.dnshostname,
+            "msDS-NeverRevealGroup" : ctx.never_reveal_sid,
+            "msDS-RevealOnDemandGroup" : ctx.reveal_sid}
+        ctx.samdb.add(rec)
+
+        print "Adding %s" % ctx.krbtgt_dn
+        rec = {
+            "dn" : ctx.krbtgt_dn,
+            "objectclass" : "user",
+            "useraccountcontrol" : str(samba.dsdb.UF_NORMAL_ACCOUNT |
+                                       samba.dsdb.UF_ACCOUNTDISABLE),
+            "showinadvancedviewonly" : "TRUE",
+            "description" : "tricky account"}
+        ctx.samdb.add(rec, ["rodc_join:1:1"])
+
+        # now we need to search for the samAccountName attribute on the krbtgt DN,
+        # as this will have been magically set to the krbtgt number
+        res = ctx.samdb.search(base=ctx.krbtgt_dn, scope=ldb.SCOPE_BASE, attrs=["samAccountName"])
+        ctx.krbtgt_name = res[0]["samAccountName"][0]
+
+        print "Got krbtgt_name=%s" % ctx.krbtgt_name
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
+        m["msDS-krbTgtLink"] = ldb.MessageElement(ctx.krbtgt_dn,
+                                                  ldb.FLAG_MOD_REPLACE, "msDS-krbTgtLink")
+        ctx.samdb.modify(m)
+
+        ctx.new_krbtgt_dn = "CN=%s,CN=Users,%s" % (ctx.krbtgt_name, ctx.base_dn)
+        print "Renaming %s to %s" % (ctx.krbtgt_dn, ctx.new_krbtgt_dn)
+        ctx.samdb.rename(ctx.krbtgt_dn, ctx.new_krbtgt_dn)
+
+        print "Adding %s" % ctx.server_dn
+        rec = {
+            "dn": ctx.server_dn,
+            "objectclass" : "server",
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
+                                samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
+                                samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            "serverReference" : ctx.acct_dn,
+            "dnsHostName" : ctx.dnshostname}
+        ctx.samdb.add(rec)
+
+        print "Adding %s" % ctx.ntds_dn
+        rec = {
+            "dn" : ctx.ntds_dn,
+            "objectclass" : "nTDSDSA",
+            "objectCategory" : "CN=NTDS-DSA-RO,%s" % ctx.schema_dn,
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            "dMDLocation" : ctx.schema_dn,
+            "options" : "37",
+            "msDS-Behavior-Version" : "4",
+            "msDS-HasDomainNCs" : ctx.base_dn,
+            "msDS-HasFullReplicaNCs" : [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]}
+        ctx.samdb.add(rec, ["rodc_join:1:1"])
+
+        # find the GUID of our NTDS DN
+        res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+        ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+
+        print "Adding %s" % ctx.connection_dn
+        rec = {
+            "dn" : ctx.connection_dn,
+            "objectclass" : "nTDSConnection",
+            "enabledconnection" : "TRUE",
+            "options" : "65",
+            "fromServer" : ctx.dc_ntds_dn}
+        ctx.samdb.add(rec)
+
+        print "Adding %s" % ctx.topology_dn
+        rec = {
+            "dn" : ctx.topology_dn,
+            "objectclass" : "msDFSR-Member",
+            "msDFSR-ComputerReference" : ctx.acct_dn,
+            "serverReference" : ctx.ntds_dn}
+        ctx.samdb.add(rec)
+
+        print "Adding HOST SPNs to %s" % ctx.acct_dn
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
+        SPNs = [ "HOST/%s" % ctx.myname,
+                 "HOST/%s" % ctx.dnshostname ]
+        m["servicePrincipalName"] = ldb.MessageElement(SPNs,
+                                                       ldb.FLAG_MOD_ADD,
+                                                       "servicePrincipalName")
+        ctx.samdb.modify(m)
+
+        print "Adding RestrictedKrbHost SPNs to %s" % ctx.acct_dn
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
+        SPNs = [ "RestrictedKrbHost/%s" % ctx.myname,
+                 "RestrictedKrbHost/%s" % ctx.dnshostname ]
+        m["servicePrincipalName"] = ldb.MessageElement(SPNs,
+                                                       ldb.FLAG_MOD_ADD,
+                                                       "servicePrincipalName")
+        ctx.samdb.modify(m)
+
+        print "Setting account password for %s" % ctx.samname
+        ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))" % ctx.samname,
+                              ctx.acct_pass,
+                              force_change_at_next_login=False,
+                              username=ctx.samname)
+
+
+    def join_drs_connect(ctx):
+        '''connect to DRSUAPI'''
+        print "Doing DsBind as %s" % ctx.samname
+        ctx.acct_creds = Credentials()
+        ctx.acct_creds.guess(ctx.lp)
+        ctx.acct_creds.set_kerberos_state(DONT_USE_KERBEROS)
+        ctx.acct_creds.set_username(ctx.samname)
+        ctx.acct_creds.set_password(ctx.acct_pass)
+
+        ctx.drs = drsuapi.drsuapi("ncacn_ip_tcp:%s[seal,print]" % ctx.server, ctx.lp, ctx.acct_creds)
+        ctx.drs_handle = do_DsBind(ctx.drs)
+
+
+    def join_provision(ctx):
+        '''provision the local SAM'''
+
+        print "Calling bare provision"
+
+        setup_dir = find_setup_dir()
+        logger = logging.getLogger("provision")
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        smbconf = lp.configfile
+
+        presult = provision(setup_dir, logger, system_session(), None,
+                            smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
+                            realm=ctx.realm, rootdn=ctx.root_dn, domaindn=ctx.base_dn,
+                            schemadn=ctx.schema_dn,
+                            configdn=ctx.config_dn,
+                            serverdn=ctx.server_dn, domain=ctx.domain_name,
+                            hostname=ctx.myname, hostip="127.0.0.1", domainsid=ctx.domsid,
+                            machinepass=ctx.acct_pass, serverrole="domain controller",
+                            sitename=ctx.site)
+        print "Provision OK for domain DN %s" % presult.domaindn
+        ctx.local_samdb = presult.samdb
+        ctx.lp          = presult.lp
+
+
+    def join_replicate(ctx):
+        '''replicate the SAM'''
+
+        print "Starting replication"
+        ctx.local_samdb.transaction_start()
+
+        ctx.replication_state = ctx.net.replicate_init(ctx.local_samdb, ctx.lp, ctx.drs)
+
+        replicate_partition(ctx, ctx.schema_dn, schema=True)
+        replicate_partition(ctx, ctx.config_dn)
+        replicate_partition(ctx, ctx.base_dn)
+        replicate_partition(ctx, ctx.acct_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+        replicate_partition(ctx, ctx.new_krbtgt_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+
+        print "Committing SAM database"
+        ctx.local_samdb.transaction_commit()
 
 
     # main join code
@@ -210,6 +383,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                       session_info=system_session(),
                       credentials=ctx.creds, lp=ctx.lp)
+    ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
 
     ctx.myname = netbios_name
     ctx.samname = "%s$" % ctx.myname
@@ -218,6 +392,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.schema_dn = str(ctx.samdb.get_schema_basedn())
     ctx.config_dn = str(ctx.samdb.get_config_basedn())
     ctx.domsid = ctx.samdb.get_domain_sid()
+    ctx.domain_name = get_domain_name(ctx.samdb)
 
     ctx.dc_ntds_dn = get_dsServiceName(ctx.samdb)
     ctx.dc_dnsHostName = get_dnsHostName(ctx.samdb)
@@ -232,9 +407,13 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
     ctx.topology_dn = "CN=%s,CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,%s" % (ctx.myname, ctx.base_dn)
 
-    # we should lookup these SIDs, and have far more never reveal SIDs
-    ctx.never_reveal_sid = "%s-572" % ctx.domsid;
-    ctx.reveal_sid = "%s-571" % ctx.domsid;
+    # setup some defaults for accounts that should be replicated to this RODC
+    ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
+                             "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
+                             "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
+                             "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
+                             "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
+    ctx.reveal_sid = "<SID=%s-571>" % ctx.domsid;
 
     ctx.dnsdomain = ldb.Dn(ctx.samdb, ctx.base_dn).canonical_str().split('/')[0]
     ctx.realm = ctx.dnsdomain
@@ -243,186 +422,15 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
 
     cleanup_old_join(ctx)
+    try:
+        join_add_objects(ctx)
+        join_drs_connect(ctx)
+        join_provision(ctx)
+        join_replicate(ctx)
+    except:
+        print "Join failed - cleaning up"
+        cleanup_old_join(ctx)
+        raise
 
-    print "Adding %s" % ctx.acct_dn
-    rec = {
-        "dn" : ctx.acct_dn,
-        "objectClass": "computer",
-        "displayname": ctx.samname,
-        "samaccountname" : ctx.samname,
-        "useraccountcontrol" : "83890176",
-        "managedby" : ctx.admin_dn,
-        "dnshostname" : ctx.dnshostname,
-        "msDS-NeverRevealGroup" : "<SID=%s>" % ctx.never_reveal_sid,
-        "msDS-RevealOnDemandGroup" : "<SID=%s>" % ctx.reveal_sid}
-    ctx.samdb.add(rec)
+    print "Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid)
 
-    print "Adding %s" % ctx.krbtgt_dn
-    rec = {
-        "dn" : ctx.krbtgt_dn,
-        "objectclass" : "user",
-        "useraccountcontrol" : "514",
-        "showinadvancedviewonly" : "TRUE",
-        "description" : "tricky account"}
-    ctx.samdb.add(rec, ["rodc_join:1:1"])
-
-    # now we need to search for the samAccountName attribute on the krbtgt DN,
-    # as this will have been magically set to the krbtgt number
-    res = ctx.samdb.search(base=ctx.krbtgt_dn, scope=ldb.SCOPE_BASE, attrs=["samAccountName"])
-    ctx.krbtgt_name = res[0]["samAccountName"][0]
-
-    print "Got krbtgt_name=%s" % ctx.krbtgt_name
-
-    m = ldb.Message()
-    m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
-    m["msDS-krbTgtLink"] = ldb.MessageElement(ctx.krbtgt_dn,
-                                              ldb.FLAG_MOD_REPLACE, "msDS-krbTgtLink")
-    ctx.samdb.modify(m)
-
-    ctx.new_krbtgt_dn = "CN=%s,CN=Users,%s" % (ctx.krbtgt_name, ctx.base_dn)
-    print "Renaming %s to %s" % (ctx.krbtgt_dn, ctx.new_krbtgt_dn)
-    ctx.samdb.rename(ctx.krbtgt_dn, ctx.new_krbtgt_dn)
-
-    print "Adding %s" % ctx.server_dn
-    rec = {
-        "dn": ctx.server_dn,
-        "objectclass" : "server",
-        "systemFlags" : "1375731712",
-        "serverReference" : ctx.acct_dn,
-        "dnsHostName" : ctx.dnshostname}
-    ctx.samdb.add(rec)
-
-    print "Adding %s" % ctx.ntds_dn
-    rec = {
-        "dn" : ctx.ntds_dn,
-        "objectclass" : "nTDSDSA",
-        "objectCategory" : "CN=NTDS-DSA-RO,%s" % ctx.schema_dn,
-        "systemFlags" : "33554432",
-        "dMDLocation" : ctx.schema_dn,
-        "options" : "37",
-        "msDS-Behavior-Version" : "4",
-        "msDS-HasDomainNCs" : ctx.base_dn,
-        "msDS-HasFullReplicaNCs" : [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]}
-    ctx.samdb.add(rec, ["rodc_join:1:1"])
-
-    # find the GUID of our NTDS DN
-    res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
-    ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
-
-    print "Adding %s" % ctx.connection_dn
-    rec = {
-        "dn" : ctx.connection_dn,
-        "objectclass" : "nTDSConnection",
-        "enabledconnection" : "TRUE",
-        "options" : "65",
-        "fromServer" : ctx.dc_ntds_dn}
-    ctx.samdb.add(rec)
-
-    print "Adding %s" % ctx.topology_dn
-    rec = {
-        "dn" : ctx.topology_dn,
-        "objectclass" : "msDFSR-Member",
-        "msDFSR-ComputerReference" : ctx.acct_dn,
-        "serverReference" : ctx.ntds_dn}
-    ctx.samdb.add(rec)
-
-    print "Adding HOST SPNs to %s" % ctx.acct_dn
-    m = ldb.Message()
-    m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
-    SPNs = [ "HOST/%s" % ctx.myname,
-             "HOST/%s" % ctx.dnshostname ]
-    m["servicePrincipalName"] = ldb.MessageElement(SPNs,
-                                                   ldb.FLAG_MOD_ADD,
-                                                   "servicePrincipalName")
-    ctx.samdb.modify(m)
-
-    print "Adding RestrictedKrbHost SPNs to %s" % ctx.acct_dn
-    m = ldb.Message()
-    m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
-    SPNs = [ "RestrictedKrbHost/%s" % ctx.myname,
-             "RestrictedKrbHost/%s" % ctx.dnshostname ]
-    m["servicePrincipalName"] = ldb.MessageElement(SPNs,
-                                                   ldb.FLAG_MOD_ADD,
-                                                   "servicePrincipalName")
-    ctx.samdb.modify(m)
-
-    print "Setting account password for %s" % ctx.samname
-    ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))" % ctx.samname,
-                      ctx.acct_pass,
-                      force_change_at_next_login=False,
-                      username=ctx.samname)
-
-    print "Enabling account %s" % ctx.acct_dn
-    # weird, its already enabled, but w2k8r2 disables then re-enables again
-    m = ldb.Message()
-    m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
-    m["userAccountControl"] = ldb.MessageElement("83890178",
-                                                 ldb.FLAG_MOD_REPLACE,
-                                                 "userAccountControl")
-    ctx.samdb.modify(m)
-
-    m["userAccountControl"] = ldb.MessageElement("83890176",
-                                                 ldb.FLAG_MOD_REPLACE,
-                                                 "userAccountControl")
-    ctx.samdb.modify(m)
-
-    print "Doing DsBind as %s" % ctx.samname
-
-    ctx.acct_creds = Credentials()
-    ctx.acct_creds.guess(ctx.lp)
-    ctx.acct_creds.set_kerberos_state(DONT_USE_KERBEROS)
-    ctx.acct_creds.set_username(ctx.samname)
-    ctx.acct_creds.set_password(ctx.acct_pass)
-
-    ctx.drs = drsuapi.drsuapi("ncacn_ip_tcp:%s[seal,print]" % ctx.server, ctx.lp, ctx.acct_creds)
-    ctx.drs_handle = do_DsBind(ctx.drs)
-    print "DRS Handle: %s" % ctx.drs_handle
-
-    print "Calling DsRGetDCNameEx2"
-    netr = netlogon.netlogon("ncacn_np:%s[print]" % ctx.server, ctx.lp, ctx.acct_creds)
-    dcname = netr.netr_DsRGetDCNameEx2(server_unc=ctx.dc_dnsHostName.decode("utf-8"),
-                                       client_account=None,
-                                       mask=0,
-                                       domain_name=ctx.dnsdomain.decode("utf-8"),
-                                       domain_guid=None, site_name=None,
-                                       flags=0x40001020)
-
-    print ndr_print(dcname)
-    print "Calling bare provision"
-
-    setup_dir = find_setup_dir()
-    logger = logging.getLogger("provision")
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-    smbconf = lp.configfile
-
-    presult = provision(setup_dir, logger, system_session(), None,
-                        smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
-                        realm=ctx.realm, rootdn=ctx.root_dn, domaindn=ctx.base_dn,
-                        schemadn=ctx.schema_dn,
-                        configdn=ctx.config_dn,
-                        serverdn=ctx.server_dn, domain=get_domain_name(ctx.samdb),
-                        hostname=ctx.myname, hostip="127.0.0.1", domainsid=ctx.domsid,
-                        machinepass=ctx.acct_pass, serverrole="domain controller",
-                        sitename=ctx.site)
-    print "Provision OK for domain DN %s" % presult.domaindn
-    ctx.local_samdb = presult.samdb
-    ctx.lp          = presult.lp
-
-
-    print "Starting replication"
-    ctx.local_samdb.transaction_start()
-
-    net = Net(creds=ctx.creds, lp=ctx.lp)
-    ctx.replication_state = net.replicate_init(ctx.local_samdb, ctx.lp, ctx.drs)
-
-    replicate_partition(ctx, ctx.schema_dn, schema=True)
-    replicate_partition(ctx, ctx.config_dn)
-    replicate_partition(ctx, ctx.base_dn)
-    ctx.local_samdb.transaction_commit()
-
-    ctx.local_samdb.transaction_start()
-    replicate_partition(ctx, ctx.acct_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
-    replicate_partition(ctx, ctx.new_krbtgt_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
-
-    print "Committing SAM database"
-    ctx.local_samdb.transaction_commit()
