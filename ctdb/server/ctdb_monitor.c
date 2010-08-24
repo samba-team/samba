@@ -114,6 +114,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	int ret;
 	TDB_DATA rddata;
 	struct takeover_run_reply rd;
+	const char *state_str = NULL;
 
 	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
@@ -141,28 +142,12 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		ctdb->monitor->next_interval = 5;
 
 		ctdb_run_notification_script(ctdb, "unhealthy");
-
-		/* ask the recmaster to reallocate all addresses */
-		DEBUG(DEBUG_ERR,("Node became UNHEALTHY. Ask recovery master %u to perform ip reallocation\n", ctdb->recovery_master));
-		ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
-		}
-
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event OK - node re-enabled\n"));
 		node->flags &= ~NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 5;
 
 		ctdb_run_notification_script(ctdb, "healthy");
-
-		/* ask the recmaster to reallocate all addresses */
-		DEBUG(DEBUG_ERR,("Node became HEALTHY. Ask recovery master %u to perform ip reallocation\n", ctdb->recovery_master));
-		ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
-		}
-
 	}
 
 after_change_status:
@@ -190,6 +175,19 @@ after_change_status:
 	ctdb_daemon_send_message(ctdb, ctdb->pnn,
 				 CTDB_SRVID_PUSH_NODE_FLAGS, data);
 
+	if (c.new_flags & NODE_FLAGS_UNHEALTHY) {
+		state_str = "UNHEALTHY";
+	} else {
+		state_str = "HEALTHY";
+	}
+
+	/* ask the recmaster to reallocate all addresses */
+	DEBUG(DEBUG_ERR,("Node became %s. Ask recovery master %u to perform ip reallocation\n",
+			 state_str, ctdb->recovery_master));
+	ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
+	}
 }
 
 
