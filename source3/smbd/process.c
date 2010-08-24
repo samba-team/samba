@@ -1647,9 +1647,8 @@ static void process_smb(struct smbd_server_connection *conn,
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
-	DEBUG( 3, ( "Transaction %d of length %d (%u toread)\n", trans_num,
-				(int)nread,
-				(unsigned int)unread_bytes ));
+	DEBUG(3, ("Transaction %d of length %d (%u toread)\n",
+		  conn->trans_num, (int)nread, (unsigned int)unread_bytes));
 
 	if (msg_type != 0) {
 		/*
@@ -1676,7 +1675,7 @@ static void process_smb(struct smbd_server_connection *conn,
 	show_msg((char *)inbuf);
 
 	construct_reply((char *)inbuf,nread,unread_bytes,seqnum,encrypted,deferred_pcd);
-	trans_num++;
+	conn->trans_num++;
 
 done:
 	conn->smb1.num_requests++;

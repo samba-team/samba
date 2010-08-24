@@ -71,7 +71,6 @@ struct msg_state *smbd_msg_state = NULL;
 
 bool logged_ioctl_message = false;
 
-int trans_num = 0;
 pid_t mypid = 0;
 time_t last_smb_conf_reload_time = 0;
 time_t last_printer_reload_time = 0;

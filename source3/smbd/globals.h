@@ -466,6 +466,7 @@ struct smbd_server_connection {
 		bool got_session;
 	} nbt;
 	bool using_smb2;
+	int trans_num;
 	struct {
 		struct fd_event *fde;
 
