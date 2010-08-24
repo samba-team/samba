@@ -3812,9 +3812,9 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
-	dbname = dbhdr.name;
+	dbname = discard_const(dbhdr.name);
 	if (argc == 2) {
-		dbname = argv[1];
+		dbname = discard_const(argv[1]);
 	}
 
 	outdata.dsize = dbhdr.size;
