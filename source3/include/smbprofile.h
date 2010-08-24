@@ -894,8 +894,6 @@ extern bool do_profile_times;
 #define DEC_PROFILE_COUNT(x) profile_p->x--
 #define ADD_PROFILE_COUNT(x,y) profile_p->x += (y)
 
-#if defined(HAVE_CLOCK_GETTIME)
-
 extern clockid_t __profile_clock;
 
 static inline uint64_t profile_timestamp(void)
@@ -910,17 +908,6 @@ static inline uint64_t profile_timestamp(void)
 	clock_gettime(__profile_clock, &ts);
 	return (ts.tv_sec * 1000000) + (ts.tv_nsec / 1000); /* usec */
 }
-
-#else
-
-static inline uint64_t profile_timestamp(void)
-{
-	struct timeval tv;
-	GetTimeOfDay(&tv);
-	return (tv.tv_sec * 1000000) + tv.tv_usec;
-}
-
-#endif
 
 /* end of helper macros */
 
