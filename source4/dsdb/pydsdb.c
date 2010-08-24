@@ -578,6 +578,34 @@ void initdsdb(void)
 	PyModule_AddObject(m, "UF_ACCOUNTDISABLE",
 					   PyInt_FromLong(UF_ACCOUNTDISABLE));
 
+	PyModule_AddObject(m, "UF_SCRIPT", PyInt_FromLong(UF_SCRIPT));
+	PyModule_AddObject(m, "UF_ACCOUNTDISABLE", PyInt_FromLong(UF_ACCOUNTDISABLE));
+	PyModule_AddObject(m, "UF_00000004", PyInt_FromLong(UF_00000004));
+	PyModule_AddObject(m, "UF_HOMEDIR_REQUIRED", PyInt_FromLong(UF_HOMEDIR_REQUIRED));
+	PyModule_AddObject(m, "UF_LOCKOUT", PyInt_FromLong(UF_LOCKOUT));
+	PyModule_AddObject(m, "UF_PASSWD_NOTREQD", PyInt_FromLong(UF_PASSWD_NOTREQD));
+	PyModule_AddObject(m, "UF_PASSWD_CANT_CHANGE", PyInt_FromLong(UF_PASSWD_CANT_CHANGE));
+	PyModule_AddObject(m, "UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED", PyInt_FromLong(UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED));
+	PyModule_AddObject(m, "UF_TEMP_DUPLICATE_ACCOUNT", PyInt_FromLong(UF_TEMP_DUPLICATE_ACCOUNT));
+	PyModule_AddObject(m, "UF_NORMAL_ACCOUNT", PyInt_FromLong(UF_NORMAL_ACCOUNT));
+	PyModule_AddObject(m, "UF_00000400", PyInt_FromLong(UF_00000400));
+	PyModule_AddObject(m, "UF_INTERDOMAIN_TRUST_ACCOUNT", PyInt_FromLong(UF_INTERDOMAIN_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_WORKSTATION_TRUST_ACCOUNT", PyInt_FromLong(UF_WORKSTATION_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_SERVER_TRUST_ACCOUNT", PyInt_FromLong(UF_SERVER_TRUST_ACCOUNT));
+	PyModule_AddObject(m, "UF_00004000", PyInt_FromLong(UF_00004000));
+	PyModule_AddObject(m, "UF_00008000", PyInt_FromLong(UF_00008000));
+	PyModule_AddObject(m, "UF_DONT_EXPIRE_PASSWD", PyInt_FromLong(UF_DONT_EXPIRE_PASSWD));
+	PyModule_AddObject(m, "UF_MNS_LOGON_ACCOUNT", PyInt_FromLong(UF_MNS_LOGON_ACCOUNT));
+	PyModule_AddObject(m, "UF_SMARTCARD_REQUIRED", PyInt_FromLong(UF_SMARTCARD_REQUIRED));
+	PyModule_AddObject(m, "UF_TRUSTED_FOR_DELEGATION", PyInt_FromLong(UF_TRUSTED_FOR_DELEGATION));
+	PyModule_AddObject(m, "UF_NOT_DELEGATED", PyInt_FromLong(UF_NOT_DELEGATED));
+	PyModule_AddObject(m, "UF_USE_DES_KEY_ONLY", PyInt_FromLong(UF_USE_DES_KEY_ONLY));
+	PyModule_AddObject(m, "UF_DONT_REQUIRE_PREAUTH", PyInt_FromLong(UF_DONT_REQUIRE_PREAUTH));
+	PyModule_AddObject(m, "UF_PASSWORD_EXPIRED", PyInt_FromLong(UF_PASSWORD_EXPIRED));
+	PyModule_AddObject(m, "UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION", PyInt_FromLong(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION));
+	PyModule_AddObject(m, "UF_NO_AUTH_DATA_REQUIRED", PyInt_FromLong(UF_NO_AUTH_DATA_REQUIRED));
+	PyModule_AddObject(m, "UF_PARTIAL_SECRETS_ACCOUNT", PyInt_FromLong(UF_PARTIAL_SECRETS_ACCOUNT));
+
 	/* "groupType" flags */
 	PyModule_AddObject(m, "GTYPE_SECURITY_BUILTIN_LOCAL_GROUP",
 					   PyInt_FromLong(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP));
