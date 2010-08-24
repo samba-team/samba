@@ -479,7 +479,7 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
-#ifdef PAM_RHOST
+#if HAVE_PAM_RHOST
 	const char *our_rhost;
 	char addr[INET6_ADDRSTRLEN];
 #endif
