@@ -3875,6 +3875,8 @@ NTSTATUS pdb_enum_trusteddoms(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 			      struct trustdom_info ***domains);
 NTSTATUS pdb_get_trusted_domain(TALLOC_CTX *mem_ctx, const char *domain,
 				struct pdb_trusted_domain **td);
+NTSTATUS pdb_get_trusted_domain_by_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid,
+				struct pdb_trusted_domain **td);
 NTSTATUS pdb_set_trusted_domain(const char* domain,
 				const struct pdb_trusted_domain *td);
 NTSTATUS pdb_del_trusted_domain(const char *domain);

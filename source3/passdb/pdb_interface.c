@@ -2109,6 +2109,13 @@ NTSTATUS pdb_get_trusted_domain(TALLOC_CTX *mem_ctx, const char *domain,
 	return pdb->get_trusted_domain(pdb, mem_ctx, domain, td);
 }
 
+NTSTATUS pdb_get_trusted_domain_by_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid,
+				struct pdb_trusted_domain **td)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->get_trusted_domain_by_sid(pdb, mem_ctx, sid, td);
+}
+
 NTSTATUS pdb_set_trusted_domain(const char* domain,
 				const struct pdb_trusted_domain *td)
 {
@@ -2133,6 +2140,14 @@ static NTSTATUS pdb_default_get_trusted_domain(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       const char *domain,
 					       struct pdb_trusted_domain **td)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_get_trusted_domain_by_sid(struct pdb_methods *methods,
+						      TALLOC_CTX *mem_ctx,
+						      struct dom_sid *sid,
+						      struct pdb_trusted_domain **td)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -2230,6 +2245,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->enum_trusteddoms  = pdb_default_enum_trusteddoms;
 
 	(*methods)->get_trusted_domain = pdb_default_get_trusted_domain;
+	(*methods)->get_trusted_domain_by_sid = pdb_default_get_trusted_domain_by_sid;
 	(*methods)->set_trusted_domain = pdb_default_set_trusted_domain;
 	(*methods)->del_trusted_domain = pdb_default_del_trusted_domain;
 	(*methods)->enum_trusted_domains = pdb_default_enum_trusted_domains;

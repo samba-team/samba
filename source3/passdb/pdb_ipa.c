@@ -72,30 +72,20 @@ static char *trusted_domain_base_dn(struct ldapsam_privates *ldap_state)
 
 static bool get_trusted_domain_int(struct ldapsam_privates *ldap_state,
 				   TALLOC_CTX *mem_ctx,
-				   const char *domain, LDAPMessage **entry)
+				   const char *filter, LDAPMessage **entry)
 {
 	int rc;
-	char *filter = NULL;
 	char *base_dn = NULL;
 	LDAPMessage *result = NULL;
 	uint32_t num_result;
 
-	filter = talloc_asprintf(talloc_tos(),
-				 "(&(objectClass=%s)(|(sambaFlatName=%s)(cn=%s)(sambaTrustPartner=%s)))",
-				 LDAP_OBJ_TRUSTED_DOMAIN, domain, domain, domain);
-	if (filter == NULL) {
-		return false;
-	}
-
 	base_dn = trusted_domain_base_dn(ldap_state);
 	if (base_dn == NULL) {
-		TALLOC_FREE(filter);
 		return false;
 	}
 
 	rc = smbldap_search(ldap_state->smbldap_state, base_dn,
 			    LDAP_SCOPE_SUBTREE, filter, NULL, 0, &result);
-	TALLOC_FREE(filter);
 	TALLOC_FREE(base_dn);
 
 	if (result != NULL) {
@@ -115,21 +105,56 @@ static bool get_trusted_domain_int(struct ldapsam_privates *ldap_state,
 
 	if (num_result > 1) {
 		DEBUG(1, ("get_trusted_domain_int: more than one "
-			  "%s object for domain '%s'?!\n",
-			  LDAP_OBJ_TRUSTED_DOMAIN, domain));
+			  "%s object with filter '%s'?!\n",
+			  LDAP_OBJ_TRUSTED_DOMAIN, filter));
 		return false;
 	}
 
 	if (num_result == 0) {
 		DEBUG(1, ("get_trusted_domain_int: no "
-			  "%s object for domain %s.\n",
-			  LDAP_OBJ_TRUSTED_DOMAIN, domain));
+			  "%s object with filter '%s'.\n",
+			  LDAP_OBJ_TRUSTED_DOMAIN, filter));
 		*entry = NULL;
 	} else {
 		*entry = ldap_first_entry(priv2ld(ldap_state), result);
 	}
 
 	return true;
+}
+
+static bool get_trusted_domain_by_name_int(struct ldapsam_privates *ldap_state,
+					  TALLOC_CTX *mem_ctx,
+					  const char *domain,
+					  LDAPMessage **entry)
+{
+	char *filter = NULL;
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(objectClass=%s)(|(%s=%s)(%s=%s)(cn=%s)))",
+				 LDAP_OBJ_TRUSTED_DOMAIN,
+				 LDAP_ATTRIBUTE_FLAT_NAME, domain,
+				 LDAP_ATTRIBUTE_TRUST_PARTNER, domain, domain);
+	if (filter == NULL) {
+		return false;
+	}
+
+	return get_trusted_domain_int(ldap_state, mem_ctx, filter, entry);
+}
+
+static bool get_trusted_domain_by_sid_int(struct ldapsam_privates *ldap_state,
+					   TALLOC_CTX *mem_ctx,
+					   const char *sid, LDAPMessage **entry)
+{
+	char *filter = NULL;
+
+	filter = talloc_asprintf(talloc_tos(), "(&(objectClass=%s)(%s=%s))",
+				 LDAP_OBJ_TRUSTED_DOMAIN,
+				 LDAP_ATTRIBUTE_SECURITY_IDENTIFIER, sid);
+	if (filter == NULL) {
+		return false;
+	}
+
+	return get_trusted_domain_int(ldap_state, mem_ctx, filter, entry);
 }
 
 static bool get_uint32_t_from_ldap_msg(struct ldapsam_privates *ldap_state,
@@ -284,12 +309,45 @@ static NTSTATUS ipasam_get_trusted_domain(struct pdb_methods *methods,
 
 	DEBUG(10, ("ipasam_get_trusted_domain called for domain %s\n", domain));
 
-	if (!get_trusted_domain_int(ldap_state, talloc_tos(), domain, &entry)) {
+	if (!get_trusted_domain_by_name_int(ldap_state, talloc_tos(), domain,
+					    &entry)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (entry == NULL) {
 		DEBUG(5, ("ipasam_get_trusted_domain: no such trusted domain: "
 			  "%s\n", domain));
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	if (!fill_pdb_trusted_domain(mem_ctx, ldap_state, entry, td)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ipasam_get_trusted_domain_by_sid(struct pdb_methods *methods,
+						 TALLOC_CTX *mem_ctx,
+						 struct dom_sid *sid,
+						 struct pdb_trusted_domain **td)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	LDAPMessage *entry = NULL;
+	char *sid_str;
+
+	sid_str = sid_string_tos(sid);
+
+	DEBUG(10, ("ipasam_get_trusted_domain_by_sid called for sid %s\n",
+		   sid_str));
+
+	if (!get_trusted_domain_by_sid_int(ldap_state, talloc_tos(), sid_str,
+					   &entry)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	if (entry == NULL) {
+		DEBUG(5, ("ipasam_get_trusted_domain_by_sid: no trusted domain "
+			  "with sid: %s\n", sid_str));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
@@ -347,7 +405,8 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 
 	DEBUG(10, ("ipasam_set_trusted_domain called for domain %s\n", domain));
 
-	res = get_trusted_domain_int(ldap_state, talloc_tos(), domain, &entry);
+	res = get_trusted_domain_by_name_int(ldap_state, talloc_tos(), domain,
+					     &entry);
 	if (!res) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -451,7 +510,8 @@ static NTSTATUS ipasam_del_trusted_domain(struct pdb_methods *methods,
 	LDAPMessage *entry = NULL;
 	const char *dn;
 
-	if (!get_trusted_domain_int(ldap_state, talloc_tos(), domain, &entry)) {
+	if (!get_trusted_domain_by_name_int(ldap_state, talloc_tos(), domain,
+					    &entry)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -610,6 +670,7 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	(*pdb_method)->enum_trusteddoms = ipasam_enum_trusteddoms;
 
 	(*pdb_method)->get_trusted_domain = ipasam_get_trusted_domain;
+	(*pdb_method)->get_trusted_domain_by_sid = ipasam_get_trusted_domain_by_sid;
 	(*pdb_method)->set_trusted_domain = ipasam_set_trusted_domain;
 	(*pdb_method)->del_trusted_domain = ipasam_del_trusted_domain;
 	(*pdb_method)->enum_trusted_domains = ipasam_enum_trusted_domains;

@@ -454,6 +454,10 @@ struct pdb_methods
 				       TALLOC_CTX *mem_ctx,
 				       const char *domain,
 				       struct pdb_trusted_domain **td);
+	NTSTATUS (*get_trusted_domain_by_sid)(struct pdb_methods *methods,
+					      TALLOC_CTX *mem_ctx,
+					      struct dom_sid *sid,
+					      struct pdb_trusted_domain **td);
 	NTSTATUS (*set_trusted_domain)(struct pdb_methods *methods,
 				       const char* domain,
 				       const struct pdb_trusted_domain *td);
