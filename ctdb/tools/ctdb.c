@@ -2922,6 +2922,106 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+/*
+  write a record to a persistent database
+ */
+static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	struct stat st;
+	TDB_DATA key, data;
+	int fd, ret;
+
+	if (argc < 3) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	fd = open(argv[2], O_RDONLY);
+	if (fd == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file containing record data : %s  %s\n", argv[2], strerror(errno)));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	
+	ret = fstat(fd, &st);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("fstat of file %s failed: %s\n", argv[2], strerror(errno)));
+		close(fd);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (!S_ISREG(st.st_mode)) {
+		DEBUG(DEBUG_ERR,("Not a regular file %s\n", argv[2]));
+		close(fd);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	data.dsize = st.st_size;
+	if (data.dsize == 0) {
+		data.dptr  = NULL;
+	} else {
+		data.dptr = talloc_size(tmp_ctx, data.dsize);
+		if (data.dptr == NULL) {
+			DEBUG(DEBUG_ERR,("Failed to talloc %d of memory to store record data\n", (int)data.dsize));
+			close(fd);
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		ret = read(fd, data.dptr, data.dsize);
+		if (ret != data.dsize) {
+			DEBUG(DEBUG_ERR,("Failed to read %d bytes of record data\n", (int)data.dsize));
+			close(fd);
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+	}
+	close(fd);
+
+
+	db_name = argv[0];
+
+	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	ret = ctdb_transaction_store(h, key, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to store record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_transaction_commit(h);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
 static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -4598,6 +4698,7 @@ static const struct {
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
 	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key>" },
+	{ "pstore", 	     control_pstore,      	true,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
 };
 
 /*
