@@ -2856,6 +2856,72 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
+/*
+  fetch a record from a persistent database
+ */
+static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key, data;
+	int ret;
+
+	if (argc < 2) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (data.dsize == 0 || data.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Record is empty\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	fwrite(data.dptr, data.dsize, 1, stdout);
+
+	/* abort the transaction */
+	talloc_free(h);
+
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
 static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -4531,6 +4597,7 @@ static const struct {
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
+	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key>" },
 };
 
 /*
