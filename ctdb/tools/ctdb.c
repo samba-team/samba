@@ -2866,7 +2866,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_transaction_handle *h;
 	TDB_DATA key, data;
-	int ret;
+	int fd, ret;
 
 	if (argc < 2) {
 		talloc_free(tmp_ctx);
@@ -2912,7 +2912,18 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	fwrite(data.dptr, data.dsize, 1, stdout);
+	if (argc == 3) {
+		fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC);
+		if (fd == -1) {
+			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		write(fd, data.dptr, data.dsize);
+		close(fd);
+	} else {
+		write(1, data.dptr, data.dsize);
+	}
 
 	/* abort the transaction */
 	talloc_free(h);
@@ -4697,7 +4708,7 @@ static const struct {
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
-	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key>" },
+	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	true,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
 };
 
