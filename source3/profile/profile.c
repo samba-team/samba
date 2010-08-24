@@ -29,10 +29,8 @@
 #ifdef WITH_PROFILE
 static int shm_id;
 static bool read_only;
-#if defined(HAVE_CLOCK_GETTIME)
 clockid_t __profile_clock;
 bool have_profiling_clock = False;
-#endif
 #endif
 
 struct profile_header *profile_h;
@@ -138,8 +136,6 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
   open the profiling shared memory area
   ******************************************************************/
 
-#ifdef HAVE_CLOCK_GETTIME
-
 /* Find a clock. Just because the definition for a particular clock ID is
  * present doesn't mean the system actually supports it.
  */
@@ -195,7 +191,6 @@ static void init_clock_gettime(void)
 		("could not find a working clock for profiling"));
 	return;
 }
-#endif
 
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
@@ -203,9 +198,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 
 	read_only = rdonly;
 
-#ifdef HAVE_CLOCK_GETTIME
 	init_clock_gettime();
-#endif
 
  again:
 	/* try to use an existing key */
