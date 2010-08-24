@@ -258,6 +258,50 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	return ret;
 }
 
+
+static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *is_schema_nc;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const char *ldap_display_name;
+	bool schema_nc = false;
+	const struct dsdb_attribute *a;
+	uint32_t attid;
+
+	if (!PyArg_ParseTuple(args, "OsO", &py_ldb, &ldap_display_name, &is_schema_nc))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	if (is_schema_nc) {
+		if (!PyBool_Check(is_schema_nc)) {
+			PyErr_SetString(PyExc_TypeError, "Expected boolean is_schema_nc");
+			return NULL;
+		}
+		if (is_schema_nc == Py_True) {
+			schema_nc = true;
+		}
+	}
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	a = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (a == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	attid = dsdb_attribute_get_attid(a, schema_nc);
+
+	return PyLong_FromUnsignedLong(attid);
+}
+
 static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *py_guid;
@@ -484,6 +528,8 @@ static PyMethodDef py_dsdb_methods[] = {
 		"samdb_set_ntds_settings_dn(samdb, ntds_settings_dn)\n"
 		"Set NTDS Settings DN for this LDB (allows it to be set before the DB fully exists)." },
 	{ "_dsdb_get_oid_from_attid", (PyCFunction)py_dsdb_get_oid_from_attid,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_attid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_attid_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,

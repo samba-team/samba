@@ -440,6 +440,9 @@ accountExpires: %u
     def get_oid_from_attid(self, attid):
         return dsdb._dsdb_get_oid_from_attid(self, attid)
 
+    def get_attid_from_lDAPDisplayName(self, ldap_display_name, is_schema_nc=False):
+        return dsdb._dsdb_get_attid_from_lDAPDisplayName(self, ldap_display_name, is_schema_nc)
+
     def get_invocation_id(self):
         "Get the invocation_id id"
         return dsdb._samdb_ntds_invocation_id(self)
