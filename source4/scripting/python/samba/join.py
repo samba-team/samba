@@ -119,15 +119,48 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
         return handle
 
-    def replicate_partition(ctx, dn, schema=False):
+    def get_rodc_partial_attribute_set(ctx):
+        '''get a list of attributes for RODC replication'''
+        partial_attribute_set = drsuapi.DsPartialAttributeSet()
+        partial_attribute_set.version = 1
+
+        ctx.attids = []
+
+        # the exact list of attids we send is quite critical. Note that
+        # we do ask for the secret attributes, but set set SPECIAL_SECRET_PROCESSING
+        # to zero them out
+        res = ctx.local_samdb.search(base=ctx.schema_dn, scope=ldb.SCOPE_SUBTREE,
+                                     expression="objectClass=attributeSchema",
+                                     attrs=["lDAPDisplayName", "systemFlags",
+                                            "searchFlags"])
+        for r in res:
+            ldap_display_name = r["lDAPDisplayName"][0]
+            if "systemFlags" in r:
+                system_flags      = r["systemFlags"][0]
+                if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
+                                         samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
+                    continue
+            search_flags = r["searchFlags"][0]
+            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+                continue
+            attid = ctx.local_samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
+            ctx.attids.append(int(attid))
+
+        # the attids do need to be sorted, or windows doesn't return
+        # all the attributes we need
+        ctx.attids.sort()
+        partial_attribute_set.attids         = ctx.attids
+        partial_attribute_set.num_attids = len(ctx.attids)
+        return partial_attribute_set
+
+
+    def replicate_partition(ctx, dn, schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE):
         '''replicate a partition'''
 
         # setup for a GetNCChanges call
         req8 = drsuapi.DsGetNCChangesRequest8()
 
-        exop = drsuapi.DRSUAPI_EXOP_NONE
-        null_guid = misc.GUID()
-        req8.destination_dsa_guid           = misc.GUID("9c637462-5b8c-4467-aef2-bdb1f57bc4ef")
+        req8.destination_dsa_guid           = ctx.ntds_guid
         req8.source_dsa_invocation_id	    = misc.GUID(ctx.samdb.get_invocation_id())
         req8.naming_context		    = drsuapi.DsReplicaObjectIdentifier()
         req8.naming_context.dn              = dn.decode("utf-8")
@@ -136,11 +169,14 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         req8.highwatermark.reserved_usn	    = 0
         req8.highwatermark.highest_usn	    = 0
         req8.uptodateness_vector	    = None
-        req8.replica_flags		    = 0
-        req8.replica_flags		    |=  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                                 drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                                 drsuapi.DRSUAPI_DRS_GET_ANC |
-                                                 drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+        if exop == drsuapi.DRSUAPI_EXOP_REPL_SECRET:
+            req8.replica_flags		    = 0
+        else:
+            req8.replica_flags		    =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                                                drsuapi.DRSUAPI_DRS_PER_SYNC |
+                                                drsuapi.DRSUAPI_DRS_GET_ANC |
+                                                drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                                                drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
         req8.max_object_count		     = 402
         req8.max_ndr_size		     = 402116
         req8.extended_op		     = exop
@@ -151,6 +187,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         req8.mapping_ctr.mappings	     = None
 
         while True:
+            if not schema:
+                req8.partial_attribute_set = get_rodc_partial_attribute_set(ctx)
             (level, ctr) = ctx.drs.DsGetNCChanges(ctx.drs_handle, 8, req8)
             net.replicate_chunk(ctx.replication_state, level, ctr, schema=schema)
             if ctr.more_data == 0:
@@ -267,6 +305,10 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         "msDS-HasFullReplicaNCs" : [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]}
     ctx.samdb.add(rec, ["rodc_join:1:1"])
 
+    # find the GUID of our NTDS DN
+    res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+    ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+
     print "Adding %s" % ctx.connection_dn
     rec = {
         "dn" : ctx.connection_dn,
@@ -332,7 +374,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.acct_creds.set_username(ctx.samname)
     ctx.acct_creds.set_password(ctx.acct_pass)
 
-    ctx.drs = drsuapi.drsuapi("ncacn_ip_tcp:%s[seal,print]" % ctx.server, ctx.lp, ctx.creds)
+    ctx.drs = drsuapi.drsuapi("ncacn_ip_tcp:%s[seal,print]" % ctx.server, ctx.lp, ctx.acct_creds)
     ctx.drs_handle = do_DsBind(ctx.drs)
     print "DRS Handle: %s" % ctx.drs_handle
 
@@ -376,6 +418,11 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     replicate_partition(ctx, ctx.schema_dn, schema=True)
     replicate_partition(ctx, ctx.config_dn)
     replicate_partition(ctx, ctx.base_dn)
+    ctx.local_samdb.transaction_commit()
 
-    print "Committing"
+    ctx.local_samdb.transaction_start()
+    replicate_partition(ctx, ctx.acct_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+    replicate_partition(ctx, ctx.new_krbtgt_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+
+    print "Committing SAM database"
     ctx.local_samdb.transaction_commit()
