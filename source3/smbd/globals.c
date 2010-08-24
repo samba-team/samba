@@ -57,15 +57,12 @@ const struct mangle_fns *mangle_fns = NULL;
 unsigned char *chartest = NULL;
 TDB_CONTEXT *tdb_mangled_cache = NULL;
 
-/* these tables are used to provide fast tests for characters */
-unsigned char char_flags[256];
 /*
   this determines how many characters are used from the original filename
   in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
   The largest possible value is 6.
 */
 unsigned mangle_prefix = 0;
-unsigned char base_reverse[256];
 
 struct msg_state *smbd_msg_state = NULL;
 
@@ -146,9 +143,6 @@ struct memcache *smbd_memcache(void)
 
 void smbd_init_globals(void)
 {
-	ZERO_STRUCT(char_flags);
-	ZERO_STRUCT(base_reverse);
-
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
