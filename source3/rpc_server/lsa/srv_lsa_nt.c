@@ -1876,12 +1876,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 	case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
 		return NT_STATUS_INVALID_INFO_CLASS;
 	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
-		init_lsa_String(&info->info_basic.netbios_name, trust_info->name);
-		info->info_basic.sid = dom_sid_dup(info, &trust_info->sid);
-		if (!info->info_basic.sid) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		break;
+		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
 		init_lsa_StringLarge(&info->info_ex.domain_name, trust_info->name);
 		init_lsa_StringLarge(&info->info_ex.netbios_name, trust_info->name);
