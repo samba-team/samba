@@ -233,17 +233,18 @@ static int thread_mutex_destroy(smb_mutex_t *mutex, const char *name)
 	return pthread_mutex_destroy((pthread_mutex_t *)mutex->mutex);
 }
 
-static void mutex_start_timer(struct timeval *tp1)
+static void mutex_start_timer(struct timespec *tp1)
 {
-	gettimeofday(tp1,NULL);
+	clock_gettime_mono(tp1);
 }
 
-static double mutex_end_timer(struct timeval tp1)
+static double mutex_end_timer(struct timespec tp1)
 {
-	struct timeval tp2;
-	gettimeofday(&tp2,NULL);
+	struct timespec tp2;
+
+	clock_gettime_mono(&tp2);
 	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+	       (tp2.tv_nsec - tp1.tv_nsec)*1.0e-9);
 }
 
 /*
@@ -254,7 +255,7 @@ static int thread_mutex_lock(smb_mutex_t *mutexP, const char *name)
 	pthread_mutex_t *mutex = (pthread_mutex_t *)mutexP->mutex;
 	int rc;
 	double t;
-	struct timeval tp1;
+	struct timespec tp1;
 	/* Test below is ONLY for debugging */
 	if ((rc = pthread_mutex_trylock(mutex))) {
 		if (rc == EBUSY) {
@@ -316,7 +317,7 @@ static int thread_rwlock_lock_read(smb_rwlock_t *rwlockP, const char *name)
 	pthread_rwlock_t *rwlock = (pthread_rwlock_t *)rwlockP->rwlock;
 	int rc;
 	double t;
-	struct timeval tp1;
+	struct time tp1;
 	/* Test below is ONLY for debugging */
 	if ((rc = pthread_rwlock_tryrdlock(rwlock))) {
 		if (rc == EBUSY) {
@@ -345,7 +346,7 @@ static int thread_rwlock_lock_write(smb_rwlock_t *rwlockP, const char *name)
 	pthread_rwlock_t *rwlock = (pthread_rwlock_t *)rwlockP->rwlock;
 	int rc;
 	double t;
-	struct timeval tp1;
+	struct timespec tp1;
 	/* Test below is ONLY for debugging */
 	if ((rc = pthread_rwlock_trywrlock(rwlock))) {
 		if (rc == EBUSY) {
