@@ -329,3 +329,4 @@ unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
 talloc_report_full = _glue.talloc_report_full
 talloc_enable_null_tracking = _glue.talloc_enable_null_tracking
+talloc_total_blocks = _glue.talloc_total_blocks
