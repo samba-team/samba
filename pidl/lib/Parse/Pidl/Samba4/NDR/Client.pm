@@ -347,35 +347,77 @@ sub ParseOutputArgument($$$$$$)
 		my $in_env = GenerateFunctionInEnv($fn, $r);
 		my $out_env = GenerateFunctionOutEnv($fn, $r);
 		my $l = $e->{LEVELS}[$level];
+
+		my $in_var = undef;
+		if (grep(/in/, @{$e->{DIRECTION}})) {
+			$in_var = ParseExpr($e->{NAME}, $in_env, $e->{ORIGINAL});
+		}
+		my $out_var = ParseExpr($e->{NAME}, $out_env, $e->{ORIGINAL});
+
+		my $in_size_is = undef;
+		my $out_size_is = undef;
+		my $out_length_is = undef;
+
+		my $avail_len = undef;
+		my $needed_len = undef;
+
+		$self->pidl("{");
+		$self->indent;
+		my $copy_len_var = "_copy_len_$e->{NAME}";
+		$self->pidl("size_t $copy_len_var;");
+
 		unless (defined($l->{SIZE_IS})) {
 			fatal($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
 		} else {
-			my $in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
-			my $out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
-			my $out_length_is = $out_size_is;
+			$in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
+			$out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
+			$out_length_is = $out_size_is;
 			if (defined($l->{LENGTH_IS})) {
 				$out_length_is = ParseExpr($l->{LENGTH_IS}, $out_env, $e->{ORIGINAL});
 			}
-			if ($out_size_is ne $in_size_is) {
-				$self->pidl("if (($out_size_is) > ($in_size_is)) {");
-				$self->indent;
-				$self->ParseInvalidResponse($invalid_response_type);
-				$self->deindent;
-				$self->pidl("}");
-			}
-			if ($out_length_is ne $out_size_is) {
-				$self->pidl("if (($out_length_is) > ($out_size_is)) {");
-				$self->indent;
-				$self->ParseInvalidResponse($invalid_response_type);
-				$self->deindent;
-				$self->pidl("}");
-			}
 			if (has_property($e, "charset")) {
-				$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
-			} else {
-				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
+				if (defined($in_var)) {
+					$avail_len = "ndr_charset_length($in_var, CH_UNIX)";
+				} else {
+					$avail_len = $out_length_is;
+				}
+				$needed_len = "ndr_charset_length($out_var, CH_UNIX)";
 			}
 		}
+
+		if ($out_size_is ne $in_size_is) {
+			$self->pidl("if (($out_size_is) > ($in_size_is)) {");
+			$self->indent;
+			$self->ParseInvalidResponse($invalid_response_type);
+			$self->deindent;
+			$self->pidl("}");
+		}
+		if ($out_length_is ne $out_size_is) {
+			$self->pidl("if (($out_length_is) > ($out_size_is)) {");
+			$self->indent;
+			$self->ParseInvalidResponse($invalid_response_type);
+			$self->deindent;
+			$self->pidl("}");
+		}
+		if (defined($needed_len)) {
+			$self->pidl("$copy_len_var = $needed_len;");
+			$self->pidl("if ($copy_len_var > $avail_len) {");
+			$self->indent;
+			$self->ParseInvalidResponse($invalid_response_type);
+			$self->deindent;
+			$self->pidl("}");
+		} else {
+			$self->pidl("$copy_len_var = $out_length_is;");
+		}
+
+		if (has_property($e, "charset")) {
+			$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), $out_var, $copy_len_var * sizeof(*$o$e->{NAME}));");
+		} else {
+			$self->pidl("memcpy($o$e->{NAME}, $out_var, $copy_len_var * sizeof(*$o$e->{NAME}));");
+		}
+
+		$self->deindent;
+		$self->pidl("}");
 	} else {
 		$self->pidl("*$o$e->{NAME} = *${r}out.$e->{NAME};");
 	}
