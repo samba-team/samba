@@ -383,6 +383,10 @@ LIBCLI_SAMR_OBJ = librpc/gen_ndr/cli_samr.o \
 		  librpc/gen_ndr/ndr_samr_c.o \
 		  rpc_client/cli_samr.o
 
+LIBCLI_NETLOGON_OBJ = librpc/gen_ndr/cli_netlogon.o \
+		      librpc/gen_ndr/ndr_netlogon_c.o \
+		      rpc_client/cli_netlogon.o
+
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
@@ -590,8 +594,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(CLDAP_OBJ) \
 	     $(DRSUAPI_OBJ)
 
-RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o \
-		  $(SCHANNEL_OBJ)
+RPC_CLIENT_OBJ1 = $(SCHANNEL_OBJ)
 
 LIBMSRPC_OBJ = \
 	       $(RPC_CLIENT_OBJ1) \
@@ -600,11 +603,9 @@ LIBMSRPC_OBJ = \
 		   ../librpc/rpc/binding.o
 
 DCERPC_CLIENT_GEN_OBJ = \
-		librpc/gen_ndr/ndr_netlogon_c.o \
 		librpc/gen_ndr/ndr_epmapper_c.o
 
-LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_netlogon.o \
-		   librpc/gen_ndr/cli_epmapper.o \
+LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_epmapper.o \
 		   $(DCERPC_CLIENT_GEN_OBJ) \
 		   ../librpc/rpc/dcerpc_util.o \
 		   ../librpc/rpc/binding_handle.o \
@@ -718,6 +719,7 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
+		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
@@ -1021,6 +1023,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_SRVSVC_OBJ) \
 	     $(LIBCLI_LSA_OBJ) \
 	     $(LIBCLI_SAMR_OBJ) \
+	     $(LIBCLI_NETLOGON_OBJ) \
 	     $(RPC_CLIENT_SCHANNEL_OBJ)
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
@@ -1134,6 +1137,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBCLI_SRVSVC_OBJ) \
 	   $(LIBCLI_LSA_OBJ) \
 	   $(LIBCLI_SAMR_OBJ) \
+	   $(LIBCLI_NETLOGON_OBJ) \
 	   $(RPC_CLIENT_SCHANNEL_OBJ)
 
 # these are not processed by make proto
@@ -1382,7 +1386,8 @@ WINBINDD_OBJ = \
 		$(TDB_VALIDATE_OBJ) \
 		$(LIBCLI_DSSETUP_OBJ) \
 		$(LIBCLI_LSA_OBJ) \
-		$(LIBCLI_SAMR_OBJ)
+		$(LIBCLI_SAMR_OBJ) \
+		$(LIBCLI_NETLOGON_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
@@ -2304,6 +2309,7 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
+		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ)
 
 LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
