@@ -593,10 +593,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(CLDAP_OBJ) \
 	     $(DRSUAPI_OBJ)
 
-RPC_CLIENT_OBJ1 = $(SCHANNEL_OBJ)
-
-LIBMSRPC_OBJ = \
-	       $(RPC_CLIENT_OBJ1) \
+LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       $(RPC_CLIENT_OBJ) \
 		   ../librpc/rpc/binding.o
 
