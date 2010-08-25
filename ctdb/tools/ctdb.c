@@ -4755,10 +4755,10 @@ static const struct {
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
-	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
-	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
-	{ "pstore", 	     control_pstore,      	true,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
-	{ "tfetch", 	     control_tfetch,      	true,	false,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
+	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
+	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
+	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
+	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
 };
 
 /*
