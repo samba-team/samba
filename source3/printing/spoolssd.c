@@ -25,17 +25,19 @@
 #include "rpc_server/rpc_server.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
-
+#define DAEMON_NAME "spoolssd"
 
 static void spoolss_reopen_logs(void)
 {
-	char *lfile = NULL;
-	int ret;
+	char *lfile = lp_logfile();
+	int rc;
 
-	ret = asprintf(&lfile, "%s.spoolssd", lp_logfile());
-	if (ret > 0) {
-		lp_set_logfile(lfile);
-		SAFE_FREE(lfile);
+	if (strstr(lfile, DAEMON_NAME) == NULL) {
+		rc = asprintf(&lfile, "%s.%s", lp_logfile(), DAEMON_NAME);
+		if (rc > 0) {
+			lp_set_logfile(lfile);
+			SAFE_FREE(lfile);
+		}
 	}
 	reopen_logs();
 }
