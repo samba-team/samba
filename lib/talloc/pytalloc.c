@@ -47,6 +47,7 @@ PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 	if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
 		return NULL;
 	}
+	talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
 	ret->ptr = ptr;
 	return (PyObject *)ret;
 }
@@ -67,6 +68,7 @@ PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, voi
 	if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
 		return NULL;
 	}
+	talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
 	ret->ptr = ptr;
 	return (PyObject *)ret;
 }
