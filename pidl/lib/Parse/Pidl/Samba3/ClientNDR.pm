@@ -9,7 +9,7 @@ package Parse::Pidl::Samba3::ClientNDR;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(ParseFunction $res $res_hdr ParseOutputArgument);
+@EXPORT_OK = qw(ParseFunction $res $res_hdr);
 
 use strict;
 use Parse::Pidl qw(fatal warning error);
@@ -83,78 +83,6 @@ sub ParseInvalidResponse($$)
 		$self->pidl("return;");
 	} else {
 		die("ParseInvalidResponse($type)");
-	}
-}
-
-sub ParseOutputArgument($$$;$$$)
-{
-	my ($self, $fn, $e, $r, $o, $invalid_response_type) = @_;
-	my $level = 0;
-	$r = "r." unless defined($r);
-	$o = "" unless defined($o);
-	$invalid_response_type = "sync" unless defined($invalid_response_type);
-
-	if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY") {
-		$self->pidl("return NT_STATUS_NOT_SUPPORTED;");
-		error($e->{ORIGINAL}, "[out] argument is not a pointer or array");
-		return;
-	}
-
-	if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
-		$level = 1;
-		if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") {
-			$self->pidl("if ($o$e->{NAME} && ${r}out.$e->{NAME}) {");
-			$self->indent;
-		}
-	}
-
-	if ($e->{LEVELS}[$level]->{TYPE} eq "ARRAY") {
-		# This is a call to GenerateFunctionInEnv intentionally. 
-		# Since the data is being copied into a user-provided data 
-		# structure, the user should be able to know the size beforehand 
-		# to allocate a structure of the right size.
-		my $in_env = GenerateFunctionInEnv($fn, $r);
-		my $out_env = GenerateFunctionOutEnv($fn, $r);
-		my $l = $e->{LEVELS}[$level];
-		unless (defined($l->{SIZE_IS})) {
-			$self->pidl('#error No size known for [out] array `$e->{NAME}');
-			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
-		} else {
-			my $in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
-			my $out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
-			my $out_length_is = $out_size_is;
-			if (defined($l->{LENGTH_IS})) {
-				$out_length_is = ParseExpr($l->{LENGTH_IS}, $out_env, $e->{ORIGINAL});
-			}
-			if ($out_size_is ne $in_size_is) {
-				$self->pidl("if (($out_size_is) > ($in_size_is)) {");
-				$self->indent;
-				$self->ParseInvalidResponse($invalid_response_type);
-				$self->deindent;
-				$self->pidl("}");
-			}
-			if ($out_length_is ne $out_size_is) {
-				$self->pidl("if (($out_length_is) > ($out_size_is)) {");
-				$self->indent;
-				$self->ParseInvalidResponse($invalid_response_type);
-				$self->deindent;
-				$self->pidl("}");
-			}
-			if (has_property($e, "charset")) {
-				$self->pidl("memcpy(discard_const_p(uint8_t *, $o$e->{NAME}), ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
-			} else {
-				$self->pidl("memcpy($o$e->{NAME}, ${r}out.$e->{NAME}, ($out_length_is) * sizeof(*$o$e->{NAME}));");
-			}
-		}
-	} else {
-		$self->pidl("*$o$e->{NAME} = *${r}out.$e->{NAME};");
-	}
-
-	if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
-		if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref") {
-			$self->deindent;
-			$self->pidl("}");
-		}
 	}
 }
 
