@@ -52,6 +52,14 @@ PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 	return (PyObject *)ret;
 }
 
+/**
+ * Import an existing talloc pointer into a Python object.
+ */
+PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr)
+{
+	return py_talloc_steal_ex(py_type, ptr, ptr);
+}
+
 
 /**
  * Import an existing talloc pointer into a Python object, leaving the

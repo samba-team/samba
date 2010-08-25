@@ -43,8 +43,8 @@ void py_talloc_dealloc(PyObject* self);
 #define py_talloc_get_mem_ctx(py_obj)  ((py_talloc_Object *)py_obj)->talloc_ctx
 
 PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
+PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr);
 PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
-#define py_talloc_steal(py_type, talloc_ptr) py_talloc_steal_ex(py_type, talloc_ptr, talloc_ptr)
 #define py_talloc_reference(py_type, talloc_ptr) py_talloc_reference_ex(py_type, talloc_ptr, talloc_ptr)
 
 /* Sane default implementation of reprfunc. */
