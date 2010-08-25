@@ -596,13 +596,18 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(DRSUAPI_OBJ)
 
 LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
-	       $(RPC_CLIENT_OBJ) \
-		   ../librpc/rpc/binding.o
+	       rpc_client/cli_pipe.o \
+	       librpc/rpc/dcerpc_gssapi.o \
+	       librpc/rpc/dcerpc_spnego.o \
+	       librpc/rpc/rpc_common.o \
+	       rpc_client/rpc_transport_np.o \
+	       rpc_client/rpc_transport_sock.o \
+	       ../librpc/rpc/binding.o \
+	       ../librpc/rpc/dcerpc_util.o \
+	       ../librpc/rpc/binding_handle.o \
+	       librpc/rpc/dcerpc_helpers.o
 
 LIBMSRPC_GEN_OBJ = $(LIBCLI_EPMAPPER_OBJ) \
-		   ../librpc/rpc/dcerpc_util.o \
-		   ../librpc/rpc/binding_handle.o \
-		   librpc/rpc/dcerpc_helpers.o \
 		   $(LIBNDR_GEN_OBJ)
 
 #
@@ -716,13 +721,6 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
 		 rpc_client/init_netlogon.o \
 		 rpc_client/init_samr.o
-
-RPC_CLIENT_OBJ = rpc_client/cli_pipe.o \
-		 librpc/rpc/dcerpc_gssapi.o \
-		 librpc/rpc/dcerpc_spnego.o \
-		 librpc/rpc/rpc_common.o \
-		 rpc_client/rpc_transport_np.o \
-		 rpc_client/rpc_transport_sock.o
 
 RPC_CLIENT_SCHANNEL_OBJ = rpc_client/cli_pipe_schannel.o
 
