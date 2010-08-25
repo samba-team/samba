@@ -191,8 +191,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         req8.mapping_ctr.mappings	     = None
 
         if not schema:
-            pas = get_rodc_partial_attribute_set(ctx)
-            req8.partial_attribute_set = pas
+            req8.partial_attribute_set = get_rodc_partial_attribute_set(ctx)
 
         while True:
             (level, ctr) = ctx.drs.DsGetNCChanges(ctx.drs_handle, 8, req8)
