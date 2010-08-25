@@ -384,19 +384,25 @@ static NTSTATUS cmd_set_transport(void)
 static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
+	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
 
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
-		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+		printf("Usage: %s %s\n", argv[0], p);
 		return NT_STATUS_OK;
 	}
 
 	if (argc == 2) {
 		type = argv[1];
-		if (strequal(type, "NTLMSSP")) {
+		if (strequal(type, "KRB5")) {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_KRB5;
+		} else if (strequal(type, "KRB5_SPNEGO")) {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+		} else if (strequal(type, "NTLMSSP")) {
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
@@ -405,7 +411,7 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
-			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+			printf("Usage: %s %s\n", argv[0], p);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
@@ -418,19 +424,25 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          int argc, const char **argv)
 {
+	const char *p = "[KRB5|KRB5_SPNEGO|NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]";
 	const char *type = "NTLMSSP";
 
 	pipe_default_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
-		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+		printf("Usage: %s %s\n", argv[0], p);
 		return NT_STATUS_OK;
 	}
 
 	if (argc == 2) {
 		type = argv[1];
-		if (strequal(type, "NTLMSSP")) {
+		if (strequal(type, "KRB5")) {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_KRB5;
+		} else if (strequal(type, "KRB5_SPNEGO")) {
+			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
+			pipe_default_auth_spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
+		} else if (strequal(type, "NTLMSSP")) {
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 		} else if (strequal(type, "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_SPNEGO;
@@ -439,7 +451,7 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			pipe_default_auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			printf("unknown type %s\n", type);
-			printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+			printf("Usage: %s %s\n", argv[0], p);
 			return NT_STATUS_INVALID_LEVEL;
 		}
 	}
