@@ -129,6 +129,11 @@ LIBCLI_SAMR_SRC = '''
                   librpc/gen_ndr/ndr_samr_c.c
                   rpc_client/cli_samr.c'''
 
+LIBCLI_NETLOGON_SRC = '''
+                      librpc/gen_ndr/cli_netlogon.c
+                      librpc/gen_ndr/ndr_netlogon_c.c
+                      rpc_client/cli_netlogon.c'''
+
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
@@ -341,8 +346,7 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              ${CLDAP_SRC}
              ${DRSUAPI_SRC}'''
 
-RPC_CLIENT_SRC1 = '''rpc_client/cli_netlogon.c
-                  ${SCHANNEL_SRC}'''
+RPC_CLIENT_SRC1 = '''${SCHANNEL_SRC}'''
 
 LIBMSRPC_SRC = '''
                ${RPC_CLIENT_SRC1}
@@ -351,11 +355,9 @@ LIBMSRPC_SRC = '''
                    ../librpc/rpc/binding.c'''
 
 DCERPC_CLIENT_GEN_SRC = '''
-                ../librpc/gen_ndr/ndr_netlogon_c.c
                 ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBMSRPC_GEN_SRC = '''
-                   ../librpc/gen_ndr/cli_netlogon.c
                    ../librpc/gen_ndr/cli_epmapper.c
                    ${DCERPC_CLIENT_GEN_SRC}
                    ../librpc/rpc/dcerpc_util.c
@@ -727,7 +729,8 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
                   ${LIBCLI_LSA_SRC}
-                  ${LIBCLI_SAMR_SRC}'''
+                  ${LIBCLI_SAMR_SRC}
+                  ${LIBCLI_NETLOGON_SRC}'''
 
 LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
 
@@ -806,6 +809,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_SRVSVC_SRC}
                 ${LIBCLI_LSA_SRC}
                 ${LIBCLI_SAMR_SRC}
+                ${LIBCLI_NETLOGON_SRC}
                 ${RPC_CLIENT_SCHANNEL_SRC}
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}'''
