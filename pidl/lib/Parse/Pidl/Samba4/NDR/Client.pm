@@ -366,8 +366,20 @@ sub ParseOutputArgument($$$$$$)
 		my $copy_len_var = "_copy_len_$e->{NAME}";
 		$self->pidl("size_t $copy_len_var;");
 
-		unless (defined($l->{SIZE_IS})) {
-			fatal($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
+		if (not defined($l->{SIZE_IS})) {
+			if (not $l->{IS_ZERO_TERMINATED}) {
+				fatal($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
+			}
+			if (has_property($e, "charset")) {
+				$avail_len = "ndr_charset_length($in_var, CH_UNIX)";
+				$needed_len = "ndr_charset_length($out_var, CH_UNIX)";
+			} else {
+				$avail_len = "ndr_string_length($in_var, sizeof(*$in_var))";
+				$needed_len = "ndr_string_length($out_var, sizeof(*$out_var))";
+			}
+			$in_size_is = "";
+			$out_size_is = "";
+			$out_length_is = "";
 		} else {
 			$in_size_is = ParseExpr($l->{SIZE_IS}, $in_env, $e->{ORIGINAL});
 			$out_size_is = ParseExpr($l->{SIZE_IS}, $out_env, $e->{ORIGINAL});
@@ -743,6 +755,9 @@ sub ParseFunction($$$)
 			if ($e->{LEVELS}[1]->{TYPE} eq "DATA" and
 			    $e->{LEVELS}[1]->{DATA_TYPE} eq "string") {
 				$reason = "is a pointer to type 'string'";
+			} elsif ($e->{LEVELS}[1]->{TYPE} eq "ARRAY" and
+				 $e->{LEVELS}[1]->{IS_ZERO_TERMINATED}) {
+				next;
 			} elsif ($e->{LEVELS}[1]->{TYPE} eq "ARRAY" and
 				 not defined($e->{LEVELS}[1]->{SIZE_IS})) {
 				$reason = "is a pointer to an unsized array";
