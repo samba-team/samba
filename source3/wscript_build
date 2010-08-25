@@ -350,14 +350,19 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 
 LIBMSRPC_SRC = '''
                ${SCHANNEL_SRC}
-               ${RPC_CLIENT_SRC}
-                   ../librpc/rpc/binding.c'''
+               rpc_client/cli_pipe.c
+               librpc/rpc/rpc_common.c
+               librpc/rpc/dcerpc_gssapi.c
+               librpc/rpc/dcerpc_spnego.c
+               rpc_client/rpc_transport_np.c
+               rpc_client/rpc_transport_sock.c
+               ../librpc/rpc/binding.c
+               ../librpc/rpc/dcerpc_util.c
+               librpc/rpc/dcerpc_helpers.c
+               ../librpc/rpc/binding_handle.c'''
 
 LIBMSRPC_GEN_SRC = '''
                    ${LIBCLI_EPMAPPER_SRC}
-                   ../librpc/rpc/dcerpc_util.c
-                   librpc/rpc/dcerpc_helpers.c
-                   ../librpc/rpc/binding_handle.c
                    ${LIBNDR_GEN_SRC}'''
 
 #
@@ -465,13 +470,6 @@ RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
 #TODO: RPC_SERVER_SRC used to include RPC_STATIC modules
 RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
-
-RPC_CLIENT_SRC = '''rpc_client/cli_pipe.c
-                    librpc/rpc/rpc_common.c
-                    librpc/rpc/dcerpc_gssapi.c
-                    librpc/rpc/dcerpc_spnego.c
-                    rpc_client/rpc_transport_np.c
-                    rpc_client/rpc_transport_sock.c'''
 
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
