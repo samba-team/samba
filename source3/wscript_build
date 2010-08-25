@@ -870,9 +870,9 @@ EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
 
 DISPLAY_SEC_SRC= '../libcli/security/display_sec.c'
 
-CLIENT_SRC1 = '''client/client.c client/clitar.c ${RPC_CLIENT_SRC}
-                 ../librpc/rpc/binding.c client/dnsbrowse.c
-                 ${RPC_CLIENT_SRC1}'''
+CLIENT_SRC1 = '''client/client.c client/clitar.c
+                 client/dnsbrowse.c
+                 ${LIBMSRPC_SRC}'''
 
 CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
                 ${READLINE_SRC} ${DISPLAY_SEC_SRC}
