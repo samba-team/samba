@@ -327,3 +327,5 @@ interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
 unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
+talloc_report_full = _glue.talloc_report_full
+talloc_enable_null_tracking = _glue.talloc_enable_null_tracking

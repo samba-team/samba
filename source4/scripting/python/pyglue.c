@@ -25,6 +25,7 @@
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
 #include "lib/socket/netif_proto.h"
+#include "lib/talloc/pytalloc.h"
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
@@ -164,6 +165,31 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	return pylist;
 }
 
+/* return a talloc tree string for a talloc python object */
+static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
+{
+	PyObject *py_obj;
+	PyTypeObject *type;
+
+	if (!PyArg_ParseTuple(args, "O", &py_obj))
+		return NULL;
+
+	if (py_obj == Py_None) {
+		talloc_report_full(NULL, stdout);
+	} else {
+		type = (PyTypeObject*)PyObject_Type(py_obj);
+		talloc_report_full(py_talloc_get_mem_ctx(py_obj), stdout);
+	}
+	return Py_None;
+}
+
+/* return a talloc tree string for a talloc python object */
+static PyObject *py_talloc_enable_null_tracking(PyObject *self, PyObject *args)
+{
+	talloc_enable_null_tracking();
+	return Py_None;
+}
+
 
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
@@ -182,6 +208,10 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
+	{ "talloc_report_full", (PyCFunction)py_talloc_report_full, METH_VARARGS,
+		"show a talloc tree for an object"},
+	{ "talloc_enable_null_tracking", (PyCFunction)py_talloc_enable_null_tracking, METH_VARARGS,
+		"enable tracking of the NULL object"},
 	{ NULL }
 };
 
