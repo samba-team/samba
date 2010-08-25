@@ -629,6 +629,43 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
+			     TALLOC_CTX *mem_ctx, char **cli_name)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_desc name_buffer;
+
+	if (!gse_ctx->authenticated) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!gse_ctx->client_name) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	/* TODO: check OID matches KRB5 Principal Name OID ? */
+
+	gss_maj = gss_display_name(&gss_min,
+				   gse_ctx->client_name,
+				   &name_buffer, NULL);
+	if (gss_maj) {
+		DEBUG(0, ("gss_display_name failed [%s]\n",
+			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	*cli_name = talloc_strndup(talloc_tos(),
+					(char *)name_buffer.value,
+					name_buffer.length);
+
+	gss_maj = gss_release_buffer(&gss_min, &name_buffer);
+
+	if (!*cli_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
 
 NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
@@ -947,6 +984,11 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	return data_blob_null;
 }
 
+NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
+			     TALLOC_CTX *mem_ctx, char **client_name)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
 
 NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
