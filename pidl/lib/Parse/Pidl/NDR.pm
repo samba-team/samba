@@ -103,7 +103,7 @@ sub GetElementLevelTable($$)
 	if (has_property($e, "out")) {
 		my $needptrs = 1;
 
-		if (has_property($e, "string")) { $needptrs++; }
+		if (has_property($e, "string") and not has_property($e, "in")) { $needptrs++; }
 		if ($#bracket_array >= 0) { $needptrs = 0; }
 
 		warning($e, "[out] argument `$e->{NAME}' not a pointer") if ($needptrs > $e->{POINTERS});
