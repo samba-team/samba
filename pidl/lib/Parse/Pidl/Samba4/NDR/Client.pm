@@ -710,7 +710,7 @@ sub ParseFunction($$$)
 		}
 		if ($e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
 			if (not defined($e->{LEVELS}[0]->{SIZE_IS})) {
-				$reason = "is a pointer to an unsized array";
+				$reason = "is an unsized array";
 			} else {
 				next;
 			}
