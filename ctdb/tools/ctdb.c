@@ -2934,6 +2934,54 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  fetch a record from a tdb-file
+ */
+static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *tdb_file;
+	TDB_CONTEXT *tdb;
+	TDB_DATA key, data;
+	int fd;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	tdb_file = argv[0];
+
+	tdb = tdb_open(tdb_file, 0, 0, O_RDONLY, 0);
+	if (tdb == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to open TDB file %s\n", tdb_file));
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	data = tdb_fetch(tdb, key);
+	if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		DEBUG(DEBUG_ERR,("Failed to read record %s from tdb %s\n", argv[1], tdb_file));
+		tdb_close(tdb);
+		return -1;
+	}
+
+	tdb_close(tdb);
+
+	if (argc == 3) {
+	  fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
+		if (fd == -1) {
+			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
+			return -1;
+		}
+		write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		close(fd);
+	} else {
+		write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+	}
+
+	return 0;
+}
+
+/*
   write a record to a persistent database
  */
 static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4710,6 +4758,7 @@ static const struct {
 	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
 	{ "pfetch", 	     control_pfetch,      	true,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	true,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
+	{ "tfetch", 	     control_tfetch,      	true,	false,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
 };
 
 /*
