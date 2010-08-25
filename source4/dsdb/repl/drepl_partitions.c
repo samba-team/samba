@@ -39,7 +39,7 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	struct ldb_dn *basedn;
 	struct ldb_result *r;
 	struct ldb_message_element *el;
-	static const char *attrs[] = { "hasMasterNCs", NULL };
+	static const char *attrs[] = { "hasMasterNCs", "msDS-hasFullReplicaNCs", NULL };
 	unsigned int i;
 	int ret;
 
@@ -55,10 +55,9 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		return WERR_FOOBAR;
 	}
 
+
+
 	el = ldb_msg_find_element(r->msgs[0], "hasMasterNCs");
-	if (!el) {
-		return WERR_FOOBAR;
-	}
 
 	for (i=0; el && i < el->num_values; i++) {
 		const char *v = (const char *)el->values[i].data;
@@ -78,6 +77,29 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		DLIST_ADD(s->partitions, p);
 
 		DEBUG(2, ("dreplsrv_partition[%s] loaded\n", v));
+	}
+
+	el = ldb_msg_find_element(r->msgs[0], "msDS-hasFullReplicaNCs");
+
+	for (i=0; el && i < el->num_values; i++) {
+		const char *v = (const char *)el->values[i].data;
+		struct ldb_dn *pdn;
+		struct dreplsrv_partition *p;
+
+		pdn = ldb_dn_new(s, s->samdb, v);
+		if (!ldb_dn_validate(pdn)) {
+			return WERR_FOOBAR;
+		}
+
+		p = talloc_zero(s, struct dreplsrv_partition);
+		W_ERROR_HAVE_NO_MEMORY(p);
+
+		p->dn = talloc_steal(p, pdn);
+		p->incoming_only = true;
+
+		DLIST_ADD(s->partitions, p);
+
+		DEBUG(2, ("dreplsrv_partition[%s] loaded (incoming only)\n", v));
 	}
 
 	talloc_free(r);

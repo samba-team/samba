@@ -99,6 +99,8 @@ struct dreplsrv_partition {
 	 * a linked list of all source dsa's we replicate from
 	 */
 	struct dreplsrv_partition_source_dsa *sources;
+
+	bool incoming_only;
 };
 
 typedef void (*dreplsrv_fsmo_callback_t)(struct dreplsrv_service *,
