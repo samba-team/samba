@@ -3294,34 +3294,15 @@ selftestdir = ../selftest
 
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
-FILTER_XFAIL = $(PYTHON) -u $(selftestdir)/filter-subunit --expected-failures=$(srcdir)/selftest/knownfail
-SUBUNIT_FORMATTER = $(PYTHON) -u $(selftestdir)/format-subunit --immediate
-FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(SUBUNIT_FORMATTER)
-
-test-buildfarm:: all torture timelimit
-	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
-		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
-		PERL="$(PERL)" PYTHON="$(PYTHON)" \
-		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/@WINBIND_NSS@" \
-		$(PERL) $(selftestdir)/selftest.pl \
-		--prefix=${selftest_prefix} --target=samba3 \
-		--testlist="$(srcdir)/selftest/tests.sh|" \
-		--exclude=$(srcdir)/selftest/skip \
-		--socket-wrapper $(TESTS) | \
-		$(FILTER_XFAIL) --strip-passed-output
-	test -f ${selftest_prefix}/summary && cat ${selftest_prefix}/summary
-
 test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
+		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/../nsswitch/libnss_winbind.so" \
+		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
+		SOURCEDIR="$(srcdir)" \
+		RUN_FROM_BUILD_FARM="$(RUN_FROM_BUILD_FARM)" \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
-		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/@WINBIND_NSS@" \
-		$(PERL) $(selftestdir)/selftest.pl \
-		--prefix=${selftest_prefix} --target=samba3 \
-		--testlist="$(srcdir)/selftest/tests.sh|" \
-		--exclude=$(srcdir)/selftest/skip \
-		--socket-wrapper $(TESTS) | \
-		$(FORMAT_TEST_OUTPUT)
+		$(selftestdir)/s3-selftest.sh
 
 test-%:
 	$(MAKE) test TESTS=$*
