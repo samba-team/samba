@@ -21,7 +21,7 @@
 import samba.getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec
+from samba import gensec, Ldb
 import ldb, samba, sys
 from samba.ndr import ndr_pack, ndr_unpack, ndr_print
 from samba.dcerpc import security
@@ -30,6 +30,9 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup_dir
 from samba.net import Net
 import logging
+
+# this makes debugging easier
+samba.talloc_enable_null_tracking()
 
 class join_ctx:
     '''hold join context variables'''
@@ -187,10 +190,11 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         req8.mapping_ctr.num_mappings	     = 0
         req8.mapping_ctr.mappings	     = None
 
-        while True:
-            if not schema:
-                req8.partial_attribute_set = get_rodc_partial_attribute_set(ctx)
+        if not schema:
+            pas = get_rodc_partial_attribute_set(ctx)
+            req8.partial_attribute_set = pas
 
+        while True:
             (level, ctr) = ctx.drs.DsGetNCChanges(ctx.drs_handle, 8, req8)
             ctx.net.replicate_chunk(ctx.replication_state, level, ctr, schema=schema)
             if ctr.more_data == 0:
@@ -349,6 +353,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
+        ctx.paths       = presult.paths
 
 
     def join_replicate(ctx):
@@ -367,6 +372,28 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
         print "Committing SAM database"
         ctx.local_samdb.transaction_commit()
+
+
+    def join_finalise(ctx):
+        '''finalise the join, mark us synchronised and setup secrets db'''
+
+        print "Setting isSynchronized"
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, '@ROOTDSE')
+        m["isSynchronized"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isSynchronized")
+        ctx.samdb.modify(m)
+
+        secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
+
+        print "Setting up secrets database"
+        secretsdb_self_join(secrets_ldb, domain=ctx.domain_name,
+                            realm=ctx.realm,
+                            dnsdomain=ctx.dnsdomain,
+                            netbiosname=ctx.myname,
+                            domainsid=security.dom_sid(ctx.domsid),
+                            machinepass=ctx.acct_pass,
+                            secure_channel_type=misc.SEC_CHAN_RODC)
+
 
 
     # main join code
@@ -413,7 +440,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
                              "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
                              "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
                              "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
-    ctx.reveal_sid = "<SID=%s-571>" % ctx.domsid;
+    ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
     ctx.dnsdomain = ldb.Dn(ctx.samdb, ctx.base_dn).canonical_str().split('/')[0]
     ctx.realm = ctx.dnsdomain
@@ -427,6 +454,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         join_drs_connect(ctx)
         join_provision(ctx)
         join_replicate(ctx)
+        join_finalise(ctx)
     except:
         print "Join failed - cleaning up"
         cleanup_old_join(ctx)
