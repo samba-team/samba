@@ -714,7 +714,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 /* Return number of elements in a string in the specified charset */
 _PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 {
-	/* FIXME: Treat special chars special here, taking chset into account */
-	/* Also include 0 byte */
+	switch (chset) {
+	/* case CH_UTF16: this has the same value as CH_UTF16LE */
+	case CH_UTF16LE:
+	case CH_UTF16BE:
+	case CH_UTF16MUNGED:
+		return strlen_m_term((const char *)var);
+	case CH_DISPLAY:
+	case CH_DOS:
+	case CH_UNIX:
+	case CH_UTF8:
+		return strlen((const char *)var)+1;
+	}
+
+	/* Fallback, this should never happen */
 	return strlen((const char *)var)+1;
 }
