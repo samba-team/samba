@@ -6799,6 +6799,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	files_struct *all_fsps = NULL;
 	bool modify_mtime = true;
 	struct file_id id;
+	struct smb_filename *smb_fname_tmp = NULL;
 	SMB_STRUCT_STAT sbuf;
 
 	ZERO_STRUCT(ft);
@@ -6851,7 +6852,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	sbuf = smb_fname->st;
 
 	if (!VALID_STAT(sbuf)) {
-		struct smb_filename *smb_fname_tmp = NULL;
 		/*
 		 * The only valid use of this is to create character and block
 		 * devices, and named pipes. This is deprecated (IMHO) and 
@@ -6880,7 +6880,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		}
 
 		sbuf = smb_fname_tmp->st;
-		TALLOC_FREE(smb_fname_tmp);
+		smb_fname = smb_fname_tmp;
 
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
