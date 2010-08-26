@@ -35,6 +35,10 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "../libcli/security/dom_sid.h"
+#include "../librpc/gen_ndr/drsblobs.h"
+#include "../librpc/gen_ndr/ndr_drsblobs.h"
+#include "../lib/crypto/arcfour.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1607,6 +1611,9 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 	struct security_descriptor *psd;
 	size_t sd_size;
 	struct pdb_trusted_domain td;
+	struct trustDomainPasswords auth_struct;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB auth_blob;
 
 	if (!IS_DC) {
 		return NT_STATUS_NOT_SUPPORTED;
@@ -1650,16 +1657,54 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 
 	ZERO_STRUCT(td);
 
-	td.domain_name = r->in.info->domain_name.string;
-	td.netbios_name = r->in.info->netbios_name.string;
+	td.domain_name = talloc_strdup(p->mem_ctx,
+				       r->in.info->domain_name.string);
+	if (td.domain_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	td.netbios_name = talloc_strdup(p->mem_ctx,
+					r->in.info->netbios_name.string);
+	if (td.netbios_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	sid_copy(&td.security_identifier, r->in.info->sid);
-	td.trust_auth_incoming.data = NULL;
-	td.trust_auth_incoming.length = 0;
-	td.trust_auth_outgoing.data = NULL;
-	td.trust_auth_outgoing.length = 0;
 	td.trust_direction = r->in.info->trust_direction;
 	td.trust_type = r->in.info->trust_type;
 	td.trust_attributes = r->in.info->trust_attributes;
+
+	if (r->in.auth_info->auth_blob.size != 0) {
+		auth_blob.length = r->in.auth_info->auth_blob.size;
+		auth_blob.data = r->in.auth_info->auth_blob.data;
+
+		arcfour_crypt_blob(auth_blob.data, auth_blob.length,
+				   &p->server_info->user_session_key);
+
+		ndr_err = ndr_pull_struct_blob(&auth_blob, p->mem_ctx,
+					       &auth_struct,
+					       (ndr_pull_flags_fn_t) ndr_pull_trustDomainPasswords);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		ndr_err = ndr_push_struct_blob(&td.trust_auth_incoming, p->mem_ctx,
+					       &auth_struct.incoming,
+					       (ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		ndr_err = ndr_push_struct_blob(&td.trust_auth_outgoing, p->mem_ctx,
+					       &auth_struct.outgoing,
+					       (ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		td.trust_auth_incoming.data = NULL;
+		td.trust_auth_incoming.length = 0;
+		td.trust_auth_outgoing.data = NULL;
+		td.trust_auth_outgoing.length = 0;
+	}
 
 	status = pdb_set_trusted_domain(r->in.info->domain_name.string, &td);
 	if (!NT_STATUS_IS_OK(status)) {
