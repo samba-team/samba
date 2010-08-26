@@ -538,7 +538,7 @@ const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn)
 	return &current_user.ut;
 }
 
-const NT_USER_TOKEN *get_current_nttok(connection_struct *conn)
+const struct security_token *get_current_nttok(connection_struct *conn)
 {
 	return current_user.nt_user_token;
 }

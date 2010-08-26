@@ -502,7 +502,7 @@ void svcctl_init_keys( void )
  in case of any failure.
 ********************************************************************/
 
-struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, struct security_token *token )
 {
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
@@ -564,7 +564,7 @@ done:
  Wrapper to make storing a Service sd easier
 ********************************************************************/
 
-bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, NT_USER_TOKEN *token )
+bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, struct security_token *token )
 {
 	struct registry_key_handle *key = NULL;
 	WERROR wresult;
@@ -618,7 +618,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 /********************************************************************
 ********************************************************************/
 
-const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, struct security_token *token )
 {
 	const char *display_name = NULL;
 	struct registry_key_handle *key = NULL;
@@ -671,7 +671,7 @@ fail:
 /********************************************************************
 ********************************************************************/
 
-const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, struct security_token *token )
 {
 	const char *description = NULL;
 	struct registry_key_handle *key = NULL;
@@ -722,7 +722,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 /********************************************************************
 ********************************************************************/
 
-struct regval_ctr *svcctl_fetch_regvalues(const char *name, NT_USER_TOKEN *token)
+struct regval_ctr *svcctl_fetch_regvalues(const char *name, struct security_token *token)
 {
 	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;

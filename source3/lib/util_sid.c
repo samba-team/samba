@@ -107,11 +107,11 @@ static struct dom_sid anon_sid_array[3] =
 { { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
   { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
   { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
-NT_USER_TOKEN anonymous_token = { 3, anon_sid_array, SE_NONE };
+struct security_token anonymous_token = { 3, anon_sid_array, SE_NONE };
 
 static struct dom_sid system_sid_array[1] =
 { { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
-NT_USER_TOKEN system_token = { 1, system_sid_array, SE_ALL_PRIVS };
+struct security_token system_token = { 1, system_sid_array, SE_ALL_PRIVS };
 
 /****************************************************************************
  Lookup string names for SID types.
@@ -153,7 +153,7 @@ const char *sid_type_lookup(uint32 sid_type)
  Create the SYSTEM token.
 ***************************************************************************/
 
-NT_USER_TOKEN *get_system_token(void) 
+struct security_token *get_system_token(void)
 {
 	return &system_token;
 }
@@ -668,7 +668,7 @@ bool is_null_sid(const struct dom_sid *sid)
 	return sid_equal(sid, &null_sid);
 }
 
-bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid)
+bool is_sid_in_token(const struct security_token *token, const struct dom_sid *sid)
 {
         int i;
 

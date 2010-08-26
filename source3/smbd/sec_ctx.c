@@ -300,7 +300,7 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
  Set the current security context to a given user.
 ****************************************************************************/
 
-void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token)
+void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct security_token *token)
 {
 	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 	

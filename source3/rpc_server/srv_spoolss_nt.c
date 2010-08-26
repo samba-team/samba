@@ -150,7 +150,7 @@ const struct standard_mapping printserver_std_mapping = {
 
 struct xcv_api_table {
 	const char *name;
-	WERROR(*fn) (TALLOC_CTX *mem_ctx, NT_USER_TOKEN *token, DATA_BLOB *in, DATA_BLOB *out, uint32_t *needed);
+	WERROR(*fn) (TALLOC_CTX *mem_ctx, struct security_token *token, DATA_BLOB *in, DATA_BLOB *out, uint32_t *needed);
 };
 
 static void prune_printername_cache(void);
@@ -357,7 +357,7 @@ static bool close_printer_handle(struct pipes_struct *p, struct policy_handle *h
  Delete a printer given a handle.
 ****************************************************************************/
 
-static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 				  const char *sharename,
 				  struct messaging_context *msg_ctx)
 {
@@ -5859,7 +5859,7 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri)
+static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const char *portname, const char *uri)
 {
 	char *cmd = lp_addport_cmd();
 	char *command = NULL;
@@ -5908,7 +5908,7 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *p
 /****************************************************************************
 ****************************************************************************/
 
-static bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
+static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 			     struct spoolss_SetPrinterInfo2 *info2,
 			     const char *remote_machine,
 			     struct messaging_context *msg_ctx)
@@ -9540,7 +9540,7 @@ static bool push_monitorui_buf(TALLOC_CTX *mem_ctx, DATA_BLOB *buf,
 *******************************************************************/
 
 static WERROR xcvtcp_monitorui(TALLOC_CTX *mem_ctx,
-			       NT_USER_TOKEN *token, DATA_BLOB *in,
+			       struct security_token *token, DATA_BLOB *in,
 			       DATA_BLOB *out, uint32_t *needed)
 {
 	const char *dllname = "tcpmonui.dll";
@@ -9595,7 +9595,7 @@ static bool pull_port_data_2(TALLOC_CTX *mem_ctx,
 *******************************************************************/
 
 static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
-			     NT_USER_TOKEN *token, DATA_BLOB *in,
+			     struct security_token *token, DATA_BLOB *in,
 			     DATA_BLOB *out, uint32_t *needed)
 {
 	struct spoolss_PortData1 port1;
@@ -9687,7 +9687,7 @@ struct xcv_api_table xcvtcp_cmds[] = {
 };
 
 static WERROR process_xcvtcp_command(TALLOC_CTX *mem_ctx,
-				     NT_USER_TOKEN *token, const char *command,
+				     struct security_token *token, const char *command,
 				     DATA_BLOB *inbuf,
 				     DATA_BLOB *outbuf,
 				     uint32_t *needed )
@@ -9709,7 +9709,7 @@ static WERROR process_xcvtcp_command(TALLOC_CTX *mem_ctx,
 #if 0 	/* don't support management using the "Local Port" monitor */
 
 static WERROR xcvlocal_monitorui(TALLOC_CTX *mem_ctx,
-				 NT_USER_TOKEN *token, DATA_BLOB *in,
+				 struct security_token *token, DATA_BLOB *in,
 				 DATA_BLOB *out, uint32_t *needed)
 {
 	const char *dllname = "localui.dll";
@@ -9746,7 +9746,7 @@ struct xcv_api_table xcvlocal_cmds[] = {
 *******************************************************************/
 
 static WERROR process_xcvlocal_command(TALLOC_CTX *mem_ctx,
-				       NT_USER_TOKEN *token, const char *command,
+				       struct security_token *token, const char *command,
 				       DATA_BLOB *inbuf, DATA_BLOB *outbuf,
 				       uint32_t *needed)
 {

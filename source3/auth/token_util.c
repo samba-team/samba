@@ -31,10 +31,10 @@
 #include "../librpc/gen_ndr/netlogon.h"
 
 /****************************************************************************
- Check for a SID in an NT_USER_TOKEN
+ Check for a SID in an struct security_token
 ****************************************************************************/
 
-bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token )
+bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token )
 {
 	int i;
 
@@ -49,7 +49,7 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token 
 	return False;
 }
 
-bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
+bool nt_token_check_domain_rid( struct security_token *token, uint32 rid )
 {
 	struct dom_sid domain_sid;
 
@@ -79,7 +79,7 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
  Create a copy if your need to change it.
 ******************************************************************************/
 
-NT_USER_TOKEN *get_root_nt_token( void )
+struct security_token *get_root_nt_token( void )
 {
 	struct security_token *token, *for_cache;
 	struct dom_sid u_sid, g_sid;
@@ -649,10 +649,10 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 }
 
 /****************************************************************************
- prints a NT_USER_TOKEN to debug output.
+ prints a struct security_token to debug output.
 ****************************************************************************/
 
-void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
+void debug_nt_user_token(int dbg_class, int dbg_lev, struct security_token *token)
 {
 	size_t     i;
 

@@ -28,16 +28,16 @@
  * - disk operators privilege
  */
 NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
-				     NT_USER_TOKEN **ptoken)
+				     struct security_token **ptoken)
 {
 	NTSTATUS status;
-	NT_USER_TOKEN *token = NULL;
+	struct security_token *token = NULL;
 
 	if (ptoken == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
+	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
 	if (token == NULL) {
 		DEBUG(1, ("talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;

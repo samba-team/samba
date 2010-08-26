@@ -552,7 +552,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 					 struct GP_LINK *gp_link,
 					 enum GPO_LINK_TYPE link_type,
 					 bool only_add_forced_gpos,
-					 const NT_USER_TOKEN *token)
+					 const struct security_token *token)
 {
 	ADS_STATUS status;
 	int i;
@@ -619,7 +619,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
 			     const char *dn,
-			     NT_USER_TOKEN **token)
+			     struct security_token **token)
 {
 	ADS_STATUS status;
 	struct dom_sid object_sid;
@@ -628,7 +628,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 	size_t num_ad_token_sids = 0;
 	struct dom_sid *token_sids;
 	uint32_t num_token_sids = 0;
-	NT_USER_TOKEN *new_token = NULL;
+	struct security_token *new_token = NULL;
 	int i;
 
 	status = ads_get_tokensids(ads, mem_ctx, dn,
@@ -710,7 +710,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			    TALLOC_CTX *mem_ctx,
 			    const char *dn,
 			    uint32_t flags,
-			    const NT_USER_TOKEN *token,
+			    const struct security_token *token,
 			    struct GROUP_POLICY_OBJECT **gpo_list)
 {
 	/* (L)ocal (S)ite (D)omain (O)rganizational(U)nit */

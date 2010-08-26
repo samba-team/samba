@@ -56,7 +56,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 				const struct security_descriptor *sd,
-				const NT_USER_TOKEN *token,
+				const struct security_token *token,
 				uint32_t access_desired,
 				uint32_t *access_granted)
 {

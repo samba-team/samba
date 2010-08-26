@@ -4114,7 +4114,7 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 	return result;
 }
 
-static void init_user_token(NT_USER_TOKEN *token, struct dom_sid *user_sid)
+static void init_user_token(struct security_token *token, struct dom_sid *user_sid)
 {
 	token->num_sids = 4;
 
@@ -4130,12 +4130,12 @@ static void init_user_token(NT_USER_TOKEN *token, struct dom_sid *user_sid)
 	sid_copy(&token->sids[3], &global_sid_Authenticated_Users);
 }
 
-static void free_user_token(NT_USER_TOKEN *token)
+static void free_user_token(struct security_token *token)
 {
 	SAFE_FREE(token->sids);
 }
 
-static void add_sid_to_token(NT_USER_TOKEN *token, struct dom_sid *sid)
+static void add_sid_to_token(struct security_token *token, struct dom_sid *sid)
 {
 	if (is_sid_in_token(token, sid))
 		return;
@@ -4152,7 +4152,7 @@ static void add_sid_to_token(NT_USER_TOKEN *token, struct dom_sid *sid)
 
 struct user_token {
 	fstring name;
-	NT_USER_TOKEN token;
+	struct security_token token;
 };
 
 static void dump_user_token(struct user_token *token)
@@ -4178,7 +4178,7 @@ static bool is_alias_member(struct dom_sid *sid, struct full_alias *alias)
 	return false;
 }
 
-static void collect_sid_memberships(NT_USER_TOKEN *token, struct dom_sid sid)
+static void collect_sid_memberships(struct security_token *token, struct dom_sid sid)
 {
 	int i;
 
@@ -4195,7 +4195,7 @@ static void collect_sid_memberships(NT_USER_TOKEN *token, struct dom_sid sid)
  * add them to the token.
  */
 
-static void collect_alias_memberships(NT_USER_TOKEN *token)
+static void collect_alias_memberships(struct security_token *token)
 {
 	int num_global_sids = token->num_sids;
 	int i;
@@ -4205,7 +4205,7 @@ static void collect_alias_memberships(NT_USER_TOKEN *token)
 	}
 }
 
-static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *token)
+static bool get_user_sids(const char *domain, const char *user, struct security_token *token)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	enum wbcSidType type;

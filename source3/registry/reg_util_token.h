@@ -21,6 +21,6 @@
 #define _REG_UTIL_TOKEN_H
 
 NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
-				     NT_USER_TOKEN **ptoken);
+				     struct security_token **ptoken);
 
 #endif /* _REG_UTIL_TOKEN_H */

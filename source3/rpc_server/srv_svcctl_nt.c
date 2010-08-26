@@ -123,7 +123,7 @@ static struct service_control_op* find_service_by_name( const char *name )
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, NT_USER_TOKEN *token,
+static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, struct security_token *token,
                                      uint32 access_desired, uint32 *access_granted )
 {
 	if ( geteuid() == sec_initial_uid() ) {
@@ -387,7 +387,7 @@ WERROR _svcctl_QueryServiceStatus(struct pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static int enumerate_status( TALLOC_CTX *ctx, struct ENUM_SERVICE_STATUSW **status, NT_USER_TOKEN *token )
+static int enumerate_status( TALLOC_CTX *ctx, struct ENUM_SERVICE_STATUSW **status, struct security_token *token )
 {
 	int num_services = 0;
 	int i;
@@ -430,7 +430,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	NT_USER_TOKEN *token = p->server_info->ptok;
+	struct security_token *token = p->server_info->ptok;
 	DATA_BLOB blob = data_blob_null;
 
 	/* perform access checks */
@@ -642,7 +642,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 
 static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
 			       struct QUERY_SERVICE_CONFIG *config,
-			       NT_USER_TOKEN *token )
+			       struct security_token *token )
 {
 	struct regval_ctr *values;
 	struct regval_blob *val;

@@ -101,7 +101,7 @@ static bool gpo_sd_check_read_access_bits(uint32_t access_mask)
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
-					       const NT_USER_TOKEN *token)
+					       const struct security_token *token)
 {
 	char *sid_str;
 
@@ -123,7 +123,7 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
-						const NT_USER_TOKEN *token)
+						const struct security_token *token)
 {
 	char *sid_str;
 
@@ -146,7 +146,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace(const struct security_ace *ace,
-				 const NT_USER_TOKEN *token)
+				 const struct security_token *token)
 {
 	switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
@@ -162,7 +162,7 @@ static NTSTATUS gpo_sd_check_ace(const struct security_ace *ace,
 ****************************************************************/
 
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
-				      const NT_USER_TOKEN *token)
+				      const struct security_token *token)
 {
 	struct security_descriptor *sd = gpo->security_descriptor;
 	struct security_acl *dacl = NULL;

@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-extern NT_USER_TOKEN anonymous_token;
+extern struct security_token anonymous_token;
 
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
@@ -106,7 +106,7 @@ void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
 static uint32_t access_check_max_allowed(const struct security_descriptor *sd, 
-			  		const NT_USER_TOKEN *token)
+					const struct security_token *token)
 {
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
@@ -154,7 +154,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
   to by the access_granted pointer.
 */
 NTSTATUS se_access_check(const struct security_descriptor *sd, 
-			  const NT_USER_TOKEN *token,
+			  const struct security_token *token,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)
 {

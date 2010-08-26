@@ -407,7 +407,7 @@ bool delete_share_security(const char *servicename)
  Can this user access with share with the required permissions ?
 ********************************************************************/
 
-bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+bool share_access_check(const struct security_token *token, const char *sharename,
 			uint32 desired_access)
 {
 	uint32 granted;

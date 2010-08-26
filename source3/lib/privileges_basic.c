@@ -281,7 +281,7 @@ const char* get_privilege_dispname( const char *name )
  at a time here.
 *****************************************************************************/
 
-bool user_has_privileges(const NT_USER_TOKEN *token, const uint64_t *privilege)
+bool user_has_privileges(const struct security_token *token, const uint64_t *privilege)
 {
 	if ( !token )
 		return False;
@@ -294,7 +294,7 @@ bool user_has_privileges(const NT_USER_TOKEN *token, const uint64_t *privilege)
  at a time here.
 *****************************************************************************/
 
-bool user_has_any_privilege(NT_USER_TOKEN *token, const uint64_t *privilege)
+bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege)
 {
 	if ( !token )
 		return False;

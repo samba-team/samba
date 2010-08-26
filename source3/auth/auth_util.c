@@ -388,7 +388,7 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 	return NT_STATUS_IS_OK(nt_status) ? True : False;
 }
 
-static NTSTATUS log_nt_token(NT_USER_TOKEN *token)
+static NTSTATUS log_nt_token(struct security_token *token)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *command;
@@ -929,7 +929,7 @@ const struct auth_serversupplied_info *get_server_info_system(void)
 bool copy_current_user(struct current_user *dst, struct current_user *src)
 {
 	gid_t *groups;
-	NT_USER_TOKEN *nt_token;
+	struct security_token *nt_token;
 
 	groups = (gid_t *)memdup(src->ut.groups,
 				 sizeof(gid_t) * src->ut.ngroups);

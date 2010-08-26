@@ -31,14 +31,14 @@
  Duplicate a SID token.
 ****************************************************************************/
 
-NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
+struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_token *ptoken)
 {
-	NT_USER_TOKEN *token;
+	struct security_token *token;
 
 	if (!ptoken)
 		return NULL;
 
-	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
+	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
@@ -120,7 +120,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
  Check if this struct security_ace has a SID in common with the token.
 ********************************************************************/
 
-bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace)
+bool token_sid_in_ace(const struct security_token *token, const struct security_ace *ace)
 {
 	size_t i;
 

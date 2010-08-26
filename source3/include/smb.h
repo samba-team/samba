@@ -232,8 +232,6 @@ extern const struct dom_sid global_sid_Unix_Groups;
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct security_token NT_USER_TOKEN;
-
 typedef struct unix_user_token {
 	uid_t uid;
 	gid_t gid;
@@ -551,7 +549,7 @@ struct current_user {
 	connection_struct *conn;
 	uint16 vuid;
 	UNIX_USER_TOKEN ut;
-	NT_USER_TOKEN *nt_user_token;
+	struct security_token *nt_user_token;
 };
 
 struct smbd_smb2_request;

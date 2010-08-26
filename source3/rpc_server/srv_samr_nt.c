@@ -179,7 +179,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor
  level of access for further checks.
 ********************************************************************/
 
-NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
+NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
                                           uint64_t *rights, uint32 rights_mask,
                                           uint32 des_access, uint32 *acc_granted,
 					  const char *debug )
@@ -241,7 +241,7 @@ done:
  Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
 ********************************************************************/
 
-void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
+void map_max_allowed_access(const struct security_token *nt_token,
 			    const struct unix_user_token *unix_token,
 			    uint32_t *pacc_requested)
 {

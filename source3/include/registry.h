@@ -49,7 +49,7 @@ struct registry_ops {
 	bool 	(*store_values)( const char *key, struct regval_ctr *val );
 	bool	(*reg_access_check)( const char *keyname, uint32 requested,
 				     uint32 *granted,
-				     const NT_USER_TOKEN *token );
+				     const struct security_token *token );
 	WERROR (*get_secdesc)(TALLOC_CTX *mem_ctx, const char *key,
 			      struct security_descriptor **psecdesc);
 	WERROR (*set_secdesc)(const char *key,

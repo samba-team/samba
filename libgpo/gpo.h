@@ -156,7 +156,7 @@ struct gp_registry_entries {
 };
 
 struct gp_registry_context {
-	const NT_USER_TOKEN *token;
+	const struct security_token *token;
 	const char *path;
 	struct registry_key *curr_key;
 };
@@ -215,18 +215,18 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
 			     const char *dn,
-			     NT_USER_TOKEN **token);
+			     struct security_token **token);
 ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			    TALLOC_CTX *mem_ctx,
 			    const char *dn,
 			    uint32_t flags,
-			    const NT_USER_TOKEN *token,
+			    const struct security_token *token,
 			    struct GROUP_POLICY_OBJECT **gpo_list);
 
 /* The following definitions come from libgpo/gpo_sec.c  */
 
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
-				      const NT_USER_TOKEN *token);
+				      const struct security_token *token);
 
 /* The following definitions come from libgpo/gpo_util.c  */
 
@@ -245,14 +245,14 @@ void dump_gpo_list(ADS_STRUCT *ads,
 void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
-			     const NT_USER_TOKEN *token,
+			     const struct security_token *token,
 			     struct registry_key *root_key,
 			     struct GROUP_POLICY_OBJECT *gpo,
 			     const char *extension_guid_filter,
 			     uint32_t flags);
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				const NT_USER_TOKEN *token,
+				const struct security_token *token,
 				struct GROUP_POLICY_OBJECT *gpo_list,
 				const char *extensions_guid_filter,
 				uint32_t flags);
@@ -282,7 +282,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
 				const char *dn,
-				NT_USER_TOKEN **token);
+				struct security_token **token);
 
 
 #include "../libgpo/gpext/gpext.h"

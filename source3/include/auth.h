@@ -34,7 +34,7 @@ struct auth_serversupplied_info {
 
 	/* NT group information taken from the info3 structure */
 
-	NT_USER_TOKEN *ptok;
+	struct security_token *ptok;
 
 	/* This is the final session key, as used by SMB signing, and
 	 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes

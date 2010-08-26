@@ -241,9 +241,9 @@ NTSTATUS pass_check(const struct passwd *pass,
 
 /* The following definitions come from auth/token_util.c  */
 
-bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token );
-bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
-NT_USER_TOKEN *get_root_nt_token( void );
+bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token );
+bool nt_token_check_domain_rid( struct security_token *token, uint32 rid );
+struct security_token *get_root_nt_token( void );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token);
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
@@ -258,7 +258,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  struct netr_SamInfo3 *info3,
 					  struct extra_auth_info *extra,
 					  struct security_token **ntok);
-void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
+void debug_nt_user_token(int dbg_class, int dbg_lev, struct security_token *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
 
@@ -663,8 +663,8 @@ void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *mask );
 bool is_privilege_assigned(const uint64_t *privileges,
 			   const uint64_t *check);
 const char* get_privilege_dispname( const char *name );
-bool user_has_privileges(const NT_USER_TOKEN *token, const uint64_t *privilege);
-bool user_has_any_privilege(NT_USER_TOKEN *token, const uint64_t *privilege);
+bool user_has_privileges(const struct security_token *token, const uint64_t *privilege);
+bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege);
 int count_all_privileges( void );
 struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask );
 const char *luid_to_privilege_name(const struct lsa_LUID *set);
@@ -756,7 +756,7 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 			      size_t *psize);
 bool set_share_security(const char *share_name, struct security_descriptor *psd);
 bool delete_share_security(const char *servicename);
-bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
+bool share_access_check(const struct security_token *token, const char *sharename,
 			uint32 desired_access);
 bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_descriptor **ppsd);
 
@@ -1286,12 +1286,12 @@ void smb_nscd_flush_group_cache(void);
 
 /* The following definitions come from lib/util_nttoken.c  */
 
-NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken);
+struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_token *ptoken);
 NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 			const struct security_token *token_1,
 			const struct security_token *token_2,
 			struct security_token **token_out);
-bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace);
+bool token_sid_in_ace(const struct security_token *token, const struct security_ace *ace);
 
 /* The following definitions come from lib/util_pw.c  */
 
@@ -1314,7 +1314,7 @@ bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **
 void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
 void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
 void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping);
-NTSTATUS se_access_check(const struct security_descriptor *sd, const NT_USER_TOKEN *token,
+NTSTATUS se_access_check(const struct security_descriptor *sd, const struct security_token *token,
 		     uint32 acc_desired, uint32 *acc_granted);
 
 /* The following definitions come from lib/util_sec.c  */
@@ -1339,7 +1339,7 @@ bool is_setuid_root(void) ;
 /* The following definitions come from lib/util_sid.c  */
 
 const char *sid_type_lookup(uint32 sid_type) ;
-NT_USER_TOKEN *get_system_token(void) ;
+struct security_token *get_system_token(void) ;
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid);
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_string_dbg(const struct dom_sid *sid);
@@ -1368,7 +1368,7 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t
 bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num);
 bool is_null_sid(const struct dom_sid *sid);
-bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid);
+bool is_sid_in_token(const struct security_token *token, const struct dom_sid *sid);
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      struct dom_sid **user_sids,
@@ -4450,11 +4450,11 @@ bool init_service_op_table( void );
 /* The following definitions come from services/services_db.c  */
 
 void svcctl_init_keys( void );
-struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
-bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, NT_USER_TOKEN *token );
-const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
-const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
-struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
+struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, struct security_token *token );
+bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, struct security_token *token );
+const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, struct security_token *token );
+const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, struct security_token *token );
+struct regval_ctr *svcctl_fetch_regvalues( const char *name, struct security_token *token );
 
 /* The following definitions come from services/svc_netlogon.c  */
 
@@ -5033,7 +5033,7 @@ void reply_nttranss(struct smb_request *req);
 
 NTSTATUS smb1_file_se_access_check(connection_struct *conn,
 				const struct security_descriptor *sd,
-				const NT_USER_TOKEN *token,
+				const struct security_token *token,
 				uint32_t access_desired,
 				uint32_t *access_granted);
 NTSTATUS fd_close(files_struct *fsp);
@@ -5409,7 +5409,7 @@ void server_encryption_shutdown(void);
 
 bool unix_token_equal(const UNIX_USER_TOKEN *t1, const UNIX_USER_TOKEN *t2);
 bool push_sec_ctx(void);
-void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN *token);
+void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct security_token *token);
 void set_root_sec_ctx(void);
 bool pop_sec_ctx(void);
 void init_sec_ctx(void);
@@ -5575,7 +5575,7 @@ bool unbecome_user(void);
 uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);
 const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn);
-const NT_USER_TOKEN *get_current_nttok(connection_struct *conn);
+const struct security_token *get_current_nttok(connection_struct *conn);
 uint16_t get_current_vuid(connection_struct *conn);
 
 /* The following definitions come from smbd/utmp.c  */
@@ -5666,11 +5666,11 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int fncall_recv(struct tevent_req *req, int *perr);
 
 /* The following definitions come from rpc_server/srv_samr_nt.c */
-NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
+NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
 				uint64_t *rights, uint32 rights_mask,
 				uint32 des_access, uint32 *acc_granted,
 				const char *debug);
-void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
+void map_max_allowed_access(const struct security_token *nt_token,
 			    const struct unix_user_token *unix_token,
 			    uint32_t *pacc_requested);
 

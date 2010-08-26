@@ -448,7 +448,7 @@ static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
-			     const NT_USER_TOKEN *token,
+			     const struct security_token *token,
 			     struct registry_key *root_key,
 			     struct GROUP_POLICY_OBJECT *gpo,
 			     const char *extension_guid_filter,
@@ -505,7 +505,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 					      TALLOC_CTX *mem_ctx,
-					      const NT_USER_TOKEN *token,
+					      const struct security_token *token,
 					      struct registry_key *root_key,
 					      struct GROUP_POLICY_OBJECT *gpo_list,
 					      const char *extensions_guid,
@@ -543,7 +543,7 @@ static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				const NT_USER_TOKEN *token,
+				const struct security_token *token,
 				struct GROUP_POLICY_OBJECT *gpo_list,
 				const char *extensions_guid_filter,
 				uint32_t flags)
@@ -840,9 +840,9 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
 				const char *dn,
-				NT_USER_TOKEN **token)
+				struct security_token **token)
 {
-	NT_USER_TOKEN *ad_token = NULL;
+	struct security_token *ad_token = NULL;
 	ADS_STATUS status;
 #if _SAMBA_BUILD_ == 4
 	struct auth_session_info *info;

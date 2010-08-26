@@ -41,7 +41,7 @@ static WERROR open_hive(TALLOC_CTX *ctx, const char *path,
 			char **subkeyname)
 {
 	WERROR werr;
-	NT_USER_TOKEN *token = NULL;
+	struct security_token *token = NULL;
 	char *hivename = NULL;
 	char *tmp_subkeyname = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
