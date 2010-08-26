@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 <refentry id="nmblookup">
 
 <refmeta>
@@ -106,11 +106,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
-		&popt.common.connection;
-		&stdarg.help;
-
 		<varlistentry>
 		<term>-B &lt;broadcast address&gt;</term> 
 		<listitem><para>Send the query to the given broadcast address. Without 
@@ -123,8 +118,6 @@
 		</para></listitem>
 		</varlistentry>
 
-
-
 		<varlistentry>
 		<term>-U &lt;unicast address&gt;</term>
 		<listitem><para>Do a unicast query to the specified address or 
@@ -132,9 +125,6 @@
 		(along with the <parameter>-R</parameter> option) is needed to 
 		query a WINS server.</para></listitem>
 		</varlistentry>
-		
-		&stdarg.server.debug;	
-		&popt.common.samba;
 
 		<varlistentry>
 		<term>-T</term> 
