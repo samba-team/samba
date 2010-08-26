@@ -77,11 +77,11 @@ PRIVS privs[] = {
 bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 {
 	if ( !dst || !src )
-		return False;
+		return false;
 
 	memcpy( dst, src, sizeof(uint64_t) );
 
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -94,12 +94,12 @@ bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 	uint32 num_privs = count_all_privileges();
 
 	if (!se_priv_copy(privilege_mask, &se_priv_none)) {
-		return False;
+		return false;
 	}
 	for ( i=0; i<num_privs; i++ ) {
 		se_priv_add(privilege_mask, &privs[i].privilege_mask);
 	}
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -169,11 +169,11 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
 			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
-			return True;
+			return true;
 		}
 	}
 
-	return False;
+	return false;
 }
 
 /***************************************************************************
@@ -195,20 +195,20 @@ bool is_privilege_assigned(const uint64_t *privileges,
 	uint64_t p1, p2;
 
 	if ( !privileges || !check )
-		return False;
+		return false;
 
 	/* everyone has privileges if you aren't checking for any */
 
 	if ( se_priv_empty( check ) ) {
 		DEBUG(1,("is_privilege_assigned: no privileges in check_mask!\n"));
-		return True;
+		return true;
 	}
 
 	se_priv_copy( &p1, check );
 
 	/* invert the uint64_t we want to check for and remove that from the
 	   original set.  If we are left with the uint64_t we are checking
-	   for then return True */
+	   for then return true */
 
 	se_priv_invert( &p1, check );
 	se_priv_copy( &p2, privileges );
@@ -226,20 +226,20 @@ static bool is_any_privilege_assigned( uint64_t *privileges, const uint64_t *che
 	uint64_t p1, p2;
 
 	if ( !privileges || !check )
-		return False;
+		return false;
 
 	/* everyone has privileges if you aren't checking for any */
 
 	if ( se_priv_empty( check ) ) {
 		DEBUG(1,("is_any_privilege_assigned: no privileges in check_mask!\n"));
-		return True;
+		return true;
 	}
 
 	se_priv_copy( &p1, check );
 
 	/* invert the uint64_t we want to check for and remove that from the
 	   original set.  If we are left with the uint64_t we are checking
-	   for then return True */
+	   for then return true */
 
 	se_priv_invert( &p1, check );
 	se_priv_copy( &p2, privileges );
@@ -284,7 +284,7 @@ const char* get_privilege_dispname( const char *name )
 bool user_has_privileges(const struct security_token *token, const uint64_t *privilege_bit)
 {
 	if ( !token )
-		return False;
+		return false;
 
 	return is_privilege_assigned( &token->privilege_mask, privilege_bit );
 }
@@ -297,7 +297,7 @@ bool user_has_privileges(const struct security_token *token, const uint64_t *pri
 bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege_mask)
 {
 	if ( !token )
-		return False;
+		return false;
 
 	return is_any_privilege_assigned( &token->privilege_mask, privilege_mask );
 }
@@ -374,7 +374,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, struct lsa_LUIDAttribute, priv_set->count + 1);
 	if ( !new_set ) {
 		DEBUG(0,("privilege_set_add: failed to allocate memory!\n"));
-		return False;
+		return false;
 	}
 
 	new_set[priv_set->count].luid.high = set.luid.high;
@@ -384,7 +384,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 	priv_set->count++;
 	priv_set->set = new_set;
 
-	return True;
+	return true;
 }
 
 /*******************************************************************
@@ -407,10 +407,10 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 		luid.luid.low = privs[i].luid;
 
 		if ( !privilege_set_add( set, luid ) )
-			return False;
+			return false;
 	}
 
-	return True;
+	return true;
 }
 
 /*******************************************************************
@@ -424,11 +424,11 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid ) {
 			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
-			return True;
+			return true;
 		}
 	}
 
-	return False;
+	return false;
 }
 
 /*******************************************************************
@@ -447,11 +447,11 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 		   only care about the low 32 bits */
 
 		if ( privset->set[i].luid.high != 0 )
-			return False;
+			return false;
 
 		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
 			se_priv_add( privilege_mask, &r );
 	}
 
-	return True;
+	return true;
 }
