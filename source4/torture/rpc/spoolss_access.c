@@ -314,7 +314,7 @@ static bool test_SetPrinter(struct torture_context *tctx,
 static bool spoolss_access_setup_sd(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    const char *printername,
-				    struct dom_sid *user_sid,
+				    const struct dom_sid *user_sid,
 				    struct security_descriptor **sd_orig)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -453,7 +453,8 @@ static bool torture_rpc_spoolss_access_setup_common(struct torture_context *tctx
 				   CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials, t->user.username, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
-	test_sid = torture_join_user_sid(testuser);
+	test_sid = discard_const_p(struct dom_sid,
+				   torture_join_user_sid(testuser));
 
 	if (t->user.num_builtin_memberships) {
 		struct dcerpc_pipe *samr_pipe = torture_join_samr_pipe(testuser);
