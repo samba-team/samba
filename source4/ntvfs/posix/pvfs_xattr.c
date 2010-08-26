@@ -176,8 +176,8 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 
 	status = pvfs_xattr_ndr_load(pvfs, mem_ctx, name->full_name, 
 				     fd, XATTR_DOSATTRIB_NAME,
-				     &attrib, 
-				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosAttrib);
+				     &attrib,
+				     (void *) ndr_pull_xattr_DosAttrib);
 
 	/* not having a DosAttrib is not an error */
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -271,7 +271,7 @@ NTSTATUS pvfs_dosattrib_save(struct pvfs_state *pvfs, struct pvfs_filename *name
 
 	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				   XATTR_DOSATTRIB_NAME, &attrib, 
-				   (ndr_push_flags_fn_t)ndr_push_xattr_DosAttrib);
+				   (void *) ndr_push_xattr_DosAttrib);
 }
 
 
@@ -287,7 +287,7 @@ NTSTATUS pvfs_doseas_load(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 		return NT_STATUS_OK;
 	}
 	status = pvfs_xattr_ndr_load(pvfs, eas, name->full_name, fd, XATTR_DOSEAS_NAME,
-				     eas, (ndr_pull_flags_fn_t)ndr_pull_xattr_DosEAs);
+				     eas, (void *) ndr_pull_xattr_DosEAs);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_OK;
 	}
@@ -304,7 +304,7 @@ NTSTATUS pvfs_doseas_save(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 		return NT_STATUS_OK;
 	}
 	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, XATTR_DOSEAS_NAME, eas, 
-				   (ndr_push_flags_fn_t)ndr_push_xattr_DosEAs);
+				   (void *) ndr_push_xattr_DosEAs);
 }
 
 
@@ -322,7 +322,7 @@ NTSTATUS pvfs_streams_load(struct pvfs_state *pvfs, struct pvfs_filename *name, 
 	status = pvfs_xattr_ndr_load(pvfs, streams, name->full_name, fd, 
 				     XATTR_DOSSTREAMS_NAME,
 				     streams, 
-				     (ndr_pull_flags_fn_t)ndr_pull_xattr_DosStreams);
+				     (void *) ndr_pull_xattr_DosStreams);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_OK;
 	}
@@ -341,7 +341,7 @@ NTSTATUS pvfs_streams_save(struct pvfs_state *pvfs, struct pvfs_filename *name, 
 	return pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				   XATTR_DOSSTREAMS_NAME, 
 				   streams, 
-				   (ndr_push_flags_fn_t)ndr_push_xattr_DosStreams);
+				   (void *) ndr_push_xattr_DosStreams);
 }
 
 
@@ -359,7 +359,7 @@ NTSTATUS pvfs_acl_load(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	status = pvfs_xattr_ndr_load(pvfs, acl, name->full_name, fd, 
 				     XATTR_NTACL_NAME,
 				     acl, 
-				     (ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
+				     (void *) ndr_pull_xattr_NTACL);
 	return status;
 }
 
@@ -382,7 +382,7 @@ NTSTATUS pvfs_acl_save(struct pvfs_state *pvfs, struct pvfs_filename *name, int 
 	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				     XATTR_NTACL_NAME, 
 				     acl, 
-				     (ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
+				     (void *) ndr_push_xattr_NTACL);
 	talloc_free(privs);
 	return status;
 }

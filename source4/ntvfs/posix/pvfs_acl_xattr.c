@@ -43,8 +43,7 @@ static NTSTATUS pvfs_acl_load_xattr(struct pvfs_state *pvfs, struct pvfs_filenam
 
 	status = pvfs_xattr_ndr_load(pvfs, mem_ctx, name->full_name, fd, 
 				     XATTR_NTACL_NAME,
-				     acl, 
-				     (ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
+				     acl, (void *) ndr_pull_xattr_NTACL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(acl);
@@ -83,8 +82,7 @@ static NTSTATUS pvfs_acl_save_xattr(struct pvfs_state *pvfs, struct pvfs_filenam
 	privs = root_privileges();
 	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
 				     XATTR_NTACL_NAME, 
-				     &acl, 
-				     (ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
+				     &acl, (void *) ndr_push_xattr_NTACL);
 	talloc_free(privs);
 	return status;
 }
