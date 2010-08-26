@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../libcli/security/dom_sid.h"
 
 #define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
 					SECINFO_DACL|SECINFO_SACL|\
@@ -607,10 +608,10 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		}
 
 		/* The CREATOR sids are special when inherited */
-		if (sid_equal(ptrustee, &global_sid_Creator_Owner)) {
+		if (dom_sid_equal(ptrustee, &global_sid_Creator_Owner)) {
 			creator = &global_sid_Creator_Owner;
 			ptrustee = owner_sid;
-		} else if (sid_equal(ptrustee, &global_sid_Creator_Group)) {
+		} else if (dom_sid_equal(ptrustee, &global_sid_Creator_Group)) {
 			creator = &global_sid_Creator_Group;
 			ptrustee = group_sid;
 		}

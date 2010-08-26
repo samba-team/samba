@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/samr.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -890,7 +891,7 @@ static bool pdb_user_in_group(TALLOC_CTX *mem_ctx, struct samu *account,
 	}
 
 	for (i=0; i<num_groups; i++) {
-		if (sid_equal(group_sid, &sids[i])) {
+		if (dom_sid_equal(group_sid, &sids[i])) {
 			return True;
 		}
 	}

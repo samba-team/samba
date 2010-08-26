@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -1372,7 +1373,7 @@ static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, struct sam
 		return nt_status;
 
 	/* build_sam_account might change the SID on us, if the name was for the guest account */
-	if (NT_STATUS_IS_OK(nt_status) && !sid_equal(pdb_get_user_sid(sam_acct), sid)) {
+	if (NT_STATUS_IS_OK(nt_status) && !dom_sid_equal(pdb_get_user_sid(sam_acct), sid)) {
 		DEBUG(1, ("looking for user with sid %s instead returned %s "
 			  "for account %s!?!\n", sid_string_dbg(sid),
 			  sid_string_dbg(pdb_get_user_sid(sam_acct)),

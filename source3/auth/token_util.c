@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "secrets.h"
 #include "memcache.h"
-
+#include "../libcli/security/dom_sid.h"
 #include "../librpc/gen_ndr/netlogon.h"
 
 /****************************************************************************
@@ -42,7 +42,7 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token
 		return False;
 
 	for ( i=0; i<token->num_sids; i++ ) {
-		if ( sid_equal( sid, &token->sids[i] ) )
+		if ( dom_sid_equal( sid, &token->sids[i] ) )
 			return True;
 	}
 

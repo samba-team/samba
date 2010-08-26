@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/ndr_wbint.h"
 #include "ads.h"
 #include "nss_info.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -118,7 +119,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	if (strequal(domain->name, get_global_sam_name()) &&
-	    sid_equal(&domain->sid, get_global_sam_sid())) {
+	    dom_sid_equal(&domain->sid, get_global_sam_sid())) {
 		domain->backend = &sam_passdb_methods;
 		domain->initialized = True;
 	}
@@ -644,7 +645,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 static bool is_my_own_sam_domain(struct winbindd_domain *domain)
 {
 	if (strequal(domain->name, get_global_sam_name()) &&
-	     sid_equal(&domain->sid, get_global_sam_sid())) {
+	     dom_sid_equal(&domain->sid, get_global_sam_sid())) {
 		return true;
 	}
 
@@ -654,7 +655,7 @@ static bool is_my_own_sam_domain(struct winbindd_domain *domain)
 static bool is_builtin_domain(struct winbindd_domain *domain)
 {
 	if (strequal(domain->name, "BUILTIN") &&
-	    sid_equal(&domain->sid, &global_sid_Builtin)) {
+	    dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
 		return true;
 	}
 

@@ -18,10 +18,11 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/dom_sid.h"
 
 bool sid_check_is_unix_users(const struct dom_sid *sid)
 {
-	return sid_equal(sid, &global_sid_Unix_Users);
+	return dom_sid_equal(sid, &global_sid_Unix_Users);
 }
 
 bool sid_check_is_in_unix_users(const struct dom_sid *sid)
@@ -79,7 +80,7 @@ bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
 
 bool sid_check_is_unix_groups(const struct dom_sid *sid)
 {
-	return sid_equal(sid, &global_sid_Unix_Groups);
+	return dom_sid_equal(sid, &global_sid_Unix_Groups);
 }
 
 bool sid_check_is_in_unix_groups(const struct dom_sid *sid)

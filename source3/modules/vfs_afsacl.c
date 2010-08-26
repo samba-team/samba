@@ -417,7 +417,7 @@ static void split_afs_acl(struct afs_acl *acl,
 static bool same_principal(struct afs_ace *x, struct afs_ace *y)
 {
 	return ( (x->positive == y->positive) &&
-		 (sid_compare(&x->sid, &y->sid) == 0) );
+		 (dom_sid_compare(&x->sid, &y->sid) == 0) );
 }
 
 static void merge_afs_acls(struct afs_acl *dir_acl,
@@ -699,16 +699,16 @@ static bool mappable_sid(const struct dom_sid *sid)
 {
 	struct dom_sid domain_sid;
 	
-	if (sid_compare(sid, &global_sid_Builtin_Administrators) == 0)
+	if (dom_sid_compare(sid, &global_sid_Builtin_Administrators) == 0)
 		return True;
 
-	if (sid_compare(sid, &global_sid_World) == 0)
+	if (dom_sid_compare(sid, &global_sid_World) == 0)
 		return True;
 
-	if (sid_compare(sid, &global_sid_Authenticated_Users) == 0)
+	if (dom_sid_compare(sid, &global_sid_Authenticated_Users) == 0)
 		return True;
 
-	if (sid_compare(sid, &global_sid_Builtin_Backup_Operators) == 0)
+	if (dom_sid_compare(sid, &global_sid_Builtin_Backup_Operators) == 0)
 		return True;
 
 	string_to_sid(&domain_sid, "S-1-5-21");
@@ -757,22 +757,22 @@ static bool nt_to_afs_acl(const char *filename,
 			continue;
 		}
 
-		if (sid_compare(&ace->trustee,
+		if (dom_sid_compare(&ace->trustee,
 				&global_sid_Builtin_Administrators) == 0) {
 
 			name = "system:administrators";
 
-		} else if (sid_compare(&ace->trustee,
+		} else if (dom_sid_compare(&ace->trustee,
 				       &global_sid_World) == 0) {
 
 			name = "system:anyuser";
 
-		} else if (sid_compare(&ace->trustee,
+		} else if (dom_sid_compare(&ace->trustee,
 				       &global_sid_Authenticated_Users) == 0) {
 
 			name = "system:authuser";
 
-		} else if (sid_compare(&ace->trustee,
+		} else if (dom_sid_compare(&ace->trustee,
 				       &global_sid_Builtin_Backup_Operators)
 			   == 0) {
 

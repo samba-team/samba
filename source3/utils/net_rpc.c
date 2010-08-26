@@ -36,6 +36,7 @@
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
@@ -4171,7 +4172,7 @@ static bool is_alias_member(struct dom_sid *sid, struct full_alias *alias)
 	int i;
 
 	for (i=0; i<alias->num_members; i++) {
-		if (sid_compare(sid, &alias->members[i]) == 0)
+		if (dom_sid_compare(sid, &alias->members[i]) == 0)
 			return true;
 	}
 

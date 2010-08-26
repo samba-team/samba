@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
+#include "../libcli/security/dom_sid.h"
 
 static TALLOC_CTX *ctx;
 
@@ -370,8 +371,8 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 	if (ace1->type != ace2->type)
 		return ace2->type - ace1->type;
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee))
-		return sid_compare(&ace1->trustee, &ace2->trustee);
+	if (dom_sid_compare(&ace1->trustee, &ace2->trustee))
+		return dom_sid_compare(&ace1->trustee, &ace2->trustee);
 
 	if (ace1->flags != ace2->flags)
 		return ace1->flags - ace2->flags;
@@ -459,7 +460,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		bool found = False;
 
 		for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-		    if (sid_equal(&sd->dacl->aces[i].trustee,
+		    if (dom_sid_equal(&sd->dacl->aces[i].trustee,
 			&old->dacl->aces[j].trustee)) {
 			old->dacl->aces[j] = sd->dacl->aces[i];
 			found = True;

@@ -39,6 +39,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -712,7 +713,7 @@ NTSTATUS _samr_SetSecurity(struct pipes_struct *p,
 
 	dacl = r->in.sdbuf->sd->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
-		if (sid_equal(&uinfo->sid, &dacl->aces[i].trustee)) {
+		if (dom_sid_equal(&uinfo->sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass,
 				(dacl->aces[i].access_mask &
 				 SAMR_USER_ACCESS_CHANGE_PASSWORD) ?

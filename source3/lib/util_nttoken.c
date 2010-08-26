@@ -26,6 +26,7 @@
 /* function(s) moved from auth/auth_util.c to minimize linker deps */
 
 #include "includes.h"
+#include "../libcli/security/dom_sid.h"
 
 /****************************************************************************
  Duplicate a SID token.
@@ -120,7 +121,7 @@ bool token_sid_in_ace(const struct security_token *token, const struct security_
 	size_t i;
 
 	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->trustee, &token->sids[i]))
+		if (dom_sid_equal(&ace->trustee, &token->sids[i]))
 			return true;
 	}
 

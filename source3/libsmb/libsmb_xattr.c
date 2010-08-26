@@ -27,6 +27,7 @@
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
+#include "../libcli/security/dom_sid.h"
 
 
 /*
@@ -121,8 +122,8 @@ ace_compare(struct security_ace *ace1,
 		return ace2->type - ace1->type;
         }
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) {
-		return sid_compare(&ace1->trustee, &ace2->trustee);
+	if (dom_sid_compare(&ace1->trustee, &ace2->trustee)) {
+		return dom_sid_compare(&ace1->trustee, &ace2->trustee);
         }
 
 	if (ace1->flags != ace2->flags) {
@@ -1608,7 +1609,7 @@ cacl_set(SMBCCTX *context,
 			bool found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->aces[i].trustee,
+				if (dom_sid_equal(&sd->dacl->aces[i].trustee,
 					      &old->dacl->aces[j].trustee)) {
                                         if (!(flags & SMBC_XATTR_FLAG_CREATE)) {
                                                 err = EEXIST;

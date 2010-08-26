@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/dom_sid.h"
 
 struct rid_name_map {
 	uint32 rid;
@@ -104,7 +105,7 @@ const char *builtin_domain_name(void)
 
 bool sid_check_is_builtin(const struct dom_sid *sid)
 {
-	return sid_equal(sid, &global_sid_Builtin);
+	return dom_sid_equal(sid, &global_sid_Builtin);
 }
 
 /*****************************************************************

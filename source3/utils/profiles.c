@@ -23,6 +23,7 @@
 #include "popt_common.h"
 #include "registry/reg_objects.h"
 #include "regfio.h"
+#include "../libcli/security/dom_sid.h"
 
 /* GLOBAL VARIABLES */
 
@@ -64,7 +65,7 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	bool update = False;
 
 	verbose_output("  Owner SID: %s\n", sid_string_tos(sd->owner_sid));
-	if ( sid_equal( sd->owner_sid, s1 ) ) {
+	if ( dom_sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
 		update = True;
 		verbose_output("  New Owner SID: %s\n",
@@ -73,7 +74,7 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	}
 
 	verbose_output("  Group SID: %s\n", sid_string_tos(sd->group_sid));
-	if ( sid_equal( sd->group_sid, s1 ) ) {
+	if ( dom_sid_equal( sd->group_sid, s1 ) ) {
 		sid_copy( sd->group_sid, s2 );
 		update = True;
 		verbose_output("  New Group SID: %s\n",
@@ -85,7 +86,7 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	for ( i=0; i<theacl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n",
 			sid_string_tos(&theacl->aces[i].trustee));
-		if ( sid_equal( &theacl->aces[i].trustee, s1 ) ) {
+		if ( dom_sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
 			verbose_output("    New Trustee SID: %s\n",
@@ -99,7 +100,7 @@ static bool swap_sid_in_acl( struct security_descriptor *sd, struct dom_sid *s1,
 	for ( i=0; i<theacl->num_aces; i++ ) {
 		verbose_output("    Trustee SID: %s\n",
 			sid_string_tos(&theacl->aces[i].trustee));
-		if ( sid_equal( &theacl->aces[i].trustee, s1 ) ) {
+		if ( dom_sid_equal( &theacl->aces[i].trustee, s1 ) ) {
 			sid_copy( &theacl->aces[i].trustee, s2 );
 			update = True;
 			verbose_output("    New Trustee SID: %s\n",

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -509,7 +510,7 @@ bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum p
 
 	sid_compose(&dug_sid, get_global_sam_sid(), DOMAIN_RID_USERS);
 
-	if (sid_equal(&dug_sid, g_sid)) {
+	if (dom_sid_equal(&dug_sid, g_sid)) {
 		sid_copy(sampass->group_sid, &dug_sid);
 	} else if (sid_to_gid( g_sid, &gid ) ) {
 		sid_copy(sampass->group_sid, g_sid);

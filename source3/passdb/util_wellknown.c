@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/dom_sid.h"
 
 struct rid_name_map {
 	uint32 rid;
@@ -75,7 +76,7 @@ bool sid_check_is_wellknown_domain(const struct dom_sid *sid, const char **name)
 	int i;
 
 	for (i=0; special_domains[i].sid != NULL; i++) {
-		if (sid_equal(sid, special_domains[i].sid)) {
+		if (dom_sid_equal(sid, special_domains[i].sid)) {
 			if (name != NULL) {
 				*name = special_domains[i].name;
 			}
@@ -115,7 +116,7 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	}
 
 	for (i=0; special_domains[i].sid != NULL; i++) {
-		if (sid_equal(&dom_sid, special_domains[i].sid)) {
+		if (dom_sid_equal(&dom_sid, special_domains[i].sid)) {
 			*domain = talloc_strdup(mem_ctx,
 						special_domains[i].name);
 			users = special_domains[i].known_users;

@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "secrets.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -135,7 +136,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 				continue;
 			}
 
-			if (sid_equal(sid, &domain->sid)) {
+			if (dom_sid_equal(sid, &domain->sid)) {
 				break;
 			}
 		}
@@ -146,7 +147,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		 * We found a match. Possibly update the SID
 		 */
 		if ((sid != NULL)
-		    && sid_equal(&domain->sid, &global_sid_NULL)) {
+		    && dom_sid_equal(&domain->sid, &global_sid_NULL)) {
 			sid_copy( &domain->sid, sid );
 		}
 		return domain;
@@ -740,7 +741,7 @@ struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid)
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (sid_compare_domain(sid, &domain->sid) == 0)
+		if (dom_sid_compare_domain(sid, &domain->sid) == 0)
 			return domain;
 	}
 

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/dom_sid.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -944,10 +945,10 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 			 * ensure the POSIX ACL types are the same. */
 
 			if (!dir_acl) {
-				can_merge = (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 						(curr_ace->attr == curr_ace_outer->attr));
 			} else {
-				can_merge = (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 						(curr_ace->type == curr_ace_outer->type) &&
 						(curr_ace->attr == curr_ace_outer->attr));
 			}
@@ -996,7 +997,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+			if (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
@@ -1297,7 +1298,7 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 
 	/* "Everyone" always matches every uid. */
 
-	if (sid_equal(&group_ace->trustee, &global_sid_World))
+	if (dom_sid_equal(&group_ace->trustee, &global_sid_World))
 		return True;
 
 	/*
@@ -1513,12 +1514,12 @@ static void check_owning_objs(canon_ace *ace, struct dom_sid *pfile_owner_sid, s
 
 	for (i=0, current_ace = ace; i < entries; i++, current_ace = current_ace->next) {
 		if (!got_user_obj && current_ace->owner_type == UID_ACE &&
-				sid_equal(&current_ace->trustee, pfile_owner_sid)) {
+				dom_sid_equal(&current_ace->trustee, pfile_owner_sid)) {
 			current_ace->type = SMB_ACL_USER_OBJ;
 			got_user_obj = True;
 		}
 		if (!got_group_obj && current_ace->owner_type == GID_ACE &&
-				sid_equal(&current_ace->trustee, pfile_grp_sid)) {
+				dom_sid_equal(&current_ace->trustee, pfile_grp_sid)) {
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 			got_group_obj = True;
 		}
@@ -1549,7 +1550,7 @@ static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
 	*/
 
 	if (ace->type == SMB_ACL_USER_OBJ &&
-			!(sid_equal(&ace->trustee, &global_sid_Creator_Owner))) {
+			!(dom_sid_equal(&ace->trustee, &global_sid_Creator_Owner))) {
 		canon_ace *dup_ace = dup_canon_ace(ace);
 
 		if (dup_ace == NULL) {
@@ -1560,7 +1561,7 @@ static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
 	}
 
 	if (ace->type == SMB_ACL_GROUP_OBJ &&
-			!(sid_equal(&ace->trustee, &global_sid_Creator_Group))) {
+			!(dom_sid_equal(&ace->trustee, &global_sid_Creator_Group))) {
 		canon_ace *dup_ace = dup_canon_ace(ace);
 
 		if (dup_ace == NULL) {
@@ -1646,7 +1647,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			if (psa1->access_mask != psa2->access_mask)
 				continue;
 
-			if (!sid_equal(&psa1->trustee, &psa2->trustee))
+			if (!dom_sid_equal(&psa1->trustee, &psa2->trustee))
 				continue;
 
 			/*
@@ -1692,11 +1693,11 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		 * Note what kind of a POSIX ACL this should map to.
 		 */
 
-		if( sid_equal(&current_ace->trustee, &global_sid_World)) {
+		if( dom_sid_equal(&current_ace->trustee, &global_sid_World)) {
 			current_ace->owner_type = WORLD_ACE;
 			current_ace->unix_ug.world = -1;
 			current_ace->type = SMB_ACL_OTHER;
-		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Owner)) {
+		} else if (dom_sid_equal(&current_ace->trustee, &global_sid_Creator_Owner)) {
 			current_ace->owner_type = UID_ACE;
 			current_ace->unix_ug.uid = pst->st_ex_uid;
 			current_ace->type = SMB_ACL_USER_OBJ;
@@ -1709,7 +1710,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 
 			psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
+		} else if (dom_sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
 			current_ace->owner_type = GID_ACE;
 			current_ace->unix_ug.gid = pst->st_ex_gid;
 			current_ace->type = SMB_ACL_GROUP_OBJ;
@@ -2085,7 +2086,7 @@ static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 			continue;
 		}
 
-		if (!sid_equal(&curr_ace->trustee, &global_sid_World))
+		if (!dom_sid_equal(&curr_ace->trustee, &global_sid_World))
 			continue;
 
 		/* JRATEST - assert. */
@@ -3080,7 +3081,7 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 			if ((nt_ace_list[i].type == nt_ace_list[j].type) &&
 				(nt_ace_list[i].size == nt_ace_list[j].size) &&
 				(nt_ace_list[i].access_mask == nt_ace_list[j].access_mask) &&
-				sid_equal(&nt_ace_list[i].trustee, &nt_ace_list[j].trustee) &&
+				dom_sid_equal(&nt_ace_list[i].trustee, &nt_ace_list[j].trustee) &&
 				(i_inh == j_inh) &&
 				(i_flags_ni == 0) &&
 				(j_flags_ni == (SEC_ACE_FLAG_OBJECT_INHERIT|
@@ -3144,7 +3145,7 @@ static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_ace
 
 	/* first search for a duplicate */
 	for (i = 0; i < *num_aces; i++) {
-		if (sid_equal(&nt_ace_list[i].trustee, sid) &&
+		if (dom_sid_equal(&nt_ace_list[i].trustee, sid) &&
 		    (nt_ace_list[i].flags == flags)) break;
 	}
 
@@ -3367,7 +3368,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 
 			if (lp_profile_acls(SNUM(conn))) {
 				for (i = 0; i < num_aces; i++) {
-					if (sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
+					if (dom_sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
 						add_or_replace_ace(nt_ace_list, &num_aces,
 	    							   &orig_owner_sid,
 			    					   nt_ace_list[i].type,
@@ -3756,7 +3757,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 			 * same SID. This is order N^2. Ouch :-(. JRA. */
 			unsigned int k;
 			for (k = 0; k < psd->dacl->num_aces; k++) {
-				if (sid_equal(&psd->dacl->aces[k].trustee,
+				if (dom_sid_equal(&psd->dacl->aces[k].trustee,
 						&se->trustee)) {
 					break;
 				}

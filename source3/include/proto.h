@@ -1294,9 +1294,6 @@ bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid 
 void sid_copy(struct dom_sid *dst, const struct dom_sid *src);
 bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid);
 bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid);
-int sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2);
-int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2);
-bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
 bool non_mappable_sid(struct dom_sid *sid);
 char *sid_binstring(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_binstring_hex(const struct dom_sid *sid);

@@ -34,6 +34,7 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -91,7 +92,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->count; num++) {
-			if (sid_equal(dom_sid, ref->domains[num].sid)) {
+			if (dom_sid_equal(dom_sid, ref->domains[num].sid)) {
 				return num;
 			}
 		}

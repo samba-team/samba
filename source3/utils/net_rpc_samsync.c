@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
 #include "libnet/libnet_samsync.h"
 #include "libnet/libnet_dssync.h"
+#include "../libcli/security/dom_sid.h"
 
 static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
 						      int argc,
@@ -187,7 +188,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	NTSTATUS result;
 	struct samsync_context *ctx = NULL;
 
-	if (!sid_equal(domain_sid, get_global_sam_sid())) {
+	if (!dom_sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf(_("Cannot import users from %s at this time, "
 			   "as the current domain:\n\t%s: %s\nconflicts "
 			   "with the remote domain\n\t%s: %s\n"

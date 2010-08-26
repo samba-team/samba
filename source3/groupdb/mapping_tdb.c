@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "groupdb/mapping.h"
 #include "dbwrap.h"
+#include "../libcli/security/dom_sid.h"
 
 static struct db_context *db; /* used for driver files */
 
@@ -340,7 +341,7 @@ static int collect_map(struct db_record *rec, void *private_data)
 	}
 
 	if ((state->domsid != NULL) &&
-	    (sid_compare_domain(state->domsid, &map.sid) != 0)) {
+	    (dom_sid_compare_domain(state->domsid, &map.sid) != 0)) {
 		DEBUG(11,("enum_group_mapping: group %s is not in domain\n",
 			  sid_string_dbg(&map.sid)));
 		return 0;
@@ -455,7 +456,7 @@ static bool is_aliasmem(const struct dom_sid *alias, const struct dom_sid *membe
 		return False;
 
 	for (i=0; i<num; i++) {
-		if (sid_compare(alias, &sids[i]) == 0) {
+		if (dom_sid_compare(alias, &sids[i]) == 0) {
 			TALLOC_FREE(sids);
 			return True;
 		}
@@ -576,7 +577,7 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 		if (!string_to_sid(&alias, alias_string))
 			continue;
 
-		if (sid_compare(state->alias, &alias) != 0)
+		if (dom_sid_compare(state->alias, &alias) != 0)
 			continue;
 
 		/* Ok, we found the alias we're looking for in the membership
@@ -656,7 +657,7 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	}
 
 	for (i=0; i<num; i++) {
-		if (sid_compare(&sids[i], alias) == 0) {
+		if (dom_sid_compare(&sids[i], alias) == 0) {
 			found = True;
 			break;
 		}

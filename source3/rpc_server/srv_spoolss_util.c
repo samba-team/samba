@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../libcli/security/dom_sid.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -2387,7 +2388,7 @@ create_default:
 	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
 	   this security descriptor has been created when winbindd was
 	   down.  Take ownership of security descriptor. */
-	if (sid_equal(secdesc->owner_sid, &global_sid_World)) {
+	if (dom_sid_equal(secdesc->owner_sid, &global_sid_World)) {
 		struct dom_sid owner_sid;
 
 		/* Change sd owner to workgroup administrator */

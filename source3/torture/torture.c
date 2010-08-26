@@ -6852,7 +6852,7 @@ static bool run_local_string_to_sid(int dummy) {
 		printf("could not parse S-1-5-32-545\n");
 		return false;
 	}
-	if (!sid_equal(&sid, &global_sid_Builtin_Users)) {
+	if (!dom_sid_equal(&sid, &global_sid_Builtin_Users)) {
 		printf("mis-parsed S-1-5-32-545 as %s\n",
 		       sid_string_tos(&sid));
 		return false;

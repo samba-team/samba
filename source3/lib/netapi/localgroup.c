@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 static NTSTATUS libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 						     struct rpc_pipe_client *pipe_cli,
@@ -1171,7 +1172,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		for (i=0; i < r->in.total_entries; i++) {
 			bool already_member = false;
 			for (k=0; k < current_sids.num_sids; k++) {
-				if (sid_equal(&member_sids[i],
+				if (dom_sid_equal(&member_sids[i],
 					      current_sids.sids[k].sid)) {
 					already_member = true;
 					break;
@@ -1193,7 +1194,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		for (k=0; k < current_sids.num_sids; k++) {
 			bool keep_member = false;
 			for (i=0; i < r->in.total_entries; i++) {
-				if (sid_equal(&member_sids[i],
+				if (dom_sid_equal(&member_sids[i],
 					      current_sids.sids[k].sid)) {
 					keep_member = true;
 					break;

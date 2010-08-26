@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../lib/crypto/arcfour.h"
 #include "../librpc/gen_ndr/netlogon.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -332,7 +333,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 
 	/* check if this is a "Unix Users" domain user,
 	 * we need to handle it in a special way if that's the case */
-	if (sid_compare_domain(user_sid, &global_sid_Unix_Users) == 0) {
+	if (dom_sid_compare_domain(user_sid, &global_sid_Unix_Users) == 0) {
 		/* in info3 you can only set rids for the user and the
 		 * primary group, and the domain sid must be that of
 		 * the sam domain.
@@ -358,7 +359,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 
 	/* check if this is a "Unix Groups" domain group,
 	 * if so we need special handling */
-	if (sid_compare_domain(group_sid, &global_sid_Unix_Groups) == 0) {
+	if (dom_sid_compare_domain(group_sid, &global_sid_Unix_Groups) == 0) {
 		/* in info3 you can only set rids for the user and the
 		 * primary group, and the domain sid must be that of
 		 * the sam domain.

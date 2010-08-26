@@ -244,7 +244,7 @@ bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid 
 		return False;
 	}
 
-	if (sid_compare_domain(exp_dom_sid, sid)!=0){
+	if (dom_sid_compare_domain(exp_dom_sid, sid)!=0){
 		*rid=(-1);
 		return False;
 	}
@@ -308,84 +308,6 @@ bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid)
 }
 
 /*****************************************************************
- Compare the auth portion of two sids.
-*****************************************************************/  
-
-static int sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	int i;
-
-	if (sid1 == sid2)
-		return 0;
-	if (!sid1)
-		return -1;
-	if (!sid2)
-		return 1;
-
-	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return sid1->sid_rev_num - sid2->sid_rev_num;
-
-	for (i = 0; i < 6; i++)
-		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return sid1->id_auth[i] - sid2->id_auth[i];
-
-	return 0;
-}
-
-/*****************************************************************
- Compare two sids.
-*****************************************************************/  
-
-int sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	int i;
-
-	if (sid1 == sid2)
-		return 0;
-	if (!sid1)
-		return -1;
-	if (!sid2)
-		return 1;
-
-	/* Compare most likely different rids, first: i.e start at end */
-	if (sid1->num_auths != sid2->num_auths)
-		return sid1->num_auths - sid2->num_auths;
-
-	for (i = sid1->num_auths-1; i >= 0; --i)
-		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return sid1->sub_auths[i] - sid2->sub_auths[i];
-
-	return sid_compare_auth(sid1, sid2);
-}
-
-/*****************************************************************
- See if 2 SIDs are in the same domain
- this just compares the leading sub-auths
-*****************************************************************/  
-
-int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	int n, i;
-
-	n = MIN(sid1->num_auths, sid2->num_auths);
-
-	for (i = n-1; i >= 0; --i)
-		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return sid1->sub_auths[i] - sid2->sub_auths[i];
-
-	return sid_compare_auth(sid1, sid2);
-}
-
-/*****************************************************************
- Compare two sids.
-*****************************************************************/  
-
-bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	return sid_compare(sid1, sid2) == 0;
-}
-
-/*****************************************************************
  Returns true if SID is internal (and non-mappable).
 *****************************************************************/
 
@@ -397,10 +319,10 @@ bool non_mappable_sid(struct dom_sid *sid)
 	sid_copy(&dom, sid);
 	sid_split_rid(&dom, &rid);
 
-	if (sid_equal(&dom, &global_sid_Builtin))
+	if (dom_sid_equal(&dom, &global_sid_Builtin))
 		return True;
 
-	if (sid_equal(&dom, &global_sid_NT_Authority))
+	if (dom_sid_equal(&dom, &global_sid_NT_Authority))
 		return True;
 
 	return False;
@@ -494,7 +416,7 @@ NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 	size_t i;
 
 	for (i=0; i<(*num_sids); i++) {
-		if (sid_compare(sid, &(*sids)[i]) == 0)
+		if (dom_sid_compare(sid, &(*sids)[i]) == 0)
 			return NT_STATUS_OK;
 	}
 
@@ -515,7 +437,7 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t
 		/* if we find the SID, then decrement the count
 		   and break out of the loop */
 
-		if ( sid_equal(sid, &sid_list[i]) ) {
+		if ( dom_sid_equal(sid, &sid_list[i]) ) {
 			*num -= 1;
 			break;
 		}
@@ -555,7 +477,7 @@ bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 bool is_null_sid(const struct dom_sid *sid)
 {
 	static const struct dom_sid null_sid = {0};
-	return sid_equal(sid, &null_sid);
+	return dom_sid_equal(sid, &null_sid);
 }
 
 bool is_sid_in_token(const struct security_token *token, const struct dom_sid *sid)
@@ -563,7 +485,7 @@ bool is_sid_in_token(const struct security_token *token, const struct dom_sid *s
         int i;
 
         for (i=0; i<token->num_sids; i++) {
-                if (sid_compare(sid, &token->sids[i]) == 0)
+                if (dom_sid_compare(sid, &token->sids[i]) == 0)
                         return true;
         }
         return false;

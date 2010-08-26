@@ -47,6 +47,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
 #include "idmap_cache.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -1106,7 +1107,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		gid_to_sid(&mapped_gsid, sampass->unix_pw->pw_gid);
 		primary_gsid = pdb_get_group_sid(sampass);
-		if (primary_gsid && sid_equal(primary_gsid, &mapped_gsid)) {
+		if (primary_gsid && dom_sid_equal(primary_gsid, &mapped_gsid)) {
 			store_gid_sid_cache(primary_gsid,
 					    sampass->unix_pw->pw_gid);
 			idmap_cache_set_sid2gid(primary_gsid,
@@ -2682,7 +2683,7 @@ static bool ldapsam_extract_rid_from_entry(LDAP *ldap_struct,
 		return False;
 	}
 
-	if (sid_compare_domain(&sid, domain_sid) != 0) {
+	if (dom_sid_compare_domain(&sid, domain_sid) != 0) {
 		DEBUG(10, ("SID %s is not in expected domain %s\n",
 			   str, sid_string_dbg(domain_sid)));
 		return False;
@@ -3055,7 +3056,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		}
 	}
 
-	if (sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
+	if (dom_sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
 		DEBUG(3, ("primary group of [%s] not found\n",
 			  pdb_get_username(user)));
 		goto done;
@@ -6668,7 +6669,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		}
 		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name,
 						     &secrets_domain_sid);
-		if (!found_sid || !sid_equal(&secrets_domain_sid,
+		if (!found_sid || !dom_sid_equal(&secrets_domain_sid,
 					     &ldap_domain_sid)) {
 			DEBUG(1, ("pdb_init_ldapsam: Resetting SID for domain "
 				  "%s based on pdb_ldap results %s -> %s\n",

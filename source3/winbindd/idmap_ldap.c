@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "idmap.h"
 #include "idmap_rw.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -1030,7 +1031,7 @@ static struct id_map *find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
 		if (maps[i] == NULL) { /* end of the run */
 			return NULL;
 		}
-		if (sid_equal(maps[i]->sid, sid)) {
+		if (dom_sid_equal(maps[i]->sid, sid)) {
 			return maps[i];
 		}
 	}

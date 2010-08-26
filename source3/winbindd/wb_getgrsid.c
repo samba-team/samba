@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/cli_wbint.h"
+#include "../libcli/security/dom_sid.h"
 
 struct wb_getgrsid_state {
 	struct tevent_context *ev;
@@ -55,7 +56,7 @@ struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 	if (lp_winbind_trusted_domains_only()) {
 		struct winbindd_domain *our_domain = find_our_domain();
 
-		if (sid_compare_domain(group_sid, &our_domain->sid) == 0) {
+		if (dom_sid_compare_domain(group_sid, &our_domain->sid) == 0) {
 			DEBUG(7, ("winbindd_getgrsid: My domain -- rejecting "
 				  "getgrsid() for %s\n", sid_string_tos(group_sid)));
 			tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);

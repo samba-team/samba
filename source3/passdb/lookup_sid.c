@@ -24,6 +24,7 @@
 #include "secrets.h"
 #include "memcache.h"
 #include "idmap_cache.h"
+#include "../libcli/security/dom_sid.h"
 
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.
@@ -655,7 +656,7 @@ static bool lookup_as_domain(const struct dom_sid *sid, TALLOC_CTX *mem_ctx,
 		}
 
 		for (i=0; i<num_domains; i++) {
-			if (sid_equal(sid, &domains[i]->sid)) {
+			if (dom_sid_equal(sid, &domains[i]->sid)) {
 				*name = talloc_strdup(mem_ctx,
 						      domains[i]->name);
 				return true;
@@ -834,7 +835,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			if (!dom_infos[j].valid) {
 				break;
 			}
-			if (sid_equal(&sid, &dom_infos[j].sid)) {
+			if (dom_sid_equal(&sid, &dom_infos[j].sid)) {
 				break;
 			}
 		}
@@ -1581,7 +1582,7 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 		/* We need a sid within our domain */
 		sid_copy(&domain_sid, group_sid);
 		sid_split_rid(&domain_sid, &rid);
-		if (sid_equal(&domain_sid, get_global_sam_sid())) {
+		if (dom_sid_equal(&domain_sid, get_global_sam_sid())) {
 			/*
 			 * As shortcut for the expensive lookup_sid call
 			 * compare the domain sid part
