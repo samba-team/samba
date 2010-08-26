@@ -62,6 +62,7 @@
 
 #include "smb_signing.h"
 #include "dbwrap.h"
+#include "smbldap.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>

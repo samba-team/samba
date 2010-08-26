@@ -27,6 +27,7 @@
 #include "libads/cldap.h"
 #include "libads/dns.h"
 #include "../libds/common/flags.h"
+#include "smbldap.h"
 
 #ifdef HAVE_LDAP
 

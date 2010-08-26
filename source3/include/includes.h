@@ -658,10 +658,6 @@ extern void *cmdline_lp_ctx;
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 
-/* forward declarations from smbldap.c */
-
-#include "smbldap.h"
-
 /*
  * Reasons for cache flush.
  */

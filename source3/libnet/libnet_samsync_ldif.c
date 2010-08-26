@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "libnet/libnet_samsync.h"
+#include "smbldap.h"
 
 #ifdef HAVE_LDAP
 

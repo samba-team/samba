@@ -740,43 +740,6 @@ bool share_access_check(const struct security_token *token, const char *sharenam
 			uint32 desired_access);
 bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_descriptor **ppsd);
 
-/* The following definitions come from lib/smbldap.c  */
-
-int smb_ldap_start_tls(LDAP *ldap_struct, int version);
-int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
-int smbldap_search(struct smbldap_state *ldap_state, 
-		   const char *base, int scope, const char *filter, 
-		   const char *attrs[], int attrsonly, 
-		   LDAPMessage **res);
-int smbldap_search_paged(struct smbldap_state *ldap_state, 
-			 const char *base, int scope, const char *filter, 
-			 const char **attrs, int attrsonly, int pagesize,
-			 LDAPMessage **res, void **cookie);
-int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs[]);
-int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs[]);
-int smbldap_delete(struct smbldap_state *ldap_state, const char *dn);
-int smbldap_extended_operation(struct smbldap_state *ldap_state, 
-			       LDAP_CONST char *reqoid, struct berval *reqdata, 
-			       LDAPControl **serverctrls, LDAPControl **clientctrls, 
-			       char **retoidp, struct berval **retdatap);
-int smbldap_search_suffix (struct smbldap_state *ldap_state,
-			   const char *filter, const char **search_attr,
-			   LDAPMessage ** result);
-void smbldap_free_struct(struct smbldap_state **ldap_state) ;
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
-		      const char *location,
-		      struct smbldap_state **smbldap_state);
-bool smbldap_has_control(LDAP *ld, const char *control);
-bool smbldap_has_extension(LDAP *ld, const char *extension);
-bool smbldap_has_naming_context(LDAP *ld, const char *naming_context);
-bool smbldap_set_creds(struct smbldap_state *ldap_state, bool anon, const char *dn, const char *secret);
-
-/* The following definitions come from lib/smbldap_util.c  */
-
-NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
-                                    LDAPMessage ** result, const char *domain_name,
-                                    bool try_add);
-
 /* The following definitions come from lib/smbrun.c  */
 
 int smbrun_no_sanitize(const char *cmd, int *outfd);
@@ -3943,6 +3906,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods ) ;
 
 /* The following definitions come from passdb/pdb_ldap.c  */
 
+struct ldapsam_privates;
+
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
 int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 					  const char *user,
@@ -3953,6 +3918,8 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 NTSTATUS pdb_ldap_init(void);
 
 /* The following definitions come from passdb/pdb_nds.c  */
+
+struct smbldap_state;
 
 int pdb_nds_get_password(
 	struct smbldap_state *ldap_state,
