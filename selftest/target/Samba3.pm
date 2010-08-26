@@ -628,9 +628,6 @@ $unix_name-group:x:$unix_gids[0]:
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
 
-	delete $ENV{NSS_WRAPPER_PASSWD};
-	delete $ENV{NSS_WRAPPER_GROUP};
-
 	print "DONE\n";
 
 	$ret{SERVER_IP} = $server_ip;
