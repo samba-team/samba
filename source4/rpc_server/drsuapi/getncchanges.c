@@ -910,7 +910,103 @@ failed:
 	return WERR_DS_DRA_BAD_DN;
 }
 
+/*
+  handle DRSUAPI_EXOP_FSMO_REQ_ROLE,
+  DRSUAPI_EXOP_FSMO_RID_REQ_ROLE,
+  and DRSUAPI_EXOP_FSMO_REQ_PDC calls
+ */
+static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
+					 TALLOC_CTX *mem_ctx,
+					 struct drsuapi_DsGetNCChangesRequest8 *req8,
+					 struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+{
+	struct ldb_dn *fsmo_role_dn, *req_dn, *ntds_dn;
+	int ret, i;
+	struct ldb_context *ldb = b_state->sam_ctx;
+	struct ldb_message *msg;
 
+	/*
+	  steps:
+	    - verify that the client dn exists
+	    - verify that we are the current master
+	 */
+
+	req_dn = ldb_dn_new(mem_ctx, ldb, req8->naming_context->dn);
+	if (!req_dn ||
+	    !ldb_dn_validate(req_dn)) {
+		/* that is not a valid dn */
+		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
+			 req8->naming_context->dn));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
+		return WERR_OK;
+	}
+
+	/* retrieve the current role owner */
+	ret = samdb_reference_dn(ldb, mem_ctx, req_dn, "fSMORoleOwner", &fsmo_role_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in context - %s\n",
+			 ldb_errstring(ldb)));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+		/* we're not the current owner - go away */
+		DEBUG(0,(__location__ ": FSMO transfer request when not owner\n"));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
+		return WERR_OK;
+	}
+
+	/* change the current master */
+	msg = ldb_msg_new(ldb);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+	msg->dn = ldb_dn_new(msg, ldb, req8->naming_context->dn);
+	W_ERROR_HAVE_NO_MEMORY(msg->dn);
+
+	ret = dsdb_find_dn_by_guid(ldb, msg, &req8->destination_dsa_guid, &ntds_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
+			  GUID_string(mem_ctx, &req8->destination_dsa_guid), ldb_errstring(ldb)));
+		talloc_free(msg);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	ret = ldb_msg_add_string(msg, "fSMORoleOwner", ldb_dn_get_linearized(ntds_dn));
+	if (ret != 0) {
+		talloc_free(msg);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed transaction start - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	ret = ldb_modify(ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to change current owner - %s\n",
+			 ldb_errstring(ldb)));
+		ldb_transaction_cancel(ldb);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	ret = ldb_transaction_commit(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed transaction commit - %s\n",
+			 ldb_errstring(ldb)));
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+
+	return WERR_OK;
+}
 
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
@@ -1066,8 +1162,20 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		break;
 
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+		W_ERROR_NOT_OK_RETURN(werr);
+		break;
+
 	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+		W_ERROR_NOT_OK_RETURN(werr);
+		break;
+
 	case DRSUAPI_EXOP_FSMO_REQ_PDC:
+		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+		W_ERROR_NOT_OK_RETURN(werr);
+		break;
+
 	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
 	case DRSUAPI_EXOP_REPL_OBJ:
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
