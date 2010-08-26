@@ -35,6 +35,7 @@
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "krb5_env.h"
+#include "../libcli/security/dom_sid.h"
 
 /****************************************************************
 ****************************************************************/
@@ -744,7 +745,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		r->out.netbios_domain_name = info->dns.name.string;
 		r->out.dns_domain_name = info->dns.dns_domain.string;
 		r->out.forest_name = info->dns.dns_forest.string;
-		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->dns.sid);
+		r->out.domain_sid = dom_sid_dup(mem_ctx, info->dns.sid);
 		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
@@ -758,7 +759,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		}
 
 		r->out.netbios_domain_name = info->account_domain.name.string;
-		r->out.domain_sid = sid_dup_talloc(mem_ctx, info->account_domain.sid);
+		r->out.domain_sid = dom_sid_dup(mem_ctx, info->account_domain.sid);
 		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
@@ -2008,7 +2009,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				"Unable to fetch domain sid: are we joined?");
 			return WERR_SETUP_NOT_JOINED;
 		}
-		r->in.domain_sid = sid_dup_talloc(mem_ctx, &sid);
+		r->in.domain_sid = dom_sid_dup(mem_ctx, &sid);
 		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
 	}
 

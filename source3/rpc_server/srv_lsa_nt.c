@@ -117,7 +117,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(ref->domains[num]);
 
 	init_lsa_StringLarge(&ref->domains[num].name, dom_name);
-	ref->domains[num].sid = sid_dup_talloc(mem_ctx, dom_sid);
+	ref->domains[num].sid = dom_sid_dup(mem_ctx, dom_sid);
 	if (!ref->domains[num].sid) {
 		return -1;
 	}
@@ -307,7 +307,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 
 		/* Initialize the lsa_TranslatedSid3 return. */
 		trans_sids[i].sid_type = type;
-		trans_sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+		trans_sids[i].sid = dom_sid_dup(mem_ctx, &sid);
 		trans_sids[i].sid_index = dom_idx;
 	}
 
@@ -654,7 +654,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = get_global_sam_name();
-				sid = sid_dup_talloc(p->mem_ctx, get_global_sam_sid());
+				sid = dom_sid_dup(p->mem_ctx, get_global_sam_sid());
 				if (!sid) {
 					return NT_STATUS_NO_MEMORY;
 				}
@@ -663,7 +663,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 				name = lp_workgroup();
 				/* We need to return the Domain SID here. */
 				if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
-					sid = sid_dup_talloc(p->mem_ctx, &domain_sid);
+					sid = dom_sid_dup(p->mem_ctx, &domain_sid);
 					if (!sid) {
 						return NT_STATUS_NO_MEMORY;
 					}
@@ -1606,7 +1606,7 @@ NTSTATUS _lsa_EnumAccounts(struct pipes_struct *p,
 		}
 
 		for (i = *r->in.resume_handle, j = 0; i < num_entries; i++, j++) {
-			sids[j].sid = sid_dup_talloc(p->mem_ctx, &sid_list[i]);
+			sids[j].sid = dom_sid_dup(p->mem_ctx, &sid_list[i]);
 			if (!sids[j].sid) {
 				talloc_free(sid_list);
 				return NT_STATUS_NO_MEMORY;
@@ -2428,7 +2428,7 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(struct pipes_struct *p,
 					 r->out.sids->num_sids);
 
 	for (i=0; i < r->out.sids->num_sids; i++) {
-		r->out.sids->sids[i].sid = sid_dup_talloc(r->out.sids->sids,
+		r->out.sids->sids[i].sid = dom_sid_dup(r->out.sids->sids,
 							  &sids[i]);
 		if (!r->out.sids->sids[i].sid) {
 			TALLOC_FREE(r->out.sids->sids);

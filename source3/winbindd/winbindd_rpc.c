@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
+#include "../libcli/security/dom_sid.h"
 
 /* Query display info for a domain */
 NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
@@ -612,7 +613,7 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 		}
 
 		for (i = 0; i < num_query_sids; i++) {
-			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[total_sids++]);
+			sid_array.sids[i].sid = dom_sid_dup(mem_ctx, &sids[total_sids++]);
 			if (sid_array.sids[i].sid == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -739,7 +740,7 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 		struct lsa_SidPtr sid_ptr;
 		struct samr_Ids rids_query;
 
-		sid_ptr.sid = sid_dup_talloc(mem_ctx, group_sid);
+		sid_ptr.sid = dom_sid_dup(mem_ctx, group_sid);
 		if (sid_ptr.sid == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

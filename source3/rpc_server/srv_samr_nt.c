@@ -5473,7 +5473,7 @@ NTSTATUS _samr_GetMembersInAlias(struct pipes_struct *p,
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		sids[i].sid = sid_dup_talloc(p->mem_ctx, &pdb_sids[i]);
+		sids[i].sid = dom_sid_dup(p->mem_ctx, &pdb_sids[i]);
 		if (!sids[i].sid) {
 			TALLOC_FREE(pdb_sids);
 			return NT_STATUS_NO_MEMORY;
@@ -6736,7 +6736,7 @@ NTSTATUS _samr_RidToSid(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*r->out.sid = sid_dup_talloc(p->mem_ctx, &sid);
+	*r->out.sid = dom_sid_dup(p->mem_ctx, &sid);
 	if (!*r->out.sid) {
 		return NT_STATUS_NO_MEMORY;
 	}

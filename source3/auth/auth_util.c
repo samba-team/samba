@@ -26,6 +26,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -664,7 +665,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	/* Domain sid */
 	sid_copy(&domain_sid, get_global_sam_sid());
 
-	info3->base.domain_sid = sid_dup_talloc(mem_ctx, &domain_sid);
+	info3->base.domain_sid = dom_sid_dup(mem_ctx, &domain_sid);
 	if (info3->base.domain_sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

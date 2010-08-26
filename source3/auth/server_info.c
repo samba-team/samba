@@ -230,7 +230,7 @@ static NTSTATUS append_netr_SidAttr(TALLOC_CTX *mem_ctx,
 	if (*sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	(*sids)[t].sid = sid_dup_talloc(*sids, asid);
+	(*sids)[t].sid = dom_sid_dup(*sids, asid);
 	if ((*sids)[t].sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -468,7 +468,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 						  pdb_get_domain(samu));
 	RET_NOMEM(info3->base.domain.string);
 
-	info3->base.domain_sid = sid_dup_talloc(info3, &domain_sid);
+	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
 	RET_NOMEM(info3->base.domain_sid);
 
 	info3->base.acct_flags = pdb_get_acct_ctrl(samu);
@@ -548,7 +548,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	if (orig->base.domain_sid) {
-		info3->base.domain_sid = sid_dup_talloc(info3, orig->base.domain_sid);
+		info3->base.domain_sid = dom_sid_dup(info3, orig->base.domain_sid);
 		RET_NOMEM(info3->base.domain_sid);
 	}
 
@@ -558,7 +558,7 @@ struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					   orig->sidcount);
 		RET_NOMEM(info3->sids);
 		for (i = 0; i < orig->sidcount; i++) {
-			info3->sids[i].sid = sid_dup_talloc(info3->sids,
+			info3->sids[i].sid = dom_sid_dup(info3->sids,
 							    orig->sids[i].sid);
 			RET_NOMEM(info3->sids[i].sid);
 			info3->sids[i].attributes =
@@ -695,7 +695,7 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 		RET_NOMEM(info3->base.domain.string);
 	}
 
-	info3->base.domain_sid = sid_dup_talloc(info3, &domain_sid);
+	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
 	RET_NOMEM(info3->base.domain_sid);
 
 	memcpy(info3->base.LMSessKey.key, info->lm_session_key, 8);

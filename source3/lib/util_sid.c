@@ -366,25 +366,6 @@ char *sid_binstring_hex(const struct dom_sid *sid)
 	return s;
 }
 
-/*******************************************************************
- Tallocs a duplicate SID. 
-********************************************************************/ 
-
-struct dom_sid *sid_dup_talloc(TALLOC_CTX *ctx, const struct dom_sid *src)
-{
-	struct dom_sid *dst;
-
-	if (src == NULL) {
-		return NULL;
-	}
-	dst = talloc_zero(ctx, struct dom_sid);
-	if (dst == NULL) {
-		return NULL;
-	}
-	sid_copy(dst, src);
-	return dst;
-}
-
 /********************************************************************
  Add SID to an array SIDs
 ********************************************************************/

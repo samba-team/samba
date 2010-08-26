@@ -30,6 +30,7 @@
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 extern struct dom_sid domain_sid;
 
@@ -668,7 +669,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	}
 
 	for (i=0; i<num_sids; i++) {
-		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[i]);
+		sid_array.sids[i].sid = dom_sid_dup(mem_ctx, &sids[i]);
 		if (!sid_array.sids[i].sid) {
 			return NT_STATUS_NO_MEMORY;
 		}

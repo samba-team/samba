@@ -36,6 +36,7 @@
 #include "../lib/crypto/md4.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../libcli/security/dom_sid.h"
 
 extern userdom_struct current_user_info;
 
@@ -909,7 +910,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		goto out;
 	}
 
-	creds->sid = sid_dup_talloc(creds, &sid);
+	creds->sid = dom_sid_dup(creds, &sid);
 	if (!creds->sid) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;

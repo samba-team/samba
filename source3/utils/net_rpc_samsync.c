@@ -236,7 +236,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	}
 
 	/* fetch builtin */
-	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
+	ctx->domain_sid = dom_sid_dup(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	result = libnet_samsync(SAM_DATABASE_BUILTIN, ctx);
 
@@ -319,7 +319,7 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	}
 
 	/* fetch builtin */
-	ctx->domain_sid = sid_dup_talloc(mem_ctx, &global_sid_Builtin);
+	ctx->domain_sid = dom_sid_dup(mem_ctx, &global_sid_Builtin);
 	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
 	status = libnet_samsync(SAM_DATABASE_BUILTIN, ctx);
 

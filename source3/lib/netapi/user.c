@@ -27,6 +27,7 @@
 #include "rpc_client/init_samr.h"
 #include "../libds/common/flags.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 /****************************************************************
 ****************************************************************/
@@ -705,12 +706,12 @@ static NTSTATUS libnetapi_samr_lookup_user(TALLOC_CTX *mem_ctx,
 
 		for (i=0; i<rid_array->count; i++) {
 			sid_compose(&sid, domain_sid, rid_array->rids[i].rid);
-			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+			sid_array.sids[i].sid = dom_sid_dup(mem_ctx, &sid);
 			NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
 		}
 
 		sid_compose(&sid, domain_sid, rid);
-		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sid);
+		sid_array.sids[i].sid = dom_sid_dup(mem_ctx, &sid);
 		NT_STATUS_HAVE_NO_MEMORY(sid_array.sids[i].sid);
 
 		status = rpccli_samr_GetAliasMembership(pipe_cli, mem_ctx,
@@ -923,7 +924,7 @@ static NTSTATUS info21_to_USER_INFO_4(TALLOC_CTX *mem_ctx,
 	if (!sid_compose(&sid, domain_sid, i21->rid)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	i->usri4_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+	i->usri4_user_sid	= (struct domsid *)dom_sid_dup(mem_ctx, &sid);
 	i->usri4_primary_group_id = i21->primary_gid;
 	i->usri4_profile	= talloc_strdup(mem_ctx, i21->profile_path.string);
 	i->usri4_home_dir_drive	= talloc_strdup(mem_ctx, i21->home_drive.string);
@@ -1024,7 +1025,7 @@ static NTSTATUS info21_to_USER_INFO_23(TALLOC_CTX *mem_ctx,
 	if (!sid_compose(&sid, domain_sid, i21->rid)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	i->usri23_user_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+	i->usri23_user_sid	= (struct domsid *)dom_sid_dup(mem_ctx, &sid);
 
 	return NT_STATUS_OK;
 }
@@ -2066,7 +2067,7 @@ static NTSTATUS query_USER_MODALS_INFO_2(TALLOC_CTX *mem_ctx,
 	info2->usrmod2_domain_name =
 		talloc_strdup(mem_ctx, dom_info5.domain_name.string);
 	info2->usrmod2_domain_id =
-		(struct domsid *)sid_dup_talloc(mem_ctx, domain_sid);
+		(struct domsid *)dom_sid_dup(mem_ctx, domain_sid);
 
 	NT_STATUS_HAVE_NO_MEMORY(info2->usrmod2_domain_name);
 	NT_STATUS_HAVE_NO_MEMORY(info2->usrmod2_domain_id);
@@ -3334,7 +3335,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	sid_array.sids[0].sid = sid_dup_talloc(ctx, &user_sid);
+	sid_array.sids[0].sid = dom_sid_dup(ctx, &user_sid);
 	if (!sid_array.sids[0].sid) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -3348,7 +3349,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 			goto done;
 		}
 
-		sid_array.sids[i+1].sid = sid_dup_talloc(ctx, &sid);
+		sid_array.sids[i+1].sid = dom_sid_dup(ctx, &sid);
 		if (!sid_array.sids[i+1].sid) {
 			werr = WERR_NOMEM;
 			goto done;

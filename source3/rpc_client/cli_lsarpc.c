@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 /** @defgroup lsa LSA - Local Security Architecture
  *  @ingroup rpc_client
@@ -145,7 +146,7 @@ static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i<num_sids; i++) {
-		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[i]);
+		sid_array.sids[i].sid = dom_sid_dup(mem_ctx, &sids[i]);
 		if (!sid_array.sids[i].sid) {
 			return NT_STATUS_NO_MEMORY;
 		}

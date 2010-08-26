@@ -28,6 +28,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../libcli/security/dom_sid.h"
 
 /**
  * Fix up the delta, dealing with encryption issues so that the final
@@ -72,7 +73,7 @@ NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	if (domain_sid) {
-		ctx->domain_sid = sid_dup_talloc(mem_ctx, domain_sid);
+		ctx->domain_sid = dom_sid_dup(mem_ctx, domain_sid);
 		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid);
 
 		ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);

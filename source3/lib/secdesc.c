@@ -191,10 +191,10 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 	dst->sacl      = NULL;
 	dst->dacl      = NULL;
 
-	if(owner_sid && ((dst->owner_sid = sid_dup_talloc(dst,owner_sid)) == NULL))
+	if(owner_sid && ((dst->owner_sid = dom_sid_dup(dst,owner_sid)) == NULL))
 		goto error_exit;
 
-	if(grp_sid && ((dst->group_sid = sid_dup_talloc(dst,grp_sid)) == NULL))
+	if(grp_sid && ((dst->group_sid = dom_sid_dup(dst,grp_sid)) == NULL))
 		goto error_exit;
 
 	if(sacl && ((dst->sacl = dup_sec_acl(dst, sacl)) == NULL))

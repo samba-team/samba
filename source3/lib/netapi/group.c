@@ -25,6 +25,7 @@
 #include "lib/netapi/libnetapi.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/init_lsa.h"
+#include "../libcli/security/dom_sid.h"
 
 /****************************************************************
 ****************************************************************/
@@ -603,7 +604,7 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 			info3.grpi3_name	= info->name.string;
 			info3.grpi3_comment	= info->description.string;
 			info3.grpi3_attributes	= info->attributes;
-			info3.grpi3_group_sid	= (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+			info3.grpi3_group_sid	= (struct domsid *)dom_sid_dup(mem_ctx, &sid);
 
 			*buffer = (uint8_t *)talloc_memdup(mem_ctx, &info3, sizeof(info3));
 
@@ -1086,7 +1087,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_3_buffer(TALLOC_CTX *mem_ct
 			groups->entries[i].account_name.string);
 		g3[i].grpi3_comment = talloc_strdup(mem_ctx,
 			groups->entries[i].description.string);
-		g3[i].grpi3_group_sid = (struct domsid *)sid_dup_talloc(mem_ctx, &sid);
+		g3[i].grpi3_group_sid = (struct domsid *)dom_sid_dup(mem_ctx, &sid);
 		g3[i].grpi3_attributes = groups->entries[i].acct_flags;
 		W_ERROR_HAVE_NO_MEMORY(g3[i].grpi3_name);
 	}
