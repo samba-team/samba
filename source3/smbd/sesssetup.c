@@ -243,10 +243,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 {
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB ticket;
-	char *client, *p, *domain;
-	fstring netbios_domain_name;
 	struct passwd *pw;
-	fstring user;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
@@ -254,11 +251,14 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
-	fstring real_username;
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
+	char *principal;
+	char *user;
+	char *domain;
+	char *real_username;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(ap_rep);
@@ -281,7 +281,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	}
 
 	ret = ads_verify_ticket(mem_ctx, lp_realm(), 0, &ticket,
-				&client, &logon_info, &ap_rep,
+				&principal, &logon_info, &ap_rep,
 				&session_key, True);
 
 	data_blob_free(&ticket);
@@ -342,11 +342,14 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		return;
 	}
 
-	DEBUG(3,("Ticket name is [%s]\n", client));
-
-	p = strchr_m(client, '@');
-	if (!p) {
-		DEBUG(3,("Doesn't look like a valid principal\n"));
+	ret = get_user_from_kerberos_info(talloc_tos(),
+					  sconn->client_id.name,
+					  principal, logon_info,
+					  &username_was_mapped,
+					  &map_domainuser_to_guest,
+					  &user, &domain,
+					  &real_username, &pw);
+	if (!NT_STATUS_IS_OK(ret)) {
 		data_blob_free(&ap_rep);
 		data_blob_free(&session_key);
 		talloc_destroy(mem_ctx);
@@ -354,131 +357,35 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		return;
 	}
 
-	*p = 0;
-
 	/* save the PAC data if we have it */
-
 	if (logon_info) {
-		netsamlogon_cache_store( client, &logon_info->info3 );
+		netsamlogon_cache_store(user, &logon_info->info3);
 	}
 
-	if (!strequal(p+1, lp_realm())) {
-		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
-		if (!lp_allow_trusted_domains()) {
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			talloc_destroy(mem_ctx);
-			reply_nterror(req, nt_status_squash(
-					      NT_STATUS_LOGON_FAILURE));
-			return;
-		}
-	}
+	/* setup the string used by %U */
+	sub_set_smb_name(real_username);
 
-	/* this gives a fully qualified user name (ie. with full realm).
-	   that leads to very long usernames, but what else can we do? */
+	/* reload services so that the new %U is taken into account */
+	reload_services(sconn->msg_ctx, sconn->sock, True);
 
-	domain = p+1;
-
-	if (logon_info && logon_info->info3.base.domain.string) {
-		fstrcpy(netbios_domain_name,
-			logon_info->info3.base.domain.string);
-		domain = netbios_domain_name;
-		DEBUG(10, ("Mapped to [%s] (using PAC)\n", domain));
-
-	} else {
-
-		/* If we have winbind running, we can (and must) shorten the
-		   username by using the short netbios name. Otherwise we will
-		   have inconsistent user names. With Kerberos, we get the
-		   fully qualified realm, with ntlmssp we get the short
-		   name. And even w2k3 does use ntlmssp if you for example
-		   connect to an ip address. */
-
-		wbcErr wbc_status;
-		struct wbcDomainInfo *info = NULL;
-
-		DEBUG(10, ("Mapping [%s] to short name\n", domain));
-
-		wbc_status = wbcDomainInfo(domain, &info);
-
-		if (WBC_ERROR_IS_OK(wbc_status)) {
-
-			fstrcpy(netbios_domain_name,
-				info->short_name);
-
-			wbcFreeMemory(info);
-			domain = netbios_domain_name;
-			DEBUG(10, ("Mapped to [%s] (using Winbind)\n", domain));
-		} else {
-			DEBUG(3, ("Could not find short name: %s\n",
-				wbcErrorString(wbc_status)));
-		}
-	}
-
-	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
-
-	/* lookup the passwd struct, create a new user if necessary */
-
-	username_was_mapped = map_username(user);
-
-	pw = smb_getpwnam( mem_ctx, user, real_username, True );
-
-	if (pw) {
-		/* if a real user check pam account restrictions */
-		/* only really perfomed if "obey pam restriction" is true */
-		/* do this before an eventual mapping to guest occurs */
-		ret = smb_pam_accountcheck(pw->pw_name, sconn->client_id.name);
-		if (  !NT_STATUS_IS_OK(ret)) {
-			DEBUG(1,("PAM account restriction "
-				"prevents user login\n"));
+	if (map_domainuser_to_guest) {
+		ret = make_server_info_guest(NULL, &server_info);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, ("make_server_info_guest failed: %s!\n",
+				 nt_errstr(ret)));
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
 			reply_nterror(req, nt_status_squash(ret));
 			return;
 		}
-	}
-
-	if (!pw) {
-
-		/* this was originally the behavior of Samba 2.2, if a user
-		   did not have a local uid but has been authenticated, then
-		   map them to a guest account */
-
-		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){
-			map_domainuser_to_guest = True;
-			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam( mem_ctx, user, real_username, True );
-		}
-
-		/* extra sanity check that the guest account is valid */
-
-		if ( !pw ) {
-			DEBUG(1,("Username %s is invalid on this system\n",
-				user));
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE(mem_ctx);
-			reply_nterror(req, nt_status_squash(
-					      NT_STATUS_LOGON_FAILURE));
-			return;
-		}
-	}
-
-	/* setup the string used by %U */
-
-	sub_set_smb_name( real_username );
-	reload_services(sconn->msg_ctx, sconn->sock, True);
-
-	if ( map_domainuser_to_guest ) {
-		make_server_info_guest(NULL, &server_info);
 	} else if (logon_info) {
 		/* pass the unmapped username here since map_username()
 		   will be called again from inside make_server_info_info3() */
 
-		ret = make_server_info_info3(mem_ctx, client, domain,
+		ret = make_server_info_info3(mem_ctx, user, domain,
 					     &server_info, &logon_info->info3);
-		if ( !NT_STATUS_IS_OK(ret) ) {
+		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1,("make_server_info_info3 failed: %s!\n",
 				 nt_errstr(ret)));
 			data_blob_free(&ap_rep);
@@ -576,11 +483,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	 * no need to free after this on success. A better interface would copy
 	 * it.... */
 
-	sess_vuid = register_existing_vuid(sconn,
-					sess_vuid,
-					server_info,
-					nullblob,
-					client);
+	sess_vuid = register_existing_vuid(sconn, sess_vuid,
+					   server_info, nullblob, user);
 
 	reply_outbuf(req, 4, 0);
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
