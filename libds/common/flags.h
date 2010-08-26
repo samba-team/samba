@@ -207,3 +207,26 @@
 
 /* wellknown GUIDs for optional directory features */
 #define DS_GUID_FEATURE_RECYCLE_BIN		      "766ddcd8-acd0-445e-f3b9-a7f9b6744f2a"
+
+/* dsHeurisrics character indexes see MS-ADTS 7.1.1.2.4.1.2 */
+
+#define DS_HR_SUPFIRSTLASTANR                     0x00000001
+#define DS_HR_SUPLASTFIRSTANR                     0x00000002
+#define DS_HR_DOLISTOBJECT                        0x00000003
+#define DS_HR_DONICKRES                           0x00000004
+#define DS_HR_LDAP_USEPERMMOD                     0x00000005
+#define DS_HR_HIDEDSID                            0x00000006
+#define DS_HR_BLOCK_ANONYMOUS_OPS                 0x00000007
+#define DS_HR_ALLOW_ANON_NSPI                     0x00000008
+#define DS_HR_USER_PASSWORD_SUPPORT               0x00000009
+#define DS_HR_TENTH_CHAR                          0x0000000A
+#define DS_HR_SPECIFY_GUID_ON_ADD                 0x0000000B
+#define DS_HR_NO_STANDARD_SD                      0x0000000C
+#define DS_HR_ALLOW_NONSECURE_PWD_OPS             0x0000000D
+#define DS_HR_NO_PROPAGATE_ON_NOCHANGE            0x0000000E
+#define DS_HR_COMPUTE_ANR_STATS                   0x0000000F
+#define DS_HR_ADMINSDEXMASK                       0x00000010
+#define DS_HR_KVNOEMUW2K                          0x00000011
+#define DS_HR_LDAP_BYPASS_UPPER_LIMIT_BOUNDS      0x00000012
+
+
