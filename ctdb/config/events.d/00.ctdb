@@ -34,6 +34,23 @@ case "$1" in
 	done || exit 1
 	;;
 
+    startup)
+	# Pull optional ctdb configuration data out of config.tdb
+	PUBLICADDRESSESKEY='public-addresses:node#'`ctdb -t 1 xpnn|sed -e "s/.*://"`
+	rm -f $CTDB_BASE/state/public_addresses
+	ctdb pfetch config.tdb $PUBLICADDRESSESKEY $CTDB_BASE/state/public_addresses
+	[ "$?" = "0" ] && [ `stat --format="%s" /etc/ctdb/state/public_addresses` != "0" ] && [ ! -z "$CTDB_PUBLIC_ADDRESSES" ] && {
+		diff $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES >/dev/null 2>/dev/null
+		[ $? = "0" ] || {
+			echo CTDB public address configuration had been updated.
+			echo Extracting new configuration from database.
+			diff $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES
+			cp $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES
+			echo Restarting CTDB
+			service ctdb restart &
+		}
+	}
+	;;
     monitor)
 	# We should never enter swap, so SwapTotal == SwapFree.
 	[ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] && {

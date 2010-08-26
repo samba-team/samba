@@ -2856,6 +2856,231 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
+/*
+  fetch a record from a persistent database
+ */
+static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key, data;
+	int fd, ret;
+
+	if (argc < 2) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	ret = ctdb_transaction_fetch(h, tmp_ctx, key, &data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to fetch record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (data.dsize == 0 || data.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Record is empty\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (argc == 3) {
+	  fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
+		if (fd == -1) {
+			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		write(fd, data.dptr, data.dsize);
+		close(fd);
+	} else {
+		write(1, data.dptr, data.dsize);
+	}
+
+	/* abort the transaction */
+	talloc_free(h);
+
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  fetch a record from a tdb-file
+ */
+static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *tdb_file;
+	TDB_CONTEXT *tdb;
+	TDB_DATA key, data;
+	int fd;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	tdb_file = argv[0];
+
+	tdb = tdb_open(tdb_file, 0, 0, O_RDONLY, 0);
+	if (tdb == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to open TDB file %s\n", tdb_file));
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	data = tdb_fetch(tdb, key);
+	if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		DEBUG(DEBUG_ERR,("Failed to read record %s from tdb %s\n", argv[1], tdb_file));
+		tdb_close(tdb);
+		return -1;
+	}
+
+	tdb_close(tdb);
+
+	if (argc == 3) {
+	  fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
+		if (fd == -1) {
+			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
+			return -1;
+		}
+		write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		close(fd);
+	} else {
+		write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+	}
+
+	return 0;
+}
+
+/*
+  write a record to a persistent database
+ */
+static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	struct stat st;
+	TDB_DATA key, data;
+	int fd, ret;
+
+	if (argc < 3) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	fd = open(argv[2], O_RDONLY);
+	if (fd == -1) {
+		DEBUG(DEBUG_ERR,("Failed to open file containing record data : %s  %s\n", argv[2], strerror(errno)));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	
+	ret = fstat(fd, &st);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("fstat of file %s failed: %s\n", argv[2], strerror(errno)));
+		close(fd);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (!S_ISREG(st.st_mode)) {
+		DEBUG(DEBUG_ERR,("Not a regular file %s\n", argv[2]));
+		close(fd);
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	data.dsize = st.st_size;
+	if (data.dsize == 0) {
+		data.dptr  = NULL;
+	} else {
+		data.dptr = talloc_size(tmp_ctx, data.dsize);
+		if (data.dptr == NULL) {
+			DEBUG(DEBUG_ERR,("Failed to talloc %d of memory to store record data\n", (int)data.dsize));
+			close(fd);
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		ret = read(fd, data.dptr, data.dsize);
+		if (ret != data.dsize) {
+			DEBUG(DEBUG_ERR,("Failed to read %d bytes of record data\n", (int)data.dsize));
+			close(fd);
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+	}
+	close(fd);
+
+
+	db_name = argv[0];
+
+	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	ret = ctdb_transaction_store(h, key, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to store record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_transaction_commit(h);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
 static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -3746,9 +3971,9 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		return -1;
 	}
 
-	dbname = dbhdr.name;
+	dbname = discard_const(dbhdr.name);
 	if (argc == 2) {
-		dbname = argv[1];
+		dbname = discard_const(argv[1]);
 	}
 
 	outdata.dsize = dbhdr.size;
@@ -4530,7 +4755,10 @@ static const struct {
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
-	{ "sync", 	     control_ipreallocate,      true,	false,  "wait until ctdbd has synced all state changes" },
+	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
+	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
+	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
+	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
 };
 
 /*

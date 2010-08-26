@@ -810,16 +810,16 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
 
-	/* start frozen, then let the first election sort things out */
-	if (ctdb_blocking_freeze(ctdb)) {
-		ctdb_fatal(ctdb, "Failed to get initial freeze\n");
-	}
-
 	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "Failed to run init event\n");
 	}
 	ctdb_run_notification_script(ctdb, "init");
+
+	/* start frozen, then let the first election sort things out */
+	if (ctdb_blocking_freeze(ctdb)) {
+		ctdb_fatal(ctdb, "Failed to get initial freeze\n");
+	}
 
 	/* now start accepting clients, only can do this once frozen */
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
