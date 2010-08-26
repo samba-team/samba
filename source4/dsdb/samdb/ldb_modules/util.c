@@ -1150,3 +1150,50 @@ int dsdb_module_constrainted_update_uint64(struct ldb_module *module,
 						     (const int64_t *)old_val,
 						     (const int64_t *)new_val);
 }
+
+
+const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
+						    TALLOC_CTX *mem_ctx)
+{
+	int ret;
+	struct ldb_dn *new_dn;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	static const char *attrs[] = { "dsHeuristics", NULL };
+	struct ldb_result *res;
+
+	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(ldb));
+	if ( !ldb_dn_add_child_fmt(new_dn,
+				   "CN=Directory Service,CN=Windows NT,CN=Services")) {
+		talloc_free(new_dn);
+		return NULL;
+	}
+	ret = dsdb_module_search_dn(module, mem_ctx, &res,
+				    new_dn,
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		return ldb_msg_find_ldb_val(res->msgs[0],
+					    "dsHeuristics");
+	}
+	return NULL;
+}
+
+bool dsdb_block_anonymous_ops(struct ldb_module *module,
+			      TALLOC_CTX *mem_ctx)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool result;
+	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
+								     tmp_ctx);
+	if (hr_val == NULL || hr_val->length < DS_HR_BLOCK_ANONYMOUS_OPS) {
+		result = true;
+	} else if (hr_val->data[DS_HR_BLOCK_ANONYMOUS_OPS -1] == '2') {
+		result = false;
+	} else {
+		result = true;
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
