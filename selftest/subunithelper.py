@@ -66,7 +66,7 @@ def parse_results(msg_ops, statistics, fh):
                         break
                     else:
                         reason += l
-                
+
                 if not terminated:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.end_test(testname, "error", True, 
@@ -167,7 +167,7 @@ class SubunitOps(object):
     def end_test(self, name, result, reason=None):
         if reason:
             print "%s: %s [" % (result, name)
-            print "%s" % reason
+            print reason
             print "]"
         else:
             print "%s: %s" % (result, name)
