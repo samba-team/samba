@@ -65,9 +65,20 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 		return False;
 	}
 
-	SMB_ASSERT( data.dsize == sizeof( uint64_t ) );
+	if (data.dsize == 4*4) {
+		DEBUG(3, ("get_privileges: Should not have obtained old-style privileges record for SID "
+			  "[%s]\n", sid_string_dbg(sid)));
+		return False;
+	}
 
-	se_priv_copy( mask, (uint64_t*)data.dptr );
+	if (data.dsize != sizeof( uint64_t ) ) {
+		DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
+			  "[%s]\n", sid_string_dbg(sid)));
+		return False;
+	}
+
+	*mask = BVAL(data.dptr, 0);
+
 	TALLOC_FREE(data.dptr);
 
 	return True;
@@ -80,6 +91,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 static bool set_privileges( const struct dom_sid *sid, uint64_t *mask )
 {
 	struct db_context *db = get_account_pol_db();
+	uint8_t privbuf[8];
 	fstring tmp, keystr;
 	TDB_DATA data;
 
@@ -98,7 +110,8 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t *mask )
 
 	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
-	/* no packing.  static size structure, just write it out */
+	/* This writes the 64 bit bitmask out in little endian format */
+	SBVAL(privbuf,0,*mask);
 
 	data.dptr  = (uint8 *)mask;
 	data.dsize = sizeof(uint64_t);
