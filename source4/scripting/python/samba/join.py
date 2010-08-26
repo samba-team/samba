@@ -30,6 +30,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup_dir
 from samba.net import Net
 import logging
+from samba.drs_utils import drs_Replicate
 
 # this makes debugging easier
 samba.talloc_enable_null_tracking()
@@ -85,121 +86,6 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         # this should be done via CLDAP
         res = samdb.search(base=samdb.get_default_basedn(), scope=ldb.SCOPE_BASE, attrs=["name"])
         return res[0]["name"][0]
-
-    def do_DsBind(drs):
-        '''make a DsBind call, returning the binding handle'''
-        bind_info = drsuapi.DsBindInfoCtr()
-        bind_info.length = 28
-        bind_info.info = drsuapi.DsBindInfo28()
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_BASE;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
-	bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-        (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
-        return handle
-
-    def get_rodc_partial_attribute_set(ctx):
-        '''get a list of attributes for RODC replication'''
-        partial_attribute_set = drsuapi.DsPartialAttributeSet()
-        partial_attribute_set.version = 1
-
-        ctx.attids = []
-
-        # the exact list of attids we send is quite critical. Note that
-        # we do ask for the secret attributes, but set set SPECIAL_SECRET_PROCESSING
-        # to zero them out
-        res = ctx.local_samdb.search(base=ctx.schema_dn, scope=ldb.SCOPE_SUBTREE,
-                                     expression="objectClass=attributeSchema",
-                                     attrs=["lDAPDisplayName", "systemFlags",
-                                            "searchFlags"])
-
-        for r in res:
-            ldap_display_name = r["lDAPDisplayName"][0]
-            if "systemFlags" in r:
-                system_flags      = r["systemFlags"][0]
-                if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
-                                         samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
-                    continue
-            search_flags = r["searchFlags"][0]
-            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
-                continue
-            attid = ctx.local_samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
-            ctx.attids.append(int(attid))
-
-        # the attids do need to be sorted, or windows doesn't return
-        # all the attributes we need
-        ctx.attids.sort()
-        partial_attribute_set.attids         = ctx.attids
-        partial_attribute_set.num_attids = len(ctx.attids)
-        return partial_attribute_set
-
-
-    def replicate_partition(ctx, dn, schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE):
-        '''replicate a partition'''
-
-        # setup for a GetNCChanges call
-        req8 = drsuapi.DsGetNCChangesRequest8()
-
-        req8.destination_dsa_guid           = ctx.ntds_guid
-        req8.source_dsa_invocation_id	    = misc.GUID(ctx.samdb.get_invocation_id())
-        req8.naming_context		    = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn              = dn.decode("utf-8")
-        req8.highwatermark                  = drsuapi.DsReplicaHighWaterMark()
-        req8.highwatermark.tmp_highest_usn  = 0
-        req8.highwatermark.reserved_usn	    = 0
-        req8.highwatermark.highest_usn	    = 0
-        req8.uptodateness_vector	    = None
-        if exop == drsuapi.DRSUAPI_EXOP_REPL_SECRET:
-            req8.replica_flags		    = 0
-        else:
-            req8.replica_flags		    =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                                drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                                drsuapi.DRSUAPI_DRS_GET_ANC |
-                                                drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                                                drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
-        req8.max_object_count		     = 402
-        req8.max_ndr_size		     = 402116
-        req8.extended_op		     = exop
-        req8.fsmo_info			     = 0
-        req8.partial_attribute_set	     = None
-        req8.partial_attribute_set_ex	     = None
-        req8.mapping_ctr.num_mappings	     = 0
-        req8.mapping_ctr.mappings	     = None
-
-        if not schema:
-            req8.partial_attribute_set = get_rodc_partial_attribute_set(ctx)
-
-        while True:
-            (level, ctr) = ctx.drs.DsGetNCChanges(ctx.drs_handle, 8, req8)
-            ctx.net.replicate_chunk(ctx.replication_state, level, ctr, schema=schema)
-            if ctr.more_data == 0:
-                break
-            req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
-
 
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
@@ -317,19 +203,6 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
                               username=ctx.samname)
 
 
-    def join_drs_connect(ctx):
-        '''connect to DRSUAPI'''
-        print "Doing DsBind as %s" % ctx.samname
-        ctx.acct_creds = Credentials()
-        ctx.acct_creds.guess(ctx.lp)
-        ctx.acct_creds.set_kerberos_state(DONT_USE_KERBEROS)
-        ctx.acct_creds.set_username(ctx.samname)
-        ctx.acct_creds.set_password(ctx.acct_pass)
-
-        ctx.drs = drsuapi.drsuapi("ncacn_ip_tcp:%s[seal,print]" % ctx.server, ctx.lp, ctx.acct_creds)
-        ctx.drs_handle = do_DsBind(ctx.drs)
-
-
     def join_provision(ctx):
         '''provision the local SAM'''
 
@@ -361,13 +234,21 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         print "Starting replication"
         ctx.local_samdb.transaction_start()
 
-        ctx.replication_state = ctx.net.replicate_init(ctx.local_samdb, ctx.lp, ctx.drs)
+        source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
 
-        replicate_partition(ctx, ctx.schema_dn, schema=True)
-        replicate_partition(ctx, ctx.config_dn)
-        replicate_partition(ctx, ctx.base_dn)
-        replicate_partition(ctx, ctx.acct_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
-        replicate_partition(ctx, ctx.new_krbtgt_dn, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+        acct_creds = Credentials()
+        acct_creds.guess(ctx.lp)
+        acct_creds.set_kerberos_state(DONT_USE_KERBEROS)
+        acct_creds.set_username(ctx.samname)
+        acct_creds.set_password(ctx.acct_pass)
+
+        repl = drs_Replicate("ncacn_ip_tcp:%s[seal]" % ctx.server, ctx.lp, acct_creds, ctx.local_samdb)
+
+        repl.replicate(ctx.schema_dn, source_dsa_invocation_id, ctx.ntds_guid, schema=True)
+        repl.replicate(ctx.config_dn, source_dsa_invocation_id, ctx.ntds_guid)
+        repl.replicate(ctx.base_dn, source_dsa_invocation_id, ctx.ntds_guid)
+        repl.replicate(ctx.acct_dn, source_dsa_invocation_id, ctx.ntds_guid, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+        repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id, ctx.ntds_guid, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
 
         print "Committing SAM database"
         ctx.local_samdb.transaction_commit()
@@ -450,7 +331,6 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     cleanup_old_join(ctx)
     try:
         join_add_objects(ctx)
-        join_drs_connect(ctx)
         join_provision(ctx)
         join_replicate(ctx)
         join_finalise(ctx)
