@@ -340,7 +340,7 @@ static int smb_pam_passchange_conv(int num_msg,
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
 #ifdef DEBUG_PASSWORD
-					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We actualy sent: %s\n", current_reply));
+					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We actually sent: %s\n", current_reply));
 #endif
 					reply[replies].resp_retcode = PAM_SUCCESS;
 					reply[replies].resp = smb_pam_copy_fstring(
@@ -375,7 +375,7 @@ static int smb_pam_passchange_conv(int num_msg,
 					reply[replies].resp = smb_pam_copy_fstring(
 						current_reply);
 #ifdef DEBUG_PASSWORD
-					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We actualy sent: %s\n", current_reply));
+					DEBUG(100,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We actually sent: %s\n", current_reply));
 #endif
 					found = True;
 					break;
