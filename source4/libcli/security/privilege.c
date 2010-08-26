@@ -4,6 +4,7 @@
    manipulate privileges
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Andrew Bartlett 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
