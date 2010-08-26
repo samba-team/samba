@@ -26,6 +26,8 @@
 #include "librpc/gen_ndr/security.h"
 
 int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2);
+int dom_sid_compare_domain(const struct dom_sid *sid1,
+			   const struct dom_sid *sid2);
 bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret);
 struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr);

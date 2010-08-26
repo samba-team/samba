@@ -98,6 +98,24 @@ bool sid_append_rid(struct dom_sid *sid, uint32_t rid)
 	return false;
 }
 
+/*
+  See if 2 SIDs are in the same domain
+  this just compares the leading sub-auths
+*/
+int dom_sid_compare_domain(const struct dom_sid *sid1,
+			   const struct dom_sid *sid2)
+{
+	int n, i;
+
+	n = MIN(sid1->num_auths, sid2->num_auths);
+
+	for (i = n-1; i >= 0; --i)
+		if (sid1->sub_auths[i] != sid2->sub_auths[i])
+			return sid1->sub_auths[i] - sid2->sub_auths[i];
+
+	return dom_sid_compare_auth(sid1, sid2);
+}
+
 /*****************************************************************
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/
