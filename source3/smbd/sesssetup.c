@@ -368,85 +368,17 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	/* reload services so that the new %U is taken into account */
 	reload_services(sconn->msg_ctx, sconn->sock, True);
 
-	if (map_domainuser_to_guest) {
-		ret = make_server_info_guest(NULL, &server_info);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(1, ("make_server_info_guest failed: %s!\n",
-				 nt_errstr(ret)));
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE(mem_ctx);
-			reply_nterror(req, nt_status_squash(ret));
-			return;
-		}
-	} else if (logon_info) {
-		/* pass the unmapped username here since map_username()
-		   will be called again from inside make_server_info_info3() */
-
-		ret = make_server_info_info3(mem_ctx, user, domain,
-					     &server_info, &logon_info->info3);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(1,("make_server_info_info3 failed: %s!\n",
-				 nt_errstr(ret)));
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE(mem_ctx);
-			reply_nterror(req, nt_status_squash(ret));
-			return;
-		}
-
-	} else {
-		/*
-		 * We didn't get a PAC, we have to make up the user
-		 * ourselves. Try to ask the pdb backend to provide
-		 * SID consistency with ntlmssp session setup
-		 */
-		struct samu *sampass;
-
-		sampass = samu_new(talloc_tos());
-		if (sampass == NULL) {
-			ret = NT_STATUS_NO_MEMORY;
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE(mem_ctx);
-			reply_nterror(req, nt_status_squash(ret));
-			return;
-		}
-
-		if (pdb_getsampwnam(sampass, real_username)) {
-			DEBUG(10, ("found user %s in passdb, calling "
-				   "make_server_info_sam\n", real_username));
-			ret = make_server_info_sam(&server_info, sampass);
-			TALLOC_FREE(sampass);
-		} else {
-			/*
-			 * User not in passdb, make it up artificially
-			 */
-			TALLOC_FREE(sampass);
-			DEBUG(10, ("didn't find user %s in passdb, calling "
-				   "make_server_info_pw\n", real_username));
-			ret = make_server_info_pw(&server_info, real_username,
-						  pw);
-		}
-
-		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(1,("make_server_info_[sam|pw] failed: %s!\n",
-				 nt_errstr(ret)));
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE(mem_ctx);
-			reply_nterror(req, nt_status_squash(ret));
-			return;
-		}
-
-	        /* make_server_info_pw does not set the domain. Without this
-		 * we end up with the local netbios name in substitutions for
-		 * %D. */
-
-		if (server_info->info3 != NULL) {
-			server_info->info3->base.domain.string =
-				talloc_strdup(server_info->info3, domain);
-		}
+	ret = make_server_info_krb5(mem_ctx,
+				    user, domain, real_username, pw,
+				    logon_info, map_domainuser_to_guest,
+				    &server_info);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("make_server_info_krb5 failed!\n"));
+		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
+		TALLOC_FREE(mem_ctx);
+		reply_nterror(req, nt_status_squash(ret));
+		return;
 	}
 
 	server_info->nss_token |= username_was_mapped;
