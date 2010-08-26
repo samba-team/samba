@@ -97,15 +97,15 @@ PRIVS privs[] = {
 	{SE_BATCH_LOGON,	"SeBatchLogonRight",		"Log on as a batch job",		   { 0x0, 0x0 }},
 	{SE_SERVICE_LOGON,	"SeServiceLogonRight",		"Log on as a service",			   { 0x0, 0x0 }},
 #endif
-	{SE_MACHINE_ACCOUNT,	"SeMachineAccountPrivilege",	"Add machines to domain",		   { 0x0006,	0x0 }},
-	{SE_TAKE_OWNERSHIP,     "SeTakeOwnershipPrivilege",     "Take ownership of files or other objects",{ 0x0009,	0x0 }},
-        {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   { 0x0011,	0x0 }},
-        {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   { 0x0012,	0x0 }},
-	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   { 0x0018,	0x0 }},
+	{SE_MACHINE_ACCOUNT,	"SeMachineAccountPrivilege",	"Add machines to domain",		   { SEC_PRIV_MACHINE_ACCOUNT,	0x0 }},
+	{SE_TAKE_OWNERSHIP,     "SeTakeOwnershipPrivilege",     "Take ownership of files or other objects",{ SEC_PRIV_TAKE_OWNERSHIP,	0x0 }},
+        {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   { SEC_PRIV_BACKUP,	0x0 }},
+        {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   { SEC_PRIV_RESTORE,	0x0 }},
+	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   { SEC_PRIV_REMOTE_SHUTDOWN,	0x0 }},
 
-	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   { 0x1001,	0x0 }},
-	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   { 0x1002,	0x0 }},
-	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   { 0x1003,	0x0 }},
+	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   { SEC_PRIV_PRINT_OPERATOR,	0x0 }},
+	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   { SEC_PRIV_ADD_USERS,	0x0 }},
+	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   { SEC_PRIV_DISK_OPERATOR,	0x0 }},
 
 	{SE_END, "", "", { 0x0, 0x0 }}
 };
