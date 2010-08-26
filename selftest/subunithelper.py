@@ -34,6 +34,7 @@ def parse_results(msg_ops, statistics, fh):
             break
         parts = l.split(None, 1)
         if not len(parts) == 2 or not l.startswith(parts[0]):
+            msg_ops.output_msg(l)
             continue
         command = parts[0].rstrip(":")
         arg = parts[1]
@@ -128,6 +129,9 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.end_testsuite(testname, "xfail", reason)
             elif result == "testsuite-error":
                 msg_ops.end_testsuite(testname, "error", reason)
+            else:
+                raise AssertionError("Recognized but unhandled result %r" %
+                    result)
         elif command == "testsuite":
             msg_ops.start_testsuite(arg.strip())
         elif command == "progress":
