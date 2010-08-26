@@ -1162,7 +1162,7 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	struct ldb_result *res;
 
 	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(ldb));
-	if ( !ldb_dn_add_child_fmt(new_dn,
+	if (!ldb_dn_add_child_fmt(new_dn,
 				   "CN=Directory Service,CN=Windows NT,CN=Services")) {
 		talloc_free(new_dn);
 		return NULL;
