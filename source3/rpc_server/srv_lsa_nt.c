@@ -1836,7 +1836,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_info *info=NULL;
-	SE_PRIV mask;
+	uint64_t mask;
 	PRIVILEGE_SET privileges;
 	struct lsa_PrivilegeSet *priv_set = NULL;
 	struct lsa_LUIDAttribute *luid_attrs = NULL;
@@ -1995,7 +1995,7 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 				     struct lsa_AddPrivilegesToAccount *r)
 {
 	struct lsa_info *info = NULL;
-	SE_PRIV mask;
+	uint64_t mask;
 	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
@@ -2034,7 +2034,7 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(struct pipes_struct *p,
 					  struct lsa_RemovePrivilegesFromAccount *r)
 {
 	struct lsa_info *info = NULL;
-	SE_PRIV mask;
+	uint64_t mask;
 	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
@@ -2350,7 +2350,7 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	struct lsa_info *info = NULL;
 	struct dom_sid sid;
 	PRIVILEGE_SET privileges;
-	SE_PRIV mask;
+	uint64_t mask;
 
 	/* find the connection policy handle. */
 
@@ -2405,7 +2405,7 @@ NTSTATUS _lsa_LookupPrivValue(struct pipes_struct *p,
 	struct lsa_info *info = NULL;
 	const char *name = NULL;
 	struct lsa_LUIDAttribute priv_luid;
-	SE_PRIV mask;
+	uint64_t mask;
 
 	/* find the connection policy handle. */
 
@@ -2446,7 +2446,7 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(struct pipes_struct *p,
 	struct dom_sid *sids = NULL;
 	int num_sids = 0;
 	uint32_t i;
-	SE_PRIV mask;
+	uint64_t mask;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;

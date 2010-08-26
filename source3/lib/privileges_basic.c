@@ -32,20 +32,20 @@
 
 #include "includes.h"
 
-const SE_PRIV se_priv_all         = SE_ALL_PRIVS;
-static const SE_PRIV se_priv_end  = SE_END;
+const uint64_t se_priv_all         = SE_ALL_PRIVS;
+static const uint64_t se_priv_end  = SE_END;
 
 /* Define variables for all privileges so we can use the
-   SE_PRIV* in the various se_priv_XXX() functions */
+   uint64_t* in the various se_priv_XXX() functions */
 
-const SE_PRIV se_priv_none       = SE_NONE;
-const SE_PRIV se_machine_account = SE_MACHINE_ACCOUNT;
-const SE_PRIV se_print_operator  = SE_PRINT_OPERATOR;
-const SE_PRIV se_add_users       = SE_ADD_USERS;
-const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
-const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
-const SE_PRIV se_restore         = SE_RESTORE;
-const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
+const uint64_t se_priv_none       = SE_NONE;
+const uint64_t se_machine_account = SE_MACHINE_ACCOUNT;
+const uint64_t se_print_operator  = SE_PRINT_OPERATOR;
+const uint64_t se_add_users       = SE_ADD_USERS;
+const uint64_t se_disk_operators  = SE_DISK_OPERATOR;
+const uint64_t se_remote_shutdown = SE_REMOTE_SHUTDOWN;
+const uint64_t se_restore         = SE_RESTORE;
+const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
@@ -111,15 +111,15 @@ PRIVS privs[] = {
 };
 
 /***************************************************************************
- copy an SE_PRIV structure
+ copy an uint64_t structure
 ****************************************************************************/
 
-bool se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
+bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 {
 	if ( !dst || !src )
 		return False;
 
-	memcpy( dst, src, sizeof(SE_PRIV) );
+	memcpy( dst, src, sizeof(uint64_t) );
 
 	return True;
 }
@@ -128,7 +128,7 @@ bool se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
  put all privileges into a mask
 ****************************************************************************/
 
-bool se_priv_put_all_privileges(SE_PRIV *mask)
+bool se_priv_put_all_privileges(uint64_t *mask)
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -143,31 +143,31 @@ bool se_priv_put_all_privileges(SE_PRIV *mask)
 }
 
 /***************************************************************************
- combine 2 SE_PRIV structures and store the resulting set in mew_mask
+ combine 2 uint64_t structures and store the resulting set in mew_mask
 ****************************************************************************/
 
-void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
+void se_priv_add( uint64_t *mask, const uint64_t *addpriv )
 {
 	*mask |= *addpriv;
 }
 
 /***************************************************************************
- remove one SE_PRIV sytucture from another and store the resulting set
+ remove one uint64_t sytucture from another and store the resulting set
  in mew_mask
 ****************************************************************************/
 
-void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
+void se_priv_remove( uint64_t *mask, const uint64_t *removepriv )
 {
 	*mask &= ~*removepriv;
 }
 
 /***************************************************************************
- invert a given SE_PRIV and store the set in new_mask
+ invert a given uint64_t and store the set in new_mask
 ****************************************************************************/
 
-static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
+static void se_priv_invert( uint64_t *new_mask, const uint64_t *mask )
 {
-	SE_PRIV allprivs;
+	uint64_t allprivs;
 
 	se_priv_copy( &allprivs, &se_priv_all );
 	se_priv_remove( &allprivs, mask );
@@ -175,21 +175,21 @@ static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
 }
 
 /***************************************************************************
- check if 2 SE_PRIV structure are equal
+ check if 2 uint64_t structure are equal
 ****************************************************************************/
 
-bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
+bool se_priv_equal( const uint64_t *mask1, const uint64_t *mask2 )
 {
 	return *mask1 == *mask2;
 }
 
 /***************************************************************************
- check if a SE_PRIV has any assigned privileges
+ check if a uint64_t has any assigned privileges
 ****************************************************************************/
 
-static bool se_priv_empty( const SE_PRIV *mask )
+static bool se_priv_empty( const uint64_t *mask )
 {
-	SE_PRIV p1;
+	uint64_t p1;
 
 	se_priv_copy( &p1, mask );
 
@@ -199,10 +199,10 @@ static bool se_priv_empty( const SE_PRIV *mask )
 }
 
 /*********************************************************************
- Lookup the SE_PRIV value for a privilege name
+ Lookup the uint64_t value for a privilege name
 *********************************************************************/
 
-bool se_priv_from_name( const char *name, SE_PRIV *mask )
+bool se_priv_from_name( const char *name, uint64_t *mask )
 {
 	int i;
 
@@ -217,22 +217,22 @@ bool se_priv_from_name( const char *name, SE_PRIV *mask )
 }
 
 /***************************************************************************
- dump an SE_PRIV structure to the log files
+ dump an uint64_t structure to the log files
 ****************************************************************************/
 
-void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask )
+void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *mask )
 {
-	DEBUGADDC( dbg_cl, dbg_lvl,("SE_PRIV 0x%llx\n", (unsigned long long)*mask));
+	DEBUGADDC( dbg_cl, dbg_lvl,("uint64_t 0x%llx\n", (unsigned long long)*mask));
 }
 
 /****************************************************************************
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-bool is_privilege_assigned(const SE_PRIV *privileges,
-			   const SE_PRIV *check)
+bool is_privilege_assigned(const uint64_t *privileges,
+			   const uint64_t *check)
 {
-	SE_PRIV p1, p2;
+	uint64_t p1, p2;
 
 	if ( !privileges || !check )
 		return False;
@@ -246,8 +246,8 @@ bool is_privilege_assigned(const SE_PRIV *privileges,
 
 	se_priv_copy( &p1, check );
 
-	/* invert the SE_PRIV we want to check for and remove that from the
-	   original set.  If we are left with the SE_PRIV we are checking
+	/* invert the uint64_t we want to check for and remove that from the
+	   original set.  If we are left with the uint64_t we are checking
 	   for then return True */
 
 	se_priv_invert( &p1, check );
@@ -261,9 +261,9 @@ bool is_privilege_assigned(const SE_PRIV *privileges,
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static bool is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
+static bool is_any_privilege_assigned( uint64_t *privileges, const uint64_t *check )
 {
-	SE_PRIV p1, p2;
+	uint64_t p1, p2;
 
 	if ( !privileges || !check )
 		return False;
@@ -277,8 +277,8 @@ static bool is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check
 
 	se_priv_copy( &p1, check );
 
-	/* invert the SE_PRIV we want to check for and remove that from the
-	   original set.  If we are left with the SE_PRIV we are checking
+	/* invert the uint64_t we want to check for and remove that from the
+	   original set.  If we are left with the uint64_t we are checking
 	   for then return True */
 
 	se_priv_invert( &p1, check );
@@ -321,7 +321,7 @@ const char* get_privilege_dispname( const char *name )
  at a time here.
 *****************************************************************************/
 
-bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
+bool user_has_privileges(const NT_USER_TOKEN *token, const uint64_t *privilege)
 {
 	if ( !token )
 		return False;
@@ -334,7 +334,7 @@ bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
  at a time here.
 *****************************************************************************/
 
-bool user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
+bool user_has_any_privilege(NT_USER_TOKEN *token, const uint64_t *privilege)
 {
 	if ( !token )
 		return False;
@@ -361,7 +361,7 @@ int count_all_privileges( void )
  so we are guaranteed to find it in the list.
 *********************************************************************/
 
-struct lsa_LUIDAttribute get_privilege_luid( SE_PRIV *mask )
+struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask )
 {
 	struct lsa_LUIDAttribute priv_luid;
 	int i;
@@ -429,7 +429,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 /*******************************************************************
 *******************************************************************/
 
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -454,7 +454,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
+static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -472,14 +472,14 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
+bool privilege_set_to_se_priv( uint64_t *mask, struct lsa_PrivilegeSet *privset )
 {
 	int i;
 
 	ZERO_STRUCTP( mask );
 
 	for ( i=0; i<privset->count; i++ ) {
-		SE_PRIV r;
+		uint64_t r;
 
 		/* sanity check for invalid privilege.  we really
 		   only care about the low 32 bits */

@@ -234,7 +234,7 @@ extern const struct dom_sid global_sid_Unix_Groups;
 typedef struct nt_user_token {
 	size_t num_sids;
 	struct dom_sid *sids;
-	SE_PRIV privilege_mask;
+	uint64_t privilege_mask;
 } NT_USER_TOKEN;
 
 typedef struct unix_user_token {

@@ -30,27 +30,25 @@
 
 /* privilege bitmask */
 
-typedef uint64_t SE_PRIV;
-
 /* common privilege defines */
 
 #define SE_END				0x0
 #define SE_NONE				0x0
-#define SE_ALL_PRIVS                    (SE_PRIV)-1
+#define SE_ALL_PRIVS                    (uint64_t)-1
 
 
 /* defined in lib/privilegs_basic.c */
 
-extern const SE_PRIV se_priv_all;
+extern const uint64_t se_priv_all;
 
-extern const SE_PRIV se_priv_none;
-extern const SE_PRIV se_machine_account;
-extern const SE_PRIV se_print_operator;
-extern const SE_PRIV se_add_users;
-extern const SE_PRIV se_disk_operators;
-extern const SE_PRIV se_remote_shutdown;
-extern const SE_PRIV se_restore;
-extern const SE_PRIV se_take_ownership;
+extern const uint64_t se_priv_none;
+extern const uint64_t se_machine_account;
+extern const uint64_t se_print_operator;
+extern const uint64_t se_add_users;
+extern const uint64_t se_disk_operators;
+extern const uint64_t se_remote_shutdown;
+extern const uint64_t se_restore;
+extern const uint64_t se_take_ownership;
 
 
 /*
@@ -66,7 +64,7 @@ typedef struct {
 } PRIVILEGE_SET;
 
 typedef struct {
-	SE_PRIV se_priv;
+	uint64_t se_priv;
 	const char *name;
 	const char *description;
 	struct lsa_LUID luid;

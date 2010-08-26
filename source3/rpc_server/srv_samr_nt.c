@@ -180,7 +180,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor
 ********************************************************************/
 
 NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
-                                          SE_PRIV *rights, uint32 rights_mask,
+                                          uint64_t *rights, uint32 rights_mask,
                                           uint32 des_access, uint32 *acc_granted,
 					  const char *debug )
 {
@@ -545,7 +545,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	NTSTATUS  status;
 	size_t    sd_size;
 	uint32_t extra_access = SAMR_DOMAIN_ACCESS_CREATE_USER;
-	SE_PRIV se_rights;
+	uint64_t se_rights;
 
 	/* find the connection policy handle. */
 
@@ -2253,7 +2253,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	size_t    sd_size;
 	bool ret;
 	NTSTATUS nt_status;
-	SE_PRIV se_rights;
+	uint64_t se_rights;
 	NTSTATUS status;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
@@ -3807,7 +3807,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	bool can_add_account = False;
-	SE_PRIV se_rights;
+	uint64_t se_rights;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_CREATE_USER, NULL,
@@ -4233,7 +4233,7 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 	uint32    des_access = r->in.access_mask;
 	size_t    sd_size;
 	NTSTATUS  status;
-	SE_PRIV se_rights;
+	uint64_t se_rights;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, NULL,
@@ -6312,7 +6312,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	size_t            sd_size;
 	NTSTATUS          status;
 	bool ret;
-	SE_PRIV se_rights;
+	uint64_t se_rights;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, NULL,

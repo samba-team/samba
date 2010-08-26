@@ -364,7 +364,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 	char *cmd = lp_deleteprinter_cmd();
 	char *command = NULL;
 	int ret;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	/* can't fail if we don't try */
@@ -1743,7 +1743,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		if ( r->in.access_mask & SERVER_ACCESS_ADMINISTER )
 		{
-			SE_PRIV se_printop = SE_PRINT_OPERATOR;
+			uint64_t se_printop = SE_PRINT_OPERATOR;
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, r->out.handle);
@@ -1995,7 +1995,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
-	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;
+	uint64_t                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -2101,7 +2101,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	int				version;
 	bool				delete_files;
 	WERROR				status;
-	SE_PRIV                         se_printop = SE_PRINT_OPERATOR;
+	uint64_t                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -5864,7 +5864,7 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *p
 	char *cmd = lp_addport_cmd();
 	char *command = NULL;
 	int ret;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	if ( !*cmd ) {
@@ -5919,7 +5919,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 	int numlines;
 	int ret;
 	int fd;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	if (!remote_machine) {
@@ -8248,7 +8248,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
@@ -8322,7 +8322,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -8382,7 +8382,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 

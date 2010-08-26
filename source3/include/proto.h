@@ -633,13 +633,13 @@ void pidfile_unlink(void);
 
 /* The following definitions come from lib/privileges.c  */
 
-bool get_privileges_for_sids(SE_PRIV *privileges, struct dom_sid *slist, int scount);
+bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int scount);
 NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids);
-NTSTATUS privilege_enum_sids(const SE_PRIV *mask, TALLOC_CTX *mem_ctx,
+NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids);
-bool grant_privilege(const struct dom_sid *sid, const SE_PRIV *priv_mask);
+bool grant_privilege(const struct dom_sid *sid, const uint64_t *priv_mask);
 bool grant_privilege_by_name(struct dom_sid *sid, const char *name);
-bool revoke_privilege(const struct dom_sid *sid, const SE_PRIV *priv_mask);
+bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask);
 bool revoke_all_privileges( struct dom_sid *sid );
 bool revoke_privilege_by_name(struct dom_sid *sid, const char *name);
 NTSTATUS privilege_create_account(const struct dom_sid *sid );
@@ -653,23 +653,23 @@ bool grant_all_privileges( const struct dom_sid *sid );
 
 /* The following definitions come from lib/privileges_basic.c  */
 
-bool se_priv_copy( SE_PRIV *dst, const SE_PRIV *src );
-bool se_priv_put_all_privileges(SE_PRIV *mask);
-void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv );
-void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv );
-bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 );
-bool se_priv_from_name( const char *name, SE_PRIV *mask );
-void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask );
-bool is_privilege_assigned(const SE_PRIV *privileges,
-			   const SE_PRIV *check);
+bool se_priv_copy( uint64_t *dst, const uint64_t *src );
+bool se_priv_put_all_privileges(uint64_t *mask);
+void se_priv_add( uint64_t *mask, const uint64_t *addpriv );
+void se_priv_remove( uint64_t *mask, const uint64_t *removepriv );
+bool se_priv_equal( const uint64_t *mask1, const uint64_t *mask2 );
+bool se_priv_from_name( const char *name, uint64_t *mask );
+void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *mask );
+bool is_privilege_assigned(const uint64_t *privileges,
+			   const uint64_t *check);
 const char* get_privilege_dispname( const char *name );
-bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege);
-bool user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege);
+bool user_has_privileges(const NT_USER_TOKEN *token, const uint64_t *privilege);
+bool user_has_any_privilege(NT_USER_TOKEN *token, const uint64_t *privilege);
 int count_all_privileges( void );
-struct lsa_LUIDAttribute get_privilege_luid( SE_PRIV *mask );
+struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask );
 const char *luid_to_privilege_name(const struct lsa_LUID *set);
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask );
-bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset );
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask );
+bool privilege_set_to_se_priv( uint64_t *mask, struct lsa_PrivilegeSet *privset );
 
 /* The following definitions come from lib/readline.c  */
 
@@ -5667,7 +5667,7 @@ int fncall_recv(struct tevent_req *req, int *perr);
 
 /* The following definitions come from rpc_server/srv_samr_nt.c */
 NTSTATUS access_check_object( struct security_descriptor *psd, NT_USER_TOKEN *token,
-				SE_PRIV *rights, uint32 rights_mask,
+				uint64_t *rights, uint32 rights_mask,
 				uint32 des_access, uint32 *acc_granted,
 				const char *debug);
 void map_max_allowed_access(const NT_USER_TOKEN *nt_token,

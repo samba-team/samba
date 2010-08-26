@@ -2075,7 +2075,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	WERROR result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
-	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	/* If user is NULL then use the current_user structure */
 

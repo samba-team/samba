@@ -636,7 +636,7 @@ extern PRIVS privs[];
 static int net_sam_rights_list(struct net_context *c, int argc,
 			       const char **argv)
 {
-	SE_PRIV mask;
+	uint64_t mask;
 
 	if (argc > 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\n%s",
@@ -692,7 +692,7 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
-	SE_PRIV mask;
+	uint64_t mask;
 	int i;
 
 	if (argc < 2 || c->display_usage) {
@@ -731,7 +731,7 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
-	SE_PRIV mask;
+	uint64_t mask;
 	int i;
 
 	if (argc < 2 || c->display_usage) {

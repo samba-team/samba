@@ -1535,7 +1535,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	int ret;
 	char *path = NULL;
 	struct security_descriptor *psd = NULL;
-	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op = False;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1764,7 +1764,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	int ret;
 	char *path;
 	struct security_descriptor *psd = NULL;
-	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1941,7 +1941,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	char *share_name = NULL;
 	int ret;
 	int snum;
-	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 	struct share_params *params;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -2517,7 +2517,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 			    struct srvsvc_NetFileClose *r)
 {
 	struct enum_file_close_state state;
-	SE_PRIV se_diskop = SE_DISK_OPERATOR;
+	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
