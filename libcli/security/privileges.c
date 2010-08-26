@@ -455,4 +455,3 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 
 	return True;
 }
-

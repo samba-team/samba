@@ -634,7 +634,7 @@ extern void *cmdline_lp_ctx;
 #include "../lib/util/charset/charset.h"
 #include "dynconfig.h"
 #include "debugparse.h"
-#include "privileges.h"
+#include "../libcli/security/privileges.h"
 #include "messages.h"
 #include "locking.h"
 #include "smb_perfcount.h"
