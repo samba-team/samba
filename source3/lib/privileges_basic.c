@@ -47,47 +47,6 @@ const uint64_t se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 const uint64_t se_restore         = SE_RESTORE;
 const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
 
-/********************************************************************
- This is a list of privileges reported by a WIndows 2000 SP4 AD DC
- just for reference purposes (and I know the LUID is not guaranteed
- across reboots):
-
-            SeCreateTokenPrivilege  Create a token object ( 0x0, 0x2 )
-     SeAssignPrimaryTokenPrivilege  Replace a process level token ( 0x0, 0x3 )
-             SeLockMemoryPrivilege  Lock pages in memory ( 0x0, 0x4 )
-          SeIncreaseQuotaPrivilege  Increase quotas ( 0x0, 0x5 )
-         SeMachineAccountPrivilege  Add workstations to domain ( 0x0, 0x6 )
-                    SeTcbPrivilege  Act as part of the operating system ( 0x0, 0x7 )
-               SeSecurityPrivilege  Manage auditing and security log ( 0x0, 0x8 )
-          SeTakeOwnershipPrivilege  Take ownership of files or other objects ( 0x0, 0x9 )
-             SeLoadDriverPrivilege  Load and unload device drivers ( 0x0, 0xa )
-          SeSystemProfilePrivilege  Profile system performance ( 0x0, 0xb )
-             SeSystemtimePrivilege  Change the system time ( 0x0, 0xc )
-   SeProfileSingleProcessPrivilege  Profile single process ( 0x0, 0xd )
-   SeIncreaseBasePriorityPrivilege  Increase scheduling priority ( 0x0, 0xe )
-         SeCreatePagefilePrivilege  Create a pagefile ( 0x0, 0xf )
-        SeCreatePermanentPrivilege  Create permanent shared objects ( 0x0, 0x10 )
-                 SeBackupPrivilege  Back up files and directories ( 0x0, 0x11 )
-                SeRestorePrivilege  Restore files and directories ( 0x0, 0x12 )
-               SeShutdownPrivilege  Shut down the system ( 0x0, 0x13 )
-                  SeDebugPrivilege  Debug programs ( 0x0, 0x14 )
-                  SeAuditPrivilege  Generate security audits ( 0x0, 0x15 )
-      SeSystemEnvironmentPrivilege  Modify firmware environment values ( 0x0, 0x16 )
-           SeChangeNotifyPrivilege  Bypass traverse checking ( 0x0, 0x17 )
-         SeRemoteShutdownPrivilege  Force shutdown from a remote system ( 0x0, 0x18 )
-                 SeUndockPrivilege  Remove computer from docking station ( 0x0, 0x19 )
-              SeSyncAgentPrivilege  Synchronize directory service data ( 0x0, 0x1a )
-       SeEnableDelegationPrivilege  Enable computer and user accounts to be trusted for delegation ( 0x0, 0x1b )
-           SeManageVolumePrivilege  Perform volume maintenance tasks ( 0x0, 0x1c )
-            SeImpersonatePrivilege  Impersonate a client after authentication ( 0x0, 0x1d )
-           SeCreateGlobalPrivilege  Create global objects ( 0x0, 0x1e )
-
- ********************************************************************/
-
-/* we have to define the LUID here due to a horrible check by printmig.exe
-   that requires the SeBackupPrivilege match what is in Windows.  So match
-   those that we implement and start Samba privileges at 0x1001 */
-
 PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
