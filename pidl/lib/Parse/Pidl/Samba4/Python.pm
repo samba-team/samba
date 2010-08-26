@@ -947,7 +947,11 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 		}
 		# if we want to handle more than one level of pointer in python interfaces
 		# then this is where we would need to allocate it
-		$self->pidl("$var_name = NULL;");
+		if ($l->{POINTER_TYPE} eq "ref") {
+			$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
+		} else {
+			$self->pidl("$var_name = NULL;");
+		}
 		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $mem_ref, $py_var, $e, $nl, get_value_of($var_name), $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
