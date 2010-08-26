@@ -291,6 +291,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
 	uint32_t i;
+	enum sec_privilege priv;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
@@ -298,12 +299,11 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 	state = h->data;
 
 	i = *r->in.resume_handle;
-	if (i == 0) i = 1;
 
-	while ((privname = sec_privilege_name(i)) &&
+	while (((priv = sec_privilege_from_index(i)) != -1) &&
 	       r->out.privs->count < r->in.max_count) {
 		struct lsa_PrivEntry *e;
-
+		privname = sec_privilege_name(priv);
 		r->out.privs->privs = talloc_realloc(r->out.privs,
 						       r->out.privs->privs, 
 						       struct lsa_PrivEntry, 

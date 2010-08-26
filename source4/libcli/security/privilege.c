@@ -235,6 +235,17 @@ enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 	return -1;
 }
 
+/*
+  map a privilege name to a privilege id. Return -1 if not found
+*/
+enum sec_privilege sec_privilege_from_index(int idx)
+{
+	if (idx >= 0 && idx<ARRAY_SIZE(privilege_names)) {
+		return privilege_names[idx].privilege;
+	}
+	return -1;
+}
+
 
 /*
   return a privilege mask given a privilege id
