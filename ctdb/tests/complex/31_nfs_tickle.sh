@@ -77,16 +77,20 @@ echo "Source socket is $src_socket"
 
 wait_for_monitor_event $test_node
 
-echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
-f="/etc/sysconfig/nfs"
-try_command_on_node -v 0 "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
+if try_command_on_node 0 "test -r /etc/ctdb/events.d/61.nfstickle" ; then
+    echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
+    f="/etc/sysconfig/nfs"
+    try_command_on_node -v 0 "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
 
-nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
+    nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
 
-try_command_on_node $test_node hostname
-test_hostname=$out
+    try_command_on_node $test_node hostname
+    test_hostname=$out
 
-try_command_on_node -v 0 cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
+    try_command_on_node -v 0 cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
+else
+    try_command_on_node -v 0 "ctdb -Y gettickles $testip" "$testport"
+fi
 
 if [ "${out/${src_socket}/}" != "$out" ] ; then
     echo "GOOD: NFS connection tracked OK in tickles file."
