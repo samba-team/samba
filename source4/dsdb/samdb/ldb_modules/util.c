@@ -1172,9 +1172,11 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 				    attrs,
 				    DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_SUCCESS && res->count == 1) {
+		talloc_free(new_dn);
 		return ldb_msg_find_ldb_val(res->msgs[0],
 					    "dsHeuristics");
 	}
+	talloc_free(new_dn);
 	return NULL;
 }
 
