@@ -653,7 +653,6 @@ extern void *cmdline_lp_ctx;
 #include "session.h"
 #include "module.h"
 #include "packet.h"
-#include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "serverid.h"
 #include "../lib/util/smb_threads.h"

@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/async_req/async_sock.h"
+#include "ctdbd_conn.h"
 
 extern bool global_machine_password_needs_changing;
 

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "secrets.h"
+#include "ctdbd_conn.h"
 
 extern char *global_clobber_region_function;
 extern unsigned int global_clobber_region_line;
