@@ -166,3 +166,5 @@ from samba.netcmd.group import cmd_group
 commands["group"] = cmd_group()
 from samba.netcmd.join import cmd_join
 commands["join"] = cmd_join()
+from samba.netcmd.rodc import cmd_rodc
+commands["rodc"] = cmd_rodc()
