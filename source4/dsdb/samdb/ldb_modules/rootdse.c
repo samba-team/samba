@@ -30,6 +30,9 @@
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
 #include "auth/auth.h"
+#include "param/param.h"
+#include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 struct private_data {
 	unsigned int num_controls;
@@ -971,6 +974,34 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_NAMING_VIOLATION;
 }
 
+static int rootdse_become_master(struct ldb_module *module,
+				 struct ldb_request *req,
+				 uint32_t role)
+{
+	struct drepl_takeFSMORole r;
+	struct server_id *sid;
+	struct messaging_context *msg;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
+	NTSTATUS status_call, status_fn;
+
+	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
+				    ldb_get_event_context(ldb));
+
+	sid = irpc_servers_byname(msg, tmp_ctx, "dreplsrv");
+	r.in.role = role;
+	status_call = IRPC_CALL(msg, sid[0], irpc, DREPL_TAKEFSMOROLE, &r, NULL);
+	if (!NT_STATUS_IS_OK(status_call)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	status_fn = r.out.result;
+	if (!NT_STATUS_IS_OK(status_fn)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -989,7 +1020,21 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_msg_find_element(req->op.mod.message, "schemaUpdateNow")) {
 		return rootdse_schemaupdatenow(module, req);
 	}
-
+	if (ldb_msg_find_element(req->op.mod.message, "becomeDomainMaster")) {
+		return rootdse_become_master(module, req, DREPL_NAMING_MASTER);
+	}
+	if (ldb_msg_find_element(req->op.mod.message, "becomeInfrastructureMaster")) {
+		return rootdse_become_master(module, req, DREPL_INFRASTRUCTURE_MASTER);
+	}
+	if (ldb_msg_find_element(req->op.mod.message, "becomeRidMaster")) {
+		return rootdse_become_master(module, req, DREPL_RID_MASTER);
+	}
+	if (ldb_msg_find_element(req->op.mod.message, "becomeSchemaMaster")) {
+		return rootdse_become_master(module, req, DREPL_SCHEMA_MASTER);
+	}
+	if (ldb_msg_find_element(req->op.mod.message, "becomePdc")) {
+		return rootdse_become_master(module, req, DREPL_PDC_MASTER);
+	}
 	if (ldb_msg_find_element(req->op.mod.message, "enableOptionalFeature")) {
 		return rootdse_enableoptionalfeature(module, req);
 	}
