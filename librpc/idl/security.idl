@@ -352,9 +352,11 @@ interface security
 
  ********************************************************************/
 
-/* we have to define the LUID here due to a horrible check by printmig.exe
-   that requires the SeBackupPrivilege match what is in Windows.  So match
-   those that we implement and start Samba privileges at 0x1001 */
+	/* LUID values for privileges known about by Samba (bottom 32 bit of enum, top bits are 0) */
+
+	/* we have to define the LUID here due to a horrible check by printmig.exe
+	   that requires the SeBackupPrivilege match what is in Windows.  So match
+	   those that we implement and start Samba privileges at 0x1001 */
 
 	typedef enum {
 		SEC_PRIV_INCREASE_QUOTA            = 0x5,
@@ -389,9 +391,11 @@ interface security
 		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 0x2024
 	} sec_privilege;
 
-/*
- * We will use our own bitmap here as the Samba3 privilages.tdb records these values
- */
+
+	/* Bitmap of privilege values for internal use only.  We need
+	 * our own bitmap here as privilages.tdb records these values
+	 * as a bitmap (privilages.ldb uses the string forms).
+	 */
 	typedef [bitmap64bit] bitmap {
 		SE_NETWORK_LOGON		= 0x00000001,
 		SE_INTERACTIVE_LOGON		= 0x00000002,
