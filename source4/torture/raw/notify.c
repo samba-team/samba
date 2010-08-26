@@ -1619,7 +1619,7 @@ static bool test_notify_alignment(struct smbcli_state *cli,
 				 "abc",
 				 "abcd" };
 	int num_names = ARRAY_SIZE(fnames);
-	const char *fpath = NULL;
+	char *fpath = NULL;
 
 	torture_comment(tctx, "TESTING CHANGE NOTIFY REPLY ALIGNMENT\n");
 
