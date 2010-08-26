@@ -50,5 +50,6 @@ struct object_tree {
 #include "libcli/security/proto.h"
 #include "libcli/security/security_descriptor.h"
 #include "libcli/security/sddl.h"
+#include "libcli/security/privileges.h"
 
 #endif

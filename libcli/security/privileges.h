@@ -1,4 +1,3 @@
-
 /*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
@@ -59,8 +58,8 @@ extern const uint64_t se_take_ownership;
 typedef struct {
 	TALLOC_CTX *mem_ctx;
 	bool ext_ctx;
-	uint32 count;
-	uint32 control;
+	uint32_t count;
+	uint32_t control;
 	struct lsa_LUIDAttribute *set;
 } PRIVILEGE_SET;
 
@@ -158,5 +157,44 @@ const char *luid_to_privilege_name(const struct lsa_LUID *set);
 
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask );
 bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset );
+
+/*
+  map a privilege id to the wire string constant
+*/
+const char *sec_privilege_name(enum sec_privilege privilege);
+
+/*
+  map a privilege id to a privilege display name. Return NULL if not found
+
+  TODO: this should use language mappings
+*/
+const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *language);
+
+/*
+  map a privilege name to a privilege id. Return -1 if not found
+*/
+enum sec_privilege sec_privilege_id(const char *name);
+
+/*
+  map a privilege name to a privilege id. Return -1 if not found
+*/
+enum sec_privilege sec_privilege_from_mask(uint64_t mask);
+
+/*
+  map a privilege name to a privilege id. Return -1 if not found
+*/
+enum sec_privilege sec_privilege_from_index(int idx);
+
+/*
+  return true if a security_token has a particular privilege bit set
+*/
+bool security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege);
+
+/*
+  set a bit in the privilege mask
+*/
+void security_token_set_privilege(struct security_token *token, enum sec_privilege privilege);
+
+void security_token_debug_privileges(int dbg_lev, const struct security_token *token);
 
 #endif /* PRIVILEGES_H */
