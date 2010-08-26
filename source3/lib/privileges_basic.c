@@ -281,12 +281,12 @@ const char* get_privilege_dispname( const char *name )
  at a time here.
 *****************************************************************************/
 
-bool user_has_privileges(const struct security_token *token, const uint64_t *privilege)
+bool user_has_privileges(const struct security_token *token, const uint64_t *privilege_bit)
 {
 	if ( !token )
 		return False;
 
-	return is_privilege_assigned( &token->privilege_mask, privilege );
+	return is_privilege_assigned( &token->privilege_mask, privilege_bit );
 }
 
 /****************************************************************************
@@ -294,12 +294,12 @@ bool user_has_privileges(const struct security_token *token, const uint64_t *pri
  at a time here.
 *****************************************************************************/
 
-bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege)
+bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege_mask)
 {
 	if ( !token )
 		return False;
 
-	return is_any_privilege_assigned( &token->privilege_mask, privilege );
+	return is_any_privilege_assigned( &token->privilege_mask, privilege_mask );
 }
 
 /*******************************************************************
