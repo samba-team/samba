@@ -233,82 +233,15 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	/* reload services so that the new %U is taken into account */
 	reload_services(smb2req->sconn->msg_ctx, smb2req->sconn->sock, true);
 
-	if (map_domainuser_to_guest) {
-		status = make_server_info_guest(session,
-						&session->server_info);
-		if (!NT_STATUS_IS_OK(status) ) {
-			DEBUG(1,("smb2: make_server_info_guest failed: %s!\n",
-				nt_errstr(status)));
-			goto fail;
-		}
-
-	} else if (logon_info) {
-		/* pass the unmapped username here since map_username()
-		   will be called again in make_server_info_info3() */
-
-		status = make_server_info_info3(session,
-						user, domain,
-						&session->server_info,
-						&logon_info->info3);
-		if (!NT_STATUS_IS_OK(status) ) {
-			DEBUG(1,("smb2: make_server_info_info3 failed: %s!\n",
-				nt_errstr(status)));
-			goto fail;
-		}
-
-	} else {
-		/*
-		 * We didn't get a PAC, we have to make up the user
-		 * ourselves. Try to ask the pdb backend to provide
-		 * SID consistency with ntlmssp session setup
-		 */
-		struct samu *sampass;
-		/* The stupid make_server_info_XX functions here
-		   don't take a talloc context. */
-		struct auth_serversupplied_info *tmp_server_info = NULL;
-
-		sampass = samu_new(talloc_tos());
-		if (sampass == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-
-		if (pdb_getsampwnam(sampass, real_username)) {
-			DEBUG(10, ("smb2: found user %s in passdb, calling "
-				"make_server_info_sam\n", real_username));
-			status = make_server_info_sam(&tmp_server_info, sampass);
-			TALLOC_FREE(sampass);
-		} else {
-			/*
-			 * User not in passdb, make it up artificially
-			 */
-			TALLOC_FREE(sampass);
-			DEBUG(10, ("smb2: didn't find user %s in passdb, calling "
-				"make_server_info_pw\n", real_username));
-			status = make_server_info_pw(&tmp_server_info,
-						     real_username, pw);
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1,("smb2: make_server_info_[sam|pw] failed: %s!\n",
-				nt_errstr(status)));
-			goto fail;
-                }
-
-		/* Steal tmp_server_info into the session->server_info
-		   pointer. */
-		session->server_info = talloc_move(session, &tmp_server_info);
-
-		/* make_server_info_pw does not set the domain. Without this
-		 * we end up with the local netbios name in substitutions for
-		 * %D. */
-
-		if (session->server_info->info3 != NULL) {
-			session->server_info->info3->base.domain.string =
-				talloc_strdup(session->server_info->info3, domain);
-		}
-
+	status = make_server_info_krb5(session,
+					user, domain, real_username, pw,
+					logon_info, map_domainuser_to_guest,
+					&session->server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("smb2: make_server_info_krb5 failed\n"));
+		goto fail;
 	}
+
 
 	session->server_info->nss_token |= username_was_mapped;
 
