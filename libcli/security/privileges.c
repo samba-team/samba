@@ -371,7 +371,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 
 	/* we can allocate memory to add the new privilege */
 
-	new_set = TALLOC_REALLOC_ARRAY(priv_set->mem_ctx, priv_set->set, struct lsa_LUIDAttribute, priv_set->count + 1);
+	new_set = talloc_realloc(priv_set->mem_ctx, priv_set->set, struct lsa_LUIDAttribute, priv_set->count + 1);
 	if ( !new_set ) {
 		DEBUG(0,("privilege_set_add: failed to allocate memory!\n"));
 		return false;
