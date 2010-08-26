@@ -627,7 +627,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 	struct dom_sid *ad_token_sids;
 	size_t num_ad_token_sids = 0;
 	struct dom_sid *token_sids;
-	size_t num_token_sids = 0;
+	uint32_t num_token_sids = 0;
 	NT_USER_TOKEN *new_token = NULL;
 	int i;
 

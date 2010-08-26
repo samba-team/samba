@@ -2913,7 +2913,8 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	size_t num_sids, num_gids;
+	uint32_t num_sids;
+	size_t num_gids;
 	char *gidstr;
 	gid_t primary_gid = -1;
 
@@ -3692,7 +3693,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 	char **values = NULL;
 	int i;
 	char *filter = NULL;
-	size_t num_members = 0;
+	uint32_t num_members = 0;
 	enum lsa_SidType type = SID_NAME_USE_NONE;
 	fstring tmp;
 

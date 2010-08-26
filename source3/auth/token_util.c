@@ -725,7 +725,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	gid_t *gids;
 	struct dom_sid *group_sids;
 	struct dom_sid unix_group_sid;
-	size_t num_group_sids;
+	uint32_t num_group_sids;
 	size_t num_gids;
 	size_t i;
 
@@ -743,7 +743,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 	if (sid_check_is_in_our_domain(&user_sid)) {
 		bool ret;
-
+		size_t pdb_num_group_sids;
 		/* This is a passdb user, so ask passdb */
 
 		struct samu *sam_acct = NULL;
@@ -766,7 +766,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		result = pdb_enum_group_memberships(tmp_ctx, sam_acct,
 						    &group_sids, &gids,
-						    &num_group_sids);
+						    &pdb_num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(1, ("enum_group_memberships failed for %s (%s): "
 				  "%s\n", username, sid_string_dbg(&user_sid),
@@ -774,6 +774,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			DEBUGADD(1, ("Fall back to unix user %s\n", username));
 			goto unix_user;
 		}
+		num_group_sids = pdb_num_group_sids;
 
 		/* see the smb_panic() in pdb_default_enum_group_memberships */
 		SMB_ASSERT(num_group_sids > 0);
@@ -812,7 +813,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		*uid = sam_acct->unix_pw->pw_uid;
 
 	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
-
+		size_t getgroups_num_group_sids;
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
 
@@ -843,11 +844,12 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		if (!getgroups_unix_user(tmp_ctx, username, pass->pw_gid,
-					 &gids, &num_group_sids)) {
+					 &gids, &getgroups_num_group_sids)) {
 			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
 				  username));
 			goto done;
 		}
+		num_group_sids = getgroups_num_group_sids;
 
 		if (num_group_sids) {
 			group_sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_group_sids);

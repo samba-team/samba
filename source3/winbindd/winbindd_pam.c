@@ -256,7 +256,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
  */
 {
 	struct dom_sid *require_membership_of_sid;
-	size_t num_require_membership_of_sid;
+	uint32_t num_require_membership_of_sid;
 	char *req_sid;
 	const char *p;
 	struct dom_sid sid;

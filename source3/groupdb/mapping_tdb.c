@@ -409,14 +409,17 @@ static NTSTATUS one_alias_membership(const struct dom_sid *member,
 
 	while (next_token_talloc(frame, &p, &string_sid, " ")) {
 		struct dom_sid alias;
+		uint32_t num_sids;
 
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		status= add_sid_to_array_unique(NULL, &alias, sids, num);
+		num_sids = *num;
+		status= add_sid_to_array_unique(NULL, &alias, sids, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+		*num = num_sids;
 	}
 
 done:
@@ -443,7 +446,8 @@ static NTSTATUS alias_memberships(const struct dom_sid *members, size_t num_memb
 static bool is_aliasmem(const struct dom_sid *alias, const struct dom_sid *member)
 {
 	struct dom_sid *sids;
-	size_t i, num;
+	size_t i;
+	size_t num;
 
 	/* This feels the wrong way round, but the on-disk data structure
 	 * dictates it this way. */
@@ -567,6 +571,7 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 	while (next_token_talloc(frame, &p, &alias_string, " ")) {
 		struct dom_sid alias, member;
 		const char *member_string;
+		uint32_t num_sids;
 
 		if (!string_to_sid(&alias, alias_string))
 			continue;
@@ -589,13 +594,15 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 		if (!string_to_sid(&member, member_string))
 			continue;
 
+		num_sids = *state->num;
 		if (!NT_STATUS_IS_OK(add_sid_to_array(state->mem_ctx, &member,
 						      state->sids,
-						      state->num)))
+						      &num_sids)))
 		{
 			/* talloc fail. */
 			break;
 		}
+		*state->num = num_sids;
 	}
 
 	TALLOC_FREE(frame);

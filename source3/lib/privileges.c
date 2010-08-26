@@ -27,7 +27,7 @@
 #define PRIVPREFIX              "PRIV_"
 
 typedef struct {
-	size_t count;
+	uint32_t count;
 	struct dom_sid *list;
 } SID_LIST;
 

@@ -232,7 +232,7 @@ extern const struct dom_sid global_sid_Unix_Groups;
 #define PRIMARY_GROUP_SID_INDEX 1
 
 typedef struct nt_user_token {
-	size_t num_sids;
+	uint32_t num_sids;
 	struct dom_sid *sids;
 	uint64_t privilege_mask;
 } NT_USER_TOKEN;

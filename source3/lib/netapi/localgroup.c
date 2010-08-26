@@ -986,8 +986,8 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 
 	struct dom_sid *add_sids = NULL;
 	struct dom_sid *del_sids = NULL;
-	size_t num_add_sids = 0;
-	size_t num_del_sids = 0;
+	uint32_t num_add_sids = 0;
+	uint32_t num_del_sids = 0;
 
 	if ((!add && !del && !set) || (add && del && set)) {
 		return WERR_INVALID_PARAM;

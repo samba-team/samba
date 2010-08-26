@@ -1066,11 +1066,11 @@ int winbindd_num_clients(void)
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
-				  uint32 *p_num_groups, struct dom_sid **user_sids)
+				  uint32_t *p_num_groups, struct dom_sid **user_sids)
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	size_t num_groups = 0;
+	uint32_t num_groups = 0;
 
 	DEBUG(3,(": lookup_usergroups_cached\n"));
 

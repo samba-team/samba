@@ -614,7 +614,7 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 					 TALLOC_CTX *mem_ctx,
 					 const char *user_dn, 
 					 struct dom_sid *primary_group,
-					 size_t *p_num_groups, struct dom_sid **user_sids)
+					 uint32_t *p_num_groups, struct dom_sid **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -625,7 +625,7 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
 	char *escaped_dn;
-	size_t num_groups = 0;
+	uint32_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups_member\n"));
 
@@ -721,14 +721,14 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 					   TALLOC_CTX *mem_ctx,
 					   const char *user_dn,
 					   struct dom_sid *primary_group,
-					   size_t *p_num_groups,
+					   uint32_t *p_num_groups,
 					   struct dom_sid **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"memberOf", NULL};
-	size_t num_groups = 0;
+	uint32_t num_groups = 0;
 	struct dom_sid *group_sids = NULL;
 	int i;
 	char **strings = NULL;
@@ -846,7 +846,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	struct dom_sid primary_group;
 	uint32 primary_group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	size_t num_groups = 0;
+	uint32_t num_groups = 0;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 	*p_num_groups = 0;
@@ -931,7 +931,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		status = lookup_usergroups_memberof(domain, mem_ctx, user_dn,
 						    &primary_group,
 						    &num_groups, user_sids);
-		*p_num_groups = (uint32)num_groups;
+		*p_num_groups = num_groups;
 		if (NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -942,7 +942,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		status = lookup_usergroups_member(domain, mem_ctx, user_dn, 
 						  &primary_group,
 						  &num_groups, user_sids);
-		*p_num_groups = (uint32)num_groups;
+		*p_num_groups = num_groups;
 		goto done;
 	}
 

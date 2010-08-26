@@ -633,7 +633,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	struct policy_handle 		connect_pol, domain_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid                *sids;
-	size_t                     num_sids;
+	uint32_t                     num_sids;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	struct lsa_SidArray sid_array;

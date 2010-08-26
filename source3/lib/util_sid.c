@@ -578,7 +578,7 @@ struct dom_sid *sid_dup_talloc(TALLOC_CTX *ctx, const struct dom_sid *src)
 ********************************************************************/
 
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			  struct dom_sid **sids, size_t *num)
+			  struct dom_sid **sids, uint32_t *num)
 {
 	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, struct dom_sid,
 					     (*num)+1);
@@ -599,7 +599,7 @@ NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 ********************************************************************/
 
 NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-				 struct dom_sid **sids, size_t *num_sids)
+				 struct dom_sid **sids, uint32_t *num_sids)
 {
 	size_t i;
 
@@ -682,14 +682,14 @@ bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid)
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      struct dom_sid **user_sids,
-			      size_t *num_user_sids,
+			      uint32_t *num_user_sids,
 			      bool include_user_group_rid,
 			      bool skip_ressource_groups)
 {
 	NTSTATUS status;
 	struct dom_sid sid;
 	struct dom_sid *sid_array = NULL;
-	size_t num_sids = 0;
+	uint32_t num_sids = 0;
 	int i;
 
 	if (include_user_group_rid) {
