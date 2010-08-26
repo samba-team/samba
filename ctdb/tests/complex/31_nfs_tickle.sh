@@ -89,7 +89,7 @@ if try_command_on_node 0 "test -r /etc/ctdb/events.d/61.nfstickle" ; then
 
     try_command_on_node -v 0 cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
 else
-    try_command_on_node -v 0 "ctdb -Y gettickles $testip" "$testport"
+    try_command_on_node -v 0 "ctdb -Y gettickles $test_ip $test_port"
 fi
 
 if [ "${out/${src_socket}/}" != "$out" ] ; then
