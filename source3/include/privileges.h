@@ -68,7 +68,7 @@ typedef struct {
 	uint64_t se_priv;
 	const char *name;
 	const char *description;
-	struct lsa_LUID luid;
+	uint32_t luid;
 } PRIVS;
 
 #endif /* PRIVILEGES_H */

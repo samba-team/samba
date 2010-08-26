@@ -52,22 +52,22 @@ PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
 
-	{SE_NETWORK_LOGON,	"SeNetworkLogonRight",		"Access this computer from network", 	   { 0x0, 0x0 }},
-	{SE_INTERACTIVE_LOGON,	"SeInteractiveLogonRight",	"Log on locally", 			   { 0x0, 0x0 }},
-	{SE_BATCH_LOGON,	"SeBatchLogonRight",		"Log on as a batch job",		   { 0x0, 0x0 }},
-	{SE_SERVICE_LOGON,	"SeServiceLogonRight",		"Log on as a service",			   { 0x0, 0x0 }},
+	{SE_NETWORK_LOGON,	"SeNetworkLogonRight",		"Access this computer from network", 	   0x0},
+	{SE_INTERACTIVE_LOGON,	"SeInteractiveLogonRight",	"Log on locally", 			   0x0},
+	{SE_BATCH_LOGON,	"SeBatchLogonRight",		"Log on as a batch job",		   0x0},
+	{SE_SERVICE_LOGON,	"SeServiceLogonRight",		"Log on as a service",			   0x0},
 #endif
-	{SE_MACHINE_ACCOUNT,	"SeMachineAccountPrivilege",	"Add machines to domain",		   { SEC_PRIV_MACHINE_ACCOUNT,	0x0 }},
-	{SE_TAKE_OWNERSHIP,     "SeTakeOwnershipPrivilege",     "Take ownership of files or other objects",{ SEC_PRIV_TAKE_OWNERSHIP,	0x0 }},
-        {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   { SEC_PRIV_BACKUP,	0x0 }},
-        {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   { SEC_PRIV_RESTORE,	0x0 }},
-	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   { SEC_PRIV_REMOTE_SHUTDOWN,	0x0 }},
+	{SE_MACHINE_ACCOUNT,	"SeMachineAccountPrivilege",	"Add machines to domain",		   SEC_PRIV_MACHINE_ACCOUNT},
+	{SE_TAKE_OWNERSHIP,     "SeTakeOwnershipPrivilege",     "Take ownership of files or other objects",SEC_PRIV_TAKE_OWNERSHIP},
+        {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   SEC_PRIV_BACKUP},
+        {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   SEC_PRIV_RESTORE},
+	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   SEC_PRIV_REMOTE_SHUTDOWN},
 
-	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   { SEC_PRIV_PRINT_OPERATOR,	0x0 }},
-	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   { SEC_PRIV_ADD_USERS,	0x0 }},
-	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   { SEC_PRIV_DISK_OPERATOR,	0x0 }},
+	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   SEC_PRIV_PRINT_OPERATOR},
+	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   SEC_PRIV_ADD_USERS},
+	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   SEC_PRIV_DISK_OPERATOR},
 
-	{SE_END, "", "", { 0x0, 0x0 }}
+	{SE_END, "", "", 0x0}
 };
 
 /***************************************************************************
@@ -331,7 +331,8 @@ struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask )
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 
 		if ( se_priv_equal( &privs[i].se_priv, mask ) ) {
-			priv_luid.luid = privs[i].luid;
+			priv_luid.luid.low = privs[i].luid;
+			priv_luid.luid.high = 0;
 			break;
 		}
 	}
@@ -351,7 +352,7 @@ const char *luid_to_privilege_name(const struct lsa_LUID *set)
 		return NULL;
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
-		if ( set->low == privs[i].luid.low ) {
+		if ( set->low == privs[i].luid ) {
 			return privs[i].name;
 		}
 	}
@@ -402,7 +403,8 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask )
 		if ( !is_privilege_assigned(mask, &privs[i].se_priv) )
 			continue;
 
-		luid.luid = privs[i].luid;
+		luid.luid.high = 0;
+		luid.luid.low = privs[i].luid;
 
 		if ( !privilege_set_add( set, luid ) )
 			return False;
@@ -420,7 +422,7 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *mask )
 	uint32 num_privs = count_all_privileges();
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( luid->low == privs[i].luid.low ) {
+		if ( luid->low == privs[i].luid ) {
 			se_priv_copy( mask, &privs[i].se_priv );
 			return True;
 		}
