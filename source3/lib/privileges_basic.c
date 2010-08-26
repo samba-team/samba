@@ -88,16 +88,16 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src )
  put all privileges into a mask
 ****************************************************************************/
 
-bool se_priv_put_all_privileges(uint64_t *mask)
+bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
 
-	if (!se_priv_copy(mask, &se_priv_none)) {
+	if (!se_priv_copy(privilege_mask, &se_priv_none)) {
 		return False;
 	}
 	for ( i=0; i<num_privs; i++ ) {
-		se_priv_add(mask, &privs[i].se_priv);
+		se_priv_add(privilege_mask, &privs[i].se_priv);
 	}
 	return True;
 }
@@ -106,9 +106,9 @@ bool se_priv_put_all_privileges(uint64_t *mask)
  combine 2 uint64_t structures and store the resulting set in mew_mask
 ****************************************************************************/
 
-void se_priv_add( uint64_t *mask, const uint64_t *addpriv )
+void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv )
 {
-	*mask |= *addpriv;
+	*privilege_mask |= *addpriv;
 }
 
 /***************************************************************************
@@ -116,21 +116,21 @@ void se_priv_add( uint64_t *mask, const uint64_t *addpriv )
  in mew_mask
 ****************************************************************************/
 
-void se_priv_remove( uint64_t *mask, const uint64_t *removepriv )
+void se_priv_remove( uint64_t *privilege_mask, const uint64_t *removepriv )
 {
-	*mask &= ~*removepriv;
+	*privilege_mask &= ~*removepriv;
 }
 
 /***************************************************************************
  invert a given uint64_t and store the set in new_mask
 ****************************************************************************/
 
-static void se_priv_invert( uint64_t *new_mask, const uint64_t *mask )
+static void se_priv_invert( uint64_t *new_mask, const uint64_t *privilege_mask )
 {
 	uint64_t allprivs;
 
 	se_priv_copy( &allprivs, &se_priv_all );
-	se_priv_remove( &allprivs, mask );
+	se_priv_remove( &allprivs, privilege_mask );
 	se_priv_copy( new_mask, &allprivs );
 }
 
@@ -138,20 +138,20 @@ static void se_priv_invert( uint64_t *new_mask, const uint64_t *mask )
  check if 2 uint64_t structure are equal
 ****************************************************************************/
 
-bool se_priv_equal( const uint64_t *mask1, const uint64_t *mask2 )
+bool se_priv_equal( const uint64_t *privilege_mask1, const uint64_t *privilege_mask2 )
 {
-	return *mask1 == *mask2;
+	return *privilege_mask1 == *privilege_mask2;
 }
 
 /***************************************************************************
  check if a uint64_t has any assigned privileges
 ****************************************************************************/
 
-static bool se_priv_empty( const uint64_t *mask )
+static bool se_priv_empty( const uint64_t *privilege_mask )
 {
 	uint64_t p1;
 
-	se_priv_copy( &p1, mask );
+	se_priv_copy( &p1, privilege_mask );
 
 	p1 &= se_priv_all;
 
@@ -162,13 +162,13 @@ static bool se_priv_empty( const uint64_t *mask )
  Lookup the uint64_t value for a privilege name
 *********************************************************************/
 
-bool se_priv_from_name( const char *name, uint64_t *mask )
+bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 {
 	int i;
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
-			se_priv_copy( mask, &privs[i].se_priv );
+			se_priv_copy( privilege_mask, &privs[i].se_priv );
 			return True;
 		}
 	}
@@ -180,9 +180,9 @@ bool se_priv_from_name( const char *name, uint64_t *mask )
  dump an uint64_t structure to the log files
 ****************************************************************************/
 
-void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *mask )
+void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *privilege_mask )
 {
-	DEBUGADDC( dbg_cl, dbg_lvl,("uint64_t 0x%llx\n", (unsigned long long)*mask));
+	DEBUGADDC( dbg_cl, dbg_lvl,("uint64_t 0x%llx\n", (unsigned long long)*privilege_mask));
 }
 
 /****************************************************************************
@@ -321,7 +321,7 @@ int count_all_privileges( void )
  so we are guaranteed to find it in the list.
 *********************************************************************/
 
-struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask )
+struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask )
 {
 	struct lsa_LUIDAttribute priv_luid;
 	int i;
@@ -330,7 +330,7 @@ struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask )
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 
-		if ( se_priv_equal( &privs[i].se_priv, mask ) ) {
+		if ( se_priv_equal( &privs[i].se_priv, privilege_mask ) ) {
 			priv_luid.luid.low = privs[i].luid;
 			priv_luid.luid.high = 0;
 			break;
@@ -390,7 +390,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 /*******************************************************************
 *******************************************************************/
 
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask )
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
@@ -400,7 +400,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask )
 	luid.luid.high = 0;
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( !is_privilege_assigned(mask, &privs[i].se_priv) )
+		if ( !is_privilege_assigned(privilege_mask, &privs[i].se_priv) )
 			continue;
 
 		luid.luid.high = 0;
@@ -416,14 +416,14 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask )
 /*******************************************************************
 *******************************************************************/
 
-static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *mask )
+static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
 
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid ) {
-			se_priv_copy( mask, &privs[i].se_priv );
+			se_priv_copy( privilege_mask, &privs[i].se_priv );
 			return True;
 		}
 	}
@@ -434,11 +434,11 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *mask )
 /*******************************************************************
 *******************************************************************/
 
-bool privilege_set_to_se_priv( uint64_t *mask, struct lsa_PrivilegeSet *privset )
+bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset )
 {
 	int i;
 
-	ZERO_STRUCTP( mask );
+	ZERO_STRUCTP( privilege_mask );
 
 	for ( i=0; i<privset->count; i++ ) {
 		uint64_t r;
@@ -450,7 +450,7 @@ bool privilege_set_to_se_priv( uint64_t *mask, struct lsa_PrivilegeSet *privset 
 			return False;
 
 		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
-			se_priv_add( mask, &r );
+			se_priv_add( privilege_mask, &r );
 	}
 
 	return True;
