@@ -775,6 +775,61 @@ iptables()
 }
 
 ########################################################
+# tickle handling
+########################################################
+
+# Temporary directory for tickles.
+tickledir="$CTDB_BASE/state/tickles"
+mkdir -p "$tickledir"
+
+update_tickles ()
+{
+	_port="$1"
+
+	mkdir -p "$tickledir" # Just in case
+
+	# Who am I?
+	_pnn=$(ctdb pnn) ; _pnn=${_pnn#PNN:}
+
+	# What public IPs do I hold?
+	_ips=$(ctdb -Y ip | awk -F: -v pnn=$_pnn '$3 == pnn {print $2}')
+
+	# IPs as a regexp choice
+	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"
+
+	# Record connections to our public IPs in a temporary file
+	_my_connections="${tickledir}/${_port}.connections"
+	rm -f "$_my_connections"
+	netstat -tn |
+	awk -v destpat="^${_ipschoice}:${_port}\$" \
+	  '$1 == "tcp" && $6 == "ESTABLISHED" && $4 ~ destpat {print $5, $4}' |
+	sort >"$_my_connections"
+
+	# Record our current tickles in a temporary file
+	_my_tickles="${tickledir}/${_port}.tickles"
+	rm -f "$_my_tickles"
+	for _i in $_ips ; do
+		ctdb -Y gettickles $_i $_port | 
+		awk -F: 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
+	done |
+	sort >"$_my_tickles"
+
+	# Add tickles for connections that we haven't already got tickles for
+	comm -23 "$_my_connections" "$_my_tickles" |
+	while read _src _dst ; do
+		ctdb addtickle $_src $_dst
+	done
+
+	# Remove tickles for connections that are no longer there
+	comm -13 "$_my_connections" "$_my_tickles" |
+	while read _src _dst ; do
+		ctdb deltickle $_src $_dst
+	done
+
+	rm -f "$_my_connections" "$_my_tickles" 
+}
+
+########################################################
 # load a site local config file
 ########################################################
 
