@@ -52,8 +52,8 @@ sub parse_results($$$)
 				
 				unless ($terminated) {
 					$statistics->{TESTS_ERROR}++;
-					$msg_ops->end_test($testname, "error", 1, 
-						               "reason ($result) interrupted");
+					$msg_ops->end_test($testname, "error", 1,
+						               "reason ($result) interrupted\n");
 					return 1;
 				}
 			}
@@ -102,7 +102,7 @@ sub parse_results($$$)
 
 	while ($#$open_tests+1 > 0) {
 		$msg_ops->end_test(pop(@$open_tests), "error", 1,
-				   "was started but never finished!");
+				   "was started but never finished!\n");
 		$statistics->{TESTS_ERROR}++;
 	}
 
@@ -132,7 +132,8 @@ sub end_test($$;$)
 	my $reason = shift;
 	if ($reason) {
 		print "$result: $name [\n";
-		print "$reason";
+		print $reason;
+		if (substr($reason, -1, 1) != "\n") { print "\n"; }
 		print "]\n";
 	} else {
 		print "$result: $name\n";
