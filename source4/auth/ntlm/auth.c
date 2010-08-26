@@ -378,7 +378,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(2,("auth_check_password_recv: "
-			 "%s authentication for user [%s\\%s]"
+			 "%s authentication for user [%s\\%s] "
 			 "FAILED with error %s\n",
 			 (state->method ? state->method->ops->name : "NO_METHOD"),
 			 state->user_info->mapped.domain_name,
