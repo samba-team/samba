@@ -26,6 +26,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "libads/kerberos_proto.h"
 #include "krb5_env.h"
+#include "async_smb.h"
 
 static const struct {
 	int prot;

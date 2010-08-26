@@ -656,8 +656,6 @@ extern void *cmdline_lp_ctx;
 #include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "serverid.h"
-#include "async_smb.h"
-#include "../lib/async_req/async_sock.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 

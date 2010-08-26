@@ -23,6 +23,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/crypto/arcfour.h"
+#include "async_smb.h"
 
 /****************************************************************************
  Call a remote api

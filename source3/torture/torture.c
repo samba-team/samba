@@ -29,6 +29,7 @@
 #include "nsswitch/winbind_client.h"
 #include "dbwrap.h"
 #include "talloc_dict.h"
+#include "async_smb.h"
 
 extern char *optarg;
 extern int optind;

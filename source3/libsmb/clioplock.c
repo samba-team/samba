@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "async_smb.h"
 
 /****************************************************************************
 send an ack for an oplock break request

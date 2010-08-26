@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "async_smb.h"
 
 struct cli_message_start_state {
 	uint16_t grp;

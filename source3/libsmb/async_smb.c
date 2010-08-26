@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "../lib/async_req/async_sock.h"
+#include "async_smb.h"
 
 /*
  * Read an smb packet asynchronously, discard keepalives

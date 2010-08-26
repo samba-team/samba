@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "smb_signing.h"
+#include "async_smb.h"
 
 /*******************************************************************
  Setup the word count and byte count for a client smb message.

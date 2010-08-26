@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-
+#include "async_smb.h"
 
 /****************************************************************************
  Send a SMB trans or trans2 request.

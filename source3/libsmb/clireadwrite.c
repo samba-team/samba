@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "async_smb.h"
 
 /****************************************************************************
   Calculate the recommended read buffer size

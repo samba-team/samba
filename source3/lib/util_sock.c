@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "memcache.h"
+#include "../lib/async_req/async_sock.h"
 
 /****************************************************************************
  Get a port number in host byte order from a sockaddr_storage.
