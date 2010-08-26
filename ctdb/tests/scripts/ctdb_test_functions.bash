@@ -986,7 +986,7 @@ ctdb_test_eventscript_install ()
 {
 
     local script='#!/bin/sh
-out=$($CTDB pnn)
+out=$(ctdb pnn)
 pnn="${out#PNN:}"
 
 rm -vf "/tmp/ctdb-test-flag-${1}.${pnn}"
