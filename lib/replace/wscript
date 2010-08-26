@@ -173,6 +173,7 @@ def configure(conf):
                            define='DLOPEN_TAKES_UNSIGNED_FLAGS', headers='dlfcn.h dl.h')
 
     conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True)
+    conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True)
 
     # these headers need to be tested as a group on freebsd
     conf.CHECK_HEADERS(headers='sys/socket.h net/if.h', together=True)
