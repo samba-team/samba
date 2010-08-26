@@ -4274,20 +4274,6 @@ struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p);
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
 
-/* The following definitions come from rpc_client/ndr.c  */
-
-struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct rpc_pipe_client *cli,
-				       const struct ndr_interface_table *table,
-				       uint32_t opnum,
-				       void *r);
-NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
-NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
-			TALLOC_CTX *mem_ctx,
-			const struct ndr_interface_table *table,
-			uint32 opnum, void *r);
-
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
 /* The following definitions come from rpc_server/rpc_handles.c  */
