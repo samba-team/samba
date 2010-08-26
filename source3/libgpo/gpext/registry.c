@@ -218,7 +218,7 @@ static NTSTATUS reg_parse_registry(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static WERROR reg_apply_registry(TALLOC_CTX *mem_ctx,
-				 const struct nt_user_token *token,
+				 const struct security_token *token,
 				 struct registry_key *root_key,
 				 uint32_t flags,
 				 struct gp_registry_entry *entries,
@@ -273,7 +273,7 @@ static NTSTATUS registry_process_group_policy(ADS_STRUCT *ads,
 					      TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
-					      const struct nt_user_token *token,
+					      const struct security_token *token,
 					      struct GROUP_POLICY_OBJECT *gpo,
 					      const char *extension_guid,
 					      const char *snapin_guid)

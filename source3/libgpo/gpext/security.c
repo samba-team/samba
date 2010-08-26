@@ -144,7 +144,7 @@ static NTSTATUS security_process_group_policy(ADS_STRUCT *ads,
 					      TALLOC_CTX *mem_ctx,
 					      uint32_t flags,
 					      struct registry_key *root_key,
-					      const struct nt_user_token *token,
+					      const struct security_token *token,
 					      struct GROUP_POLICY_OBJECT *gpo,
 					      const char *extension_guid,
 					      const char *snapin_guid)

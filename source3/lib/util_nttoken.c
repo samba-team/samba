@@ -71,11 +71,11 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 ****************************************************************************/
 
 NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
-			const struct nt_user_token *token_1,
-			const struct nt_user_token *token_2,
-			struct nt_user_token **token_out)
+			const struct security_token *token_1,
+			const struct security_token *token_2,
+			struct security_token **token_out)
 {
-	struct nt_user_token *token = NULL;
+	struct security_token *token = NULL;
 	NTSTATUS status;
 	int i;
 
@@ -83,7 +83,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token);
+	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
 	NT_STATUS_HAVE_NO_MEMORY(token);
 
 	for (i=0; i < token_1->num_sids; i++) {

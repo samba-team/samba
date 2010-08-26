@@ -31,7 +31,7 @@ int fetch_reg_keys(struct registry_key_handle *key,
 int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
 bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
 			 uint32 *granted,
-			 const struct nt_user_token *token);
+			 const struct security_token *token);
 WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, struct registry_key_handle *key,
 			  struct security_descriptor **psecdesc);
 WERROR regkey_set_secdesc(struct registry_key_handle *key,

@@ -261,7 +261,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 	const char *p;
 	struct dom_sid sid;
 	size_t i;
-	struct nt_user_token *token;
+	struct security_token *token;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -272,7 +272,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 		return NT_STATUS_OK;
 	}
 
-	token = talloc_zero(talloc_tos(), struct nt_user_token);
+	token = talloc_zero(talloc_tos(), struct security_token);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(frame);

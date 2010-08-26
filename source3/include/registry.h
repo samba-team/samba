@@ -71,7 +71,7 @@ struct registry_key {
 	struct registry_key_handle *key;
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
-	struct nt_user_token *token;
+	struct security_token *token;
 };
 
 
@@ -134,7 +134,7 @@ struct registry_key {
 
 WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 		    uint32 desired_access,
-		    const struct nt_user_token *token,
+		    const struct security_token *token,
 		    struct registry_key **pkey);
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		   const char *name, uint32 desired_access,
@@ -173,7 +173,7 @@ WERROR reg_restorekey(struct registry_key *key, const char *fname);
 WERROR reg_savekey(struct registry_key *key, const char *fname);
 WERROR reg_deleteallvalues(struct registry_key *key);
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		     uint32 desired_access, const struct nt_user_token *token,
+		     uint32 desired_access, const struct security_token *token,
 		     struct registry_key **pkey);
 WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 			       struct registry_key *parent,
@@ -183,10 +183,10 @@ WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 				   const char *path);
 WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		       uint32 desired_access,
-		       const struct nt_user_token *token,
+		       const struct security_token *token,
 		       enum winreg_CreateAction *paction,
 		       struct registry_key **pkey);
-WERROR reg_delete_path(const struct nt_user_token *token,
+WERROR reg_delete_path(const struct security_token *token,
 		       const char *orig_path);
 
 /* The following definitions come from registry/reg_init_basic.c  */

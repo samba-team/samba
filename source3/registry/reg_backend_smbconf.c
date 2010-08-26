@@ -58,7 +58,7 @@ static bool smbconf_store_values(const char *key, struct regval_ctr *val)
 
 static bool smbconf_reg_access_check(const char *keyname, uint32 requested,
 				     uint32 *granted,
-				     const struct nt_user_token *token)
+				     const struct security_token *token)
 {
 	if (!(user_has_privileges(token, &se_disk_operators))) {
 		return False;

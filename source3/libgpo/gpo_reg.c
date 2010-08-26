@@ -27,11 +27,11 @@
 /****************************************************************
 ****************************************************************/
 
-struct nt_user_token *registry_create_system_token(TALLOC_CTX *mem_ctx)
+struct security_token *registry_create_system_token(TALLOC_CTX *mem_ctx)
 {
-	struct nt_user_token *token = NULL;
+	struct security_token *token = NULL;
 
-	token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token);
+	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
 	if (!token) {
 		DEBUG(1,("talloc failed\n"));
 		return NULL;
@@ -54,7 +54,7 @@ struct nt_user_token *registry_create_system_token(TALLOC_CTX *mem_ctx)
 WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		       const char *initial_path,
 		       uint32_t desired_access,
-		       const struct nt_user_token *token,
+		       const struct security_token *token,
 		       struct gp_registry_context **reg_ctx)
 {
 	struct gp_registry_context *tmp_ctx;
@@ -314,7 +314,7 @@ static const char *gp_reg_groupmembership_path(TALLOC_CTX *mem_ctx,
 
 static WERROR gp_reg_del_groupmembership(TALLOC_CTX *mem_ctx,
 					 struct registry_key *key,
-					 const struct nt_user_token *token,
+					 const struct security_token *token,
 					 uint32_t flags)
 {
 	const char *path = NULL;
@@ -332,7 +332,7 @@ static WERROR gp_reg_del_groupmembership(TALLOC_CTX *mem_ctx,
 
 static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 					   struct gp_registry_context *reg_ctx,
-					   const struct nt_user_token *token,
+					   const struct security_token *token,
 					   uint32_t flags)
 {
 	struct registry_key *key = NULL;
@@ -377,7 +377,7 @@ static WERROR gp_reg_store_groupmembership(TALLOC_CTX *mem_ctx,
 static WERROR gp_reg_read_groupmembership(TALLOC_CTX *mem_ctx,
 					  struct gp_registry_context *reg_ctx,
 					  const struct dom_sid *object_sid,
-					  struct nt_user_token **token,
+					  struct security_token **token,
 					  uint32_t flags)
 {
 	struct registry_key *key = NULL;
@@ -388,9 +388,9 @@ static WERROR gp_reg_read_groupmembership(TALLOC_CTX *mem_ctx,
 	const char *path = NULL;
 	uint32_t count = 0;
 	int num_token_sids = 0;
-	struct nt_user_token *tmp_token = NULL;
+	struct security_token *tmp_token = NULL;
 
-	tmp_token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token);
+	tmp_token = TALLOC_ZERO_P(mem_ctx, struct security_token);
 	W_ERROR_HAVE_NO_MEMORY(tmp_token);
 
 	path = gp_reg_groupmembership_path(mem_ctx, object_sid, flags);
@@ -453,7 +453,7 @@ static WERROR gp_del_reg_state(TALLOC_CTX *mem_ctx,
 WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 			  uint32_t flags,
 			  const char *dn,
-			  const struct nt_user_token *token,
+			  const struct security_token *token,
 			  struct GROUP_POLICY_OBJECT *gpo_list)
 {
 	struct gp_registry_context *reg_ctx = NULL;
@@ -950,7 +950,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				struct registry_key *root_key,
 				struct gp_registry_context *reg_ctx,
 				struct gp_registry_entry *entry,
-				const struct nt_user_token *token,
+				const struct security_token *token,
 				uint32_t flags)
 {
 	WERROR werr;

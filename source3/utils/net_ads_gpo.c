@@ -38,7 +38,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo;
 	NTSTATUS result;
-	struct nt_user_token *token = NULL;
+	struct security_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s\n%s",
@@ -301,7 +301,7 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 	uint32 uac = 0;
 	uint32 flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo_list;
-	struct nt_user_token *token = NULL;
+	struct security_token *token = NULL;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s\n%s",
@@ -371,7 +371,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	uint32 uac = 0;
 	uint32 flags = 0;
-	struct nt_user_token *token = NULL;
+	struct security_token *token = NULL;
 	const char *filter = NULL;
 
 	if (argc < 1 || c->display_usage) {

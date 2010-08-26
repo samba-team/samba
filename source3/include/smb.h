@@ -176,6 +176,7 @@ typedef union unid_t {
 
 #include "librpc/gen_ndr/epmapper.h"
 #include "librpc/gen_ndr/dcerpc.h"
+#include "librpc/gen_ndr/security.h"
 
 struct lsa_dom_info {
 	bool valid;
@@ -231,11 +232,7 @@ extern const struct dom_sid global_sid_Unix_Groups;
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct nt_user_token {
-	uint32_t num_sids;
-	struct dom_sid *sids;
-	uint64_t privilege_mask;
-} NT_USER_TOKEN;
+typedef struct security_token NT_USER_TOKEN;
 
 typedef struct unix_user_token {
 	uid_t uid;

@@ -30,8 +30,8 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token 
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
-		     struct nt_user_token *token);
-struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+		     struct security_token *token);
+struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,

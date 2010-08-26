@@ -812,7 +812,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct nt_user_token *token = p->server_info->ptok;
+	struct security_token *token = p->server_info->ptok;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -887,7 +887,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct nt_user_token *token = p->server_info->ptok;
+	struct security_token *token = p->server_info->ptok;
 
 	if (!r->in.account || !r->in.encrypted_password) {
 		return WERR_INVALID_PARAM;

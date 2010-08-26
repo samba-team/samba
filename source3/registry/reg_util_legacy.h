@@ -39,7 +39,7 @@
 WERROR regkey_open_internal(TALLOC_CTX *ctx,
 			    struct registry_key_handle **regkey,
 			    const char *path,
-			    const struct nt_user_token *token,
+			    const struct security_token *token,
 			    uint32 access_desired );
 
 #endif /* _REG_UTIL_LEGACY_H */

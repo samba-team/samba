@@ -19,11 +19,11 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libgpo/gpo_reg.c  */
 
-struct nt_user_token *registry_create_system_token(TALLOC_CTX *mem_ctx);
+struct security_token *registry_create_system_token(TALLOC_CTX *mem_ctx);
 WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		       const char *initial_path,
 		       uint32_t desired_access,
-		       const struct nt_user_token *token,
+		       const struct security_token *token,
 		       struct gp_registry_context **reg_ctx);
 void gp_free_reg_ctx(struct gp_registry_context *reg_ctx);
 WERROR gp_store_reg_subkey(TALLOC_CTX *mem_ctx,
@@ -45,7 +45,7 @@ WERROR gp_read_reg_val_sz(TALLOC_CTX *mem_ctx,
 WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 			  uint32_t flags,
 			  const char *dn,
-			  const struct nt_user_token *token,
+			  const struct security_token *token,
 			  struct GROUP_POLICY_OBJECT *gpo_list);
 WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 			 uint32_t flags,
@@ -73,5 +73,5 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				struct registry_key *root_key,
 				struct gp_registry_context *reg_ctx,
 				struct gp_registry_entry *entry,
-				const struct nt_user_token *token,
+				const struct security_token *token,
 				uint32_t flags);

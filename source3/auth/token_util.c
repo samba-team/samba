@@ -81,7 +81,7 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 
 NT_USER_TOKEN *get_root_nt_token( void )
 {
-	struct nt_user_token *token, *for_cache;
+	struct security_token *token, *for_cache;
 	struct dom_sid u_sid, g_sid;
 	struct passwd *pw;
 	void *cache_data;
@@ -92,7 +92,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	if (cache_data != NULL) {
 		return talloc_get_type_abort(
-			cache_data, struct nt_user_token);
+			cache_data, struct security_token);
 	}
 
 	if ( !(pw = sys_getpwuid(0)) ) {
@@ -129,7 +129,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
  */
 
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
-		     struct nt_user_token *token)
+		     struct security_token *token)
 {
 	uint32 *aliases;
 	size_t i, num_aliases;
@@ -174,7 +174,7 @@ done:
 /*******************************************************************
 *******************************************************************/
 
-static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
+static NTSTATUS add_builtin_administrators(struct security_token *token,
 					   const struct dom_sid *dom_sid)
 {
 	struct dom_sid domadm;
@@ -339,23 +339,23 @@ NTSTATUS create_builtin_administrators(const struct dom_sid *dom_sid)
 	return status;
 }
 
-static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
+static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest);
 
 NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  bool is_guest,
 					  struct netr_SamInfo3 *info3,
 					  struct extra_auth_info *extra,
-					  struct nt_user_token **ntok)
+					  struct security_token **ntok)
 {
-	struct nt_user_token *usrtok = NULL;
+	struct security_token *usrtok = NULL;
 	NTSTATUS status;
 	int i;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   info3->base.account_name.string));
 
-	usrtok = talloc_zero(mem_ctx, struct nt_user_token);
+	usrtok = talloc_zero(mem_ctx, struct security_token);
 	if (!usrtok) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -458,20 +458,20 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
  Create a NT token for the user, expanding local aliases
 *******************************************************************/
 
-struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
 					    const struct dom_sid *groupsids)
 {
-	struct nt_user_token *result = NULL;
+	struct security_token *result = NULL;
 	int i;
 	NTSTATUS status;
 
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct nt_user_token))) {
+	if (!(result = TALLOC_ZERO_P(mem_ctx, struct security_token))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
@@ -521,7 +521,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
+static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest)
 {
 	struct dom_sid dom_sid;
@@ -716,7 +716,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
-				    struct nt_user_token **token)
+				    struct security_token **token)
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -969,7 +969,7 @@ bool user_in_group_sid(const char *username, const struct dom_sid *group_sid)
 	uid_t uid;
 	gid_t gid;
 	char *found_username;
-	struct nt_user_token *token;
+	struct security_token *token;
 	bool result;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 

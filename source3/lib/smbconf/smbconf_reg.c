@@ -568,7 +568,7 @@ done:
 static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 {
 	WERROR werr = WERR_OK;
-	struct nt_user_token *token;
+	struct security_token *token;
 
 	if (path == NULL) {
 		path = KEY_SMBCONF;
@@ -696,7 +696,7 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 	struct registry_key *new_key = NULL;
 	TALLOC_CTX* mem_ctx = talloc_stackframe();
 	enum winreg_CreateAction action;
-	struct nt_user_token *token;
+	struct security_token *token;
 
 	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
 	if (!W_ERROR_IS_OK(werr)) {

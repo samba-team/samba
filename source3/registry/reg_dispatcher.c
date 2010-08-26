@@ -161,7 +161,7 @@ int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val)
 
 bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
 			 uint32 *granted,
-			 const struct nt_user_token *token )
+			 const struct security_token *token )
 {
 	struct security_descriptor *sec_desc;
 	NTSTATUS status;

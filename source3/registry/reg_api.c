@@ -130,7 +130,7 @@ static int regkey_destructor(struct registry_key_handle *key)
 static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx, 
 				   struct registry_key *parent,
 				   const char *name,
-				   const struct nt_user_token *token,
+				   const struct security_token *token,
 				   uint32 access_desired,
 				   struct registry_key **pregkey)
 {
@@ -235,7 +235,7 @@ done:
 
 WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 		    uint32 desired_access,
-		    const struct nt_user_token *token,
+		    const struct security_token *token,
 		    struct registry_key **pkey)
 {
 	SMB_ASSERT(hive != NULL);
@@ -1055,7 +1055,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
  */
 
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		     uint32 desired_access, const struct nt_user_token *token,
+		     uint32 desired_access, const struct security_token *token,
 		     struct registry_key **pkey)
 {
 	struct registry_key *hive, *key;
@@ -1222,7 +1222,7 @@ WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 
 WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		       uint32 desired_access,
-		       const struct nt_user_token *token,
+		       const struct security_token *token,
 		       enum winreg_CreateAction *paction,
 		       struct registry_key **pkey)
 {
@@ -1275,7 +1275,7 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
  * before. Will not delete a hive.
  */
 
-WERROR reg_delete_path(const struct nt_user_token *token,
+WERROR reg_delete_path(const struct security_token *token,
 		       const char *orig_path)
 {
 	struct registry_key *hive;

@@ -127,7 +127,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
-				    struct nt_user_token **token);
+				    struct security_token **token);
 bool user_in_group_sid(const char *username, const struct dom_sid *group_sid);
 bool user_in_group(const char *username, const char *groupname);
 NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
@@ -245,10 +245,10 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token 
 bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid );
 NT_USER_TOKEN *get_root_nt_token( void );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
-		     struct nt_user_token *token);
+		     struct security_token *token);
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
 NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
-struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
@@ -257,7 +257,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  bool is_guest,
 					  struct netr_SamInfo3 *info3,
 					  struct extra_auth_info *extra,
-					  struct nt_user_token **ntok);
+					  struct security_token **ntok);
 void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
@@ -1288,9 +1288,9 @@ void smb_nscd_flush_group_cache(void);
 
 NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken);
 NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
-			const struct nt_user_token *token_1,
-			const struct nt_user_token *token_2,
-			struct nt_user_token **token_out);
+			const struct security_token *token_1,
+			const struct security_token *token_2,
+			struct security_token **token_out);
 bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace);
 
 /* The following definitions come from lib/util_pw.c  */
@@ -5487,13 +5487,13 @@ void reply_sesssetup_and_X(struct smb_request *req);
 bool token_contains_name_in_list(const char *username,
 				 const char *domain,
 				 const char *sharename,
-				 const struct nt_user_token *token,
+				 const struct security_token *token,
 				 const char **list);
 bool user_ok_token(const char *username, const char *domain,
-		   const struct nt_user_token *token, int snum);
+		   const struct security_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  const struct nt_user_token *token,
+				  const struct security_token *token,
 				  connection_struct *conn);
 
 /* The following definitions come from smbd/srvstr.c  */
