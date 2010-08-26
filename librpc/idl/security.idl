@@ -357,7 +357,7 @@ interface security
 
  ********************************************************************/
 
-	/* LUID values for privileges known about by Samba (bottom 32 bit of enum, top bits are 0) */
+	/* LUID values for privileges known about by Samba (bottom 32 bits of enum, top bits are 0) */
 
 	/* we have to define the LUID here due to a horrible check by printmig.exe
 	   that requires the SeBackupPrivilege match what is in Windows.  So match
@@ -417,6 +417,8 @@ interface security
 		SE_BACKUP			= 0x00000200,
 		SE_RESTORE			= 0x00000400,
 		SE_TAKE_OWNERSHIP		= 0x00000800,
+		/* End of privilages implemented before merge to common code */
+
 		SE_INCREASE_QUOTA               = 0x00001000,
 		SE_SECURITY                     = 0x00002000,
 		SE_LOAD_DRIVER                  = 0x00004000,
