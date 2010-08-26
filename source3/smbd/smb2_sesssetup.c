@@ -183,13 +183,12 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	DATA_BLOB secblob_out = data_blob_null;
 	uint8 tok_id[2];
 	struct PAC_LOGON_INFO *logon_info = NULL;
-	char *client = NULL;
-	char *p = NULL;
+	char *principal = NULL;
+	char *user = NULL;
 	char *domain = NULL;
 	struct passwd *pw = NULL;
 	NTSTATUS status;
-	fstring user;
-	fstring real_username;
+	char *real_username;
 	fstring tmp;
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
@@ -200,8 +199,8 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	}
 
 	status = ads_verify_ticket(smb2req, lp_realm(), 0, &ticket,
-				&client, &logon_info, &ap_rep,
-				&session_key, true);
+				   &principal, &logon_info, &ap_rep,
+				   &session_key, true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("smb2: Failed to verify incoming ticket with error %s!\n",
@@ -212,133 +211,43 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		goto fail;
 	}
 
-	DEBUG(3,("smb2: Ticket name is [%s]\n", client));
-
-	p = strchr_m(client, '@');
-	if (!p) {
-		DEBUG(3,("smb2: %s Doesn't look like a valid principal\n",
-			client));
-		status = NT_STATUS_LOGON_FAILURE;
+	status = get_user_from_kerberos_info(talloc_tos(),
+					     smb2req->sconn->client_id.name,
+					     principal, logon_info,
+					     &username_was_mapped,
+					     &map_domainuser_to_guest,
+					     &user, &domain,
+					     &real_username, &pw);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	*p = 0;
-
 	/* save the PAC data if we have it */
-
 	if (logon_info) {
-		netsamlogon_cache_store(client, &logon_info->info3);
-	}
-
-	if (!strequal(p+1, lp_realm())) {
-		DEBUG(3,("smb2: Ticket for foreign realm %s@%s\n", client, p+1));
-		if (!lp_allow_trusted_domains()) {
-			status = NT_STATUS_LOGON_FAILURE;
-			goto fail;
-		}
-	}
-
-	/* this gives a fully qualified user name (ie. with full realm).
-	   that leads to very long usernames, but what else can we do? */
-
-	domain = p+1;
-
-	if (logon_info && logon_info->info3.base.domain.string) {
-		domain = talloc_strdup(talloc_tos(),
-					logon_info->info3.base.domain.string);
-		if (!domain) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-		DEBUG(10, ("smb2: Mapped to [%s] (using PAC)\n", domain));
-	} else {
-
-		/* If we have winbind running, we can (and must) shorten the
-		   username by using the short netbios name. Otherwise we will
-		   have inconsistent user names. With Kerberos, we get the
-		   fully qualified realm, with ntlmssp we get the short
-		   name. And even w2k3 does use ntlmssp if you for example
-		   connect to an ip address. */
-
-		wbcErr wbc_status;
-		struct wbcDomainInfo *info = NULL;
-
-		DEBUG(10, ("smb2: Mapping [%s] to short name\n", domain));
-
-		wbc_status = wbcDomainInfo(domain, &info);
-
-		if (WBC_ERROR_IS_OK(wbc_status)) {
-			domain = talloc_strdup(talloc_tos(), info->short_name);
-
-			wbcFreeMemory(info);
-			if (!domain) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-			DEBUG(10, ("smb2: Mapped to [%s] (using Winbind)\n", domain));
-		} else {
-			DEBUG(3, ("smb2: Could not find short name: %s\n",
-				wbcErrorString(wbc_status)));
-		}
-	}
-
-	/* We have to use fstring for this - map_username requires it. */
-	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
-
-	/* lookup the passwd struct, create a new user if necessary */
-
-	username_was_mapped = map_username(user);
-
-	pw = smb_getpwnam(talloc_tos(), user, real_username, true );
-	if (pw) {
-		/* if a real user check pam account restrictions */
-		/* only really perfomed if "obey pam restriction" is true */
-		/* do this before an eventual mapping to guest occurs */
-		status = smb_pam_accountcheck(
-			pw->pw_name, smb2req->sconn->client_id.name);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1,("smb2: PAM account restriction "
-				"prevents user login\n"));
-			goto fail;
-		}
-	}
-
-	if (!pw) {
-
-		/* this was originally the behavior of Samba 2.2, if a user
-		   did not have a local uid but has been authenticated, then
-		   map them to a guest account */
-
-		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){
-			map_domainuser_to_guest = true;
-			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam(talloc_tos(), user, real_username, true );
-		}
-
-		/* extra sanity check that the guest account is valid */
-
-		if (!pw) {
-			DEBUG(1,("smb2: Username %s is invalid on this system\n",
-				user));
-			status = NT_STATUS_LOGON_FAILURE;
-			goto fail;
-		}
+		netsamlogon_cache_store(user, &logon_info->info3);
 	}
 
 	/* setup the string used by %U */
-
 	sub_set_smb_name(real_username);
+
+	/* reload services so that the new %U is taken into account */
 	reload_services(smb2req->sconn->msg_ctx, smb2req->sconn->sock, true);
 
 	if (map_domainuser_to_guest) {
-		make_server_info_guest(session, &session->server_info);
+		status = make_server_info_guest(session,
+						&session->server_info);
+		if (!NT_STATUS_IS_OK(status) ) {
+			DEBUG(1,("smb2: make_server_info_guest failed: %s!\n",
+				nt_errstr(status)));
+			goto fail;
+		}
+
 	} else if (logon_info) {
 		/* pass the unmapped username here since map_username()
-		   will be called again from inside make_server_info_info3() */
+		   will be called again in make_server_info_info3() */
 
 		status = make_server_info_info3(session,
-						client,
-						domain,
+						user, domain,
 						&session->server_info,
 						&logon_info->info3);
 		if (!NT_STATUS_IS_OK(status) ) {
@@ -377,8 +286,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 			DEBUG(10, ("smb2: didn't find user %s in passdb, calling "
 				"make_server_info_pw\n", real_username));
 			status = make_server_info_pw(&tmp_server_info,
-					real_username,
-					pw);
+						     real_username, pw);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -456,12 +364,9 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	DLIST_ADD(session->sconn->smb1.sessions.validated_users, session->compat_vuser);
 
 	/* This is a potentially untrusted username */
-	alpha_strcpy(tmp,
-		client,
-		". _-$",
-		sizeof(tmp));
-	session->server_info->sanitized_username = talloc_strdup(
-			session->server_info, tmp);
+	alpha_strcpy(tmp, user, ". _-$", sizeof(tmp));
+	session->server_info->sanitized_username =
+				talloc_strdup(session->server_info, tmp);
 
 	if (!session->server_info->guest) {
 		session->compat_vuser->homes_snum =
