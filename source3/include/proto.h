@@ -651,26 +651,6 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, struct lsa_LUIDAttribute **new_la, s
 bool is_privileged_sid( const struct dom_sid *sid );
 bool grant_all_privileges( const struct dom_sid *sid );
 
-/* The following definitions come from lib/privileges_basic.c  */
-
-bool se_priv_copy( uint64_t *dst, const uint64_t *src );
-bool se_priv_put_all_privileges(uint64_t *mask);
-void se_priv_add( uint64_t *mask, const uint64_t *addpriv );
-void se_priv_remove( uint64_t *mask, const uint64_t *removepriv );
-bool se_priv_equal( const uint64_t *mask1, const uint64_t *mask2 );
-bool se_priv_from_name( const char *name, uint64_t *mask );
-void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *mask );
-bool is_privilege_assigned(const uint64_t *privileges,
-			   const uint64_t *check);
-const char* get_privilege_dispname( const char *name );
-bool user_has_privileges(const struct security_token *token, const uint64_t *privilege);
-bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege);
-int count_all_privileges( void );
-struct lsa_LUIDAttribute get_privilege_luid( uint64_t *mask );
-const char *luid_to_privilege_name(const struct lsa_LUID *set);
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *mask );
-bool privilege_set_to_se_priv( uint64_t *mask, struct lsa_PrivilegeSet *privset );
-
 /* The following definitions come from lib/readline.c  */
 
 void smb_readline_done(void);

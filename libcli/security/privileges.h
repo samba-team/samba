@@ -71,4 +71,92 @@ typedef struct {
 	enum sec_privilege luid;
 } PRIVS;
 
+/***************************************************************************
+ copy an uint64_t structure
+****************************************************************************/
+
+bool se_priv_copy( uint64_t *dst, const uint64_t *src );
+
+/***************************************************************************
+ put all privileges into a mask
+****************************************************************************/
+
+bool se_priv_put_all_privileges(uint64_t *privilege_mask);
+
+/***************************************************************************
+ combine 2 uint64_t structures and store the resulting set in mew_mask
+****************************************************************************/
+
+void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv );
+
+/***************************************************************************
+ remove one uint64_t sytucture from another and store the resulting set
+ in mew_mask
+****************************************************************************/
+
+void se_priv_remove( uint64_t *privilege_mask, const uint64_t *removepriv );
+
+/***************************************************************************
+ check if 2 uint64_t structure are equal
+****************************************************************************/
+
+bool se_priv_equal( const uint64_t *privilege_mask1, const uint64_t *privilege_mask2 );
+
+/*********************************************************************
+ Lookup the uint64_t value for a privilege name
+*********************************************************************/
+
+bool se_priv_from_name( const char *name, uint64_t *privilege_mask );
+
+/***************************************************************************
+ dump an uint64_t structure to the log files
+****************************************************************************/
+
+void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *privilege_mask );
+
+/****************************************************************************
+ check if the privilege is in the privilege list
+****************************************************************************/
+
+bool is_privilege_assigned(const uint64_t *privileges,
+			   const uint64_t *check);
+
+const char* get_privilege_dispname( const char *name );
+
+/****************************************************************************
+ Does the user have the specified privilege ?  We only deal with one privilege
+ at a time here.
+*****************************************************************************/
+
+bool user_has_privileges(const struct security_token *token, const uint64_t *privilege_bit);
+
+/****************************************************************************
+ Does the user have any of the specified privileges ?  We only deal with one privilege
+ at a time here.
+*****************************************************************************/
+
+bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege_mask);
+
+/*******************************************************************
+ return the number of elements in the privlege array
+*******************************************************************/
+
+int count_all_privileges( void );
+
+/*********************************************************************
+ Generate the struct lsa_LUIDAttribute structure based on a bitmask
+ The assumption here is that the privilege has already been validated
+ so we are guaranteed to find it in the list.
+*********************************************************************/
+
+struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask );
+/****************************************************************************
+ Convert a LUID to a named string
+****************************************************************************/
+
+const char *luid_to_privilege_name(const struct lsa_LUID *set);
+
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask );
+bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset );
+
 #endif /* PRIVILEGES_H */
