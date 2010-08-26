@@ -91,7 +91,7 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 {
 	int i;
-	uint32 num_privs = count_all_privileges();
+	uint32_t num_privs = count_all_privileges();
 
 	if (!se_priv_copy(privilege_mask, &se_priv_none)) {
 		return false;
@@ -393,7 +393,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 {
 	int i;
-	uint32 num_privs = count_all_privileges();
+	uint32_t num_privs = count_all_privileges();
 	struct lsa_LUIDAttribute luid;
 
 	luid.attribute = 0;
@@ -419,7 +419,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
 {
 	int i;
-	uint32 num_privs = count_all_privileges();
+	uint32_t num_privs = count_all_privileges();
 
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid ) {
