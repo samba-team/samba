@@ -25,9 +25,9 @@ if [ "x${RUN_FROM_BUILD_FARM}" = "xyes" ]; then
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
 		${FILTER_XFAIL} --strip-passed-output
+	EXIT_STATUS=$?
 
 	st_test_done
-	test -f ${SELFTESTPREFIX}/summary && cat ${SELFTESTPREFIX}/summary
 else
 	( rm -f ${SELFTESTPREFIX}/st_done && \
 		${PERL} ${SELFTESTDIR}/selftest.pl \
@@ -37,8 +37,9 @@ else
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
 		${SUBUNIT_FORMATTER}
+	EXIT_STATUS=$?
 
 	st_test_done
 fi
 
-cleanup_and_exit
+cleanup_and_exit ${EXIT_STATUS}
