@@ -315,36 +315,78 @@ interface security
 	const int BUILTIN_RID_AUTH_ACCESS		= 560;
 	const int BUILTIN_RID_TS_LICENSE_SERVERS	= 561;
 
-	/*
-	  privilege IDs. Please keep the IDs below 64. If we get more
-	  than 64 then we need to change security_token
-	*/
+/********************************************************************
+ This is a list of privileges reported by a WIndows 2000 SP4 AD DC
+ just for reference purposes (and I know the LUID is not guaranteed
+ across reboots):
+
+            SeCreateTokenPrivilege  Create a token object ( 0x0, 0x2 )
+     SeAssignPrimaryTokenPrivilege  Replace a process level token ( 0x0, 0x3 )
+             SeLockMemoryPrivilege  Lock pages in memory ( 0x0, 0x4 )
+          SeIncreaseQuotaPrivilege  Increase quotas ( 0x0, 0x5 )
+         SeMachineAccountPrivilege  Add workstations to domain ( 0x0, 0x6 )
+                    SeTcbPrivilege  Act as part of the operating system ( 0x0, 0x7 )
+               SeSecurityPrivilege  Manage auditing and security log ( 0x0, 0x8 )
+          SeTakeOwnershipPrivilege  Take ownership of files or other objects ( 0x0, 0x9 )
+             SeLoadDriverPrivilege  Load and unload device drivers ( 0x0, 0xa )
+          SeSystemProfilePrivilege  Profile system performance ( 0x0, 0xb )
+             SeSystemtimePrivilege  Change the system time ( 0x0, 0xc )
+   SeProfileSingleProcessPrivilege  Profile single process ( 0x0, 0xd )
+   SeIncreaseBasePriorityPrivilege  Increase scheduling priority ( 0x0, 0xe )
+         SeCreatePagefilePrivilege  Create a pagefile ( 0x0, 0xf )
+        SeCreatePermanentPrivilege  Create permanent shared objects ( 0x0, 0x10 )
+                 SeBackupPrivilege  Back up files and directories ( 0x0, 0x11 )
+                SeRestorePrivilege  Restore files and directories ( 0x0, 0x12 )
+               SeShutdownPrivilege  Shut down the system ( 0x0, 0x13 )
+                  SeDebugPrivilege  Debug programs ( 0x0, 0x14 )
+                  SeAuditPrivilege  Generate security audits ( 0x0, 0x15 )
+      SeSystemEnvironmentPrivilege  Modify firmware environment values ( 0x0, 0x16 )
+           SeChangeNotifyPrivilege  Bypass traverse checking ( 0x0, 0x17 )
+         SeRemoteShutdownPrivilege  Force shutdown from a remote system ( 0x0, 0x18 )
+                 SeUndockPrivilege  Remove computer from docking station ( 0x0, 0x19 )
+              SeSyncAgentPrivilege  Synchronize directory service data ( 0x0, 0x1a )
+       SeEnableDelegationPrivilege  Enable computer and user accounts to be trusted for delegation ( 0x0, 0x1b )
+           SeManageVolumePrivilege  Perform volume maintenance tasks ( 0x0, 0x1c )
+            SeImpersonatePrivilege  Impersonate a client after authentication ( 0x0, 0x1d )
+           SeCreateGlobalPrivilege  Create global objects ( 0x0, 0x1e )
+
+ ********************************************************************/
+
+/* we have to define the LUID here due to a horrible check by printmig.exe
+   that requires the SeBackupPrivilege match what is in Windows.  So match
+   those that we implement and start Samba privileges at 0x1001 */
+
 	typedef enum {
-		SEC_PRIV_SECURITY                  = 1,
-		SEC_PRIV_BACKUP                    = 2,
-		SEC_PRIV_RESTORE                   = 3,
-		SEC_PRIV_SYSTEMTIME                = 4,
-		SEC_PRIV_SHUTDOWN                  = 5,
-		SEC_PRIV_REMOTE_SHUTDOWN           = 6,
-		SEC_PRIV_TAKE_OWNERSHIP            = 7,
-		SEC_PRIV_DEBUG                     = 8,
-		SEC_PRIV_SYSTEM_ENVIRONMENT        = 9,
-		SEC_PRIV_SYSTEM_PROFILE            = 10,
-		SEC_PRIV_PROFILE_SINGLE_PROCESS    = 11,
-		SEC_PRIV_INCREASE_BASE_PRIORITY    = 12,
-		SEC_PRIV_LOAD_DRIVER               = 13,
-		SEC_PRIV_CREATE_PAGEFILE           = 14,
-		SEC_PRIV_INCREASE_QUOTA            = 15,
-		SEC_PRIV_CHANGE_NOTIFY             = 16,
-		SEC_PRIV_UNDOCK                    = 17,
-		SEC_PRIV_MANAGE_VOLUME             = 18,
-		SEC_PRIV_IMPERSONATE               = 19,
-		SEC_PRIV_CREATE_GLOBAL             = 20,
-		SEC_PRIV_ENABLE_DELEGATION         = 21,
-		SEC_PRIV_INTERACTIVE_LOGON         = 22,
-		SEC_PRIV_NETWORK_LOGON             = 23,
-		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 24,
-		SEC_PRIV_MACHINE_ACCOUNT           = 25
+		SEC_PRIV_INCREASE_QUOTA            = 0x5,
+		SEC_PRIV_MACHINE_ACCOUNT           = 0x6,
+		SEC_PRIV_SECURITY                  = 0x8,
+		SEC_PRIV_TAKE_OWNERSHIP            = 0x09,
+		SEC_PRIV_LOAD_DRIVER               = 0x0a,
+		SEC_PRIV_SYSTEM_PROFILE            = 0x0b,
+		SEC_PRIV_SYSTEMTIME                = 0x0c,
+		SEC_PRIV_PROFILE_SINGLE_PROCESS    = 0x0d,
+		SEC_PRIV_INCREASE_BASE_PRIORITY    = 0x0e,
+		SEC_PRIV_CREATE_PAGEFILE           = 0x0f,
+		SEC_PRIV_BACKUP                    = 0x11,
+		SEC_PRIV_RESTORE                   = 0x12,
+		SEC_PRIV_SHUTDOWN                  = 0x13,
+		SEC_PRIV_DEBUG                     = 0x14,
+		SEC_PRIV_SYSTEM_ENVIRONMENT        = 0x16,
+		SEC_PRIV_CHANGE_NOTIFY             = 0x17,
+		SEC_PRIV_REMOTE_SHUTDOWN           = 0x18,
+		SEC_PRIV_UNDOCK                    = 0x19,
+		SEC_PRIV_ENABLE_DELEGATION         = 0x1b,
+		SEC_PRIV_MANAGE_VOLUME             = 0x1c,
+		SEC_PRIV_IMPERSONATE               = 0x1d,
+		SEC_PRIV_CREATE_GLOBAL             = 0x1e,
+		/* Samba-specific privs */
+		SEC_PRIV_PRINT_OPERATOR            = 0x1001,
+		SEC_PRIV_ADD_USERS                 = 0x1002,
+		SEC_PRIV_DISK_OPERATOR             = 0x1003,
+		/* Windows privs not in the list above */
+		SEC_PRIV_INTERACTIVE_LOGON         = 0x2022,
+		SEC_PRIV_NETWORK_LOGON             = 0x2023,
+		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 0x2024
 	} sec_privilege;
 
 /*
