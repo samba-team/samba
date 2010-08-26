@@ -4867,6 +4867,14 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 				     char **ntdomain,
 				     char **username,
 				     struct passwd **_pw);
+NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
+				char *ntuser,
+				char *ntdomain,
+				char *username,
+				struct passwd *pw,
+				struct PAC_LOGON_INFO *logon_info,
+				bool mapped_to_guest,
+				struct auth_serversupplied_info **server_info);
 
 /* The following definitions come from smbd/message.c  */
 
