@@ -4851,9 +4851,22 @@ const struct mangle_fns *mangle_hash_init(void);
 const struct mangle_fns *mangle_hash2_init(void);
 const struct mangle_fns *posix_mangle_init(void);
 
-/* The following definitions come from smbd/map_username.c  */
+/* The following definitions come from auth/user_util.c  */
 
 bool map_username(fstring user);
+
+/* The following definitions come from auth/user_krb5.c  */
+
+NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
+				     const char *cli_name,
+				     const char *princ_name,
+				     struct PAC_LOGON_INFO *logon_info,
+				     bool *is_mapped,
+				     bool *mapped_to_guest,
+				     char **ntuser,
+				     char **ntdomain,
+				     char **username,
+				     struct passwd **_pw);
 
 /* The following definitions come from smbd/message.c  */
 
