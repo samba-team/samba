@@ -65,10 +65,10 @@ typedef struct {
 } PRIVILEGE_SET;
 
 typedef struct {
-	uint64_t se_priv;
+	uint64_t privilege_mask;
 	const char *name;
 	const char *description;
-	uint32_t luid;
+	enum sec_privilege luid;
 } PRIVS;
 
 #endif /* PRIVILEGES_H */

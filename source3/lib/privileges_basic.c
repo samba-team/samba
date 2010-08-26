@@ -97,7 +97,7 @@ bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 		return False;
 	}
 	for ( i=0; i<num_privs; i++ ) {
-		se_priv_add(privilege_mask, &privs[i].se_priv);
+		se_priv_add(privilege_mask, &privs[i].privilege_mask);
 	}
 	return True;
 }
@@ -166,9 +166,9 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 {
 	int i;
 
-	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
-			se_priv_copy( privilege_mask, &privs[i].se_priv );
+			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
 			return True;
 		}
 	}
@@ -262,7 +262,7 @@ const char* get_privilege_dispname( const char *name )
 		return NULL;
 	}
 
-	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
 
 		if ( strequal( privs[i].name, name ) ) {
 			return privs[i].description;
@@ -328,9 +328,9 @@ struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask )
 
 	ZERO_STRUCT( priv_luid );
 
-	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
 
-		if ( se_priv_equal( &privs[i].se_priv, privilege_mask ) ) {
+		if ( se_priv_equal( &privs[i].privilege_mask, privilege_mask ) ) {
 			priv_luid.luid.low = privs[i].luid;
 			priv_luid.luid.high = 0;
 			break;
@@ -351,7 +351,7 @@ const char *luid_to_privilege_name(const struct lsa_LUID *set)
 	if (set->high != 0)
 		return NULL;
 
-	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
 		if ( set->low == privs[i].luid ) {
 			return privs[i].name;
 		}
@@ -400,7 +400,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 	luid.luid.high = 0;
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( !is_privilege_assigned(privilege_mask, &privs[i].se_priv) )
+		if ( !is_privilege_assigned(privilege_mask, &privs[i].privilege_mask) )
 			continue;
 
 		luid.luid.high = 0;
@@ -423,7 +423,7 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
 
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid ) {
-			se_priv_copy( privilege_mask, &privs[i].se_priv );
+			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
 			return True;
 		}
 	}
