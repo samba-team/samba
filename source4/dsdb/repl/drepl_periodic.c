@@ -99,15 +99,19 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 
 	DEBUG(2,("dreplsrv_periodic_run(): schedule pull replication\n"));
 
+	/*
+	 * KCC or some administrative tool
+	 * might have changed Topology graph
+	 * i.e. repsFrom/repsTo
+	 */
+	dreplsrv_refresh_partitions(service);
+
 	mem_ctx = talloc_new(service);
 	dreplsrv_schedule_pull_replication(service, mem_ctx);
 	talloc_free(mem_ctx);
 
 	DEBUG(2,("dreplsrv_periodic_run(): run pending_ops memory=%u\n", 
 		 (unsigned)talloc_total_blocks(service)));
-
-	/* the KCC might have changed repsFrom */
-	dreplsrv_refresh_partitions(service);
 
 	dreplsrv_ridalloc_check_rid_pool(service);
 
