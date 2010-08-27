@@ -30,12 +30,14 @@
 #include "includes.h"
 #include "srv_pipe_internal.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
+#include "../librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
+#include "librpc/rpc/dcerpc_gssapi.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -93,6 +95,11 @@ static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 static void free_pipe_schannel_auth_data(struct pipe_auth_data *auth)
 {
 	TALLOC_FREE(auth->a_u.schannel_auth);
+}
+
+static void free_pipe_gssapi_auth_data(struct pipe_auth_data *auth)
+{
+	TALLOC_FREE(auth->a_u.gssapi_state);
 }
 
 static void free_pipe_auth_data(struct pipe_auth_data *auth)
@@ -330,13 +337,19 @@ static bool pipe_ntlmssp_verify_final(struct pipes_struct *p,
 	return True;
 }
 
+static NTSTATUS pipe_gssapi_auth_bind_next(struct pipes_struct *p,
+					   TALLOC_CTX *mem_ctx,
+					   struct dcerpc_auth *pauth_info,
+					   DATA_BLOB *response);
+
 /*******************************************************************
- This is the "stage3" NTLMSSP response after a bind request and reply.
+ This is the "stage3" response after a bind request and reply.
 *******************************************************************/
 
 bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
+	DATA_BLOB response = data_blob_null;
 	NTSTATUS status;
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
@@ -373,10 +386,32 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	 * as zero. JRA.
  	 */
 
-	if (auth_info.auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
-		DEBUG(0,("api_pipe_bind_auth3: incorrect auth type (%u).\n",
-			(unsigned int)auth_info.auth_type ));
-		return False;
+	switch (auth_info.auth_type) {
+	case DCERPC_AUTH_TYPE_NTLMSSP:
+		if (!pipe_ntlmssp_verify_final(p, &auth_info.credentials)) {
+			goto err;
+		}
+		break;
+	case DCERPC_AUTH_TYPE_KRB5:
+		status = pipe_gssapi_auth_bind_next(p, pkt,
+						    &auth_info, &response);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err;
+		}
+		if (response.length) {
+			DEBUG(0, (__location__ ": This was supposed to be "
+				  "the final leg, but gssapi machinery "
+				  "claims a response is needed, "
+				  "aborting auth!\n"));
+			data_blob_free(&response);
+			goto err;
+		}
+
+		break;
+	default:
+		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
+			  (unsigned int)auth_info.auth_type));
+		return false;
 	}
 
 	/*
@@ -384,19 +419,13 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	 * for correctness against the given DOMAIN\user name.
 	 */
 
-	if (!pipe_ntlmssp_verify_final(p, &auth_info.credentials)) {
-		goto err;
-	}
+	p->pipe_bound = true;
+	return true;
 
-	p->pipe_bound = True;
-
-	return True;
-
- err:
+err:
 
 	free_pipe_auth_data(&p->auth);
-
-	return False;
+	return false;
 }
 
 static bool pipe_init_outgoing_data(struct pipes_struct *p);
@@ -980,6 +1009,292 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 }
 
 /*******************************************************************
+ Handle a GSSAPI bind auth.
+*******************************************************************/
+
+static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
+				  TALLOC_CTX *mem_ctx,
+				  struct dcerpc_auth *auth_info,
+				  DATA_BLOB *response)
+{
+        NTSTATUS status;
+	struct gse_context *gse_ctx = NULL;
+
+	/* Let's init the gssapi machinery for this connection */
+	/* passing a NULL server name means the server will try
+	 * to accept any connection regardless of the name used as
+	 * long as it can find a decryption key */
+	/* by passing NULL, the code will attempt to set a default
+	 * keytab based on configuration options */
+	status = gse_init_server(p,
+				 DCERPC_AUTH_TYPE_KRB5,
+				 auth_info->auth_level,
+				 GSS_C_DCE_STYLE,
+				 NULL, NULL,
+				 &gse_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to init dcerpc gssapi server (%s)\n",
+			  nt_errstr(status)));
+		goto err;
+	}
+
+	status = gse_get_server_auth_token(mem_ctx, gse_ctx,
+					   &auth_info->credentials,
+					   response);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to parse initial client token (%s)\n",
+			  nt_errstr(status)));
+		goto err;
+	}
+
+	p->auth.a_u.gssapi_state = gse_ctx;
+	p->auth.auth_data_free_func = &free_pipe_gssapi_auth_data;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_KRB5;
+
+	DEBUG(10, ("KRB5 auth started\n"));
+
+	return true;
+
+err:
+	TALLOC_FREE(gse_ctx);
+	return false;
+}
+
+static NTSTATUS finalize_gssapi_bind(TALLOC_CTX *mem_ctx,
+				     struct gse_context *gse_ctx,
+				     struct client_address *client_id,
+				     struct auth_serversupplied_info **sinfo)
+{
+	TALLOC_CTX *tmp_ctx;
+	DATA_BLOB session_key;
+	DATA_BLOB auth_data;
+	DATA_BLOB pac;
+	bool bret;
+	NTSTATUS status;
+	char *princ_name;
+	time_t tgs_authtime;
+	NTTIME tgs_authtime_nttime;
+	struct PAC_DATA *pac_data;
+	struct PAC_LOGON_NAME *logon_name = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
+	enum ndr_err_code ndr_err;
+	unsigned int i;
+	bool is_mapped;
+	bool is_guest;
+	char *ntuser;
+	char *ntdomain;
+	char *username;
+	struct passwd *pw;
+	struct auth_serversupplied_info *server_info;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
+	   ensure the underlying flags are also set. If not we should
+	   refuse the bind. */
+
+	status = gse_verify_server_auth_flags(gse_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Requested Security Layers not honored!\n"));
+		goto done;
+	}
+
+	status = gse_get_authz_data(gse_ctx, tmp_ctx, &auth_data);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		/* TODO: Fetch user by principal name ? */
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	bret = unwrap_pac(tmp_ctx, &auth_data, &pac);
+	if (!bret) {
+		DEBUG(1, ("Failed to unwrap PAC\n"));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	status = gse_get_client_name(gse_ctx, tmp_ctx, &princ_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = gse_get_authtime(gse_ctx, &tgs_authtime);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
+
+	pac_data = talloc_zero(tmp_ctx, struct PAC_DATA);
+	if (!pac_data) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&pac, pac_data, pac_data,
+				(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1, ("Failed to parse the PAC for %s\n", princ_name));
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	/* get logon name and logon info */
+	for (i = 0; i < pac_data->num_buffers; i++) {
+		struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
+
+		switch (data_buf->type) {
+		case PAC_TYPE_LOGON_INFO:
+			if (!data_buf->info) {
+				break;
+			}
+			logon_info = data_buf->info->logon_info.info;
+			break;
+		case PAC_TYPE_LOGON_NAME:
+			logon_name = &data_buf->info->logon_name;
+			break;
+		default:
+			break;
+		}
+	}
+	if (!logon_info) {
+		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
+		status = NT_STATUS_NOT_FOUND;
+		goto done;
+	}
+	if (!logon_name) {
+		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
+		status = NT_STATUS_NOT_FOUND;
+		goto done;
+	}
+
+	/* check time */
+	if (tgs_authtime_nttime != logon_name->logon_time) {
+		DEBUG(1, ("Logon time mismatch between ticket and PAC!\n"
+			  "PAC Time = %s | Ticket Time = %s\n",
+			  nt_time_string(tmp_ctx, logon_name->logon_time),
+			  nt_time_string(tmp_ctx, tgs_authtime_nttime)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	/* TODO: Should we check princ_name against account_name in
+	 * logon_name ? Are they supposed to be identical, or can an
+	 * account_name be different from the UPN ? */
+
+	status = get_user_from_kerberos_info(talloc_tos(), client_id->name,
+						princ_name, logon_info,
+						&is_mapped, &is_guest,
+						&ntuser, &ntdomain,
+						&username, &pw);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to map kerberos principal to system user "
+			  "(%s)\n", nt_errstr(status)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	/* TODO: save PAC data in netsamlogon cache ? */
+
+	status = make_server_info_krb5(mem_ctx,
+					ntuser, ntdomain, username, pw,
+					logon_info, is_guest, &server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
+			  nt_errstr(status)));
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	if (server_info->ptok == NULL) {
+		status = create_local_token(server_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to create local user token (%s)\n",
+				  nt_errstr(status)));
+			status = NT_STATUS_ACCESS_DENIED;
+			goto done;
+		}
+	}
+
+	/* TODO: this is what the ntlmssp code does with the session_key,
+	 * probably need to be moved to an upper level as this will not apply
+	 * to tcp/ip connections */
+
+	/*
+	 * We're an authenticated bind over smb, so the session key needs to
+	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
+	 * does. See the RPC-SAMBA3SESSIONKEY.
+	 */
+
+	session_key = generic_session_key();
+	if (session_key.data == NULL) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	bret = server_info_set_session_key(server_info, session_key);
+	if (!bret) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	data_blob_free(&session_key);
+
+	*sinfo = server_info;
+	status = NT_STATUS_OK;
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
+/*******************************************************************
+ Process a KRB5 authentication response.
+ If this function succeeds, the user has been authenticated
+ and their domain, name and calling workstation stored in
+ the pipe struct.
+*******************************************************************/
+
+static NTSTATUS pipe_gssapi_auth_bind_next(struct pipes_struct *p,
+					   TALLOC_CTX *mem_ctx,
+					   struct dcerpc_auth *pauth_info,
+					   DATA_BLOB *response)
+{
+	struct gse_context *gse_ctx = p->auth.a_u.gssapi_state;
+	NTSTATUS status;
+
+	DEBUG(5, (__location__ ": pipe %s checking user details\n",
+		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+
+	status = gse_get_server_auth_token(mem_ctx, gse_ctx,
+					   &pauth_info->credentials,
+					   response);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(response);
+		return status;
+	}
+
+	if (gse_require_more_processing(gse_ctx)) {
+		/* ask for next leg */
+		return NT_STATUS_OK;
+	}
+
+	status = finalize_gssapi_bind(p, gse_ctx,
+				      p->client_id, &p->server_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("gssapi bind failed with: %s", nt_errstr(status)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -1147,6 +1462,13 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 
 		case DCERPC_AUTH_TYPE_SPNEGO:
 			if (!pipe_spnego_auth_bind_negotiate(p, pkt,
+						&auth_info, &auth_resp)) {
+				goto err_exit;
+			}
+			break;
+
+		case DCERPC_AUTH_TYPE_KRB5:
+			if (!pipe_gssapi_auth_bind(p, pkt,
 						&auth_info, &auth_resp)) {
 				goto err_exit;
 			}
@@ -1336,23 +1658,36 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			goto err_exit;
 		}
 
+		/* We can only finish if the pipe is unbound for now */
+		if (p->pipe_bound) {
+			DEBUG(0, (__location__ ": Pipe already bound, "
+				  "Altering Context not yet supported!\n"));
+			goto err_exit;
+		}
 
-		/*
-		 * Currently only the SPNEGO auth type uses the alter ctx
-		 * response in place of the NTLMSSP auth3 type.
-		 */
-
-		if (auth_info.auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
-			/* We can only finish if the pipe is unbound. */
-			if (!p->pipe_bound) {
-				if (!pipe_spnego_auth_bind_continue(p, pkt,
-						&auth_info, &auth_resp)) {
-					goto err_exit;
-				}
-
-			} else {
+		switch (auth_info.auth_type) {
+		case DCERPC_AUTH_TYPE_SPNEGO:
+			if (!pipe_spnego_auth_bind_continue(p, pkt,
+							    &auth_info,
+							    &auth_resp)) {
 				goto err_exit;
 			}
+			break;
+
+		case DCERPC_AUTH_TYPE_KRB5:
+			status = pipe_gssapi_auth_bind_next(p, pkt,
+							    &auth_info,
+							    &auth_resp);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto err_exit;
+			}
+			break;
+
+		default:
+			DEBUG(3, (__location__ ": Usupported auth type (%d) "
+				  "in alter-context call\n",
+				  auth_info.auth_type));
+			goto err_exit;
 		}
 	}
 
@@ -1906,7 +2241,7 @@ void process_complete_pdu(struct pipes_struct *p)
 
 	case DCERPC_PKT_AUTH3:
 		/*
-		 * The third packet in an NTLMSSP auth exchange.
+		 * The third packet in an auth exchange.
 		 */
 		if (pipe_init_outgoing_data(p)) {
 			reply = api_pipe_bind_auth3(p, pkt);
