@@ -63,13 +63,6 @@ typedef struct {
 	struct lsa_LUIDAttribute *set;
 } PRIVILEGE_SET;
 
-typedef struct {
-	enum sec_privilege luid;
-	uint64_t privilege_mask;
-	const char *name;
-	const char *description;
-} PRIVS;
-
 /***************************************************************************
  copy an uint64_t structure
 ****************************************************************************/
@@ -137,18 +130,11 @@ bool user_has_privileges(const struct security_token *token, const uint64_t *pri
 bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege_mask);
 
 /*******************************************************************
- return the number of elements in the privlege array
+ return the number of elements in the 'short' privlege array (traditional source3 behaviour)
 *******************************************************************/
 
-int count_all_privileges( void );
+int num_privileges_in_short_list( void );
 
-/*********************************************************************
- Generate the struct lsa_LUIDAttribute structure based on a bitmask
- The assumption here is that the privilege has already been validated
- so we are guaranteed to find it in the list.
-*********************************************************************/
-
-enum sec_privilege get_privilege_luid( uint64_t *privilege_mask );
 /****************************************************************************
  Convert a LUID to a named string
 ****************************************************************************/
@@ -181,9 +167,14 @@ enum sec_privilege sec_privilege_id(const char *name);
 enum sec_privilege sec_privilege_from_mask(uint64_t mask);
 
 /*
-  map a privilege name to a privilege id. Return -1 if not found
+  assist in walking the table of privileges - return the LUID (low 32 bits) by index
 */
 enum sec_privilege sec_privilege_from_index(int idx);
+
+/*
+  assist in walking the table of privileges - return the string constant by index
+*/
+const char *sec_privilege_name_from_index(int idx);
 
 /*
   return true if a security_token has a particular privilege bit set

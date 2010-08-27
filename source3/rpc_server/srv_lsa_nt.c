@@ -39,8 +39,6 @@
 
 #define MAX_LOOKUP_SIDS 0x5000 /* 20480 */
 
-extern PRIVS privs[];
-
 enum lsa_handle_type { LSA_HANDLE_POLICY_TYPE = 1, LSA_HANDLE_ACCOUNT_TYPE };
 
 struct lsa_info {
@@ -1454,7 +1452,6 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 	uint32 enum_context = *r->in.resume_handle;
 	int num_privs = num_privileges_in_short_list();
 	struct lsa_PrivEntry *entries = NULL;
-	struct lsa_LUIDAttribute luid;
 
 	/* remember that the enum_context starts at 0 and not 1 */
 
@@ -1495,9 +1492,9 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 			entries[i].luid.high = 0;
 		} else {
 
-			init_lsa_StringLarge(&entries[i].name, privs[i].name);
+			init_lsa_StringLarge(&entries[i].name, sec_privilege_name_from_index(i));
 
-			entries[i].luid.low = get_privilege_luid( &privs[i].privilege_mask );
+			entries[i].luid.low = sec_privilege_from_index(i);
 			entries[i].luid.high = 0;
 		}
 	}

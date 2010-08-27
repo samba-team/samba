@@ -631,8 +631,6 @@ static int net_sam_policy(struct net_context *c, int argc, const char **argv)
         return net_run_function(c, argc, argv, "net sam policy", func);
 }
 
-extern PRIVS privs[];
-
 static int net_sam_rights_list(struct net_context *c, int argc,
 			       const char **argv)
 {
@@ -647,10 +645,10 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 
 	if (argc == 0) {
 		int i;
-		int num = count_all_privileges();
+		int num = num_privileges_in_short_list();
 
 		for (i=0; i<num; i++) {
-			d_printf("%s\n", privs[i].name);
+			d_printf("%s\n", sec_privilege_name_from_index(i));
 		}
 		return 0;
 	}

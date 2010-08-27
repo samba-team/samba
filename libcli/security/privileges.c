@@ -55,7 +55,12 @@ const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
 
 #define NUM_SHORT_LIST_PRIVS 8
 
-PRIVS privs[] = {
+static const struct {
+	enum sec_privilege luid;
+	uint64_t privilege_mask;
+	const char *name;
+	const char *description;
+} privs[] = {
 
 	{SEC_PRIV_MACHINE_ACCOUNT, SE_MACHINE_ACCOUNT,   "SeMachineAccountPrivilege",	"Add machines to domain"},
 	{SEC_PRIV_TAKE_OWNERSHIP,  SE_TAKE_OWNERSHIP,    "SeTakeOwnershipPrivilege",    "Take ownership of files or other objects"},
@@ -404,33 +409,12 @@ bool user_has_any_privilege(struct security_token *token, const uint64_t *privil
 }
 
 /*******************************************************************
- return the number of elements in the privlege array
+ return the number of elements in the 'short' privlege array (traditional source3 behaviour)
 *******************************************************************/
 
 int num_privileges_in_short_list( void )
 {
 	return NUM_SHORT_LIST_PRIVS;
-}
-
-/*********************************************************************
- Generate the struct lsa_LUIDAttribute structure based on a bitmask
- The assumption here is that the privilege has already been validated
- so we are guaranteed to find it in the list.
-*********************************************************************/
-
-enum sec_privilege get_privilege_luid( uint64_t *privilege_mask )
-{
-	int i;
-
-	uint32_t num_privs = ARRAY_SIZE(privs);
-
-	for ( i=0; i<num_privs; i++ ) {
-		if ( se_priv_equal( &privs[i].privilege_mask, privilege_mask ) ) {
-			return privs[i].luid;
-		}
-	}
-
-	return 0;
 }
 
 /****************************************************************************
@@ -613,7 +597,7 @@ enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 }
 
 /*
-  map a privilege name to a privilege id. Return -1 if not found
+  assist in walking the table of privileges - return the LUID (low 32 bits) by index
 */
 enum sec_privilege sec_privilege_from_index(int idx)
 {
@@ -621,6 +605,17 @@ enum sec_privilege sec_privilege_from_index(int idx)
 		return privs[idx].luid;
 	}
 	return -1;
+}
+
+/*
+  assist in walking the table of privileges - return the string constant by index
+*/
+const char *sec_privilege_name_from_index(int idx)
+{
+	if (idx >= 0 && idx<ARRAY_SIZE(privs)) {
+		return privs[idx].name;
+	}
+	return NULL;
 }
 
 
