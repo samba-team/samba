@@ -2017,8 +2017,7 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 	if ( !grant_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
-		DEBUG(3,("Privilege mask:\n"));
-		dump_se_priv( DBGC_ALL, 3, &mask );
+		DEBUG(3,("Privilege mask: 0x%llx\n", (unsigned long long)mask));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -2057,8 +2056,7 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(struct pipes_struct *p,
 	if ( !revoke_privilege( &info->sid, &mask ) ) {
 		DEBUG(3,("_lsa_RemovePrivilegesFromAccount: revoke_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
-		DEBUG(3,("Privilege mask:\n"));
-		dump_se_priv( DBGC_ALL, 3, &mask );
+		DEBUG(3,("Privilege mask: 0x%llx\n", (unsigned long long)mask));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 

@@ -671,7 +671,7 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, struct security_token *toke
 			  ("SID[%3lu]: %s\n", (unsigned long)i,
 			   sid_string_dbg(&token->sids[i])));
 
-	dump_se_priv( dbg_class, dbg_lev, &token->privilege_mask );
+	DEBUGADDC(dbg_class, dbg_lev,("Privilege mask: 0x%llx\n", (unsigned long long)token->privilege_mask));
 }
 
 /****************************************************************************

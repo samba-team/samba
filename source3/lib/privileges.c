@@ -139,8 +139,8 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 			continue;
 
 		DEBUG(5,("get_privileges_for_sids: sid = %s\nPrivilege "
-			 "set:\n", sid_string_dbg(&slist[i])));
-		dump_se_priv( DBGC_ALL, 5, &mask );
+			 "set: 0x%llx\n", sid_string_dbg(&slist[i]),
+			 (unsigned long long)mask));
 
 		se_priv_add( privileges, &mask );
 		found = True;
@@ -285,11 +285,9 @@ bool grant_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
 
 	DEBUG(10,("grant_privilege: %s\n", sid_string_dbg(sid)));
 
-	DEBUGADD( 10, ("original privilege mask:\n"));
-	dump_se_priv( DBGC_ALL, 10, &old_mask );
+	DEBUGADD( 10, ("original privilege mask: 0x%llx\n", (unsigned long long)new_mask));
 
-	DEBUGADD( 10, ("new privilege mask:\n"));
-	dump_se_priv( DBGC_ALL, 10, &new_mask );
+	DEBUGADD( 10, ("new privilege mask:      0x%llx\n", (unsigned long long)new_mask));
 
 	return set_privileges( sid, &new_mask );
 }
@@ -326,13 +324,11 @@ bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
 
 	DEBUG(10,("revoke_privilege: %s\n", sid_string_dbg(sid)));
 
-	DEBUGADD( 10, ("original privilege mask:\n"));
-	dump_se_priv( DBGC_ALL, 10, &mask );
+	DEBUGADD( 10, ("original privilege mask: 0x%llx\n", (unsigned long long)mask));
 
 	se_priv_remove( &mask, priv_mask );
 
-	DEBUGADD( 10, ("new privilege mask:\n"));
-	dump_se_priv( DBGC_ALL, 10, &mask );
+	DEBUGADD( 10, ("new privilege mask:      0x%llx\n", (unsigned long long)mask));
 
 	return set_privileges( sid, &mask );
 }

@@ -176,15 +176,6 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 	return false;
 }
 
-/***************************************************************************
- dump an uint64_t structure to the log files
-****************************************************************************/
-
-void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *privilege_mask )
-{
-	DEBUGADDC( dbg_cl, dbg_lvl,("uint64_t 0x%llx\n", (unsigned long long)*privilege_mask));
-}
-
 /****************************************************************************
  check if the privilege is in the privilege list
 ****************************************************************************/
