@@ -2045,6 +2045,14 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 	struct smbd_smb2_request *req;
 	struct tevent_req *subreq;
 
+	if (lp_security() == SEC_SHARE) {
+		DEBUG(2,("WARNING!!: \"security = share\" is deprecated for "
+			"SMB2 servers. Mapping to \"security = user\" and "
+			"\"map to guest = Bad User\"\n" ));
+		lp_do_parameter(-1, "security", "user");
+		lp_do_parameter(-1, "map to guest", "Bad User");
+	}
+
 	DEBUG(10,("smbd_smb2_first_negprot: packet length %u\n",
 		 (unsigned int)size));
 
