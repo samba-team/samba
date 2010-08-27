@@ -56,14 +56,7 @@ const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
 #define NUM_SHORT_LIST_PRIVS 8
 
 PRIVS privs[] = {
-#if 0	/* usrmgr will display these twice if you include them.  We don't
-	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
 
-	{0x0,                      SE_NETWORK_LOGON,	 "SeNetworkLogonRight",		"Access this computer from network"},
-	{0x0,                      SE_INTERACTIVE_LOGON, "SeInteractiveLogonRight",	"Log on locally"},
-	{0x0,                      SE_BATCH_LOGON,	 "SeBatchLogonRight",		"Log on as a batch job"},
-	{0x0,                      SE_SERVICE_LOGON,	 "SeServiceLogonRight",		"Log on as a service"},
-#endif
 	{SEC_PRIV_MACHINE_ACCOUNT, SE_MACHINE_ACCOUNT,   "SeMachineAccountPrivilege",	"Add machines to domain"},
 	{SEC_PRIV_TAKE_OWNERSHIP,  SE_TAKE_OWNERSHIP,    "SeTakeOwnershipPrivilege",    "Take ownership of files or other objects"},
         {SEC_PRIV_BACKUP,          SE_BACKUP,            "SeBackupPrivilege",           "Back up files and directories"},
@@ -74,6 +67,114 @@ PRIVS privs[] = {
 	{SEC_PRIV_ADD_USERS,       SE_ADD_USERS,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
 	{SEC_PRIV_DISK_OPERATOR,   SE_DISK_OPERATOR,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
 
+	/* The list from here on was not displayed in the code from
+	 * source3/ with the comment that usrmgr will display these
+	 * next 2 twice if you include them.  The source4/ code has
+	 * always included them, but they do not appear in Windows
+	 * 2008 R2.
+
+	   Finally, the parameter 'short_list' determines if the short
+	   or full list (including many other privileges) is used */
+
+	{SEC_PRIV_SECURITY,
+	 SE_SECURITY,
+	 "SeSecurityPrivilege",
+	"System security"},
+
+	{SEC_PRIV_SYSTEMTIME,
+	 SE_SYSTEMTIME,
+	 "SeSystemtimePrivilege",
+	"Set the system clock"},
+
+	{SEC_PRIV_SHUTDOWN,
+	 SE_SHUTDOWN,
+	 "SeShutdownPrivilege",
+	"Shutdown the system"},
+
+	{SEC_PRIV_DEBUG,
+	 SE_DEBUG,
+	 "SeDebugPrivilege",
+	"Debug processes"},
+
+	{SEC_PRIV_SYSTEM_ENVIRONMENT,
+	 SE_SYSTEM_ENVIRONMENT,
+	 "SeSystemEnvironmentPrivilege",
+	"Modify system environment"},
+
+	{SEC_PRIV_SYSTEM_PROFILE,
+	 SE_SYSTEM_PROFILE,
+	 "SeSystemProfilePrivilege",
+	"Profile the system"},
+
+	{SEC_PRIV_PROFILE_SINGLE_PROCESS,
+	 SE_PROFILE_SINGLE_PROCESS,
+	 "SeProfileSingleProcessPrivilege",
+	"Profile one process"},
+
+	{SEC_PRIV_INCREASE_BASE_PRIORITY,
+	 SE_INCREASE_BASE_PRIORITY,
+	 "SeIncreaseBasePriorityPrivilege",
+	 "Increase base priority"},
+
+	{SEC_PRIV_LOAD_DRIVER,
+	 SE_LOAD_DRIVER,
+	 "SeLoadDriverPrivilege",
+	"Load drivers"},
+
+	{SEC_PRIV_CREATE_PAGEFILE,
+	 SE_CREATE_PAGEFILE,
+	 "SeCreatePagefilePrivilege",
+	"Create page files"},
+
+	{SEC_PRIV_INCREASE_QUOTA,
+	 SE_INCREASE_QUOTA,
+	 "SeIncreaseQuotaPrivilege",
+	"Increase quota"},
+
+	{SEC_PRIV_CHANGE_NOTIFY,
+	 SE_CHANGE_NOTIFY,
+	 "SeChangeNotifyPrivilege",
+	"Register for change notify"},
+
+	{SEC_PRIV_UNDOCK,
+	 SE_UNDOCK,
+	 "SeUndockPrivilege",
+	"Undock devices"},
+
+	{SEC_PRIV_MANAGE_VOLUME,
+	 SE_MANAGE_VOLUME,
+	 "SeManageVolumePrivilege",
+	"Manage system volumes"},
+
+	{SEC_PRIV_IMPERSONATE,
+	 SE_IMPERSONATE,
+	 "SeImpersonatePrivilege",
+	"Impersonate users"},
+
+	{SEC_PRIV_CREATE_GLOBAL,
+	 SE_CREATE_GLOBAL,
+	 "SeCreateGlobalPrivilege",
+	"Create global"},
+
+	{SEC_PRIV_ENABLE_DELEGATION,
+	 SE_ENABLE_DELEGATION,
+	 "SeEnableDelegationPrivilege",
+	"Enable Delegation"},
+
+	{SEC_PRIV_INTERACTIVE_LOGON,
+	 SE_INTERACTIVE_LOGON,
+	 "SeInteractiveLogonRight",
+	"Interactive logon"},
+
+	{SEC_PRIV_NETWORK_LOGON,
+	 SE_NETWORK_LOGON,
+	 "SeNetworkLogonRight",
+	"Network logon"},
+
+	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,
+	 SE_REMOTE_INTERACTIVE_LOGON,
+	 "SeRemoteInteractiveLogonRight",
+	"Remote Interactive logon"}
 };
 
 /***************************************************************************
@@ -450,159 +551,15 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 	return true;
 }
 
-static const PRIVS privilege_names[] = {
-	{SEC_PRIV_SECURITY,
-	 SE_SECURITY,
-	 "SeSecurityPrivilege",
-	"System security"},
-
-	{SEC_PRIV_BACKUP,
-	 SE_BACKUP,
-	 "SeBackupPrivilege",
-	 "Backup files and directories"},
-
-	{SEC_PRIV_RESTORE,
-	 SE_RESTORE,
-	 "SeRestorePrivilege",
-	"Restore files and directories"},
-
-	{SEC_PRIV_SYSTEMTIME,
-	 SE_SYSTEMTIME,
-	 "SeSystemtimePrivilege",
-	"Set the system clock"},
-
-	{SEC_PRIV_SHUTDOWN,
-	 SE_SHUTDOWN,
-	 "SeShutdownPrivilege",
-	"Shutdown the system"},
-
-	{SEC_PRIV_REMOTE_SHUTDOWN,
-	 SE_REMOTE_SHUTDOWN,
-	 "SeRemoteShutdownPrivilege",
-	"Shutdown the system remotely"},
-
-	{SEC_PRIV_TAKE_OWNERSHIP,
-	 SE_TAKE_OWNERSHIP,
-	 "SeTakeOwnershipPrivilege",
-	"Take ownership of files and directories"},
-
-	{SEC_PRIV_DEBUG,
-	 SE_DEBUG,
-	 "SeDebugPrivilege",
-	"Debug processes"},
-
-	{SEC_PRIV_SYSTEM_ENVIRONMENT,
-	 SE_SYSTEM_ENVIRONMENT,
-	 "SeSystemEnvironmentPrivilege",
-	"Modify system environment"},
-
-	{SEC_PRIV_SYSTEM_PROFILE,
-	 SE_SYSTEM_PROFILE,
-	 "SeSystemProfilePrivilege",
-	"Profile the system"},
-
-	{SEC_PRIV_PROFILE_SINGLE_PROCESS,
-	 SE_PROFILE_SINGLE_PROCESS,
-	 "SeProfileSingleProcessPrivilege",
-	"Profile one process"},
-
-	{SEC_PRIV_INCREASE_BASE_PRIORITY,
-	 SE_INCREASE_BASE_PRIORITY,
-	 "SeIncreaseBasePriorityPrivilege",
-	 "Increase base priority"},
-
-	{SEC_PRIV_LOAD_DRIVER,
-	 SE_LOAD_DRIVER,
-	 "SeLoadDriverPrivilege",
-	"Load drivers"},
-
-	{SEC_PRIV_CREATE_PAGEFILE,
-	 SE_CREATE_PAGEFILE,
-	 "SeCreatePagefilePrivilege",
-	"Create page files"},
-
-	{SEC_PRIV_INCREASE_QUOTA,
-	 SE_INCREASE_QUOTA,
-	 "SeIncreaseQuotaPrivilege",
-	"Increase quota"},
-
-	{SEC_PRIV_CHANGE_NOTIFY,
-	 SE_CHANGE_NOTIFY,
-	 "SeChangeNotifyPrivilege",
-	"Register for change notify"},
-
-	{SEC_PRIV_UNDOCK,
-	 SE_UNDOCK,
-	 "SeUndockPrivilege",
-	"Undock devices"},
-
-	{SEC_PRIV_MANAGE_VOLUME,
-	 SE_MANAGE_VOLUME,
-	 "SeManageVolumePrivilege",
-	"Manage system volumes"},
-
-	{SEC_PRIV_IMPERSONATE,
-	 SE_IMPERSONATE,
-	 "SeImpersonatePrivilege",
-	"Impersonate users"},
-
-	{SEC_PRIV_CREATE_GLOBAL,
-	 SE_CREATE_GLOBAL,
-	 "SeCreateGlobalPrivilege",
-	"Create global"},
-
-	{SEC_PRIV_ENABLE_DELEGATION,
-	 SE_ENABLE_DELEGATION,
-	 "SeEnableDelegationPrivilege",
-	"Enable Delegation"},
-
-	{SEC_PRIV_INTERACTIVE_LOGON,
-	 SE_INTERACTIVE_LOGON,
-	 "SeInteractiveLogonRight",
-	"Interactive logon"},
-
-	{SEC_PRIV_NETWORK_LOGON,
-	 SE_NETWORK_LOGON,
-	 "SeNetworkLogonRight",
-	"Network logon"},
-
-	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,
-	 SE_REMOTE_INTERACTIVE_LOGON,
-	 "SeRemoteInteractiveLogonRight",
-	"Remote Interactive logon"},
-
-	{SEC_PRIV_MACHINE_ACCOUNT,
-	 SE_MACHINE_ACCOUNT,
-	 "SeMachineAccountPrivilege",
-	 "Add workstations to domain"},
-
-	/* These last 3 are Samba only */
-	{SEC_PRIV_PRINT_OPERATOR,
-	 SE_PRINT_OPERATOR,
-	 "SePrintOperatorPrivilege",
-	 "Manage printers"},
-
-	{SEC_PRIV_ADD_USERS,
-	 SE_ADD_USERS,
-	 "SeAddUsersPrivilege",
-	 "Add users and groups to the domain"},
-
-	{SEC_PRIV_DISK_OPERATOR,
-	 SE_DISK_OPERATOR,
-	 "SeDiskOperatorPrivilege",
-	 "Manage disk shares"},
-};
-
-
 /*
   map a privilege id to the wire string constant
 */
 const char *sec_privilege_name(enum sec_privilege privilege)
 {
 	int i;
-	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].luid == privilege) {
-			return privilege_names[i].name;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (privs[i].luid == privilege) {
+			return privs[i].name;
 		}
 	}
 	return NULL;
@@ -619,9 +576,9 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 	if (privilege < 1 || privilege > 64) {
 		return NULL;
 	}
-	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].luid == privilege) {
-			return privilege_names[i].description;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (privs[i].luid == privilege) {
+			return privs[i].description;
 		}
 	}
 	return NULL;
@@ -633,9 +590,9 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 enum sec_privilege sec_privilege_id(const char *name)
 {
 	int i;
-	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (strcasecmp(privilege_names[i].name, name) == 0) {
-			return privilege_names[i].luid;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (strcasecmp(privs[i].name, name) == 0) {
+			return privs[i].luid;
 		}
 	}
 	return -1;
@@ -647,9 +604,9 @@ enum sec_privilege sec_privilege_id(const char *name)
 enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 {
 	int i;
-	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].privilege_mask == mask) {
-			return privilege_names[i].luid;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (privs[i].privilege_mask == mask) {
+			return privs[i].luid;
 		}
 	}
 	return -1;
@@ -660,8 +617,8 @@ enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 */
 enum sec_privilege sec_privilege_from_index(int idx)
 {
-	if (idx >= 0 && idx<ARRAY_SIZE(privilege_names)) {
-		return privilege_names[idx].luid;
+	if (idx >= 0 && idx<ARRAY_SIZE(privs)) {
+		return privs[idx].luid;
 	}
 	return -1;
 }
@@ -673,9 +630,9 @@ enum sec_privilege sec_privilege_from_index(int idx)
 static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
 	int i;
-	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].luid == privilege) {
-			return privilege_names[i].privilege_mask;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (privs[i].luid == privilege) {
+			return privs[i].privilege_mask;
 		}
 	}
 
