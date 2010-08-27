@@ -77,7 +77,7 @@ PRIVS privs[] = {
 };
 
 /***************************************************************************
- copy an uint64_t structure
+ copy an uint64_t privilege bitmap
 ****************************************************************************/
 
 bool se_priv_copy( uint64_t *dst, const uint64_t *src )
@@ -91,7 +91,7 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 }
 
 /***************************************************************************
- put all privileges into a mask
+ put all valid privileges into a mask
 ****************************************************************************/
 
 bool se_priv_put_all_privileges(uint64_t *privilege_mask)
@@ -109,7 +109,7 @@ bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 }
 
 /***************************************************************************
- combine 2 uint64_t structures and store the resulting set in mew_mask
+ combine 2 uint64_t privilege bitmaps and store the resulting set in new_mask
 ****************************************************************************/
 
 void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv )
@@ -118,8 +118,8 @@ void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv )
 }
 
 /***************************************************************************
- remove one uint64_t sytucture from another and store the resulting set
- in mew_mask
+ remove one uint64_t privileges bitmap from another and store the resulting set
+ in privilege_mask
 ****************************************************************************/
 
 void se_priv_remove( uint64_t *privilege_mask, const uint64_t *removepriv )
@@ -141,7 +141,7 @@ static void se_priv_invert( uint64_t *new_mask, const uint64_t *privilege_mask )
 }
 
 /***************************************************************************
- check if 2 uint64_t structure are equal
+ check if 2 privilege bitmaps (as uint64_t) are equal
 ****************************************************************************/
 
 bool se_priv_equal( const uint64_t *privilege_mask1, const uint64_t *privilege_mask2 )
@@ -165,7 +165,7 @@ static bool se_priv_empty( const uint64_t *privilege_mask )
 }
 
 /*********************************************************************
- Lookup the uint64_t value for a privilege name
+ Lookup the uint64_t bitmask value for a privilege name
 *********************************************************************/
 
 bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
@@ -183,7 +183,7 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 }
 
 /****************************************************************************
- check if the privilege is in the privilege list
+ check if the privilege (by bitmask) is in the privilege list
 ****************************************************************************/
 
 bool is_privilege_assigned(const uint64_t *privileges,
@@ -215,7 +215,7 @@ bool is_privilege_assigned(const uint64_t *privileges,
 }
 
 /****************************************************************************
- check if the privilege is in the privilege list
+ check if the any of the privileges (by bitmask) is in the privilege list
 ****************************************************************************/
 
 static bool is_any_privilege_assigned( uint64_t *privileges, const uint64_t *check )
