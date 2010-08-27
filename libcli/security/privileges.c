@@ -40,7 +40,6 @@
 #undef strcasecmp
 
 const uint64_t se_priv_all         = SE_ALL_PRIVS;
-static const uint64_t se_priv_end  = SE_END;
 
 /* Define variables for all privileges so we can use the
    uint64_t* in the various se_priv_XXX() functions */
@@ -73,7 +72,6 @@ PRIVS privs[] = {
 	{SEC_PRIV_ADD_USERS,       SE_ADD_USERS,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
 	{SEC_PRIV_DISK_OPERATOR,   SE_DISK_OPERATOR,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
 
-	{0x0, SE_END, "", ""}
 };
 
 /***************************************************************************
@@ -97,7 +95,7 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 {
 	int i;
-	uint32_t num_privs = count_all_privileges();
+	uint32_t num_privs = ARRAY_SIZE(privs);
 
 	if (!se_priv_copy(privilege_mask, &se_priv_none)) {
 		return false;
@@ -172,7 +170,9 @@ bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 {
 	int i;
 
-	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
+	uint32_t num_privs = ARRAY_SIZE(privs);
+
+	for ( i=0; i<num_privs; i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
 			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
 			return true;
@@ -255,12 +255,13 @@ const char* get_privilege_dispname( const char *name )
 {
 	int i;
 
+	uint32_t num_privs = ARRAY_SIZE(privs);
+
 	if (!name) {
 		return NULL;
 	}
 
-	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
-
+	for ( i=0; i<num_privs; i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
 			return privs[i].description;
 		}
@@ -305,10 +306,7 @@ bool user_has_any_privilege(struct security_token *token, const uint64_t *privil
 
 int count_all_privileges( void )
 {
-	/*
-	 * The -1 is due to the weird SE_END record...
-	 */
-	return (sizeof(privs) / sizeof(privs[0])) - 1;
+	return ARRAY_SIZE(privs);
 }
 
 
@@ -323,10 +321,11 @@ struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask )
 	struct lsa_LUIDAttribute priv_luid;
 	int i;
 
+	uint32_t num_privs = ARRAY_SIZE(privs);
+
 	ZERO_STRUCT( priv_luid );
 
-	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
-
+	for ( i=0; i<num_privs; i++ ) {
 		if ( se_priv_equal( &privs[i].privilege_mask, privilege_mask ) ) {
 			priv_luid.luid.low = privs[i].luid;
 			priv_luid.luid.high = 0;
@@ -345,10 +344,12 @@ const char *luid_to_privilege_name(const struct lsa_LUID *set)
 {
 	int i;
 
+	uint32_t num_privs = ARRAY_SIZE(privs);
+
 	if (set->high != 0)
 		return NULL;
 
-	for ( i=0; !se_priv_equal(&privs[i].privilege_mask, &se_priv_end); i++ ) {
+	for ( i=0; i<num_privs; i++ ) {
 		if ( set->low == privs[i].luid ) {
 			return privs[i].name;
 		}
@@ -390,7 +391,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 {
 	int i;
-	uint32_t num_privs = count_all_privileges();
+	uint32_t num_privs = ARRAY_SIZE(privs);
 	struct lsa_LUIDAttribute luid;
 
 	luid.attribute = 0;
@@ -416,7 +417,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
 {
 	int i;
-	uint32_t num_privs = count_all_privileges();
+	uint32_t num_privs = ARRAY_SIZE(privs);
 
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid ) {
