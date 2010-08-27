@@ -104,16 +104,16 @@ class cmd_rodc_preload(Command):
         local_samdb.transaction_start()
         repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds, local_samdb)
         try:
-            repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+            repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid,
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
         except RuntimeError, (ecode, estring):
             if estring == 'WERR_DS_DRA_ACCESS_DENIED':
-                print "Access denied replicating DN %s" % dn
                 local_samdb.transaction_cancel()
-                # how do we fail a net command??
-                return False
+                raise CommandError("Access denied replicating DN %s" % dn)
             else:
                 raise
         local_samdb.transaction_commit()
+
 
 
 class cmd_rodc(SuperCommand):
