@@ -56,7 +56,7 @@ source		(The official Samba source files - expect more of these!):
 
 	Samba uses the GNU autoconf system. In
 	order to build a default Samba for your platform cd into
-	the source/ directory and then type :
+	the source3/ directory and then type :
 
 		./configure
 
