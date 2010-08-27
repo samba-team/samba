@@ -1327,6 +1327,30 @@ sub setup_vampire_dc($$$)
 
 	$self->{vars}->{vampire_dc} = $env;
 
+	# force replicated DC to update repsTo/repsFrom
+	# for vampired partitions
+	my $net = $self->bindir_path("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+	$cmd .= " $net drs kcc $env->{DC_SERVER}";
+	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+	system($cmd) == 0 or die("Failed to exec kcc\n$cmd");
+
+	# as 'vampired' dc may add data in its local replica
+	# we need to synchronize data between DCs
+	my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+	$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+	$cmd .= " $net drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
+	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+	# replicate Configuration NC
+	my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
+	# replicate Default NC
+	$cmd_repl = "$cmd \"$base_dn\"";
+	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
+
 	return $env;
 }
 
