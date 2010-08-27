@@ -53,6 +53,8 @@ const uint64_t se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 const uint64_t se_restore         = SE_RESTORE;
 const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
 
+#define NUM_SHORT_LIST_PRIVS 8
+
 PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
@@ -304,11 +306,10 @@ bool user_has_any_privilege(struct security_token *token, const uint64_t *privil
  return the number of elements in the privlege array
 *******************************************************************/
 
-int count_all_privileges( void )
+int num_privileges_in_short_list( void )
 {
-	return ARRAY_SIZE(privs);
+	return NUM_SHORT_LIST_PRIVS;
 }
-
 
 /*********************************************************************
  Generate the struct lsa_LUIDAttribute structure based on a bitmask

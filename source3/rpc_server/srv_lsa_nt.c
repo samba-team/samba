@@ -1452,7 +1452,7 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 	struct lsa_info *handle;
 	uint32 i;
 	uint32 enum_context = *r->in.resume_handle;
-	int num_privs = count_all_privileges();
+	int num_privs = num_privileges_in_short_list();
 	struct lsa_PrivEntry *entries = NULL;
 	struct lsa_LUIDAttribute luid;
 
