@@ -148,7 +148,7 @@ int count_all_privileges( void );
  so we are guaranteed to find it in the list.
 *********************************************************************/
 
-struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask );
+enum sec_privilege get_privilege_luid( uint64_t *privilege_mask );
 /****************************************************************************
  Convert a LUID to a named string
 ****************************************************************************/

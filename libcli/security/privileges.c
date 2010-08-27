@@ -316,24 +316,19 @@ int count_all_privileges( void )
  so we are guaranteed to find it in the list.
 *********************************************************************/
 
-struct lsa_LUIDAttribute get_privilege_luid( uint64_t *privilege_mask )
+enum sec_privilege get_privilege_luid( uint64_t *privilege_mask )
 {
-	struct lsa_LUIDAttribute priv_luid;
 	int i;
 
 	uint32_t num_privs = ARRAY_SIZE(privs);
 
-	ZERO_STRUCT( priv_luid );
-
 	for ( i=0; i<num_privs; i++ ) {
 		if ( se_priv_equal( &privs[i].privilege_mask, privilege_mask ) ) {
-			priv_luid.luid.low = privs[i].luid;
-			priv_luid.luid.high = 0;
-			break;
+			return privs[i].luid;
 		}
 	}
 
-	return priv_luid;
+	return 0;
 }
 
 /****************************************************************************

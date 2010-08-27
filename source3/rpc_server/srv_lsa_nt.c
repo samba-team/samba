@@ -1497,10 +1497,8 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 
 			init_lsa_StringLarge(&entries[i].name, privs[i].name);
 
-			luid = get_privilege_luid( &privs[i].privilege_mask );
-
-			entries[i].luid.low = luid.luid.low;
-			entries[i].luid.high = luid.luid.high;
+			entries[i].luid.low = get_privilege_luid( &privs[i].privilege_mask );
+			entries[i].luid.high = 0;
 		}
 	}
 
