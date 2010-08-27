@@ -59,10 +59,12 @@ static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, 
 static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 			   struct ldb_result *res)
 {
-	struct repsFromTo1 *r1;
-	r1 = &r->ctr.ctr1;
+	struct repsFromTo1 *r1 = &r->ctr.ctr1;
 	struct GUID invocation_id = r1->source_dsa_invocation_id;
 	unsigned int i, j;
+
+	/* we are expecting only version 1 */
+	SMB_ASSERT(r->version == 1);
 
 	for (i=0; i<res->count; i++) {
 		struct ldb_message *msg = res->msgs[i];
