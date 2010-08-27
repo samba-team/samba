@@ -86,7 +86,8 @@ static const struct {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
 	{"smb2", DCERPC_SMB2},
 	{"hdrsign", DCERPC_HEADER_SIGNING},
-	{"ndr64", DCERPC_NDR64}
+	{"ndr64", DCERPC_NDR64},
+	{"localaddress", DCERPC_LOCALADDRESS}
 };
 
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
@@ -220,7 +221,12 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
 		if (b->flags & ncacn_options[i].flag) {
-			s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
+			if (ncacn_options[i].flag == DCERPC_LOCALADDRESS && b->localaddress) {
+				s = talloc_asprintf_append_buffer(s, ",%s=%s", ncacn_options[i].name,
+								  b->localaddress);
+			} else {
+				s = talloc_asprintf_append_buffer(s, ",%s", ncacn_options[i].name);
+			}
 			if (!s) return NULL;
 		}
 	}
@@ -313,6 +319,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	b->flags = 0;
 	b->assoc_group_id = 0;
 	b->endpoint = NULL;
+	b->localaddress = NULL;
 
 	if (!options) {
 		*b_out = b;
@@ -339,8 +346,17 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	/* some options are pre-parsed for convenience */
 	for (i=0;b->options[i];i++) {
 		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
-			if (strcasecmp(ncacn_options[j].name, b->options[i]) == 0) {
+			size_t opt_len = strlen(ncacn_options[j].name);
+			if (strncasecmp(ncacn_options[j].name, b->options[i], opt_len) == 0) {
 				int k;
+				char c = b->options[i][opt_len];
+
+				if (ncacn_options[j].flag == DCERPC_LOCALADDRESS && c == '=') {
+					b->localaddress = talloc_strdup(b, &b->options[i][opt_len+1]);
+				} else if (c != 0) {
+					continue;
+				}
+
 				b->flags |= ncacn_options[j].flag;
 				for (k=i;b->options[k];k++) {
 					b->options[k] = b->options[k+1];

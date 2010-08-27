@@ -102,6 +102,7 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 		}
 
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
+							 s->binding->localaddress,
 							 s->peer_addr->addr,
 							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint),

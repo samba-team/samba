@@ -228,6 +228,7 @@ struct pipe_open_socket_state {
 	struct dcerpc_connection *conn;
 	struct socket_context *socket_ctx;
 	struct sock_private *sock;
+	struct socket_address *localaddr;
 	struct socket_address *server;
 	const char *target_hostname;
 	enum dcerpc_transport_t transport;
@@ -305,6 +306,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
+						       struct socket_address *localaddr,
 						       struct socket_address *server,
 						       const char *target_hostname,
 						       const char *full_path,
@@ -323,6 +325,10 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	s->conn      = cn;
 	s->transport = transport;
+	if (localaddr) {
+		s->localaddr = talloc_reference(c, localaddr);
+		if (composite_nomem(s->localaddr, c)) return c;
+	}
 	s->server    = talloc_reference(c, server);
 	if (composite_nomem(s->server, c)) return c;
 	s->target_hostname = talloc_reference(s, target_hostname);
@@ -337,7 +343,7 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	s->sock->path = talloc_reference(s->sock, full_path);
 
-	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
+	conn_req = socket_connect_send(s->socket_ctx, s->localaddr, s->server, 0,
 				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
@@ -357,6 +363,7 @@ struct pipe_tcp_state {
 	const char *target_hostname;
 	const char *address;
 	uint32_t port;
+	struct socket_address *localaddr;
 	struct socket_address *srvaddr;
 	struct resolve_context *resolve_ctx;
 	struct dcerpc_connection *conn;
@@ -385,7 +392,7 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	/* resolve_nbt_name gives only ipv4 ... - send socket open request */
-	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn,
+	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
 						     s->srvaddr, s->target_hostname,
 						     NULL,
 						     NCACN_IP_TCP);
@@ -419,7 +426,7 @@ static void continue_ipv6_open_socket(struct composite_context *ctx)
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	/* try IPv4 if IPv6 fails */
-	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
 						     s->srvaddr, s->target_hostname, 
 						     NCACN_IP_TCP);
 	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
@@ -452,12 +459,12 @@ static void continue_ipv4_open_socket(struct composite_context *ctx)
 	composite_done(c);
 }
 
-
 /*
   Send rpc pipe open request to given host:port using
   tcp/ip transport
 */
 struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *conn,
+						    const char *localaddr,
 						    const char *server,
 						    const char *target_hostname,
 						    uint32_t port,
@@ -486,6 +493,12 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	s->port            = port;
 	s->conn            = conn;
 	s->resolve_ctx     = resolve_ctx;
+	if (localaddr) {
+		s->localaddr = socket_address_from_strings(s, "ip", localaddr, 0);
+		/* if there is no localaddr, we pass NULL for
+		   s->localaddr, which is handled by the socket libraries as
+		   meaning no local binding address specified */
+	}
 
 	make_nbt_name_server(&name, server);
 	resolve_req = resolve_name_send(resolve_ctx, s, &name, c->event_ctx);
@@ -560,7 +573,7 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL,
 						     s->srvaddr, NULL,
 						     s->path,
 						     NCALRPC);
@@ -631,7 +644,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NULL, s->path, NCALRPC);
+	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL, s->srvaddr, NULL, s->path, NCALRPC);
 	composite_continue(c, sock_np_req, continue_np_open_socket, c);
 	return c;
 }

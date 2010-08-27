@@ -128,6 +128,12 @@ static bool test_parse_check_results(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, b->object.if_version, 0, "object version");
 	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, 
 		"308FB580-1EB2-11CA-923B-08002B1075A7@ncacn_ip_tcp:$SERVER", &b), "parse");
+	torture_assert_ntstatus_ok(tctx, dcerpc_parse_binding(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]", &b), "parse");
+	torture_assert(tctx, b->transport == NCACN_IP_TCP, "ncacn_ip_tcp expected");
+	torture_assert(tctx, b->flags == (DCERPC_SIGN | DCERPC_LOCALADDRESS), "sign flag");
+	torture_assert_str_equal(tctx, b->localaddress, "192.168.1.1", "localaddress");
+	torture_assert_str_equal(tctx, "ncacn_ip_tcp:$SERVER[,sign,localaddress=192.168.1.1]",
+				 dcerpc_binding_string(tctx, b), "back to string");
 
 	return true;
 }

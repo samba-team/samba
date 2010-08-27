@@ -181,6 +181,9 @@ struct dcerpc_pipe {
 /* use NDR64 transport */
 #define DCERPC_NDR64                   (1<<21)
 
+/* specify binding interface */
+#define	DCERPC_LOCALADDRESS            (1<<22)
+
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
@@ -189,6 +192,7 @@ struct dcerpc_binding {
 	const char *target_hostname;
 	const char *endpoint;
 	const char **options;
+	const char *localaddress;
 	uint32_t flags;
 	uint32_t assoc_group_id;
 };

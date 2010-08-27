@@ -285,6 +285,7 @@ struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 	epmapper_binding->host			= talloc_reference(epmapper_binding, binding->host);
 	epmapper_binding->target_hostname       = epmapper_binding->host;
 	epmapper_binding->options		= NULL;
+	epmapper_binding->localaddress          = talloc_reference(epmapper_binding, binding->localaddress);
 	epmapper_binding->flags			= 0;
 	epmapper_binding->assoc_group_id	= 0;
 	epmapper_binding->endpoint		= NULL;
