@@ -843,7 +843,7 @@ struct sockaddr;
  *
  * @param[in]  sa       The sockaddr structure to convert.
  *
- * @param[in]  sa_socklen   The lenth of the sockaddr sturucte.
+ * @param[in]  sasocklen   The lenth of the sockaddr sturucte.
  *
  * @param[out] addr     The tsocket pointer to allocate and fill.
  *
@@ -851,17 +851,17 @@ struct sockaddr;
  */
 int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				      struct sockaddr *sa,
-				      size_t sa_socklen,
+				      size_t sasocklen,
 				      struct tsocket_address **addr);
 #else
 int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				       struct sockaddr *sa,
-				       size_t sa_socklen,
+				       size_t sasocklen,
 				       struct tsocket_address **_addr,
 				       const char *location);
 
-#define tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr) \
-	_tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr, \
+#define tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sasocklen, _addr) \
+	_tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sasocklen, _addr, \
 					   __location__)
 #endif
 
@@ -872,10 +872,10 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  sa       The bsd sockaddr structure to fill out.
  *
- * @param[in]  sa_socklen   The length of the  bsd sockaddr structure to fill out.
+ * @param[in]  sasocklen   The length of the  bsd sockaddr structure to fill out.
  *
  * @return              The actual size of the sockaddr structure, -1 on error
- *                      with errno set. The size could differ from sa_socklen.
+ *                      with errno set. The size could differ from sasocklen.
  *
  * @code
  *   ssize_t socklen;
@@ -891,7 +891,7 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
  */
 ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 				     struct sockaddr *sa,
-				     size_t sa_socklen);
+				     size_t sasocklen);
 
 #ifdef DOXYGEN
 /**
