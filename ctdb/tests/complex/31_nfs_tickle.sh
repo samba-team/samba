@@ -77,6 +77,10 @@ echo "Source socket is $src_socket"
 
 wait_for_monitor_event $test_node
 
+echo "Sleeping until tickles are synchronised across nodes..."
+try_command_on_node $test_node $CTDB getvar TickleUpdateInterval
+sleep_for "${out#*= }"
+
 if try_command_on_node 0 "test -r /etc/ctdb/events.d/61.nfstickle" ; then
     echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
     f="/etc/sysconfig/nfs"
@@ -102,8 +106,11 @@ fi
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
-echo "Disabling node $test_node"
-try_command_on_node 1 $CTDB disable -n $test_node
-wait_until_node_has_status $test_node disabled
+# We need to be nasty to make that the node being failed out doesn't
+# get a chance to send any tickles and confuse our sniff.
+echo "Killing ctdbd on ${test_node}..."
+try_command_on_node $test_node killall -9 ctdbd
+
+wait_until_node_has_status $test_node disconnected
 
 tcptickle_sniff_wait_show
