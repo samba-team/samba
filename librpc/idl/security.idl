@@ -347,6 +347,45 @@ interface security
 		SEC_PRIV_MACHINE_ACCOUNT           = 25
 	} sec_privilege;
 
+/*
+ * We will use our own bitmap here as the Samba3 privilages.tdb records these values
+ */
+	typedef [bitmap64bit] bitmap {
+		SE_NETWORK_LOGON		= 0x00000001,
+		SE_INTERACTIVE_LOGON		= 0x00000002,
+		SE_BATCH_LOGON			= 0x00000004,
+		SE_SERVICE_LOGON		= 0x00000008,
+		SE_MACHINE_ACCOUNT		= 0x00000010,
+
+		/* Samba-specific privs */
+		SE_PRINT_OPERATOR		= 0x00000020,
+		SE_ADD_USERS			= 0x00000040,
+		SE_DISK_OPERATOR		= 0x00000080,
+
+		SE_REMOTE_SHUTDOWN		= 0x00000100,
+		SE_BACKUP			= 0x00000200,
+		SE_RESTORE			= 0x00000400,
+		SE_TAKE_OWNERSHIP		= 0x00000800,
+		SE_INCREASE_QUOTA               = 0x00001000,
+		SE_SECURITY                     = 0x00002000,
+		SE_LOAD_DRIVER                  = 0x00004000,
+		SE_SYSTEM_PROFILE               = 0x00008000,
+		SE_SYSTEMTIME                   = 0x00010000,
+		SE_PROFILE_SINGLE_PROCESS       = 0x00020000,
+		SE_INCREASE_BASE_PRIORITY       = 0x00040000,
+		SE_CREATE_PAGEFILE              = 0x00080000,
+		SE_SHUTDOWN                     = 0x00100000,
+		SE_DEBUG                        = 0x00200000,
+		SE_SYSTEM_ENVIRONMENT           = 0x00400000,
+		SE_CHANGE_NOTIFY                = 0x00800000,
+		SE_UNDOCK                       = 0x01000000,
+		SE_ENABLE_DELEGATION            = 0x02000000,
+		SE_MANAGE_VOLUME                = 0x04000000,
+		SE_IMPERSONATE                  = 0x08000000,
+		SE_CREATE_GLOBAL                = 0x10000000,
+		/* Windows privs not in the list above */
+		SE_REMOTE_INTERACTIVE_LOGON     = 0x20000000
+	} se_privilege;
 
 	typedef [public,bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
