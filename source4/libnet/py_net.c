@@ -29,6 +29,7 @@
 #include "lib/ldb/pyldb.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/pyrpc.h"
+#include "librpc/rpc/pyrpc_util.h"
 
 typedef struct {
 	PyObject_HEAD
@@ -407,12 +408,9 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 
 	switch (level) {
 	case 1:
-#ifdef Py_TYPE
-		if (strcmp("drsuapi.DsGetNCChangesCtr1", Py_TYPE(py_ctr)->tp_name) != 0) {
-			PyErr_SetString(PyExc_TypeError, "Expected DsGetNCChangesCtr1 type for ctr");
+		if (!py_check_dcerpc_type(py_ctr, "samba.dcerpc.drsuapi", "DsGetNCChangesCtr1")) {
 			return NULL;
 		}
-#endif
 		s->chunk.ctr1                         = py_talloc_get_ptr(py_ctr);
 		s->partition.nc                       = *s->chunk.ctr1->naming_context;
 		s->partition.more_data                = s->chunk.ctr1->more_data;
@@ -421,12 +419,9 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		s->partition.highwatermark            = s->chunk.ctr1->new_highwatermark;
 		break;
 	case 6:
-#ifdef Py_TYPE
-		if (strcmp("drsuapi.DsGetNCChangesCtr6", Py_TYPE(py_ctr)->tp_name) != 0) {
-			PyErr_SetString(PyExc_TypeError, "Expected DsGetNCChangesCtr6 type for ctr");
+		if (!py_check_dcerpc_type(py_ctr, "samba.dcerpc.drsuapi", "DsGetNCChangesCtr6")) {
 			return NULL;
 		}
-#endif
 		s->chunk.ctr6                         = py_talloc_get_ptr(py_ctr);
 		s->partition.nc                       = *s->chunk.ctr6->naming_context;
 		s->partition.more_data                = s->chunk.ctr6->more_data;

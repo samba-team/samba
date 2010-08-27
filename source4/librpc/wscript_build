@@ -637,6 +637,12 @@ bld.SAMBA_LIBRARY('dcerpc',
 	vnum='0.0.1'
 	)
 
+bld.SAMBA_SUBSYSTEM('pyrpc_util',
+	source='rpc/pyrpc_util.c',
+	public_deps='PYTALLOC',
+        needs_python=True,
+	)
+
 
 bld.SAMBA_PYTHON('python_dcerpc',
 	source='rpc/pyrpc.c',
