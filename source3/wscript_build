@@ -484,7 +484,7 @@ PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 
 PDB_STATIC =        ''
 PDB_TDBSAM_SRC =    'passdb/pdb_tdb.c'
-PDB_LDAP_SRC =      'passdb/pdb_ldap.c'
+PDB_LDAP_SRC =      'passdb/pdb_ldap.c passdb/pdb_nds.c'
 PDB_ADS_SRC =       'passdb/pdb_ads.c'
 PDB_SMBPASSWD_SRC = 'passdb/pdb_smbpasswd.c'
 PDB_WBC_SAM_SRC =   'passdb/pdb_wbc_sam.c'
