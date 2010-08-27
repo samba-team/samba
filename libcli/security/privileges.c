@@ -58,22 +58,22 @@ PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
 
-	{SE_NETWORK_LOGON,	"SeNetworkLogonRight",		"Access this computer from network", 	   0x0},
-	{SE_INTERACTIVE_LOGON,	"SeInteractiveLogonRight",	"Log on locally", 			   0x0},
-	{SE_BATCH_LOGON,	"SeBatchLogonRight",		"Log on as a batch job",		   0x0},
-	{SE_SERVICE_LOGON,	"SeServiceLogonRight",		"Log on as a service",			   0x0},
+	{0x0,                      SE_NETWORK_LOGON,	 "SeNetworkLogonRight",		"Access this computer from network"},
+	{0x0,                      SE_INTERACTIVE_LOGON, "SeInteractiveLogonRight",	"Log on locally"},
+	{0x0,                      SE_BATCH_LOGON,	 "SeBatchLogonRight",		"Log on as a batch job"},
+	{0x0,                      SE_SERVICE_LOGON,	 "SeServiceLogonRight",		"Log on as a service"},
 #endif
-	{SE_MACHINE_ACCOUNT,	"SeMachineAccountPrivilege",	"Add machines to domain",		   SEC_PRIV_MACHINE_ACCOUNT},
-	{SE_TAKE_OWNERSHIP,     "SeTakeOwnershipPrivilege",     "Take ownership of files or other objects",SEC_PRIV_TAKE_OWNERSHIP},
-        {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   SEC_PRIV_BACKUP},
-        {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   SEC_PRIV_RESTORE},
-	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   SEC_PRIV_REMOTE_SHUTDOWN},
+	{SEC_PRIV_MACHINE_ACCOUNT, SE_MACHINE_ACCOUNT,   "SeMachineAccountPrivilege",	"Add machines to domain"},
+	{SEC_PRIV_TAKE_OWNERSHIP,  SE_TAKE_OWNERSHIP,    "SeTakeOwnershipPrivilege",    "Take ownership of files or other objects"},
+        {SEC_PRIV_BACKUP,          SE_BACKUP,            "SeBackupPrivilege",           "Back up files and directories"},
+        {SEC_PRIV_RESTORE,         SE_RESTORE,           "SeRestorePrivilege",          "Restore files and directories"},
+	{SEC_PRIV_REMOTE_SHUTDOWN, SE_REMOTE_SHUTDOWN,   "SeRemoteShutdownPrivilege",	"Force shutdown from a remote system"},
 
-	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   SEC_PRIV_PRINT_OPERATOR},
-	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   SEC_PRIV_ADD_USERS},
-	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   SEC_PRIV_DISK_OPERATOR},
+	{SEC_PRIV_PRINT_OPERATOR,  SE_PRINT_OPERATOR,	 "SePrintOperatorPrivilege",	"Manage printers"},
+	{SEC_PRIV_ADD_USERS,       SE_ADD_USERS,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
+	{SEC_PRIV_DISK_OPERATOR,   SE_DISK_OPERATOR,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
 
-	{SE_END, "", "", 0x0}
+	{0x0, SE_END, "", ""}
 };
 
 /***************************************************************************
@@ -453,12 +453,7 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 	return true;
 }
 
-static const struct {
-	enum sec_privilege privilege;
-	uint64_t privilege_mask;
-	const char *name;
-	const char *display_name;
-} privilege_names[] = {
+static const PRIVS privilege_names[] = {
 	{SEC_PRIV_SECURITY,
 	 SE_SECURITY,
 	 "SeSecurityPrivilege",
@@ -609,7 +604,7 @@ const char *sec_privilege_name(enum sec_privilege privilege)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].privilege == privilege) {
+		if (privilege_names[i].luid == privilege) {
 			return privilege_names[i].name;
 		}
 	}
@@ -628,8 +623,8 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 		return NULL;
 	}
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].privilege == privilege) {
-			return privilege_names[i].display_name;
+		if (privilege_names[i].luid == privilege) {
+			return privilege_names[i].description;
 		}
 	}
 	return NULL;
@@ -643,7 +638,7 @@ enum sec_privilege sec_privilege_id(const char *name)
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
 		if (strcasecmp(privilege_names[i].name, name) == 0) {
-			return privilege_names[i].privilege;
+			return privilege_names[i].luid;
 		}
 	}
 	return -1;
@@ -657,7 +652,7 @@ enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
 		if (privilege_names[i].privilege_mask == mask) {
-			return privilege_names[i].privilege;
+			return privilege_names[i].luid;
 		}
 	}
 	return -1;
@@ -669,7 +664,7 @@ enum sec_privilege sec_privilege_from_mask(uint64_t mask)
 enum sec_privilege sec_privilege_from_index(int idx)
 {
 	if (idx >= 0 && idx<ARRAY_SIZE(privilege_names)) {
-		return privilege_names[idx].privilege;
+		return privilege_names[idx].luid;
 	}
 	return -1;
 }
@@ -682,7 +677,7 @@ static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(privilege_names);i++) {
-		if (privilege_names[i].privilege == privilege) {
+		if (privilege_names[i].luid == privilege) {
 			return privilege_names[i].privilege_mask;
 		}
 	}
