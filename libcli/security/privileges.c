@@ -83,7 +83,7 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src )
 	if ( !dst || !src )
 		return false;
 
-	memcpy( dst, src, sizeof(uint64_t) );
+	*dst = *src;
 
 	return true;
 }
