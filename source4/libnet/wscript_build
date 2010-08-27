@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA-NET',
 
 bld.SAMBA_PYTHON('python_net',
 	source='py_net.c',
-	deps='LIBSAMBA-NET',
+	deps='LIBSAMBA-NET pyrpc_util',
 	realname='samba/net.so'
 	)
 
