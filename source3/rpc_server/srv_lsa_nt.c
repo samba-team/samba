@@ -2400,8 +2400,6 @@ NTSTATUS _lsa_LookupPrivValue(struct pipes_struct *p,
 {
 	struct lsa_info *info = NULL;
 	const char *name = NULL;
-	struct lsa_LUIDAttribute priv_luid;
-	uint64_t mask;
 
 	/* find the connection policy handle. */
 
@@ -2419,14 +2417,11 @@ NTSTATUS _lsa_LookupPrivValue(struct pipes_struct *p,
 
 	DEBUG(10,("_lsa_lookup_priv_value: name = %s\n", name));
 
-	if ( !se_priv_from_name( name, &mask ) )
+	r->out.luid->low = sec_privilege_id(name);
+	r->out.luid->high = 0;
+	if (r->out.luid->low == -1) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
-
-	priv_luid = get_privilege_luid( &mask );
-
-	r->out.luid->low = priv_luid.luid.low;
-	r->out.luid->high = priv_luid.luid.high;
-
+	}
 	return NT_STATUS_OK;
 }
 
