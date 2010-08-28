@@ -816,6 +816,8 @@ const char *get_remote_machine_name(void);
 void sub_set_smb_name(const char *name);
 void set_current_user_info(const char *smb_name, const char *unix_name,
 			   const char *domain);
+void sub_set_socket_ids(const char *peeraddr, const char *peername,
+			const char *sockaddr);
 const char *get_current_username(void);
 void standard_sub_basic(const char *smb_name, const char *domain_name,
 			char *str, size_t len);

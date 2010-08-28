@@ -61,6 +61,7 @@ int smbd_server_fd(void)
 static void smbd_set_server_fd(int fd)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
+	char addr[INET6_ADDRSTRLEN];
 	const char *name;
 
 	server_fd = fd;
@@ -82,6 +83,10 @@ static void smbd_set_server_fd(int fd)
 	}
 	sconn->client_id.name =
 		(name != NULL) ? name : sconn->client_id.addr;
+
+	sub_set_socket_ids(sconn->client_id.addr, sconn->client_id.name,
+			   client_socket_addr(sconn->sock, addr,
+					      sizeof(addr)));
 }
 
 struct event_context *smbd_event_context(void)
