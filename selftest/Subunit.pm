@@ -133,7 +133,7 @@ sub end_test($$;$)
 	if ($reason) {
 		print "$result: $name [\n";
 		print $reason;
-		if (substr($reason, -1, 1) != "\n") { print "\n"; }
+		if (substr($reason, -1, 1) ne "\n") { print "\n"; }
 		print "]\n";
 	} else {
 		print "$result: $name\n";
