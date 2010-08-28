@@ -1010,8 +1010,7 @@ extern void build_options(bool screen);
 	 * Reloading of the printers will not work here as we don't have a
 	 * server info and rpc services set up. It will be called later.
 	 */
-	if (!reload_services(smbd_messaging_context(), smbd_server_fd(),
-			     False)) {
+	if (!reload_services(smbd_messaging_context(), -1, False)) {
 		exit(1);
 	}
 
