@@ -453,7 +453,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		return NULL;
 	}
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static const char py_net_vampire_doc[] = "vampire(domain, target_dir=None)\n"
