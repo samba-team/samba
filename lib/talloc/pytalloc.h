@@ -54,4 +54,8 @@ PyObject *py_talloc_default_repr(PyObject *py_obj);
 
 PyObject *PyCObject_FromTallocPtr(void *);
 
+PyObject *PyString_FromString_check_null(const char *ptr);
+PyObject *PyUnicode_Decode_check_null(const void *ptr, size_t len,
+				      const char *charset, const char *options);
+
 #endif /* _PY_TALLOC_H_ */

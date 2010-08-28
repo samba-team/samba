@@ -873,7 +873,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		my $ctype_name = $self->use_type_variable($ctype);
 		unless (defined ($ctype_name)) {
 			error($location, "Unable to determine origin of type `" . mapTypeName($ctype) . "'");
-			$self->pidl("PyErr_SetString(PyExc_TypeError, \"Can not convert C Type " . mapTypeName($ctype) . " to Python\");");
+			$self->pidl("PyErr_SetString(PyExc_TypeError, \"Can not convert C Type " . mapTypeName($ctype) . " from Python\");");
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
@@ -895,12 +895,12 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
 		$self->pidl("$target = PyString_AsString($cvar);");
 		return;
-		}
+	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "dnsp_name") {
 		$self->pidl("$target = PyString_AsString($cvar);");
 		return;
-		}
+	}
 
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
@@ -1050,13 +1050,13 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {
-		return "PyString_FromString($cvar)";
+		return "PyString_FromString_check_null($cvar)";
 	}
 
 	# Not yet supported
 	if ($ctypename eq "string_array") { return "PyCObject_FromTallocPtr($cvar)"; }
-	if ($ctypename eq "ipv4address") { return "PyString_FromString($cvar)"; }
-	if ($ctypename eq "dnsp_name") { return "PyString_FromString($cvar)"; }
+	if ($ctypename eq "ipv4address") { return "PyString_FromString_check_null($cvar)"; }
+	if ($ctypename eq "dnsp_name") { return "PyString_FromString_check_null($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromTallocPtr($cvar)";
 	}
@@ -1139,7 +1139,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 
 		if (is_charset_array($e, $l)) {
 			# FIXME: Use Unix charset setting rather than utf-8
-			$self->pidl("$py_var = PyUnicode_Decode($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
+			$self->pidl("$py_var = PyUnicode_Decode_check_null($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
 		} else {
 			die("No SIZE_IS for array $var_name") unless (defined($l->{SIZE_IS}));
 			my $length = $l->{SIZE_IS};

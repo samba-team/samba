@@ -106,5 +106,25 @@ static void py_cobject_talloc_free(void *ptr)
 
 PyObject *PyCObject_FromTallocPtr(void *ptr)
 {
+	if (ptr == NULL) {
+		Py_RETURN_NONE;
+	}
 	return PyCObject_FromVoidPtr(ptr, py_cobject_talloc_free);
+}
+
+PyObject *PyString_FromString_check_null(const char *ptr)
+{
+	if (ptr == NULL) {
+		Py_RETURN_NONE;
+	}
+	return PyString_FromString(ptr);
+}
+
+PyObject *PyUnicode_Decode_check_null(const void *ptr, size_t len,
+				      const char *charset, const char *options)
+{
+	if (ptr == NULL) {
+		Py_RETURN_NONE;
+	}
+	return PyUnicode_Decode(ptr, len, charset, options);
 }
