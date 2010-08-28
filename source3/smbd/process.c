@@ -2889,7 +2889,8 @@ fail:
 	return false;
 }
 
-static NTSTATUS smbd_register_ips(struct sockaddr_storage *srv,
+static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
+				  struct sockaddr_storage *srv,
 				  struct sockaddr_storage *clnt)
 {
 	struct ctdbd_connection *cconn;
@@ -2901,7 +2902,7 @@ static NTSTATUS smbd_register_ips(struct sockaddr_storage *srv,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	client_socket_addr(smbd_server_fd(),addr,sizeof(addr));
+	client_socket_addr(sconn->sock, addr, sizeof(addr));
 	addr = talloc_strdup(cconn, tmp_addr);
 	if (addr == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3109,7 +3110,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 		if (client_get_tcp_info(&srv, &clnt) == 0) {
 			NTSTATUS status;
-			status = smbd_register_ips(&srv, &clnt);
+			status = smbd_register_ips(sconn, &srv, &clnt);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 					  nt_errstr(status)));
