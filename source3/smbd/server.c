@@ -107,7 +107,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(msg, smbd_server_fd(), False);
+	reload_services(msg, smbd_server_conn->sock, False);
 }
 
 

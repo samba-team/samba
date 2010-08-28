@@ -928,7 +928,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 		private_data, struct messaging_context);
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
-	reload_services(msg_ctx, smbd_server_fd(), False);
+	reload_services(msg_ctx, smbd_server_conn->sock, False);
 }
 
 void smbd_setup_sig_hup_handler(struct tevent_context *ev,
