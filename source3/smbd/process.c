@@ -2212,7 +2212,7 @@ void chain_reply(struct smb_request *req)
  Check if services need reloading.
 ****************************************************************************/
 
-static void check_reload(struct messaging_context *msg_ctx, time_t t)
+static void check_reload(struct smbd_server_connection *sconn, time_t t)
 {
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 
@@ -2237,7 +2237,7 @@ static void check_reload(struct messaging_context *msg_ctx, time_t t)
 	}
 
 	if (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK) {
-		reload_services(msg_ctx, smbd_server_fd(), True);
+		reload_services(sconn->msg_ctx, sconn->sock, True);
 		last_smb_conf_reload_time = t;
 	}
 
@@ -2251,7 +2251,7 @@ static void check_reload(struct messaging_context *msg_ctx, time_t t)
 			|| (t-last_printer_reload_time  < 0) ) 
 		{
 			DEBUG( 3,( "Printcap cache time expired.\n"));
-			reload_printers(msg_ctx);
+			reload_printers(sconn->msg_ctx);
 			last_printer_reload_time = t;
 		}
 	}
@@ -2502,7 +2502,7 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 	update_monitored_printq_cache(sconn->msg_ctx);
 
 	/* check if we need to reload services */
-	check_reload(sconn->msg_ctx, time(NULL));
+	check_reload(sconn, time(NULL));
 
 	/* Change machine password if neccessary. */
 	attempt_machine_password_change();
