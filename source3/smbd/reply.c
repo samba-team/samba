@@ -528,6 +528,15 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 			exit_server_cleanly("retargeted client");
 		}
 
+		/*
+		 * Windows NT/2k uses "*SMBSERVER" and XP uses
+		 * "*SMBSERV" arrggg!!!
+		 */
+		if (strequal(name1, "*SMBSERVER     ")
+		    || strequal(name1, "*SMBSERV       "))  {
+			fstrcpy(name1, sconn->client_id.addr);
+		}
+
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
 

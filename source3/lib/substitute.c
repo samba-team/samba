@@ -45,7 +45,6 @@ bool set_local_machine_name(const char *local_name, bool perm)
 {
 	static bool already_perm = false;
 	char *tmp_local_machine = NULL;
-	char addr[INET6_ADDRSTRLEN];
 	size_t len;
 
 	tmp_local_machine = SMB_STRDUP(local_name);
@@ -53,20 +52,6 @@ bool set_local_machine_name(const char *local_name, bool perm)
 		return false;
 	}
 	trim_char(tmp_local_machine,' ',' ');
-
-	/*
-	 * Windows NT/2k uses "*SMBSERVER" and XP uses "*SMBSERV"
-	 * arrggg!!!
-	 */
-
-	if (strequal(tmp_local_machine, "*SMBSERVER") ||
-			strequal(tmp_local_machine, "*SMBSERV") )  {
-		SAFE_FREE(local_machine);
-		local_machine = SMB_STRDUP(client_socket_addr(smbd_server_fd(),
-					addr, sizeof(addr)) );
-		SAFE_FREE(tmp_local_machine);
-		return local_machine ? true : false;
-	}
 
 	if (already_perm) {
 		return true;
