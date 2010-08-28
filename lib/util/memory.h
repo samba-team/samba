@@ -28,7 +28,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
 
 /** 
