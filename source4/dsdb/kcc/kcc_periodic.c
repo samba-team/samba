@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 #include "param/param.h"
 
 /*
@@ -97,6 +98,24 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 }
 
 
+/**
+ * Force dreplsrv to update its state as topology is changed
+ */
+static void kccsrv_notify_drepl_server(struct kccsrv_service *s,
+				       TALLOC_CTX *mem_ctx)
+{
+	struct dreplsrv_refresh r;
+	struct server_id *drepl_srv;
+
+	drepl_srv = irpc_servers_byname(s->task->msg_ctx, mem_ctx, "dreplsrv");
+	if (!drepl_srv) {
+		/* dreplsrv is not running yet */
+		return;
+	}
+
+	IRPC_CALL(s->task->msg_ctx, drepl_srv[0], irpc, DREPLSRV_REFRESH, &r, mem_ctx);
+}
+
 /*
  * add any missing repsFrom structures to our partitions
  */
@@ -105,6 +124,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 				    struct ldb_result *res)
 {
 	struct kccsrv_partition *p;
+	bool notify_dreplsrv = false;
 
 	/* update the repsFrom on all partitions */
 	for (p=s->partitions; p; p=p->next) {
@@ -151,6 +171,8 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
+			/* dreplsrv should refresh its state */
+			notify_dreplsrv = true;
 		}
 
 		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps_to, &to_count);
@@ -179,7 +201,14 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
+			/* dreplsrv should refresh its state */
+			notify_dreplsrv = true;
 		}
+	}
+
+	/* notify dreplsrv toplogy has changed */
+	if (notify_dreplsrv) {
+		kccsrv_notify_drepl_server(s, mem_ctx);
 	}
 
 	return NT_STATUS_OK;
