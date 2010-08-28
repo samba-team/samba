@@ -222,13 +222,13 @@ bool init_names(void)
 
 	if (global_myname() == NULL || *global_myname() == '\0') {
 		if (!set_global_myname(myhostname())) {
-			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+			DEBUG( 0, ( "init_names: malloc fail.\n" ) );
 			return False;
 		}
 	}
 
 	if (!set_netbios_aliases(lp_netbios_aliases())) {
-		DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+		DEBUG( 0, ( "init_names: malloc fail.\n" ) );
 		return False;
 	}
 
