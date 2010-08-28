@@ -68,7 +68,13 @@ PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr)
  */
 PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr)
 {
-	py_talloc_Object *ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
+	py_talloc_Object *ret;
+
+	if (ptr == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
 	ret->talloc_ctx = talloc_new(NULL);
 	if (ret->talloc_ctx == NULL) {
 		return NULL;
