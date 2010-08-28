@@ -362,7 +362,7 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 }
 
 /*
-  Dispatch one messsaging_rec
+  Dispatch one messaging_rec
 */
 void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			    struct messaging_rec *rec)
