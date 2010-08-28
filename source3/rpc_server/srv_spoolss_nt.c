@@ -342,7 +342,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 
 	/* go ahead and re-read the services immediately */
 	become_root();
-	reload_services(msg_ctx, smbd_server_fd(), false);
+	reload_services(msg_ctx, -1, false);
 	unbecome_root();
 
 	if ( lp_servicenumber( sharename )  > 0 )
@@ -5765,7 +5765,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 
 	/* reload our services immediately */
 	become_root();
-	reload_services(msg_ctx, smbd_server_fd(), false);
+	reload_services(msg_ctx, -1, false);
 	unbecome_root();
 
 	numlines = 0;
