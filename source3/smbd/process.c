@@ -2377,10 +2377,8 @@ received when we should release a specific IP
 ****************************************************************************/
 static void release_ip(const char *ip, void *priv)
 {
-	char addr[INET6_ADDRSTRLEN];
-	char *p = addr;
-
-	client_socket_addr(smbd_server_fd(),addr,sizeof(addr));
+	const char *addr = (const char *)priv;
+	const char *p = addr;
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
 		p = addr + 7;
@@ -2403,7 +2401,10 @@ static void release_ip(const char *ip, void *priv)
 static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
 {
-	release_ip((char *)data->data, NULL);
+	char addr[INET6_ADDRSTRLEN];
+
+	client_socket_addr(smbd_server_fd(),addr,sizeof(addr));
+	release_ip((char *)data->data, addr);
 }
 
 #ifdef CLUSTER_SUPPORT
@@ -2888,6 +2889,26 @@ fail:
 	return false;
 }
 
+static NTSTATUS smbd_register_ips(struct sockaddr_storage *srv,
+				  struct sockaddr_storage *clnt)
+{
+	struct ctdbd_connection *cconn;
+	char tmp_addr[INET6_ADDRSTRLEN];
+	char *addr;
+
+	cconn = messaging_ctdbd_connection(procid_self());
+	if (cconn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	client_socket_addr(smbd_server_fd(),addr,sizeof(addr));
+	addr = talloc_strdup(cconn, tmp_addr);
+	if (addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return ctdbd_register_ips(cconn, srv, clnt, release_ip, addr);
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -3087,13 +3108,8 @@ void smbd_process(struct smbd_server_connection *sconn)
 		struct sockaddr_storage srv, clnt;
 
 		if (client_get_tcp_info(&srv, &clnt) == 0) {
-
 			NTSTATUS status;
-
-			status = ctdbd_register_ips(
-				messaging_ctdbd_connection(procid_self()),
-				&srv, &clnt, release_ip, NULL);
-
+			status = smbd_register_ips(&srv, &clnt);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 					  nt_errstr(status)));
