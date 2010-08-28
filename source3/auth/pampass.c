@@ -59,10 +59,6 @@ struct smb_pam_userdata {
 
 typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_response **, void *appdata_ptr);
 
-/*
- *  Macros to help make life easy
- */
-
 static char *smb_pam_copy_string(const char *s)
 {
 	if (s == NULL) {
