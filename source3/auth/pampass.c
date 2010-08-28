@@ -802,8 +802,8 @@ NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost)
  * PAM Password Validation Suite
  */
 
-NTSTATUS smb_pam_passcheck(const char * user, const char * password,
-			   const char * rhost)
+NTSTATUS smb_pam_passcheck(const char * user, const char * rhost,
+			   const char * password)
 {
 	pam_handle_t *pamh = NULL;
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
