@@ -388,15 +388,17 @@ static void smbd_accept_connection(struct tevent_context *ev,
 				     struct smbd_open_socket);
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
+	int fd;
 	pid_t pid = 0;
 	uint64_t unique_id;
 
-	smbd_set_server_fd(accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen));
+	fd = accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen);
+	smbd_set_server_fd(fd);
 
-	if (smbd_server_fd() == -1 && errno == EINTR)
+	if (fd == -1 && errno == EINTR)
 		return;
 
-	if (smbd_server_fd() == -1) {
+	if (fd == -1) {
 		DEBUG(0,("open_sockets_smbd: accept: %s\n",
 			 strerror(errno)));
 		return;
@@ -409,7 +411,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (!allowable_number_of_smbd_processes()) {
-		close(smbd_server_fd());
+		close(fd);
 		smbd_set_server_fd(-1);
 		return;
 	}
@@ -482,7 +484,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	/* The parent doesn't need this socket */
-	close(smbd_server_fd());
+	close(fd);
 
 	/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
 		Clear the closed fd info out of server_fd --
