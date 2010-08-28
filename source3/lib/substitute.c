@@ -47,15 +47,15 @@ bool set_local_machine_name(const char *local_name, bool perm)
 	char *tmp_local_machine = NULL;
 	size_t len;
 
+	if (already_perm) {
+		return true;
+	}
+
 	tmp_local_machine = SMB_STRDUP(local_name);
 	if (!tmp_local_machine) {
 		return false;
 	}
 	trim_char(tmp_local_machine,' ',' ');
-
-	if (already_perm) {
-		return true;
-	}
 
 	SAFE_FREE(local_machine);
 	len = strlen(tmp_local_machine);
