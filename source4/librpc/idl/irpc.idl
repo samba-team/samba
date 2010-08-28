@@ -148,4 +148,15 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[in] astring reason
 		);
 
+	/******************************************************
+         management calls for the drepl server
+	******************************************************/
+	/**
+	 * Force dreplsrv to fefresh internal cache.
+	 * @param partition_dn Partition to refresh cacheh for.
+	 *                     If empy/NULL, refresh all partitions.
+	 */
+	void dreplsrv_refresh(
+		[out] WERROR werr
+		);
 }

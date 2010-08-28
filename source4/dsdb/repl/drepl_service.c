@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 #include "param/param.h"
 
 static WERROR dreplsrv_init_creds(struct dreplsrv_service *service)
@@ -127,6 +128,24 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Called when drplsrv should refresh its state.
+ * For example, when KCC change topology, dreplsrv
+ * should update its cache
+ *
+ * @param partition_dn If not empty/NULL, partition to update
+ */
+static NTSTATUS dreplsrv_refresh(struct irpc_message *msg,
+				 struct dreplsrv_refresh *r)
+{
+	struct dreplsrv_service *s = talloc_get_type(msg->private_data,
+						     struct dreplsrv_service);
+
+	r->out.werr = dreplsrv_refresh_partitions(s);
+
+	return NT_STATUS_OK;
+}
+
 /*
   startup the dsdb replicator service task
 */
@@ -214,6 +233,7 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	irpc_add_name(task->msg_ctx, "dreplsrv");
 
+	IRPC_REGISTER(task->msg_ctx, irpc, DREPLSRV_REFRESH, dreplsrv_refresh, service);
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
 	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
 }
