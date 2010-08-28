@@ -5391,7 +5391,6 @@ void server_messaging_context_free(void);
 
 /* The following definitions come from smbd/server.c  */
 
-int smbd_server_fd(void);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);

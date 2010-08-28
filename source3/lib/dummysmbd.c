@@ -23,11 +23,6 @@
 
 #include "includes.h"
 
-int smbd_server_fd(void)
-{
-	return -1;
-}
-
 int find_service(fstring service)
 {
 	return -1;

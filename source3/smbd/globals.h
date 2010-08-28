@@ -469,7 +469,7 @@ struct smbd_server_connection {
 
 		struct {
 			/*
-			 * fd for the fcntl lock mutexing access to smbd_server_fd
+			 * fd for the fcntl lock mutexing access to our sock
 			 */
 			int socket_lock_fd;
 

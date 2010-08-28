@@ -53,18 +53,11 @@ static_decl_rpc;
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
 
-int smbd_server_fd(void)
-{
-	return server_fd;
-}
-
 static void smbd_set_server_fd(int fd)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	char addr[INET6_ADDRSTRLEN];
 	const char *name;
-
-	server_fd = fd;
 
 	sconn->sock = fd;
 
