@@ -5361,8 +5361,6 @@ static char *lp_string(const char *s)
  bool fn_name(const struct share_params *p) {return(bool)(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_INTEGER(fn_name,val) \
  int fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
-#define FN_LOCAL_PARM_STRING(fn_name,val) \
- char *fn_name(const struct share_params *p) {return(lp_string((LP_SNUM_OK(p->service) && ServicePtrs[(p->service)]->val) ? ServicePtrs[(p->service)]->val : sDefault.val));}
 #define FN_LOCAL_CHAR(fn_name,val) \
  char fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
