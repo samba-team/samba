@@ -190,7 +190,7 @@ static ssize_t tsocket_bsd_pending(int fd)
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
 
 struct tsocket_address_bsd {
-	socklen_t sasocklen;
+	socklen_t sa_socklen;
 	union {
 		struct sockaddr sa;
 		struct sockaddr_in in;
@@ -204,38 +204,38 @@ struct tsocket_address_bsd {
 
 int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				       struct sockaddr *sa,
-				       size_t sasocklen,
+				       size_t sa_socklen,
 				       struct tsocket_address **_addr,
 				       const char *location)
 {
 	struct tsocket_address *addr;
 	struct tsocket_address_bsd *bsda;
 
-	if (sasocklen < sizeof(sa->sa_family)) {
+	if (sa_socklen < sizeof(sa->sa_family)) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	switch (sa->sa_family) {
 	case AF_UNIX:
-		if (sasocklen > sizeof(struct sockaddr_un)) {
-			sasocklen = sizeof(struct sockaddr_un);
+		if (sa_socklen > sizeof(struct sockaddr_un)) {
+			sa_socklen = sizeof(struct sockaddr_un);
 		}
 		break;
 	case AF_INET:
-		if (sasocklen < sizeof(struct sockaddr_in)) {
+		if (sa_socklen < sizeof(struct sockaddr_in)) {
 			errno = EINVAL;
 			return -1;
 		}
-		sasocklen = sizeof(struct sockaddr_in);
+		sa_socklen = sizeof(struct sockaddr_in);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		if (sasocklen < sizeof(struct sockaddr_in6)) {
+		if (sa_socklen < sizeof(struct sockaddr_in6)) {
 			errno = EINVAL;
 			return -1;
 		}
-		sasocklen = sizeof(struct sockaddr_in6);
+		sa_socklen = sizeof(struct sockaddr_in6);
 		break;
 #endif
 	default:
@@ -243,7 +243,7 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	if (sasocklen > sizeof(struct sockaddr_storage)) {
+	if (sa_socklen > sizeof(struct sockaddr_storage)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -260,9 +260,9 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(bsda);
 
-	memcpy(&bsda->u.ss, sa, sasocklen);
+	memcpy(&bsda->u.ss, sa, sa_socklen);
 
-	bsda->sasocklen = sasocklen;
+	bsda->sa_socklen = sa_socklen;
 
 	*_addr = addr;
 	return 0;
@@ -270,7 +270,7 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 
 ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 				     struct sockaddr *sa,
-				     size_t sasocklen)
+				     size_t sa_socklen)
 {
 	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
 					   struct tsocket_address_bsd);
@@ -280,18 +280,18 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 		return -1;
 	}
 
-	if (sasocklen < bsda->sasocklen) {
+	if (sa_socklen < bsda->sa_socklen) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (sasocklen > bsda->sasocklen) {
-		memset(sa, 0, sasocklen);
-		sasocklen = bsda->sasocklen;
+	if (sa_socklen > bsda->sa_socklen) {
+		memset(sa, 0, sa_socklen);
+		sa_socklen = bsda->sa_socklen;
 	}
 
-	memcpy(sa, &bsda->u.ss, sasocklen);
-	return sasocklen;
+	memcpy(sa, &bsda->u.ss, sa_socklen);
+	return sa_socklen;
 }
 
 bool tsocket_address_is_inet(const struct tsocket_address *addr, const char *fam)
@@ -627,7 +627,7 @@ static struct tsocket_address *tsocket_address_bsd_copy(const struct tsocket_add
 
 	ret = _tsocket_address_bsd_from_sockaddr(mem_ctx,
 						 &bsda->u.sa,
-						 bsda->sasocklen,
+						 bsda->sa_socklen,
 						 &copy,
 						 location);
 	if (ret != 0) {
@@ -899,10 +899,10 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	}
 
 	ZERO_STRUCTP(bsda);
-	bsda->sasocklen = sizeof(bsda->u.ss);
+	bsda->sa_socklen = sizeof(bsda->u.ss);
 
 	ret = recvfrom(bsds->fd, state->buf, state->len, 0,
-		       &bsda->u.sa, &bsda->sasocklen);
+		       &bsda->u.sa, &bsda->sa_socklen);
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
@@ -1037,7 +1037,7 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 	struct tdgram_context *dgram = state->dgram;
 	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
 	struct sockaddr *sa = NULL;
-	socklen_t sasocklen = 0;
+	socklen_t sa_socklen = 0;
 	ssize_t ret;
 	int err;
 	bool retry;
@@ -1048,10 +1048,10 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 			struct tsocket_address_bsd);
 
 		sa = &bsda->u.sa;
-		sasocklen = bsda->sasocklen;
+		sa_socklen = bsda->sa_socklen;
 	}
 
-	ret = sendto(bsds->fd, state->buf, state->len, 0, sa, sasocklen);
+	ret = sendto(bsds->fd, state->buf, state->len, 0, sa, sa_socklen);
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
@@ -1302,7 +1302,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	}
 
 	if (do_bind) {
-		ret = bind(fd, &lbsda->u.sa, lbsda->sasocklen);
+		ret = bind(fd, &lbsda->u.sa, lbsda->sa_socklen);
 		if (ret == -1) {
 			int saved_errno = errno;
 			talloc_free(dgram);
@@ -1318,7 +1318,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			return -1;
 		}
 
-		ret = connect(fd, &rbsda->u.sa, rbsda->sasocklen);
+		ret = connect(fd, &rbsda->u.sa, rbsda->sa_socklen);
 		if (ret == -1) {
 			int saved_errno = errno;
 			talloc_free(dgram);
@@ -2116,7 +2116,7 @@ static struct tevent_req * tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_bind) {
-		ret = bind(state->fd, &lbsda->u.sa, lbsda->sasocklen);
+		ret = bind(state->fd, &lbsda->u.sa, lbsda->sa_socklen);
 		if (ret == -1) {
 			tevent_req_error(req, errno);
 			goto post;
@@ -2128,7 +2128,7 @@ static struct tevent_req * tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	ret = connect(state->fd, &rbsda->u.sa, rbsda->sasocklen);
+	ret = connect(state->fd, &rbsda->u.sa, rbsda->sa_socklen);
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */

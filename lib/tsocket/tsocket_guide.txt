@@ -439,7 +439,7 @@ Otherwise it returns 0.
 
   int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
       struct sockaddr *sa,
-      socklen_t sasocklen,
+      socklen_t sa_socklen,
       struct tsocket_address **addr);
 
 In some situations it's needed to get a 'struct sockaddr' from a
@@ -450,7 +450,7 @@ success, otherwise it returns -1 and sets 'errno'.
 
   ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
       struct sockaddr *sa,
-      socklen_t sasocklen);
+      socklen_t sa_socklen);
 
 In some situations it's needed to wrap existing file descriptors
 into the tstream abstraction. You can use tstream_bsd_existing_socket()
