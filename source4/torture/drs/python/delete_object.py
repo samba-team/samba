@@ -147,9 +147,9 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
            and vice versa so both DCs are synchronized
            before test_ReplicateDeteleteObject test"""
         # replicate Domain NC on DC2 from DC1
-        self._net_drs_replicate(DC=self.dc2, fromDC=self.dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
         # replicate Domain NC on DC1 from DC2
-        self._net_drs_replicate(DC=self.dc1, fromDC=self.dc2)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
         pass
 
     def test_ReplicateDeteleteObject(self):
@@ -177,7 +177,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dc2, fromDC=self.dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
 
         # delete user on DC1
         self.ldb_dc1.delete(user_dn)
@@ -188,7 +188,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
         # trigger replication from DC2 to DC1
         # to check if deleted object gets restored
-        self._net_drs_replicate(DC=self.dc1, fromDC=self.dc2)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be valid user
@@ -196,7 +196,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
         # trigger replication from DC1 to DC2
         # to check if deleted object is replicated
-        self._net_drs_replicate(DC=self.dc2, fromDC=self.dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be deleted
