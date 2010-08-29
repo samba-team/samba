@@ -35,6 +35,7 @@ net_drs_server_dn_from_dc_name(struct net_drs_context *drs_ctx,
                                const char *dc_name)
 {
 	int ldb_err;
+	char *filter;
 	struct ldb_dn *dn;
 	struct ldb_dn *server_dn = NULL;
 	struct ldb_result *ldb_res;
@@ -57,17 +58,25 @@ net_drs_server_dn_from_dc_name(struct net_drs_context *drs_ctx,
 	}
 
 	/* search for Server in Sites container */
+	filter = talloc_asprintf(mem_ctx,
+	                         "(&(objectCategory=server)(|(name=%1$s)(dNSHostName=%1$s)))",
+	                         dc_name);
 	ldb_err = ldb_search(drs_ctx->ldap.ldb, mem_ctx, &ldb_res,
 	                     dn, LDB_SCOPE_SUBTREE, attrs,
-	                     "(&(objectCategory=server)(|(name=%1$s)(dNSHostName=%1$s)))",
-	                     dc_name);
+	                     "%s",
+	                     filter);
 	if (ldb_err != LDB_SUCCESS) {
-		d_printf("ldb_seach() failed with err: %d (%s).\n",
+		d_printf("ldb_seach(base=%s, filter=%s) failed: %d (%s).\n",
+		         ldb_dn_get_linearized(dn),
+		         filter,
 		         ldb_err, ldb_errstring(drs_ctx->ldap.ldb));
 		goto failed;
 	}
 	if (ldb_res->count != 1) {
-		d_printf("ldb_search() should return exactly one record!\n");
+		d_printf("ldb_search(base=%s, filter=%s) returned %d records, expected 1!\n",
+		         ldb_dn_get_linearized(dn),
+		         filter,
+		         ldb_res->count);
 		goto failed;
 	}
 
