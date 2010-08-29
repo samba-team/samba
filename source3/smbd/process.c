@@ -2879,7 +2879,7 @@ void smbd_process(void)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct sockaddr_storage ss;
 	struct sockaddr *sa = NULL;
-	socklen_t sa_len;
+	socklen_t sa_socklen;
 	struct tsocket_address *local_address = NULL;
 	struct tsocket_address *remote_address = NULL;
 	const char *remaddr = NULL;
@@ -2906,15 +2906,15 @@ void smbd_process(void)
 	set_socket_options(smbd_server_fd(), lp_socket_options());
 
 	sa = (struct sockaddr *)(void *)&ss;
-	sa_len = sizeof(ss);
-	ret = getpeername(smbd_server_fd(), sa, &sa_len);
+	sa_socklen = sizeof(ss);
+	ret = getpeername(smbd_server_fd(), sa, &sa_socklen);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getpeername() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getpeername() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
-						sa, sa_len,
+						sa, sa_socklen,
 						&remote_address);
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",
@@ -2923,15 +2923,15 @@ void smbd_process(void)
 	}
 
 	sa = (struct sockaddr *)(void *)&ss;
-	sa_len = sizeof(ss);
-	ret = getsockname(smbd_server_fd(), sa, &sa_len);
+	sa_socklen = sizeof(ss);
+	ret = getsockname(smbd_server_fd(), sa, &sa_socklen);
 	if (ret != 0) {
 		int level = (errno == ENOTCONN)?2:0;
 		DEBUG(level,("getsockname() failed - %s\n", strerror(errno)));
 		exit_server_cleanly("getsockname() failed.\n");
 	}
 	ret = tsocket_address_bsd_from_sockaddr(smbd_server_conn,
-						sa, sa_len,
+						sa, sa_socklen,
 						&local_address);
 	if (ret != 0) {
 		DEBUG(0,("%s: tsocket_address_bsd_from_sockaddr remote failed - %s\n",

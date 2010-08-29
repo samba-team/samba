@@ -303,18 +303,18 @@ static void onefs_smb_statistics_end(struct smb_perfcount_data *pcd)
 	/* get address info once, doesn't change for process */
 	if (rem_addr == 0) {
 		struct sockaddr_storage sa;
-		socklen_t sa_len;
+		socklen_t sa_socklen;
 		int fd = smbd_server_fd();
 
-		sa_len = sizeof sa;
-		if (getpeername(fd, (struct sockaddr *)&sa, &sa_len) == 0 && 
+		sa_socklen = sizeof sa;
+		if (getpeername(fd, (struct sockaddr *)&sa, &sa_socklen) == 0 && 
 		    sa.ss_family == AF_INET)
 			rem_addr = ((struct sockaddr_in *)&sa)->sin_addr.s_addr;
 		else
 			rem_addr = ISC_MASKED_ADDR;
 
-		sa_len = sizeof sa;
-		if (getsockname(fd, (struct sockaddr *)&sa, &sa_len) == 0 &&
+		sa_socklen = sizeof sa;
+		if (getsockname(fd, (struct sockaddr *)&sa, &sa_socklen) == 0 &&
 		    sa.ss_family == AF_INET)
 			loc_addr = ((struct sockaddr_in *)&sa)->sin_addr.s_addr;
 		else
