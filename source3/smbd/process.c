@@ -2889,6 +2889,8 @@ fail:
 	return false;
 }
 
+#if CLUSTER_SUPPORT
+
 static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 				  struct sockaddr_storage *srv,
 				  struct sockaddr_storage *clnt)
@@ -2909,6 +2911,8 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 	}
 	return ctdbd_register_ips(cconn, srv, clnt, release_ip, addr);
 }
+
+#endif
 
 /****************************************************************************
  Process commands from the client
