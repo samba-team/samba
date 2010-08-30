@@ -448,7 +448,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
   Send a message to a particular server
 */
 NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server, 
-			uint32_t msg_type, DATA_BLOB *data)
+			uint32_t msg_type, const DATA_BLOB *data)
 {
 	struct messaging_rec *rec;
 	NTSTATUS status;

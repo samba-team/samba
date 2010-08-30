@@ -88,7 +88,7 @@ typedef void (*msg_callback_t)(struct messaging_context *msg, void *private_data
 			       struct server_id server_id, DATA_BLOB *data);
 
 NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server, 
-			uint32_t msg_type, DATA_BLOB *data);
+			uint32_t msg_type, const DATA_BLOB *data);
 NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
 			    uint32_t msg_type, 
 			    msg_callback_t fn);
