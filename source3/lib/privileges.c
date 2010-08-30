@@ -130,7 +130,7 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 	int i;
 	bool found = False;
 
-	se_priv_copy( privileges, &se_priv_none );
+	*privileges = 0;
 
 	for ( i=0; i<scount; i++ ) {
 		/* don't add unless we actually have a privilege assigned */
@@ -142,7 +142,7 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 			 "set: 0x%llx\n", sid_string_dbg(&slist[i]),
 			 (unsigned long long)mask));
 
-		se_priv_add( privileges, &mask );
+		*privileges |= mask;
 		found = True;
 	}
 
@@ -224,8 +224,6 @@ NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids)
 
 	ZERO_STRUCT(priv);
 
-	se_priv_copy( &priv.privilege, &se_priv_none );
-
 	db->traverse_read(db, priv_traverse_fn, &priv);
 
 	/* give the memory away; caller will free */
@@ -252,7 +250,7 @@ NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(priv);
 
-	se_priv_copy(&priv.privilege, mask);
+	priv.privilege = *mask;
 	priv.mem_ctx = mem_ctx;
 
 	db->traverse_read(db, priv_traverse_fn, &priv);

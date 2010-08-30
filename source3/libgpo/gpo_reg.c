@@ -37,7 +37,7 @@ struct security_token *registry_create_system_token(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	token->privilege_mask = se_priv_all;
+	token->privilege_mask = SE_ALL_PRIVS;
 
 	if (!NT_STATUS_IS_OK(add_sid_to_array(token, &global_sid_System,
 			 &token->sids, &token->num_sids))) {

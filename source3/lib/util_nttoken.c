@@ -56,12 +56,7 @@ struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_t
 		token->num_sids = ptoken->num_sids;
 	}
 	
-	/* copy the privileges; don't consider failure to be critical here */
-	
-	if ( !se_priv_copy( &token->privilege_mask, &ptoken->privilege_mask ) ) {
-		DEBUG(0,("dup_nt_token: Failure to copy privilages!.  "
-			 "Continuing with 0 privileges assigned.\n"));
-	}
+	token->privilege_mask = ptoken->privilege_mask;
 
 	return token;
 }
@@ -108,8 +103,8 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	se_priv_add(&token->privilege_mask, &token_1->privilege_mask);
-	se_priv_add(&token->privilege_mask, &token_2->privilege_mask);
+	token->privilege_mask |= token_1->privilege_mask;
+	token->privilege_mask |= token_2->privilege_mask;
 
 	*token_out = token;
 
