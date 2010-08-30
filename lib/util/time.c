@@ -409,6 +409,15 @@ _PUBLIC_ int64_t usec_time_diff(const struct timeval *tv1, const struct timeval 
 	return (sec_diff * 1000000) + (int64_t)(tv1->tv_usec - tv2->tv_usec);
 }
 
+/**
+  return (tp1 - tp2) in microseconds
+*/
+_PUBLIC_ int64_t nsec_time_diff(const struct timespec *tp1, const struct timespec *tp2)
+{
+	int64_t sec_diff = tp1->tv_sec - tp2->tv_sec;
+	return (sec_diff * 1000000000) + (int64_t)(tp1->tv_nsec - tp2->tv_nsec);
+}
+
 
 /**
   return a zero timeval
