@@ -13,13 +13,6 @@
 loadconfig ctdb
 loadconfig nfs
 
-[ -z "$STATD_SHARED_DIRECTORY" ] && {
-	echo STATD_SHARED_DIRECTORY not configured. statd-callout failed.
-	exit 0
-}
-
-[ -d $STATD_SHARED_DIRECTORY ] || exit 0
-
 [ -z $NFS_HOSTNAME ] && {
 	echo NFS_HOSTNAME is not configured. statd-callout failed.
 	exit 0
@@ -29,20 +22,85 @@ case "$1" in
   add-client)
 	# the callout does not tell us to which ip the client connected
 	# so we must add it to all the ips that we serve
-        for f in $CTDB_BASE/state/statd/ip/*; do
-	    ip=`basename $f`
-	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
-	    touch $STATD_SHARED_DIRECTORY/$ip/$2
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			# not us
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+		/bin/mkdir -p $CTDB_BASE/state/statd/ip/$IP
+		touch $CTDB_BASE/state/statd/ip/$IP/$2
 	done
 	;;
   del-client)
-	# the callout does not tell us to which ip the client connected
-	# so we must add it to all the ips that we serve
-        for f in $CTDB_BASE/state/statd/ip/*; do
-	    ip=`basename $f`
-	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
+	# the callout does not tell us to which ip the client disconnected
+	# so we must remove it from all the ips that we serve
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			# not us
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+		/bin/rm -f $CTDB_BASE/state/statd/ip/$IP/$2
 	done
 	;;
+  updatelocal)
+	# For all IPs we serve, collect info and push to the config database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		rm -f $CTDB_BASE/state/statd/ip/$IP.tar
+		tar cfP $CTDB_BASE/state/statd/ip/$IP.tar $CTDB_BASE/state/statd/ip/$IP
+
+		rm -f $CTDB_BASE/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.rec 2>/dev/null
+		[ "$?" = "0" ] || {
+			# something went wrong,  try storing this data
+			echo No record. Store STATD state data for $IP
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.tar 2>/dev/null
+			continue
+		}
+
+		cmp $CTDB_BASE/state/statd/ip/$IP.tar $CTDB_BASE/state/statd/ip/$IP.rec >/dev/null 2>/dev/null
+		[ "$?" = "0" ] || {
+			# something went wrong,  try storing this data
+			echo Updated record. Store STATD state data for $IP
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.tar 2>/dev/null
+			continue
+		}
+	done
+	;;
+
+  updateremote)
+	# For all IPs we dont serve, pull the state from the database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] && {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		rm -f $CTDB_BASE/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.rec 2>/dev/null
+		[ "$?" = "0" ] || {
+			continue
+		}
+
+		rm -f $CTDB_BASE/state/statd/ip/$IP/*
+		tar xfP $CTDB_BASE/state/statd/ip/$IP.rec
+	done
+	;;
+
   notify)
 	# we must restart the lockmanager (on all nodes) so that we get
 	# a clusterwide grace period (so other clients dont take out
@@ -55,26 +113,19 @@ case "$1" in
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_tw_buckets
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_orphans
 
-	# rebuild the state directory for the local statd to use the correct
-	# state value and to initally send notifications to all clients
+	# Delete the notification list for statd, we dont want it to 
+	# ping any clients
 	rm -f /var/lib/nfs/statd/sm/*
 	rm -f /var/lib/nfs/statd/sm.bak/*
-	cat $STATD_SHARED_DIRECTORY/state >/var/lib/nfs/statd/state
-
 
 	# we must keep a monotonically increasing state variable for the entire
 	# cluster  so state always increases when ip addresses fail from one
 	# node to another
-	[ ! -f $STATD_SHARED_DIRECTORY/state ] && {
-		echo 1 | awk '{printf("%c%c%c%c", $0, $0/256, $0/256/256, $0/256/256/256);}' >$STATD_SHARED_DIRECTORY/state
-	}
-	# read current state
-	STATE=`od -t d4 $STATD_SHARED_DIRECTORY/state | head -1 | sed -e "s/^[0-9]*[^0-9]*//"`
-	# write current state+2 back to the state file
-	# the /2 *2 are to ensure that state is odd. state must be odd.
-	STATE=`expr $STATE "/" 2 "*" 2 "+" 3`
-	echo $STATE | awk '{printf("%c%c%c%c", $0, $0/256, $0/256/256, $0/256/256/256);}' >$STATD_SHARED_DIRECTORY/state
-	
+	# We use epoch and hope the nodes are close enough in clock.
+	# Even numbers mean service is shut down, odd numbers mean
+	# service is started.
+	STATE=`date +"%s"`
+	STATE=`expr "$STATE" "/" "2"`
 
 
 	# we must also let some time pass between stopping and restarting the
@@ -84,17 +135,6 @@ case "$1" in
 	# 
 	startstop_nfslock stop > /dev/null 2>&1
 	sleep 2
-
-	# copy all monitored clients on this node to the local lockmanager
-	for f in `/bin/ls $CTDB_BASE/state/statd/ip/* 2>/dev/null`; do
-	    ip=`basename $f`
-	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
-		for g in `/bin/ls $STATD_SHARED_DIRECTORY/$ip/* 2>/dev/null`; do
-			client=`basename $g`
-			touch /var/lib/nfs/statd/sm/$client
-		done
-	    }
-	done
 
 	# now start lockmanager again with the new state directory.
 	startstop_nfslock start > /dev/null 2>&1
@@ -127,23 +167,23 @@ case "$1" in
 	# Both 2a and 2b are commonly used in lockmanagers since they maximize
 	# probability that the client will accept the statd notify packet and
 	# not just ignore it.
-        for f in `/bin/ls $CTDB_BASE/state/statd/ip/* 2>/dev/null`; do
-	    ip=`basename $f`
-	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
-		for g in `/bin/ls $STATD_SHARED_DIRECTORY/$ip/* 2>/dev/null`; do
-			client=`basename $g`
-#			/bin/rm -f $g
-			# send out notifications from the "correct" address
-			# (the same addresse as where the lock was taken out
-			# on)   some clients require that the source address
-			# matches where the lock was taken out.
-			# also send it both as a name that the client
-			# hopefully can resolve into the server ip and
-			# and also by specifying the raw ip address as name.
-			/usr/bin/smnotify --client=$client --ip=$ip --server=$ip --stateval=$STATE
-			/usr/bin/smnotify --client=$client --ip=$ip --server=$NFS_HOSTNAME --stateval=$STATE
+	# For all IPs we serve, collect info and push to the config database
+	PNN=`ctdb xpnn | sed -e "s/.*://"`
+	ctdb ip -Y | tail -n +2 | while read LINE; do
+		NODE=`echo $LINE | cut -f3 -d:`
+		[ "$NODE" = "$PNN" ] || {
+			continue
+		} 
+		IP=`echo $LINE | cut -f2 -d:`
+
+		ls $CTDB_BASE/state/statd/ip/$IP | while read CLIENT; do
+			rm $CTDB_BASE/state/statd/ip/$IP/$CLIENT
+			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
+			STATE=`expr "$STATE" "+" "1"`
+			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
 		done
-	    }
 	done
 	;;
 esac

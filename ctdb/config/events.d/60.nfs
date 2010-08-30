@@ -4,18 +4,8 @@
 start_nfs() {
 	/bin/mkdir -p $CTDB_BASE/state/nfs
 	/bin/mkdir -p $CTDB_BASE/state/statd/ip
-	/bin/mkdir -p $STATD_SHARED_DIRECTORY
 	startstop_nfs stop
 	startstop_nfs start
-}
-
-reconfigure_nfs() {
-	# always restart the lockmanager so that we start with a clusterwide
-	# graceperiod when ip addresses has changed
-	[ -x $CTDB_BASE/statd-callout ] && {
-		$CTDB_BASE/statd-callout notify &
-	} >/dev/null 2>&1
-
 }
 
 . $CTDB_BASE/functions
@@ -23,17 +13,20 @@ reconfigure_nfs() {
 service_name="nfs"
 service_start="start_nfs"
 service_stop="startstop_nfs stop"
-service_reconfigure="reconfigure_nfs"
 
 loadconfig
 
-[ -z "$STATD_SHARED_DIRECTORY" ] && exit 0
-
 ctdb_start_stop_service
 
+echo XX 60.nfs   $@
+
 case "$1" in 
+     init)
+	# read statd from persistent database
+	;;
      startup)
 	ctdb_service_start
+	touch $CTDB_BASE/state/statd/update-trigger
 	;;
 
      shutdown)
@@ -42,20 +35,10 @@ case "$1" in
 
      takeip)
 	ctdb_service_set_reconfigure
-	touch $CTDB_BASE/state/statd/ip/$3
 	;;
 
      releaseip)
 	ctdb_service_set_reconfigure
-	/bin/rm -f $CTDB_BASE/state/statd/ip/$3
-	;;
-
-     recovered)
-	# if we have taken or released any ips we must 
-	# restart the lock manager so that we enter a clusterwide grace period
-	if ctdb_service_needs_reconfigure ; then
-	    ctdb_service_reconfigure
-	fi
 	;;
 
       monitor)
@@ -95,8 +78,6 @@ case "$1" in
 
 	# check that lockd responds to rpc requests
 	ctdb_check_rpc "lockd" 100021 1
-	echo "$STATD_SHARED_DIRECTORY" | ctdb_check_directories "statd" || \
-	    exit $?
 
 	# mount needs special handling since it is sometimes not started
 	# correctly on RHEL5
@@ -118,8 +99,26 @@ case "$1" in
 		killall -q -9 rpc.rquotad
 		rpc.rquotad $RPCRQUOTADOPTS &
 	}
+
+	# once every 60 seconds, update the statd state database for which
+	# clients need notifications
+	LAST_UPDATE=`stat --printf="%Y" $CTDB_BASE/state/statd/update-trigger`
+	CURRENT_TIME=`date +"%s"`
+	expr "$CURRENT_TIME" ">" "(" "$LAST_UPDATE" "+" "60" ")" >/dev/null 2>/dev/null
+	[ $? = "0" ] && {
+	    touch $CTDB_BASE/state/statd/update-trigger
+	    $CTDB_BASE/statd-callout updatelocal &
+	    $CTDB_BASE/statd-callout updateremote &
+	}
        	;;
 
+    ipreallocated)
+	# if the ips have been reallocated, we must restart the lockmanager
+	# across all nodes and ping all statd listeners
+	[ -x $CTDB_BASE/statd-callout ] && {
+		$CTDB_BASE/statd-callout notify &
+	} >/dev/null 2>&1
+	;;
     *)
 	ctdb_standard_event_handler "$@"
 	;;
