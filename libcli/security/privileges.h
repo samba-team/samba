@@ -75,36 +75,11 @@ bool se_priv_copy( uint64_t *dst, const uint64_t *src );
 
 bool se_priv_put_all_privileges(uint64_t *privilege_mask);
 
-/***************************************************************************
- combine 2 uint64_t structures and store the resulting set in mew_mask
-****************************************************************************/
-
-void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv );
-
-/***************************************************************************
- remove one uint64_t sytucture from another and store the resulting set
- in mew_mask
-****************************************************************************/
-
-void se_priv_remove( uint64_t *privilege_mask, const uint64_t *removepriv );
-
-/***************************************************************************
- check if 2 uint64_t structure are equal
-****************************************************************************/
-
-bool se_priv_equal( const uint64_t *privilege_mask1, const uint64_t *privilege_mask2 );
-
 /*********************************************************************
  Lookup the uint64_t value for a privilege name
 *********************************************************************/
 
 bool se_priv_from_name( const char *name, uint64_t *privilege_mask );
-
-/***************************************************************************
- dump an uint64_t structure to the log files
-****************************************************************************/
-
-void dump_se_priv( int dbg_cl, int dbg_lvl, const uint64_t *privilege_mask );
 
 /****************************************************************************
  check if the privilege is in the privilege list
@@ -138,8 +113,6 @@ int num_privileges_in_short_list( void );
 /****************************************************************************
  Convert a LUID to a named string
 ****************************************************************************/
-
-const char *luid_to_privilege_name(const struct lsa_LUID *set);
 
 bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask );
 bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset );

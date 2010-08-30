@@ -39,20 +39,6 @@
 /* The use of strcasecmp here is safe, all the comparison strings are ASCII */
 #undef strcasecmp
 
-const uint64_t se_priv_all         = SE_ALL_PRIVS;
-
-/* Define variables for all privileges so we can use the
-   uint64_t* in the various se_priv_XXX() functions */
-
-const uint64_t se_priv_none       = SE_NONE;
-const uint64_t se_machine_account = SE_MACHINE_ACCOUNT;
-const uint64_t se_print_operator  = SE_PRINT_OPERATOR;
-const uint64_t se_add_users       = SE_ADD_USERS;
-const uint64_t se_disk_operators  = SE_DISK_OPERATOR;
-const uint64_t se_remote_shutdown = SE_REMOTE_SHUTDOWN;
-const uint64_t se_restore         = SE_RESTORE;
-const uint64_t se_take_ownership  = SE_TAKE_OWNERSHIP;
-
 #define NUM_SHORT_LIST_PRIVS 8
 
 static const struct {
@@ -182,18 +168,19 @@ static const struct {
 	"Remote Interactive logon"}
 };
 
-/***************************************************************************
- copy an uint64_t privilege bitmap
-****************************************************************************/
-
-bool se_priv_copy( uint64_t *dst, const uint64_t *src )
+/*
+  return a privilege mask given a privilege id
+*/
+static uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
-	if ( !dst || !src )
-		return false;
+	int i;
+	for (i=0;i<ARRAY_SIZE(privs);i++) {
+		if (privs[i].luid == privilege) {
+			return privs[i].privilege_mask;
+		}
+	}
 
-	*dst = *src;
-
-	return true;
+	return 0;
 }
 
 /***************************************************************************
@@ -205,69 +192,11 @@ bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 	int i;
 	uint32_t num_privs = ARRAY_SIZE(privs);
 
-	if (!se_priv_copy(privilege_mask, &se_priv_none)) {
-		return false;
-	}
+	*privilege_mask = 0;
 	for ( i=0; i<num_privs; i++ ) {
-		se_priv_add(privilege_mask, &privs[i].privilege_mask);
+		*privilege_mask |= privs[i].privilege_mask;
 	}
 	return true;
-}
-
-/***************************************************************************
- combine 2 uint64_t privilege bitmaps and store the resulting set in new_mask
-****************************************************************************/
-
-void se_priv_add( uint64_t *privilege_mask, const uint64_t *addpriv )
-{
-	*privilege_mask |= *addpriv;
-}
-
-/***************************************************************************
- remove one uint64_t privileges bitmap from another and store the resulting set
- in privilege_mask
-****************************************************************************/
-
-void se_priv_remove( uint64_t *privilege_mask, const uint64_t *removepriv )
-{
-	*privilege_mask &= ~*removepriv;
-}
-
-/***************************************************************************
- invert a given uint64_t and store the set in new_mask
-****************************************************************************/
-
-static void se_priv_invert( uint64_t *new_mask, const uint64_t *privilege_mask )
-{
-	uint64_t allprivs;
-
-	se_priv_copy( &allprivs, &se_priv_all );
-	se_priv_remove( &allprivs, privilege_mask );
-	se_priv_copy( new_mask, &allprivs );
-}
-
-/***************************************************************************
- check if 2 privilege bitmaps (as uint64_t) are equal
-****************************************************************************/
-
-bool se_priv_equal( const uint64_t *privilege_mask1, const uint64_t *privilege_mask2 )
-{
-	return *privilege_mask1 == *privilege_mask2;
-}
-
-/***************************************************************************
- check if a uint64_t has any assigned privileges
-****************************************************************************/
-
-static bool se_priv_empty( const uint64_t *privilege_mask )
-{
-	uint64_t p1;
-
-	se_priv_copy( &p1, privilege_mask );
-
-	p1 &= se_priv_all;
-
-	return se_priv_equal( &p1, &se_priv_none );
 }
 
 /*********************************************************************
@@ -277,87 +206,16 @@ static bool se_priv_empty( const uint64_t *privilege_mask )
 bool se_priv_from_name( const char *name, uint64_t *privilege_mask )
 {
 	int i;
-
 	uint32_t num_privs = ARRAY_SIZE(privs);
-
 	for ( i=0; i<num_privs; i++ ) {
 		if ( strequal( privs[i].name, name ) ) {
-			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
+			*privilege_mask = privs[i].privilege_mask;
 			return true;
 		}
 	}
 
 	return false;
 }
-
-/****************************************************************************
- check if the privilege (by bitmask) is in the privilege list
-****************************************************************************/
-
-bool is_privilege_assigned(const uint64_t *privileges,
-			   const uint64_t *check)
-{
-	uint64_t p1, p2;
-
-	if ( !privileges || !check )
-		return false;
-
-	/* everyone has privileges if you aren't checking for any */
-
-	if ( se_priv_empty( check ) ) {
-		DEBUG(1,("is_privilege_assigned: no privileges in check_mask!\n"));
-		return true;
-	}
-
-	se_priv_copy( &p1, check );
-
-	/* invert the uint64_t we want to check for and remove that from the
-	   original set.  If we are left with the uint64_t we are checking
-	   for then return true */
-
-	se_priv_invert( &p1, check );
-	se_priv_copy( &p2, privileges );
-	se_priv_remove( &p2, &p1 );
-
-	return se_priv_equal( &p2, check );
-}
-
-/****************************************************************************
- check if the any of the privileges (by bitmask) is in the privilege list
-****************************************************************************/
-
-static bool is_any_privilege_assigned( uint64_t *privileges, const uint64_t *check )
-{
-	uint64_t p1, p2;
-
-	if ( !privileges || !check )
-		return false;
-
-	/* everyone has privileges if you aren't checking for any */
-
-	if ( se_priv_empty( check ) ) {
-		DEBUG(1,("is_any_privilege_assigned: no privileges in check_mask!\n"));
-		return true;
-	}
-
-	se_priv_copy( &p1, check );
-
-	/* invert the uint64_t we want to check for and remove that from the
-	   original set.  If we are left with the uint64_t we are checking
-	   for then return true */
-
-	se_priv_invert( &p1, check );
-	se_priv_copy( &p2, privileges );
-	se_priv_remove( &p2, &p1 );
-
-	/* see if we have any bits left */
-
-	return !se_priv_empty( &p2 );
-}
-
-/*********************************************************************
- Generate the struct lsa_LUIDAttribute structure based on a bitmask
-*********************************************************************/
 
 const char* get_privilege_dispname( const char *name )
 {
@@ -376,36 +234,6 @@ const char* get_privilege_dispname( const char *name )
 	}
 
 	return NULL;
-}
-
-/****************************************************************************
- initialise a privilege list and set the talloc context
- ****************************************************************************/
-
-/****************************************************************************
- Does the user have the specified privilege ?  We only deal with one privilege
- at a time here.
-*****************************************************************************/
-
-bool user_has_privileges(const struct security_token *token, const uint64_t *privilege_bit)
-{
-	if ( !token )
-		return false;
-
-	return is_privilege_assigned( &token->privilege_mask, privilege_bit );
-}
-
-/****************************************************************************
- Does the user have any of the specified privileges ?  We only deal with one privilege
- at a time here.
-*****************************************************************************/
-
-bool user_has_any_privilege(struct security_token *token, const uint64_t *privilege_mask)
-{
-	if ( !token )
-		return false;
-
-	return is_any_privilege_assigned( &token->privilege_mask, privilege_mask );
 }
 
 /*******************************************************************
@@ -544,20 +372,6 @@ enum sec_privilege sec_privilege_id(const char *name)
 }
 
 /*
-  map a privilege name to a privilege id. Return -1 if not found
-*/
-enum sec_privilege sec_privilege_from_mask(uint64_t mask)
-{
-	int i;
-	for (i=0;i<ARRAY_SIZE(privs);i++) {
-		if (privs[i].privilege_mask == mask) {
-			return privs[i].luid;
-		}
-	}
-	return -1;
-}
-
-/*
   assist in walking the table of privileges - return the LUID (low 32 bits) by index
 */
 enum sec_privilege sec_privilege_from_index(int idx)
@@ -579,21 +393,6 @@ const char *sec_privilege_name_from_index(int idx)
 	return NULL;
 }
 
-
-/*
-  return a privilege mask given a privilege id
-*/
-static uint64_t sec_privilege_mask(enum sec_privilege privilege)
-{
-	int i;
-	for (i=0;i<ARRAY_SIZE(privs);i++) {
-		if (privs[i].luid == privilege) {
-			return privs[i].privilege_mask;
-		}
-	}
-
-	return 0;
-}
 
 
 /*
