@@ -45,7 +45,7 @@ NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
 	}
 	token->privileges = se_disk_operators;
 	status = add_sid_to_array(token, &global_sid_Builtin_Administrators,
-				  &token->user_sids, &token->num_sids);
+				  &token->sids, &token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error adding builtin administrators sid "
 			  "to fake token.\n"));

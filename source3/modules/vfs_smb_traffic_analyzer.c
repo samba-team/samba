@@ -330,7 +330,7 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	 * anonymized if needed, by the calling function.
 	 */
 	usersid = dom_sid_string( common_data_count_str,
-		&handle->conn->server_info->ptok->user_sids[0]);
+		&handle->conn->server_info->ptok->sids[0]);
 
 	sidstr = smb_traffic_analyzer_anonymize(
 		common_data_count_str,

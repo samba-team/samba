@@ -673,7 +673,7 @@ bool is_sid_in_token(const NT_USER_TOKEN *token, const struct dom_sid *sid)
         int i;
 
         for (i=0; i<token->num_sids; i++) {
-                if (sid_compare(sid, &token->user_sids[i]) == 0)
+                if (sid_compare(sid, &token->sids[i]) == 0)
                         return true;
         }
         return false;

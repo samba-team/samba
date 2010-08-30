@@ -759,7 +759,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 		status = find_forced_group(
 			conn->force_user, snum, conn->server_info->unix_name,
-			&conn->server_info->ptok->user_sids[1],
+			&conn->server_info->ptok->sids[1],
 			&conn->server_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {

@@ -325,14 +325,14 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 						conn->force_group_gid;
 					gid = conn->force_group_gid;
 					gid_to_sid(&conn->server_info->ptok
-						   ->user_sids[1], gid);
+						   ->sids[1], gid);
 					break;
 				}
 			}
 		} else {
 			conn->server_info->utok.gid = conn->force_group_gid;
 			gid = conn->force_group_gid;
-			gid_to_sid(&conn->server_info->ptok->user_sids[1],
+			gid_to_sid(&conn->server_info->ptok->sids[1],
 				   gid);
 		}
 	}

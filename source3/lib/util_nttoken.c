@@ -44,11 +44,11 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 		return NULL;
 	}
 
-	if (ptoken->user_sids && ptoken->num_sids) {
-		token->user_sids = (struct dom_sid *)talloc_memdup(
-			token, ptoken->user_sids, sizeof(struct dom_sid) * ptoken->num_sids );
+	if (ptoken->sids && ptoken->num_sids) {
+		token->sids = (struct dom_sid *)talloc_memdup(
+			token, ptoken->sids, sizeof(struct dom_sid) * ptoken->num_sids );
 
-		if (token->user_sids == NULL) {
+		if (token->sids == NULL) {
 			DEBUG(0, ("talloc_memdup failed\n"));
 			TALLOC_FREE(token);
 			return NULL;
@@ -88,8 +88,8 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < token_1->num_sids; i++) {
 		status = add_sid_to_array_unique(mem_ctx,
-						 &token_1->user_sids[i],
-						 &token->user_sids,
+						 &token_1->sids[i],
+						 &token->sids,
 						 &token->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(token);
@@ -99,8 +99,8 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < token_2->num_sids; i++) {
 		status = add_sid_to_array_unique(mem_ctx,
-						 &token_2->user_sids[i],
-						 &token->user_sids,
+						 &token_2->sids[i],
+						 &token->sids,
 						 &token->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(token);
@@ -125,7 +125,7 @@ bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace
 	size_t i;
 
 	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->trustee, &token->user_sids[i]))
+		if (sid_equal(&ace->trustee, &token->sids[i]))
 			return true;
 	}
 

@@ -303,7 +303,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 	}
 
 	status = sid_array_from_info3(talloc_tos(), info3,
-				      &token->user_sids,
+				      &token->sids,
 				      &token->num_sids,
 				      true, false);
 	if (!NT_STATUS_IS_OK(status)) {

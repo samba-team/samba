@@ -405,12 +405,12 @@ static NTSTATUS log_nt_token(NT_USER_TOKEN *token)
 	for (i=1; i<token->num_sids; i++) {
 		group_sidstr = talloc_asprintf(
 			frame, "%s %s", group_sidstr,
-			sid_string_talloc(frame, &token->user_sids[i]));
+			sid_string_talloc(frame, &token->sids[i]));
 	}
 
 	command = talloc_string_sub(
 		frame, lp_log_nt_token_command(),
-		"%s", sid_string_talloc(frame, &token->user_sids[0]));
+		"%s", sid_string_talloc(frame, &token->sids[0]));
 	command = talloc_string_sub(frame, command, "%t", group_sidstr);
 
 	if (command == NULL) {
@@ -477,7 +477,7 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 
 	for (i=1; i<server_info->ptok->num_sids; i++) {
 		gid_t gid;
-		struct dom_sid *sid = &server_info->ptok->user_sids[i];
+		struct dom_sid *sid = &server_info->ptok->sids[i];
 
 		if (!sid_to_gid(sid, &gid)) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
@@ -505,13 +505,13 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 	uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid);
 
 	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
-				&server_info->ptok->user_sids,
+				&server_info->ptok->sids,
 				&server_info->ptok->num_sids);
 
 	for ( i=0; i<server_info->utok.ngroups; i++ ) {
 		gid_to_unix_groups_sid(server_info->utok.groups[i], &tmp_sid);
 		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
-					&server_info->ptok->user_sids,
+					&server_info->ptok->sids,
 					&server_info->ptok->num_sids);
 	}
 

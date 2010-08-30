@@ -42,7 +42,7 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const NT_USER_TOKEN *token 
 		return False;
 
 	for ( i=0; i<token->num_sids; i++ ) {
-		if ( sid_equal( sid, &token->user_sids[i] ) )
+		if ( sid_equal( sid, &token->sids[i] ) )
 			return True;
 	}
 
@@ -144,7 +144,7 @@ NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 	num_aliases = 0;
 
 	status = pdb_enum_alias_memberships(tmp_ctx, domain_sid,
-					    token->user_sids,
+					    token->sids,
 					    token->num_sids,
 					    &aliases, &num_aliases);
 
@@ -158,7 +158,7 @@ NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		struct dom_sid alias_sid;
 		sid_compose(&alias_sid, domain_sid, aliases[i]);
 		status = add_sid_to_array_unique(token, &alias_sid,
-						 &token->user_sids,
+						 &token->sids,
 						 &token->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
@@ -200,7 +200,7 @@ static NTSTATUS add_builtin_administrators(struct nt_user_token *token,
 	if ( nt_token_check_sid( &domadm, token ) ) {
 		status = add_sid_to_array(token,
 					  &global_sid_Builtin_Administrators,
-					  &token->user_sids, &token->num_sids);
+					  &token->sids, &token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -365,8 +365,8 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 	/* check if the user rid is the special "Domain Guests" rid.
 	 * If so pick the first sid for the extra sids instead as it
 	 * is a local fake account */
-	usrtok->user_sids = talloc_array(usrtok, struct dom_sid, 2);
-	if (!usrtok->user_sids) {
+	usrtok->sids = talloc_array(usrtok, struct dom_sid, 2);
+	if (!usrtok->sids) {
 		TALLOC_FREE(usrtok);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -383,10 +383,10 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(usrtok);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		sid_copy(&usrtok->user_sids[0], &extra->user_sid);
+		sid_copy(&usrtok->sids[0], &extra->user_sid);
 	} else {
-		sid_copy(&usrtok->user_sids[0], info3->base.domain_sid);
-		sid_append_rid(&usrtok->user_sids[0], info3->base.rid);
+		sid_copy(&usrtok->sids[0], info3->base.domain_sid);
+		sid_append_rid(&usrtok->sids[0], info3->base.rid);
 	}
 
 	/* GROUP SID */
@@ -400,10 +400,10 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(usrtok);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		sid_copy(&usrtok->user_sids[1], &extra->pgid_sid);
+		sid_copy(&usrtok->sids[1], &extra->pgid_sid);
 	} else {
-		sid_copy(&usrtok->user_sids[1], info3->base.domain_sid);
-		sid_append_rid(&usrtok->user_sids[1],
+		sid_copy(&usrtok->sids[1], info3->base.domain_sid);
+		sid_append_rid(&usrtok->sids[1],
 				info3->base.primary_gid);
 	}
 
@@ -420,7 +420,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 		sid_append_rid(&tmp_sid, info3->base.groups.rids[i].rid);
 
 		status = add_sid_to_array_unique(usrtok, &tmp_sid,
-						 &usrtok->user_sids,
+						 &usrtok->sids,
 						 &usrtok->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Failed to add SID to nt token\n"));
@@ -434,7 +434,7 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < info3->sidcount; i++) {
 		status = add_sid_to_array_unique(usrtok,
 						 info3->sids[i].sid,
-						 &usrtok->user_sids,
+						 &usrtok->sids,
 						 &usrtok->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Failed to add SID to nt token\n"));
@@ -479,7 +479,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	/* Add the user and primary group sid */
 
 	status = add_sid_to_array(result, user_sid,
-				  &result->user_sids, &result->num_sids);
+				  &result->sids, &result->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
 		return NULL;
@@ -488,7 +488,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	/* For guest, num_groupsids may be zero. */
 	if (num_groupsids) {
 		status = add_sid_to_array(result, &groupsids[0],
-					  &result->user_sids,
+					  &result->sids,
 					  &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(result);
@@ -504,7 +504,7 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 	for (i=1; i<num_groupsids; i++) {
 		status = add_sid_to_array_unique(result, &groupsids[i],
-						 &result->user_sids,
+						 &result->sids,
 						 &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(result);
@@ -531,19 +531,19 @@ static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
 	/* Add in BUILTIN sids */
 
 	status = add_sid_to_array(result, &global_sid_World,
-				  &result->user_sids, &result->num_sids);
+				  &result->sids, &result->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	status = add_sid_to_array(result, &global_sid_Network,
-				  &result->user_sids, &result->num_sids);
+				  &result->sids, &result->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	if (is_guest) {
 		status = add_sid_to_array(result, &global_sid_Builtin_Guests,
-					  &result->user_sids,
+					  &result->sids,
 					  &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -551,7 +551,7 @@ static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
 	} else {
 		status = add_sid_to_array(result,
 					  &global_sid_Authenticated_Users,
-					  &result->user_sids,
+					  &result->sids,
 					  &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -642,7 +642,7 @@ static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
 
 	/* Add privileges based on current user sids */
 
-	get_privileges_for_sids(&result->privileges, result->user_sids,
+	get_privileges_for_sids(&result->privileges, result->sids,
 				result->num_sids);
 
 	return NT_STATUS_OK;
@@ -663,13 +663,13 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 
 	DEBUGC(dbg_class, dbg_lev,
 	       ("NT user token of user %s\n",
-		sid_string_dbg(&token->user_sids[0]) ));
+		sid_string_dbg(&token->sids[0]) ));
 	DEBUGADDC(dbg_class, dbg_lev,
 		  ("contains %lu SIDs\n", (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev,
 			  ("SID[%3lu]: %s\n", (unsigned long)i,
-			   sid_string_dbg(&token->user_sids[i])));
+			   sid_string_dbg(&token->sids[i])));
 
 	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
 }

@@ -4118,21 +4118,21 @@ static void init_user_token(NT_USER_TOKEN *token, struct dom_sid *user_sid)
 {
 	token->num_sids = 4;
 
-	if (!(token->user_sids = SMB_MALLOC_ARRAY(struct dom_sid, 4))) {
+	if (!(token->sids = SMB_MALLOC_ARRAY(struct dom_sid, 4))) {
 		d_fprintf(stderr, "malloc %s\n",_("failed"));
 		token->num_sids = 0;
 		return;
 	}
 
-	token->user_sids[0] = *user_sid;
-	sid_copy(&token->user_sids[1], &global_sid_World);
-	sid_copy(&token->user_sids[2], &global_sid_Network);
-	sid_copy(&token->user_sids[3], &global_sid_Authenticated_Users);
+	token->sids[0] = *user_sid;
+	sid_copy(&token->sids[1], &global_sid_World);
+	sid_copy(&token->sids[2], &global_sid_Network);
+	sid_copy(&token->sids[3], &global_sid_Authenticated_Users);
 }
 
 static void free_user_token(NT_USER_TOKEN *token)
 {
-	SAFE_FREE(token->user_sids);
+	SAFE_FREE(token->sids);
 }
 
 static void add_sid_to_token(NT_USER_TOKEN *token, struct dom_sid *sid)
@@ -4140,12 +4140,12 @@ static void add_sid_to_token(NT_USER_TOKEN *token, struct dom_sid *sid)
 	if (is_sid_in_token(token, sid))
 		return;
 
-	token->user_sids = SMB_REALLOC_ARRAY(token->user_sids, struct dom_sid, token->num_sids+1);
-	if (!token->user_sids) {
+	token->sids = SMB_REALLOC_ARRAY(token->sids, struct dom_sid, token->num_sids+1);
+	if (!token->sids) {
 		return;
 	}
 
-	sid_copy(&token->user_sids[token->num_sids], sid);
+	sid_copy(&token->sids[token->num_sids], sid);
 
 	token->num_sids += 1;
 }
@@ -4162,7 +4162,7 @@ static void dump_user_token(struct user_token *token)
 	d_printf("%s\n", token->name);
 
 	for (i=0; i<token->token.num_sids; i++) {
-		d_printf(" %s\n", sid_string_tos(&token->token.user_sids[i]));
+		d_printf(" %s\n", sid_string_tos(&token->token.sids[i]));
 	}
 }
 
@@ -4201,7 +4201,7 @@ static void collect_alias_memberships(NT_USER_TOKEN *token)
 	int i;
 
 	for (i=0; i<num_global_sids; i++) {
-		collect_sid_memberships(token, token->user_sids[i]);
+		collect_sid_memberships(token, token->sids[i]);
 	}
 }
 
@@ -4410,7 +4410,7 @@ static bool get_user_tokens_from_file(FILE *f,
 
 		fstrcpy(token->name, line);
 		token->token.num_sids = 0;
-		token->token.user_sids = NULL;
+		token->token.sids = NULL;
 		continue;
 	}
 	
