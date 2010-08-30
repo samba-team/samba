@@ -19,8 +19,6 @@ loadconfig
 
 ctdb_start_stop_service
 
-echo XX 60.nfs   $@
-
 case "$1" in 
      init)
 	# read statd from persistent database
