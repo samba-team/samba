@@ -20,7 +20,9 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/common/common.h"
 #include "messaging/irpc.h"
 
 struct dcesrv_forward_state {
@@ -31,18 +33,21 @@ struct dcesrv_forward_state {
 /*
   called when the forwarded rpc request is finished
  */
-static void dcesrv_irpc_forward_callback(struct irpc_request *ireq)
+static void dcesrv_irpc_forward_callback(struct tevent_req *subreq)
 {
-	struct dcesrv_forward_state *st = talloc_get_type(ireq->async.private_data, 
-							  struct dcesrv_forward_state);
+	struct dcesrv_forward_state *st =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_forward_state);
 	const char *opname = st->opname;
 	NTSTATUS status;
-	if (!NT_STATUS_IS_OK(ireq->status)) {
+
+	status = dcerpc_binding_handle_call_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("IRPC callback failed for %s - %s\n",
-			 opname, nt_errstr(ireq->status)));
+			 opname, nt_errstr(status)));
 		st->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
 	}
-	talloc_free(ireq);
 	status = dcesrv_reply(st->dce_call);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s_handler: dcesrv_reply() failed - %s\n",
@@ -60,9 +65,9 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 				  const struct ndr_interface_table *ndr_table,
 				  const char *dest_task, const char *opname)
 {
-	struct server_id *sid;
-	struct irpc_request *ireq;
 	struct dcesrv_forward_state *st;
+	struct dcerpc_binding_handle *binding_handle;
+	struct tevent_req *subreq;
 
 	st = talloc(mem_ctx, struct dcesrv_forward_state);
 	if (st == NULL) {
@@ -82,17 +87,22 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return;
 	}
 
-	/* find the server task */
-	sid = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, dest_task);
-	if (sid == NULL || sid[0].id == 0) {
-		DEBUG(0,("%s: Unable to find %s task\n", dest_task, opname));
+	binding_handle = irpc_binding_handle_by_name(st, dce_call->msg_ctx,
+						     dest_task, ndr_table);
+	if (binding_handle == NULL) {
+		DEBUG(0,("%s: Failed to forward request to %s task\n",
+			 opname, dest_task));
 		dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
 
 	/* forward the call */
-	ireq = irpc_call_send(dce_call->msg_ctx, sid[0], ndr_table, callid, r, mem_ctx);
-	if (ireq == NULL) {
+	subreq = dcerpc_binding_handle_call_send(st, dce_call->event_ctx,
+						 binding_handle,
+						 NULL, ndr_table,
+						 callid,
+						 dce_call, r);
+	if (subreq == NULL) {
 		DEBUG(0,("%s: Failed to forward request to %s task\n", 
 			 opname, dest_task));
 		dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
@@ -103,6 +113,5 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 
 	/* setup the callback */
-	ireq->async.fn = dcesrv_irpc_forward_callback;
-	ireq->async.private_data = st;
+	tevent_req_set_callback(subreq, dcesrv_irpc_forward_callback, st);
 }
