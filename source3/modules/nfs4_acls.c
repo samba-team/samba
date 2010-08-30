@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "include/dbwrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
