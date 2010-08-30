@@ -451,36 +451,6 @@ NTSTATUS privilege_delete_account(const struct dom_sid *sid)
 	return dbwrap_delete_bystring(db, keystr);
 }
 
-/****************************************************************************
- duplicate alloc luid_attr
- ****************************************************************************/
-
-NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, struct lsa_LUIDAttribute **new_la, struct lsa_LUIDAttribute *old_la, int count)
-{
-	int i;
-
-	if ( !old_la )
-		return NT_STATUS_OK;
-
-	if (count) {
-		*new_la = TALLOC_ARRAY(mem_ctx, struct lsa_LUIDAttribute, count);
-		if ( !*new_la ) {
-			DEBUG(0,("dup_luid_attr: failed to alloc new struct lsa_LUIDAttribute array [%d]\n", count));
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		*new_la = NULL;
-	}
-
-	for (i=0; i<count; i++) {
-		(*new_la)[i].luid.high = old_la[i].luid.high;
-		(*new_la)[i].luid.low = old_la[i].luid.low;
-		(*new_la)[i].attribute = old_la[i].attribute;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /*******************************************************************
 *******************************************************************/
 
