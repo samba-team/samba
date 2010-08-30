@@ -157,7 +157,7 @@ export CC
 CC_SAVE="$CC"
 CC="$CC -m32"
 
-CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32" ./configure \
+CFLAGS="$RPM_OPT_FLAGS -O3 -D_GNU_SOURCE -m32" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
         --with-configdir=%{_sysconfdir}/samba \
