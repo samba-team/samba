@@ -2075,14 +2075,13 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	WERROR result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	/* If user is NULL then use the current_user structure */
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
 	if (server_info->utok.uid == sec_initial_uid()
-	    || user_has_privileges(server_info->ptok, &se_printop ) ) {
+	    || security_token_has_privilege(server_info->ptok, SEC_PRIV_PRINT_OPERATOR)) {
 		return True;
 	}
 

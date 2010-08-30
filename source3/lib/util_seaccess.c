@@ -113,7 +113,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 
 	if (is_sid_in_token(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	} else if (user_has_privileges(token, &se_restore)) {
+	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		granted |= SEC_STD_DELETE;
 	}
 
@@ -203,7 +203,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
 	}
 	if ((bits_remaining & SEC_STD_DELETE) &&
-	    user_has_privileges(token, &se_restore)) {
+	    (security_token_has_privilege(token, SEC_PRIV_RESTORE))) {
 		bits_remaining &= ~SEC_STD_DELETE;
 	}
 

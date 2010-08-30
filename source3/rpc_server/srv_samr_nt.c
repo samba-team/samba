@@ -574,7 +574,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	 * Users with SeAddUser get the ability to manipulate groups
 	 * and aliases.
 	 */
-	if (user_has_any_privilege(p->server_info->ptok, &se_add_users)) {
+	if (security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS)) {
 		extra_access |= (SAMR_DOMAIN_ACCESS_CREATE_GROUP |
 				SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
 				SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |

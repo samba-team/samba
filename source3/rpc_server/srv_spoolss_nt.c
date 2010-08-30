@@ -364,7 +364,6 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	char *cmd = lp_deleteprinter_cmd();
 	char *command = NULL;
 	int ret;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	/* can't fail if we don't try */
@@ -379,7 +378,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 		return WERR_NOMEM;
 	}
 	if ( token )
-		is_print_op = user_has_privileges( token, &se_printop );
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -1743,8 +1742,6 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		if ( r->in.access_mask & SERVER_ACCESS_ADMINISTER )
 		{
-			uint64_t se_printop = SE_PRINT_OPERATOR;
-
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
@@ -1755,8 +1752,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			   and not a printer admin, then fail */
 
 			if ((p->server_info->utok.uid != sec_initial_uid()) &&
-			    !user_has_privileges(p->server_info->ptok,
-						 &se_printop ) &&
+			    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 			    !token_contains_name_in_list(
 				    uidtoname(p->server_info->utok.uid),
 				    p->server_info->info3->base.domain.string,
@@ -1995,13 +1991,12 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
-	uint64_t                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-		&& !user_has_privileges(p->server_info->ptok, &se_printop )
+	     && !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
@@ -2101,13 +2096,12 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	int				version;
 	bool				delete_files;
 	WERROR				status;
-	uint64_t                         se_printop = SE_PRINT_OPERATOR;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-		&& !user_has_privileges(p->server_info->ptok, &se_printop )
+		&& !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
@@ -5864,7 +5858,6 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const
 	char *cmd = lp_addport_cmd();
 	char *command = NULL;
 	int ret;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	if ( !*cmd ) {
@@ -5878,7 +5871,7 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const
 	}
 
 	if ( token )
-		is_print_op = user_has_privileges( token, &se_printop );
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -5919,7 +5912,6 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	int numlines;
 	int ret;
 	int fd;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 	bool is_print_op = false;
 
 	if (!remote_machine) {
@@ -5936,7 +5928,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	}
 
 	if ( token )
-		is_print_op = user_has_privileges( token, &se_printop );
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -8248,7 +8240,6 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
@@ -8264,8 +8255,8 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
-	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
+	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
 					  p->server_info->ptok,
@@ -8322,7 +8313,6 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -8333,8 +8323,8 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	}
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
-	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
+	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
 					  p->server_info->ptok,
@@ -8382,7 +8372,6 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
-	uint64_t se_printop = SE_PRINT_OPERATOR;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
@@ -8398,7 +8387,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
+	     !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,

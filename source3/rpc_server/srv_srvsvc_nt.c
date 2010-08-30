@@ -1535,7 +1535,6 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	int ret;
 	char *path = NULL;
 	struct security_descriptor *psd = NULL;
-	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op = False;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1572,7 +1571,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
+	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	/* fail out now if you are not root and not a disk op */
 
@@ -1764,7 +1763,6 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	int ret;
 	char *path;
 	struct security_descriptor *psd = NULL;
-	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 	int max_connections = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1775,7 +1773,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
+	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -1941,7 +1939,6 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	char *share_name = NULL;
 	int ret;
 	int snum;
-	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 	struct share_params *params;
 	TALLOC_CTX *ctx = p->mem_ctx;
@@ -1969,7 +1966,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
+	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -2517,12 +2514,11 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 			    struct srvsvc_NetFileClose *r)
 {
 	struct enum_file_close_state state;
-	uint64_t se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
+	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
