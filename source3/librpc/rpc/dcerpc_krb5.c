@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "secrets.h"
+#include "librpc/rpc/dcerpc_krb5.h"
 
 #ifdef HAVE_KRB5
 
