@@ -1401,3 +1401,35 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 
 	return h;
 }
+
+struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
+					struct messaging_context *msg_ctx,
+					const char *dest_task,
+					const struct ndr_interface_table *table)
+{
+	struct dcerpc_binding_handle *h;
+	struct server_id *sids;
+	struct server_id sid;
+
+	/* find the server task */
+	sids = irpc_servers_byname(msg_ctx, mem_ctx, dest_task);
+	if (sids == NULL) {
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+	if (sids[0].id == 0) {
+		talloc_free(sids);
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+	sid = sids[0];
+	talloc_free(sids);
+
+	h = irpc_binding_handle(mem_ctx, msg_ctx,
+				sid, table);
+	if (h == NULL) {
+		return NULL;
+	}
+
+	return h;
+}

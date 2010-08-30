@@ -102,6 +102,10 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 					struct messaging_context *msg_ctx,
 					struct server_id server_id,
 					const struct ndr_interface_table *table);
+struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
+					struct messaging_context *msg_ctx,
+					const char *dest_task,
+					const struct ndr_interface_table *table);
 
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, TALLOC_CTX *mem_ctx, const char *name);
