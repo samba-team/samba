@@ -356,11 +356,8 @@ struct timeval convert_timespec_to_timeval(const struct timespec ts)
 
 struct timespec timespec_current(void)
 {
-	struct timeval tv;
 	struct timespec ts;
-	GetTimeOfDay(&tv);
-	ts.tv_sec = tv.tv_sec;
-	ts.tv_nsec = tv.tv_usec * 1000;
+	clock_gettime(CLOCK_REALTIME, &ts);
 	return ts;
 }
 
