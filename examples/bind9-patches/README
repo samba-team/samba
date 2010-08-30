@@ -1,3 +1,9 @@
+NOTE! These patches are now incorporated in bind9 releases from
+9.7.2RC1 and onwards. You no longer need a patched version of bind9 to
+work with krb5 DNS updates and Samba4.
+
+---------------------------------
+
 These patches fix the TSIG-GSS dynamic DNS updates in bind9 to allow
 dynamic updates to work with recent windows versions.
 
