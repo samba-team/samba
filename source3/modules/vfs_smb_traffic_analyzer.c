@@ -421,7 +421,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	}
 
 	GetTimeOfDay(&tv);
-	tv_sec = convert_timespec_to_time_t(convert_timeval_to_timespec(tv));
+	tv_sec = tv.tv_sec;
 	tm = localtime(&tv_sec);
 	if (!tm) {
 		return;
