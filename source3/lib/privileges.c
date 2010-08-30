@@ -280,7 +280,7 @@ NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
  Add privilege to sid
 ****************************************************************************/
 
-bool grant_privilege(const struct dom_sid *sid, const uint64_t priv_mask)
+static bool grant_privilege_bitmap(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t old_mask, new_mask;
 
@@ -317,14 +317,27 @@ bool grant_privilege_by_name(struct dom_sid *sid, const char *name)
 		return False;
 	}
 
-	return grant_privilege( sid, mask );
+	return grant_privilege_bitmap( sid, mask );
+}
+
+/***************************************************************************
+ Grant a privilege set (list of LUID values) from a sid
+****************************************************************************/
+
+bool grant_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *set)
+{
+	uint64_t privilege_mask;
+	if (!privilege_set_to_se_priv(&privilege_mask, set)) {
+		return false;
+	}
+	return grant_privilege_bitmap(sid, privilege_mask);
 }
 
 /***************************************************************************
  Remove privilege from sid
 ****************************************************************************/
 
-bool revoke_privilege(const struct dom_sid *sid, const uint64_t priv_mask)
+static bool revoke_privilege_bitmap(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t mask;
 
@@ -344,13 +357,26 @@ bool revoke_privilege(const struct dom_sid *sid, const uint64_t priv_mask)
 	return set_privileges( sid, &mask );
 }
 
+/***************************************************************************
+ Remove a privilege set (list of LUID values) from a sid
+****************************************************************************/
+
+bool revoke_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *set)
+{
+	uint64_t privilege_mask;
+	if (!privilege_set_to_se_priv(&privilege_mask, set)) {
+		return false;
+	}
+	return revoke_privilege_bitmap(sid, privilege_mask);
+}
+
 /*********************************************************************
  Revoke all privileges
 *********************************************************************/
 
 bool revoke_all_privileges( struct dom_sid *sid )
 {
-	return revoke_privilege( sid, SE_ALL_PRIVS);
+	return revoke_privilege_bitmap( sid, SE_ALL_PRIVS);
 }
 
 /*********************************************************************
@@ -367,7 +393,7 @@ bool revoke_privilege_by_name(struct dom_sid *sid, const char *name)
         	return False;
 	}
 
-	return revoke_privilege(sid, mask);
+	return revoke_privilege_bitmap(sid, mask);
 
 }
 
@@ -377,7 +403,7 @@ bool revoke_privilege_by_name(struct dom_sid *sid, const char *name)
 
 NTSTATUS privilege_create_account(const struct dom_sid *sid )
 {
-	return ( grant_privilege(sid, 0) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	return ( grant_privilege_bitmap(sid, 0) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
 }
 
 /***************************************************************************
@@ -509,5 +535,5 @@ bool grant_all_privileges( const struct dom_sid *sid )
 		return False;
 	}
 
-	return grant_privilege( sid, mask );
+	return grant_privilege_bitmap( sid, mask );
 }

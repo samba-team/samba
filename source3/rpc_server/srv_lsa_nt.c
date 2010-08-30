@@ -1990,7 +1990,6 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 				     struct lsa_AddPrivilegesToAccount *r)
 {
 	struct lsa_info *info = NULL;
-	uint64_t mask;
 	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
@@ -2006,13 +2005,10 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 	}
 
 	set = r->in.privs;
-	if ( !privilege_set_to_se_priv( &mask, set ) )
-		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
-	if ( !grant_privilege( &info->sid, mask ) ) {
-		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege(%s) failed!\n",
+	if ( !grant_privilege_set( &info->sid, set ) ) {
+		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege_set(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
-		DEBUG(3,("Privilege mask: 0x%llx\n", (unsigned long long)mask));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -2028,7 +2024,6 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(struct pipes_struct *p,
 					  struct lsa_RemovePrivilegesFromAccount *r)
 {
 	struct lsa_info *info = NULL;
-	uint64_t mask;
 	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
@@ -2045,13 +2040,9 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(struct pipes_struct *p,
 
 	set = r->in.privs;
 
-	if ( !privilege_set_to_se_priv( &mask, set ) )
-		return NT_STATUS_NO_SUCH_PRIVILEGE;
-
-	if ( !revoke_privilege( &info->sid, mask ) ) {
+	if ( !revoke_privilege_set( &info->sid, set) ) {
 		DEBUG(3,("_lsa_RemovePrivilegesFromAccount: revoke_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
-		DEBUG(3,("Privilege mask: 0x%llx\n", (unsigned long long)mask));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 

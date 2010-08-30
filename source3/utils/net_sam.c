@@ -692,7 +692,6 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
-	uint64_t mask;
 	int i;
 
 	if (argc < 2 || c->display_usage) {
@@ -709,12 +708,13 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	}
 
 	for (i=1; i < argc; i++) {
-		if (!se_priv_from_name(argv[i], &mask)) {
+		enum sec_privilege privilege = sec_privilege_id(argv[i]);
+		if (privilege == SEC_PRIV_INVALID) {
 			d_fprintf(stderr, _("%s unknown\n"), argv[i]);
 			return -1;
 		}
 
-		if (!grant_privilege(&sid, mask)) {
+		if (!grant_privilege_by_name(&sid, argv[i])) {
 			d_fprintf(stderr, _("Could not grant privilege\n"));
 			return -1;
 		}
@@ -731,7 +731,6 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
-	uint64_t mask;
 	int i;
 
 	if (argc < 2 || c->display_usage) {
@@ -748,13 +747,13 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 	}
 
 	for (i=1; i < argc; i++) {
-
-		if (!se_priv_from_name(argv[i], &mask)) {
+		enum sec_privilege privilege = sec_privilege_id(argv[i]);
+		if (privilege == SEC_PRIV_INVALID) {
 			d_fprintf(stderr, _("%s unknown\n"), argv[i]);
 			return -1;
 		}
 
-		if (!revoke_privilege(&sid, mask)) {
+		if (!revoke_privilege_by_name(&sid, argv[i])) {
 			d_fprintf(stderr, _("Could not revoke privilege\n"));
 			return -1;
 		}
