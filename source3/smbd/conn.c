@@ -321,7 +321,13 @@ void conn_free(connection_struct *conn)
 
 	DLIST_REMOVE(conn->sconn->smb1.tcons.Connections, conn);
 
-	bitmap_clear(conn->sconn->smb1.tcons.bmap, conn->cnum);
+	if (conn->sconn->smb1.tcons.bmap != NULL) {
+		/*
+		 * Can be NULL for fake connections created by
+		 * create_conn_struct()
+		 */
+		bitmap_clear(conn->sconn->smb1.tcons.bmap, conn->cnum);
+	}
 
 	SMB_ASSERT(conn->sconn->smb1.tcons.num_open > 0);
 	conn->sconn->smb1.tcons.num_open--;
