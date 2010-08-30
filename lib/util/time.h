@@ -149,6 +149,11 @@ _PUBLIC_ NTTIME nttime_from_string(const char *s);
 _PUBLIC_ int64_t usec_time_diff(const struct timeval *tv1, const struct timeval *tv2);
 
 /**
+  return (tp1 - tp2) in nanoseconds
+*/
+_PUBLIC_ int64_t nsec_time_diff(const struct timespec *tp1, const struct timespec *tp2);
+
+/**
   return a zero timeval
 */
 _PUBLIC_ struct timeval timeval_zero(void);
