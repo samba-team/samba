@@ -1748,7 +1748,7 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 	nk.unknown_offset = -1;
 	nk.num_values = 0;
 	nk.values_offset = -1;
-	memset(nk.unk3, 0, 5);
+	memset(nk.unk3, 0, sizeof(nk.unk3));
 	nk.clsname_offset = -1; /* FIXME: fill in */
 	nk.clsname_length = 0;
 	nk.key_name = name;
