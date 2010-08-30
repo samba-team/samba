@@ -153,6 +153,15 @@ values
   (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
 	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
 
+/*******************************************************************
+find the difference in milliseconds between two struct timespec
+values
+********************************************************************/
+
+#define TspecDiff(tvalold,tvalnew) \
+  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
+	 ((int)(tvalnew)->tv_nsec - (int)(tvalold)->tv_nsec)/1000000)
+
 /****************************************************************************
 true if two IPv4 addresses are equal
 ****************************************************************************/
