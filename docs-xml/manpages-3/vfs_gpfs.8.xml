@@ -274,9 +274,20 @@
 
 <refsect1>
 	<title>CAVEATS</title>
-	<para>The gpfs gpl libraries are required by <command>gpfs</command> VFS
-	module during both compilation and runtime.
-	Also this VFS module is tested to work on SLES 9/10 and RHEL 4.4
+	<para>
+	Depending on the version of gpfs, the <command>libgpfs_gpl</command>
+	library or the <command>libgpfs</command> library is needed at
+	runtime by the <command>gpfs</command> VFS module:
+	Starting with gpfs 3.2.1 PTF8, the complete <command>libgpfs</command>
+	is available as open source and <command>libgpfs_gpl</command> does no
+	longer exist. With earlier versions of gpfs, only the
+	<command>libgpfs_gpl</command> library was open source and could be
+	used at run time.
+	</para>
+	<para>
+	At build time, only the header file <command>gpfs_gpl.h</command>
+	is required , which is a symlink to <command>gpfs.h</command> in
+	gpfs versions newer than 3.2.1 PTF8.
 	</para>
 </refsect1>
 
