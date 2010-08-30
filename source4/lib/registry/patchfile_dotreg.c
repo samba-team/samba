@@ -291,7 +291,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 			/* Do not look for colons in strings */
 			if (p[0] == '"') {
 				q = NULL;
-				data_str = talloc_strdup(mem_ctx, p);
+				data_str = talloc_strndup(mem_ctx, p+1,strlen(p)-2);
 			} else {
 				/* Split the value type from the data */
 				q = strchr_m(p, ':');
