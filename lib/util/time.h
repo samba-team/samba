@@ -51,6 +51,11 @@ a gettimeofday wrapper
 _PUBLIC_ void GetTimeOfDay(struct timeval *tval);
 
 /**
+a wrapper to preferably get the monotonic time
+**/
+_PUBLIC_ void clock_gettime_mono(struct timespec *tp);
+
+/**
 interpret an 8 byte "filetime" structure to a time_t
 It's originally in "100ns units since jan 1st 1601"
 **/
