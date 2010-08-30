@@ -269,7 +269,7 @@ NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
  Add privilege to sid
 ****************************************************************************/
 
-bool grant_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
+bool grant_privilege(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t old_mask, new_mask;
 
@@ -277,11 +277,11 @@ bool grant_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
 	ZERO_STRUCT( new_mask );
 
 	if ( get_privileges( sid, &old_mask ) )
-		se_priv_copy( &new_mask, &old_mask );
+		new_mask = old_mask;
 	else
-		se_priv_copy( &new_mask, &se_priv_none );
+		new_mask = 0;
 
-	se_priv_add( &new_mask, priv_mask );
+	new_mask |= priv_mask;
 
 	DEBUG(10,("grant_privilege: %s\n", sid_string_dbg(sid)));
 
@@ -306,7 +306,7 @@ bool grant_privilege_by_name(struct dom_sid *sid, const char *name)
 		return False;
 	}
 
-	return grant_privilege( sid, &mask );
+	return grant_privilege( sid, mask );
 }
 
 /***************************************************************************
@@ -366,7 +366,7 @@ bool revoke_privilege_by_name(struct dom_sid *sid, const char *name)
 
 NTSTATUS privilege_create_account(const struct dom_sid *sid )
 {
-	return ( grant_privilege(sid, &se_priv_none) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	return ( grant_privilege(sid, 0) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
 }
 
 /***************************************************************************
@@ -498,5 +498,5 @@ bool grant_all_privileges( const struct dom_sid *sid )
 		return False;
 	}
 
-	return grant_privilege( sid, &mask );
+	return grant_privilege( sid, mask );
 }

@@ -2009,7 +2009,7 @@ NTSTATUS _lsa_AddPrivilegesToAccount(struct pipes_struct *p,
 	if ( !privilege_set_to_se_priv( &mask, set ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
-	if ( !grant_privilege( &info->sid, &mask ) ) {
+	if ( !grant_privilege( &info->sid, mask ) ) {
 		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
 		DEBUG(3,("Privilege mask: 0x%llx\n", (unsigned long long)mask));

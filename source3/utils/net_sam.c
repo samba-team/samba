@@ -712,7 +712,7 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 			return -1;
 		}
 
-		if (!grant_privilege(&sid, &mask)) {
+		if (!grant_privilege(&sid, mask)) {
 			d_fprintf(stderr, _("Could not grant privilege\n"));
 			return -1;
 		}
