@@ -173,19 +173,32 @@ static int priv_traverse_fn(struct db_record *rec, void *state)
 
 	/* check to see if we are looking for a particular privilege */
 
-	if ( !se_priv_equal(&priv->privilege, &se_priv_none) ) {
+	fstrcpy( sid_string, (char *)&(rec->key.dptr[strlen(PRIVPREFIX)]) );
+
+	if (priv->privilege != 0) {
 		uint64_t mask;
 
-		se_priv_copy( &mask, (uint64_t*)rec->value.dptr );
+		if (rec->value.dsize == 4*4) {
+			DEBUG(3, ("get_privileges: Should not have obtained old-style privileges record for SID "
+				  "[%s]\n", sid_string));
+			return 0;
+		}
+
+		if (rec->value.dsize != sizeof( uint64_t ) ) {
+			DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
+				  "[%s]\n", sid_string));
+			return 0;
+		}
+
+		mask = BVAL(rec->value.dptr, 0);
 
 		/* if the SID does not have the specified privilege
 		   then just return */
 
-		if ( !is_privilege_assigned( &mask, &priv->privilege) )
+		if ((mask & priv->privilege) == 0) {
 			return 0;
+		}
 	}
-
-	fstrcpy( sid_string, (char *)&(rec->key.dptr[strlen(PRIVPREFIX)]) );
 
 	/* this is a last ditch safety check to preventing returning
 	   and invalid SID (i've somehow run into this on development branches) */
