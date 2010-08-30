@@ -668,13 +668,12 @@ void security_token_debug_privileges(int dbg_lev, const struct security_token *t
 			    (unsigned long long) token->privilege_mask));
 
 	if (token->privilege_mask) {
+		int idx = 0;
 		int i = 0;
-		uint64_t mask;
-		for (mask = 1; mask != 0; mask = mask << 1) {
-			if (token->privilege_mask & mask) {
-				enum sec_privilege privilege = sec_privilege_from_mask(mask);
+		for (idx = 0; idx<ARRAY_SIZE(privs); idx++) {
+			if (token->privilege_mask & privs[idx].privilege_mask) {
 				DEBUGADD(dbg_lev, ("  Privilege[%3lu]: %s\n", (unsigned long)i++,
-					sec_privilege_name(privilege)));
+						   privs[idx].name));
 			}
 		}
 	}
