@@ -364,6 +364,7 @@ interface security
 	   those that we implement and start Samba privileges at 0x1001 */
 
 	typedef enum {
+		SEC_PRIV_INVALID                   = 0x0,
 		SEC_PRIV_INCREASE_QUOTA            = 0x5,
 		SEC_PRIV_MACHINE_ACCOUNT           = 0x6,
 		SEC_PRIV_SECURITY                  = 0x8,
