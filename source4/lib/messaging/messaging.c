@@ -33,6 +33,7 @@
 #include "../tdb/include/tdb.h"
 #include "../lib/util/util_tdb.h"
 #include "cluster/cluster.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
@@ -683,6 +684,11 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_me
 	irpc = (struct irpc_request *)idr_find(msg_ctx->idr, m->header.callid);
 	if (irpc == NULL) return;
 
+	if (irpc->incoming.handler) {
+		irpc->incoming.handler(irpc, m);
+		return;
+	}
+
 	/* parse the reply data */
 	ndr_err = irpc->table->calls[irpc->callnum].ndr_pull(m->ndr, NDR_OUT, irpc->r);
 	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -889,6 +895,8 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	irpc->async.fn = NULL;
 	irpc->mem_ctx  = ctx;
 	irpc->reject_free = false;
+	irpc->incoming.handler = NULL;
+	irpc->incoming.private_data = NULL;
 
 	talloc_set_destructor(irpc, irpc_destructor);
 
@@ -1121,4 +1129,275 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 struct server_id messaging_get_server_id(struct messaging_context *msg_ctx)
 {
 	return msg_ctx->server_id;
+}
+
+struct irpc_bh_state {
+	struct messaging_context *msg_ctx;
+	struct server_id server_id;
+	const struct ndr_interface_table *table;
+};
+
+static bool irpc_bh_is_connected(struct dcerpc_binding_handle *h)
+{
+	struct irpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				   struct irpc_bh_state);
+
+	if (!hs->msg_ctx) {
+		return false;
+	}
+
+	return true;
+}
+
+struct irpc_bh_raw_call_state {
+	struct irpc_request *irpc;
+	uint32_t opnum;
+	DATA_BLOB in_data;
+	DATA_BLOB in_packet;
+	DATA_BLOB out_data;
+};
+
+static void irpc_bh_raw_call_incoming_handler(struct irpc_request *irpc,
+					      struct irpc_message *m);
+
+static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h,
+						const struct GUID *object,
+						uint32_t opnum,
+						uint32_t in_flags,
+						const uint8_t *in_data,
+						size_t in_length)
+{
+	struct irpc_bh_state *hs =
+		dcerpc_binding_handle_data(h,
+		struct irpc_bh_state);
+	struct tevent_req *req;
+	struct irpc_bh_raw_call_state *state;
+	bool ok;
+	struct irpc_header header;
+	struct ndr_push *ndr;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct irpc_bh_raw_call_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->opnum = opnum;
+	state->in_data.data = discard_const_p(uint8_t, in_data);
+	state->in_data.length = in_length;
+
+	ok = irpc_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	state->irpc = talloc_zero(state, struct irpc_request);
+	if (tevent_req_nomem(state->irpc, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->irpc->msg_ctx  = hs->msg_ctx;
+	state->irpc->table    = hs->table;
+	state->irpc->callnum  = state->opnum;
+	state->irpc->callid   = idr_get_new(hs->msg_ctx->idr,
+					    state->irpc, UINT16_MAX);
+	if (state->irpc->callid == -1) {
+		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+		return tevent_req_post(req, ev);
+	}
+	state->irpc->r        = NULL;
+	state->irpc->done     = false;
+	state->irpc->async.fn = NULL;
+	state->irpc->mem_ctx  = state;
+	state->irpc->reject_free = false;
+	state->irpc->incoming.handler = irpc_bh_raw_call_incoming_handler;
+	state->irpc->incoming.private_data = req;
+
+	talloc_set_destructor(state->irpc, irpc_destructor);
+
+	/* setup the header */
+	header.uuid = hs->table->syntax_id.uuid;
+
+	header.if_version = hs->table->syntax_id.if_version;
+	header.callid     = state->irpc->callid;
+	header.callnum    = state->opnum;
+	header.flags      = 0;
+	header.status     = NT_STATUS_OK;
+
+	/* construct the irpc packet */
+	ndr = ndr_push_init_ctx(state->irpc);
+	if (tevent_req_nomem(ndr, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ndr_err = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);
+	status = ndr_map_error2ntstatus(ndr_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	ndr_err = ndr_push_bytes(ndr, in_data, in_length);
+	status = ndr_map_error2ntstatus(ndr_err);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	/* and send it */
+	state->in_packet = ndr_push_blob(ndr);
+	status = messaging_send(hs->msg_ctx, hs->server_id,
+				MSG_IRPC, &state->in_packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_endtime(req, ev, timeval_current_ofs(IRPC_CALL_TIMEOUT, 0));
+
+	return req;
+}
+
+static void irpc_bh_raw_call_incoming_handler(struct irpc_request *irpc,
+					      struct irpc_message *m)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(irpc->incoming.private_data,
+		struct tevent_req);
+	struct irpc_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct irpc_bh_raw_call_state);
+
+	talloc_steal(state, m);
+
+	if (!NT_STATUS_IS_OK(m->header.status)) {
+		tevent_req_nterror(req, m->header.status);
+		return;
+	}
+
+	state->out_data = data_blob_talloc(state,
+		m->ndr->data + m->ndr->offset,
+		m->ndr->data_size - m->ndr->offset);
+	if ((m->ndr->data_size - m->ndr->offset) > 0 && !state->out_data.data) {
+		tevent_req_nomem(NULL, req);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS irpc_bh_raw_call_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags)
+{
+	struct irpc_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct irpc_bh_raw_call_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_data = talloc_move(mem_ctx, &state->out_data.data);
+	*out_length = state->out_data.length;
+	*out_flags = 0;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct irpc_bh_disconnect_state {
+	uint8_t _dummy;
+};
+
+static struct tevent_req *irpc_bh_disconnect_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct dcerpc_binding_handle *h)
+{
+	struct irpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct irpc_bh_state);
+	struct tevent_req *req;
+	struct irpc_bh_disconnect_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct irpc_bh_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ok = irpc_bh_is_connected(h);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		return tevent_req_post(req, ev);
+	}
+
+	hs->msg_ctx = NULL;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS irpc_bh_disconnect_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static bool irpc_bh_ref_alloc(struct dcerpc_binding_handle *h)
+{
+	return true;
+}
+
+static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
+	.name			= "wbint",
+	.is_connected		= irpc_bh_is_connected,
+	.raw_call_send		= irpc_bh_raw_call_send,
+	.raw_call_recv		= irpc_bh_raw_call_recv,
+	.disconnect_send	= irpc_bh_disconnect_send,
+	.disconnect_recv	= irpc_bh_disconnect_recv,
+
+	.ref_alloc		= irpc_bh_ref_alloc,
+};
+
+/* initialise a irpc binding handle */
+struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
+					struct messaging_context *msg_ctx,
+					struct server_id server_id,
+					const struct ndr_interface_table *table)
+{
+	struct dcerpc_binding_handle *h;
+	struct irpc_bh_state *hs;
+
+	h = dcerpc_binding_handle_create(mem_ctx,
+					 &irpc_bh_ops,
+					 NULL,
+					 table,
+					 &hs,
+					 struct irpc_bh_state,
+					 __location__);
+	if (h == NULL) {
+		return NULL;
+	}
+	hs->msg_ctx = msg_ctx;
+	hs->server_id = server_id;
+	hs->table = table;
+
+	dcerpc_binding_handle_set_sync_ev(h, msg_ctx->event.ev);
+
+	return h;
 }

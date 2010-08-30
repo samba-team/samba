@@ -79,6 +79,10 @@ struct irpc_request {
 		void (*fn)(struct irpc_request *);
 		void *private_data;
 	} async;
+	struct {
+		void (*handler)(struct irpc_request *irpc, struct irpc_message *m);
+		void *private_data;
+	} incoming;
 };
 
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
@@ -93,6 +97,11 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 		   struct server_id server_id, 
 		   const struct ndr_interface_table *table, 
 		   int callnum, void *r, TALLOC_CTX *ctx);
+
+struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
+					struct messaging_context *msg_ctx,
+					struct server_id server_id,
+					const struct ndr_interface_table *table);
 
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, TALLOC_CTX *mem_ctx, const char *name);
