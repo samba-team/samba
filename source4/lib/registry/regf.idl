@@ -74,8 +74,8 @@ interface regf
 	};
 
 	[noprint] enum reg_key_type { 
-		REG_ROOT_KEY = 0x20, 
-		REG_SUB_KEY  = 0x2C, 
+		REG_ROOT_KEY = 0x2C, 
+		REG_SUB_KEY  = 0x20, 
 		REG_SYM_LINK = 0x10 
 	};
 
