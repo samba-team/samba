@@ -123,7 +123,10 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 	r.in.policy_handle = handle;
 	r.in.info = &trustinfo;
 	r.in.auth_info = authinfo;
-	r.in.access_mask = LSA_TRUSTED_SET_POSIX | LSA_TRUSTED_SET_AUTH;
+	/* LSA_TRUSTED_QUERY_DOMAIN_NAME is needed for for following
+	 * QueryTrustedDomainInfo call, although it seems that Windows does not
+	 * expect this */
+	r.in.access_mask = LSA_TRUSTED_SET_POSIX | LSA_TRUSTED_SET_AUTH | LSA_TRUSTED_QUERY_DOMAIN_NAME;
 	r.out.trustdom_handle = &trustdom_handle;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -489,7 +492,8 @@ static bool test_validate_trust(struct torture_context *tctx,
 		return false;
 	}
 
-	cli_credentials_set_username(credentials, trusted_dom_name,
+	char *dummy = talloc_asprintf(tctx, "%s$", trusted_dom_name);
+	cli_credentials_set_username(credentials, dummy,
 				     CRED_SPECIFIED);
 	cli_credentials_set_domain(credentials, trusting_dom_name,
 				   CRED_SPECIFIED);
