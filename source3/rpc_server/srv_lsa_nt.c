@@ -1858,7 +1858,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 		goto done;
 	}
 
-	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
+	if ( se_priv_to_privilege_set( &privileges, mask ) ) {
 
 		DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
 			  sid_string_dbg(&info->sid),
@@ -2376,7 +2376,7 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 		return status;
 	}
 
-	se_priv_to_privilege_set(&privileges, &mask);
+	se_priv_to_privilege_set(&privileges, mask);
 
 	DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
 		  sid_string_dbg(&sid), privileges.count));

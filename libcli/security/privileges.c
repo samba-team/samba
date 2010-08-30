@@ -469,7 +469,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 /*******************************************************************
 *******************************************************************/
 
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask )
 {
 	int i;
 	uint32_t num_privs = ARRAY_SIZE(privs);
@@ -479,7 +479,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask )
 	luid.luid.high = 0;
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( !is_privilege_assigned(privilege_mask, &privs[i].privilege_mask) )
+		if ((privilege_mask & privs[i].privilege_mask) == 0)
 			continue;
 
 		luid.luid.high = 0;

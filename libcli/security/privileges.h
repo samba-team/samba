@@ -141,7 +141,7 @@ int num_privileges_in_short_list( void );
 
 const char *luid_to_privilege_name(const struct lsa_LUID *set);
 
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t *privilege_mask );
+bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask );
 bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset );
 
 /*
