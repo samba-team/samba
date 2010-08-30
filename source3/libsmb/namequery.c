@@ -261,7 +261,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 	bool found=False;
 	int retries = 2;
 	int retry_time = 2000;
-	struct timeval tval;
+	struct timespec tp;
 	struct packet_struct p;
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
@@ -297,7 +297,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 	p.timestamp = time(NULL);
 	p.packet_type = NMB_PACKET;
 
-	GetTimeOfDay(&tval);
+	clock_gettime_mono(&tp);
 
 	if (!send_packet(&p))
 		return NULL;
@@ -305,14 +305,14 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 	retries--;
 
 	while (1) {
-		struct timeval tval2;
-		GetTimeOfDay(&tval2);
-		if (TvalDiff(&tval,&tval2) > retry_time) {
+		struct timespec tp2;
+		clock_gettime_mono(&tp2);
+		if (TspecDiff(&tp,&tp2) > retry_time) {
 			if (!retries)
 				break;
 			if (!found && !send_packet(&p))
 				return NULL;
-			GetTimeOfDay(&tval);
+			clock_gettime_mono(&tp);
 			retries--;
 		}
 
@@ -655,7 +655,7 @@ struct sockaddr_storage *name_query(int fd,
 	bool found=false;
 	int i, retries = 3;
 	int retry_time = bcast?250:2000;
-	struct timeval tval;
+	struct timespec tp;
 	struct packet_struct p;
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
@@ -705,7 +705,7 @@ struct sockaddr_storage *name_query(int fd,
 	p.timestamp = time(NULL);
 	p.packet_type = NMB_PACKET;
 
-	GetTimeOfDay(&tval);
+	clock_gettime_mono(&tp);
 
 	if (!send_packet(&p))
 		return NULL;
@@ -713,15 +713,15 @@ struct sockaddr_storage *name_query(int fd,
 	retries--;
 
 	while (1) {
-		struct timeval tval2;
+		struct timespec tp2;
 
-		GetTimeOfDay(&tval2);
-		if (TvalDiff(&tval,&tval2) > retry_time) {
+		clock_gettime_mono(&tp2);
+		if (TspecDiff(&tp,&tp2) > retry_time) {
 			if (!retries)
 				break;
 			if (!found && !send_packet(&p))
 				return NULL;
-			GetTimeOfDay(&tval);
+			clock_gettime_mono(&tp);
 			retries--;
 		}
 
