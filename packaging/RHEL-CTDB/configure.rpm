@@ -26,7 +26,7 @@ fi
 
 ./autogen.sh
 
-CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure -C \
+CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--prefix=${_prefix} \
 	--localstatedir=/var \
 	--with-configdir=${_sysconfdir}/samba \
