@@ -50,13 +50,16 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 	int ret;
 	ctdb_sock_addr __addr = *_addr;
 	ctdb_sock_addr *addr = &__addr;
+	socklen_t addrlen;
 
 	switch (addr->sa.sa_family) {
 	case AF_INET:
 		addr->ip.sin_port = 0;
+		addrlen = sizeof(struct sockaddr_in);
 		break;
 	case AF_INET6:
 		addr->ip6.sin6_port = 0;
+		addrlen = sizeof(struct sockaddr_in6);
 		break;
 	}
 
@@ -65,7 +68,7 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 		return false;
 	}
 
-	ret = bind(s, (struct sockaddr *)addr, sizeof(ctdb_sock_addr));
+	ret = bind(s, (struct sockaddr *)addr, addrlen);
 
 	close(s);
 	return ret == 0;
