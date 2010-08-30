@@ -2007,7 +2007,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	regf->hbins[0] = NULL;
 
 	nk.header = "nk";
-	nk.type = REG_SUB_KEY;
+	nk.type = REG_ROOT_KEY;
 	unix_to_nt_time(&nk.last_change, time(NULL));
 	nk.uk1 = 0;
 	nk.parent_offset = -1;
