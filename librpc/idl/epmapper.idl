@@ -30,6 +30,7 @@ interface epmapper
 	  with.
 	*/
 
+	const int EPMAPPER_STATUS_CANT_PERFORM_OP = 0x6d8;
 	const int EPMAPPER_STATUS_NO_MORE_ENTRIES = 0x16c9a0d6;
 	const int EPMAPPER_STATUS_NO_MEMORY = 0x16C9A012;
 	const int EPMAPPER_STATUS_OK = 0;
