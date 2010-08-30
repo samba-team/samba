@@ -57,7 +57,7 @@ ctdb_test_exit_hook_add ctdb_test_eventscript_uninstall
 ctdb_test_eventscript_install
 
 # We need this for later, so we know how long to sleep.
-try_command_on_node 0 $CTDB getvar MonitorInterval
+try_command_on_node any $CTDB getvar MonitorInterval
 monitor_interval="${out#*= }"
 #echo "Monitor interval on node $test_node is $monitor_interval seconds."
 
@@ -77,28 +77,40 @@ echo "Source socket is $src_socket"
 
 wait_for_monitor_event $test_node
 
-echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
-f="/etc/sysconfig/nfs"
-try_command_on_node -v 0 "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
+echo "Sleeping until tickles are synchronised across nodes..."
+try_command_on_node $test_node $CTDB getvar TickleUpdateInterval
+sleep_for "${out#*= }"
 
-nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
+if try_command_on_node any "test -r /etc/ctdb/events.d/61.nfstickle" ; then
+    echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
+    f="/etc/sysconfig/nfs"
+    try_command_on_node -v any "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
 
-try_command_on_node $test_node hostname
-test_hostname=$out
+    nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
 
-try_command_on_node -v 0 cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
+    try_command_on_node $test_node hostname
+    test_hostname=$out
+
+    try_command_on_node -v any cat "${nfs_tickle_shared_directory}/$test_hostname/$test_ip"
+else
+    echo "That's OK, we'll use \"ctdb gettickles\", which is newer..."
+    try_command_on_node -v any "ctdb -Y gettickles $test_ip $test_port"
+fi
 
 if [ "${out/${src_socket}/}" != "$out" ] ; then
-    echo "GOOD: NFS connection tracked OK in tickles file."
+    echo "GOOD: NFS connection tracked OK."
 else
-    echo "BAD: Socket not tracked in NFS tickles file:"
+    echo "BAD: Socket not tracked in NFS tickles."
     testfailures=1
 fi
 
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
-echo "Disabling node $test_node"
-try_command_on_node 1 $CTDB disable -n $test_node
-wait_until_node_has_status $test_node disabled
+# We need to be nasty to make that the node being failed out doesn't
+# get a chance to send any tickles and confuse our sniff.
+echo "Killing ctdbd on ${test_node}..."
+try_command_on_node $test_node killall -9 ctdbd
+
+wait_until_node_has_status $test_node disconnected
 
 tcptickle_sniff_wait_show

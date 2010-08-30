@@ -115,6 +115,6 @@ if wait_until 60 ips_are_on_nodeglob $test_node ${add_ip%/*} ; then
     echo "That worked!"
 else
     echo "BAD: IP didn't get added."
-    try_command_on_node $test_node ctdb ip -n all
+    try_command_on_node $test_node $CTDB ip -n all
     exit 1
 fi
