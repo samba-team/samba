@@ -313,7 +313,7 @@ bool grant_privilege_by_name(struct dom_sid *sid, const char *name)
  Remove privilege from sid
 ****************************************************************************/
 
-bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
+bool revoke_privilege(const struct dom_sid *sid, const uint64_t priv_mask)
 {
 	uint64_t mask;
 
@@ -326,7 +326,7 @@ bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
 
 	DEBUGADD( 10, ("original privilege mask: 0x%llx\n", (unsigned long long)mask));
 
-	se_priv_remove( &mask, priv_mask );
+	mask &= ~priv_mask;
 
 	DEBUGADD( 10, ("new privilege mask:      0x%llx\n", (unsigned long long)mask));
 
@@ -339,7 +339,7 @@ bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask)
 
 bool revoke_all_privileges( struct dom_sid *sid )
 {
-	return revoke_privilege( sid, &se_priv_all );
+	return revoke_privilege( sid, SE_ALL_PRIVS);
 }
 
 /*********************************************************************
@@ -356,7 +356,7 @@ bool revoke_privilege_by_name(struct dom_sid *sid, const char *name)
         	return False;
 	}
 
-	return revoke_privilege(sid, &mask);
+	return revoke_privilege(sid, mask);
 
 }
 

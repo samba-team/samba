@@ -639,7 +639,7 @@ NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids);
 bool grant_privilege(const struct dom_sid *sid, const uint64_t *priv_mask);
 bool grant_privilege_by_name(struct dom_sid *sid, const char *name);
-bool revoke_privilege(const struct dom_sid *sid, const uint64_t *priv_mask);
+bool revoke_privilege(const struct dom_sid *sid, const uint64_t priv_mask);
 bool revoke_all_privileges( struct dom_sid *sid );
 bool revoke_privilege_by_name(struct dom_sid *sid, const char *name);
 NTSTATUS privilege_create_account(const struct dom_sid *sid );

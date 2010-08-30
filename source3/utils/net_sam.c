@@ -752,7 +752,7 @@ static int net_sam_rights_revoke(struct net_context *c, int argc,
 			return -1;
 		}
 
-		if (!revoke_privilege(&sid, &mask)) {
+		if (!revoke_privilege(&sid, mask)) {
 			d_fprintf(stderr, _("Could not revoke privilege\n"));
 			return -1;
 		}
