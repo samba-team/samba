@@ -149,6 +149,23 @@ bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int sc
 	return found;
 }
 
+NTSTATUS get_privileges_for_sid_as_set(TALLOC_CTX *mem_ctx, PRIVILEGE_SET **privileges, struct dom_sid *sid)
+{
+	uint64_t mask;
+	if (!get_privileges(sid, &mask)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	*privileges = talloc_zero(mem_ctx, PRIVILEGE_SET);
+	if (!*privileges) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!se_priv_to_privilege_set(*privileges, mask)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
 
 /*********************************************************************
  traversal functions for privilege_enumerate_accounts
@@ -432,56 +449,6 @@ NTSTATUS privilege_delete_account(const struct dom_sid *sid)
 	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
 	return dbwrap_delete_bystring(db, keystr);
-}
-
-/****************************************************************************
- initialise a privilege list and set the talloc context
- ****************************************************************************/
-
-NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set)
-{
-	TALLOC_CTX *mem_ctx;
-
-	ZERO_STRUCTP( priv_set );
-
-	mem_ctx = talloc_init("privilege set");
-	if ( !mem_ctx ) {
-		DEBUG(0,("privilege_set_init: failed to initialize talloc ctx!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	priv_set->mem_ctx = mem_ctx;
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
-  initialise a privilege list and with someone else's talloc context
-****************************************************************************/
-
-NTSTATUS privilege_set_init_by_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set)
-{
-	ZERO_STRUCTP( priv_set );
-
-	priv_set->mem_ctx = mem_ctx;
-	priv_set->ext_ctx = True;
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Free all memory used by a PRIVILEGE_SET
-****************************************************************************/
-
-void privilege_set_free(PRIVILEGE_SET *priv_set)
-{
-	if ( !priv_set )
-		return;
-
-	if ( !( priv_set->ext_ctx ) )
-		talloc_destroy( priv_set->mem_ctx );
-
-	ZERO_STRUCTP( priv_set );
 }
 
 /****************************************************************************

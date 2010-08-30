@@ -634,6 +634,7 @@ void pidfile_unlink(void);
 /* The following definitions come from lib/privileges.c  */
 
 bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int scount);
+NTSTATUS get_privileges_for_sid_as_set(TALLOC_CTX *mem_ctx, PRIVILEGE_SET **privileges, struct dom_sid *sid);
 NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids);
 NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids);

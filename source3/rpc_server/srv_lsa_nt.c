@@ -11,6 +11,7 @@
  *  Copyright (C) Gerald (Jerry) Carter             2005.
  *  Copyright (C) Volker Lendecke                   2005.
  *  Copyright (C) Guenther Deschner		    2008.
+ *  Copyright (C) Andrew Bartlett		    2010.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1831,11 +1832,8 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_info *info=NULL;
-	uint64_t mask;
-	PRIVILEGE_SET privileges;
+	PRIVILEGE_SET *privileges;
 	struct lsa_PrivilegeSet *priv_set = NULL;
-	struct lsa_LUIDAttribute *luid_attrs = NULL;
-	int i;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
@@ -1848,48 +1846,23 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 	if (!(info->access & LSA_ACCOUNT_VIEW))
 		return NT_STATUS_ACCESS_DENIED;
 
-	get_privileges_for_sids(&mask, &info->sid, 1);
+	status = get_privileges_for_sid_as_set(p->mem_ctx, &privileges, &info->sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	privilege_set_init( &privileges );
-
-	priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
+	*r->out.privs = priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
 	if (!priv_set) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( se_priv_to_privilege_set( &privileges, mask ) ) {
+	DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
+		  sid_string_dbg(&info->sid),
+		  privileges->count));
 
-		DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
-			  sid_string_dbg(&info->sid),
-			  privileges.count));
-
-		luid_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx,
-					       struct lsa_LUIDAttribute,
-					       privileges.count);
-		if (!luid_attrs) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		for (i=0; i<privileges.count; i++) {
-			luid_attrs[i] = privileges.set[i];
-		}
-
-		priv_set->count = privileges.count;
-		priv_set->unknown = 0;
-		priv_set->set = luid_attrs;
-
-	} else {
-		priv_set->count = 0;
-		priv_set->unknown = 0;
-		priv_set->set = NULL;
-	}
-
-	*r->out.privs = priv_set;
-
- done:
-	privilege_set_free( &privileges );
+	priv_set->count = privileges->count;
+	priv_set->unknown = 0;
+	priv_set->set = talloc_move(priv_set, &privileges->set);
 
 	return status;
 }
@@ -2339,8 +2312,7 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *info = NULL;
 	struct dom_sid sid;
-	PRIVILEGE_SET privileges;
-	uint64_t mask;
+	PRIVILEGE_SET *privileges;
 
 	/* find the connection policy handle. */
 
@@ -2358,29 +2330,19 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
 
-	sid_copy( &sid, r->in.sid );
-
 	/* according to MS-LSAD 3.1.4.5.10 it is required to return
 	 * NT_STATUS_OBJECT_NAME_NOT_FOUND if the account sid was not found in
 	 * the lsa database */
 
-	if (!get_privileges_for_sids(&mask, &sid, 1)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	status = privilege_set_init(&privileges);
+	status = get_privileges_for_sid_as_set(p->mem_ctx, &privileges, r->in.sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	se_priv_to_privilege_set(&privileges, mask);
-
 	DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
-		  sid_string_dbg(&sid), privileges.count));
+		  sid_string_dbg(&sid), privileges->count));
 
-	status = init_lsa_right_set(p->mem_ctx, r->out.rights, &privileges);
-
-	privilege_set_free( &privileges );
+	status = init_lsa_right_set(p->mem_ctx, r->out.rights, privileges);
 
 	return status;
 }
