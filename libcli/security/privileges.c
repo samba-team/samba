@@ -379,7 +379,7 @@ enum sec_privilege sec_privilege_from_index(int idx)
 	if (idx >= 0 && idx<ARRAY_SIZE(privs)) {
 		return privs[idx].luid;
 	}
-	return -1;
+	return SEC_PRIV_INVALID;
 }
 
 /*

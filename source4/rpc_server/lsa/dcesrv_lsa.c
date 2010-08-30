@@ -300,7 +300,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 
 	i = *r->in.resume_handle;
 
-	while (((priv = sec_privilege_from_index(i)) != -1) &&
+	while (((priv = sec_privilege_from_index(i)) != SEC_PRIV_INVALID) &&
 	       r->out.privs->count < r->in.max_count) {
 		struct lsa_PrivEntry *e;
 		privname = sec_privilege_name(priv);
