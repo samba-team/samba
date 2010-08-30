@@ -368,7 +368,7 @@ enum sec_privilege sec_privilege_id(const char *name)
 			return privs[i].luid;
 		}
 	}
-	return -1;
+	return SEC_PRIV_INVALID;
 }
 
 /*

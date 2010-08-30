@@ -2458,7 +2458,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 
 	for (i=0;i<el->num_values;i++) {
 		int id = sec_privilege_id((const char *)el->values[i].data);
-		if (id == -1) {
+		if (id == SEC_PRIV_INVALID) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		privs->set[i].attribute = 0;
@@ -2584,7 +2584,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	}
 
 	for (i=0;i<rights->count;i++) {
-		if (sec_privilege_id(rights->names[i].string) == -1) {
+		if (sec_privilege_id(rights->names[i].string) == SEC_PRIV_INVALID) {
 			talloc_free(msg);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
@@ -3385,7 +3385,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivValue(struct dcesrv_call_state *dce_call,
 	state = h->data;
 
 	id = sec_privilege_id(r->in.name->string);
-	if (id == -1) {
+	if (id == SEC_PRIV_INVALID) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -3451,7 +3451,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 	state = h->data;
 
 	id = sec_privilege_id(r->in.name->string);
-	if (id == -1) {
+	if (id == SEC_PRIV_INVALID) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
@@ -3495,7 +3495,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 	} 
 
 	privname = r->in.name->string;
-	if (sec_privilege_id(privname) == -1) {
+	if (sec_privilege_id(privname) == SEC_PRIV_INVALID) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 

@@ -2422,7 +2422,7 @@ NTSTATUS _lsa_LookupPrivValue(struct pipes_struct *p,
 
 	r->out.luid->low = sec_privilege_id(name);
 	r->out.luid->high = 0;
-	if (r->out.luid->low == -1) {
+	if (r->out.luid->low == SEC_PRIV_INVALID) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 	return NT_STATUS_OK;

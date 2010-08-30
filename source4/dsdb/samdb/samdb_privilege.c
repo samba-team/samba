@@ -69,7 +69,7 @@ static NTSTATUS samdb_privilege_setup_sid(struct ldb_context *pdb, TALLOC_CTX *m
 	for (i=0;i<el->num_values;i++) {
 		const char *priv_str = (const char *)el->values[i].data;
 		enum sec_privilege privilege = sec_privilege_id(priv_str);
-		if (privilege == -1) {
+		if (privilege == SEC_PRIV_INVALID) {
 			DEBUG(1,("Unknown privilege '%s' in samdb\n",
 				 priv_str));
 			continue;
