@@ -82,6 +82,30 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:leases = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Enable/Disable cross node leases (oplocks) for GPFS.
+		You should also set the <command>oplocks</command> and <command>kernel oplocks</command>
+		options to the same value.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - propagate leases across all GPFS nodes.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - do not propagate leases across all GPFS nodes.
+		This should only be used if the GPFS file system is
+		exclusively exported by Samba. Access by local unix application or
+		NFS exports could lead to corrupted files.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
