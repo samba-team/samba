@@ -62,15 +62,15 @@ static const struct {
 	const char *description;
 } privs[] = {
 
-	{SEC_PRIV_MACHINE_ACCOUNT, SE_MACHINE_ACCOUNT,   "SeMachineAccountPrivilege",	"Add machines to domain"},
-	{SEC_PRIV_TAKE_OWNERSHIP,  SE_TAKE_OWNERSHIP,    "SeTakeOwnershipPrivilege",    "Take ownership of files or other objects"},
-        {SEC_PRIV_BACKUP,          SE_BACKUP,            "SeBackupPrivilege",           "Back up files and directories"},
-        {SEC_PRIV_RESTORE,         SE_RESTORE,           "SeRestorePrivilege",          "Restore files and directories"},
-	{SEC_PRIV_REMOTE_SHUTDOWN, SE_REMOTE_SHUTDOWN,   "SeRemoteShutdownPrivilege",	"Force shutdown from a remote system"},
+	{SEC_PRIV_MACHINE_ACCOUNT, SEC_PRIV_MACHINE_ACCOUNT_BIT,   "SeMachineAccountPrivilege",	"Add machines to domain"},
+	{SEC_PRIV_TAKE_OWNERSHIP,  SEC_PRIV_TAKE_OWNERSHIP_BIT,    "SeTakeOwnershipPrivilege",    "Take ownership of files or other objects"},
+        {SEC_PRIV_BACKUP,          SEC_PRIV_BACKUP_BIT,            "SeBackupPrivilege",           "Back up files and directories"},
+        {SEC_PRIV_RESTORE,         SEC_PRIV_RESTORE_BIT,           "SeRestorePrivilege",          "Restore files and directories"},
+	{SEC_PRIV_REMOTE_SHUTDOWN, SEC_PRIV_REMOTE_SHUTDOWN_BIT,   "SeRemoteShutdownPrivilege",	"Force shutdown from a remote system"},
 
-	{SEC_PRIV_PRINT_OPERATOR,  SE_PRINT_OPERATOR,	 "SePrintOperatorPrivilege",	"Manage printers"},
-	{SEC_PRIV_ADD_USERS,       SE_ADD_USERS,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
-	{SEC_PRIV_DISK_OPERATOR,   SE_DISK_OPERATOR,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
+	{SEC_PRIV_PRINT_OPERATOR,  SEC_PRIV_PRINT_OPERATOR_BIT,	 "SePrintOperatorPrivilege",	"Manage printers"},
+	{SEC_PRIV_ADD_USERS,       SEC_PRIV_ADD_USERS_BIT,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
+	{SEC_PRIV_DISK_OPERATOR,   SEC_PRIV_DISK_OPERATOR_BIT,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
 
 	/* The list from here on was not displayed in the code from
 	 * source3/ with the comment that usrmgr will display these
@@ -82,102 +82,102 @@ static const struct {
 	   or full list (including many other privileges) is used */
 
 	{SEC_PRIV_SECURITY,
-	 SE_SECURITY,
+	 SEC_PRIV_SECURITY_BIT,
 	 "SeSecurityPrivilege",
 	"System security"},
 
 	{SEC_PRIV_SYSTEMTIME,
-	 SE_SYSTEMTIME,
+	 SEC_PRIV_SYSTEMTIME_BIT,
 	 "SeSystemtimePrivilege",
 	"Set the system clock"},
 
 	{SEC_PRIV_SHUTDOWN,
-	 SE_SHUTDOWN,
+	 SEC_PRIV_SHUTDOWN_BIT,
 	 "SeShutdownPrivilege",
 	"Shutdown the system"},
 
 	{SEC_PRIV_DEBUG,
-	 SE_DEBUG,
+	 SEC_PRIV_DEBUG_BIT,
 	 "SeDebugPrivilege",
 	"Debug processes"},
 
 	{SEC_PRIV_SYSTEM_ENVIRONMENT,
-	 SE_SYSTEM_ENVIRONMENT,
+	 SEC_PRIV_SYSTEM_ENVIRONMENT_BIT,
 	 "SeSystemEnvironmentPrivilege",
 	"Modify system environment"},
 
 	{SEC_PRIV_SYSTEM_PROFILE,
-	 SE_SYSTEM_PROFILE,
+	 SEC_PRIV_SYSTEM_PROFILE_BIT,
 	 "SeSystemProfilePrivilege",
 	"Profile the system"},
 
 	{SEC_PRIV_PROFILE_SINGLE_PROCESS,
-	 SE_PROFILE_SINGLE_PROCESS,
+	 SEC_PRIV_PROFILE_SINGLE_PROCESS_BIT,
 	 "SeProfileSingleProcessPrivilege",
 	"Profile one process"},
 
 	{SEC_PRIV_INCREASE_BASE_PRIORITY,
-	 SE_INCREASE_BASE_PRIORITY,
+	 SEC_PRIV_INCREASE_BASE_PRIORITY_BIT,
 	 "SeIncreaseBasePriorityPrivilege",
 	 "Increase base priority"},
 
 	{SEC_PRIV_LOAD_DRIVER,
-	 SE_LOAD_DRIVER,
+	 SEC_PRIV_LOAD_DRIVER_BIT,
 	 "SeLoadDriverPrivilege",
 	"Load drivers"},
 
 	{SEC_PRIV_CREATE_PAGEFILE,
-	 SE_CREATE_PAGEFILE,
+	 SEC_PRIV_CREATE_PAGEFILE_BIT,
 	 "SeCreatePagefilePrivilege",
 	"Create page files"},
 
 	{SEC_PRIV_INCREASE_QUOTA,
-	 SE_INCREASE_QUOTA,
+	 SEC_PRIV_INCREASE_QUOTA_BIT,
 	 "SeIncreaseQuotaPrivilege",
 	"Increase quota"},
 
 	{SEC_PRIV_CHANGE_NOTIFY,
-	 SE_CHANGE_NOTIFY,
+	 SEC_PRIV_CHANGE_NOTIFY_BIT,
 	 "SeChangeNotifyPrivilege",
 	"Register for change notify"},
 
 	{SEC_PRIV_UNDOCK,
-	 SE_UNDOCK,
+	 SEC_PRIV_UNDOCK_BIT,
 	 "SeUndockPrivilege",
 	"Undock devices"},
 
 	{SEC_PRIV_MANAGE_VOLUME,
-	 SE_MANAGE_VOLUME,
+	 SEC_PRIV_MANAGE_VOLUME_BIT,
 	 "SeManageVolumePrivilege",
 	"Manage system volumes"},
 
 	{SEC_PRIV_IMPERSONATE,
-	 SE_IMPERSONATE,
+	 SEC_PRIV_IMPERSONATE_BIT,
 	 "SeImpersonatePrivilege",
 	"Impersonate users"},
 
 	{SEC_PRIV_CREATE_GLOBAL,
-	 SE_CREATE_GLOBAL,
+	 SEC_PRIV_CREATE_GLOBAL_BIT,
 	 "SeCreateGlobalPrivilege",
 	"Create global"},
 
 	{SEC_PRIV_ENABLE_DELEGATION,
-	 SE_ENABLE_DELEGATION,
+	 SEC_PRIV_ENABLE_DELEGATION_BIT,
 	 "SeEnableDelegationPrivilege",
 	"Enable Delegation"},
 
 	{SEC_PRIV_INTERACTIVE_LOGON,
-	 SE_INTERACTIVE_LOGON,
+	 SEC_PRIV_INTERACTIVE_LOGON_BIT,
 	 "SeInteractiveLogonRight",
 	"Interactive logon"},
 
 	{SEC_PRIV_NETWORK_LOGON,
-	 SE_NETWORK_LOGON,
+	 SEC_PRIV_NETWORK_LOGON_BIT,
 	 "SeNetworkLogonRight",
 	"Network logon"},
 
 	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,
-	 SE_REMOTE_INTERACTIVE_LOGON,
+	 SEC_PRIV_REMOTE_INTERACTIVE_LOGON_BIT,
 	 "SeRemoteInteractiveLogonRight",
 	"Remote Interactive logon"}
 };
