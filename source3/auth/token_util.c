@@ -112,7 +112,7 @@ struct security_token *get_root_nt_token( void )
 	token = create_local_nt_token(talloc_autofree_context(), &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
 
-	token->privilege_mask = se_disk_operators;
+	security_token_set_privilege(token, SEC_PRIV_DISK_OPERATOR);
 
 	for_cache = token;
 

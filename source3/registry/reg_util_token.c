@@ -43,7 +43,8 @@ NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	token->privilege_mask = se_disk_operators;
+	security_token_set_privilege(token, SEC_PRIV_DISK_OPERATOR);
+
 	status = add_sid_to_array(token, &global_sid_Builtin_Administrators,
 				  &token->sids, &token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
