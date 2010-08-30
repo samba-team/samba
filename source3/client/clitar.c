@@ -629,9 +629,9 @@ static void do_atar(const char *rname_in, char *lname,
 	char *rname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 
-	struct timeval tp_start;
+	struct timespec tp_start;
 
-	GetTimeOfDay(&tp_start);
+	clock_gettime_mono(&tp_start);
 
 	data = SMB_MALLOC_ARRAY(char, read_size);
 	if (!data) {
@@ -768,15 +768,15 @@ static void do_atar(const char *rname_in, char *lname,
 	fnum = -1;
 
 	if (shallitime) {
-		struct timeval tp_end;
+		struct timespec tp_end;
 		int this_time;
 
 		/* if shallitime is true then we didn't skip */
 		if (tar_reset && !dry_run)
 			(void) do_setrattr(finfo.name, aARCH, ATTRRESET);
 
-		GetTimeOfDay(&tp_end);
-		this_time = (tp_end.tv_sec - tp_start.tv_sec)*1000 + (tp_end.tv_usec - tp_start.tv_usec)/1000;
+		clock_gettime_mono(&tp_end);
+		this_time = (tp_end.tv_sec - tp_start.tv_sec)*1000 + (tp_end.tv_nsec - tp_start.tv_nsec)/1000000;
 		get_total_time_ms += this_time;
 		get_total_size += finfo.size;
 
@@ -1165,13 +1165,13 @@ static char *get_longfilename(file_info2 finfo)
 static void do_tarput(void)
 {
 	file_info2 finfo;
-	struct timeval tp_start;
+	struct timespec tp_start;
 	char *longfilename = NULL, linkflag;
 	int skip = False;
 
 	ZERO_STRUCT(finfo);
 
-	GetTimeOfDay(&tp_start);
+	clock_gettime_mono(&tp_start);
 	DEBUG(5, ("RJS do_tarput called ...\n"));
 
 	buffer_p = tarbuf + tbufsiz;  /* init this to force first read */
