@@ -38,7 +38,8 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
 					       enum drsuapi_DsExtendedOperation extended_op,
 					       uint64_t fsmo_info,
-					       dreplsrv_fsmo_callback_t callback)
+					       dreplsrv_fsmo_callback_t callback,
+					       void *cb_data)
 {
 	struct dreplsrv_out_operation *op;
 
@@ -50,6 +51,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 	op->extended_op = extended_op;
 	op->fsmo_info   = fsmo_info;
 	op->callback    = callback;
+	op->cb_data	= cb_data;
 
 	DLIST_ADD_END(s->ops.pending, op, struct dreplsrv_out_operation *);
 
@@ -64,7 +66,9 @@ static WERROR dreplsrv_schedule_partition_pull(struct dreplsrv_service *s,
 	struct dreplsrv_partition_source_dsa *cur;
 
 	for (cur = p->sources; cur; cur = cur->next) {
-		status = dreplsrv_schedule_partition_pull_source(s, cur, DRSUAPI_EXOP_NONE, 0, NULL);
+		status = dreplsrv_schedule_partition_pull_source(s, cur,
+		                                                 DRSUAPI_EXOP_NONE, 0,
+		                                                 NULL, NULL);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 
@@ -160,7 +164,7 @@ static void dreplsrv_pending_op_callback(struct tevent_req *subreq)
 
 done:
 	if (op->callback) {
-		op->callback(s, rf->result_last_attempt, op->extended_ret);
+		op->callback(s, rf->result_last_attempt, op->extended_ret, op->cb_data);
 	}
 	talloc_free(op);
 	s->ops.current = NULL;

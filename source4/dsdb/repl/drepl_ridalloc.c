@@ -102,7 +102,8 @@ static WERROR drepl_create_rid_manager_source_dsa(struct dreplsrv_service *servi
  */
 static void drepl_new_rid_pool_callback(struct dreplsrv_service *service,
 					WERROR werr,
-					enum drsuapi_DsExtendedError ext_err)
+					enum drsuapi_DsExtendedError ext_err,
+					void *cb_data)
 {
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": RID Manager failed RID allocation - %s - extended_ret[0x%X]\n",
@@ -139,7 +140,7 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 
 	werr = dreplsrv_schedule_partition_pull_source(service, service->ridalloc.rid_manager_source_dsa,
 						       DRSUAPI_EXOP_FSMO_RID_ALLOC, alloc_pool,
-						       drepl_new_rid_pool_callback);
+						       drepl_new_rid_pool_callback, NULL);
 	return werr;
 }
 
