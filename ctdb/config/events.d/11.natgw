@@ -46,7 +46,7 @@ case "$1" in
 	ctdb setnatgwstate on
 	;;
 
-    recovered|updatenatgw)
+    recovered|updatenatgw|ipreallocated)
 	MYPNN=`ctdb pnn | cut -d: -f2`
 	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
 	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`

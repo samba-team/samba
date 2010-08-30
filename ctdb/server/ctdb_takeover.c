@@ -1215,10 +1215,10 @@ create_merged_ip_list(struct ctdb_context *ctdb)
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
-	int i, num_healthy, retries;
+	int i, num_healthy, retries, num_ips;
 	struct ctdb_public_ip ip;
 	struct ctdb_public_ipv4 ipv4;
-	uint32_t mask;
+	uint32_t mask, *nodes;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	int maxnode, maxnum=0, minnode, minnum=0, num;
 	TDB_DATA data;
@@ -1527,6 +1527,19 @@ finished:
 		DEBUG(DEBUG_ERR,(__location__ " Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
 		talloc_free(tmp_ctx);
 		return -1;
+	}
+
+	/* tell all nodes to update natwg */
+	/* send the flags update natgw on all connected nodes */
+	data.dptr  = discard_const("ipreallocated");
+	data.dsize = strlen((char *)data.dptr) + 1; 
+	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RUN_EVENTSCRIPTS,
+				      nodes, 0, TAKEOVER_TIMEOUT(),
+				      false, data,
+				      NULL, NULL,
+				      NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to updatenatgw failed\n"));
 	}
 
 	talloc_free(tmp_ctx);
