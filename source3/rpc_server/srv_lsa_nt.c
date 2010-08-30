@@ -389,7 +389,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 	}
 
 	status = access_check_object(psd, p->server_info->ptok,
-				     NULL, 0, des_access,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenPolicy2" );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1723,7 +1723,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 	}
 
 	status = access_check_object(psd, p->server_info->ptok,
-				     NULL, 0, r->in.access_mask,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, r->in.access_mask,
 				     &acc_granted, "_lsa_CreateAccount");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1793,7 +1793,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 	}
 
 	status = access_check_object(psd, p->server_info->ptok,
-				     NULL, 0, des_access,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenAccount" );
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2189,7 +2189,7 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
  	 */
 
 	status = access_check_object(psd, p->server_info->ptok,
-				     NULL, 0,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
 				     &acc_granted, "_lsa_AddAccountRights" );
         if (!NT_STATUS_IS_OK(status)) {
@@ -2259,7 +2259,7 @@ NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
  	 */
 
 	status = access_check_object(psd, p->server_info->ptok,
-				     NULL, 0,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
 				     LSA_ACCOUNT_VIEW|SEC_STD_DELETE,
 				     &acc_granted, "_lsa_RemoveAccountRights");

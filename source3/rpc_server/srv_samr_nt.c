@@ -177,12 +177,16 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor
 /*******************************************************************
  Checks if access to an object should be granted, and returns that
  level of access for further checks.
+
+ If the user has either of needed_priv_1 or needed_priv_2 then they
+ get the rights in rights_mask in addition to any calulated rights.
 ********************************************************************/
 
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
-                                          uint64_t *rights, uint32 rights_mask,
-                                          uint32 des_access, uint32 *acc_granted,
-					  const char *debug )
+			      enum sec_privilege needed_priv_1, enum sec_privilege needed_priv_2,
+			      uint32 rights_mask,
+			      uint32 des_access, uint32 *acc_granted,
+			      const char *debug )
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	uint32 saved_mask = 0;
@@ -191,9 +195,8 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 	   by privileges (mostly having to do with creating/modifying/deleting
 	   users and groups) */
 
-	if (rights && !se_priv_equal(rights, &se_priv_none) &&
-			user_has_any_privilege(token, rights)) {
-
+	if ((needed_priv_1 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_1)) ||
+	    (needed_priv_2 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_2))) {
 		saved_mask = (des_access & rights_mask);
 		des_access &= ~saved_mask;
 
@@ -545,7 +548,6 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	NTSTATUS  status;
 	size_t    sd_size;
 	uint32_t extra_access = SAMR_DOMAIN_ACCESS_CREATE_USER;
-	uint64_t se_rights;
 
 	/* find the connection policy handle. */
 
@@ -564,13 +566,6 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	se_map_generic( &des_access, &dom_generic_mapping );
 
 	/*
-	 * Users with SeMachineAccount or SeAddUser get additional
-	 * SAMR_DOMAIN_ACCESS_CREATE_USER access.
-	 */
-	se_priv_copy( &se_rights, &se_machine_account );
-	se_priv_add( &se_rights, &se_add_users );
-
-	/*
 	 * Users with SeAddUser get the ability to manipulate groups
 	 * and aliases.
 	 */
@@ -582,9 +577,15 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 				SAMR_DOMAIN_ACCESS_CREATE_ALIAS);
 	}
 
+	/*
+	 * Users with SeMachineAccount or SeAddUser get additional
+	 * SAMR_DOMAIN_ACCESS_CREATE_USER access.
+	 */
+
 	status = access_check_object( psd, p->server_info->ptok,
-		&se_rights, extra_access, des_access,
-		&acc_granted, "_samr_OpenDomain" );
+				      SEC_PRIV_MACHINE_ACCOUNT, SEC_PRIV_ADD_USERS,
+				      extra_access, des_access,
+				      &acc_granted, "_samr_OpenDomain" );
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -2253,7 +2254,11 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	size_t    sd_size;
 	bool ret;
 	NTSTATUS nt_status;
-	uint64_t se_rights;
+
+	/* These two privileges, if != SEC_PRIV_INVALID, indicate
+	 * privileges that the user must have to complete this
+	 * operation in defience of the fixed ACL */
+	enum sec_privilege needed_priv_1, needed_priv_2;
 	NTSTATUS status;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
@@ -2290,8 +2295,8 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	ret=pdb_getsampwsid(sampass, &sid);
 	unbecome_root();
 
-	se_priv_copy(&se_rights, &se_priv_none);
-
+	needed_priv_1 = SEC_PRIV_INVALID;
+	needed_priv_2 = SEC_PRIV_INVALID;
 	/*
 	 * We do the override access checks on *open*, not at
 	 * SetUserInfo time.
@@ -2299,37 +2304,27 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	if (ret) {
 		uint32_t acb_info = pdb_get_acct_ctrl(sampass);
 
-		if ((acb_info & ACB_WSTRUST) &&
-				user_has_any_privilege(p->server_info->ptok,
-						&se_machine_account)) {
+		if (acb_info & ACB_WSTRUST) {
 			/*
 			 * SeMachineAccount is needed to add
 			 * GENERIC_RIGHTS_USER_WRITE to a machine
 			 * account.
 			 */
-			se_priv_add(&se_rights, &se_machine_account);
-			DEBUG(10,("_samr_OpenUser: adding machine account "
-				"rights to handle for user %s\n",
-				pdb_get_username(sampass) ));
+			needed_priv_1 = SEC_PRIV_MACHINE_ACCOUNT;
 		}
-		if ((acb_info & ACB_NORMAL) &&
-				user_has_any_privilege(p->server_info->ptok,
-						&se_add_users)) {
+		if (acb_info & ACB_NORMAL) {
 			/*
 			 * SeAddUsers is needed to add
 			 * GENERIC_RIGHTS_USER_WRITE to a normal
 			 * account.
 			 */
-			se_priv_add(&se_rights, &se_add_users);
-			DEBUG(10,("_samr_OpenUser: adding add user "
-				"rights to handle for user %s\n",
-				pdb_get_username(sampass) ));
+			needed_priv_1 = SEC_PRIV_ADD_USERS;
 		}
 		/*
-		 * Cheat - allow GENERIC_RIGHTS_USER_WRITE if pipe user is
-		 * in DOMAIN_RID_ADMINS. This is almost certainly not
-		 * what Windows does but is a hack for people who haven't
-		 * set up privileges on groups in Samba.
+		 * Cheat - we have not set a specific privilege for
+		 * server (BDC) or domain trust account, so allow
+		 * GENERIC_RIGHTS_USER_WRITE if pipe user is in
+		 * DOMAIN_RID_ADMINS.
 		 */
 		if (acb_info & (ACB_SVRTRUST|ACB_DOMTRUST)) {
 			if (lp_enable_privileges() && nt_token_check_domain_rid(p->server_info->ptok,
@@ -2346,8 +2341,9 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	TALLOC_FREE(sampass);
 
 	nt_status = access_check_object(psd, p->server_info->ptok,
-		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access,
-		&acc_granted, "_samr_OpenUser");
+					needed_priv_1, needed_priv_2,
+					GENERIC_RIGHTS_USER_WRITE, des_access,
+					&acc_granted, "_samr_OpenUser");
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -3807,7 +3803,9 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	bool can_add_account = False;
-	uint64_t se_rights;
+
+	/* Which privilege is needed to override the ACL? */
+	enum sec_privilege needed_priv = SEC_PRIV_INVALID;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_CREATE_USER, NULL,
@@ -3841,24 +3839,20 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	/* determine which user right we need to check based on the acb_info */
 
 	if (geteuid() == sec_initial_uid()) {
-		se_priv_copy(&se_rights, &se_priv_none);
 		can_add_account = true;
 	} else if (acb_info & ACB_WSTRUST) {
-		se_priv_copy(&se_rights, &se_machine_account);
-		can_add_account = user_has_privileges(
-			p->server_info->ptok, &se_rights );
+		needed_priv = SEC_PRIV_MACHINE_ACCOUNT;
+		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_MACHINE_ACCOUNT);
 	} else if (acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$')) {
 		/* usrmgr.exe (and net rpc trustdom grant) creates a normal user
 		   account for domain trusts and changes the ACB flags later */
-		se_priv_copy(&se_rights, &se_add_users);
-		can_add_account = user_has_privileges(
-			p->server_info->ptok, &se_rights );
+		needed_priv = SEC_PRIV_ADD_USERS;
+		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS);
 	} else if (lp_enable_privileges()) {
 		/* implicit assumption of a BDC or domain trust account here
 		 * (we already check the flags earlier) */
 		/* only Domain Admins can add a BDC or domain trust */
-		se_priv_copy(&se_rights, &se_priv_none);
 		can_add_account = nt_token_check_domain_rid(
 			p->server_info->ptok,
 			DOMAIN_RID_ADMINS );
@@ -3906,7 +3900,8 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	 */
 
 	nt_status = access_check_object(psd, p->server_info->ptok,
-		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access,
+					needed_priv, SEC_PRIV_INVALID,
+					GENERIC_RIGHTS_USER_WRITE, des_access,
 		&acc_granted, "_samr_CreateUser2");
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -4042,7 +4037,8 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 	se_map_generic(&des_access, &sam_generic_mapping);
 
 	nt_status = access_check_object(psd, p->server_info->ptok,
-		NULL, 0, des_access, &acc_granted, fn);
+					SEC_PRIV_INVALID, SEC_PRIV_INVALID,
+					0, des_access, &acc_granted, fn);
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -4233,7 +4229,6 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 	uint32    des_access = r->in.access_mask;
 	size_t    sd_size;
 	NTSTATUS  status;
-	uint64_t se_rights;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, NULL,
@@ -4256,11 +4251,10 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
 
-	se_priv_copy( &se_rights, &se_add_users );
-
 	status = access_check_object(psd, p->server_info->ptok,
-		&se_rights, GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
-		des_access, &acc_granted, "_samr_OpenAlias");
+				     SEC_PRIV_ADD_USERS, SEC_PRIV_INVALID,
+				     GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
+				     des_access, &acc_granted, "_samr_OpenAlias");
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -6312,7 +6306,6 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	size_t            sd_size;
 	NTSTATUS          status;
 	bool ret;
-	uint64_t se_rights;
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
 				   SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, NULL,
@@ -6329,11 +6322,9 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&grp_generic_mapping);
 
-	se_priv_copy( &se_rights, &se_add_users );
-
 	status = access_check_object(psd, p->server_info->ptok,
-		&se_rights, GENERIC_RIGHTS_GROUP_ALL_ACCESS,
-		des_access, &acc_granted, "_samr_OpenGroup");
+				     SEC_PRIV_ADD_USERS, SEC_PRIV_INVALID, GENERIC_RIGHTS_GROUP_ALL_ACCESS,
+				     des_access, &acc_granted, "_samr_OpenGroup");
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
