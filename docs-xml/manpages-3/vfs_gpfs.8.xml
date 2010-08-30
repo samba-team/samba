@@ -60,6 +60,28 @@
 
 		<varlistentry>
 
+		<term>gpfs:sharemodes = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Enable/Disable cross node sharemode handling for GPFS.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - propagate sharemodes across all GPFS nodes.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - do not propagate sharemodes across all GPFS nodes.
+		This should only be used if the GPFS file system is
+		exclusively exported by Samba. Access by local unix application or
+		NFS exports could lead to corrupted files.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
