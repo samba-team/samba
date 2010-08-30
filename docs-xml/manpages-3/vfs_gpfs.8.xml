@@ -127,6 +127,28 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:winattr = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Enable/Disable usage of the windows attributes in GPFS.
+		GPFS is able to store windows file attributes e.g. HIDDEN,
+		READONLY, SYSTEM and others natively. That means Samba doesn't
+		need to map them to permission bits or extended attributes.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>no(default)</command> - do not use GPFS windows attributes.
+		</para></listitem>
+		<listitem><para>
+		<command>yes</command> - use GPFS windows attributes.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
