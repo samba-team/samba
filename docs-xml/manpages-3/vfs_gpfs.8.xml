@@ -106,6 +106,27 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:getrealfilename = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Enable/Disable usage of the <command>gpfs_get_realfilename_path()</command> function.
+		This improves the casesensitive wildcard file name access.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - use <command>gpfs_get_realfilename_path()</command>.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - do not use <command>gpfs_get_realfilename_path()</command>.
+		It seems that <command>gpfs_get_realfilename_path()</command> doesn't work on AIX.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
