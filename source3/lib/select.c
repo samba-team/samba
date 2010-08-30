@@ -148,17 +148,18 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 {
 	int ret;
 	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
-	struct timeval tval2, *ptval, end_time;
+	struct timeval tval2, *ptval;
+	struct timespec end_time;
 
 	readfds2 = (readfds ? &readfds_buf : NULL);
 	writefds2 = (writefds ? &writefds_buf : NULL);
 	errorfds2 = (errorfds ? &errorfds_buf : NULL);
 	if (tval) {
-		GetTimeOfDay(&end_time);
+		clock_gettime_mono(&end_time);
 		end_time.tv_sec += tval->tv_sec;
-		end_time.tv_usec += tval->tv_usec;
-		end_time.tv_sec += end_time.tv_usec / 1000000;
-		end_time.tv_usec %= 1000000;
+		end_time.tv_nsec += tval->tv_usec *1000;
+		end_time.tv_sec += end_time.tv_nsec / 1000000000;
+		end_time.tv_nsec %= 1000000000;
 		errno = 0;
 		tval2 = *tval;
 		ptval = &tval2;
@@ -174,17 +175,17 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 		if (errorfds)
 			errorfds_buf = *errorfds;
 		if (ptval && (errno == EINTR)) {
-			struct timeval now_time;
+			struct timespec now_time;
 			int64_t tdif;
 
-			GetTimeOfDay(&now_time);
-			tdif = usec_time_diff(&end_time, &now_time);
+			clock_gettime_mono(&now_time);
+			tdif = nsec_time_diff(&end_time,&now_time);
 			if (tdif <= 0) {
 				ret = 0; /* time expired. */
 				break;
 			}
-			ptval->tv_sec = tdif / 1000000;
-			ptval->tv_usec = tdif % 1000000;
+			ptval->tv_sec = tdif / 1000000000;
+			ptval->tv_usec = (tdif % 1000000000) / 1000;
 		}
 
 		/* We must use select and not sys_select here. If we use
