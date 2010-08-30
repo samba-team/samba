@@ -43,11 +43,11 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	DATA_BLOB in_path_buffer;
 	char *in_path_string;
 	size_t in_path_string_size;
-	uint8_t out_share_type;
-	uint32_t out_share_flags;
-	uint32_t out_capabilities;
-	uint32_t out_maximal_access;
-	uint32_t out_tree_id;
+	uint8_t out_share_type = 0;
+	uint32_t out_share_flags = 0;
+	uint32_t out_capabilities = 0;
+	uint32_t out_maximal_access = 0;
+	uint32_t out_tree_id = 0;
 	NTSTATUS status;
 	bool ok;
 
