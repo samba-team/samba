@@ -171,7 +171,7 @@ static const struct {
 /*
   return a privilege mask given a privilege id
 */
-static uint64_t sec_privilege_mask(enum sec_privilege privilege)
+uint64_t sec_privilege_mask(enum sec_privilege privilege)
 {
 	int i;
 	for (i=0;i<ARRAY_SIZE(privs);i++) {

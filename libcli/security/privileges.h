@@ -63,6 +63,11 @@ typedef struct {
 	struct lsa_LUIDAttribute *set;
 } PRIVILEGE_SET;
 
+/*
+  return a privilege mask given a privilege id
+*/
+uint64_t sec_privilege_mask(enum sec_privilege privilege);
+
 /***************************************************************************
  copy an uint64_t structure
 ****************************************************************************/
