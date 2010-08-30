@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/security/dom_sid.h"
 
 #include "smbldap.h"
 
@@ -653,6 +654,47 @@ static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
+static uint32_t pdb_ipasam_capabilities(struct pdb_methods *methods)
+{
+	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
+}
+
+static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pdb_methods,
+							  TALLOC_CTX *mem_ctx)
+{
+	struct pdb_domain_info *info;
+	NTSTATUS status;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)pdb_methods->private_data;
+
+	info = talloc(mem_ctx, struct pdb_domain_info);
+	if (info == NULL) {
+		return NULL;
+	}
+
+	info->name = talloc_strdup(info, ldap_state->domain_name);
+	if (info->name == NULL) {
+		goto fail;
+	}
+
+	/* TODO: read dns_domain, dns_forest and guid from LDAP */
+	info->dns_domain = talloc_strdup(info, lp_realm());
+	if (info->dns_domain == NULL) {
+		goto fail;
+	}
+	strlower_m(info->dns_domain);
+	info->dns_forest = talloc_strdup(info, info->dns_domain);
+
+	sid_copy(&info->sid, &ldap_state->domain_sid);
+
+	status = GUID_from_string("testguid", &info->guid);
+
+	return info;
+
+fail:
+	TALLOC_FREE(info);
+	return NULL;
+}
+
 static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	struct ldapsam_privates *ldap_state;
@@ -663,6 +705,9 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 
 	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
 	ldap_state->is_ipa_ldap = true;
+
+	(*pdb_method)->capabilities = pdb_ipasam_capabilities;
+	(*pdb_method)->get_domain_info = pdb_ipasam_get_domain_info;
 
 	(*pdb_method)->get_trusteddom_pw = ipasam_get_trusteddom_pw;
 	(*pdb_method)->set_trusteddom_pw = ipasam_set_trusteddom_pw;
