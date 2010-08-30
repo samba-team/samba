@@ -40,19 +40,19 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 
-static struct timeval tp1,tp2;
+static struct timespec tp1,tp2;
 static struct ldb_cmdline *options;
 
 static void _start_timer(void)
 {
-	gettimeofday(&tp1,NULL);
+	clock_gettime_mono(&tp1);
 }
 
 static double _end_timer(void)
 {
-	gettimeofday(&tp2,NULL);
+	clock_gettime_mono(&tp2);
 	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
+	       (tp2.tv_nsec - tp1.tv_nsec)*1.0e-9);
 }
 
 static void add_records(struct ldb_context *ldb,
