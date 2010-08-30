@@ -2291,4 +2291,10 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 	 return 1;
 }
 
-#endif
+bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
+{
+	DEBUG(0,("NO KERBEROS SUPPORT\n"));
+	return false;
+}
+
+#endif /* HAVE_KRB5 */
