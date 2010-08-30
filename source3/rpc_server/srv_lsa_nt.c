@@ -2082,7 +2082,11 @@ NTSTATUS _lsa_LookupPrivName(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	name = luid_to_privilege_name(r->in.luid);
+	if (r->in.luid->high != 0) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	name = sec_privilege_name(r->in.luid->low);
 	if (!name) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
@@ -2304,8 +2308,10 @@ static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
 	int num_priv = 0;
 
 	for (i=0; i<privileges->count; i++) {
-
-		privname = luid_to_privilege_name(&privileges->set[i].luid);
+		if (privileges->set[i].luid.high) {
+			continue;
+		}
+		privname = sec_privilege_name(privileges->set[i].luid.low);
 		if (privname) {
 			if (!add_string_to_array(mem_ctx, privname,
 						 &privname_array, &num_priv)) {

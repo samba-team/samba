@@ -418,29 +418,6 @@ int num_privileges_in_short_list( void )
 }
 
 /****************************************************************************
- Convert a LUID to a named string
-****************************************************************************/
-
-const char *luid_to_privilege_name(const struct lsa_LUID *set)
-{
-	int i;
-
-	uint32_t num_privs = ARRAY_SIZE(privs);
-
-	if (set->high != 0)
-		return NULL;
-
-	for ( i=0; i<num_privs; i++ ) {
-		if ( set->low == privs[i].luid ) {
-			return privs[i].name;
-		}
-	}
-
-	return NULL;
-}
-
-
-/****************************************************************************
  add a privilege to a privilege array
  ****************************************************************************/
 
@@ -495,24 +472,6 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask )
 /*******************************************************************
 *******************************************************************/
 
-static bool luid_to_se_priv( struct lsa_LUID *luid, uint64_t *privilege_mask )
-{
-	int i;
-	uint32_t num_privs = ARRAY_SIZE(privs);
-
-	for ( i=0; i<num_privs; i++ ) {
-		if ( luid->low == privs[i].luid ) {
-			se_priv_copy( privilege_mask, &privs[i].privilege_mask );
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/*******************************************************************
-*******************************************************************/
-
 bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset )
 {
 	int i;
@@ -528,8 +487,10 @@ bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet
 		if ( privset->set[i].luid.high != 0 )
 			return false;
 
-		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
-			se_priv_add( privilege_mask, &r );
+		r = sec_privilege_mask(privset->set[i].luid.low);
+		if (r) {
+			*privilege_mask |= r;
+		}
 	}
 
 	return true;
