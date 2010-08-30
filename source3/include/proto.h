@@ -635,7 +635,7 @@ void pidfile_unlink(void);
 
 bool get_privileges_for_sids(uint64_t *privileges, struct dom_sid *slist, int scount);
 NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids);
-NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
+NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids);
 bool grant_privilege(const struct dom_sid *sid, const uint64_t priv_mask);
 bool grant_privilege_by_name(struct dom_sid *sid, const char *name);

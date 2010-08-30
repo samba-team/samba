@@ -634,7 +634,7 @@ static int net_sam_policy(struct net_context *c, int argc, const char **argv)
 static int net_sam_rights_list(struct net_context *c, int argc,
 			       const char **argv)
 {
-	uint64_t mask;
+	enum sec_privilege privilege;
 
 	if (argc > 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\n%s",
@@ -653,12 +653,14 @@ static int net_sam_rights_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	if (se_priv_from_name(argv[0], &mask)) {
+	privilege = sec_privilege_id(argv[0]);
+
+	if (privilege != SEC_PRIV_INVALID) {
 		struct dom_sid *sids;
 		int i, num_sids;
 		NTSTATUS status;
 
-		status = privilege_enum_sids(&mask, talloc_tos(),
+		status = privilege_enum_sids(privilege, talloc_tos(),
 					     &sids, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, _("Could not list rights: %s\n"),

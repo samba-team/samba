@@ -251,7 +251,7 @@ NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids)
  Retrieve list of SIDs granted a particular privilege
 *********************************************************************/
 
-NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
+NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids)
 {
 	struct db_context *db = get_account_pol_db();
@@ -263,7 +263,7 @@ NTSTATUS privilege_enum_sids(const uint64_t *mask, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(priv);
 
-	priv.privilege = *mask;
+	priv.privilege = sec_privilege_mask(privilege);
 	priv.mem_ctx = mem_ctx;
 
 	db->traverse_read(db, priv_traverse_fn, &priv);

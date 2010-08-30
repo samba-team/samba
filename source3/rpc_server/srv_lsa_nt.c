@@ -2440,7 +2440,7 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(struct pipes_struct *p,
 	struct dom_sid *sids = NULL;
 	int num_sids = 0;
 	uint32_t i;
-	uint64_t mask;
+	enum sec_privilege privilege;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -2458,11 +2458,12 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	if (!se_priv_from_name(r->in.name->string, &mask)) {
+	privilege = sec_privilege_id(r->in.name->string);
+	if (privilege == SEC_PRIV_INVALID) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	status = privilege_enum_sids(&mask, p->mem_ctx,
+	status = privilege_enum_sids(privilege, p->mem_ctx,
 				     &sids, &num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
