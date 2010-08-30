@@ -2012,6 +2012,9 @@ NTSTATUS _lsa_QueryTrustedDomainInfoByName(struct pipes_struct *p,
 
 	status = _lsa_OpenTrustedDomainByName(p, &o);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN)) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
 		return status;
 	}
 
