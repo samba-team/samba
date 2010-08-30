@@ -2042,7 +2042,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 			     const uint8_t *inbuf, size_t size)
 {
 	NTSTATUS status;
-	struct smbd_smb2_request *req;
+	struct smbd_smb2_request *req = NULL;
 	struct tevent_req *subreq;
 
 	if (lp_security() == SEC_SHARE) {
