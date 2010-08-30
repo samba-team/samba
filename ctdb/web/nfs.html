@@ -39,8 +39,6 @@ which causes problems on some clients.<br>
 
 This file should look something like :
 <pre>
-  NFS_TICKLE_SHARED_DIRECTORY=/gpfs0/nfs-tickles
-  STATD_SHARED_DIRECTORY=/gpfs0/nfs-state
   NFS_HOSTNAME=ctdb
   STATD_PORT=595
   STATD_OUTGOING_PORT=596
@@ -55,23 +53,6 @@ This file should look something like :
 
 You need to make sure that the lock manager runs on the same port on all nodes in the cluster since some clients will have "issues" and take very long to recover if the port suddenly changes.<br>
 599 above is only an example. You can run the lock manager on any available port as long as you use the same port on all nodes.<br><br>
-
-STATD_SHARED_DIRECTORY is the shared directory where statd and the statd-callout script expects that the state variables and lists of clients to notify are found.<br>
-
-This directory must be stored on the shared cluster filesystem so that all nodes can access the same data.<br><br>
-
-Don't forget to create this directory:
-<pre>
-  mkdir /gpfs0/nfs-state
-</pre>
-
-NFS_TICKLE_SHARED_DIRECTORY is where ctdb will store information about which
-clients have established tcp connections to the cluster. This information
-is used during failover of ip addresses.
-This allows the node that takes over an ip address to very quickly 'tickle' and reset any tcp connections for the ip address it took over.<br>
-The reason to do this is to improve the speed at which a client will detect
-that the tcp connection for NFS needs to be reestablished and to speed up
-recovery in the client.<br>
 
 NFS_HOSTNAME is the dns name for the ctdb cluster and which is used when clients map nfs shares. This name must be in DNS and resolve back into the public ip addresses of the cluster.<br>
 Always use the same name here as you use for the samba hostname.
