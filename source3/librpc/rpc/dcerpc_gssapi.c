@@ -985,7 +985,7 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
-			     TALLOC_CTX *mem_ctx, char **client_name)
+			     TALLOC_CTX *mem_ctx, char **cli_name)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
