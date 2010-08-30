@@ -1416,7 +1416,7 @@ bool torture_denytest1(struct torture_context *tctx,
 	int fnum1, fnum2;
 	int i;
 	bool correct = true;
-	struct timeval tv, tv_start;
+	struct timespec tv, tv_start;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 	int failures=0;
 
@@ -1431,7 +1431,7 @@ bool torture_denytest1(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing %d entries\n", (int)ARRAY_SIZE(denytable1));
 
-	GetTimeOfDay(&tv_start);
+	clock_gettime_mono(&tv_start);
 
 	for (i=0; i<ARRAY_SIZE(denytable1); i++) {
 		enum deny_result res;
@@ -1474,9 +1474,9 @@ bool torture_denytest1(struct torture_context *tctx,
 		if (torture_setting_bool(tctx, "showall", false) || 
 			res != denytable1[i].result) {
 			int64_t tdif;
-			GetTimeOfDay(&tv);
-			tdif = usec_time_diff(&tv, &tv_start);
-			tdif /= 1000;
+			clock_gettime_mono(&tv);
+			tdif = nsec_time_diff(&tv, &tv_start);
+			tdif /= 1000000;
 			torture_comment(tctx, "%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
 			       (long long)tdif,
 			       fname,
@@ -1518,7 +1518,7 @@ bool torture_denytest2(struct torture_context *tctx,
 	int i;
 	bool correct = true;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
-	struct timeval tv, tv_start;
+	struct timespec tv, tv_start;
 	int failures=0;
 
 	for (i=0;i<2;i++) {
@@ -1528,7 +1528,7 @@ bool torture_denytest2(struct torture_context *tctx,
 		smbcli_close(cli1->tree, fnum1);
 	}
 
-	GetTimeOfDay(&tv_start);
+	clock_gettime_mono(&tv_start);
 
 	for (i=0; i<ARRAY_SIZE(denytable2); i++) {
 		enum deny_result res;
@@ -1571,9 +1571,9 @@ bool torture_denytest2(struct torture_context *tctx,
 		if (torture_setting_bool(tctx, "showall", false) || 
 			res != denytable2[i].result) {
 			int64_t tdif;
-			GetTimeOfDay(&tv);
-			tdif = usec_time_diff(&tv, &tv_start);
-			tdif /= 1000;
+			clock_gettime_mono(&tv);
+			tdif = nsec_time_diff(&tv, &tv_start);
+			tdif /= 1000000;
 			torture_comment(tctx, "%lld: %s %8s %10s    %8s %10s    %s (correct=%s)\n",
 			       (long long)tdif,
 			       fname,
@@ -1763,7 +1763,7 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 	int fnum1;
 	int i;
 	bool correct = true;
-	struct timeval tv, tv_start;
+	struct timespec tv, tv_start;
 	const char *fname;
 	int nbits1 = ARRAY_SIZE(share_access_bits);
 	int nbits2 = ARRAY_SIZE(access_mask_bits);
@@ -1783,7 +1783,7 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 	smbcli_write(cli1->tree, fnum1, 0, buf, 0, sizeof(buf));
 	smbcli_close(cli1->tree, fnum1);
 
-	GetTimeOfDay(&tv_start);
+	clock_gettime_mono(&tv_start);
 
 	io1.ntcreatex.level = RAW_OPEN_NTCREATEX;
 	io1.ntcreatex.in.root_fid.fnum = 0;
@@ -1871,9 +1871,9 @@ static bool torture_ntdenytest(struct torture_context *tctx,
 						   read_for_execute,
 						   &res2);
 		
-		GetTimeOfDay(&tv);
-		tdif = usec_time_diff(&tv, &tv_start);
-		tdif /= 1000;
+		clock_gettime_mono(&tv);
+		tdif = nsec_time_diff(&tv, &tv_start);
+		tdif /= 1000000;
 		if (torture_setting_bool(tctx, "showall", false) || 
 		    !NT_STATUS_EQUAL(status2, status2_p) ||
 		    res != res2) {
