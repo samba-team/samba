@@ -55,6 +55,16 @@ _PUBLIC_ void GetTimeOfDay(struct timeval *tval)
 #endif
 }
 
+/**
+a wrapper to preferably get the monotonic time
+**/
+_PUBLIC_ void clock_gettime_mono(struct timespec *tp)
+{
+	if (clock_gettime(CUSTOM_CLOCK_MONOTONIC,tp) != 0) {
+		clock_gettime(CLOCK_REALTIME,tp);
+	}
+}
+
 
 #define TIME_FIXUP_CONSTANT 11644473600LL
 
