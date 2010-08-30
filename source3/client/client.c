@@ -1023,7 +1023,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	int handle = 0;
 	uint16_t fnum;
 	bool newhandle = false;
-	struct timeval tp_start;
+	struct timespec tp_start;
 	uint16 attr;
 	SMB_OFF_T size;
 	off_t start = 0;
@@ -1048,7 +1048,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		return 1;
 	}
 
-	GetTimeOfDay(&tp_start);
+	clock_gettime_mono(&tp_start);
 
 	status = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1115,13 +1115,11 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	}
 
 	{
-		struct timeval tp_end;
+		struct timespec tp_end;
 		int this_time;
 
-		GetTimeOfDay(&tp_end);
-		this_time =
-			(tp_end.tv_sec - tp_start.tv_sec)*1000 +
-			(tp_end.tv_usec - tp_start.tv_usec)/1000;
+		clock_gettime_mono(&tp_end);
+		this_time = TspecDiff(&tp_start,&tp_end);
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 
@@ -1681,7 +1679,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	XFILE *f;
 	SMB_OFF_T start = 0;
 	int rc = 0;
-	struct timeval tp_start;
+	struct timespec tp_start;
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 	struct push_state state;
@@ -1692,7 +1690,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		return 1;
 	}
 
-	GetTimeOfDay(&tp_start);
+	clock_gettime_mono(&tp_start);
 
 	if (reput) {
 		status = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
@@ -1766,13 +1764,11 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	}
 
 	{
-		struct timeval tp_end;
+		struct timespec tp_end;
 		int this_time;
 
-		GetTimeOfDay(&tp_end);
-		this_time =
-			(tp_end.tv_sec - tp_start.tv_sec)*1000 +
-			(tp_end.tv_usec - tp_start.tv_usec)/1000;
+		clock_gettime_mono(&tp_end);
+		this_time = TspecDiff(&tp_start,&tp_end);
 		put_total_time_ms += this_time;
 		put_total_size += state.nread;
 
@@ -4508,9 +4504,11 @@ static void readline_callback(void)
 	fd_set fds;
 	struct timeval timeout;
 	static time_t last_t;
+	struct timespec now;
 	time_t t;
 
-	t = time(NULL);
+	clock_gettime_mono(&now);
+	t = now.tv_sec;
 
 	if (t - last_t < 5)
 		return;
