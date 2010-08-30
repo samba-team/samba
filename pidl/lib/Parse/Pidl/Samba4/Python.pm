@@ -769,7 +769,7 @@ sub use_type_variable($$)
 	my ($self, $orig_ctype) = @_;
 	# FIXME: Have a global lookup table for types that look different on the 
 	# wire than they are named in C?
-	if ($orig_ctype->{NAME} eq "dom_sid2") {
+	if ($orig_ctype->{NAME} eq "dom_sid2" or $orig_ctype->{NAME} eq "dom_sid28") {
 		$orig_ctype->{NAME} = "dom_sid";
 	}
 	my $ctype = resolveType($orig_ctype);
