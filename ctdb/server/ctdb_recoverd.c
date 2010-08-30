@@ -1382,8 +1382,10 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
 		start_time = timeval_current();
 		if (!ctdb_recovery_lock(ctdb, true)) {
-			ctdb_set_culprit(rec, pnn);
-			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
+			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
+					 "and ban ourself for %u seconds\n",
+					 ctdb->tunable.recovery_ban_period));
+			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
 			return -1;
 		}
 		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
