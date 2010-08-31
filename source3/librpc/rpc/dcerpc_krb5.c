@@ -27,7 +27,7 @@
 static krb5_error_code flush_keytab(krb5_context krbctx, krb5_keytab keytab)
 {
 	krb5_error_code ret;
-	krb5_kt_cursor kt_cursor = NULL;
+	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
 
 	ZERO_STRUCT(kt_entry);
