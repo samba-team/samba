@@ -364,7 +364,7 @@ def build(bld):
 					  # libraries are loaded, but this doesn't appear to work 
 					  # at the moment:
 					  # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
-                      deps='crypt dl nsl socket')
+                      deps='crypt dl nsl socket rt')
 
     TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c'''
