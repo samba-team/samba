@@ -115,7 +115,7 @@ static bool test_usermod(struct torture_context *tctx, struct dcerpc_pipe *p,
 
 		testfld = (random() % USER_FIELD_LAST) + 1;
 
-		gettimeofday(&now, NULL);
+		GetTimeOfDay(&now);
 
 		switch (testfld) {
 		case acct_name:
