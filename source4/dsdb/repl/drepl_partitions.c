@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "libcli/security/dom_sid.h"
 #include "param/param.h"
 
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
@@ -234,6 +235,38 @@ static WERROR udv_convert(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
+				      const struct GUID *nc_guid,
+				      const struct dom_sid *nc_sid,
+				      const char *nc_dn_str,
+				      struct dreplsrv_partition **_p)
+{
+	struct dreplsrv_partition *p;
+	bool valid_sid, valid_guid;
+	struct dom_sid null_sid;
+	ZERO_STRUCT(null_sid);
+
+	SMB_ASSERT(_p);
+
+	valid_sid  = nc_sid && !dom_sid_equal(&null_sid, nc_sid);
+	valid_guid = nc_guid && !GUID_all_zero(nc_guid);
+
+	if (!valid_sid && !valid_guid && !nc_dn_str) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	for (p = s->partitions; p; p = p->next) {
+		if ((valid_guid && GUID_equal(&p->nc.guid, nc_guid))
+		    || strequal(p->nc.dn, nc_dn_str)
+		    || (valid_sid && dom_sid_equal(&p->nc.sid, nc_sid)))
+		{
+			*_p = p;
+			return WERR_OK;
+		}
+	}
+
+	return WERR_DS_DRA_BAD_NC;
+}
 
 static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
