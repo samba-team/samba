@@ -103,15 +103,9 @@ try_command_on_node $test_node "echo \"function exportfs () { echo $foo_dir 127.
 
 n="$rc_local_d/nfs-skip-share-check"
 n_contents='loadconfig() {
-    name="$1"
-    if [ -f /etc/sysconfig/$name ]; then
-	. /etc/sysconfig/$name
-    elif [ -f /etc/default/$name ]; then
-	. /etc/default/$name
-    elif [ -f $CTDB_BASE/sysconfig/$name ]; then
-	. $CTDB_BASE/sysconfig/$name
-    fi
-    if [ "$name" = "ctdb" ] ; then
+    _loadconfig "$@"
+
+    if [ "$1" = "ctdb" -o "$1" = "nfs" ] ; then
         CTDB_NFS_SKIP_SHARE_CHECK=no
     fi
 }
