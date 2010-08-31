@@ -33,6 +33,7 @@
 
 struct resolve_file_data {
 	const char *lookup_file;
+	const char *default_domain;
 };
 
 struct resolve_file_state {
@@ -57,6 +58,7 @@ struct composite_context *resolve_name_file_send(TALLOC_CTX *mem_ctx,
 	struct resolve_file_state *state;
 	struct sockaddr_storage *resolved_iplist;
 	int resolved_count, i;
+	char *dns_name;
 
 	bool srv_lookup = (flags & RESOLVE_NAME_FLAG_DNS_SRV);
 
@@ -79,8 +81,13 @@ struct composite_context *resolve_name_file_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
 
+	dns_name = name->name;
+	if (strchr(dns_name, '.') == NULL) {
+		dns_name = talloc_asprintf(state, "%s.%s", dns_name, data->default_domain);
+	}
 
-	c->status = resolve_dns_hosts_file_as_sockaddr(data->lookup_file, name->name, srv_lookup, state, &resolved_iplist, &resolved_count);
+	c->status = resolve_dns_hosts_file_as_sockaddr(data->lookup_file, dns_name,
+						       srv_lookup, state, &resolved_iplist, &resolved_count);
 	if (!composite_is_ok(c)) return c;
 
 	for (i=0; i < resolved_count; i++) {
@@ -100,7 +107,7 @@ struct composite_context *resolve_name_file_send(TALLOC_CTX *mem_ctx,
 		state->names = talloc_realloc(state, state->names, char *, i+2);
 		if (composite_nomem(state->addrs, c)) return c;
 
-		state->names[i] = talloc_strdup(state->names, name->name);
+		state->names[i] = talloc_strdup(state->names, dns_name);
 		if (composite_nomem(state->names[i], c)) return c;
 
 		state->names[i+1] = NULL;
@@ -137,14 +144,17 @@ NTSTATUS resolve_name_file_recv(struct composite_context *c,
 }
 
 
-bool resolve_context_add_file_method(struct resolve_context *ctx, const char *lookup_file)
+bool resolve_context_add_file_method(struct resolve_context *ctx, const char *lookup_file, const char *default_domain)
 {
 	struct resolve_file_data *data = talloc(ctx, struct resolve_file_data);
-	data->lookup_file = lookup_file;
+	data->lookup_file    = talloc_strdup(data, lookup_file);
+	data->default_domain = talloc_strdup(data, default_domain);
 	return resolve_context_add_method(ctx, resolve_name_file_send, resolve_name_file_recv, data);
 }
 
 bool resolve_context_add_file_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
-	return resolve_context_add_file_method(ctx, lpcfg_parm_string(lp_ctx, NULL, "resolv", "host file"));
+	return resolve_context_add_file_method(ctx,
+					       lpcfg_parm_string(lp_ctx, NULL, "resolv", "host file"),
+					       lpcfg_dnsdomain(lp_ctx));
 }
