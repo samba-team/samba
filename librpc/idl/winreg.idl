@@ -281,10 +281,18 @@ import "lsa.idl", "security.idl", "misc.idl";
 
 	/******************/
 	/* Function: 0x13 */
+
+	typedef [public,bitmap32bit] bitmap {
+		REG_WHOLE_HIVE_VOLATILE		= 0x00000001,
+		REG_REFRESH_HIVE 		= 0x00000002,
+		REG_NO_LAZY_FLUSH		= 0x00000004,
+		REG_FORCE_RESTORE		= 0x00000008
+	} winreg_RestoreKeyFlags;
+
 	WERROR winreg_RestoreKey(
 		[in,ref] policy_handle *handle,
 		[in,ref] winreg_String *filename,
-		[in]     uint32 flags 
+		[in]     winreg_RestoreKeyFlags flags
 	);
 
 	/******************/
