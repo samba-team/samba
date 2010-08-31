@@ -954,17 +954,20 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 
 		status = dcerpc_drsuapi_DsGetNT4ChangeLog_r(ctx->new_dc.drsuapi.drs_handle, ctx, &r);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
+			torture_skip(tctx,
+			             "DsGetNT4ChangeLog not supported: NT_STATUS_NOT_IMPLEMENTED");
 		} else if (!NT_STATUS_IS_OK(status)) {
 			const char *errstr = nt_errstr(status);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-				torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
+				torture_skip(tctx,
+				             "DsGetNT4ChangeLog not supported: NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE");
 			}
 			torture_fail(tctx,
 				     talloc_asprintf(tctx, "dcerpc_drsuapi_DsGetNT4ChangeLog failed - %s\n",
 						     errstr));
 		} else if (W_ERROR_EQUAL(r.out.result, WERR_INVALID_DOMAIN_ROLE)) {
-			torture_skip(tctx, "DsGetNT4ChangeLog not supported by target server");
+			torture_skip(tctx,
+			             "DsGetNT4ChangeLog not supported: WERR_INVALID_DOMAIN_ROLE");
 		} else if (!W_ERROR_IS_OK(r.out.result)) {
 			torture_fail(tctx,
 				     talloc_asprintf(tctx, "DsGetNT4ChangeLog failed - %s\n",
