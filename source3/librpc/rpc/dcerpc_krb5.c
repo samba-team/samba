@@ -170,7 +170,7 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 	krb5_error_code ret;
 	char *pwd = NULL;
 	size_t pwd_len;
-	krb5_kt_cursor kt_cursor = NULL;
+	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
 	krb5_data password;
 	krb5_principal princ = NULL;
@@ -200,6 +200,7 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 	}
 
 	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(kt_cursor);
 
 	/* check if the keytab already has any entry */
 	ret = krb5_kt_start_seq_get(krbctx, *keytab, &kt_cursor);
@@ -227,8 +228,8 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 			/* found private entry,
 			 * check if keytab is up to date */
 
-			if ((pwd_len == kt_entry.key.length) &&
-			    (memcmp(kt_entry.key.contents,
+			if ((pwd_len == KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry))) &&
+			    (memcmp(KRB5_KEY_DATA(KRB5_KT_KEY(&kt_entry)),
 						pwd, pwd_len) == 0)) {
 				/* keytab is already up to date, return */
 				smb_krb5_kt_free_entry(krbctx, &kt_entry);
@@ -249,11 +250,13 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 		}
 	}
 
-	if (kt_cursor) {
-		/* stop enumeration and free cursor */
-		krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
-		kt_cursor = NULL;
-	}
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && *keytab) {
+			krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
+		}
+        }
 
 	/* keytab is not up to date, fill it up */
 
@@ -292,9 +295,10 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 	ZERO_STRUCT(kt_entry);
 	kt_entry.principal = princ;
 	kt_entry.vno = 0;
-	kt_entry.key.enctype = CLEARTEXT_PRIV_ENCTYPE;
-	kt_entry.key.length = pwd_len;
-	kt_entry.key.contents = (uint8_t *)pwd;
+
+	KRB5_KEY_TYPE(KRB5_KT_KEY(&kt_entry)) = CLEARTEXT_PRIV_ENCTYPE;
+	KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry)) = pwd_len;
+	KRB5_KEY_DATA(KRB5_KT_KEY(&kt_entry)) = (uint8_t *)pwd;
 
 	ret = krb5_kt_add_entry(krbctx, *keytab, &kt_entry);
 	if (ret) {
@@ -310,11 +314,13 @@ out:
 	SAFE_FREE(pwd);
 	SAFE_FREE(pwd_old);
 
-	if (kt_cursor) {
-		/* stop enumeration and free cursor */
-		krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
-		kt_cursor = NULL;
-	}
+	{
+		krb5_kt_cursor zero_csr;
+		ZERO_STRUCT(zero_csr);
+		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && *keytab) {
+			krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
+		}
+        }
 
 	if (princ) {
 		krb5_free_principal(krbctx, princ);
