@@ -22,6 +22,8 @@
 #define _MESSAGES_H_
 
 struct messaging_context;
+struct server_id;
+
 
 /* general messages */
 #define MSG_DEBUG		1
@@ -39,5 +41,28 @@ struct messaging_context;
 
 /* taskid for messaging of parent process */
 #define SAMBA_PARENT_TASKID     0
+
+typedef void (*msg_callback_t)(struct messaging_context *msg, void *private_data,
+			       uint32_t msg_type,
+			       struct server_id server_id, DATA_BLOB *data);
+
+NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
+			uint32_t msg_type, const DATA_BLOB *data);
+NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
+			    uint32_t msg_type,
+			    msg_callback_t fn);
+NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_data,
+				msg_callback_t fn, uint32_t *msg_type);
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
+					 const char *dir,
+					 struct server_id server_id,
+					 struct tevent_context *ev);
+struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx,
+					 const char *dir,
+					 struct tevent_context *ev);
+NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id server,
+			    uint32_t msg_type, void *ptr);
+void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private_data);
+struct server_id messaging_get_server_id(struct messaging_context *msg_ctx);
 
 #endif
