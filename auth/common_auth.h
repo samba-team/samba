@@ -17,8 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "librpc/gen_ndr/krb5pac.h"
-
 #define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* don't check unix account status */

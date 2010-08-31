@@ -4856,7 +4856,7 @@ const struct mangle_fns *posix_mangle_init(void);
 bool map_username(fstring user);
 
 /* The following definitions come from auth/user_krb5.c  */
-
+struct PAC_LOGON_INFO;
 NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 				     const char *cli_name,
 				     const char *princ_name,
