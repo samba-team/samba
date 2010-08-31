@@ -276,7 +276,7 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 			     int resume, int toplevel, char *outfile)
 {
 	int remotehandle, localhandle;
-	time_t start_time = time(NULL);
+	struct timespec start_time, now;
 	const char *newpath;
 	char path[SMB_MAXPATHLEN];
 	char checkbuf[2][RESUME_CHECK_SIZE];
@@ -284,6 +284,7 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 	off_t offset_download = 0, offset_check = 0, curpos = 0, start_offset = 0;
 	struct stat localstat, remotestat;
 
+	clock_gettime_mono(&start_time);
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base, (*base && *name && name[0] != '/' && base[strlen(base)-1] != '/')?"/":"", name);
 
 	remotehandle = smbc_open(path, O_RDONLY, 0755);
@@ -466,7 +467,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 
 		if(dots)fputc('.', stderr);
 		else if(!quiet) {
-			print_progress(newpath, start_time, time(NULL), start_offset, curpos, remotestat.st_size);
+			clock_gettime_mono(&now);
+			print_progress(newpath, start_time.tv_sec, now.tv_sec,
+					start_offset, curpos, remotestat.st_size);
 		}
 	}
 
