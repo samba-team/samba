@@ -3009,10 +3009,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			rec->reallocate_callers = NULL;
 		}
 	}
-	/* if there are takeovers requested, perform it and notify the waiters */
-	if (rec->reallocate_callers) {
-		process_ipreallocate_requests(ctdb, rec);
-	}
 
 	if (rec->recmaster == (uint32_t)-1) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
@@ -3197,6 +3193,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
 			return;
 		}
+	}
+
+	/* if there are takeovers requested, perform it and notify the waiters */
+	if (rec->reallocate_callers) {
+		process_ipreallocate_requests(ctdb, rec);
 	}
 
 	/* get the nodemap for all active remote nodes
