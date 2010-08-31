@@ -22,8 +22,6 @@
 
 struct ctdbd_connection;
 
-NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
-			       struct ctdbd_connection **pconn);
 NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 				    struct ctdbd_connection **pconn);
 
