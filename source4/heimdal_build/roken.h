@@ -118,6 +118,7 @@
 #ifndef HAVE_GETTIMEOFDAY
 #define HAVE_GETTIMEOFDAY
 #endif
+#define gettimeofday(a,b) GetTimeOfDay(a)
 
 #ifndef HAVE_SETEGID
 #define HAVE_SETEGID
