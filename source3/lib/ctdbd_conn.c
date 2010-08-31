@@ -433,8 +433,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
  * Get us a ctdbd connection
  */
 
-NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
-			       struct ctdbd_connection **pconn)
+static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
+				      struct ctdbd_connection **pconn)
 {
 	struct ctdbd_connection *conn;
 	NTSTATUS status;
