@@ -373,7 +373,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 	NTSTATUS update_login_attempts_status;
 	DATA_BLOB user_sess_key = data_blob_null;
 	DATA_BLOB lm_sess_key = data_blob_null;
-	bool updated_autolock = False, updated_badpw = False;
+	bool updated_badpw = False;
 	const char *username;
 	const uint8_t *nt_pw;
 	const uint8_t *lm_pw;
