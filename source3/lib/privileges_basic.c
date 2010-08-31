@@ -345,7 +345,7 @@ bool user_has_privileges(const NT_USER_TOKEN *token, const SE_PRIV *privilege)
 	if ( !token )
 		return False;
 
-	return is_privilege_assigned( &token->privileges, privilege );
+	return is_privilege_assigned( &token->privilege_mask, privilege );
 }
 
 /****************************************************************************
@@ -358,7 +358,7 @@ bool user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
 	if ( !token )
 		return False;
 
-	return is_any_privilege_assigned( &token->privileges, privilege );
+	return is_any_privilege_assigned( &token->privilege_mask, privilege );
 }
 
 /*******************************************************************

@@ -58,8 +58,8 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 	
 	/* copy the privileges; don't consider failure to be critical here */
 	
-	if ( !se_priv_copy( &token->privileges, &ptoken->privileges ) ) {
-		DEBUG(0,("dup_nt_token: Failure to copy SE_PRIV!.  "
+	if ( !se_priv_copy( &token->privilege_mask, &ptoken->privilege_mask ) ) {
+		DEBUG(0,("dup_nt_token: Failure to copy privilages!.  "
 			 "Continuing with 0 privileges assigned.\n"));
 	}
 
@@ -108,8 +108,8 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	se_priv_add(&token->privileges, &token_1->privileges);
-	se_priv_add(&token->privileges, &token_2->privileges);
+	se_priv_add(&token->privilege_mask, &token_1->privilege_mask);
+	se_priv_add(&token->privilege_mask, &token_2->privilege_mask);
 
 	*token_out = token;
 

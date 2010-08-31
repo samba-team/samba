@@ -112,7 +112,7 @@ NT_USER_TOKEN *get_root_nt_token( void )
 	token = create_local_nt_token(talloc_autofree_context(), &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
 
-	token->privileges = se_disk_operators;
+	token->privilege_mask = se_disk_operators;
 
 	for_cache = token;
 
@@ -642,7 +642,7 @@ static NTSTATUS finalize_local_nt_token(struct nt_user_token *result,
 
 	/* Add privileges based on current user sids */
 
-	get_privileges_for_sids(&result->privileges, result->sids,
+	get_privileges_for_sids(&result->privilege_mask, result->sids,
 				result->num_sids);
 
 	return NT_STATUS_OK;
@@ -671,7 +671,7 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 			  ("SID[%3lu]: %s\n", (unsigned long)i,
 			   sid_string_dbg(&token->sids[i])));
 
-	dump_se_priv( dbg_class, dbg_lev, &token->privileges );
+	dump_se_priv( dbg_class, dbg_lev, &token->privilege_mask );
 }
 
 /****************************************************************************
