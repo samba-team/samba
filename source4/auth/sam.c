@@ -178,20 +178,20 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Quit if the account was disabled. */
 	if (acct_flags & ACB_DISABLED) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' was disabled.\n", name_for_logs));
+		DEBUG(2,("authsam_account_ok: Account for user '%s' was disabled.\n", name_for_logs));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
-		DEBUG(1,("authsam_account_ok: Account for user %s was locked out.\n", name_for_logs));
+		DEBUG(2,("authsam_account_ok: Account for user %s was locked out.\n", name_for_logs));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
 	/* Test account expire time */
 	unix_to_nt_time(&now, time(NULL));
 	if (now > acct_expiry) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", name_for_logs));
+		DEBUG(2,("authsam_account_ok: Account for user '%s' has expired.\n", name_for_logs));
 		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
 			 nt_time_string(mem_ctx, acct_expiry)));
 		return NT_STATUS_ACCOUNT_EXPIRED;
@@ -199,16 +199,16 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* check for immediate expiry "must change at next logon" (but not if this is a password change request) */
 	if ((must_change_time == 0) && !password_change) {
-		DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
+		DEBUG(2,("sam_account_ok: Account for user '%s' password must change!.\n",
 			 name_for_logs));
 		return NT_STATUS_PASSWORD_MUST_CHANGE;
 	}
 
 	/* check for expired password (but not if this is a password change request) */
 	if ((must_change_time < now) && !password_change) {
-		DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
+		DEBUG(2,("sam_account_ok: Account for user '%s' password expired!.\n",
 			 name_for_logs));
-		DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
+		DEBUG(2,("sam_account_ok: Password expired at '%s' unix time.\n",
 			 nt_time_string(mem_ctx, must_change_time)));
 		return NT_STATUS_PASSWORD_EXPIRED;
 	}
