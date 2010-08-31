@@ -2472,7 +2472,8 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 			return true;
 		}
 		DEBUG( 2, ( "Closing idle SMB2 connection\n" ) );
-		messaging_send(sconn->msg_ctx, procid_self(),
+		messaging_send(sconn->msg_ctx,
+			       messaging_server_id(sconn->msg_ctx),
 			       MSG_SHUTDOWN, &data_blob_null);
 		return false;
 	}
@@ -2480,7 +2481,8 @@ static bool deadtime_fn(const struct timeval *now, void *private_data)
 	if ((conn_num_open(sconn) == 0)
 	    || (conn_idle_all(sconn, now->tv_sec))) {
 		DEBUG( 2, ( "Closing idle SMB1 connection\n" ) );
-		messaging_send(sconn->msg_ctx, procid_self(),
+		messaging_send(sconn->msg_ctx,
+			       messaging_server_id(sconn->msg_ctx),
 			       MSG_SHUTDOWN, &data_blob_null);
 		return False;
 	}
