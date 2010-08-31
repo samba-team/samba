@@ -756,6 +756,7 @@ int ads_keytab_list(const char *keytab_name)
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret) {
+		ZERO_STRUCT(cursor);
 		goto out;
 	}
 
