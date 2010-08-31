@@ -42,6 +42,31 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 	}
 }
 
+int32_t ctdb_local_node_got_banned(struct ctdb_context *ctdb)
+{
+	uint32_t i;
+
+	/* make sure we are frozen */
+	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
+
+	/* Reset the generation id to 1 to make us ignore any
+	   REQ/REPLY CALL/DMASTER someone sends to us.
+	   We are now banned so we shouldnt service database calls
+	   anymore.
+	*/
+	ctdb->vnn_map->generation = INVALID_GENERATION;
+
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb_start_freeze(ctdb, i) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to freeze db priority %u\n", i));
+		}
+	}
+	ctdb_release_all_ips(ctdb);
+	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+
+	return 0;
+}
+
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_ban_time *bantime = (struct ctdb_ban_time *)indata.dptr;
@@ -96,7 +121,10 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 	ctdb->nodes[bantime->pnn]->flags |= NODE_FLAGS_BANNED;
 
 	event_add_timed(ctdb->ev, ctdb->banning_ctx, timeval_current_ofs(bantime->time,0), ctdb_ban_node_event, ctdb);
-	
+	if (bantime->pnn == ctdb->pnn) {
+		return ctdb_local_node_got_banned(ctdb);
+	}
+
 	return 0;
 }
 
