@@ -408,7 +408,8 @@ DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob)
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth)
+bool spnego_parse_auth_and_mic(TALLOC_CTX *ctx, DATA_BLOB blob,
+				DATA_BLOB *auth, DATA_BLOB *signature)
 {
 	ssize_t len;
 	struct spnego_data token;
@@ -429,17 +430,34 @@ bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth)
 	*auth = data_blob_talloc(ctx,
 				 token.negTokenTarg.responseToken.data,
 				 token.negTokenTarg.responseToken.length);
+
+	if (!signature) {
+		goto done;
+	}
+
+	*signature = data_blob_talloc(ctx,
+				 token.negTokenTarg.mechListMIC.data,
+				 token.negTokenTarg.mechListMIC.length);
+
+done:
 	spnego_free_data(&token);
 
 	return true;
 }
 
+bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth)
+{
+	return spnego_parse_auth_and_mic(ctx, blob, auth, NULL);
+}
+
 /*
   generate a minimal SPNEGO response packet.  Doesn't contain much.
 */
-DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx,
-				   DATA_BLOB *reply, NTSTATUS nt_status,
-				   const char *mechOID)
+DATA_BLOB spnego_gen_auth_response_and_mic(TALLOC_CTX *ctx,
+					   NTSTATUS nt_status,
+					   const char *mechOID,
+					   DATA_BLOB *reply,
+					   DATA_BLOB *mechlistMIC)
 {
 	ASN1_DATA *data;
 	DATA_BLOB ret;
@@ -476,12 +494,27 @@ DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx,
 		asn1_pop_tag(data);
 	}
 
+	if (mechlistMIC && mechlistMIC->data != NULL) {
+		asn1_push_tag(data, ASN1_CONTEXT(3));
+		asn1_write_OctetString(data,
+					mechlistMIC->data,
+					mechlistMIC->length);
+		asn1_pop_tag(data);
+	}
+
 	asn1_pop_tag(data);
 	asn1_pop_tag(data);
 
 	ret = data_blob_talloc(ctx, data->data, data->length);
 	asn1_free(data);
 	return ret;
+}
+
+DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx, DATA_BLOB *reply,
+				   NTSTATUS nt_status, const char *mechOID)
+{
+	return spnego_gen_auth_response_and_mic(ctx, nt_status,
+						mechOID, reply, NULL);
 }
 
 /*
@@ -557,4 +590,42 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 
 	asn1_free(data);
 	return True;
+}
+
+bool spnego_mech_list_blob(TALLOC_CTX *mem_ctx,
+			   char **oid_list, DATA_BLOB *raw_data)
+{
+	ASN1_DATA *data;
+	unsigned int idx;
+
+	if (!oid_list || !oid_list[0] || !raw_data) {
+		return false;
+	}
+
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
+
+	asn1_push_tag(data, ASN1_SEQUENCE(0));
+	for (idx = 0; oid_list[idx]; idx++) {
+		asn1_write_OID(data, oid_list[idx]);
+	}
+	asn1_pop_tag(data);
+
+	if (data->has_error) {
+		DEBUG(3, (__location__ " failed at %d\n", (int)data->ofs));
+		asn1_free(data);
+		return false;
+	}
+
+	*raw_data = data_blob_talloc(mem_ctx, data->data, data->length);
+	if (!raw_data->data) {
+		DEBUG(3, (__location__": data_blob_talloc() failed!\n"));
+		asn1_free(data);
+		return false;
+	}
+
+	asn1_free(data);
+	return true;
 }

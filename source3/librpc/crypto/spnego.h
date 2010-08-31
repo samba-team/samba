@@ -34,8 +34,12 @@ struct spnego_context {
 		struct gse_context *gssapi_state;
 	} mech_ctx;
 
+	char *oid_list[ASN1_MAX_OIDS];
+	char *mech_oid;
+
 	enum {
 		SPNEGO_CONV_INIT = 0,
+		SPNEGO_CONV_NEGO,
 		SPNEGO_CONV_AUTH_MORE,
 		SPNEGO_CONV_AUTH_CONFIRM,
 		SPNEGO_CONV_AUTH_DONE
@@ -43,6 +47,7 @@ struct spnego_context {
 
 	bool do_sign;
 	bool do_seal;
+	bool is_dcerpc;
 };
 
 NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
@@ -75,4 +80,22 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 
 DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 				 struct spnego_context *sp_ctx);
+
+NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature);
+NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
+			 struct spnego_context *sp_ctx,
+			 DATA_BLOB *data, DATA_BLOB *full_data,
+			 DATA_BLOB *signature);
+NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature);
+NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature);
+
 #endif /* _CLI_SPENGO_H_ */

@@ -1,6 +1,6 @@
 /*
  *  SPNEGO Encapsulation
- *  RPC Pipe client routines
+ *  Client functions
  *  Copyright (C) Simo Sorce 2010.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -346,5 +346,91 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 	default:
 		DEBUG(0, ("Unsupported type in request!\n"));
 		return data_blob_null;
+	}
+}
+
+NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature)
+{
+	switch(sp_ctx->mech) {
+	case SPNEGO_KRB5:
+		return gse_sign(mem_ctx,
+				sp_ctx->mech_ctx.gssapi_state,
+				data, signature);
+	case SPNEGO_NTLMSSP:
+		return auth_ntlmssp_sign_packet(
+					sp_ctx->mech_ctx.ntlmssp_state,
+					mem_ctx,
+					data->data, data->length,
+					full_data->data, full_data->length,
+					signature);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
+			 struct spnego_context *sp_ctx,
+			 DATA_BLOB *data, DATA_BLOB *full_data,
+			 DATA_BLOB *signature)
+{
+	switch(sp_ctx->mech) {
+	case SPNEGO_KRB5:
+		return gse_sigcheck(mem_ctx,
+				    sp_ctx->mech_ctx.gssapi_state,
+				    data, signature);
+	case SPNEGO_NTLMSSP:
+		return auth_ntlmssp_check_packet(
+					sp_ctx->mech_ctx.ntlmssp_state,
+					data->data, data->length,
+					full_data->data, full_data->length,
+					signature);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature)
+{
+	switch(sp_ctx->mech) {
+	case SPNEGO_KRB5:
+		return gse_seal(mem_ctx,
+				sp_ctx->mech_ctx.gssapi_state,
+				data, signature);
+	case SPNEGO_NTLMSSP:
+		return auth_ntlmssp_seal_packet(
+					sp_ctx->mech_ctx.ntlmssp_state,
+					mem_ctx,
+					data->data, data->length,
+					full_data->data, full_data->length,
+					signature);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
+			struct spnego_context *sp_ctx,
+			DATA_BLOB *data, DATA_BLOB *full_data,
+			DATA_BLOB *signature)
+{
+	switch(sp_ctx->mech) {
+	case SPNEGO_KRB5:
+		return gse_unseal(mem_ctx,
+				    sp_ctx->mech_ctx.gssapi_state,
+				    data, signature);
+	case SPNEGO_NTLMSSP:
+		return auth_ntlmssp_unseal_packet(
+					sp_ctx->mech_ctx.ntlmssp_state,
+					data->data, data->length,
+					full_data->data, full_data->length,
+					signature);
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
