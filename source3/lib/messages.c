@@ -210,6 +210,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
+	ctx->id.vnn = get_my_vnn();
 #endif
 
 	messaging_register(ctx, NULL, MSG_PING, ping_message);
