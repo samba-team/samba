@@ -692,8 +692,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		ctdbd_register_reconfigure(
-			messaging_ctdbd_connection(procid_self()));
+		ctdbd_register_reconfigure(messaging_ctdbd_connection());
 	}
 #endif
 

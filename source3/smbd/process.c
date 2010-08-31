@@ -3073,7 +3073,7 @@ void smbd_process(void)
 			NTSTATUS status;
 
 			status = ctdbd_register_ips(
-				messaging_ctdbd_connection(procid_self()),
+				messaging_ctdbd_connection(),
 				&srv, &clnt, release_ip, NULL);
 
 			if (!NT_STATUS_IS_OK(status)) {
