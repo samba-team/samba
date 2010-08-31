@@ -268,6 +268,46 @@ WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 	return WERR_DS_DRA_BAD_NC;
 }
 
+WERROR dreplsrv_partition_source_dsa_by_guid(struct dreplsrv_partition *p,
+					     const struct GUID *dsa_guid,
+					     struct dreplsrv_partition_source_dsa **_dsa)
+{
+	struct dreplsrv_partition_source_dsa *dsa;
+
+	SMB_ASSERT(dsa_guid != NULL);
+	SMB_ASSERT(!GUID_all_zero(dsa_guid));
+	SMB_ASSERT(_dsa);
+
+	for (dsa = p->sources; dsa; dsa = dsa->next) {
+		if (GUID_equal(dsa_guid, &dsa->repsFrom1->source_dsa_obj_guid)) {
+			*_dsa = dsa;
+			return WERR_OK;
+		}
+	}
+
+	return WERR_DS_DRA_NO_REPLICA;
+}
+
+WERROR dreplsrv_partition_source_dsa_by_dns(const struct dreplsrv_partition *p,
+					    const char *dsa_dns,
+					    struct dreplsrv_partition_source_dsa **_dsa)
+{
+	struct dreplsrv_partition_source_dsa *dsa;
+
+	SMB_ASSERT(dsa_dns != NULL);
+	SMB_ASSERT(_dsa);
+
+	for (dsa = p->sources; dsa; dsa = dsa->next) {
+		if (strequal(dsa_dns, dsa->repsFrom1->other_info->dns_name)) {
+			*_dsa = dsa;
+			return WERR_OK;
+		}
+	}
+
+	return WERR_DS_DRA_NO_REPLICA;
+}
+
+
 static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
 {
