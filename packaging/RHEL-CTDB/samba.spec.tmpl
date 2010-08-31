@@ -15,7 +15,7 @@ URL: http://www.samba.org/
 Source: samba-%{version}.tar.bz2
 
 # Don't depend on Net::LDAP
-Source997: docs.tar.bz2
+Source997: docs-3.6.tar.bz2
 Source998: filter-requires-samba.sh
 Source999: setup.tar.bz2
 
@@ -471,6 +471,8 @@ exit 0
 %{_libarchdir}/samba/vfs/aio_fork.so
 %{_libarchdir}/samba/vfs/audit.so
 %{_libarchdir}/samba/vfs/cap.so
+%{_libarchdir}/samba/vfs/catia.so
+%{_libarchdir}/samba/vfs/crossrename.so
 %{_libarchdir}/samba/vfs/default_quota.so
 %{_libarchdir}/samba/vfs/dirsort.so
 %{_libarchdir}/samba/vfs/expand_msdfs.so
@@ -479,11 +481,13 @@ exit 0
 %{_libarchdir}/samba/vfs/fileid.so
 %{_libarchdir}/samba/vfs/full_audit.so
 %{_libarchdir}/samba/vfs/gpfs.so
+%{_libarchdir}/samba/vfs/linux_xfs_sgid.so
 %{_libarchdir}/samba/vfs/netatalk.so
 %{_libarchdir}/samba/vfs/preopen.so
 %{_libarchdir}/samba/vfs/readahead.so
 %{_libarchdir}/samba/vfs/readonly.so
 %{_libarchdir}/samba/vfs/recycle.so
+%{_libarchdir}/samba/vfs/scannedonly.so
 %{_libarchdir}/samba/vfs/shadow_copy.so
 %{_libarchdir}/samba/vfs/shadow_copy2.so
 %{_libarchdir}/samba/vfs/smb_traffic_analyzer.so
@@ -546,6 +550,7 @@ exit 0
 %{_bindir}/smbtar
 %{_bindir}/smbtree
 %{_bindir}/sharesec
+%{_bindir}/smbta-util
 
 %{_mandir}/man8/smbspool.8*
 %{_mandir}/man1/smbget.1*
@@ -575,6 +580,7 @@ exit 0
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/*/LC_MESSAGES/pam_winbind.mo
+/usr/share/locale/*/LC_MESSAGES/net.mo
 
 %{_libarchdir}/samba/charset/CP437.so
 %{_libarchdir}/samba/charset/CP850.so
@@ -601,7 +607,7 @@ exit 0
 %{_libarchdir}/libnetapi.so
 %{_libarchdir}/libnetapi.so.0
 %{_libarchdir}/libtalloc.so
-%{_libarchdir}/libtalloc.so.1
+%{_libarchdir}/libtalloc.so.2
 %{_libarchdir}/libtdb.so
 %{_libarchdir}/libtdb.so.1
 %{_libarchdir}/libwbclient.so
@@ -616,12 +622,6 @@ exit 0
 %{_bindir}/smbpasswd
 %{_bindir}/profiles
 %{_bindir}/net
-%{_bindir}/ldbadd
-%{_bindir}/ldbdel
-%{_bindir}/ldbedit
-%{_bindir}/ldbmodify
-%{_bindir}/ldbsearch
-%{_bindir}/ldbrename
 %{_bindir}/wbinfo
 %{_bindir}/ntlm_auth
 %{_bindir}/pdbedit
@@ -655,7 +655,7 @@ exit 0
 %attr(755,root,root) /lib/libnss_winbind.so
 %attr(755,root,root) /lib/libnss_winbind.so.2
 %attr(755,root,root) /usr/lib/libtalloc.so
-%attr(755,root,root) /usr/lib/libtalloc.so.1
+%attr(755,root,root) /usr/lib/libtalloc.so.2
 %attr(755,root,root) /usr/lib/libtdb.so
 %attr(755,root,root) /usr/lib/libtdb.so.1
 %attr(755,root,root) /usr/lib/libwbclient.so
