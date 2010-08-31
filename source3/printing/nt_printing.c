@@ -642,6 +642,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 
 	nt_status = vfs_file_exist(conn, smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(3,("get_correct_cversion: vfs_file_exist failed\n"));
 		*perr = WERR_BADFILE;
 		goto error_exit;
 	}
