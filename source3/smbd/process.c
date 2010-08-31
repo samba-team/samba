@@ -2899,7 +2899,7 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 	char tmp_addr[INET6_ADDRSTRLEN];
 	char *addr;
 
-	cconn = messaging_ctdbd_connection(procid_self());
+	cconn = messaging_ctdbd_connection();
 	if (cconn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

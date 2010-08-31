@@ -312,8 +312,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		struct server_id my_id = messaging_server_id(ctx->msg);
-		status = ctdb_watch_us(messaging_ctdbd_connection(my_id));
+		status = ctdb_watch_us(messaging_ctdbd_connection());
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("could not register retry with ctdb: %s\n",
 				   nt_errstr(status)));
@@ -388,11 +387,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 
 #ifdef CLUSTER_SUPPORT
 		if (lp_clustering()) {
-			struct server_id my_id;
 			struct ctdbd_connection *conn;
-
-			my_id = messaging_server_id(ctx->msg);
-			conn = messaging_ctdbd_connection(my_id);
+			conn = messaging_ctdbd_connection();
 
 			r_fds = &_r_fds;
 			FD_ZERO(r_fds);
@@ -597,8 +593,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		struct server_id my_id = messaging_server_id(ctx->msg);
-		ctdb_unwatch(messaging_ctdbd_connection(my_id));
+		ctdb_unwatch(messaging_ctdbd_connection());
 	}
 #endif
 	return status;
