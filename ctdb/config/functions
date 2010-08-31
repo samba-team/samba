@@ -4,7 +4,7 @@ PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 
 #######################################
 # pull in a system config file, if any
-loadconfig() {
+_loadconfig() {
 
     if [ -z "$1" ] ; then
 	foo="${service_config:-${service_name}}"
@@ -23,6 +23,10 @@ loadconfig() {
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
+}
+
+loadconfig () {
+    _loadconfig "$@"
 }
 
 ##############################################################
