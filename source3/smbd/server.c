@@ -585,6 +585,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 ****************************************************************************/
 
 static bool open_sockets_smbd(struct smbd_parent_context *parent,
+			      struct messaging_context *msg_ctx,
 			      const char *smb_ports)
 {
 	int num_interfaces = iface_count();
@@ -715,19 +716,16 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
         /* Listen to messages */
 
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_SAM_SYNC, msg_sam_sync);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SHUTDOWN, msg_exit_server);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_FILE_RENAME, msg_file_was_renamed);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_DEBUG, smbd_msg_debug);
-	brl_register_msgs(smbd_messaging_context());
+	messaging_register(msg_ctx, NULL, MSG_SMB_SAM_SYNC, msg_sam_sync);
+	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
+	messaging_register(msg_ctx, NULL, MSG_SMB_FILE_RENAME,
+			   msg_file_was_renamed);
+	messaging_register(msg_ctx, NULL, MSG_SMB_CONF_UPDATED,
+			   smb_conf_updated);
+	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
+			   smb_stat_cache_delete);
+	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
+	brl_register_msgs(msg_ctx);
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
@@ -736,8 +734,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 #endif
 
 #ifdef DEVELOPER
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
+	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,
+			   msg_inject_fault);
 #endif
 
 	if (dns_port != 0) {
@@ -1236,7 +1234,7 @@ extern void build_options(bool screen);
 	}
 	parent->interactive = interactive;
 
-	if (!open_sockets_smbd(parent, ports))
+	if (!open_sockets_smbd(parent, smbd_messaging_context(), ports))
 		exit_server("open_sockets_smbd() failed");
 
 	TALLOC_FREE(frame);
