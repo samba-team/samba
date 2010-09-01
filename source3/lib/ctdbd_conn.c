@@ -1379,12 +1379,4 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 	return status;
 }
 
-#else
-
-NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
-			       struct ctdbd_connection **pconn)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 #endif
