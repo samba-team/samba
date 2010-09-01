@@ -30,13 +30,12 @@
 #include "includes.h"
 #include "srv_pipe_internal.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
-#include "../librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "dcesrv_ntlmssp.h"
+#include "dcesrv_gssapi.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
-#include "librpc/crypto/gse.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -316,14 +315,10 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static NTSTATUS pipe_gssapi_auth_bind_next(struct pipes_struct *p,
-					   TALLOC_CTX *mem_ctx,
-					   struct dcerpc_auth *pauth_info,
-					   DATA_BLOB *response);
-static NTSTATUS finalize_gssapi_bind(TALLOC_CTX *mem_ctx,
-				     struct gse_context *gse_ctx,
-				     struct client_address *client_id,
-				     struct auth_serversupplied_info **sinfo);
+static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
+					 struct gse_context *gse_ctx,
+					 struct client_address *client_id,
+					 struct auth_serversupplied_info **server_info);
 
 /*******************************************************************
  This is the "stage3" response after a bind request and reply.
@@ -376,8 +371,9 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 					     &response);
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = pipe_gssapi_auth_bind_next(p, pkt,
-						    &auth_info, &response);
+		status = gssapi_server_step(p->auth.a_u.gssapi_state,
+					    pkt, &auth_info.credentials,
+					    &response);
 		break;
 	default:
 		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
@@ -412,8 +408,10 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		}
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = finalize_gssapi_bind(p, p->auth.a_u.gssapi_state,
-					      p->client_id, &p->server_info);
+		status = pipe_gssapi_verify_final(p,
+					p->auth.a_u.gssapi_state,
+					p->client_id,
+					&p->server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("gssapi bind failed with: %s",
 				  nt_errstr(status)));
@@ -996,31 +994,23 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
         NTSTATUS status;
 	struct gse_context *gse_ctx = NULL;
 
-	/* Let's init the gssapi machinery for this connection */
-	/* by passing NULL, the code will attempt to set a default
-	 * keytab based on configuration options */
-	status = gse_init_server(p,
-				 (auth_info->auth_level ==
+	status = gssapi_server_auth_start(p,
+					  (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
-				 (auth_info->auth_level ==
+					  (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY),
-				 GSS_C_DCE_STYLE,
-				 NULL,
-				 &gse_ctx);
+					  true,
+					  &auth_info->credentials,
+					  response,
+					  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to init dcerpc gssapi server (%s)\n",
 			  nt_errstr(status)));
 		goto err;
 	}
 
-	status = gse_get_server_auth_token(mem_ctx, gse_ctx,
-					   &auth_info->credentials,
-					   response);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to parse initial client token (%s)\n",
-			  nt_errstr(status)));
-		goto err;
-	}
+	/* Make sure data is bound to the memctx, to be freed the caller */
+	talloc_steal(mem_ctx, response->data);
 
 	p->auth.a_u.gssapi_state = gse_ctx;
 	p->auth.auth_data_free_func = &free_pipe_gssapi_auth_data;
@@ -1035,171 +1025,45 @@ err:
 	return false;
 }
 
-static NTSTATUS finalize_gssapi_bind(TALLOC_CTX *mem_ctx,
-				     struct gse_context *gse_ctx,
-				     struct client_address *client_id,
-				     struct auth_serversupplied_info **sinfo)
+static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
+					 struct gse_context *gse_ctx,
+					 struct client_address *client_id,
+					 struct auth_serversupplied_info **server_info)
 {
-	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB session_key;
-	DATA_BLOB auth_data;
-	DATA_BLOB pac;
-	bool bret;
 	NTSTATUS status;
-	char *princ_name;
-	time_t tgs_authtime;
-	NTTIME tgs_authtime_nttime;
-	struct PAC_DATA *pac_data;
-	struct PAC_LOGON_NAME *logon_name = NULL;
-	struct PAC_LOGON_INFO *logon_info = NULL;
-	enum ndr_err_code ndr_err;
-	unsigned int i;
-	bool is_mapped;
-	bool is_guest;
-	char *ntuser;
-	char *ntdomain;
-	char *username;
-	struct passwd *pw;
-	struct auth_serversupplied_info *server_info;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	bool bret;
 
 	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
 	   ensure the underlying flags are also set. If not we should
 	   refuse the bind. */
 
-	status = gse_verify_server_auth_flags(gse_ctx);
+	status = gssapi_server_check_flags(gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Requested Security Layers not honored!\n"));
-		goto done;
+		return status;
 	}
 
-	status = gse_get_authz_data(gse_ctx, tmp_ctx, &auth_data);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		/* TODO: Fetch user by principal name ? */
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
+	status = gssapi_server_get_user_info(gse_ctx, mem_ctx,
+					     client_id, server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		DEBUG(0, (__location__ ": failed to obtain the server info "
+			  "for authenticated user: %s\n", nt_errstr(status)));
+		return status;
 	}
 
-	bret = unwrap_pac(tmp_ctx, &auth_data, &pac);
-	if (!bret) {
-		DEBUG(1, ("Failed to unwrap PAC\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	status = gse_get_client_name(gse_ctx, tmp_ctx, &princ_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = gse_get_authtime(gse_ctx, &tgs_authtime);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
-
-	pac_data = talloc_zero(tmp_ctx, struct PAC_DATA);
-	if (!pac_data) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	ndr_err = ndr_pull_struct_blob(&pac, pac_data, pac_data,
-				(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1, ("Failed to parse the PAC for %s\n", princ_name));
-		status = ndr_map_error2ntstatus(ndr_err);
-		goto done;
-	}
-
-	/* get logon name and logon info */
-	for (i = 0; i < pac_data->num_buffers; i++) {
-		struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
-
-		switch (data_buf->type) {
-		case PAC_TYPE_LOGON_INFO:
-			if (!data_buf->info) {
-				break;
-			}
-			logon_info = data_buf->info->logon_info.info;
-			break;
-		case PAC_TYPE_LOGON_NAME:
-			logon_name = &data_buf->info->logon_name;
-			break;
-		default:
-			break;
-		}
-	}
-	if (!logon_info) {
-		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-		status = NT_STATUS_NOT_FOUND;
-		goto done;
-	}
-	if (!logon_name) {
-		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-		status = NT_STATUS_NOT_FOUND;
-		goto done;
-	}
-
-	/* check time */
-	if (tgs_authtime_nttime != logon_name->logon_time) {
-		DEBUG(1, ("Logon time mismatch between ticket and PAC!\n"
-			  "PAC Time = %s | Ticket Time = %s\n",
-			  nt_time_string(tmp_ctx, logon_name->logon_time),
-			  nt_time_string(tmp_ctx, tgs_authtime_nttime)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	/* TODO: Should we check princ_name against account_name in
-	 * logon_name ? Are they supposed to be identical, or can an
-	 * account_name be different from the UPN ? */
-
-	status = get_user_from_kerberos_info(talloc_tos(), client_id->name,
-						princ_name, logon_info,
-						&is_mapped, &is_guest,
-						&ntuser, &ntdomain,
-						&username, &pw);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to map kerberos principal to system user "
-			  "(%s)\n", nt_errstr(status)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	/* TODO: save PAC data in netsamlogon cache ? */
-
-	status = make_server_info_krb5(mem_ctx,
-					ntuser, ntdomain, username, pw,
-					logon_info, is_guest, &server_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
-			  nt_errstr(status)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	if (server_info->ptok == NULL) {
-		status = create_local_token(server_info);
+	if ((*server_info)->ptok == NULL) {
+		status = create_local_token(*server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to create local user token (%s)\n",
 				  nt_errstr(status)));
 			status = NT_STATUS_ACCESS_DENIED;
-			goto done;
+			return status;
 		}
 	}
 
-	/* TODO: this is what the ntlmssp code does with the session_key,
-	 * probably need to be moved to an upper level as this will not apply
-	 * to tcp/ip connections */
-
+	/* TODO: this is what the ntlmssp code does with the session_key, check
+	 * it is ok with gssapi too */
 	/*
 	 * We're an authenticated bind over smb, so the session key needs to
 	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
@@ -1208,55 +1072,13 @@ static NTSTATUS finalize_gssapi_bind(TALLOC_CTX *mem_ctx,
 
 	session_key = generic_session_key();
 	if (session_key.data == NULL) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	bret = server_info_set_session_key(server_info, session_key);
-	if (!bret) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
+	bret = server_info_set_session_key((*server_info), session_key);
 	data_blob_free(&session_key);
-
-	*sinfo = server_info;
-	status = NT_STATUS_OK;
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
-/*******************************************************************
- Process a KRB5 authentication response.
- If this function succeeds, the user has been authenticated
- and their domain, name and calling workstation stored in
- the pipe struct.
-*******************************************************************/
-
-static NTSTATUS pipe_gssapi_auth_bind_next(struct pipes_struct *p,
-					   TALLOC_CTX *mem_ctx,
-					   struct dcerpc_auth *pauth_info,
-					   DATA_BLOB *response)
-{
-	struct gse_context *gse_ctx = p->auth.a_u.gssapi_state;
-	NTSTATUS status;
-
-	DEBUG(5, (__location__ ": pipe %s checking user details\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
-
-	status = gse_get_server_auth_token(mem_ctx, gse_ctx,
-					   &pauth_info->credentials,
-					   response);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(response);
-		return status;
-	}
-
-	if (gse_require_more_processing(gse_ctx)) {
-		/* ask for next leg */
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	if (!bret) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_OK;
@@ -1643,9 +1465,10 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_KRB5:
-			status = pipe_gssapi_auth_bind_next(p, pkt,
-							    &auth_info,
-							    &auth_resp);
+			status = gssapi_server_step(p->auth.a_u.gssapi_state,
+						    pkt,
+						    &auth_info.credentials,
+						    &auth_resp);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto err_exit;
 			}
