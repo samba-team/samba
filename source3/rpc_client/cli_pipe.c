@@ -3012,7 +3012,9 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 		goto err_out;
 	}
 
-	status = gse_init_client(auth, auth->auth_type, auth->auth_level,
+	status = gse_init_client(auth,
+				 (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY),
+				 (auth_level == DCERPC_AUTH_LEVEL_PRIVACY),
 				 NULL, server, "cifs", username, password,
 				 GSS_C_DCE_STYLE, &auth->a_u.gssapi_state);
 

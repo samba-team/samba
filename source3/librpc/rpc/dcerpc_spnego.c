@@ -77,7 +77,9 @@ NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = gse_init_client(sp_ctx, DCERPC_AUTH_TYPE_KRB5, auth_level,
+	status = gse_init_client(sp_ctx,
+				 (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY),
+				 (auth_level == DCERPC_AUTH_LEVEL_PRIVACY),
 				 ccache_name, server, service,
 				 username, password, add_gss_c_flags,
 				 &sp_ctx->mech_ctx.gssapi_state);

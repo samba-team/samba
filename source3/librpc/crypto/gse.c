@@ -89,7 +89,6 @@ struct gse_context {
 	gss_cred_id_t delegated_creds;
 	gss_name_t client_name;
 
-	bool spnego_wrap;
 	bool more_processing;
 	bool authenticated;
 };
@@ -142,8 +141,7 @@ static int gse_context_destructor(void *ptr)
 }
 
 static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
-				 enum dcerpc_AuthType auth_type,
-				 enum dcerpc_AuthLevel auth_level,
+				 bool do_sign, bool do_seal,
 				 const char *ccache_name,
 				 uint32_t add_gss_c_flags,
 				 struct gse_context **_gse_ctx)
@@ -160,32 +158,16 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
-	switch (auth_type) {
-	case DCERPC_AUTH_TYPE_SPNEGO:
-		gse_ctx->spnego_wrap = true;
-		break;
-	case DCERPC_AUTH_TYPE_KRB5:
-		gse_ctx->spnego_wrap = false;
-		break;
-	default:
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto err_out;
-	}
-
 	gse_ctx->gss_c_flags = GSS_C_MUTUAL_FLAG |
 				GSS_C_DELEG_FLAG |
 				GSS_C_DELEG_POLICY_FLAG |
 				GSS_C_REPLAY_FLAG |
 				GSS_C_SEQUENCE_FLAG;
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	if (do_sign) {
 		gse_ctx->gss_c_flags |= GSS_C_INTEG_FLAG;
-		break;
-	case DCERPC_AUTH_LEVEL_PRIVACY:
+	}
+	if (do_seal) {
 		gse_ctx->gss_c_flags |= GSS_C_CONF_FLAG;
-		break;
-	default:
-		break;
 	}
 
 	gse_ctx->gss_c_flags |= add_gss_c_flags;
@@ -226,8 +208,7 @@ err_out:
 }
 
 NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  enum dcerpc_AuthType auth_type,
-			  enum dcerpc_AuthLevel auth_level,
+			  bool do_sign, bool do_seal,
 			  const char *ccache_name,
 			  const char *server,
 			  const char *service,
@@ -246,7 +227,7 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = gse_context_init(mem_ctx, auth_type, auth_level,
+	status = gse_context_init(mem_ctx, do_sign, do_seal,
 				  ccache_name, add_gss_c_flags,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -357,8 +338,7 @@ done:
 }
 
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
-			 enum dcerpc_AuthType auth_type,
-			 enum dcerpc_AuthLevel auth_level,
+			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
 			 const char *server,
 			 const char *keytab_name,
@@ -371,7 +351,7 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	const char *ktname;
 	NTSTATUS status;
 
-	status = gse_context_init(mem_ctx, auth_type, auth_level,
+	status = gse_context_init(mem_ctx, do_sign, do_seal,
 				  NULL, add_gss_c_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
@@ -928,8 +908,7 @@ done:
 #else
 
 NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  enum dcerpc_AuthType auth_type,
-			  enum dcerpc_AuthLevel auth_level,
+			  bool do_sign, bool do_seal,
 			  const char *ccache_name,
 			  const char *server,
 			  const char *service,
@@ -950,8 +929,7 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
-			 enum dcerpc_AuthType auth_type,
-			 enum dcerpc_AuthLevel auth_level,
+			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
 			 const char *server,
 			 const char *keytab,

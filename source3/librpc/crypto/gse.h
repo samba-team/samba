@@ -1,6 +1,5 @@
 /*
  *  GSSAPI Security Extensions
- *  RPC Pipe client routines
  *  Copyright (C) Simo Sorce 2010.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -27,8 +26,7 @@ struct gse_context;
 #endif
 
 NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  enum dcerpc_AuthType auth_type,
-			  enum dcerpc_AuthLevel auth_level,
+			  bool do_sign, bool do_seal,
 			  const char *ccache_name,
 			  const char *server,
 			  const char *service,
@@ -42,8 +40,7 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_out);
 
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
-			 enum dcerpc_AuthType auth_type,
-			 enum dcerpc_AuthLevel auth_level,
+			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
 			 const char *server,
 			 const char *keytab,

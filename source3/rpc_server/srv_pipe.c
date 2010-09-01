@@ -1027,8 +1027,10 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
 	/* by passing NULL, the code will attempt to set a default
 	 * keytab based on configuration options */
 	status = gse_init_server(p,
-				 DCERPC_AUTH_TYPE_KRB5,
-				 auth_info->auth_level,
+				 (auth_info->auth_level ==
+						DCERPC_AUTH_LEVEL_INTEGRITY),
+				 (auth_info->auth_level ==
+						DCERPC_AUTH_LEVEL_PRIVACY),
 				 GSS_C_DCE_STYLE,
 				 NULL, NULL,
 				 &gse_ctx);
