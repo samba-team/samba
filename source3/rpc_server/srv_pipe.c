@@ -1021,9 +1021,6 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
 	struct gse_context *gse_ctx = NULL;
 
 	/* Let's init the gssapi machinery for this connection */
-	/* passing a NULL server name means the server will try
-	 * to accept any connection regardless of the name used as
-	 * long as it can find a decryption key */
 	/* by passing NULL, the code will attempt to set a default
 	 * keytab based on configuration options */
 	status = gse_init_server(p,
@@ -1032,7 +1029,7 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
 				 (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY),
 				 GSS_C_DCE_STYLE,
-				 NULL, NULL,
+				 NULL,
 				 &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to init dcerpc gssapi server (%s)\n",
