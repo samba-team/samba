@@ -45,6 +45,7 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
+		mkdir -p $CTDB_BASE/state/statd/ip/$IP
 		/bin/rm -f $CTDB_BASE/state/statd/ip/$IP/$2
 	done
 	;;
@@ -57,6 +58,8 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
+
+		mkdir -p $CTDB_BASE/state/statd/ip/$IP
 
 		rm -f $CTDB_BASE/state/statd/ip/$IP.tar
 		tar cfP $CTDB_BASE/state/statd/ip/$IP.tar $CTDB_BASE/state/statd/ip/$IP
@@ -89,6 +92,8 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
+
+		mkdir -p $CTDB_BASE/state/statd/ip/$IP
 
 		rm -f $CTDB_BASE/state/statd/ip/$IP.rec
 		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.rec 2>/dev/null
