@@ -639,7 +639,6 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	struct dom_sid domain_sid;
 	struct passwd *pwd;
 	const char *tmp;
-	NTSTATUS status;
 
 	pwd = getpwnam_alloc(mem_ctx, guest_account);
 	if (pwd == NULL) {
@@ -677,7 +676,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	info3->base.primary_gid = BUILTIN_RID_GUESTS;
 
 	TALLOC_FREE(pwd);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
