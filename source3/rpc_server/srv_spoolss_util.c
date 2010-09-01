@@ -223,7 +223,7 @@ static uint32_t winreg_printer_rev_changeid(void)
  *
  * @param[in]  server_info   The supplied server info.
  *
- * @param[out] winreg_pipe   A pointer for the winreg rpc client pipe.
+ * @param[out] binding_handle A pointer for the winreg dcerpc binding handle.
  *
  * @param[in]  path          The path to the key to open.
  *
@@ -244,7 +244,7 @@ static uint32_t winreg_printer_rev_changeid(void)
 static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 			      struct auth_serversupplied_info *server_info,
 			      struct messaging_context *msg_ctx,
-			      struct rpc_pipe_client **winreg_pipe,
+			      struct dcerpc_binding_handle **winreg_binding_handle,
 			      const char *path,
 			      const char *key,
 			      bool create_key,
@@ -252,26 +252,29 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 			      struct policy_handle *hive_handle,
 			      struct policy_handle *key_handle)
 {
-	struct rpc_pipe_client *pipe_handle;
+	static struct client_address client_id;
+	struct dcerpc_binding_handle *binding_handle;
 	struct winreg_String wkey, wkeyclass;
 	char *keyname;
 	NTSTATUS status;
 	WERROR result = WERR_OK;
 
-	/* create winreg connection */
-	status = rpc_pipe_open_internal(mem_ctx,
-					&ndr_table_winreg.syntax_id,
-					server_info,
-					NULL,
-					msg_ctx,
-					&pipe_handle);
+	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
+	client_id.name = "127.0.0.1";
+
+	status = rpcint_binding_handle(mem_ctx,
+				       &ndr_table_winreg,
+				       &client_id,
+				       server_info,
+				       msg_ctx,
+				       &binding_handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("winreg_printer_openkey: Could not connect to winreg_pipe: %s\n",
+		DEBUG(0, ("winreg_printer_openkey: Could not connect to winreg pipe: %s\n",
 			  nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	}
 
-	status = rpccli_winreg_OpenHKLM(pipe_handle,
+	status = dcerpc_winreg_OpenHKLM(binding_handle,
 					mem_ctx,
 					NULL,
 					access_mask,
@@ -280,11 +283,14 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_openkey: Could not open HKLM hive: %s\n",
 			  nt_errstr(status)));
-		talloc_free(pipe_handle);
-		if (!W_ERROR_IS_OK(result)) {
-			return result;
-		}
+		talloc_free(binding_handle);
 		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_openkey: Could not open HKLM hive: %s\n",
+			  win_errstr(result)));
+		talloc_free(binding_handle);
+		return result;
 	}
 
 	if (key && *key) {
@@ -293,7 +299,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 		keyname = talloc_strdup(mem_ctx, path);
 	}
 	if (keyname == NULL) {
-		talloc_free(pipe_handle);
+		talloc_free(binding_handle);
 		return WERR_NOMEM;
 	}
 
@@ -306,7 +312,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(wkeyclass);
 		wkeyclass.name = "";
 
-		status = rpccli_winreg_CreateKey(pipe_handle,
+		status = dcerpc_winreg_CreateKey(binding_handle,
 						 mem_ctx,
 						 hive_handle,
 						 wkey,
@@ -329,7 +335,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 				break;
 		}
 	} else {
-		status = rpccli_winreg_OpenKey(pipe_handle,
+		status = dcerpc_winreg_OpenKey(binding_handle,
 					       mem_ctx,
 					       hive_handle,
 					       wkey,
@@ -339,14 +345,15 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 					       &result);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(pipe_handle);
-		if (!W_ERROR_IS_OK(result)) {
-			return result;
-		}
+		talloc_free(binding_handle);
 		return ntstatus_to_werror(status);
 	}
+	if (!W_ERROR_IS_OK(result)) {
+		talloc_free(binding_handle);
+		return result;
+	}
 
-	*winreg_pipe = pipe_handle;
+	*winreg_binding_handle = binding_handle;
 
 	return WERR_OK;
 }
@@ -371,7 +378,7 @@ static char *winreg_printer_data_keyname(TALLOC_CTX *mem_ctx, const char *printe
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
- * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ * @param[in]  winreg_handle The binding handle for the rpc connection.
  *
  * @param[in]  key_hnd  The opened key handle.
  *
@@ -383,7 +390,7 @@ static char *winreg_printer_data_keyname(TALLOC_CTX *mem_ctx, const char *printe
  *                           code if something gone wrong.
  */
 static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
-					struct rpc_pipe_client *pipe_handle,
+					struct dcerpc_binding_handle *winreg_handle,
 					struct policy_handle *key_hnd,
 					uint32_t *pnum_values,
 					struct spoolss_PrinterEnumValues **penum_values)
@@ -408,7 +415,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(classname);
 
-	status = rpccli_winreg_QueryInfoKey(pipe_handle,
+	status = dcerpc_winreg_QueryInfoKey(winreg_handle,
 					    tmp_ctx,
 					    key_hnd,
 					    &classname,
@@ -424,10 +431,12 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_enumvalues: Could not query info: %s\n",
 			  nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto error;
-		}
 		result = ntstatus_to_werror(status);
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_enumvalues: Could not query info: %s\n",
+			  win_errstr(result)));
 		goto error;
 	}
 
@@ -463,7 +472,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		}
 		length = 0;
 
-		status = rpccli_winreg_EnumValue(pipe_handle,
+		status = dcerpc_winreg_EnumValue(winreg_handle,
 						 tmp_ctx,
 						 key_hnd,
 						 i,
@@ -482,10 +491,12 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("winreg_printer_enumvalues: Could not enumerate values: %s\n",
 				  nt_errstr(status)));
-			if (!W_ERROR_IS_OK(result)) {
-				goto error;
-			}
 			result = ntstatus_to_werror(status);
+			goto error;
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("winreg_printer_enumvalues: Could not enumerate values: %s\n",
+				  win_errstr(result)));
 			goto error;
 		}
 
@@ -535,7 +546,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
- * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ * @param[in]  winreg_handle The binding handle for the rpc connection.
  *
  * @param[in]  key_hnd  The opened key handle.
  *
@@ -548,7 +559,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
  *                           code if something gone wrong.
  */
 static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
-				      struct rpc_pipe_client *pipe_handle,
+				      struct dcerpc_binding_handle *winreg_handle,
 				      struct policy_handle *key_hnd,
 				      uint32_t *pnum_subkeys,
 				      const char ***psubkeys)
@@ -571,7 +582,7 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(classname);
 
-	status = rpccli_winreg_QueryInfoKey(pipe_handle,
+	status = dcerpc_winreg_QueryInfoKey(winreg_handle,
 					    tmp_ctx,
 					    key_hnd,
 					    &classname,
@@ -587,10 +598,12 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_enumkeys: Could not query info: %s\n",
 			  nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto error;
-		}
 		result = ntstatus_to_werror(status);
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_enumkeys: Could not query info: %s\n",
+			  win_errstr(result)));
 		goto error;
 	}
 
@@ -633,7 +646,7 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT(modtime);
 
-		status = rpccli_winreg_EnumKey(pipe_handle,
+		status = dcerpc_winreg_EnumKey(winreg_handle,
 					       tmp_ctx,
 					       key_hnd,
 					       i,
@@ -650,10 +663,12 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("winreg_printer_enumkeys: Could not enumerate keys: %s\n",
 				  nt_errstr(status)));
-			if (!W_ERROR_IS_OK(result)) {
-				goto error;
-			}
 			result = ntstatus_to_werror(status);
+			goto error;
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("winreg_printer_enumkeys: Could not enumerate keys: %s\n",
+				  win_errstr(result)));
 			goto error;
 		}
 
@@ -688,7 +703,7 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
- * @param[in]  pipe_handle The pipe handle for the rpc connection.
+ * @param[in]  winreg_handle The binding handle for the rpc connection.
  *
  * @param[in]  hive_handle A opened hive handle to the key.
  *
@@ -700,7 +715,7 @@ static WERROR winreg_printer_enumkeys(TALLOC_CTX *mem_ctx,
  *                      code if something gone wrong.
  */
 static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
-					    struct rpc_pipe_client *pipe_handle,
+					    struct dcerpc_binding_handle *winreg_handle,
 					    struct policy_handle *hive_handle,
 					    uint32_t access_mask,
 					    const char *key)
@@ -718,7 +733,7 @@ static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("winreg_printer_delete_subkeys: delete key %s\n", key));
 	/* open the key */
-	status = rpccli_winreg_OpenKey(pipe_handle,
+	status = dcerpc_winreg_OpenKey(winreg_handle,
 				       mem_ctx,
 				       hive_handle,
 				       wkey,
@@ -729,14 +744,16 @@ static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_delete_subkeys: Could not open key %s: %s\n",
 			  wkey.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			return result;
-		}
 		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_printer_delete_subkeys: Could not open key %s: %s\n",
+			  wkey.name, win_errstr(result)));
+		return result;
 	}
 
 	result = winreg_printer_enumkeys(mem_ctx,
-					 pipe_handle,
+					 winreg_handle,
 					 &key_hnd,
 					 &num_subkeys,
 					 &subkeys);
@@ -753,7 +770,7 @@ static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
 
 		DEBUG(2, ("winreg_printer_delete_subkeys: delete subkey %s\n", subkey));
 		result = winreg_printer_delete_subkeys(mem_ctx,
-						       pipe_handle,
+						       winreg_handle,
 						       hive_handle,
 						       access_mask,
 						       subkey);
@@ -763,27 +780,33 @@ static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_valid_policy_hnd(&key_hnd)) {
-		rpccli_winreg_CloseKey(pipe_handle, mem_ctx, &key_hnd, NULL);
+		WERROR ignore;
+		dcerpc_winreg_CloseKey(winreg_handle, mem_ctx, &key_hnd, &ignore);
 	}
 
 	wkey.name = key;
 
-	status = rpccli_winreg_DeleteKey(pipe_handle,
+	status = dcerpc_winreg_DeleteKey(winreg_handle,
 					 mem_ctx,
 					 hive_handle,
 					 wkey,
 					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 
 done:
 	if (is_valid_policy_hnd(&key_hnd)) {
-		rpccli_winreg_CloseKey(pipe_handle, mem_ctx, &key_hnd, NULL);
+		WERROR ignore;
+
+		dcerpc_winreg_CloseKey(winreg_handle, mem_ctx, &key_hnd, &ignore);
 	}
 
 	return result;
 }
 
 static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
-				      struct rpc_pipe_client *pipe_handle,
+				      struct dcerpc_binding_handle *winreg_handle,
 				      struct policy_handle *key_handle,
 				      const char *value,
 				      const char *data)
@@ -803,7 +826,7 @@ static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
 			return WERR_NOMEM;
 		}
 	}
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -812,18 +835,18 @@ static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_sz: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
 }
 
 static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
-					 struct rpc_pipe_client *pipe_handle,
+					 struct dcerpc_binding_handle *winreg_handle,
 					 struct policy_handle *key_handle,
 					 const char *value,
 					 uint32_t data)
@@ -837,7 +860,7 @@ static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
 	blob = data_blob_talloc(mem_ctx, NULL, 4);
 	SIVAL(blob.data, 0, data);
 
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -846,18 +869,18 @@ static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_dword: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
 }
 
 static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
-					  struct rpc_pipe_client *pipe_handle,
+					  struct dcerpc_binding_handle *winreg_handle,
 					  struct policy_handle *key_handle,
 					  const char *value,
 					  DATA_BLOB blob)
@@ -867,7 +890,7 @@ static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	wvalue.name = value;
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -876,18 +899,18 @@ static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_binary: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
 }
 
 static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
-					  struct rpc_pipe_client *pipe_handle,
+					  struct dcerpc_binding_handle *winreg_handle,
 					  struct policy_handle *key_handle,
 					  const char *value,
 					  DATA_BLOB *data)
@@ -901,7 +924,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 
 	wvalue.name = value;
-	status = rpccli_winreg_QueryValue(pipe_handle,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  mem_ctx,
 					  key_handle,
 					  &wvalue,
@@ -911,12 +934,11 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
-			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
+			  wvalue.name, win_errstr(result)));
 		goto done;
 	}
 
@@ -931,7 +953,7 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 	}
 	value_len = 0;
 
-	status = rpccli_winreg_QueryValue(pipe_handle,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  mem_ctx,
 					  key_handle,
 					  &wvalue,
@@ -941,11 +963,11 @@ static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
-			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
+			  wvalue.name, win_errstr(result)));
 		goto done;
 	}
 
@@ -958,7 +980,7 @@ done:
 }
 
 static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
-					 struct rpc_pipe_client *pipe_handle,
+					 struct dcerpc_binding_handle *winreg_handle,
 					 struct policy_handle *key_handle,
 					 const char *value,
 					 uint32_t *data)
@@ -972,7 +994,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 
 	wvalue.name = value;
-	status = rpccli_winreg_QueryValue(pipe_handle,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  mem_ctx,
 					  key_handle,
 					  &wvalue,
@@ -982,12 +1004,11 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
-			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
+			  wvalue.name, win_errstr(result)));
 		goto done;
 	}
 
@@ -1008,7 +1029,7 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 	}
 	value_len = 0;
 
-	status = rpccli_winreg_QueryValue(pipe_handle,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  mem_ctx,
 					  key_handle,
 					  &wvalue,
@@ -1018,11 +1039,11 @@ static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					  &value_len,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
-			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
+			  wvalue.name, win_errstr(result)));
 		goto done;
 	}
 
@@ -1034,7 +1055,7 @@ done:
 }
 
 static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
-					    struct rpc_pipe_client *pipe_handle,
+					    struct dcerpc_binding_handle *winreg_handle,
 					    struct policy_handle *key_handle,
 					    const char *value,
 					    const char **data)
@@ -1048,7 +1069,7 @@ static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
 	if (!push_reg_multi_sz(mem_ctx, &blob, data)) {
 		return WERR_NOMEM;
 	}
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -1057,11 +1078,11 @@ static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_multi_sz: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
@@ -1075,7 +1096,7 @@ static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
 					uint32_t version,
 					uint32_t access_mask,
 					bool create,
-					struct rpc_pipe_client **winreg_pipe,
+					struct dcerpc_binding_handle **winreg_binding_handle,
 					struct policy_handle *hive_hnd,
 					struct policy_handle *key_hnd)
 {
@@ -1092,7 +1113,7 @@ static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(mem_ctx,
 					server_info,
 					msg_ctx,
-					winreg_pipe,
+					winreg_binding_handle,
 					key_name,
 					drivername,
 					create,
@@ -1183,7 +1204,7 @@ static WERROR winreg_enumval_to_multi_sz(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
-					struct rpc_pipe_client *pipe_handle,
+					struct dcerpc_binding_handle *winreg_handle,
 					struct policy_handle *key_handle,
 					const char *value,
 					NTTIME data)
@@ -1208,7 +1229,7 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 	if (!push_reg_sz(mem_ctx, &blob, str)) {
 		return WERR_NOMEM;
 	}
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -1217,11 +1238,11 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_date: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
@@ -1249,7 +1270,7 @@ static WERROR winreg_printer_date_to_NTTIME(const char *str, NTTIME *data)
 }
 
 static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
-				       struct rpc_pipe_client *pipe_handle,
+				       struct dcerpc_binding_handle *winreg_handle,
 				       struct policy_handle *key_handle,
 				       const char *value,
 				       uint64_t data)
@@ -1275,7 +1296,7 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 	if (!push_reg_sz(mem_ctx, &blob, str)) {
 		return WERR_NOMEM;
 	}
-	status = rpccli_winreg_SetValue(pipe_handle,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					mem_ctx,
 					key_handle,
 					wvalue,
@@ -1284,11 +1305,11 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 					blob.length,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_write_date: Could not set value %s: %s\n",
 			wvalue.name, win_errstr(result)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
 	}
 
 	return result;
@@ -1321,7 +1342,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     const char *sharename)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_SetPrinterInfo2 *info2;
 	struct security_descriptor *secdesc;
@@ -1350,7 +1371,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -1372,7 +1393,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					true,
@@ -1386,7 +1407,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_valid_policy_hnd(&key_hnd)) {
-		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &result);
 	}
 
 	/* Create subkeys */
@@ -1406,7 +1427,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(wkeyclass);
 		wkeyclass.name = "";
 
-		status = rpccli_winreg_CreateKey(winreg_pipe,
+		status = dcerpc_winreg_CreateKey(winreg_handle,
 						 tmp_ctx,
 						 &hive_hnd,
 						 wkey,
@@ -1418,11 +1439,11 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 						 &action,
 						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
+		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(0, ("winreg_create_printer_keys: Could not create key %s: %s\n",
 				wkey.name, win_errstr(result)));
-			if (!W_ERROR_IS_OK(result)) {
-				result = ntstatus_to_werror(status);
-			}
 			goto done;
 		}
 
@@ -1433,7 +1454,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			const char *uncname;
 
 			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_pipe,
+							 winreg_handle,
 							 &key_hnd,
 							 SPOOL_REG_PRINTERNAME,
 							 sharename);
@@ -1442,7 +1463,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_pipe,
+							 winreg_handle,
 							 &key_hnd,
 							 SPOOL_REG_SHORTSERVERNAME,
 							 global_myname());
@@ -1466,7 +1487,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_pipe,
+							 winreg_handle,
 							 &key_hnd,
 							 SPOOL_REG_SERVERNAME,
 							 longname);
@@ -1482,7 +1503,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_pipe,
+							 winreg_handle,
 							 &key_hnd,
 							 SPOOL_REG_UNCNAME,
 							 uncname);
@@ -1491,7 +1512,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_pipe,
+							    winreg_handle,
 							    &key_hnd,
 							    SPOOL_REG_VERSIONNUMBER,
 							    4);
@@ -1500,7 +1521,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_pipe,
+							    winreg_handle,
 							    &key_hnd,
 							    SPOOL_REG_PRINTSTARTTIME,
 							    0);
@@ -1509,7 +1530,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_pipe,
+							    winreg_handle,
 							    &key_hnd,
 							    SPOOL_REG_PRINTENDTIME,
 							    0);
@@ -1518,7 +1539,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_pipe,
+							    winreg_handle,
 							    &key_hnd,
 							    SPOOL_REG_PRIORITY,
 							    1);
@@ -1527,7 +1548,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			}
 
 			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_pipe,
+							    winreg_handle,
 							    &key_hnd,
 							    SPOOL_REG_PRINTKEEPPRINTEDJOBS,
 							    0);
@@ -1540,7 +1561,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 		}
 
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &result);
 		}
 	}
 	info2 = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
@@ -1612,12 +1633,14 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				       secdesc);
 
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -1635,7 +1658,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			     struct security_descriptor *secdesc)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	int snum = lp_servicenumber(sharename);
 	enum ndr_err_code ndr_err;
@@ -1661,7 +1684,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					true,
@@ -1676,7 +1699,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_ATTRIBUTES) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "Attributes",
 						    info2->attributes);
@@ -1688,7 +1711,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 #if 0
 	if (info2_mask & SPOOLSS_PRINTER_INFO_AVERAGEPPM) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "AveragePpm",
 						    info2->attributes);
@@ -1700,7 +1723,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_COMMENT) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Description",
 						 info2->comment);
@@ -1711,7 +1734,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DATATYPE) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Datatype",
 						 info2->datatype);
@@ -1722,7 +1745,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "Default Priority",
 						    info2->defaultpriority);
@@ -1754,7 +1777,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 		}
 
 		result = winreg_printer_write_binary(tmp_ctx,
-						     winreg_pipe,
+						     winreg_handle,
 						     &key_hnd,
 						     "Default DevMode",
 						     blob);
@@ -1765,7 +1788,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DRIVERNAME) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Printer Driver",
 						 info2->drivername);
@@ -1776,7 +1799,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_LOCATION) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Location",
 						 info2->location);
@@ -1787,7 +1810,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PARAMETERS) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Parameters",
 						 info2->parameters);
@@ -1798,7 +1821,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PORTNAME) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Port",
 						 info2->portname);
@@ -1826,7 +1849,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			p++;
 		}
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Name",
 						 p);
@@ -1837,7 +1860,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PRINTPROCESSOR) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Print Processor",
 						 info2->printprocessor);
@@ -1848,7 +1871,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PRIORITY) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "Priority",
 						    info2->priority);
@@ -1880,7 +1903,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_SEPFILE) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Separator File",
 						 info2->sepfile);
@@ -1891,7 +1914,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_SHARENAME) {
 		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_pipe,
+						 winreg_handle,
 						 &key_hnd,
 						 "Share Name",
 						 info2->sharename);
@@ -1902,7 +1925,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_STARTTIME) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "StartTime",
 						    info2->starttime);
@@ -1913,7 +1936,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_STATUS) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "Status",
 						    info2->status);
@@ -1924,7 +1947,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_UNTILTIME) {
 		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_pipe,
+						    winreg_handle,
 						    &key_hnd,
 						    "UntilTime",
 						    info2->untiltime);
@@ -1934,7 +1957,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_write_dword(tmp_ctx,
-					    winreg_pipe,
+					    winreg_handle,
 					    &key_hnd,
 					    "ChangeID",
 					    winreg_printer_rev_changeid());
@@ -1944,12 +1967,14 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -1966,7 +1991,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 {
 	struct spoolss_PrinterInfo2 *info2;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
 	struct spoolss_PrinterEnumValues *v;
@@ -1993,7 +2018,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -2007,7 +2032,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumvalues(tmp_ctx,
-					   winreg_pipe,
+					   winreg_handle,
 					   &key_hnd,
 					   &num_values,
 					   &enum_values);
@@ -2182,7 +2207,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 
 	/* Construct the Device Mode */
 	result = winreg_printer_query_binary(tmp_ctx,
-					     winreg_pipe,
+					     winreg_handle,
 					     &key_hnd,
 					     "Default DevMode",
 					     &blob);
@@ -2242,12 +2267,14 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2263,7 +2290,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 {
 	struct spoolss_security_descriptor *secdesc;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	enum ndr_err_code ndr_err;
 	const char *path;
@@ -2288,7 +2315,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -2303,7 +2330,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_query_binary(tmp_ctx,
-					     winreg_pipe,
+					     winreg_handle,
 					     &key_hnd,
 					     "Security",
 					     &blob);
@@ -2340,7 +2367,7 @@ create_default:
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					true,
@@ -2399,7 +2426,7 @@ create_default:
 	}
 
 	result = winreg_printer_write_binary(tmp_ctx,
-					     winreg_pipe,
+					     winreg_handle,
 					     &key_hnd,
 					     "Security",
 					     blob);
@@ -2413,12 +2440,14 @@ create_default:
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2435,7 +2464,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	const struct spoolss_security_descriptor *new_secdesc = secdesc;
 	struct spoolss_security_descriptor *old_secdesc;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	enum ndr_err_code ndr_err;
 	const char *path;
@@ -2513,7 +2542,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -2533,18 +2562,20 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_write_binary(tmp_ctx,
-					     winreg_pipe,
+					     winreg_handle,
 					     &key_hnd,
 					     "Security",
 					     blob);
 
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2564,7 +2595,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 				 uint32_t data_size)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	char *path;
@@ -2591,7 +2622,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					true,
@@ -2605,7 +2636,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 	}
 
 	wvalue.name = value;
-	status = rpccli_winreg_SetValue(winreg_pipe,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					tmp_ctx,
 					&key_hnd,
 					wvalue,
@@ -2616,21 +2647,18 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_set_printer_dataex: Could not set value %s: %s\n",
 			  value, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
-		goto done;
 	}
 
-	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2650,7 +2678,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 				 uint32_t *data_size)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	enum winreg_Type type_in;
@@ -2679,7 +2707,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					false,
@@ -2699,7 +2727,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	 * needed memory size to be allocated, then allocate
 	 * data buffer and call again.
 	 */
-	status = rpccli_winreg_QueryValue(winreg_pipe,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  tmp_ctx,
 					  &key_hnd,
 					  &wvalue,
@@ -2711,10 +2739,10 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
 			  value, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -2725,7 +2753,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	}
 	value_len = 0;
 
-	status = rpccli_winreg_QueryValue(winreg_pipe,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  tmp_ctx,
 					  &key_hnd,
 					  &wvalue,
@@ -2737,9 +2765,10 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
 			  value, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			result = ntstatus_to_werror(status);
-		}
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -2751,12 +2780,14 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2774,7 +2805,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 				  struct spoolss_PrinterEnumValues **penum_values)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
@@ -2798,7 +2829,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					false,
@@ -2812,7 +2843,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumvalues(tmp_ctx,
-					   winreg_pipe,
+					   winreg_handle,
 					   &key_hnd,
 					   &num_values,
 					   &enum_values);
@@ -2829,12 +2860,14 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2851,7 +2884,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 				    const char *value)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	char *path;
@@ -2877,7 +2910,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					false,
@@ -2891,7 +2924,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 	}
 
 	wvalue.name = value;
-	status = rpccli_winreg_DeleteValue(winreg_pipe,
+	status = dcerpc_winreg_DeleteValue(winreg_handle,
 					   tmp_ctx,
 					   &key_hnd,
 					   wvalue,
@@ -2899,21 +2932,18 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_delete_printer_dataex: Could not delete value %s: %s\n",
 			  value, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
-		goto done;
 	}
 
-	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -2931,7 +2961,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 			       const char ***psubkeys)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	char *path;
 	const char **subkeys = NULL;
@@ -2958,7 +2988,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					false,
@@ -2972,7 +3002,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumkeys(tmp_ctx,
-					 winreg_pipe,
+					 winreg_handle,
 					 &key_hnd,
 					 &num_subkeys,
 					 &subkeys);
@@ -2989,12 +3019,14 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3010,7 +3042,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 				 const char *key)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	char *keyname;
 	char *path;
@@ -3031,7 +3063,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					key,
 					false,
@@ -3051,7 +3083,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_valid_policy_hnd(&key_hnd)) {
-		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &result);
 	}
 
 	if (key == NULL || key[0] == '\0') {
@@ -3068,7 +3100,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_delete_subkeys(tmp_ctx,
-					       winreg_pipe,
+					       winreg_handle,
 					       &hive_hnd,
 					       access_mask,
 					       keyname);
@@ -3079,12 +3111,14 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3098,7 +3132,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 				      const char *printer)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	char *path;
 	WERROR result;
@@ -3121,7 +3155,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -3135,7 +3169,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_write_dword(tmp_ctx,
-					    winreg_pipe,
+					    winreg_handle,
 					    &key_hnd,
 					    "ChangeID",
 					    winreg_printer_rev_changeid());
@@ -3145,12 +3179,14 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3165,7 +3201,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 				   uint32_t *pchangeid)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	uint32_t changeid = 0;
 	char *path;
@@ -3189,7 +3225,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					path,
 					"",
 					false,
@@ -3205,7 +3241,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("winreg_printer_get_changeid: get changeid from %s\n", path));
 
 	result = winreg_printer_query_dword(tmp_ctx,
-					    winreg_pipe,
+					    winreg_handle,
 					    &key_hnd,
 					    "ChangeID",
 					    &changeid);
@@ -3219,12 +3255,14 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3245,7 +3283,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_AddFormInfo1 *form)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	DATA_BLOB blob;
@@ -3267,7 +3305,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
 					true,
@@ -3308,7 +3346,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 	SIVAL(blob.data, 24, num_info + 1); /* FIXME */
 	SIVAL(blob.data, 28, form->flags);
 
-	status = rpccli_winreg_SetValue(winreg_pipe,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					tmp_ctx,
 					&key_hnd,
 					wvalue,
@@ -3319,21 +3357,18 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_addform1: Could not set value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
-		goto done;
 	}
 
-	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3349,7 +3384,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 				 union spoolss_FormInfo **pinfo)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	union spoolss_FormInfo *info;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
@@ -3370,7 +3405,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
 					true,
@@ -3390,7 +3425,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumvalues(tmp_ctx,
-					   winreg_pipe,
+					   winreg_handle,
 					   &key_hnd,
 					   &num_values,
 					   &enum_values);
@@ -3444,12 +3479,14 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3464,7 +3501,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 				  const char *form_name)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
@@ -3490,7 +3527,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
 					false,
@@ -3507,34 +3544,32 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	}
 
 	wvalue.name = form_name;
-	status = rpccli_winreg_DeleteValue(winreg_pipe,
+	status = dcerpc_winreg_DeleteValue(winreg_handle,
 					   tmp_ctx,
 					   &key_hnd,
 					   wvalue,
 					   &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If the value doesn't exist, return WERR_INVALID_FORM_NAME */
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
-			result = WERR_INVALID_FORM_NAME;
-			goto done;
-		}
 		DEBUG(0, ("winreg_printer_delteform1: Could not delete value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
 		goto done;
 	}
 
-	result = WERR_OK;
+	if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		result = WERR_INVALID_FORM_NAME;
+	}
+
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3549,7 +3584,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_AddFormInfo1 *form)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	DATA_BLOB blob;
@@ -3577,7 +3612,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
 					true,
@@ -3613,7 +3648,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 	SIVAL(blob.data, 24, 42);
 	SIVAL(blob.data, 28, form->flags);
 
-	status = rpccli_winreg_SetValue(winreg_pipe,
+	status = dcerpc_winreg_SetValue(winreg_handle,
 					tmp_ctx,
 					&key_hnd,
 					wvalue,
@@ -3624,21 +3659,18 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_setform1: Could not set value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
-		goto done;
 	}
 
-	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3653,7 +3685,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_FormInfo1 *r)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
 	enum winreg_Type type_in;
@@ -3685,7 +3717,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
 					msg_ctx,
-					&winreg_pipe,
+					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
 					"",
 					true,
@@ -3705,7 +3737,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	 * needed memory size to be allocated, then allocate
 	 * data buffer and call again.
 	 */
-	status = rpccli_winreg_QueryValue(winreg_pipe,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  tmp_ctx,
 					  &key_hnd,
 					  &wvalue,
@@ -3717,10 +3749,10 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_getform1: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -3731,7 +3763,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	}
 	value_len = 0;
 
-	status = rpccli_winreg_QueryValue(winreg_pipe,
+	status = dcerpc_winreg_QueryValue(winreg_handle,
 					  tmp_ctx,
 					  &key_hnd,
 					  &wvalue,
@@ -3743,10 +3775,10 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_getform1: Could not query value %s: %s\n",
 			  wvalue.name, nt_errstr(status)));
-		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
 		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -3767,12 +3799,14 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -3788,7 +3822,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 			 uint32_t *driver_version)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_DriverInfo8 info8;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -3815,7 +3849,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 					   info8.architecture,
 					   info8.version,
 					   access_mask, true,
-					   &winreg_pipe,
+					   &winreg_handle,
 					   &hive_hnd,
 					   &key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
@@ -3828,161 +3862,161 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 
 	/* TODO: "Attributes" ? */
 
-	result = winreg_printer_write_dword(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_dword(tmp_ctx, winreg_handle,
 					    &key_hnd, "Version",
 					    info8.version);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Driver",
 					 info8.driver_path);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Data File",
 					 info8.data_file);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Configuration File",
 					 info8.config_file);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Help File",
 					 info8.help_file);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
 					       &key_hnd, "Dependent Files",
 					       info8.dependent_files);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Monitor",
 					 info8.monitor_name);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Datatype",
 					 info8.default_datatype);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
 					       &key_hnd, "Previous Names",
 					       info8.previous_names);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_date(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_date(tmp_ctx, winreg_handle,
 					   &key_hnd, "DriverDate",
 					   info8.driver_date);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_ver(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_ver(tmp_ctx, winreg_handle,
 					  &key_hnd, "DriverVersion",
 					  info8.driver_version);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Manufacturer",
 					 info8.manufacturer_name);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "OEM URL",
 					 info8.manufacturer_url);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "HardwareID",
 					 info8.hardware_id);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Provider",
 					 info8.provider);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "Print Processor",
 					 info8.print_processor);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "VendorSetup",
 					 info8.vendor_setup);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
 					       &key_hnd, "Color Profiles",
 					       info8.color_profiles);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
 					 &key_hnd, "InfPath",
 					 info8.inf_path);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_dword(tmp_ctx, winreg_pipe, &key_hnd,
+	result = winreg_printer_write_dword(tmp_ctx, winreg_handle, &key_hnd,
 					    "PrinterDriverAttributes",
 					    info8.printer_driver_attributes);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
 					       &key_hnd, "CoreDependencies",
 					       info8.core_driver_dependencies);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_date(tmp_ctx, winreg_pipe,
+	result = winreg_printer_write_date(tmp_ctx, winreg_handle,
 					   &key_hnd, "MinInboxDriverVerDate",
 					   info8.min_inbox_driver_ver_date);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_ver(tmp_ctx, winreg_pipe, &key_hnd,
+	result = winreg_printer_write_ver(tmp_ctx, winreg_handle, &key_hnd,
 					  "MinInboxDriverVerVersion",
 					  info8.min_inbox_driver_ver_version);
 	if (!W_ERROR_IS_OK(result)) {
@@ -3993,12 +4027,14 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 	*driver_version = info8.version;
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -4015,7 +4051,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 			 struct spoolss_DriverInfo8 **_info8)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_DriverInfo8 i8, *info8;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
@@ -4043,7 +4079,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 						   architecture,
 						   3,
 						   access_mask, false,
-						   &winreg_pipe,
+						   &winreg_handle,
 						   &hive_hnd,
 						   &key_hnd);
 		if (!W_ERROR_IS_OK(result)) {
@@ -4054,7 +4090,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 							   architecture,
 							   2,
 							   access_mask, false,
-							   &winreg_pipe,
+							   &winreg_handle,
 							   &hive_hnd,
 							   &key_hnd);
 		}
@@ -4067,7 +4103,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 						   architecture,
 						   driver_version,
 						   access_mask, false,
-						   &winreg_pipe,
+						   &winreg_handle,
 						   &hive_hnd,
 						   &key_hnd);
 	}
@@ -4080,7 +4116,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumvalues(tmp_ctx,
-					   winreg_pipe,
+					   winreg_handle,
 					   &key_hnd,
 					   &num_values,
 					   &enum_values);
@@ -4263,12 +4299,14 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	*_info8 = talloc_steal(mem_ctx, info8);
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -4283,7 +4321,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 			 uint32_t version)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	TALLOC_CTX *tmp_ctx;
 	char *key_name;
@@ -4305,7 +4343,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 					   info8->architecture,
 					   version,
 					   access_mask, false,
-					   &winreg_pipe,
+					   &winreg_handle,
 					   &hive_hnd,
 					   &key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
@@ -4324,7 +4362,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 
 
 	if (is_valid_policy_hnd(&key_hnd)) {
-		rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &result);
 	}
 
 	key_name = talloc_asprintf(tmp_ctx,
@@ -4337,7 +4375,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_delete_subkeys(tmp_ctx,
-					       winreg_pipe,
+					       winreg_handle,
 					       &hive_hnd,
 					       access_mask,
 					       key_name);
@@ -4351,12 +4389,14 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
@@ -4373,7 +4413,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 			      const char ***drivers_p)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct rpc_pipe_client *winreg_pipe = NULL;
+	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	const char **drivers;
 	TALLOC_CTX *tmp_ctx;
@@ -4399,7 +4439,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 					   architecture,
 					   version,
 					   access_mask, false,
-					   &winreg_pipe,
+					   &winreg_handle,
 					   &hive_hnd,
 					   &key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
@@ -4411,7 +4451,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_enumkeys(tmp_ctx,
-					 winreg_pipe,
+					 winreg_handle,
 					 &key_hnd,
 					 num_drivers,
 					 &drivers);
@@ -4426,12 +4466,14 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_pipe != NULL) {
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
 		if (is_valid_policy_hnd(&key_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &key_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
 		}
 		if (is_valid_policy_hnd(&hive_hnd)) {
-			rpccli_winreg_CloseKey(winreg_pipe, tmp_ctx, &hive_hnd, NULL);
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 		}
 	}
 
