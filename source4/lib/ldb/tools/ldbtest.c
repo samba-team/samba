@@ -45,12 +45,16 @@ static struct ldb_cmdline *options;
 
 static void _start_timer(void)
 {
-	clock_gettime_mono(&tp1);
+	if (clock_gettime(CUSTOM_CLOCK_MONOTONIC, &tp1) != 0) {
+		clock_gettime(CLOCK_REALTIME, &tp1);
+	}
 }
 
 static double _end_timer(void)
 {
-	clock_gettime_mono(&tp2);
+	if (clock_gettime(CUSTOM_CLOCK_MONOTONIC, &tp2) != 0) {
+		clock_gettime(CLOCK_REALTIME, &tp2);
+	}
 	return((tp2.tv_sec - tp1.tv_sec) + 
 	       (tp2.tv_nsec - tp1.tv_nsec)*1.0e-9);
 }
