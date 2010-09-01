@@ -17,8 +17,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CLI_PIPE_GSSAPI_H_
-#define _CLI_PIPE_GSSAPI_H_
+#ifndef _GSE_H_
+#define _GSE_H_
 
 struct gse_context;
 
@@ -73,4 +73,5 @@ NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 		  DATA_BLOB *data, DATA_BLOB *signature);
 NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 		      DATA_BLOB *data, DATA_BLOB *signature);
-#endif /* _CLI_PIPE_GSSAPI_H_ */
+
+#endif /* _GSE_H_ */

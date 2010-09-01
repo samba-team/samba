@@ -26,7 +26,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
-#include "librpc/rpc/dcerpc_gssapi.h"
+#include "librpc/crypto/gse.h"
 #include "librpc/rpc/dcerpc_spnego.h"
 
 #undef DBGC_CLASS

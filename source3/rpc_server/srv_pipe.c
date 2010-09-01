@@ -37,7 +37,7 @@
 #include "ntlmssp_wrap.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
-#include "librpc/rpc/dcerpc_gssapi.h"
+#include "librpc/crypto/gse.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -20,12 +20,12 @@
 /* We support only GSSAPI/KRB5 here */
 
 #include "includes.h"
-#include "dcerpc_gssapi.h"
+#include "gse.h"
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
 
 #include "smb_krb5.h"
-#include "dcerpc_krb5.h"
+#include "gse_krb5.h"
 
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
@@ -378,7 +378,7 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!keytab_name) {
-		ret = smb_krb5_get_server_keytab(gse_ctx->k5ctx,
+		ret = gse_krb5_get_server_keytab(gse_ctx->k5ctx,
 						 &gse_ctx->keytab);
 		if (ret) {
 			status = NT_STATUS_INTERNAL_ERROR;

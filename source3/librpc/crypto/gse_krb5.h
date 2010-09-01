@@ -17,14 +17,14 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DCERPC_KRB5_H_
-#define _DCERPC_KRB5_H_
+#ifndef _GSE_KRB5_H_
+#define _GSE_KRB5_H_
 
 #ifdef HAVE_KRB5
 
-krb5_error_code smb_krb5_get_server_keytab(krb5_context krbctx,
+krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 					   krb5_keytab *keytab);
 
 #endif /* HAVE_KRB5 */
 
-#endif /* _DCERPC_KRB5_H_ */
+#endif /* _GSE_KRB5_H_ */

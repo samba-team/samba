@@ -22,7 +22,7 @@
 #include "include/ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ntlmssp.h"
 #include "dcerpc_spnego.h"
-#include "dcerpc_gssapi.h"
+#include "librpc/crypto/gse.h"
 
 struct spnego_context {
 	enum dcerpc_AuthType auth_type;

@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "secrets.h"
-#include "librpc/rpc/dcerpc_krb5.h"
+#include "gse_krb5.h"
 
 #ifdef HAVE_KRB5
 
@@ -348,7 +348,7 @@ static krb5_error_code get_mem_keytab_from_system_keytab(krb5_context krbctx,
 	return KRB5_KT_NOTFOUND;
 }
 
-krb5_error_code smb_krb5_get_server_keytab(krb5_context krbctx,
+krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 					   krb5_keytab *keytab)
 {
 	krb5_error_code ret;

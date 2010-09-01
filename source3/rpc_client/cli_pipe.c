@@ -29,7 +29,7 @@
 #include "ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/rpc/dcerpc_gssapi.h"
+#include "librpc/crypto/gse.h"
 #include "librpc/rpc/dcerpc_spnego.h"
 #include "rpc_dce.h"
 
