@@ -166,6 +166,9 @@ olcAttributeTypes: {53}( 1.3.6.1.4.1.7165.2.1.76 NAME 'sambaTrustAuthIncoming'
 olcAttributeTypes: {54}( 1.3.6.1.4.1.7165.2.1.77 NAME 'sambaSecurityIdentifier
  ' DESC 'SID of a trusted domain' EQUALITY caseIgnoreIA5Match SUBSTR caseExact
  IA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
+olcAttributeTypes: {55}( 1.3.6.1.4.1.7165.2.1.78 NAME 'sambaTrustForestTrustIn
+ fo' DESC 'Forest trust information for a trusted domain object' EQUALITY case
+ ExactMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
 olcObjectClasses: {0}( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' DESC 'Sam
  ba 3.0 Auxilary SAM Account' SUP top AUXILIARY MUST ( uid $ sambaSID ) MAY ( 
  cn $ sambaLMPassword $ sambaNTPassword $ sambaPwdLastSet $ sambaLogonTime $ s
@@ -211,4 +214,4 @@ olcObjectClasses: {11}( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' DESC
   'Samba Trusted Domain Object' SUP top STRUCTURAL MUST cn MAY ( sambaTrustTyp
  e $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFla
  tName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdenti
- fier ) )
+ fier $ sambaTrustForestTrustInfo ) )

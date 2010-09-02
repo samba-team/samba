@@ -108,3 +108,5 @@ attributetypes=( 1.3.6.1.4.1.7165.2.1.75 NAME 'sambaTrustAuthOutgoing' DESC 'Aut
 attributetypes=( 1.3.6.1.4.1.7165.2.1.76 NAME 'sambaTrustAuthIncoming' DESC 'Authentication information for the incoming portion of a trust' EQUALITY caseExactMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
 
 attributetypes=( 1.3.6.1.4.1.7165.2.1.77 NAME 'sambaSecurityIdentifier' DESC 'SID of a trusted domain' EQUALITY caseIgnoreIA5Match SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
+
+attributetypes=( 1.3.6.1.4.1.7165.2.1.78 NAME 'sambaTrustForestTrustInfo' DESC 'Forest trust information for a trusted domain object' EQUALITY caseExactMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
