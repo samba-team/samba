@@ -658,6 +658,8 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
+DCE_RPC_EP_OBJ = librpc/rpc/dcerpc_ep.o
+
 RPC_LSARPC_OBJ = rpc_server/srv_lsa_nt.o \
 		 librpc/gen_ndr/srv_lsa.o
 
