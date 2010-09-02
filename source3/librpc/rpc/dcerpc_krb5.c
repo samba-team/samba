@@ -145,7 +145,7 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 
 		kt_entry.principal = princ;
 		kt_entry.vno = vno;
-		kt_entry.key = *key;
+		*(KRB5_KT_KEY(&kt_entry)) = *key;
 
 		ret = krb5_kt_add_entry(krbctx, keytab, &kt_entry);
 		if (ret) {
