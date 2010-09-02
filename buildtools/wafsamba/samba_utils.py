@@ -451,7 +451,9 @@ def CHECK_MAKEFLAGS(bld):
         return
     makeflags = os.environ.get('MAKEFLAGS')
     jobs_set = False
-    for opt in makeflags.split():
+    # we need to use shlex.split to cope with the escaping of spaces
+    # in makeflags
+    for opt in shlex.split(makeflags):
         # options can come either as -x or as x
         if opt[0:2] == 'V=':
             Options.options.verbose = Logs.verbose = int(opt[2:])
