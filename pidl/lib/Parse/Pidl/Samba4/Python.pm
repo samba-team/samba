@@ -712,12 +712,13 @@ sub Interface($$$)
 			$docstring = $signature;
 		}
 
-		$self->pidl("static PyTypeObject $interface->{NAME}_InterfaceType = {");
+		my $if_typename = "$interface->{NAME}_InterfaceType";
+
+		$self->pidl("static PyTypeObject $if_typename = {");
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
 		$self->pidl(".tp_basicsize = sizeof(dcerpc_InterfaceObject),");
-		$self->pidl(".tp_base = &dcerpc_InterfaceType,");
 		$self->pidl(".tp_doc = $docstring,");
 		$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
 		$self->pidl(".tp_new = interface_$interface->{NAME}_new,");
@@ -726,8 +727,8 @@ sub Interface($$$)
 
 		$self->pidl("");
 
-		$self->register_module_typeobject($interface->{NAME}, "&$interface->{NAME}_InterfaceType");
-		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$interface->{NAME}_InterfaceType, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
+		$self->register_module_typeobject($interface->{NAME}, "&$if_typename");
+		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$if_typename, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
 	}
 
 	$self->pidl_hdr("\n");
