@@ -2193,7 +2193,7 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 	if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_NTLMSSP) {
 		a = rpc_cli->auth->a_u.auth_ntlmssp_state;
 	} else if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
-		enum dcerpc_AuthType auth_type;
+		enum spnego_mech auth_type;
 		void *auth_ctx;
 		NTSTATUS status;
 
@@ -2204,7 +2204,7 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 			return false;
 		}
 
-		if (auth_type == DCERPC_AUTH_TYPE_NTLMSSP) {
+		if (auth_type == SPNEGO_NTLMSSP) {
 			a = talloc_get_type(auth_ctx,
 					    struct auth_ntlmssp_state);
 		}
@@ -3083,10 +3083,14 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 		goto err_out;
 	}
 
-	status = spnego_gssapi_init_client(auth, auth->auth_level,
+	status = spnego_gssapi_init_client(auth,
+					   (auth->auth_level ==
+						DCERPC_AUTH_LEVEL_INTEGRITY),
+					   (auth->auth_level ==
+						DCERPC_AUTH_LEVEL_PRIVACY),
+					   true,
 					   NULL, server, "cifs",
 					   username, password,
-					   GSS_C_DCE_STYLE,
 					   &auth->a_u.spnego_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("spnego_init_client returned %s\n",
@@ -3153,7 +3157,12 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 		goto err_out;
 	}
 
-	status = spnego_ntlmssp_init_client(auth, auth->auth_level,
+	status = spnego_ntlmssp_init_client(auth,
+					    (auth->auth_level ==
+						DCERPC_AUTH_LEVEL_INTEGRITY),
+					    (auth->auth_level ==
+						DCERPC_AUTH_LEVEL_PRIVACY),
+					    true,
 					    domain, username, password,
 					    &auth->a_u.spnego_state);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -21,11 +21,14 @@
 #include "../libcli/auth/spnego.h"
 #include "include/ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ntlmssp.h"
-#include "dcerpc_spnego.h"
 #include "librpc/crypto/gse.h"
+#include "dcerpc_spnego.h"
 
 struct spnego_context {
-	enum dcerpc_AuthType auth_type;
+	enum spnego_mech mech;
+
+	bool do_sign;
+	bool do_seal;
 
 	union {
 		struct auth_ntlmssp_state *ntlmssp_state;
@@ -41,7 +44,7 @@ struct spnego_context {
 };
 
 static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
-				    enum dcerpc_AuthType auth_type,
+				    bool do_sign, bool do_seal,
 				    struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx;
@@ -51,7 +54,8 @@ static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sp_ctx->auth_type = auth_type;
+	sp_ctx->do_sign = do_sign;
+	sp_ctx->do_seal = do_seal;
 	sp_ctx->state = SPNEGO_CONV_INIT;
 
 	*spnego_ctx = sp_ctx;
@@ -59,27 +63,31 @@ static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
-				   enum dcerpc_AuthLevel auth_level,
+				   bool do_sign, bool do_seal,
+				   bool is_dcerpc,
 				   const char *ccache_name,
 				   const char *server,
 				   const char *service,
 				   const char *username,
 				   const char *password,
-				   uint32_t add_gss_c_flags,
 				   struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx = NULL;
+	uint32_t add_gss_c_flags = 0;
 	NTSTATUS status;
 
-	status = spnego_context_init(mem_ctx,
-					DCERPC_AUTH_TYPE_KRB5, &sp_ctx);
+	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	sp_ctx->mech = SPNEGO_KRB5;
+
+	if (is_dcerpc) {
+		add_gss_c_flags = GSS_C_DCE_STYLE;
+	}
 
 	status = gse_init_client(sp_ctx,
-				 (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY),
-				 (auth_level == DCERPC_AUTH_LEVEL_PRIVACY),
+				 do_sign, do_seal,
 				 ccache_name, server, service,
 				 username, password, add_gss_c_flags,
 				 &sp_ctx->mech_ctx.gssapi_state);
@@ -93,7 +101,8 @@ NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
-				    enum dcerpc_AuthLevel auth_level,
+				    bool do_sign, bool do_seal,
+				    bool is_dcerpc,
 				    const char *domain,
 				    const char *username,
 				    const char *password,
@@ -102,11 +111,11 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	struct spnego_context *sp_ctx = NULL;
 	NTSTATUS status;
 
-	status = spnego_context_init(mem_ctx,
-					DCERPC_AUTH_TYPE_NTLMSSP, &sp_ctx);
+	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	sp_ctx->mech = SPNEGO_NTLMSSP;
 
 	status = auth_ntlmssp_client_start(sp_ctx,
 					global_myname(),
@@ -146,10 +155,10 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 						~(NTLMSSP_NEGOTIATE_SIGN |
 						  NTLMSSP_NEGOTIATE_SEAL));
 
-	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (do_sign) {
 		auth_ntlmssp_or_flags(sp_ctx->mech_ctx.ntlmssp_state,
 						NTLMSSP_NEGOTIATE_SIGN);
-	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+	} else if (do_seal) {
 		auth_ntlmssp_or_flags(sp_ctx->mech_ctx.ntlmssp_state,
 						NTLMSSP_NEGOTIATE_SEAL |
 						NTLMSSP_NEGOTIATE_SIGN);
@@ -209,8 +218,8 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	switch (sp_ctx->auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	switch (sp_ctx->mech) {
+	case SPNEGO_KRB5:
 
 		gse_ctx = sp_ctx->mech_ctx.gssapi_state;
 		status = gse_get_client_auth_token(mem_ctx, gse_ctx,
@@ -224,7 +233,7 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 
 		break;
 
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 
 		ntlmssp_ctx = sp_ctx->mech_ctx.ntlmssp_state;
 		status = auth_ntlmssp_update(ntlmssp_ctx,
@@ -309,11 +318,11 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 	}
 
 	/* otherwise see if underlying mechnism does */
-	switch (sp_ctx->auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	switch (sp_ctx->mech) {
+	case SPNEGO_KRB5:
 		gse_ctx = sp_ctx->mech_ctx.gssapi_state;
 		return gse_require_more_processing(gse_ctx);
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 		return false;
 	default:
 		DEBUG(0, ("Unsupported type in request!\n"));
@@ -322,21 +331,21 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 }
 
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
-				    enum dcerpc_AuthType *auth_type,
+				    enum spnego_mech *type,
 				    void **auth_context)
 {
-	switch (sp_ctx->auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	switch (sp_ctx->mech) {
+	case SPNEGO_KRB5:
 		*auth_context = sp_ctx->mech_ctx.gssapi_state;
 		break;
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 		*auth_context = sp_ctx->mech_ctx.ntlmssp_state;
 		break;
 	default:
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	*auth_type = sp_ctx->auth_type;
+	*type = sp_ctx->mech;
 	return NT_STATUS_OK;
 }
 
@@ -345,11 +354,11 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB sk;
 
-	switch (sp_ctx->auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	switch (sp_ctx->mech) {
+	case SPNEGO_KRB5:
 		return gse_get_session_key(mem_ctx,
 					   sp_ctx->mech_ctx.gssapi_state);
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 		sk = auth_ntlmssp_get_session_key(
 					sp_ctx->mech_ctx.ntlmssp_state);
 		return data_blob_dup_talloc(mem_ctx, &sk);

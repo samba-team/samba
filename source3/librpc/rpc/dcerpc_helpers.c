@@ -267,7 +267,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	size_t max_len;
 	size_t mod_len;
 	struct gse_context *gse_ctx;
-	enum dcerpc_AuthType auth_type;
+	enum spnego_mech auth_type;
 	void *auth_ctx;
 	bool seal = false;
 	NTSTATUS status;
@@ -315,11 +315,11 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 			return status;
 		}
 		switch (auth_type) {
-		case DCERPC_AUTH_TYPE_NTLMSSP:
+		case SPNEGO_NTLMSSP:
 			*auth_len = NTLMSSP_SIG_SIZE;
 			break;
 
-		case DCERPC_AUTH_TYPE_KRB5:
+		case SPNEGO_KRB5:
 			gse_ctx = talloc_get_type(auth_ctx,
 						  struct gse_context);
 			if (!gse_ctx) {
@@ -653,7 +653,7 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
-	enum dcerpc_AuthType auth_type;
+	enum spnego_mech auth_type;
 	struct gse_context *gse_ctx;
 	struct auth_ntlmssp_state *ntlmssp_ctx;
 	void *auth_ctx;
@@ -670,7 +670,7 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 	}
 
 	switch (auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	case SPNEGO_KRB5:
 		gse_ctx = talloc_get_type(auth_ctx, struct gse_context);
 		if (!gse_ctx) {
 			status = NT_STATUS_INTERNAL_ERROR;
@@ -680,7 +680,7 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 						auth_level, rpc_out);
 		break;
 
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type(auth_ctx,
 						struct auth_ntlmssp_state);
 		if (!ntlmssp_ctx) {
@@ -705,7 +705,7 @@ static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
 					DATA_BLOB *data, DATA_BLOB *full_pkt,
 					DATA_BLOB *auth_token)
 {
-	enum dcerpc_AuthType auth_type;
+	enum spnego_mech auth_type;
 	struct auth_ntlmssp_state *ntlmssp_ctx;
 	struct gse_context *gse_ctx;
 	void *auth_ctx;
@@ -717,7 +717,7 @@ static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (auth_type) {
-	case DCERPC_AUTH_TYPE_KRB5:
+	case SPNEGO_KRB5:
 		gse_ctx = talloc_get_type(auth_ctx,
 					  struct gse_context);
 		if (!gse_ctx) {
@@ -730,7 +730,7 @@ static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
 						auth_level,
 						data, full_pkt,
 						auth_token);
-	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case SPNEGO_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type(auth_ctx,
 					  struct auth_ntlmssp_state);
 		if (!ntlmssp_ctx) {
