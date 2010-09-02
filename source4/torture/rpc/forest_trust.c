@@ -189,7 +189,7 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 	}
 
 	if (ret != false) {
-		fti.in.handle = handle;
+		fti.in.handle = &trustdom_handle;
 		fti.in.trusted_domain_name = talloc_zero(tctx, struct lsa_StringLarge);
 		fti.in.trusted_domain_name->string = trust_name_dns;
 		fti.in.highest_record_type = 2;
@@ -339,7 +339,10 @@ static bool delete_trusted_domain_by_sid(struct dcerpc_pipe *p,
 
 	torture_comment(tctx, "\nDeleting trusted domain.\n");
 
-	if (!test_get_policy_handle(tctx, p, LSA_POLICY_VIEW_LOCAL_INFORMATION,
+	/* Against a windows server it was sufficient to have
+	 * LSA_POLICY_VIEW_LOCAL_INFORMATION although the documentations says
+	 * otherwise. */
+	if (!test_get_policy_handle(tctx, p, LSA_POLICY_TRUST_ADMIN,
 				    &handle)) {
 		return false;
 	}
