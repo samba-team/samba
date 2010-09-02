@@ -243,7 +243,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 			status = werror_to_ntstatus(result);
 		}
 		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
-			  key_name, nt_errstr(status)));
+			  key_name, win_errstr(result)));
 		return status;
 	}
 

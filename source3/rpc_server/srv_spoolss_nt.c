@@ -1522,7 +1522,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 	if (!open_printer_hnd(p, r->out.handle, r->in.printername, 0)) {
 		DEBUG(0,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
-			" for printer %s\n", r->in.printername));
+			"for printer %s\n", r->in.printername));
 		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
 	}
