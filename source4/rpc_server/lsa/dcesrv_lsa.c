@@ -3444,7 +3444,7 @@ static NTSTATUS dcesrv_lsa_LookupPrivDisplayName(struct dcesrv_call_state *dce_c
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *state;
 	struct lsa_StringLarge *disp_name = NULL;
-	int id;
+	enum sec_privilege id;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
