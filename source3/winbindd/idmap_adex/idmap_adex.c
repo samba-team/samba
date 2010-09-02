@@ -430,8 +430,3 @@ NTSTATUS idmap_adex_init(void)
 
 	return NT_STATUS_OK;
 }
-
-static NTSTATUS nss_info_adex_init(void)
-{
-	return idmap_adex_init();
-}
