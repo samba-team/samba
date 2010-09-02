@@ -30,7 +30,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/crypto/gse.h"
-#include "librpc/rpc/dcerpc_spnego.h"
+#include "librpc/crypto/spnego.h"
 #include "rpc_dce.h"
 
 #undef DBGC_CLASS

@@ -22,7 +22,7 @@
 #include "include/ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ntlmssp.h"
 #include "librpc/crypto/gse.h"
-#include "dcerpc_spnego.h"
+#include "librpc/crypto/spnego.h"
 
 struct spnego_context {
 	enum spnego_mech mech;
@@ -367,4 +367,3 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 		return data_blob_null;
 	}
 }
-

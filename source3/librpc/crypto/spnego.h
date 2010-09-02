@@ -17,8 +17,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DCERPC_SPNEGO_H_
-#define _DCERPC_SPENGO_H_
+#ifndef _CLI_SPNEGO_H_
+#define _CLI_SPENGO_H_
 
 struct spnego_context;
 
@@ -58,4 +58,4 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 
 DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 				 struct spnego_context *sp_ctx);
-#endif /* _DCERPC_SPENGO_H_ */
+#endif /* _CLI_SPENGO_H_ */
