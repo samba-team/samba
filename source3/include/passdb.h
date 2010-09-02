@@ -234,6 +234,7 @@ struct pdb_trusted_domain {
 	uint32_t trust_direction;
 	uint32_t trust_type;
 	uint32_t trust_attributes;
+	DATA_BLOB trust_forest_trust_info;
 };
 
 /*

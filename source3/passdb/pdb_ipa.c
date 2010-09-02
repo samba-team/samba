@@ -33,6 +33,7 @@
 #define LDAP_ATTRIBUTE_TRUST_AUTH_OUTGOING "sambaTrustAuthOutgoing"
 #define LDAP_ATTRIBUTE_TRUST_AUTH_INCOMING "sambaTrustAuthIncoming"
 #define LDAP_ATTRIBUTE_SECURITY_IDENTIFIER "sambaSecurityIdentifier"
+#define LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO "sambaTrustForestTrustInfo"
 
 #define LDAP_OBJ_KRB_PRINCIPAL "krbPrincipal"
 #define LDAP_OBJ_KRB_PRINCIPAL_AUX "krbPrincipalAux"
@@ -328,6 +329,10 @@ static bool fill_pdb_trusted_domain(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	get_data_blob_from_ldap_msg(td, ldap_state, entry,
+				    LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO,
+				    &td->trust_forest_trust_info);
+
 	*_td = td;
 
 	return true;
@@ -512,6 +517,16 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 					    &mods,
 					    LDAP_ATTRIBUTE_TRUST_AUTH_INCOMING,
 					    td->trust_auth_incoming);
+		if (!res) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (td->trust_forest_trust_info.data != NULL) {
+		res = smbldap_make_mod_blob(priv2ld(ldap_state), entry,
+					    &mods,
+					    LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO,
+					    td->trust_forest_trust_info);
 		if (!res) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
