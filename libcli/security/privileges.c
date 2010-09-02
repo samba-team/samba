@@ -346,9 +346,6 @@ const char *sec_privilege_name(enum sec_privilege privilege)
 const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *language)
 {
 	int i;
-	if (privilege < 1 || privilege > 64) {
-		return NULL;
-	}
 	for (i=0;i<ARRAY_SIZE(privs);i++) {
 		if (privs[i].luid == privilege) {
 			return privs[i].description;
