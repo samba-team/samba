@@ -369,7 +369,7 @@ cat >$SERVERCONFFILE<<EOF
 	copy = print1
 [print3]
 	copy = print1
-[print4]
+[lp]
 	copy = print1
 [print$]
 	copy = tmp

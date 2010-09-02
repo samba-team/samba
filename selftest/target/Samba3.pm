@@ -584,7 +584,7 @@ sub provision($$$$$$)
 	copy = print1
 [print3]
 	copy = print1
-[print4]
+[lp]
 	copy = print1
 [print\$]
 	copy = tmp
