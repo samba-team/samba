@@ -128,7 +128,10 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 	for (i = 0; enctypes[i]; i++) {
 		krb5_keyblock *key = NULL;
 
-		key = KRB5_KT_KEY(&kt_entry);
+		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
+			ret = ENOMEM;
+			goto out;
+		}
 
 		if (create_kerberos_key_from_string(krbctx, princ,
 						    password, key,
@@ -136,11 +139,13 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 			DEBUG(10, ("Failed to create key for enctype %d "
 				   "(error: %s)\n",
 				   enctypes[i], error_message(ret)));
+			SAFE_FREE(key);
 			continue;
 		}
 
 		kt_entry.principal = princ;
 		kt_entry.vno = vno;
+		kt_entry.key = *key;
 
 		ret = krb5_kt_add_entry(krbctx, keytab, &kt_entry);
 		if (ret) {
