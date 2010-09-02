@@ -421,13 +421,8 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *hand
 {
 	DEBUG(3,("Setting printer type=%s\n", handlename));
 
-	if ( strlen(handlename) < 3 ) {
-		DEBUGADD(4,("A print server must have at least 1 char ! %s\n", handlename));
-		return false;
-	}
-
 	/* it's a print server */
-	if (*handlename=='\\' && *(handlename+1)=='\\' && !strchr_m(handlename+2, '\\')) {
+	if (handlename && *handlename=='\\' && *(handlename+1)=='\\' && !strchr_m(handlename+2, '\\')) {
 		DEBUGADD(4,("Printer is a print server\n"));
 		Printer->printer_type = SPLHND_SERVER;
 	}
