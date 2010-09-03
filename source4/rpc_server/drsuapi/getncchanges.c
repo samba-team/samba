@@ -652,6 +652,15 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
+	/*
+	 * FIXME (kim): this is a temp hack to return just few object,
+	 * but not the whole domain NC.
+	 * We should remove this hack and implement a 'scope'
+	 * building function to return just the set of object
+	 * documented for DRSUAPI_EXOP_FSMO_RID_ALLOC extended_op
+	 */
+	ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &req8->highwatermark.highest_usn);
+
 	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID_POOL, exop, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed extended allocation RID pool operation - %s\n",
