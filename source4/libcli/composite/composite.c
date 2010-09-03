@@ -26,7 +26,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/composite/composite.h"
-#include "lib/messaging/irpc.h"
 #include "../libcli/nbt/libnbt.h"
 
 /*
@@ -160,16 +159,6 @@ _PUBLIC_ void composite_continue(struct composite_context *ctx,
 	if (new_ctx->state >= COMPOSITE_STATE_DONE && continuation) {
 		event_add_timed(new_ctx->event_ctx, new_ctx, timeval_zero(), composite_trigger, new_ctx);
 	}
-}
-
-_PUBLIC_ void composite_continue_irpc(struct composite_context *ctx,
-				      struct irpc_request *new_req,
-				      void (*continuation)(struct irpc_request *),
-				      void *private_data)
-{
-	if (composite_nomem(new_req, ctx)) return;
-	new_req->async.fn = continuation;
-	new_req->async.private_data = private_data;
 }
 
 _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
