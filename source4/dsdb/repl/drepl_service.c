@@ -103,28 +103,131 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 	return WERR_OK;
 }
 
+
 /*
   DsReplicaSync messages from the DRSUAPI server are forwarded here
  */
 static NTSTATUS drepl_replica_sync(struct irpc_message *msg, 
 				   struct drsuapi_DsReplicaSync *r)
 {
+	WERROR werr;
+	struct dreplsrv_partition *p;
+	struct dreplsrv_partition_source_dsa *dsa;
+	struct drsuapi_DsReplicaSyncRequest1 *req1;
+	struct drsuapi_DsReplicaObjectIdentifier *nc;
 	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
 							   struct dreplsrv_service);
-	struct drsuapi_DsReplicaObjectIdentifier *nc = r->in.req->req1.naming_context;
 
-	r->out.result = dreplsrv_schedule_partition_pull_by_nc(service, msg, nc);
-	if (W_ERROR_IS_OK(r->out.result)) {
-		DEBUG(3,("drepl_replica_sync: forcing sync of partition (%s, %s)\n",
-			 GUID_string(msg, &nc->guid),
-			 nc->dn));
-		dreplsrv_run_pending_ops(service);
-	} else {
-		DEBUG(3,("drepl_replica_sync: failed setup of sync of partition (%s, %s) - %s\n",
+#define REPLICA_SYNC_FAIL(_werr) do {r->out.result = _werr; goto done;} while(0)
+
+	if (r->in.level != 1) {
+		DEBUG(0,("%s: Level %d is not supported yet.\n",
+			 __FUNCTION__, r->in.level));
+		REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+	}
+
+	req1 = &r->in.req->req1;
+	nc   = req1->naming_context;
+
+	/* Check input parameters */
+	if (!nc) {
+		REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+	}
+
+	/* Find Naming context to be synchronized */
+	werr = dreplsrv_partition_find_for_nc(service,
+	                                      &nc->guid, &nc->sid, nc->dn,
+	                                      &p);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("%s: failed to find NC for (%s, %s) - %s\n",
+			 __FUNCTION__,
 			 GUID_string(msg, &nc->guid),
 			 nc->dn,
-			 win_errstr(r->out.result)));
+			 win_errstr(werr)));
+		REPLICA_SYNC_FAIL(werr);
 	}
+
+	/* collect source DSAs to sync with */
+	if (req1->options & DRSUAPI_DRS_SYNC_ALL) {
+		for (dsa = p->sources; dsa; dsa = dsa->next) {
+			/* schedule replication item */
+			werr = dreplsrv_schedule_partition_pull_source(service, dsa,
+			                                               DRSUAPI_EXOP_NONE, 0,
+			                                               NULL, NULL);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,("%s: failed setup of sync of partition (%s, %s, %s) - %s\n",
+					 __FUNCTION__,
+					 GUID_string(msg, &nc->guid),
+					 nc->dn,
+					 dsa->repsFrom1->other_info->dns_name,
+					 win_errstr(werr)));
+				REPLICA_SYNC_FAIL(werr);
+			}
+			/* log we've scheduled replication item */
+			DEBUG(3,("%s: forcing sync of partition (%s, %s, %s)\n",
+				 __FUNCTION__,
+				 GUID_string(msg, &nc->guid),
+				 nc->dn,
+				 dsa->repsFrom1->other_info->dns_name));
+		}
+	} else {
+		if (req1->options & DRSUAPI_DRS_SYNC_BYNAME) {
+			/* client should pass at least valid string */
+			if (!req1->source_dsa_dns) {
+				REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+			}
+
+			werr = dreplsrv_partition_source_dsa_by_dns(p,
+			                                            req1->source_dsa_dns,
+			                                            &dsa);
+		} else {
+			/* client should pass at least some GUID */
+			if (GUID_all_zero(&req1->source_dsa_guid)) {
+				REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+			}
+
+			werr = dreplsrv_partition_source_dsa_by_guid(p,
+			                                             &req1->source_dsa_guid,
+			                                             &dsa);
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,("%s: Failed to locate source DSA %s for NC %s.\n",
+				 __FUNCTION__,
+				 (req1->options & DRSUAPI_DRS_SYNC_BYNAME)
+					 ? req1->source_dsa_dns
+					 : GUID_string(r, &req1->source_dsa_guid),
+				 nc->dn));
+			REPLICA_SYNC_FAIL(WERR_DS_DRA_NO_REPLICA);
+		}
+
+		/* schedule replication item */
+		werr = dreplsrv_schedule_partition_pull_source(service, dsa,
+		                                               DRSUAPI_EXOP_NONE, 0,
+		                                               NULL, NULL);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,("%s: failed setup of sync of partition (%s, %s, %s) - %s\n",
+				 __FUNCTION__,
+				 GUID_string(msg, &nc->guid),
+				 nc->dn,
+				 dsa->repsFrom1->other_info->dns_name,
+				 win_errstr(werr)));
+			REPLICA_SYNC_FAIL(werr);
+		}
+		/* log we've scheduled replication item */
+		DEBUG(3,("%s: forcing sync of partition (%s, %s, %s)\n",
+			 __FUNCTION__,
+			 GUID_string(msg, &nc->guid),
+			 nc->dn,
+			 dsa->repsFrom1->other_info->dns_name));
+	}
+
+	/* if we got here, everything is OK */
+	r->out.result = WERR_OK;
+
+	/* force execution of scheduled replications */
+	dreplsrv_run_pending_ops(service);
+
+done:
 	return NT_STATUS_OK;
 }
 
