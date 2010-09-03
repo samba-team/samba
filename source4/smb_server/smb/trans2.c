@@ -873,7 +873,8 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 		ZERO_STRUCTP(ref);
 		ref->version = version;
 		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
-		ref->referral.v3.size = 18;
+		/* "normal" referral seems to always include the GUID */
+		ref->referral.v3.size = 34;
 
 		ref->referral.v3.data.entry_flags = 0;
 		ref->referral.v3.data.ttl = 600; /* As w2k3 */
@@ -885,7 +886,8 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 		ZERO_STRUCTP(ref);
 		ref->version = version;
 		ref->referral.v4.server_type = DFS_SERVER_NON_ROOT;
-		ref->referral.v4.size = 18;
+		/* "normal" referral seems to always include the GUID */
+		ref->referral.v4.size = 34;
 
 		if (isfirstoffset) {
 			ref->referral.v4.entry_flags =  DFS_HEADER_FLAG_TARGET_BCK;
@@ -914,7 +916,12 @@ static NTSTATUS fill_domain_dfs_referraltype(struct dfs_referral_type *ref,
 		ZERO_STRUCTP(ref);
 		ref->version = version;
 		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
-		ref->referral.v3.size = 34;
+		/* It's hard coded ... don't think it's a good way but the sizeof return not the
+		 * correct values
+		 *
+		 * We have 18 if the GUID is not included 34 otherwise
+		*/
+		ref->referral.v3.size = 18;
 		ref->referral.v3.data.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
 		ref->referral.v3.data.ttl = 600; /* As w2k3 */
 		ref->referral.v3.data.referrals.r2.special_name = domain;
@@ -1249,7 +1256,7 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
 
 	referral = talloc(tab, struct dfs_referral_type);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral, context);
-	referral_str = talloc_asprintf(referral, "\\%s", dns_domain);
+	referral_str = talloc_asprintf(referral, "\\%s", netbios_domain);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral_str, context);
 	status = fill_domain_dfs_referraltype(referral,  3,
 					      referral_str,
@@ -1265,7 +1272,7 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
 
 	referral = talloc(tab, struct dfs_referral_type);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral, context);
-	referral_str = talloc_asprintf(referral, "\\%s", netbios_domain);
+	referral_str = talloc_asprintf(referral, "\\%s", dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral_str, context);
 	status = fill_domain_dfs_referraltype(referral,  3,
 					      referral_str,
