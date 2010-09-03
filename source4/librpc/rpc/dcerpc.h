@@ -407,6 +407,8 @@ struct dcerpc_binding_handle_ops {
 	const char *name;
 
 	bool (*is_connected)(struct dcerpc_binding_handle *h);
+	uint32_t (*set_timeout)(struct dcerpc_binding_handle *h,
+				uint32_t timeout);
 
 	struct tevent_req *(*raw_call_send)(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
