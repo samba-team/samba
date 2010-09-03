@@ -34,6 +34,7 @@
 #include "../libcli/auth/spnego.h"
 #include "dcesrv_ntlmssp.h"
 #include "dcesrv_gssapi.h"
+#include "dcesrv_spnego.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
 
@@ -98,6 +99,11 @@ static void free_pipe_schannel_auth_data(struct pipe_auth_data *auth)
 static void free_pipe_gssapi_auth_data(struct pipe_auth_data *auth)
 {
 	TALLOC_FREE(auth->a_u.gssapi_state);
+}
+
+static void free_pipe_spnego_auth_data(struct pipe_auth_data *auth)
+{
+	TALLOC_FREE(auth->a_u.spnego_state);
 }
 
 static void free_pipe_auth_data(struct pipe_auth_data *auth)
@@ -320,6 +326,8 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct client_address *client_id,
 					 struct auth_serversupplied_info **server_info);
 
+static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p);
+
 /*******************************************************************
  This is the "stage3" response after a bind request and reply.
 *******************************************************************/
@@ -375,6 +383,11 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 					    pkt, &auth_info.credentials,
 					    &response);
 		break;
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		status = spnego_server_step(p->auth.a_u.spnego_state,
+					    pkt, &auth_info.credentials,
+					    &response);
+		break;
 	default:
 		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
 			  (unsigned int)auth_info.auth_type));
@@ -396,15 +409,37 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	}
 
 	/* Now verify auth was indeed successful and extract server info */
+	status = pipe_auth_verify_final(p);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Auth Verify failed (%s)\n", nt_errstr(status)));
+		goto err;
+	}
 
-	switch (auth_info.auth_type) {
+	return true;
+
+err:
+
+	free_pipe_auth_data(&p->auth);
+	return false;
+}
+
+
+static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
+{
+	enum spnego_mech auth_type;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gse_context *gse_ctx;
+	void *mech_ctx;
+	NTSTATUS status;
+
+	switch (p->auth.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		if (!pipe_ntlmssp_verify_final(p,
 					p->auth.a_u.auth_ntlmssp_state,
 					p->auth.auth_level,
 					p->client_id, &p->syntax,
 					&p->server_info)) {
-			goto err;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
@@ -415,28 +450,56 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("gssapi bind failed with: %s",
 				  nt_errstr(status)));
-			goto err;
+			return status;
 		}
-
+		break;
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		status = spnego_get_negotiated_mech(p->auth.a_u.spnego_state,
+						    &auth_type, &mech_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Bad SPNEGO state (%s)\n",
+				  nt_errstr(status)));
+			return status;
+		}
+		switch(auth_type) {
+		case SPNEGO_KRB5:
+			gse_ctx = talloc_get_type_abort(mech_ctx,
+							struct gse_context);
+			status = pipe_gssapi_verify_final(p, gse_ctx,
+							  p->client_id,
+							  &p->server_info);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(1, ("gssapi bind failed with: %s",
+					  nt_errstr(status)));
+				return status;
+			}
+			break;
+		case SPNEGO_NTLMSSP:
+			ntlmssp_ctx = talloc_get_type_abort(mech_ctx,
+						struct auth_ntlmssp_state);
+			if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
+							p->auth.auth_level,
+							p->client_id,
+							&p->syntax,
+							&p->server_info)) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		default:
+			DEBUG(0, (__location__ ": incorrect spnego type "
+				  "(%d).\n", auth_type));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		break;
 	default:
 		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
-			  (unsigned int)auth_info.auth_type));
-		return false;
+			  (unsigned int)p->auth.auth_type));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/*
-	 * The following call actually checks the challenge/response data.
-	 * for correctness against the given DOMAIN\user name.
-	 */
-
 	p->pipe_bound = true;
-	return true;
 
-err:
-
-	free_pipe_auth_data(&p->auth);
-	return false;
+	return NT_STATUS_OK;
 }
 
 static bool pipe_init_outgoing_data(struct pipes_struct *p);
@@ -628,196 +691,42 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 }
 
 /*******************************************************************
- Handle a SPNEGO krb5 bind auth.
-*******************************************************************/
-
-static bool pipe_spnego_auth_bind_kerberos(struct pipes_struct *p,
-					   TALLOC_CTX *mem_ctx,
-					   struct dcerpc_auth *pauth_info,
-					   DATA_BLOB *psecblob,
-					   DATA_BLOB *response)
-{
-	return False;
-}
-
-/*******************************************************************
  Handle the first part of a SPNEGO bind auth.
 *******************************************************************/
 
-static bool pipe_spnego_auth_bind_negotiate(struct pipes_struct *p,
-					    TALLOC_CTX *mem_ctx,
-					    struct dcerpc_auth *pauth_info,
-					    DATA_BLOB *response)
+static bool pipe_spnego_auth_bind(struct pipes_struct *p,
+				  TALLOC_CTX *mem_ctx,
+				  struct dcerpc_auth *auth_info,
+				  DATA_BLOB *response)
 {
-	DATA_BLOB secblob = data_blob_null;
-	DATA_BLOB chal = data_blob_null;
-	char *OIDs[ASN1_MAX_OIDS];
-        int i;
+	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
-        bool got_kerberos_mechanism = false;
-	bool ret;
 
-	if (pauth_info->credentials.data[0] != ASN1_APPLICATION(0)) {
-		ret = false;
-		goto done;
-	}
-
-	/* parse out the OIDs and the first sec blob */
-	ret = spnego_parse_negTokenInit(talloc_tos(),
-			pauth_info->credentials, OIDs, NULL, &secblob);
-	if (!ret) {
-		DEBUG(0, (__location__ ": Failed to parse the secblob.\n"));
-		goto done;
-        }
-
-	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
-	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		got_kerberos_mechanism = true;
-	}
-
-	for (i = 0; OIDs[i]; i++) {
-		DEBUG(3, (__location__ ": Got OID %s\n", OIDs[i]));
-		TALLOC_FREE(OIDs[i]);
-	}
-	DEBUG(3, (__location__ ": Got secblob of size %lu\n",
-		  (unsigned long)secblob.length));
-
-	if (got_kerberos_mechanism &&
-	    ((lp_security()==SEC_ADS) || USE_KERBEROS_KEYTAB)) {
-		ret = pipe_spnego_auth_bind_kerberos(p, mem_ctx, pauth_info,
-						     &secblob, response);
-		goto done;
-	}
-
-	/* Free any previous auth type. */
-	free_pipe_auth_data(&p->auth);
-	p->auth.a_u.auth_ntlmssp_state = NULL;
-
-	if (!got_kerberos_mechanism) {
-		/* Initialize the NTLM engine. */
-		status = ntlmssp_server_auth_start(p,
-					(pauth_info->auth_level ==
+	status = spnego_server_auth_start(p,
+					  (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
-					(pauth_info->auth_level ==
+					  (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY),
-					true, &secblob, &chal,
-					&p->auth.a_u.auth_ntlmssp_state);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, (__location__ ": Failed to start NTLMSSP "
-				  "auth (%s).\n", nt_errstr(status)));
-			ret = false;
-			goto done;
-		}
-
-		/* Generate the response blob we need for step 2 of the bind. */
-		*response = spnego_gen_auth_response(
-					mem_ctx, &chal,
-					NT_STATUS_MORE_PROCESSING_REQUIRED,
-					OID_NTLMSSP);
-	} else {
-		/*
-		 * SPNEGO negotiate down to NTLMSSP. The subsequent
-		 * code to process follow-up packets is not complete
-		 * yet. JRA.
-		 */
-		*response = spnego_gen_auth_response(mem_ctx, NULL,
-					NT_STATUS_MORE_PROCESSING_REQUIRED,
-					OID_NTLMSSP);
-	}
-
-	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
-	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-	p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
-
-	ret = true;
-
-done:
-
-	data_blob_free(&secblob);
-	data_blob_free(&chal);
-
-	return ret;
-}
-
-/*******************************************************************
- Handle the second part of a SPNEGO bind auth.
-*******************************************************************/
-
-static bool pipe_spnego_auth_bind_continue(struct pipes_struct *p,
-					   TALLOC_CTX *mem_ctx,
-					   struct dcerpc_auth *pauth_info,
-					   DATA_BLOB *response)
-{
-	DATA_BLOB auth_blob = data_blob_null;
-	DATA_BLOB auth_reply = data_blob_null;
-	NTSTATUS status;
-	bool ret;
-
-	/*
-	 * NB. If we've negotiated down from krb5 to NTLMSSP we'll currently
-	 * fail here as 'a' == NULL.
-	 */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SPNEGO ||
-	    p->auth.spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP ||
-	    p->auth.a_u.auth_ntlmssp_state == NULL) {
-		DEBUG(0, (__location__ ": not in NTLMSSP auth state.\n"));
-		goto err;
-	}
-
-	if (pauth_info->credentials.data[0] != ASN1_CONTEXT(1)) {
-		DEBUG(0, (__location__ ": invalid SPNEGO blob type.\n"));
-		goto err;
-	}
-
-	ret = spnego_parse_auth(talloc_tos(),
-				pauth_info->credentials, &auth_blob);
-	if (!ret) {
-		DEBUG(0, (__location__ ": invalid SPNEGO blob.\n"));
-		goto err;
-	}
-
-	status = ntlmssp_server_step(p->auth.a_u.auth_ntlmssp_state,
-				     p, &auth_blob, &auth_reply);
-	if (NT_STATUS_EQUAL(status,
-			    NT_STATUS_MORE_PROCESSING_REQUIRED) ||
-	    auth_reply.length) {
-		DEBUG(0, (__location__ ": This was supposed to be the final "
-			  "leg, but crypto machinery claims a response is "
-			  "needed, aborting auth!\n"));
-		goto err;
-	}
+					  true,
+					  &auth_info->credentials,
+					  response,
+					  &spnego_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Auth failed (%s)\n", nt_errstr(status)));
-		goto err;
+		DEBUG(0, ("Failed SPNEGO negotiate (%s)\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
-	ret = pipe_ntlmssp_verify_final(p,
-					p->auth.a_u.auth_ntlmssp_state,
-					p->auth.auth_level,
-					p->client_id, &p->syntax,
-					&p->server_info);
-	if (!ret) {
-		goto err;
-	}
+	/* Make sure data is bound to the memctx, to be freed the caller */
+	talloc_steal(mem_ctx, response->data);
 
-	data_blob_free(&auth_blob);
+	p->auth.a_u.spnego_state = spnego_ctx;
+	p->auth.auth_data_free_func = &free_pipe_spnego_auth_data;
+	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
-	/* Generate the spnego "accept completed" blob - no incoming data. */
-	*response = spnego_gen_auth_response(mem_ctx, &auth_reply,
-					     NT_STATUS_OK, OID_NTLMSSP);
+	DEBUG(10, ("SPNEGO auth started\n"));
 
-	data_blob_free(&auth_reply);
-
-	p->pipe_bound = true;
 	return true;
-
-err:
-	data_blob_free(&auth_blob);
-	data_blob_free(&auth_reply);
-	free_pipe_auth_data(&p->auth);
-
-	return false;
 }
 
 /*******************************************************************
@@ -1251,7 +1160,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			if (!pipe_spnego_auth_bind_negotiate(p, pkt,
+			if (!pipe_spnego_auth_bind(p, pkt,
 						&auth_info, &auth_resp)) {
 				goto err_exit;
 			}
@@ -1457,11 +1366,10 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 		switch (auth_info.auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			if (!pipe_spnego_auth_bind_continue(p, pkt,
-							    &auth_info,
-							    &auth_resp)) {
-				goto err_exit;
-			}
+			status = spnego_server_step(p->auth.a_u.spnego_state,
+						    pkt,
+						    &auth_info.credentials,
+						    &auth_resp);
 			break;
 
 		case DCERPC_AUTH_TYPE_KRB5:
@@ -1469,15 +1377,29 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 						    pkt,
 						    &auth_info.credentials,
 						    &auth_resp);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto err_exit;
-			}
 			break;
 
 		default:
 			DEBUG(3, (__location__ ": Usupported auth type (%d) "
 				  "in alter-context call\n",
 				  auth_info.auth_type));
+			goto err_exit;
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			/* third leg of auth, verify auth info */
+			status = pipe_auth_verify_final(p);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("Auth Verify failed (%s)\n",
+					  nt_errstr(status)));
+				goto err_exit;
+			}
+		} else if (NT_STATUS_EQUAL(status,
+					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(10, ("More auth legs required.\n"));
+		} else {
+			DEBUG(0, ("Auth step returned an error (%s)\n",
+				  nt_errstr(status)));
 			goto err_exit;
 		}
 	}
