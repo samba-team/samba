@@ -25,7 +25,7 @@
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "auth/auth_sam_reply.h"
-#include "librpc/gen_ndr/ndr_winbind.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
 #include "nsswitch/libwbclient/wbclient.h"
@@ -134,7 +134,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
-	struct server_id *winbind_servers;
+	struct dcerpc_binding_handle *irpc_handle;
 	struct winbind_check_password_state *s;
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
@@ -147,8 +147,10 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	s = talloc(mem_ctx, struct winbind_check_password_state);
 	NT_STATUS_HAVE_NO_MEMORY(s);
 
-	winbind_servers = irpc_servers_byname(ctx->auth_ctx->msg_ctx, s, "winbind_server");
-	if ((winbind_servers == NULL) || (winbind_servers[0].id == 0)) {
+	irpc_handle = irpc_binding_handle_by_name(s, ctx->auth_ctx->msg_ctx,
+						  "winbind_server",
+						  &ndr_table_winbind);
+	if (irpc_handle == NULL) {
 		DEBUG(0, ("Winbind authentication for [%s]\\[%s] failed, " 
 			  "no winbind_server running!\n",
 			  user_info->client.domain_name, user_info->client.account_name));
@@ -209,9 +211,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	s->req.in.validation_level	= 3;
 
-	status = IRPC_CALL(ctx->auth_ctx->msg_ctx, winbind_servers[0],
-			   winbind, WINBIND_SAMLOGON,
-			   &s->req, s);
+	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = make_server_info_netlogon_validation(mem_ctx,
