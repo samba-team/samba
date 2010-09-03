@@ -180,6 +180,10 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor
 
  If the user has either of needed_priv_1 or needed_priv_2 then they
  get the rights in rights_mask in addition to any calulated rights.
+
+ This handles the unusual case where we need to allow two different
+ privileges to obtain exactly the same rights, which occours only in
+ SAMR.
 ********************************************************************/
 
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
