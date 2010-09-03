@@ -154,7 +154,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 
 	value = tdb_fetch_bystring(tdb_sc->tdb, keystr);
 	if (!value.dptr) {
-		DEBUG(0,("schannel_fetch_session_key_tdb: Failed to find entry with key %s\n",
+		DEBUG(10,("schannel_fetch_session_key_tdb: Failed to find entry with key %s\n",
 			keystr ));
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto done;
