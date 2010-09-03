@@ -57,8 +57,8 @@ static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te
 			      struct timeval t, void *private_data)
 {
 	struct irpc_message *irpc = talloc_get_type(private_data, struct irpc_message);
-	struct echo_EchoData *r = irpc->data;
-	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
+	struct echo_EchoData *r = (struct echo_EchoData *)irpc->data;
+	r->out.out_data = (uint8_t *)talloc_memdup(r, r->in.in_data, r->in.len);
 	if (r->out.out_data == NULL) {
 		irpc_send_reply(irpc, NT_STATUS_NO_MEMORY);
 	}
