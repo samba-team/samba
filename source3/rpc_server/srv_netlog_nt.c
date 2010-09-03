@@ -395,11 +395,12 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 					   struct netr_NetrEnumerateTrustedDomains *r)
 {
 	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_OK;
 	DATA_BLOB blob;
 	int num_domains = 0;
 	const char **trusted_domains = NULL;
 	struct lsa_DomainList domain_list;
-	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *h = NULL;
 	struct policy_handle pol;
 	uint32_t enum_ctx = 0;
 	int i;
@@ -407,34 +408,47 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
-	status = rpc_pipe_open_internal(p->mem_ctx, &ndr_table_lsarpc.syntax_id,
-					p->server_info,
-					p->client_id,
-					p->msg_ctx,
-					&cli);
+	status = rpcint_binding_handle(p->mem_ctx,
+				       &ndr_table_lsarpc,
+				       p->client_id,
+				       p->server_info,
+				       p->msg_ctx,
+				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = rpccli_lsa_open_policy2(cli, p->mem_ctx,
+	status = dcerpc_lsa_open_policy2(h,
+					 p->mem_ctx,
+					 NULL,
 					 true,
 					 LSA_POLICY_VIEW_LOCAL_INFORMATION,
-					 &pol);
+					 &pol,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
 	do {
 		/* Lookup list of trusted domains */
-
-		status = rpccli_lsa_EnumTrustDom(cli, p->mem_ctx,
+		status = dcerpc_lsa_EnumTrustDom(h,
+						 p->mem_ctx,
 						 &pol,
 						 &enum_ctx,
 						 &domain_list,
-						 max_size);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
-		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+						 max_size,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+			status = result;
 			goto out;
 		}
 
@@ -445,7 +459,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 				goto out;
 			}
 		}
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	if (num_domains > 0) {
 		/* multi sz terminate */
@@ -472,8 +486,8 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	status = NT_STATUS_OK;
 
  out:
-	if (cli && is_valid_policy_hnd(&pol)) {
-		rpccli_lsa_Close(cli, p->mem_ctx, &pol);
+	if (h && is_valid_policy_hnd(&pol)) {
+		dcerpc_lsa_Close(h, p->mem_ctx, &pol, &result);
 	}
 
 	return status;
@@ -483,7 +497,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
  *************************************************************************/
 
 static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
-					  struct rpc_pipe_client *cli,
+					  struct dcerpc_binding_handle *b,
 					  const char *account_name,
 					  uint32_t access_mask,
 					  struct dom_sid2 **domain_sid_p,
@@ -491,6 +505,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 					  struct policy_handle *user_handle)
 {
 	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_OK;
 	struct policy_handle connect_handle, domain_handle;
 	struct lsa_String domain_name;
 	struct dom_sid2 *domain_sid;
@@ -499,44 +514,64 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 	struct samr_Ids types;
 	uint32_t rid;
 
-	status = rpccli_samr_Connect2(cli, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      global_myname(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
-				      &connect_handle);
+				      &connect_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
 	init_lsa_String(&domain_name, get_global_sam_name());
 
-	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+	status = dcerpc_samr_LookupDomain(b, mem_ctx,
 					  &connect_handle,
 					  &domain_name,
-					  &domain_sid);
+					  &domain_sid,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto out;
+	}
 
-	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					domain_sid,
-					&domain_handle);
+					&domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
 	init_lsa_String(&names, account_name);
 
-	status = rpccli_samr_LookupNames(cli, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_handle,
 					 1,
 					 &names,
 					 &rids,
-					 &types);
+					 &types,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
@@ -555,12 +590,17 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 
 	rid = rids.ids[0];
 
-	status = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_handle,
 				      access_mask,
 				      rid,
-				      user_handle);
+				      user_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
@@ -573,11 +613,11 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 	}
 
  out:
-	if (cli && is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	if (b && is_valid_policy_hnd(&domain_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &domain_handle, &result);
 	}
-	if (cli && is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	if (b && is_valid_policy_hnd(&connect_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &connect_handle, &result);
 	}
 
 	return status;
@@ -593,8 +633,10 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 			  struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_OK;
 	TALLOC_CTX *mem_ctx;
-	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *h = NULL;
+	static struct client_address client_id;
 	struct policy_handle user_handle;
 	uint32_t user_rid;
 	struct dom_sid *domain_sid;
@@ -620,7 +662,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	}
 #endif /* 0 */
 
-	mem_ctx = talloc_new(talloc_tos());
+	mem_ctx = talloc_stackframe();
 	if (mem_ctx == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -633,15 +675,21 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 
 	ZERO_STRUCT(user_handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info, NULL, msg_ctx,
-					&cli);
+	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
+	client_id.name = "127.0.0.1";
+
+	status = rpcint_binding_handle(mem_ctx,
+				       &ndr_table_samr,
+				       &client_id,
+				       server_info,
+				       msg_ctx,
+				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
 	become_root();
-	status = samr_find_machine_account(mem_ctx, cli, mach_acct,
+	status = samr_find_machine_account(mem_ctx, h, mach_acct,
 					   SEC_FLAG_MAXIMUM_ALLOWED,
 					   &domain_sid, &user_rid,
 					   &user_handle);
@@ -650,11 +698,17 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 		goto out;
 	}
 
-	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo2(h,
+					    mem_ctx,
 					    &user_handle,
 					    UserControlInformation,
-					    &info);
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
@@ -705,14 +759,21 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	}
 
 	become_root();
-	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo2(h,
+					    mem_ctx,
 					    &user_handle,
 					    UserInternal1Information,
-					    &info);
+					    &info,
+					    &result);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto out;
+	}
+
 	if (info->info18.nt_pwd_active == 0) {
 		DEBUG(0,("get_md4pw: Workstation %s: account does not have a password\n", mach_acct));
 		status = NT_STATUS_LOGON_FAILURE;
@@ -725,8 +786,8 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	sid_compose(sid, domain_sid, user_rid);
 
  out:
-	if (cli && is_valid_policy_hnd(&user_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	if (h && is_valid_policy_hnd(&user_handle)) {
+		dcerpc_samr_Close(h, mem_ctx, &user_handle, &result);
 	}
 
 	talloc_free(mem_ctx);
@@ -1028,7 +1089,9 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 						  struct samr_Password *nt_hash)
 {
 	NTSTATUS status;
-	struct rpc_pipe_client *cli = NULL;
+	NTSTATUS result = NT_STATUS_OK;
+	struct dcerpc_binding_handle *h = NULL;
+	static struct client_address client_id;
 	struct policy_handle user_handle;
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
@@ -1037,26 +1100,41 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(user_handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
-					server_info, NULL, msg_ctx,
-					&cli);
+	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
+	client_id.name = "127.0.0.1";
+
+	status = rpcint_binding_handle(mem_ctx,
+				       &ndr_table_samr,
+				       &client_id,
+				       server_info,
+				       msg_ctx,
+				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = samr_find_machine_account(mem_ctx, cli, account_name,
+	status = samr_find_machine_account(mem_ctx,
+					   h,
+					   account_name,
 					   SEC_FLAG_MAXIMUM_ALLOWED,
-					   NULL, NULL,
+					   NULL,
+					   NULL,
 					   &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo2(h,
+					    mem_ctx,
 					    &user_handle,
 					    UserControlInformation,
-					    &info);
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
@@ -1085,17 +1163,23 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	info->info18 = info18;
 
-	status = rpccli_samr_SetUserInfo2(cli, mem_ctx,
+	status = dcerpc_samr_SetUserInfo2(h,
+					  mem_ctx,
 					  &user_handle,
 					  UserInternal1Information,
-					  info);
+					  info,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto out;
 	}
 
  out:
-	if (cli && is_valid_policy_hnd(&user_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	if (h && is_valid_policy_hnd(&user_handle)) {
+		dcerpc_samr_Close(h, mem_ctx, &user_handle, &result);
 	}
 
 	return status;
