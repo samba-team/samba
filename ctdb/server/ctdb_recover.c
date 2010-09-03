@@ -340,10 +340,8 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	}
 	params->pulldata = talloc_realloc_size(NULL, params->pulldata, rec->length + params->len);
 	if (params->pulldata == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to expand pulldb_data to %u (%u records)\n", 
-			 rec->length + params->len, params->pulldata->count));
-		params->failed = true;
-		return -1;
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to expand pulldb_data to %u\n", rec->length + params->len));
+		ctdb_fatal(params->ctdb, "failed to allocate memory for recovery. shutting down\n");
 	}
 	params->pulldata->count++;
 	memcpy(params->len+(uint8_t *)params->pulldata, rec, rec->length);
