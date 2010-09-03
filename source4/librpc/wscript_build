@@ -454,6 +454,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_IRPC',
 	public_deps='dcerpc NDR_IRPC'
 	)
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',
+	source='gen_ndr/ndr_winbind_c.c',
+	public_deps='dcerpc NDR_WINBIND'
+	)
+
 
 bld.SAMBA_LIBRARY('dcerpc_samr',
 	source='../../librpc/gen_ndr/ndr_samr_c.c',
