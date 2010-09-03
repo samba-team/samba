@@ -33,7 +33,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "param/param.h"
 
 /*
@@ -97,6 +97,11 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 	return false;
 }
 
+struct kccsrv_notify_drepl_server_state {
+	struct dreplsrv_refresh r;
+};
+
+static void kccsrv_notify_drepl_server_done(struct tevent_req *subreq);
 
 /**
  * Force dreplsrv to update its state as topology is changed
@@ -104,16 +109,44 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 static void kccsrv_notify_drepl_server(struct kccsrv_service *s,
 				       TALLOC_CTX *mem_ctx)
 {
-	struct dreplsrv_refresh r;
-	struct server_id *drepl_srv;
+	struct kccsrv_notify_drepl_server_state *state;
+	struct dcerpc_binding_handle *irpc_handle;
+	struct tevent_req *subreq;
 
-	drepl_srv = irpc_servers_byname(s->task->msg_ctx, mem_ctx, "dreplsrv");
-	if (!drepl_srv) {
-		/* dreplsrv is not running yet */
+	state = talloc_zero(mem_ctx, struct kccsrv_notify_drepl_server_state);
+	if (state == NULL) {
 		return;
 	}
 
-	IRPC_CALL(s->task->msg_ctx, drepl_srv[0], irpc, DREPLSRV_REFRESH, &r, mem_ctx);
+	irpc_handle = irpc_binding_handle_by_name(state, s->task->msg_ctx,
+						  "dreplsrv", &ndr_table_irpc);
+	if (irpc_handle == NULL) {
+		/* dreplsrv is not running yet */
+		TALLOC_FREE(state);
+		return;
+	}
+
+	subreq = dcerpc_dreplsrv_refresh_r_send(state, s->task->event_ctx,
+						irpc_handle, &state->r);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		return;
+	}
+	tevent_req_set_callback(subreq, kccsrv_notify_drepl_server_done, state);
+}
+
+static void kccsrv_notify_drepl_server_done(struct tevent_req *subreq)
+{
+	struct kccsrv_notify_drepl_server_state *state =
+		tevent_req_callback_data(subreq,
+		struct kccsrv_notify_drepl_server_state);
+	NTSTATUS status;
+
+	status = dcerpc_dreplsrv_refresh_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+
+	/* we don't care about errors */
+	TALLOC_FREE(state);
 }
 
 /*

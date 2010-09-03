@@ -38,7 +38,7 @@ bld.SAMBA_MODULE('KCC_SRV',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
-	deps='SAMDB process_model RPC_NDR_DRSUAPI'
+	deps='SAMDB process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI'
 	)
 
 
