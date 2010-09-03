@@ -392,13 +392,17 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 		user_info->password.response.nt.data;
 
 	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
 		      err->nt_string, err->nt_status, err->display_string));
 
 		nt_status = NT_STATUS(err->nt_status);
 		wbcFreeMemory(err);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
+	} else if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(1, ("wbcAuthenticateUserEx: failed with %u - %s\n",
+			wbc_status, wbcErrorString(wbc_status)));
+		return NT_STATUS_LOGON_FAILURE;
 	}
 	nt_status = get_info3_from_wbcAuthUserInfo(mem_ctx, info, &info3);
 	wbcFreeMemory(info);
