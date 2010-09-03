@@ -37,6 +37,35 @@ typedef struct {
 	SID_LIST sids;
 } PRIV_SID_LIST;
 
+/*
+  interpret an old style SE_PRIV structure
+ */
+static uint64_t map_old_SE_PRIV(unsigned char *dptr)
+{
+	uint32_t *old_masks = (uint32_t *)dptr;
+	/*
+	 * the old privileges code only ever used up to 0x800, except
+	 * for a special case of 'SE_ALL_PRIVS' which was 0xFFFFFFFF
+	 */
+	if (old_masks[0] == 0xFFFFFFFF) {
+		/* they set all privileges */
+		return SE_ALL_PRIVS;
+	}
+
+	/* the old code used the machine byte order, but we don't know
+	 * the byte order of the machine that wrote it. However we can
+	 * tell what byte order it was by taking advantage of the fact
+	 * that it only ever use up to 0x800
+	 */
+	if (dptr[0] || dptr[1]) {
+		/* it was little endian */
+		return IVAL(dptr, 0);
+	}
+
+	/* it was either zero or big-endian */
+	return RIVAL(dptr, 0);
+}
+
 
 static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 {
@@ -66,18 +95,17 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 	}
 
 	if (data.dsize == 4*4) {
-		DEBUG(3, ("get_privileges: Should not have obtained old-style privileges record for SID "
-			  "[%s]\n", sid_string_dbg(sid)));
-		return False;
-	}
+		/* it's an old style SE_PRIV structure. */
+		*mask = map_old_SE_PRIV(data.dptr);
+	} else {
+		if (data.dsize != sizeof( uint64_t ) ) {
+			DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
+				  "[%s]\n", sid_string_dbg(sid)));
+			return False;
+		}
 
-	if (data.dsize != sizeof( uint64_t ) ) {
-		DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
-			  "[%s]\n", sid_string_dbg(sid)));
-		return False;
+		*mask = BVAL(data.dptr, 0);
 	}
-
-	*mask = BVAL(data.dptr, 0);
 
 	TALLOC_FREE(data.dptr);
 
@@ -113,8 +141,8 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t *mask )
 	/* This writes the 64 bit bitmask out in little endian format */
 	SBVAL(privbuf,0,*mask);
 
-	data.dptr  = (uint8 *)mask;
-	data.dsize = sizeof(uint64_t);
+	data.dptr  = privbuf;
+	data.dsize = sizeof(privbuf);
 
 	return NT_STATUS_IS_OK(dbwrap_store_bystring(db, keystr, data,
 						     TDB_REPLACE));
@@ -178,11 +206,6 @@ static int priv_traverse_fn(struct db_record *rec, void *state)
 	struct dom_sid sid;
 	fstring sid_string;
 
-	/* easy check first */
-
-	if (rec->value.dsize != sizeof(uint64_t) )
-		return 0;
-
 	/* check we have a PRIV_+SID entry */
 
 	if ( strncmp((char *)rec->key.dptr, PRIVPREFIX, prefixlen) != 0)
@@ -196,18 +219,15 @@ static int priv_traverse_fn(struct db_record *rec, void *state)
 		uint64_t mask;
 
 		if (rec->value.dsize == 4*4) {
-			DEBUG(3, ("get_privileges: Should not have obtained old-style privileges record for SID "
-				  "[%s]\n", sid_string));
-			return 0;
+			mask = map_old_SE_PRIV(rec->value.dptr);
+		} else {
+			if (rec->value.dsize != sizeof( uint64_t ) ) {
+				DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
+					  "[%s]\n", sid_string));
+				return 0;
+			}
+			mask = BVAL(rec->value.dptr, 0);
 		}
-
-		if (rec->value.dsize != sizeof( uint64_t ) ) {
-			DEBUG(3, ("get_privileges: Invalid privileges record assigned to SID "
-				  "[%s]\n", sid_string));
-			return 0;
-		}
-
-		mask = BVAL(rec->value.dptr, 0);
 
 		/* if the SID does not have the specified privilege
 		   then just return */
