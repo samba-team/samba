@@ -252,6 +252,13 @@ static bool rpcint_bh_is_connected(struct dcerpc_binding_handle *h)
 	return true;
 }
 
+static uint32_t rpcint_bh_set_timeout(struct dcerpc_binding_handle *h,
+				      uint32_t timeout)
+{
+	/* TODO: implement timeouts */
+	return UINT32_MAX;
+}
+
 struct rpcint_bh_raw_call_state {
 	DATA_BLOB in_data;
 	DATA_BLOB out_data;
@@ -408,6 +415,7 @@ static void rpcint_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 static const struct dcerpc_binding_handle_ops rpcint_bh_ops = {
 	.name			= "rpcint",
 	.is_connected		= rpcint_bh_is_connected,
+	.set_timeout		= rpcint_bh_set_timeout,
 	.raw_call_send		= rpcint_bh_raw_call_send,
 	.raw_call_recv		= rpcint_bh_raw_call_recv,
 	.disconnect_send	= rpcint_bh_disconnect_send,
