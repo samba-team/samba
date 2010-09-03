@@ -31,7 +31,7 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "../libcli/ldap/ldap_ndr.h"
 #include "cldap_server/cldap_server.h"
 #include "lib/tsocket/tsocket.h"
@@ -618,7 +618,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 
 		if (strcmp(r->in.logon->generic->package_name.string, "Kerberos") == 0) {
 			NTSTATUS status;
-			struct server_id *kdc;
+			struct dcerpc_binding_handle *irpc_handle;
 			struct kdc_check_generic_kerberos check;
 			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
 			NT_STATUS_HAVE_NO_MEMORY(generic);
@@ -629,8 +629,11 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 
 			r->out.validation->generic = generic;
 
-			kdc = irpc_servers_byname(dce_call->msg_ctx, mem_ctx, "kdc_server");
-			if ((kdc == NULL) || (kdc[0].id == 0)) {
+			irpc_handle = irpc_binding_handle_by_name(mem_ctx,
+								  dce_call->msg_ctx,
+								  "kdc_server",
+								  &ndr_table_irpc);
+			if (irpc_handle == NULL) {
 				return NT_STATUS_NO_LOGON_SERVERS;
 			}
 
@@ -638,9 +641,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 				data_blob_const(r->in.logon->generic->data,
 						r->in.logon->generic->length);
 
-			status = irpc_call(dce_call->msg_ctx, kdc[0],
-					   &ndr_table_irpc, NDR_KDC_CHECK_GENERIC_KERBEROS,
-					   &check, mem_ctx);
+			status = dcerpc_kdc_check_generic_kerberos_r(irpc_handle,
+								     mem_ctx,
+								     &check);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}

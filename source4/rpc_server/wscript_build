@@ -80,7 +80,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 	source='netlogon/dcerpc_netlogon.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_netlogon_init',
-	deps='DCERPC_COMMON SCHANNELDB NDR_STANDARD auth_sam LIBSAMBA-HOSTCONFIG'
+	deps='DCERPC_COMMON RPC_NDR_IRPC SCHANNELDB NDR_STANDARD auth_sam LIBSAMBA-HOSTCONFIG'
 	)
 
 
