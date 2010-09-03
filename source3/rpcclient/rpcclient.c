@@ -28,6 +28,12 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
 
+enum pipe_auth_type_spnego {
+	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
+	PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
+	PIPE_AUTH_TYPE_SPNEGO_KRB5
+};
+
 struct dom_sid domain_sid;
 
 static enum dcerpc_AuthType pipe_default_auth_type = DCERPC_AUTH_TYPE_NONE;

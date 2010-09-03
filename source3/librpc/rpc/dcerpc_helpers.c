@@ -303,11 +303,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	/* Treat the same for all authenticated rpc requests. */
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		/* compat for server code */
-		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			*auth_len = NTLMSSP_SIG_SIZE;
-			break;
-		}
 
 		status = spnego_get_negotiated_mech(auth->a_u.spnego_state,
 						    &auth_type, &auth_ctx);
@@ -806,13 +801,6 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		status = NT_STATUS_OK;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			/* compat for server code */
-			return add_ntlmssp_auth_footer(
-						auth->a_u.auth_ntlmssp_state,
-						auth->auth_level,
-						rpc_out);
-		}
 		status = add_spnego_auth_footer(auth->a_u.spnego_state,
 						auth->auth_level, rpc_out);
 		break;
@@ -923,20 +911,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		if (auth->spnego_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
-			/* compat for server code */
-			DEBUG(10, ("NTLMSSP auth\n"));
-
-			status = get_ntlmssp_auth_footer(
-						auth->a_u.auth_ntlmssp_state,
-						auth->auth_level,
-						&data, &full_pkt,
-						&auth_info.credentials);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			break;
-		}
 
 		status = get_spnego_auth_footer(pkt, auth->a_u.spnego_state,
 						auth->auth_level,

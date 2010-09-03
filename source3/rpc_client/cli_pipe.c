@@ -1630,10 +1630,9 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	DEBUG(5,("Bind RPC Pipe: %s auth_type %u(%u), auth_level %u\n",
+	DEBUG(5,("Bind RPC Pipe: %s auth_type %u, auth_level %u\n",
 		rpccli_pipe_txt(talloc_tos(), cli),
 		(unsigned int)auth->auth_type,
-		(unsigned int)auth->spnego_type,
 		(unsigned int)auth->auth_level ));
 
 	state->ev = ev;
@@ -1813,9 +1812,8 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	return;
 
 err_out:
-	DEBUG(0,("cli_finish_bind_auth: unknown auth type %u(%u)\n",
-		 (unsigned int)state->cli->auth->auth_type,
-		 (unsigned int)state->cli->auth->spnego_type));
+	DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
+		 (unsigned int)state->cli->auth->auth_type));
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 }
 
@@ -2234,7 +2232,6 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	result->auth_type = DCERPC_AUTH_TYPE_NONE;
-	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	result->user_name = talloc_strdup(result, "");
@@ -2346,7 +2343,6 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 	}
 
 	result->auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
-	result->spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	result->auth_level = auth_level;
 
 	result->user_name = talloc_strdup(result, "");
@@ -3064,8 +3060,6 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 	}
 	auth->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 	auth->auth_level = auth_level;
-	/* compat */
-	auth->spnego_type = PIPE_AUTH_TYPE_SPNEGO_KRB5;
 
 	if (!username) {
 		username = "";

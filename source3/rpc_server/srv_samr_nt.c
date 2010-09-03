@@ -2781,8 +2781,8 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 	}
 
 	if ((p->auth.auth_type != DCERPC_AUTH_TYPE_NTLMSSP) ||
-	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO) &&
-	     (p->auth.spnego_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
+	    (p->auth.auth_type != DCERPC_AUTH_TYPE_KRB5) ||
+	    (p->auth.auth_type != DCERPC_AUTH_TYPE_SPNEGO)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

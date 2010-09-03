@@ -93,19 +93,12 @@ typedef struct pipe_rpc_fns {
  * Can't keep in sync with wire values as spnego wraps different auth methods.
  */
 
-enum pipe_auth_type_spnego {
-	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
-	PIPE_AUTH_TYPE_SPNEGO_NTLMSSP,
-	PIPE_AUTH_TYPE_SPNEGO_KRB5
-};
-
 struct gse_context;
 
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
 	enum dcerpc_AuthType auth_type;
-	enum pipe_auth_type_spnego spnego_type; /* used by server only */
 	enum dcerpc_AuthLevel auth_level;
 
 	union {

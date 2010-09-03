@@ -548,7 +548,6 @@ static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 	free_pipe_auth_data(&p->auth);
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
-	p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 	p->pipe_bound = False;
 
 	return True;
@@ -1186,7 +1185,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		/* Unauthenticated bind request. */
 		/* We're finished - no more packets. */
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
-		p->auth.spnego_type = PIPE_AUTH_TYPE_SPNEGO_NONE;
 		/* We must set the pipe auth_level here also. */
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->pipe_bound = True;
@@ -1546,8 +1544,8 @@ static bool api_pipe_request(struct pipes_struct *p,
 
 	if (p->pipe_bound &&
 	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||
-	     ((p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO) &&
-	      (p->auth.spnego_type ==  PIPE_AUTH_TYPE_SPNEGO_NTLMSSP)))) {
+	     (p->auth.auth_type == DCERPC_AUTH_TYPE_KRB5) ||
+	     (p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO))) {
 		if(!become_authenticated_pipe_user(p)) {
 			data_blob_free(&p->out_data.rdata);
 			return False;
