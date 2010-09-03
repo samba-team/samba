@@ -59,7 +59,7 @@ interface dfsblobs
 	typedef struct {
 		[relative_short] nstring *special_name;
 		uint16 nb_expanded_names;
-		[relative_short,subcontext(0),flag(STR_NOTERM|NDR_REMAINING)] string_array *expanded_names;
+		[relative_short,subcontext(0),flag(NDR_REMAINING|STR_NULLTERM)] string_array *expanded_names;
 	} dfs_domain_referral;
 
 	typedef [nodiscriminant] union {
@@ -69,7 +69,7 @@ interface dfsblobs
 	} dfs_referral;
 
 	typedef [nodiscriminant] union {
-		[case(16)] uint8 *value;
+		[case(16)] uint8 value[16];
 		[default];
 	} dfs_padding;
 
