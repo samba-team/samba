@@ -31,6 +31,8 @@
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "param/pyparam.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/rpc/dcerpc.h"
 
 PyAPI_DATA(PyTypeObject) messaging_Type;
 PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;
@@ -305,6 +307,7 @@ typedef struct {
 	const char *server_name;
 	struct server_id *dest_ids;
 	struct messaging_context *msg_ctx;
+	struct tevent_context *ev;
 } irpc_ClientConnectionObject;
 
 /*
@@ -315,7 +318,6 @@ typedef struct {
 
 PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct tevent_context *ev;
 	const char *kwnames[] = { "server", "own_id", "messaging_path", NULL };
 	char *server;
 	const char *messaging_path = NULL;
@@ -335,7 +337,7 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 
 	ret->server_name = server;
 
-	ev = s4_event_context_init(ret->mem_ctx);
+	ret->ev = s4_event_context_init(ret->mem_ctx);
 
 	if (messaging_path == NULL) {
 		messaging_path = lpcfg_messaging_path(ret->mem_ctx,
@@ -353,11 +355,11 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 		ret->msg_ctx = messaging_init(ret->mem_ctx, 
 					    messaging_path,
 					    server_id,
-					    ev);
+					    ret->ev);
 	} else {
 		ret->msg_ctx = messaging_client_init(ret->mem_ctx, 
 					    messaging_path,
-					    ev);
+					    ret->ev);
 	}
 
 	if (ret->msg_ctx == NULL) {
@@ -379,7 +381,9 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
-	struct irpc_request **reqs;
+	struct tevent_context *ev;
+	struct tevent_req **reqs;
+	void **ptrs;
 	int count;
 	int current;
 	py_data_unpack_fn unpack_fn;
@@ -389,20 +393,29 @@ typedef struct {
 static PyObject *irpc_result_next(irpc_ResultObject *iterator)
 {
 	NTSTATUS status;
+	bool ok;
 
 	if (iterator->current >= iterator->count) {
 		PyErr_SetString(PyExc_StopIteration, "No more results");
 		return NULL;
 	}
 
-	status = irpc_call_recv(iterator->reqs[iterator->current]);
+	ok = tevent_req_poll(iterator->reqs[iterator->current], iterator->ev);
+	if (!ok) {
+		status = map_nt_error_from_unix(errno);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	status = dcerpc_binding_handle_call_recv(iterator->reqs[iterator->current]);
+	TALLOC_FREE(iterator->reqs[iterator->current]);
 	iterator->current++;
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
 
-	return iterator->unpack_fn(iterator->reqs[iterator->current-1]->r);
+	return iterator->unpack_fn(iterator->ptrs[iterator->current-1]);
 }
 
 static PyObject *irpc_result_len(irpc_ResultObject *self)
@@ -436,14 +449,16 @@ PyTypeObject irpc_ResultIteratorType = {
 static PyObject *py_irpc_call(irpc_ClientConnectionObject *p, struct PyNdrRpcMethodDef *method_def, PyObject *args, PyObject *kwargs)
 {
 	void *ptr;
-	struct irpc_request **reqs;
+	void **ptrs;
+	struct tevent_req **reqs;
 	int i, count;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	irpc_ResultObject *ret;
+	size_t struct_size = method_def->table->calls[method_def->opnum].struct_size;
 
 	/* allocate the C structure */
-	ptr = talloc_zero_size(mem_ctx, method_def->table->calls[method_def->opnum].struct_size);
+	ptr = talloc_zero_size(mem_ctx, struct_size);
 	if (ptr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -458,26 +473,55 @@ static PyObject *py_irpc_call(irpc_ClientConnectionObject *p, struct PyNdrRpcMet
 	for (count=0;p->dest_ids[count].id;count++) /* noop */ ;
 
 	/* we need to make a call per server */
-	reqs = talloc_array(mem_ctx, struct irpc_request *, count);
+	reqs = talloc_array(mem_ctx, struct tevent_req *, count);
 	if (reqs == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ptrs = talloc_array(mem_ctx, void *, count);
+	if (ptrs == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* make the actual calls */
 	for (i=0;i<count;i++) {
-		reqs[i] = irpc_call_send(p->msg_ctx, p->dest_ids[i], 
-					 method_def->table, method_def->opnum, ptr, ptr);
+		struct dcerpc_binding_handle *irpc_handle;
+
+		irpc_handle = irpc_binding_handle(reqs, p->msg_ctx,
+						  p->dest_ids[i],
+						  &ndr_table_irpc);
+		if (irpc_handle == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		ptrs[i] = talloc_size(mem_ctx, struct_size);
+		if (ptrs[i] == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		memcpy(ptrs[i], ptr, struct_size);
+
+		reqs[i] = dcerpc_binding_handle_call_send(reqs,
+							  p->ev,
+							  irpc_handle,
+							  NULL,
+							  &ndr_table_irpc,
+							  method_def->opnum,
+							  ptrs[i], ptrs[i]);
 		if (reqs[i] == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		talloc_steal(reqs, reqs[i]);
 	}
 
 	ret = PyObject_New(irpc_ResultObject, &irpc_ResultIteratorType);
 	ret->mem_ctx = mem_ctx;
+	ret->ev = p->ev;
 	ret->reqs = reqs;
+	ret->ptrs = ptrs;
 	ret->count = count;
 	ret->current = 0;
 	ret->unpack_fn = method_def->unpack_out_data;
