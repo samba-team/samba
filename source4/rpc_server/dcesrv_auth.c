@@ -83,7 +83,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 					       auth->auth_info->auth_level);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n", 
+		DEBUG(3, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n",
 			  (int)auth->auth_info->auth_type,
 			  (int)auth->auth_info->auth_level,
 			  nt_errstr(status)));
@@ -136,7 +136,8 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		dce_conn->auth_state.auth_info->auth_reserved = 0;
 		return NT_STATUS_OK;
 	} else {
-		DEBUG(2, ("Failed to start dcesrv auth negotiate: %s\n", nt_errstr(status)));
+		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_ack: %s\n",
+			  nt_errstr(status)));
 		return status;
 	}
 }
@@ -181,7 +182,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return true;
 	} else {
-		DEBUG(4, ("dcesrv_auth_auth3: failed to authenticate: %s\n", 
+		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_auth3: %s\n",
 			  nt_errstr(status)));
 		return false;
 	}
@@ -266,7 +267,8 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(2, ("Failed to finish dcesrv auth alter_ack: %s\n", nt_errstr(status)));
+	DEBUG(4, ("GENSEC mech rejected the incoming authentication at auth alter_ack: %s\n",
+		  nt_errstr(status)));
 	return status;
 }
 
