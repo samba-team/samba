@@ -23,6 +23,8 @@
 #ifndef _LIBCLI_AUTH_SCHANNEL_PROTO_H__
 #define _LIBCLI_AUTH_SCHANNEL_PROTO_H__
 
+struct schannel_state;
+
 struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 					     const char *private_dir);
 
