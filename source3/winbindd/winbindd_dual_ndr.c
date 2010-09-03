@@ -48,6 +48,13 @@ static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
 	return true;
 }
 
+static uint32_t wbint_bh_set_timeout(struct dcerpc_binding_handle *h,
+				     uint32_t timeout)
+{
+	/* TODO: implement timeouts */
+	return UINT32_MAX;
+}
+
 struct wbint_bh_raw_call_state {
 	struct winbindd_domain *domain;
 	uint32_t opnum;
@@ -254,6 +261,7 @@ static void wbint_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 static const struct dcerpc_binding_handle_ops wbint_bh_ops = {
 	.name			= "wbint",
 	.is_connected		= wbint_bh_is_connected,
+	.set_timeout		= wbint_bh_set_timeout,
 	.raw_call_send		= wbint_bh_raw_call_send,
 	.raw_call_recv		= wbint_bh_raw_call_recv,
 	.disconnect_send	= wbint_bh_disconnect_send,
