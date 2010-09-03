@@ -54,7 +54,7 @@ uint64_t sec_privilege_mask(enum sec_privilege privilege);
  put all privileges into a mask
 ****************************************************************************/
 
-bool se_priv_put_all_privileges(uint64_t *privilege_mask);
+void se_priv_put_all_privileges(uint64_t *privilege_mask);
 
 /*********************************************************************
  Lookup the uint64_t value for a privilege name

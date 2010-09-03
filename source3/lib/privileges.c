@@ -488,9 +488,7 @@ bool grant_all_privileges( const struct dom_sid *sid )
 {
 	uint64_t mask;
 
-	if (!se_priv_put_all_privileges(&mask)) {
-		return False;
-	}
+	se_priv_put_all_privileges(&mask);
 
 	return grant_privilege_bitmap( sid, mask );
 }

@@ -187,7 +187,7 @@ uint64_t sec_privilege_mask(enum sec_privilege privilege)
  put all valid privileges into a mask
 ****************************************************************************/
 
-bool se_priv_put_all_privileges(uint64_t *privilege_mask)
+void se_priv_put_all_privileges(uint64_t *privilege_mask)
 {
 	int i;
 	uint32_t num_privs = ARRAY_SIZE(privs);
@@ -196,7 +196,6 @@ bool se_priv_put_all_privileges(uint64_t *privilege_mask)
 	for ( i=0; i<num_privs; i++ ) {
 		*privilege_mask |= privs[i].privilege_mask;
 	}
-	return true;
 }
 
 /*********************************************************************
