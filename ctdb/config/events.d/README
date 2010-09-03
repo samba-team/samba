@@ -29,7 +29,7 @@ init
 	and prepare the basic setup.
 	At this stage 'ctdb' commands won't work.
 
-	Example: 00.ctdb cleans up $CTDB_BASE/state
+	Example: 00.ctdb cleans up $CTDB_VARDIR/state
 
 setup
 	This event does not take any additional arguments.
@@ -37,7 +37,7 @@ setup
 	This event is used to do some cleanup work from earlier runs
 	and prepare the basic setup.
 
-	Example: 00.ctdb cleans up $CTDB_BASE/state
+	Example: 00.ctdb cleans up $CTDB_VARDIR/state
 
 startup
 	This event does not take any additional arguments.

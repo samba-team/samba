@@ -9,6 +9,10 @@
     export CTDB_BASE="/etc/ctdb"
 }
 
+[ -z "$CTDB_VARDIR" ] && {
+    export CTDB_VARDIR="/var/ctdb"
+}
+
 . $CTDB_BASE/functions
 loadconfig ctdb
 loadconfig nfs
@@ -30,8 +34,8 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
-		/bin/mkdir -p $CTDB_BASE/state/statd/ip/$IP
-		touch $CTDB_BASE/state/statd/ip/$IP/$2
+		/bin/mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+		touch $CTDB_VARDIR/state/statd/ip/$IP/$2
 	done
 	;;
   del-client)
@@ -45,8 +49,8 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
-		mkdir -p $CTDB_BASE/state/statd/ip/$IP
-		/bin/rm -f $CTDB_BASE/state/statd/ip/$IP/$2
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+		/bin/rm -f $CTDB_VARDIR/state/statd/ip/$IP/$2
 	done
 	;;
   updatelocal)
@@ -59,25 +63,25 @@ case "$1" in
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
 
-		mkdir -p $CTDB_BASE/state/statd/ip/$IP
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
 
-		rm -f $CTDB_BASE/state/statd/ip/$IP.tar
-		tar cfP $CTDB_BASE/state/statd/ip/$IP.tar $CTDB_BASE/state/statd/ip/$IP
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.tar
+		tar cfP $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP
 
-		rm -f $CTDB_BASE/state/statd/ip/$IP.rec
-		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.rec 2>/dev/null
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
 		[ "$?" = "0" ] || {
 			# something went wrong,  try storing this data
 			echo No record. Store STATD state data for $IP
-			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.tar 2>/dev/null
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
 			continue
 		}
 
-		cmp $CTDB_BASE/state/statd/ip/$IP.tar $CTDB_BASE/state/statd/ip/$IP.rec >/dev/null 2>/dev/null
+		cmp $CTDB_VARDIR/state/statd/ip/$IP.tar $CTDB_VARDIR/state/statd/ip/$IP.rec >/dev/null 2>/dev/null
 		[ "$?" = "0" ] || {
 			# something went wrong,  try storing this data
 			echo Updated record. Store STATD state data for $IP
-			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.tar 2>/dev/null
+			ctdb pstore ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.tar 2>/dev/null
 			continue
 		}
 	done
@@ -93,16 +97,16 @@ case "$1" in
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
 
-		mkdir -p $CTDB_BASE/state/statd/ip/$IP
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
 
-		rm -f $CTDB_BASE/state/statd/ip/$IP.rec
-		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_BASE/state/statd/ip/$IP.rec 2>/dev/null
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP.rec
+		ctdb pfetch ctdb.tdb statd-state:$IP $CTDB_VARDIR/state/statd/ip/$IP.rec 2>/dev/null
 		[ "$?" = "0" ] || {
 			continue
 		}
 
-		rm -f $CTDB_BASE/state/statd/ip/$IP/*
-		tar xfP $CTDB_BASE/state/statd/ip/$IP.rec
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP/*
+		tar xfP $CTDB_VARDIR/state/statd/ip/$IP.rec
 	done
 	;;
 
@@ -181,8 +185,8 @@ case "$1" in
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
 
-		ls $CTDB_BASE/state/statd/ip/$IP | while read CLIENT; do
-			rm $CTDB_BASE/state/statd/ip/$IP/$CLIENT
+		ls $CTDB_VARDIR/state/statd/ip/$IP | while read CLIENT; do
+			rm $CTDB_VARDIR/state/statd/ip/$IP/$CLIENT
 			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
 			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
 			STATE=`expr "$STATE" "+" "1"`

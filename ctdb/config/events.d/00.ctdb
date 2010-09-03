@@ -15,10 +15,10 @@ loadconfig
 case "$1" in 
      init)
         # make sure we have a blank state directory for the scripts to work with
-	/bin/rm -rf $CTDB_BASE/state
-	/bin/mkdir -p $CTDB_BASE/state || {
+	/bin/rm -rf $CTDB_VARDIR/state
+	/bin/mkdir -p $CTDB_VARDIR/state || {
 	    ret=$?
-	    echo "/bin/mkdir -p $CTDB_BASE/state - failed - $ret"
+	    echo "/bin/mkdir -p $CTDB_VARDIR/state - failed - $ret"
 	    exit $ret
 	}
 	;;
@@ -37,15 +37,15 @@ case "$1" in
     startup)
 	# Pull optional ctdb configuration data out of config.tdb
 	PUBLICADDRESSESKEY='public-addresses:node#'`ctdb -t 1 xpnn|sed -e "s/.*://"`
-	rm -f $CTDB_BASE/state/public_addresses
-	ctdb pfetch config.tdb $PUBLICADDRESSESKEY $CTDB_BASE/state/public_addresses
+	rm -f $CTDB_VARDIR/state/public_addresses
+	ctdb pfetch config.tdb $PUBLICADDRESSESKEY $CTDB_VARDIR/state/public_addresses
 	[ "$?" = "0" ] && [ `stat --format="%s" /etc/ctdb/state/public_addresses` != "0" ] && [ ! -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-		diff $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES >/dev/null 2>/dev/null
+		diff $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES >/dev/null 2>/dev/null
 		[ $? = "0" ] || {
 			echo CTDB public address configuration had been updated.
 			echo Extracting new configuration from database.
-			diff $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES
-			cp $CTDB_BASE/state/public_addresses $CTDB_PUBLIC_ADDRESSES
+			diff $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES
+			cp $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES
 			echo Restarting CTDB
 			service ctdb restart &
 		}

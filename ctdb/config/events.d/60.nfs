@@ -2,8 +2,8 @@
 # script to manage nfs in a clustered environment
 
 start_nfs() {
-	/bin/mkdir -p $CTDB_BASE/state/nfs
-	/bin/mkdir -p $CTDB_BASE/state/statd/ip
+	/bin/mkdir -p $CTDB_VARDIR/state/nfs
+	/bin/mkdir -p $CTDB_VARDIR/state/statd/ip
 	startstop_nfs stop
 	startstop_nfs start
 	echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
@@ -25,7 +25,7 @@ case "$1" in
 	;;
      startup)
 	ctdb_service_start
-	touch $CTDB_BASE/state/statd/update-trigger
+	touch $CTDB_VARDIR/state/statd/update-trigger
 	;;
 
      shutdown)
@@ -103,11 +103,11 @@ case "$1" in
 
 	# once every 60 seconds, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" $CTDB_BASE/state/statd/update-trigger`
+	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger`
 	CURRENT_TIME=`date +"%s"`
 	expr "$CURRENT_TIME" ">" "(" "$LAST_UPDATE" "+" "60" ")" >/dev/null 2>/dev/null
 	[ $? = "0" ] && {
-	    touch $CTDB_BASE/state/statd/update-trigger
+	    touch $CTDB_VARDIR/state/statd/update-trigger
 	    $CTDB_BASE/statd-callout updatelocal &
 	    $CTDB_BASE/statd-callout updateremote &
 	}

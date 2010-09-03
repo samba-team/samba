@@ -34,7 +34,7 @@ loadconfig
 
 start_samba() {
 	# create the state directory for samba
-	/bin/mkdir -p $CTDB_BASE/state/samba
+	/bin/mkdir -p $CTDB_VARDIR/state/samba
 
 	# make sure samba is not already started
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
@@ -101,13 +101,13 @@ stop_samba() {
 }
 
 # we keep a cached copy of smb.conf here
-smbconf_cache="$CTDB_BASE/state/samba/smb.conf.cache"
+smbconf_cache="$CTDB_VARDIR/state/samba/smb.conf.cache"
 
 
 #############################################
 # update the smb.conf cache in the foreground
 testparm_foreground_update() {
-    mkdir -p "$CTDB_BASE/state/samba" || exit 1
+    mkdir -p "$CTDB_VARDIR/state/samba" || exit 1
     testparm -s 2> /dev/null | egrep -v 'registry.shares.=|include.=' > "$smbconf_cache"
 }
 
@@ -215,13 +215,13 @@ case "$1" in
      monitor)
 	# Create a dummy file to track when we need to do periodic cleanup
 	# of samba databases
-	[ -f $CTDB_BASE/state/samba/periodic_cleanup ] || {
-		touch $CTDB_BASE/state/samba/periodic_cleanup
+	[ -f $CTDB_VARDIR/state/samba/periodic_cleanup ] || {
+		touch $CTDB_VARDIR/state/samba/periodic_cleanup
 	}
-	[ `/usr/bin/find $CTDB_BASE/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
+	[ `/usr/bin/find $CTDB_VARDIR/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
 		# Cleanup the databases
 	    	periodic_cleanup
-		touch $CTDB_BASE/state/samba/periodic_cleanup
+		touch $CTDB_VARDIR/state/samba/periodic_cleanup
 	}
 
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {

@@ -4,7 +4,7 @@
 loadconfig
 
 [ -z "$CTDB_PER_IP_ROUTING_STATE" ] && {
-	CTDB_PER_IP_ROUTING_STATE="$CTDB_BASE/state/per_ip_routing"
+	CTDB_PER_IP_ROUTING_STATE="$CTDB_VARDIR/state/per_ip_routing"
 }
 
 AUTO_LINK_LOCAL="no"

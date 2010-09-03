@@ -231,7 +231,7 @@ kill_tcp_connections() {
     _failed=0
 
     _killcount=0
-    connfile="$CTDB_BASE/state/connections.$_IP"
+    connfile="$CTDB_VARDIR/state/connections.$_IP"
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -281,7 +281,7 @@ kill_tcp_connections_local_only() {
     _failed=0
 
     _killcount=0
-    connfile="$CTDB_BASE/state/connections.$_IP"
+    connfile="$CTDB_VARDIR/state/connections.$_IP"
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -323,7 +323,7 @@ tickle_tcp_connections() {
     _failed=0
 
     _killcount=0
-    connfile="$CTDB_BASE/state/connections.$_IP"
+    connfile="$CTDB_VARDIR/state/connections.$_IP"
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -453,7 +453,7 @@ add_ip_to_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _state_dir="$CTDB_VARDIR/state/interface_modify"
 	local _lockfile="$_state_dir/$_iface.flock"
 	local _readd_base="$_state_dir/$_iface.readd.d"
 
@@ -476,7 +476,7 @@ delete_ip_from_iface()
 	local _iface=$1
 	local _ip=$2
 	local _maskbits=$3
-	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _state_dir="$CTDB_VARDIR/state/interface_modify"
 	local _lockfile="$_state_dir/$_iface.flock"
 	local _readd_base="$_state_dir/$_iface.readd.d"
 
@@ -500,7 +500,7 @@ setup_iface_ip_readd_script()
 	local _ip=$2
 	local _maskbits=$3
 	local _readd_script=$4
-	local _state_dir="$CTDB_BASE/state/interface_modify"
+	local _state_dir="$CTDB_VARDIR/state/interface_modify"
 	local _lockfile="$_state_dir/$_iface.flock"
 	local _readd_base="$_state_dir/$_iface.readd.d"
 
@@ -779,7 +779,7 @@ iptables()
 ########################################################
 
 # Temporary directory for tickles.
-tickledir="$CTDB_BASE/state/tickles"
+tickledir="$CTDB_VARDIR/state/tickles"
 mkdir -p "$tickledir"
 
 update_tickles ()

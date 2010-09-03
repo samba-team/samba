@@ -5,7 +5,7 @@
 
 loadconfig
 
-STATEDIR=$CTDB_BASE/state/gpfs
+STATEDIR=$CTDB_VARDIR/state/gpfs
 
 
 # filesystems needed by nfs
