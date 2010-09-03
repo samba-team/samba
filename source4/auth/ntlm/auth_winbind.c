@@ -62,6 +62,11 @@ static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 {
 	int i, j;
 	struct samr_RidWithAttribute *rids = NULL;
+	struct dom_sid *user_sid;
+	struct dom_sid *group_sid;
+
+	user_sid = (struct dom_sid *)(void *)&info->sids[0].sid;
+	group_sid = (struct dom_sid *)(void *)&info->sids[1].sid;
 
 	info3->base.last_logon = info->logon_time;
 	info3->base.last_logoff = info->logoff_time;
@@ -101,10 +106,10 @@ static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dom_sid_split_rid(mem_ctx, (struct dom_sid2 *) &info->sids[0].sid,
+	dom_sid_split_rid(mem_ctx, user_sid,
 			  &info3->base.domain_sid,
 			  &info3->base.rid);
-	dom_sid_split_rid(mem_ctx, (struct dom_sid2 *) &info->sids[1].sid, NULL,
+	dom_sid_split_rid(mem_ctx, group_sid, NULL,
 			  &info3->base.primary_gid);
 
 	/* We already handled the first two, now take care of the rest */
@@ -115,9 +120,11 @@ static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(rids);
 
 	for (i = 2, j = 0; i < info->num_sids; ++i, ++j) {
+		struct dom_sid *tmp_sid;
+		tmp_sid = (struct dom_sid *)(void *)&info->sids[1].sid;
+
 		rids[j].attributes = info->sids[i].attributes;
-		dom_sid_split_rid(mem_ctx,
-				  (struct dom_sid2 *) &info->sids[i].sid,
+		dom_sid_split_rid(mem_ctx, tmp_sid,
 				  NULL, &rids[j].rid);
 	}
 	info3->base.groups.rids = rids;
