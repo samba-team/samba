@@ -71,7 +71,7 @@ bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 	source='finddcs.c',
 	autoproto='finddcs.h',
-	public_deps='LIBCLI_NBT MESSAGING'
+	public_deps='LIBCLI_NBT MESSAGING RPC_NDR_IRPC'
 	)
 
 

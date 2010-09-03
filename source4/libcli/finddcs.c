@@ -21,8 +21,9 @@
 */
 
 #include "include/includes.h"
+#include <tevent.h>
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "librpc/gen_ndr/samr.h"
 #include "libcli/composite/composite.h"
 #include "libcli/libcli.h"
@@ -46,7 +47,7 @@ struct finddcs_state {
 };
 
 static void finddcs_name_resolved(struct composite_context *ctx);
-static void finddcs_getdc_replied(struct irpc_request *ireq);
+static void finddcs_getdc_replied(struct tevent_req *subreq);
 static void fallback_node_status(struct finddcs_state *state);
 static void fallback_node_status_replied(struct nbt_name_request *name_req);
 
@@ -116,8 +117,8 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 {
 	struct finddcs_state *state =
 		talloc_get_type(ctx->async.private_data, struct finddcs_state);
-	struct irpc_request *ireq;
-	struct server_id *nbt_servers;
+	struct tevent_req *subreq;
+	struct dcerpc_binding_handle *irpc_handle;
 	const char *address;
 
 	state->ctx->status = resolve_name_recv(ctx, state, &address);
@@ -141,8 +142,9 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 		return;
 	}
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
+	irpc_handle = irpc_binding_handle_by_name(state, state->msg_ctx,
+						  "nbt_server", &ndr_table_irpc);
+	if (irpc_handle == NULL) {
 		fallback_node_status(state);
 		return;
 	}
@@ -158,25 +160,25 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 		state->r.in.domain_sid = talloc_zero(state, struct dom_sid);
 	}
 
-	ireq = irpc_call_send(state->msg_ctx, nbt_servers[0],
-			      &ndr_table_irpc, NDR_NBTD_GETDCNAME,
-			      &state->r, state);
-	if (!ireq) {
-		fallback_node_status(state);
-		return;
-	}
-
-	composite_continue_irpc(state->ctx, ireq, finddcs_getdc_replied, state);
+	subreq = dcerpc_nbtd_getdcname_r_send(state, state->ctx->event_ctx,
+					      irpc_handle, &state->r);
+	if (composite_nomem(subreq, state->ctx)) return;
+	tevent_req_set_callback(subreq, finddcs_getdc_replied, state);
 }
 
 /* Called when the GetDC request returns */
-static void finddcs_getdc_replied(struct irpc_request *ireq)
+static void finddcs_getdc_replied(struct tevent_req *subreq)
 {
 	struct finddcs_state *state =
-		talloc_get_type(ireq->async.private_data, struct finddcs_state);
+		tevent_req_callback_data(subreq,
+		struct finddcs_state);
+	NTSTATUS status;
 
-	state->ctx->status = irpc_call_recv(ireq);
-	if (!composite_is_ok(state->ctx)) return;
+	status = dcerpc_nbtd_getdcname_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		fallback_node_status(state);
+	}
 
 	state->dcs[0].name = talloc_steal(state->dcs, state->r.out.dcname);
 	composite_done(state->ctx);
