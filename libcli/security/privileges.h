@@ -30,7 +30,6 @@
 
 /* common privilege bitmask defines */
 
-#define SE_NONE				0x0
 #define SE_ALL_PRIVS                    (uint64_t)-1
 
 /*
