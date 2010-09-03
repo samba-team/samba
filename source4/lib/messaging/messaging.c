@@ -1004,6 +1004,7 @@ struct irpc_bh_state {
 	struct messaging_context *msg_ctx;
 	struct server_id server_id;
 	const struct ndr_interface_table *table;
+	uint32_t timeout;
 };
 
 static bool irpc_bh_is_connected(struct dcerpc_binding_handle *h)
@@ -1016,6 +1017,18 @@ static bool irpc_bh_is_connected(struct dcerpc_binding_handle *h)
 	}
 
 	return true;
+}
+
+static uint32_t irpc_bh_set_timeout(struct dcerpc_binding_handle *h,
+				    uint32_t timeout)
+{
+	struct irpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				   struct irpc_bh_state);
+	uint32_t old = hs->timeout;
+
+	hs->timeout = timeout;
+
+	return old;
 }
 
 struct irpc_bh_raw_call_state {
@@ -1119,7 +1132,10 @@ static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_endtime(req, ev, timeval_current_ofs(IRPC_CALL_TIMEOUT, 0));
+	ok = tevent_req_set_endtime(req, ev, timeval_current_ofs(hs->timeout, 0));
+	if (!ok) {
+		return tevent_req_post(req, ev);
+	}
 
 	return req;
 }
@@ -1228,6 +1244,7 @@ static bool irpc_bh_ref_alloc(struct dcerpc_binding_handle *h)
 static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 	.name			= "wbint",
 	.is_connected		= irpc_bh_is_connected,
+	.set_timeout		= irpc_bh_set_timeout,
 	.raw_call_send		= irpc_bh_raw_call_send,
 	.raw_call_recv		= irpc_bh_raw_call_recv,
 	.disconnect_send	= irpc_bh_disconnect_send,
@@ -1258,6 +1275,7 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 	hs->msg_ctx = msg_ctx;
 	hs->server_id = server_id;
 	hs->table = table;
+	hs->timeout = IRPC_CALL_TIMEOUT;
 
 	dcerpc_binding_handle_set_sync_ev(h, msg_ctx->event.ev);
 
