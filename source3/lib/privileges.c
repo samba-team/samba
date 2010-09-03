@@ -344,7 +344,7 @@ static bool grant_privilege_bitmap(const struct dom_sid *sid, const uint64_t pri
  Add a privilege based on its name
 *********************************************************************/
 
-bool grant_privilege_by_name(struct dom_sid *sid, const char *name)
+bool grant_privilege_by_name(const struct dom_sid *sid, const char *name)
 {
 	uint64_t mask;
 
@@ -411,7 +411,7 @@ bool revoke_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *se
  Revoke all privileges
 *********************************************************************/
 
-bool revoke_all_privileges( struct dom_sid *sid )
+bool revoke_all_privileges( const struct dom_sid *sid )
 {
 	return revoke_privilege_bitmap( sid, SE_ALL_PRIVS);
 }
@@ -420,7 +420,7 @@ bool revoke_all_privileges( struct dom_sid *sid )
  Add a privilege based on its name
 *********************************************************************/
 
-bool revoke_privilege_by_name(struct dom_sid *sid, const char *name)
+bool revoke_privilege_by_name(const struct dom_sid *sid, const char *name)
 {
 	uint64_t mask;
 

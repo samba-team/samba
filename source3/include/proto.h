@@ -639,10 +639,10 @@ NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids);
 NTSTATUS privilege_enum_sids(enum sec_privilege privilege, TALLOC_CTX *mem_ctx,
 			     struct dom_sid **sids, int *num_sids);
 bool grant_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *set);
-bool grant_privilege_by_name(struct dom_sid *sid, const char *name);
-bool revoke_all_privileges( struct dom_sid *sid );
+bool grant_privilege_by_name( const struct dom_sid *sid, const char *name);
+bool revoke_all_privileges( const struct dom_sid *sid );
 bool revoke_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *set);
-bool revoke_privilege_by_name(struct dom_sid *sid, const char *name);
+bool revoke_privilege_by_name(const struct dom_sid *sid, const char *name);
 NTSTATUS privilege_create_account(const struct dom_sid *sid );
 NTSTATUS privilege_delete_account(const struct dom_sid *sid);
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set);
