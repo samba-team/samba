@@ -1086,17 +1086,19 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 }
 
 struct r_do_release_demand_state {
-	struct messaging_context *msg_ctx;
 	struct nbtd_proxy_wins_release_demand r;
 };
 
-static void r_do_release_demand_handler(struct irpc_request *ireq)
+static void r_do_release_demand_handler(struct tevent_req *subreq)
 {
 	NTSTATUS status;
-	struct r_do_release_demand_state *state = talloc_get_type(ireq->async.private_data,
-						  struct r_do_release_demand_state);
+	struct r_do_release_demand_state *state =
+		tevent_req_callback_data(subreq,
+		struct r_do_release_demand_state);
 
-	status = irpc_call_recv(ireq);
+	status = dcerpc_nbtd_proxy_wins_release_demand_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+
 	/* don't care about the result */
 	talloc_free(state);
 }
@@ -1108,11 +1110,11 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 				    struct wrepl_name *replica)
 {
 	NTSTATUS status;
-	struct irpc_request *ireq;
-	struct server_id *nbt_servers;
+	struct dcerpc_binding_handle *irpc_handle;
 	const char **addrs;
 	struct winsdb_addr **addresses;
 	struct r_do_release_demand_state *state;
+	struct tevent_req *subreq;
 	uint32_t i;
 
 	/*
@@ -1130,10 +1132,12 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 
 	state = talloc_zero(mem_ctx, struct r_do_release_demand_state);
 	NT_STATUS_HAVE_NO_MEMORY(state);
-	state->msg_ctx	= partner->service->task->msg_ctx;
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
+	irpc_handle = irpc_binding_handle_by_name(state,
+						  partner->service->task->msg_ctx,
+						  "nbt_server",
+						  &ndr_table_irpc);
+	if (irpc_handle == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1149,13 +1153,13 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 		state->r.in.addrs[i].addr = addrs[i];
 	}
 
-	ireq = IRPC_CALL_SEND(state->msg_ctx, nbt_servers[0],
-			      irpc, NBTD_PROXY_WINS_RELEASE_DEMAND,
-			      &state->r, state);
-	NT_STATUS_HAVE_NO_MEMORY(ireq);
+	subreq = dcerpc_nbtd_proxy_wins_release_demand_r_send(state,
+			partner->service->task->event_ctx,
+			irpc_handle,
+			&state->r);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
-	ireq->async.fn		= r_do_release_demand_handler;
-	ireq->async.private_data= state;
+	tevent_req_set_callback(subreq, r_do_release_demand_handler, state);
 
 	talloc_steal(partner, state);
 	return NT_STATUS_OK;
