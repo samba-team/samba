@@ -95,9 +95,7 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		return False;
 	}
 
-	if (p->auth.auth_data_free_func) {
-		(*p->auth.auth_data_free_func)(&p->auth);
-	}
+	TALLOC_FREE(p->auth.auth_ctx);
 
 	free_pipe_rpc_context_internal( p->contexts );
 

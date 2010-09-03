@@ -107,8 +107,6 @@ struct pipe_auth_data {
 	char *domain;
 	char *user_name;
 	DATA_BLOB user_session_key;
-
-	void (*auth_data_free_func)(struct pipe_auth_data *);
 };
 
 /*

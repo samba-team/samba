@@ -86,11 +86,6 @@ static void dump_pdu_region(const char *name, int v,
 	TALLOC_FREE(fname);
 }
 
-static void free_pipe_auth_data(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->auth_ctx);
-}
-
 static DATA_BLOB generic_session_key(void)
 {
 	return data_blob("SystemLibraryDTC", 16);
@@ -269,7 +264,7 @@ static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.data_sent_length = 0;
 	p->out_data.current_pdu_sent = 0;
 
-	free_pipe_auth_data(&p->auth);
+	TALLOC_FREE(p->auth.auth_ctx);
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
@@ -444,7 +439,6 @@ static bool pipe_spnego_auth_bind(struct pipes_struct *p,
 	talloc_steal(mem_ctx, response->data);
 
 	p->auth.auth_ctx = spnego_ctx;
-	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
 	DEBUG(10, ("SPNEGO auth started\n"));
@@ -565,7 +559,6 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 
 	/* We're finished with this bind - no more packets. */
 	p->auth.auth_ctx = schannel_auth;
-	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 	p->pipe_bound = True;
@@ -610,7 +603,6 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 	talloc_steal(mem_ctx, response->data);
 
 	p->auth.auth_ctx = ntlmssp_state;
-	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	DEBUG(10, (__location__ ": NTLMSSP auth started\n"));
@@ -722,7 +714,6 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
 	talloc_steal(mem_ctx, response->data);
 
 	p->auth.auth_ctx = gse_ctx;
-	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_KRB5;
 
 	DEBUG(10, ("KRB5 auth started\n"));
@@ -1263,7 +1254,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 err:
 
-	free_pipe_auth_data(&p->auth);
+	TALLOC_FREE(p->auth.auth_ctx);
 	return false;
 }
 
