@@ -4169,6 +4169,12 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      struct client_address *client_id,
 					      struct auth_serversupplied_info *server_info,
 					      struct messaging_context *msg_ctx);
+NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
+			       const struct ndr_interface_table *ndr_table,
+			       struct client_address *client_id,
+			       struct auth_serversupplied_info *server_info,
+			       struct messaging_context *msg_ctx,
+			       struct dcerpc_binding_handle **binding_handle);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				struct auth_serversupplied_info *serversupplied_info,

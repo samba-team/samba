@@ -417,25 +417,84 @@ static const struct dcerpc_binding_handle_ops rpcint_bh_ops = {
 	.do_ndr_print		= rpcint_bh_do_ndr_print,
 };
 
-/* initialise a wbint binding handle */
-static struct dcerpc_binding_handle *rpcint_binding_handle(struct pipes_struct *p)
+static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
+			const struct ndr_syntax_id *abstract_syntax,
+			const struct ndr_interface_table *ndr_table,
+			struct client_address *client_id,
+			struct auth_serversupplied_info *server_info,
+			struct messaging_context *msg_ctx,
+			struct dcerpc_binding_handle **binding_handle)
 {
 	struct dcerpc_binding_handle *h;
 	struct rpcint_bh_state *hs;
 
-	h = dcerpc_binding_handle_create(p,
+	if (ndr_table) {
+		abstract_syntax = &ndr_table->syntax_id;
+	}
+
+	h = dcerpc_binding_handle_create(mem_ctx,
 					 &rpcint_bh_ops,
 					 NULL,
-					 NULL, /* TODO */
+					 ndr_table,
 					 &hs,
 					 struct rpcint_bh_state,
 					 __location__);
 	if (h == NULL) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
-	hs->p = p;
+	hs->p = make_internal_rpc_pipe_p(hs,
+					 abstract_syntax,
+					 client_id,
+					 server_info,
+					 msg_ctx);
+	if (hs->p == NULL) {
+		TALLOC_FREE(h);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return h;
+	*binding_handle = h;
+	return NT_STATUS_OK;
+}
+/**
+ * @brief Create a new DCERPC Binding Handle which uses a local dispatch function.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  ndr_table Normally the ndr_table_<name>.
+ *
+ * @param[in]  client_id The info about the connected client.
+ *
+ * @param[in]  serversupplied_info The server supplied authentication function.
+ *
+ * @param[in]  msg_ctx   The messaging context that can be used by the server
+ *
+ * @param[out] binding_handle  A pointer to store the connected
+ *                             dcerpc_binding_handle
+ *
+ * @return              NT_STATUS_OK on success, a corresponding NT status if an
+ *                      error occured.
+ *
+ * @code
+ *   struct dcerpc_binding_handle *winreg_binding;
+ *   NTSTATUS status;
+ *
+ *   status = rpcint_binding_handle(tmp_ctx,
+ *                                  &ndr_table_winreg,
+ *                                  p->client_id,
+ *                                  p->server_info,
+ *                                  p->msg_ctx
+ *                                  &winreg_binding);
+ * @endcode
+ */
+NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
+			       const struct ndr_interface_table *ndr_table,
+			       struct client_address *client_id,
+			       struct auth_serversupplied_info *server_info,
+			       struct messaging_context *msg_ctx,
+			       struct dcerpc_binding_handle **binding_handle)
+{
+	return rpcint_binding_handle_ex(mem_ctx, NULL, ndr_table, client_id,
+					server_info, msg_ctx, binding_handle);
 }
 
 /**
@@ -475,6 +534,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
+	NTSTATUS status;
 
 	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
@@ -491,21 +551,19 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 		client_id = &unknown;
 	}
 
-	result->pipes_struct = make_internal_rpc_pipe_p(
-		result, abstract_syntax, client_id, serversupplied_info,
-		msg_ctx);
-	if (result->pipes_struct == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	result->max_xmit_frag = -1;
 	result->max_recv_frag = -1;
 
-	result->binding_handle = rpcint_binding_handle(result->pipes_struct);
-	if (result->binding_handle == NULL) {
+	status = rpcint_binding_handle_ex(result,
+					  abstract_syntax,
+					  NULL,
+					  client_id,
+					  serversupplied_info,
+					  msg_ctx,
+					  &result->binding_handle);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	*presult = result;
