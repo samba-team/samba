@@ -24,25 +24,6 @@
 #include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
 
-struct spnego_context {
-	enum spnego_mech mech;
-
-	bool do_sign;
-	bool do_seal;
-
-	union {
-		struct auth_ntlmssp_state *ntlmssp_state;
-		struct gse_context *gssapi_state;
-	} mech_ctx;
-
-	enum {
-		SPNEGO_CONV_INIT = 0,
-		SPNEGO_CONV_AUTH_MORE,
-		SPNEGO_CONV_AUTH_CONFIRM,
-		SPNEGO_CONV_AUTH_DONE
-	} state;
-};
-
 static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
 				    bool do_sign, bool do_seal,
 				    struct spnego_context **spnego_ctx)

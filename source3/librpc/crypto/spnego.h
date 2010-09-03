@@ -20,12 +20,29 @@
 #ifndef _CLI_SPNEGO_H_
 #define _CLI_SPENGO_H_
 
-struct spnego_context;
-
 enum spnego_mech {
 	SPNEGO_NONE = 0,
 	SPNEGO_KRB5,
 	SPNEGO_NTLMSSP
+};
+
+struct spnego_context {
+	enum spnego_mech mech;
+
+	union {
+		struct auth_ntlmssp_state *ntlmssp_state;
+		struct gse_context *gssapi_state;
+	} mech_ctx;
+
+	enum {
+		SPNEGO_CONV_INIT = 0,
+		SPNEGO_CONV_AUTH_MORE,
+		SPNEGO_CONV_AUTH_CONFIRM,
+		SPNEGO_CONV_AUTH_DONE
+	} state;
+
+	bool do_sign;
+	bool do_seal;
 };
 
 NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
