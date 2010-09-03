@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "libcli/security/privileges.h"
+#include "libcli/security/privileges_private.h"
 #include "librpc/gen_ndr/security.h"
 
 /* The use of strcasecmp here is safe, all the comparison strings are ASCII */

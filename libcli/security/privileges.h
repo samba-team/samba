@@ -45,23 +45,6 @@ typedef struct {
 	struct lsa_LUIDAttribute *set;
 } PRIVILEGE_SET;
 
-/*
-  return a privilege mask given a privilege id
-*/
-uint64_t sec_privilege_mask(enum sec_privilege privilege);
-
-/***************************************************************************
- put all privileges into a mask
-****************************************************************************/
-
-void se_priv_put_all_privileges(uint64_t *privilege_mask);
-
-/*********************************************************************
- Lookup the uint64_t value for a privilege name
-*********************************************************************/
-
-bool se_priv_from_name( const char *name, uint64_t *privilege_mask );
-
 const char* get_privilege_dispname( const char *name );
 
 /*******************************************************************
@@ -69,13 +52,6 @@ const char* get_privilege_dispname( const char *name );
 *******************************************************************/
 
 int num_privileges_in_short_list( void );
-
-/****************************************************************************
- Convert a LUID to a named string
-****************************************************************************/
-
-bool se_priv_to_privilege_set( PRIVILEGE_SET *set, uint64_t privilege_mask );
-bool privilege_set_to_se_priv( uint64_t *privilege_mask, struct lsa_PrivilegeSet *privset );
 
 /*
   map a privilege id to the wire string constant

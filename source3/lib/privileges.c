@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
+#include "libcli/security/privileges_private.h"
 
 #define PRIVPREFIX              "PRIV_"
 
