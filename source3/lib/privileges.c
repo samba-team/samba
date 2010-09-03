@@ -116,7 +116,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
  Store the privilege mask (set) for a given SID
 ****************************************************************************/
 
-static bool set_privileges( const struct dom_sid *sid, uint64_t *mask )
+static bool set_privileges( const struct dom_sid *sid, uint64_t mask )
 {
 	struct db_context *db = get_account_pol_db();
 	uint8_t privbuf[8];
@@ -139,7 +139,7 @@ static bool set_privileges( const struct dom_sid *sid, uint64_t *mask )
 	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
 	/* This writes the 64 bit bitmask out in little endian format */
-	SBVAL(privbuf,0,*mask);
+	SBVAL(privbuf,0,mask);
 
 	data.dptr  = privbuf;
 	data.dsize = sizeof(privbuf);
@@ -337,7 +337,7 @@ static bool grant_privilege_bitmap(const struct dom_sid *sid, const uint64_t pri
 
 	DEBUGADD( 10, ("new privilege mask:      0x%llx\n", (unsigned long long)new_mask));
 
-	return set_privileges( sid, &new_mask );
+	return set_privileges( sid, new_mask );
 }
 
 /*********************************************************************
@@ -391,7 +391,7 @@ static bool revoke_privilege_bitmap(const struct dom_sid *sid, const uint64_t pr
 
 	DEBUGADD( 10, ("new privilege mask:      0x%llx\n", (unsigned long long)mask));
 
-	return set_privileges( sid, &mask );
+	return set_privileges( sid, mask );
 }
 
 /***************************************************************************
