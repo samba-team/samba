@@ -34,7 +34,7 @@ struct auth_usersupplied_info {
 
 	bool was_mapped;	      /* Did the username map actually match? */
 	char *internal_username;      /* username after mapping */
-	const char *workstation_name; /* workstation name (netbios calling
+	char *workstation_name; /* workstation name (netbios calling
 				       * name) unicode string */
 
 	uint32 logon_parameters;
