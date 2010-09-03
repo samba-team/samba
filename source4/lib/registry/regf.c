@@ -1320,6 +1320,8 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	if (!strncmp((char *)data.data, "li", 2)) {
 		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct li_block li;
+		struct nk_block sub_nk;
+		int32_t i, j;
 
 		pull->data = data;
 
@@ -1336,10 +1338,30 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 			return WERR_BADFILE;
 		}
 
+		/* 
+		 * Find the position to store the pointer
+		 * Extensive testing reveils that at least on windows 7 subkeys 
+		 * *MUST* be stored in alphabetical order
+		 */
+		for (i = 0; i < li.key_count; i++) {
+			/* Get the nk */
+ 			hbin_get_tdr(regf, li.nk_offset[i], regf,
+					(tdr_pull_fn_t) tdr_pull_nk_block, &sub_nk);
+			if (strcasecmp(name, sub_nk.key_name) < 0) {
+				break;
+			}
+		}
+
 		li.nk_offset = talloc_realloc(regf, li.nk_offset,
 					      uint32_t, li.key_count+1);
 		W_ERROR_HAVE_NO_MEMORY(li.nk_offset);
-		li.nk_offset[li.key_count] = key_offset;
+
+		/* Move everything behind this offset */
+		for (j = li.key_count - 1; j >= i; j--) {
+			li.nk_offset[j+1] = li.nk_offset[j];
+		}
+			
+		li.nk_offset[i] = key_offset;
 		li.key_count++;
 		*ret = hbin_store_tdr_resize(regf,
 					     (tdr_push_fn_t)tdr_push_li_block,
@@ -1349,6 +1371,8 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct lf_block lf;
+		struct nk_block sub_nk;
+		int32_t i, j;
 
 		pull->data = data;
 
@@ -1360,11 +1384,31 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
 
+		/* 
+		 * Find the position to store the hash record
+		 * Extensive testing reveils that at least on windows 7 subkeys 
+		 * *MUST* be stored in alphabetical order
+		 */
+		for (i = 0; i < lf.key_count; i++) {
+			/* Get the nk */
+ 			hbin_get_tdr(regf, lf.hr[i].nk_offset, regf,
+					(tdr_pull_fn_t) tdr_pull_nk_block, &sub_nk);
+			if (strcasecmp(name, sub_nk.key_name) < 0) {
+				break;
+			}
+		}
+
 		lf.hr = talloc_realloc(regf, lf.hr, struct hash_record,
 				       lf.key_count+1);
 		W_ERROR_HAVE_NO_MEMORY(lf.hr);
-		lf.hr[lf.key_count].nk_offset = key_offset;
-		lf.hr[lf.key_count].hash = talloc_strndup(lf.hr, name, 4);
+
+		/* Move everything behind this hash record */
+		for (j = lf.key_count - 1; j >= i; j--) {
+			lf.hr[j+1] = lf.hr[j];
+		}
+
+		lf.hr[i].nk_offset = key_offset;
+		lf.hr[i].hash = talloc_strndup(lf.hr, name, 4);
 		W_ERROR_HAVE_NO_MEMORY(lf.hr[lf.key_count].hash);
 		lf.key_count++;
 		*ret = hbin_store_tdr_resize(regf,
@@ -1375,6 +1419,8 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct tdr_pull *pull = tdr_pull_init(regf);
 		struct lh_block lh;
+		struct nk_block sub_nk;
+		int32_t i, j;
 
 		pull->data = data;
 
@@ -1386,11 +1432,31 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
 
+		/* 
+		 * Find the position to store the hash record
+		 * Extensive testing reveils that at least on windows 7 subkeys 
+		 * *MUST* be stored in alphabetical order
+		 */
+		for (i = 0; i < lh.key_count; i++) {
+			/* Get the nk */
+ 			hbin_get_tdr(regf, lh.hr[i].nk_offset, regf,
+					(tdr_pull_fn_t) tdr_pull_nk_block, &sub_nk);
+			if (strcasecmp(name, sub_nk.key_name) < 0) {
+				break;
+			}
+		}
+
 		lh.hr = talloc_realloc(regf, lh.hr, struct lh_hash,
 				       lh.key_count+1);
 		W_ERROR_HAVE_NO_MEMORY(lh.hr);
-		lh.hr[lh.key_count].nk_offset = key_offset;
-		lh.hr[lh.key_count].base37 = regf_create_lh_hash(name);
+
+		/* Move everything behind this hash record */
+		for (j = lh.key_count - 1; j >= i; j--) {
+			lh.hr[j+1] = lh.hr[j];
+		}
+
+		lh.hr[i].nk_offset = key_offset;
+		lh.hr[i].base37 = regf_create_lh_hash(name);
 		lh.key_count++;
 		*ret = hbin_store_tdr_resize(regf,
 					     (tdr_push_fn_t)tdr_push_lh_block,
