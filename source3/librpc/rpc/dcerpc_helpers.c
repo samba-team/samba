@@ -266,6 +266,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 {
 	size_t max_len;
 	size_t mod_len;
+	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	enum spnego_mech auth_type;
 	void *auth_ctx;
@@ -303,8 +304,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	/* Treat the same for all authenticated rpc requests. */
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
-
-		status = spnego_get_negotiated_mech(auth->a_u.spnego_state,
+		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
+						   struct spnego_context);
+		status = spnego_get_negotiated_mech(spnego_ctx,
 						    &auth_type, &auth_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -315,8 +317,8 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 			break;
 
 		case SPNEGO_KRB5:
-			gse_ctx = talloc_get_type(auth_ctx,
-						  struct gse_context);
+			gse_ctx = talloc_get_type_abort(auth_ctx,
+							struct gse_context);
 			if (!gse_ctx) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -338,7 +340,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		break;
 
 	case DCERPC_AUTH_TYPE_KRB5:
-		*auth_len = gse_get_signature_length(auth->a_u.gssapi_state,
+		gse_ctx = talloc_get_type_abort(auth->auth_ctx,
+						struct gse_context);
+		*auth_len = gse_get_signature_length(gse_ctx,
 						     seal, max_len);
 		break;
 
@@ -755,6 +759,10 @@ static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
+	struct schannel_state *schannel_auth;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct spnego_context *spnego_ctx;
+	struct gse_context *gse_ctx;
 	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
 	DATA_BLOB auth_info;
 	DATA_BLOB auth_blob;
@@ -801,21 +809,29 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		status = NT_STATUS_OK;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		status = add_spnego_auth_footer(auth->a_u.spnego_state,
+		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
+						   struct spnego_context);
+		status = add_spnego_auth_footer(spnego_ctx,
 						auth->auth_level, rpc_out);
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		status = add_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
+		ntlmssp_ctx = talloc_get_type_abort(auth->auth_ctx,
+						struct auth_ntlmssp_state);
+		status = add_ntlmssp_auth_footer(ntlmssp_ctx,
 						 auth->auth_level,
 						 rpc_out);
 		break;
 	case DCERPC_AUTH_TYPE_SCHANNEL:
-		status = add_schannel_auth_footer(auth->a_u.schannel_auth,
+		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
+						      struct schannel_state);
+		status = add_schannel_auth_footer(schannel_auth,
 						  auth->auth_level,
 						  rpc_out);
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = add_gssapi_auth_footer(auth->a_u.gssapi_state,
+		gse_ctx = talloc_get_type_abort(auth->auth_ctx,
+						struct gse_context);
+		status = add_gssapi_auth_footer(gse_ctx,
 						auth->auth_level,
 						rpc_out);
 		break;
@@ -846,6 +862,10 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   DATA_BLOB *raw_pkt,
 			   size_t *pad_len)
 {
+	struct schannel_state *schannel_auth;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct spnego_context *spnego_ctx;
+	struct gse_context *gse_ctx;
 	NTSTATUS status;
 	struct dcerpc_auth auth_info;
 	uint32_t auth_length;
@@ -911,8 +931,9 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-
-		status = get_spnego_auth_footer(pkt, auth->a_u.spnego_state,
+		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
+						   struct spnego_context);
+		status = get_spnego_auth_footer(pkt, spnego_ctx,
 						auth->auth_level,
 						&data, &full_pkt,
 						&auth_info.credentials);
@@ -925,7 +946,9 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("NTLMSSP auth\n"));
 
-		status = get_ntlmssp_auth_footer(auth->a_u.auth_ntlmssp_state,
+		ntlmssp_ctx = talloc_get_type_abort(auth->auth_ctx,
+						struct auth_ntlmssp_state);
+		status = get_ntlmssp_auth_footer(ntlmssp_ctx,
 						 auth->auth_level,
 						 &data, &full_pkt,
 						 &auth_info.credentials);
@@ -938,8 +961,9 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("SCHANNEL auth\n"));
 
-		status = get_schannel_auth_footer(pkt,
-						  auth->a_u.schannel_auth,
+		schannel_auth = talloc_get_type_abort(auth->auth_ctx,
+						      struct schannel_state);
+		status = get_schannel_auth_footer(pkt, schannel_auth,
 						  auth->auth_level,
 						  &data, &full_pkt,
 						  &auth_info.credentials);
@@ -952,8 +976,9 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("KRB5 auth\n"));
 
-		status = get_gssapi_auth_footer(pkt,
-						auth->a_u.gssapi_state,
+		gse_ctx = talloc_get_type_abort(auth->auth_ctx,
+						struct gse_context);
+		status = get_gssapi_auth_footer(pkt, gse_ctx,
 						auth->auth_level,
 						&data, &full_pkt,
 						&auth_info.credentials);

@@ -1426,12 +1426,16 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		/* Get the pipe session key from the creds. */
 		memcpy(pipe_session_key, creds->session_key, 16);
 	} else {
+		struct schannel_state *schannel_auth;
 		/* Get the pipe session key from the schannel. */
 		if ((p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL)
-		    || (p->auth.a_u.schannel_auth == NULL)) {
+		    || (p->auth.auth_ctx == NULL)) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
-		memcpy(pipe_session_key, p->auth.a_u.schannel_auth->creds->session_key, 16);
+
+		schannel_auth = talloc_get_type_abort(p->auth.auth_ctx,
+						      struct schannel_state);
+		memcpy(pipe_session_key, schannel_auth->creds->session_key, 16);
 	}
 
 	switch (r->in.validation_level) {

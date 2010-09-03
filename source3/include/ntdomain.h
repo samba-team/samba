@@ -101,12 +101,7 @@ struct pipe_auth_data {
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 
-	union {
-		struct schannel_state *schannel_auth;
-		struct auth_ntlmssp_state *auth_ntlmssp_state;
-		struct gse_context *gssapi_state;
-		struct spnego_context *spnego_state;
-	} a_u;
+	void *auth_ctx;
 
 	/* Only the client code uses these 3 for now */
 	char *domain;

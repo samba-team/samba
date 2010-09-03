@@ -86,32 +86,9 @@ static void dump_pdu_region(const char *name, int v,
 	TALLOC_FREE(fname);
 }
 
-static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->a_u.auth_ntlmssp_state);
-}
-
-static void free_pipe_schannel_auth_data(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->a_u.schannel_auth);
-}
-
-static void free_pipe_gssapi_auth_data(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->a_u.gssapi_state);
-}
-
-static void free_pipe_spnego_auth_data(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->a_u.spnego_state);
-}
-
 static void free_pipe_auth_data(struct pipe_auth_data *auth)
 {
-	if (auth->auth_data_free_func) {
-		(*auth->auth_data_free_func)(auth);
-		auth->auth_data_free_func = NULL;
-	}
+	TALLOC_FREE(auth->auth_ctx);
 }
 
 static DATA_BLOB generic_session_key(void)
@@ -466,8 +443,8 @@ static bool pipe_spnego_auth_bind(struct pipes_struct *p,
 	/* Make sure data is bound to the memctx, to be freed the caller */
 	talloc_steal(mem_ctx, response->data);
 
-	p->auth.a_u.spnego_state = spnego_ctx;
-	p->auth.auth_data_free_func = &free_pipe_spnego_auth_data;
+	p->auth.auth_ctx = spnego_ctx;
+	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 
 	DEBUG(10, ("SPNEGO auth started\n"));
@@ -491,6 +468,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds;
 	DATA_BLOB session_key;
 	enum ndr_err_code ndr_err;
+	struct schannel_state *schannel_auth;
 
 	ndr_err = ndr_pull_struct_blob(
 			&auth_info->credentials, mem_ctx, &neg,
@@ -525,16 +503,16 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return False;
 	}
 
-	p->auth.a_u.schannel_auth = talloc(p, struct schannel_state);
-	if (!p->auth.a_u.schannel_auth) {
+	schannel_auth = talloc(p, struct schannel_state);
+	if (!schannel_auth) {
 		TALLOC_FREE(creds);
 		return False;
 	}
 
-	p->auth.a_u.schannel_auth->state = SCHANNEL_STATE_START;
-	p->auth.a_u.schannel_auth->seq_num = 0;
-	p->auth.a_u.schannel_auth->initiator = false;
-	p->auth.a_u.schannel_auth->creds = creds;
+	schannel_auth->state = SCHANNEL_STATE_START;
+	schannel_auth->seq_num = 0;
+	schannel_auth->initiator = false;
+	schannel_auth->creds = creds;
 
 	/*
 	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
@@ -586,7 +564,8 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		neg.oem_netbios_domain.a, neg.oem_netbios_computer.a));
 
 	/* We're finished with this bind - no more packets. */
-	p->auth.auth_data_free_func = &free_pipe_schannel_auth_data;
+	p->auth.auth_ctx = schannel_auth;
+	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 
 	p->pipe_bound = True;
@@ -603,6 +582,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 				   struct dcerpc_auth *auth_info,
 				   DATA_BLOB *response)
 {
+	struct auth_ntlmssp_state *ntlmssp_state = NULL;
         NTSTATUS status;
 
 	if (strncmp((char *)auth_info->credentials.data, "NTLMSSP", 7) != 0) {
@@ -619,7 +599,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 					   true,
 					   &auth_info->credentials,
 					   response,
-					   &p->auth.a_u.auth_ntlmssp_state);
+					   &ntlmssp_state);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
 			  nt_errstr(status)));
@@ -629,7 +609,8 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 	/* Make sure data is bound to the memctx, to be freed the caller */
 	talloc_steal(mem_ctx, response->data);
 
-	p->auth.auth_data_free_func = &free_pipe_ntlmssp_auth_data;
+	p->auth.auth_ctx = ntlmssp_state;
+	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	DEBUG(10, (__location__ ": NTLMSSP auth started\n"));
@@ -740,8 +721,8 @@ static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
 	/* Make sure data is bound to the memctx, to be freed the caller */
 	talloc_steal(mem_ctx, response->data);
 
-	p->auth.a_u.gssapi_state = gse_ctx;
-	p->auth.auth_data_free_func = &free_pipe_gssapi_auth_data;
+	p->auth.auth_ctx = gse_ctx;
+	p->auth.auth_data_free_func = &free_pipe_auth_data;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_KRB5;
 
 	DEBUG(10, ("KRB5 auth started\n"));
@@ -816,25 +797,28 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
 	enum spnego_mech auth_type;
 	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	void *mech_ctx;
 	NTSTATUS status;
 
 	switch (p->auth.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		if (!pipe_ntlmssp_verify_final(p,
-					p->auth.a_u.auth_ntlmssp_state,
-					p->auth.auth_level,
-					p->client_id, &p->syntax,
-					&p->server_info)) {
+		ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						    struct auth_ntlmssp_state);
+		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
+						p->auth.auth_level,
+						p->client_id, &p->syntax,
+						&p->server_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = pipe_gssapi_verify_final(p,
-					p->auth.a_u.gssapi_state,
-					p->client_id,
-					&p->server_info);
+		gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						struct gse_context);
+		status = pipe_gssapi_verify_final(p, gse_ctx,
+						  p->client_id,
+						  &p->server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("gssapi bind failed with: %s",
 				  nt_errstr(status)));
@@ -842,7 +826,9 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		}
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		status = spnego_get_negotiated_mech(p->auth.a_u.spnego_state,
+		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						   struct spnego_context);
+		status = spnego_get_negotiated_mech(spnego_ctx,
 						    &auth_type, &mech_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Bad SPNEGO state (%s)\n",
@@ -1185,6 +1171,9 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	DATA_BLOB response = data_blob_null;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct spnego_context *spnego_ctx;
+	struct gse_context *gse_ctx;
 	NTSTATUS status;
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
@@ -1223,17 +1212,23 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	switch (auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		status = ntlmssp_server_step(p->auth.a_u.auth_ntlmssp_state,
+		ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						    struct auth_ntlmssp_state);
+		status = ntlmssp_server_step(ntlmssp_ctx,
 					     pkt, &auth_info.credentials,
 					     &response);
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
-		status = gssapi_server_step(p->auth.a_u.gssapi_state,
+		gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						struct gse_context);
+		status = gssapi_server_step(gse_ctx,
 					    pkt, &auth_info.credentials,
 					    &response);
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		status = spnego_server_step(p->auth.a_u.spnego_state,
+		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						   struct spnego_context);
+		status = spnego_server_step(spnego_ctx,
 					    pkt, &auth_info.credentials,
 					    &response);
 		break;
@@ -1288,6 +1283,9 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
 	int pad_len = 0;
+	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct spnego_context *spnego_ctx;
+	struct gse_context *gse_ctx;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
@@ -1357,20 +1355,26 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 		switch (auth_info.auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			status = spnego_server_step(p->auth.a_u.spnego_state,
+			spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+							struct spnego_context);
+			status = spnego_server_step(spnego_ctx,
 						    pkt,
 						    &auth_info.credentials,
 						    &auth_resp);
 			break;
 
 		case DCERPC_AUTH_TYPE_KRB5:
-			status = gssapi_server_step(p->auth.a_u.gssapi_state,
+			gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+							struct gse_context);
+			status = gssapi_server_step(gse_ctx,
 						    pkt,
 						    &auth_info.credentials,
 						    &auth_resp);
 			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
-			status = ntlmssp_server_step(p->auth.a_u.auth_ntlmssp_state,
+			ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
+						    struct auth_ntlmssp_state);
+			status = ntlmssp_server_step(ntlmssp_ctx,
 						     pkt,
 						     &auth_info.credentials,
 						     &auth_resp);
