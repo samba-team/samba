@@ -38,6 +38,18 @@
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
 
+/*
+  a pending irpc call
+*/
+struct irpc_request {
+	struct messaging_context *msg_ctx;
+	int callid;
+	struct {
+		void (*handler)(struct irpc_request *irpc, struct irpc_message *m);
+		void *private_data;
+	} incoming;
+};
+
 struct messaging_context {
 	struct server_id server_id;
 	struct socket_context *sock;
@@ -679,29 +691,11 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_message *m)
 {
 	struct irpc_request *irpc;
-	enum ndr_err_code ndr_err;
 
 	irpc = (struct irpc_request *)idr_find(msg_ctx->idr, m->header.callid);
 	if (irpc == NULL) return;
 
-	if (irpc->incoming.handler) {
-		irpc->incoming.handler(irpc, m);
-		return;
-	}
-
-	/* parse the reply data */
-	ndr_err = irpc->table->calls[irpc->callnum].ndr_pull(m->ndr, NDR_OUT, irpc->r);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		irpc->status = m->header.status;
-		talloc_steal(irpc->mem_ctx, m);
-	} else {
-		irpc->status = ndr_map_error2ntstatus(ndr_err);
-		talloc_steal(irpc, m);
-	}
-	irpc->done = true;
-	if (irpc->async.fn) {
-		irpc->async.fn(irpc);
-	}
+	irpc->incoming.handler(irpc, m);
 }
 
 /*
@@ -846,132 +840,7 @@ static int irpc_destructor(struct irpc_request *irpc)
 		irpc->callid = -1;
 	}
 
-	if (irpc->reject_free) {
-		return -1;
-	}
 	return 0;
-}
-
-/*
-  timeout a irpc request
-*/
-static void irpc_timeout(struct tevent_context *ev, struct tevent_timer *te, 
-			 struct timeval t, void *private_data)
-{
-	struct irpc_request *irpc = talloc_get_type(private_data, struct irpc_request);
-	irpc->status = NT_STATUS_IO_TIMEOUT;
-	irpc->done = true;
-	if (irpc->async.fn) {
-		irpc->async.fn(irpc);
-	}
-}
-
-
-/*
-  make a irpc call - async send
-*/
-struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
-				    struct server_id server_id, 
-				    const struct ndr_interface_table *table, 
-				    int callnum, void *r, TALLOC_CTX *ctx)
-{
-	struct irpc_header header;
-	struct ndr_push *ndr;
-	NTSTATUS status;
-	DATA_BLOB packet;
-	struct irpc_request *irpc;
-	enum ndr_err_code ndr_err;
-
-	irpc = talloc(msg_ctx, struct irpc_request);
-	if (irpc == NULL) goto failed;
-
-	irpc->msg_ctx  = msg_ctx;
-	irpc->table    = table;
-	irpc->callnum  = callnum;
-	irpc->callid   = idr_get_new(msg_ctx->idr, irpc, UINT16_MAX);
-	if (irpc->callid == -1) goto failed;
-	irpc->r        = r;
-	irpc->done     = false;
-	irpc->async.fn = NULL;
-	irpc->mem_ctx  = ctx;
-	irpc->reject_free = false;
-	irpc->incoming.handler = NULL;
-	irpc->incoming.private_data = NULL;
-
-	talloc_set_destructor(irpc, irpc_destructor);
-
-	/* setup the header */
-	header.uuid = table->syntax_id.uuid;
-
-	header.if_version = table->syntax_id.if_version;
-	header.callid     = irpc->callid;
-	header.callnum    = callnum;
-	header.flags      = 0;
-	header.status     = NT_STATUS_OK;
-
-	/* construct the irpc packet */
-	ndr = ndr_push_init_ctx(irpc);
-	if (ndr == NULL) goto failed;
-
-	ndr_err = ndr_push_irpc_header(ndr, NDR_SCALARS|NDR_BUFFERS, &header);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
-
-	ndr_err = table->calls[callnum].ndr_push(ndr, NDR_IN, r);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
-
-	/* and send it */
-	packet = ndr_push_blob(ndr);
-	status = messaging_send(msg_ctx, server_id, MSG_IRPC, &packet);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	event_add_timed(msg_ctx->event.ev, irpc, 
-			timeval_current_ofs(IRPC_CALL_TIMEOUT, 0), 
-			irpc_timeout, irpc);
-
-	talloc_free(ndr);
-	return irpc;
-
-failed:
-	talloc_free(irpc);
-	return NULL;
-}
-
-/*
-  wait for a irpc reply
-*/
-NTSTATUS irpc_call_recv(struct irpc_request *irpc)
-{
-	NTSTATUS status;
-
-	NT_STATUS_HAVE_NO_MEMORY(irpc);
-
-	irpc->reject_free = true;
-
-	while (!irpc->done) {
-		if (event_loop_once(irpc->msg_ctx->event.ev) != 0) {
-			return NT_STATUS_CONNECTION_DISCONNECTED;
-		}
-	}
-
-	irpc->reject_free = false;
-
-	status = irpc->status;
-	talloc_free(irpc);
-	return status;
-}
-
-/*
-  perform a synchronous irpc request
-*/
-NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
-		   struct server_id server_id, 
-		   const struct ndr_interface_table *table, 
-		   int callnum, void *r,
-		   TALLOC_CTX *mem_ctx)
-{
-	struct irpc_request *irpc = irpc_call_send(msg_ctx, server_id, 
-						   table, callnum, r, mem_ctx);
-	return irpc_call_recv(irpc);
 }
 
 /*
@@ -1201,19 +1070,12 @@ static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->irpc->msg_ctx  = hs->msg_ctx;
-	state->irpc->table    = hs->table;
-	state->irpc->callnum  = state->opnum;
 	state->irpc->callid   = idr_get_new(hs->msg_ctx->idr,
 					    state->irpc, UINT16_MAX);
 	if (state->irpc->callid == -1) {
 		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
 		return tevent_req_post(req, ev);
 	}
-	state->irpc->r        = NULL;
-	state->irpc->done     = false;
-	state->irpc->async.fn = NULL;
-	state->irpc->mem_ctx  = state;
-	state->irpc->reject_free = false;
 	state->irpc->incoming.handler = irpc_bh_raw_call_incoming_handler;
 	state->irpc->incoming.private_data = req;
 

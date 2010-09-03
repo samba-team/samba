@@ -54,49 +54,11 @@ typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
                           NDR_ ## funcname, \
 			  (irpc_function_t)function, private_data)
 
-/* make a irpc call */
-#define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
-   irpc_call(msg_ctx, server_id, &ndr_table_ ## pipename, NDR_ ## funcname, ptr, ctx)
-
-#define IRPC_CALL_SEND(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
-   irpc_call_send(msg_ctx, server_id, &ndr_table_ ## pipename, NDR_ ## funcname, ptr, ctx)
-
-
-/*
-  a pending irpc call
-*/
-struct irpc_request {
-	struct messaging_context *msg_ctx;
-	const struct ndr_interface_table *table;
-	int callnum;
-	int callid;
-	void *r;
-	NTSTATUS status;
-	bool done;
-	bool reject_free;
-	TALLOC_CTX *mem_ctx;
-	struct {
-		void (*fn)(struct irpc_request *);
-		void *private_data;
-	} async;
-	struct {
-		void (*handler)(struct irpc_request *irpc, struct irpc_message *m);
-		void *private_data;
-	} incoming;
-};
+struct ndr_interface_table;
 
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct ndr_interface_table *table, 
 		       int call, irpc_function_t fn, void *private_data);
-struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
-				    struct server_id server_id, 
-				    const struct ndr_interface_table *table, 
-				    int callnum, void *r, TALLOC_CTX *ctx);
-NTSTATUS irpc_call_recv(struct irpc_request *irpc);
-NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
-		   struct server_id server_id, 
-		   const struct ndr_interface_table *table, 
-		   int callnum, void *r, TALLOC_CTX *ctx);
 
 struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 					struct messaging_context *msg_ctx,
