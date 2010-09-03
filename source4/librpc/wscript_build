@@ -639,159 +639,151 @@ bld.SAMBA_LIBRARY('dcerpc',
 
 bld.SAMBA_SUBSYSTEM('pyrpc_util',
 	source='rpc/pyrpc_util.c',
-	public_deps='PYTALLOC',
+	public_deps='PYTALLOC pyparam_util pycredentials dcerpc',
         needs_python=True,
 	)
 
 
 bld.SAMBA_PYTHON('python_dcerpc',
 	source='rpc/pyrpc.c',
-	public_deps='LIBCLI_SMB LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG pycredentials pyparam_util',
+	public_deps='LIBCLI_SMB LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
 	realname='samba/dcerpc/base.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_echo',
 	source='../../librpc/gen_ndr/py_echo.c',
-	deps='RPC_NDR_ECHO PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_ECHO PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/echo.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_winreg',
 	source='../../librpc/gen_ndr/py_winreg.c',
-	deps='RPC_NDR_WINREG PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_WINREG PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/winreg.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_dcerpc_misc',
 	source='../../librpc/gen_ndr/py_misc.c',
-	deps='PYTALLOC python_dcerpc NDR_MISC NDR_KRB5PAC',
+	deps='PYTALLOC pyrpc_util NDR_MISC NDR_KRB5PAC',
 	realname='samba/dcerpc/misc.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_initshutdown',
 	source='../../librpc/gen_ndr/py_initshutdown.c',
-	deps='RPC_NDR_INITSHUTDOWN PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_INITSHUTDOWN PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/initshutdown.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_epmapper',
 	source='../../librpc/gen_ndr/py_epmapper.c',
-	deps='dcerpc PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='dcerpc PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/epmapper.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_mgmt',
 	source='../../librpc/gen_ndr/py_mgmt.c',
-	deps='PYTALLOC param pycredentials dcerpc python_dcerpc',
+	deps='PYTALLOC dcerpc pyrpc_util',
 	realname='samba/dcerpc/mgmt.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_atsvc',
 	source='../../librpc/gen_ndr/py_atsvc.c',
-	deps='dcerpc_atsvc PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='dcerpc_atsvc PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/atsvc.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_dcerpc_nbt',
 	source='../../librpc/gen_ndr/py_nbt.c',
-	deps='NDR_NBT PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='NDR_NBT PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/nbt.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_samr',
 	source='../../librpc/gen_ndr/py_samr.c',
-	deps='dcerpc_samr PYTALLOC pycredentials pyparam_util python_dcerpc',
+	deps='dcerpc_samr PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/samr.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_svcctl',
 	source='../../librpc/gen_ndr/py_svcctl.c',
-	deps='RPC_NDR_SVCCTL PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_SVCCTL PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/svcctl.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_lsa',
 	source='../../librpc/gen_ndr/py_lsa.c',
-	deps='RPC_NDR_LSA PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_LSA PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/lsa.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_wkssvc',
 	source='../../librpc/gen_ndr/py_wkssvc.c',
-	deps='RPC_NDR_WKSSVC PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_WKSSVC PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/wkssvc.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_dfs',
 	source='../../librpc/gen_ndr/py_dfs.c',
-	deps='RPC_NDR_DFS PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_DFS PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/dfs.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_unixinfo',
 	source='../../librpc/gen_ndr/py_unixinfo.c',
-	deps='RPC_NDR_UNIXINFO PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_UNIXINFO PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/unixinfo.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_irpc',
 	source='gen_ndr/py_irpc.c',
-	deps='RPC_NDR_IRPC PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_IRPC PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/irpc.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_drsuapi',
 	source='../../librpc/gen_ndr/py_drsuapi.c',
-	deps='RPC_NDR_DRSUAPI PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_DRSUAPI PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/drsuapi.so'
 	)
 
-
-bld.SAMBA_PYTHON('python_drsblobs',
-	source='../../librpc/gen_ndr/py_drsblobs.c',
-	deps='RPC_NDR_DRSBLOBS PYTALLOC pyparam_util pycredentials python_dcerpc',
-	realname='samba/dcerpc/drsblobs.so'
-	)
-
-
 bld.SAMBA_PYTHON('python_dcerpc_security',
 	source='../../librpc/gen_ndr/py_security.c',
-	deps='PYTALLOC python_dcerpc_misc python_dcerpc NDR_SECURITY',
+	deps='PYTALLOC pyrpc_util NDR_SECURITY',
 	realname='samba/dcerpc/security.so'
 	)
 
 bld.SAMBA_PYTHON('python_dcerpc_drsblobs',
-	source='../../librpc/gen_ndr/py_drsblobs.c ../../librpc/gen_ndr/ndr_drsblobs_c.c',
-	deps='PYTALLOC python_dcerpc_misc python_dcerpc NDR_SECURITY',
+	source='../../librpc/gen_ndr/py_drsblobs.c',
+	deps='PYTALLOC pyrpc_util NDR_SECURITY RPC_NDR_DRSBLOBS',
 	realname='samba/dcerpc/drsblobs.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	source='../../librpc/gen_ndr/py_xattr.c',
-	deps='PYTALLOC python_dcerpc_misc python_dcerpc python_dcerpc_security NDR_XATTR RPC_NDR_XATTR',
+	deps='PYTALLOC pyrpc_util RPC_NDR_XATTR',
 	realname='samba/dcerpc/xattr.so'
 	)
 
 bld.SAMBA_PYTHON('python_netlogon',
 	source='../../librpc/gen_ndr/py_netlogon.c',
-	deps='RPC_NDR_NETLOGON PYTALLOC pyparam_util pycredentials python_dcerpc',
+	deps='RPC_NDR_NETLOGON PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/netlogon.so'
 	)
 

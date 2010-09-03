@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -21,86 +21,13 @@
 #include "includes.h"
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
-#include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 #include "param/pyparam.h"
+#include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/pyrpc_util.h"
 #include "auth/credentials/pycredentials.h"
 
-static void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status);
-
-static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
-					const struct PyNdrRpcMethodDef *md,
-					PyObject *args, PyObject *kwargs)
-{
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-	void *r;
-	PyObject *result = Py_None;
-
-	if (md->pack_in_data == NULL || md->unpack_out_data == NULL) {
-		PyErr_SetString(PyExc_NotImplementedError, "No marshalling code available yet");
-		return NULL;
-	}
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	r = talloc_zero_size(mem_ctx, md->table->calls[md->opnum].struct_size);
-	if (r == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	if (!md->pack_in_data(args, kwargs, r)) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	status = md->call(iface->binding_handle, mem_ctx, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetDCERPCStatus(iface->pipe, status);
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	result = md->unpack_out_data(r);
-
-	talloc_free(mem_ctx);
-	return result;
-}
-
-static PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
-{	
-	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
-	const struct PyNdrRpcMethodDef *md = (const struct PyNdrRpcMethodDef *)wrapped;
-
-	return py_dcerpc_run_function(iface, md, args, kwargs);
-}
-
-
-bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpcMethodDef *mds)
-{
-	int i;
-	for (i = 0; mds[i].name; i++) {
-		PyObject *ret;
-		struct wrapperbase *wb = (struct wrapperbase *)calloc(sizeof(struct wrapperbase), 1);
-
-		wb->name = discard_const_p(char, mds[i].name);
-		wb->flags = PyWrapperFlag_KEYWORDS;
-		wb->wrapper = (wrapperfunc)py_dcerpc_call_wrapper;
-		wb->doc = discard_const_p(char, mds[i].doc);
-		
-		ret = PyDescr_NewWrapper(ifacetype, wb, discard_const_p(void, &mds[i]));
-
-		PyDict_SetItemString(ifacetype->tp_dict, mds[i].name, 
-				     (PyObject *)ret);
-	}
-
-	return true;
-}
+staticforward PyTypeObject dcerpc_InterfaceType;
 
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
@@ -144,13 +71,13 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 
 	PyErr_SetString(PyExc_TypeError, "Expected UUID or syntax id tuple");
 	return false;
-}	
+}
 
 static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 {
 	const char *server_name;
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
-	
+
 	server_name = dcerpc_server_name(iface->pipe);
 	if (server_name == NULL)
 		Py_RETURN_NONE;
@@ -204,14 +131,6 @@ static PyMemberDef dcerpc_interface_members[] = {
 	  discard_const_p(char, "request timeout, in seconds") },
 	{ NULL }
 };
-
-static void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
-{
-	if (p && NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-		status = dcerpc_fault_to_nt_status(p->last_fault_code);
-	}
-	PyErr_SetNTSTATUS(status);
-}
 
 static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -290,84 +209,6 @@ static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject
 	}
 
 	Py_RETURN_NONE;
-}
-
-PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table)
-{
-	dcerpc_InterfaceObject *ret;
-	const char *binding_string;
-	struct cli_credentials *credentials;
-	struct loadparm_context *lp_ctx = NULL;
-	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;
-	TALLOC_CTX *mem_ctx = NULL;
-	struct tevent_context *event_ctx;
-	NTSTATUS status;
-
-	const char *kwnames[] = {
-		"binding", "lp_ctx", "credentials", "basis_connection", NULL
-	};
-
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO:samr", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {
-		return NULL;
-	}
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
-	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	status = dcerpc_init(lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetNTSTATUS(status);
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-	credentials = cli_credentials_from_py_object(py_credentials);
-	if (credentials == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-	ret = PyObject_New(dcerpc_InterfaceObject, type);
-	ret->mem_ctx = mem_ctx;
-
-	event_ctx = s4_event_context_init(ret->mem_ctx);
-
-	if (py_basis != Py_None) {
-		struct dcerpc_pipe *base_pipe;
-
-		if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {
-			PyErr_SetString(PyExc_ValueError, "basis_connection must be a DCE/RPC connection");
-			talloc_free(mem_ctx);
-			return NULL;
-		}
-
-		base_pipe = talloc_reference(mem_ctx, ((dcerpc_InterfaceObject *)py_basis)->pipe);
-
-		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
-
-		ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
-	} else {
-		status = dcerpc_pipe_connect(event_ctx, &ret->pipe, binding_string,
-		             table, credentials, event_ctx, lp_ctx);
-	}
-	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetNTSTATUS(status);
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
-	ret->binding_handle = ret->pipe->binding_handle;
-	return (PyObject *)ret;
 }
 
 static PyMethodDef dcerpc_interface_methods[] = {
@@ -479,7 +320,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 	return (PyObject *)ret;
 }
 
-PyTypeObject dcerpc_InterfaceType = {
+static PyTypeObject dcerpc_InterfaceType = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "dcerpc.ClientConnection",
 	.tp_basicsize = sizeof(dcerpc_InterfaceObject),

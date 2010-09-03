@@ -33,7 +33,7 @@ class RpcEchoTests(RpcInterfaceTestCase):
         self.assertEquals(3, self.conn2.AddOne(2))
 
     def test_abstract_syntax(self):
-        self.assertEquals(("60a15ec5-4de8-11d7-a637-005056a20182", 1), 
+        self.assertEquals(("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                           self.conn.abstract_syntax)
 
     def test_addone(self):

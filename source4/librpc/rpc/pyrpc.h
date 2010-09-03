@@ -35,40 +35,11 @@
 #define dom_sid2_Check dom_sid_Check
 #define dom_sid28_Check dom_sid_Check
 
-/* This macro is only provided by Python >= 2.3 */
-#ifndef PyAPI_DATA
-#   define PyAPI_DATA(RTYPE) extern RTYPE
-#endif
-
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding_handle *binding_handle;
 } dcerpc_InterfaceObject;
-
-PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
-
-#define PyErr_FromNdrError(err) Py_BuildValue("(is)", err, ndr_map_error2string(err))
-
-#define PyErr_SetNdrError(err) \
-		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
-
-typedef NTSTATUS (*py_dcerpc_call_fn) (struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
-typedef bool (*py_data_pack_fn) (PyObject *args, PyObject *kwargs, void *r);
-typedef PyObject *(*py_data_unpack_fn) (void *r);
-
-struct PyNdrRpcMethodDef {
-	const char *name;
-	const char *doc;
-	py_dcerpc_call_fn call;
-	py_data_pack_fn pack_in_data;
-	py_data_unpack_fn unpack_out_data;
-	uint32_t opnum;
-	const struct ndr_interface_table *table;
-};
-
-bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, const struct PyNdrRpcMethodDef *mds);
-PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table);
 
 #endif /* _PYRPC_H_ */

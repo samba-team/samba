@@ -23,6 +23,36 @@
 #ifndef __PYRPC_UTIL_H__
 #define __PYRPC_UTIL_H__
 
+#include "librpc/rpc/pyrpc.h"
+
+/* This macro is only provided by Python >= 2.3 */
+#ifndef PyAPI_DATA
+#   define PyAPI_DATA(RTYPE) extern RTYPE
+#endif
+
+#define PyErr_FromNdrError(err) Py_BuildValue("(is)", err, ndr_map_error2string(err))
+
+#define PyErr_SetNdrError(err) \
+		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
+
+void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status);
+
+typedef NTSTATUS (*py_dcerpc_call_fn) (struct dcerpc_binding_handle *, TALLOC_CTX *, void *);
+typedef bool (*py_data_pack_fn) (PyObject *args, PyObject *kwargs, void *r);
+typedef PyObject *(*py_data_unpack_fn) (void *r);
+
+struct PyNdrRpcMethodDef {
+	const char *name;
+	const char *doc;
+	py_dcerpc_call_fn call;
+	py_data_pack_fn pack_in_data;
+	py_data_unpack_fn unpack_out_data;
+	uint32_t opnum;
+	const struct ndr_interface_table *table;
+};
+
 bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typename);
+bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, const struct PyNdrRpcMethodDef *mds);
+PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table);
 
 #endif /* __PYRPC_UTIL_H__ */

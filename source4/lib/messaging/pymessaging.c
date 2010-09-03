@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "scripting/python/modules.h"
 #include "libcli/util/pyerrors.h"
-#include "librpc/rpc/pyrpc.h"
+#include "librpc/rpc/pyrpc_util.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/messaging/irpc.h"
 #include "lib/messaging/messaging.h"

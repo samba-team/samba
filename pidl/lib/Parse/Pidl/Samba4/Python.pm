@@ -25,7 +25,8 @@ sub new($) {
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
 	             module_methods => [], module_objects => [], ready_types => [],
 				 module_imports => [], type_imports => {},
-				 patch_type_calls => [], readycode => [] };
+				 patch_type_calls => [], prereadycode => [],
+			 	 postreadycode => []};
 	bless($self, $class);
 }
 
@@ -728,7 +729,9 @@ sub Interface($$$)
 		$self->pidl("");
 
 		$self->register_module_typeobject($interface->{NAME}, "&$if_typename");
-		$self->register_module_readycode(["if (!PyInterface_AddNdrRpcMethods(&$if_typename, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
+		my $dcerpc_typename = $self->import_type_variable("base", "ClientConnection");
+		$self->register_module_prereadycode(["$if_typename.tp_base = $dcerpc_typename;", ""]);
+		$self->register_module_postreadycode(["if (!PyInterface_AddNdrRpcMethods(&$if_typename, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
 	}
 
 	$self->pidl_hdr("\n");
@@ -765,6 +768,17 @@ sub register_module_import($$)
 	push (@{$self->{module_imports}}, $basename) unless (grep(/^$basename$/,@{$self->{module_imports}}));
 }
 
+sub import_type_variable($$$)
+{
+	my ($self, $module, $name) = @_;
+
+	$self->register_module_import($module);
+	unless (defined($self->{type_imports}->{$name})) {
+		$self->{type_imports}->{$name} = $module;
+	}
+	return "$name\_Type";
+}
+
 sub use_type_variable($$)
 {
 	my ($self, $orig_ctype) = @_;
@@ -779,11 +793,7 @@ sub use_type_variable($$)
 	}
 	# If this is an external type, make sure we do the right imports.
 	if (($ctype->{BASEFILE} ne $self->{BASENAME})) {
-		$self->register_module_import($ctype->{BASEFILE});
-		unless (defined($self->{type_imports}->{$ctype->{NAME}})) {
-			$self->{type_imports}->{$ctype->{NAME}} = $ctype->{BASEFILE};
-		}
-		return "$ctype->{NAME}_Type";
+		return $self->import_type_variable($ctype->{BASEFILE}, $ctype->{NAME});
 	}
 	return "&$ctype->{NAME}_Type";
 }
@@ -796,11 +806,18 @@ sub register_patch_type_call($$$)
 
 }
 
-sub register_module_readycode($$)
+sub register_module_prereadycode($$)
 {
 	my ($self, $code) = @_;
 
-	push (@{$self->{readycode}}, @$code);
+	push (@{$self->{prereadycode}}, @$code);
+}
+
+sub register_module_postreadycode($$)
+{
+	my ($self, $code) = @_;
+
+	push (@{$self->{postreadycode}}, @$code);
 }
 
 sub register_module_object($$$)
@@ -1204,6 +1221,7 @@ sub Parse($$$$$)
 #include \"includes.h\"
 #include \"lib/talloc/pytalloc.h\"
 #include \"librpc/rpc/pyrpc.h\"
+#include \"librpc/rpc/pyrpc_util.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 
@@ -1253,12 +1271,14 @@ sub Parse($$$$$)
 		$self->pidl("");
 	}
 
+	$self->pidl($_) foreach (@{$self->{prereadycode}});
+
 	foreach (@{$self->{ready_types}}) {
 		$self->pidl("if (PyType_Ready($_) < 0)");
 		$self->pidl("\treturn;");
 	}
 
-	$self->pidl($_) foreach (@{$self->{readycode}});
+	$self->pidl($_) foreach (@{$self->{postreadycode}});
 
 	foreach (@{$self->{patch_type_calls}}) {
 		my ($typename, $cvar) = @$_;
