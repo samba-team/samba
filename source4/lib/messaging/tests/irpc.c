@@ -23,6 +23,7 @@
 #include "lib/events/events.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
+#include "librpc/gen_ndr/ndr_echo_c.h"
 #include "torture/torture.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
@@ -88,13 +89,18 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	NTSTATUS status;
 	const struct irpc_test_data *data = (const struct irpc_test_data *)_data;
 	uint32_t value = *(const uint32_t *)_value;
+	struct dcerpc_binding_handle *irpc_handle;
+
+	irpc_handle = irpc_binding_handle(test, data->msg_ctx1,
+					  cluster_id(0, MSG_ID2),
+					  &ndr_table_rpcecho);
+	torture_assert(test, irpc_handle, "no memory");
 
 	/* make the call */
 	r.in.in_data = value;
 
 	test_debug = true;
-	status = IRPC_CALL(data->msg_ctx1, cluster_id(0, MSG_ID2), 
-			   rpcecho, ECHO_ADDONE, &r, test);
+	status = dcerpc_echo_AddOne_r(irpc_handle, test, &r);
 	test_debug = false;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
 
@@ -117,14 +123,18 @@ static bool test_echodata(struct torture_context *tctx,
 	NTSTATUS status;
 	const struct irpc_test_data *data = (const struct irpc_test_data *)tcase_data;
 	TALLOC_CTX *mem_ctx = tctx;
+	struct dcerpc_binding_handle *irpc_handle;
+
+	irpc_handle = irpc_binding_handle(mem_ctx, data->msg_ctx1,
+					  cluster_id(0, MSG_ID2),
+					  &ndr_table_rpcecho);
+	torture_assert(tctx, irpc_handle, "no memory");
 
 	/* make the call */
 	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
-	status = IRPC_CALL(data->msg_ctx1, cluster_id(0, MSG_ID2), 
-			   rpcecho, ECHO_ECHODATA, &r, 
-			   mem_ctx);
+	status = dcerpc_echo_EchoData_r(irpc_handle, mem_ctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "EchoData failed");
 
 	/* check the answer */
@@ -141,20 +151,28 @@ static bool test_echodata(struct torture_context *tctx,
 	return true;
 }
 
+struct irpc_callback_state {
+	struct echo_AddOne r;
+	int *pong_count;
+};
 
-static void irpc_callback(struct irpc_request *irpc)
+static void irpc_callback(struct tevent_req *subreq)
 {
-	struct echo_AddOne *r = (struct echo_AddOne *)irpc->r;
-	int *pong_count = (int *)irpc->async.private_data;
-	NTSTATUS status = irpc_call_recv(irpc);
+	struct irpc_callback_state *s =
+		tevent_req_callback_data(subreq,
+		struct irpc_callback_state);
+	NTSTATUS status;
+
+	status = dcerpc_echo_AddOne_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("irpc call failed - %s\n", nt_errstr(status));
 	}
-	if (*r->out.out_data != r->in.in_data + 1) {
+	if (*s->r.out.out_data != s->r.in.in_data + 1) {
 		printf("AddOne wrong answer - %u + 1 = %u should be %u\n", 
-		       r->in.in_data, *r->out.out_data, r->in.in_data+1);
+		       s->r.in.in_data, *s->r.out.out_data, s->r.in.in_data+1);
 	}
-	(*pong_count)++;
+	(*s->pong_count)++;
 }
 
 /*
@@ -168,25 +186,34 @@ static bool test_speed(struct torture_context *tctx,
 	int pong_count = 0;
 	const struct irpc_test_data *data = (const struct irpc_test_data *)tcase_data;
 	struct timeval tv;
-	struct echo_AddOne r;
 	TALLOC_CTX *mem_ctx = tctx;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	struct dcerpc_binding_handle *irpc_handle;
+
+	irpc_handle = irpc_binding_handle(mem_ctx, data->msg_ctx1,
+					  cluster_id(0, MSG_ID2),
+					  &ndr_table_rpcecho);
+	torture_assert(tctx, irpc_handle, "no memory");
 
 	tv = timeval_current();
 
-	r.in.in_data = 0;
-
 	torture_comment(tctx, "Sending echo for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		struct irpc_request *irpc;
+		struct tevent_req *subreq;
+		struct irpc_callback_state *s;
 
-		irpc = IRPC_CALL_SEND(data->msg_ctx1, cluster_id(0, MSG_ID2), 
-				      rpcecho, ECHO_ADDONE, 
-				      &r, mem_ctx);
-		torture_assert(tctx, irpc != NULL, "AddOne send failed");
+		s = talloc_zero(mem_ctx, struct irpc_callback_state);
+		torture_assert(tctx, s != NULL, "no mem");
 
-		irpc->async.fn = irpc_callback;
-		irpc->async.private_data = &pong_count;
+		s->pong_count = &pong_count;
+
+		subreq = dcerpc_echo_AddOne_r_send(mem_ctx,
+						   tctx->ev,
+						   irpc_handle,
+						   &s->r);
+		torture_assert(tctx, subreq != NULL, "AddOne send failed");
+
+		tevent_req_set_callback(subreq, irpc_callback, s);
 
 		ping_count++;
 
