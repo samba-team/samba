@@ -477,6 +477,9 @@ _DEPRECATED_ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle
 
 bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
 
+uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
+					   uint32_t timeout);
+
 struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct dcerpc_binding_handle *h,

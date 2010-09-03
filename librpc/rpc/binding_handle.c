@@ -91,6 +91,12 @@ bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h)
 	return h->ops->is_connected(h);
 }
 
+uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
+					   uint32_t timeout)
+{
+	return h->ops->set_timeout(h, timeout);
+}
+
 struct dcerpc_binding_handle_raw_call_state {
 	const struct dcerpc_binding_handle_ops *ops;
 	uint8_t *out_data;
