@@ -37,6 +37,10 @@
 #include "rpc_client/init_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
+#include "../libcli/security/dom_sid.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "lib/crypto/arcfour.h"
+#include "lib/crypto/md4.h"
 
 extern userdom_struct current_user_info;
 
@@ -2177,21 +2181,270 @@ WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
+					struct lsa_ForestTrustInformation *info)
+{
+	struct lsa_ForestTrustRecord *e;
+	struct pdb_domain_info *dom_info;
+	struct lsa_ForestTrustDomainInfo *domain_info;
+
+	dom_info = pdb_get_domain_info(mem_ctx);
+	if (dom_info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	info->count = 2;
+	info->entries = talloc_array(info, struct lsa_ForestTrustRecord *, 2);
+	if (info->entries == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	e = talloc(info, struct lsa_ForestTrustRecord);
+	if (e == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	e->flags = 0;
+	e->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+	e->time = 0; /* so far always 0 in trces. */
+	e->forest_trust_data.top_level_name.string = talloc_steal(info,
+								  dom_info->dns_forest);
+
+	info->entries[0] = e;
+
+	e = talloc(info, struct lsa_ForestTrustRecord);
+	if (e == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* TODO: check if disabled and set flags accordingly */
+	e->flags = 0;
+	e->type = LSA_FOREST_TRUST_DOMAIN_INFO;
+	e->time = 0; /* so far always 0 in traces. */
+
+	domain_info = &e->forest_trust_data.domain_info;
+	domain_info->domain_sid = dom_sid_dup(info, &dom_info->sid);
+
+	domain_info->dns_domain_name.string = talloc_steal(info,
+							   dom_info->dns_domain);
+	domain_info->netbios_domain_name.string = talloc_steal(info,
+							       dom_info->name);
+
+	info->entries[1] = e;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+ _netr_GetForestTrustInformation
+****************************************************************/
+
 NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 					 struct netr_GetForestTrustInformation *r)
 {
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	struct netlogon_creds_CredentialState *creds;
+	struct lsa_ForestTrustInformation *info, **info_ptr;
+
+	/* TODO: check server name */
+
+	status = schannel_check_creds_state(p->mem_ctx, lp_private_dir(),
+					    r->in.computer_name,
+					    r->in.credential,
+					    r->out.return_authenticator,
+					    &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if ((creds->secure_channel_type != SEC_CHAN_DNS_DOMAIN) &&
+	    (creds->secure_channel_type != SEC_CHAN_DOMAIN)) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	info_ptr = talloc(p->mem_ctx, struct lsa_ForestTrustInformation *);
+	if (!info_ptr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = fill_forest_trust_array(p->mem_ctx, info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*info_ptr = info;
+	r->out.forest_trust_info = info_ptr;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
 ****************************************************************/
 
+static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
+					    const DATA_BLOB *trustAuth_blob,
+					    const DATA_BLOB *session_key,
+					    struct samr_Password *current_pw_enc,
+					    struct samr_Password *previous_pw_enc)
+{
+	enum ndr_err_code ndr_err;
+	struct trustAuthInOutBlob trustAuth;
+
+	ndr_err = ndr_pull_struct_blob_all(trustAuth_blob, mem_ctx, &trustAuth,
+					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+
+	if (trustAuth.count != 0 && trustAuth.current.count != 0 &&
+	    trustAuth.current.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+		mdfour(previous_pw_enc->hash,
+		       trustAuth.current.array[0].AuthInfo.clear.password,
+		       trustAuth.current.array[0].AuthInfo.clear.size);
+	} else {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	arcfour_crypt_blob(current_pw_enc->hash, sizeof(current_pw_enc->hash),
+			   session_key);
+
+	if (trustAuth.previous.count != 0 &&
+	    trustAuth.previous.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+		mdfour(previous_pw_enc->hash,
+		       trustAuth.previous.array[0].AuthInfo.clear.password,
+		       trustAuth.previous.array[0].AuthInfo.clear.size);
+	} else {
+		mdfour(previous_pw_enc->hash, NULL, 0);
+	}
+	arcfour_crypt_blob(previous_pw_enc->hash, sizeof(previous_pw_enc->hash),
+			   session_key);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+ _netr_ServerGetTrustInfo
+****************************************************************/
+
 NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 				  struct netr_ServerGetTrustInfo *r)
 {
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	struct netlogon_creds_CredentialState *creds;
+	char *account_name;
+	size_t account_name_last;
+	bool trusted;
+	struct netr_TrustInfo *trust_info;
+	struct pdb_trusted_domain *td;
+	DATA_BLOB trustAuth_blob;
+	struct samr_Password *new_owf_enc;
+	struct samr_Password *old_owf_enc;
+	DATA_BLOB session_key;
+
+	/* TODO: check server name */
+
+	status = schannel_check_creds_state(p->mem_ctx, lp_private_dir(),
+					    r->in.computer_name,
+					    r->in.credential,
+					    r->out.return_authenticator,
+					    &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	account_name = talloc_strdup(p->mem_ctx, r->in.account_name);
+	if (account_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	account_name_last = strlen(account_name);
+	if (account_name_last == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	account_name_last--;
+	if (account_name[account_name_last] == '.') {
+		account_name[account_name_last] = '\0';
+	}
+
+	if ((creds->secure_channel_type != SEC_CHAN_DNS_DOMAIN) &&
+	    (creds->secure_channel_type != SEC_CHAN_DOMAIN)) {
+		trusted = false;
+	} else {
+		trusted = true;
+	}
+
+
+	if (trusted) {
+		account_name_last = strlen(account_name);
+		if (account_name_last == 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		account_name_last--;
+		if (account_name[account_name_last] == '$') {
+			account_name[account_name_last] = '\0';
+		}
+
+		status = pdb_get_trusted_domain(p->mem_ctx, account_name, &td);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (r->out.trust_info != NULL) {
+			trust_info = talloc_zero(p->mem_ctx, struct netr_TrustInfo);
+			if (trust_info == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			trust_info->count = 1;
+
+			trust_info->data = talloc_array(trust_info, uint32_t, 1);
+			if (trust_info->data == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			trust_info->data[0] = td->trust_attributes;
+
+			*r->out.trust_info = trust_info;
+		}
+
+		new_owf_enc = talloc_zero(p->mem_ctx, struct samr_Password);
+		old_owf_enc = talloc_zero(p->mem_ctx, struct samr_Password);
+		if (new_owf_enc == NULL || old_owf_enc == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+/* TODO: which trustAuth shall we use if we have in/out trust or do they have to
+ * be equal ? */
+		if (td->trust_direction & NETR_TRUST_FLAG_INBOUND) {
+			trustAuth_blob = td->trust_auth_incoming;
+		} else if (td->trust_direction & NETR_TRUST_FLAG_OUTBOUND) {
+			trustAuth_blob = td->trust_auth_outgoing;
+		}
+
+		session_key.data = creds->session_key;
+		session_key.length = sizeof(creds->session_key);
+		status = get_password_from_trustAuth(p->mem_ctx, &trustAuth_blob,
+						     &session_key,
+						     new_owf_enc, old_owf_enc);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		r->out.new_owf_password = new_owf_enc;
+		r->out.old_owf_password = old_owf_enc;
+	} else {
+/* TODO: look for machine password */
+		r->out.new_owf_password = NULL;
+		r->out.old_owf_password = NULL;
+
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
