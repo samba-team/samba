@@ -34,6 +34,17 @@
 #define LDAP_ATTRIBUTE_TRUST_AUTH_INCOMING "sambaTrustAuthIncoming"
 #define LDAP_ATTRIBUTE_SECURITY_IDENTIFIER "sambaSecurityIdentifier"
 
+#define LDAP_OBJ_KRB_PRINCIPAL "krbPrincipal"
+#define LDAP_OBJ_KRB_PRINCIPAL_AUX "krbPrincipalAux"
+#define LDAP_ATTRIBUTE_KRB_PRINCIPAL "krbPrincipalName"
+
+struct ipasam_privates {
+	NTSTATUS (*ldapsam_add_sam_account)(struct pdb_methods *,
+					    struct samu *sampass);
+	NTSTATUS (*ldapsam_update_sam_account)(struct pdb_methods *,
+					       struct samu *sampass);
+};
+
 static bool ipasam_get_trusteddom_pw(struct pdb_methods *methods,
 				     const char *domain,
 				     char** pwd,
@@ -55,6 +66,29 @@ static bool ipasam_del_trusteddom_pw(struct pdb_methods *methods,
 				     const char *domain)
 {
 	return false;
+}
+
+static char *get_account_dn(const char *name)
+{
+	char *escape_name;
+	char *dn;
+
+	escape_name = escape_rdn_val_string_alloc(name);
+	if (!escape_name) {
+		return NULL;
+	}
+
+	if (name[strlen(name)-1] == '$') {
+		dn = talloc_asprintf(talloc_tos(), "uid=%s,%s", escape_name,
+				     lp_ldap_machine_suffix());
+	} else {
+		dn = talloc_asprintf(talloc_tos(), "uid=%s,%s", escape_name,
+				     lp_ldap_user_suffix());
+	}
+
+	SAFE_FREE(escape_name);
+
+	return dn;
 }
 
 static char *trusted_domain_dn(struct ldapsam_privates *ldap_state,
@@ -695,16 +729,191 @@ fail:
 	return NULL;
 }
 
+static NTSTATUS modify_ipa_password_exop(struct ldapsam_privates *ldap_state,
+					 struct samu *sampass)
+{
+	int ret;
+	BerElement *ber = NULL;
+	struct berval *bv = NULL;
+	char *retoid = NULL;
+	struct berval *retdata = NULL;
+	const char *password;
+	char *dn;
+
+	password = pdb_get_plaintext_passwd(sampass);
+	if (password == NULL || *password == '\0') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dn = get_account_dn(pdb_get_username(sampass));
+	if (dn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ber = ber_alloc_t( LBER_USE_DER );
+	if (ber == NULL) {
+		DEBUG(7, ("ber_alloc_t failed.\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ber_printf(ber, "{tsts}", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, dn,
+			 LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, password);
+	if (ret == -1) {
+		DEBUG(7, ("ber_printf failed.\n"));
+		ber_free(ber, 1);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = ber_flatten(ber, &bv);
+	ber_free(ber, 1);
+	if (ret == -1) {
+		DEBUG(1, ("ber_flatten failed.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ret = smbldap_extended_operation(ldap_state->smbldap_state,
+					 LDAP_EXOP_MODIFY_PASSWD, bv, NULL,
+					 NULL, &retoid, &retdata);
+	ber_bvfree(bv);
+	if (retdata) {
+		ber_bvfree(retdata);
+	}
+	if (retoid) {
+		ldap_memfree(retoid);
+	}
+	if (ret != LDAP_SUCCESS) {
+		DEBUG(1, ("smbldap_extended_operation LDAP_EXOP_MODIFY_PASSWD failed.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ipasam_add_objectclasses(struct ldapsam_privates *ldap_state,
+					 struct samu *sampass)
+{
+	char *dn;
+	LDAPMod **mods = NULL;
+	NTSTATUS status;
+	int ret;
+	char *princ;
+
+	dn = get_account_dn(pdb_get_username(sampass));
+	if (dn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	princ = talloc_asprintf(talloc_tos(), "%s@%s", pdb_get_username(sampass), lp_realm());
+	if (princ == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"objectclass", LDAP_OBJ_KRB_PRINCIPAL);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			LDAP_ATTRIBUTE_KRB_PRINCIPAL, princ);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"objectclass", LDAP_OBJ_KRB_PRINCIPAL_AUX);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"objectclass", "ipaHost");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"fqdn", "dummy.dummy.dummy");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"objectclass", "posixAccount");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"cn", pdb_get_username(sampass));
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"gidNumber", "12345");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"homeDirectory", "/dev/null");
+
+	ret = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	ldap_mods_free(mods, true);
+	if (ret != LDAP_SUCCESS) {
+		DEBUG(1, ("failed to modify/add user with uid = %s (dn = %s)\n",
+			  pdb_get_username(sampass),dn));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pdb_ipasam_add_sam_account(struct pdb_methods *pdb_methods,
+					   struct samu *sampass)
+{
+	NTSTATUS status;
+	struct ldapsam_privates *ldap_state;
+
+	ldap_state = (struct ldapsam_privates *)(pdb_methods->private_data);
+
+	status =ldap_state->ipasam_privates->ldapsam_add_sam_account(pdb_methods,
+								     sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = ipasam_add_objectclasses(ldap_state, sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (pdb_get_init_flags(sampass, PDB_PLAINTEXT_PW) == PDB_CHANGED) {
+		status = modify_ipa_password_exop(ldap_state, sampass);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pdb_ipasam_update_sam_account(struct pdb_methods *pdb_methods,
+					      struct samu *sampass)
+{
+	NTSTATUS status;
+	struct ldapsam_privates *ldap_state;
+	ldap_state = (struct ldapsam_privates *)(pdb_methods->private_data);
+
+	status = ldap_state->ipasam_privates->ldapsam_update_sam_account(pdb_methods,
+									 sampass);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (pdb_get_init_flags(sampass, PDB_PLAINTEXT_PW) == PDB_CHANGED) {
+		status = modify_ipa_password_exop(ldap_state, sampass);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	struct ldapsam_privates *ldap_state;
+	NTSTATUS status;
 
-	NTSTATUS nt_status = pdb_init_ldapsam(pdb_method, location);
+	status = pdb_init_ldapsam(pdb_method, location);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	(*pdb_method)->name = "IPA_ldapsam";
 
 	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
+	ldap_state->ipasam_privates = talloc_zero(ldap_state,
+						  struct ipasam_privates);
+	if (ldap_state->ipasam_privates == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	ldap_state->is_ipa_ldap = true;
+	ldap_state->ipasam_privates->ldapsam_add_sam_account = (*pdb_method)->add_sam_account;
+	ldap_state->ipasam_privates->ldapsam_update_sam_account = (*pdb_method)->update_sam_account;
+
+	(*pdb_method)->add_sam_account = pdb_ipasam_add_sam_account;
+	(*pdb_method)->update_sam_account = pdb_ipasam_update_sam_account;
 
 	(*pdb_method)->capabilities = pdb_ipasam_capabilities;
 	(*pdb_method)->get_domain_info = pdb_ipasam_get_domain_info;
@@ -720,7 +929,7 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	(*pdb_method)->del_trusted_domain = ipasam_del_trusted_domain;
 	(*pdb_method)->enum_trusted_domains = ipasam_enum_trusted_domains;
 
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS pdb_ipa_init(void)
