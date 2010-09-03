@@ -121,6 +121,23 @@ static bool dcerpc_bh_is_connected(struct dcerpc_binding_handle *h)
 	return true;
 }
 
+static uint32_t dcerpc_bh_set_timeout(struct dcerpc_binding_handle *h,
+				      uint32_t timeout)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	uint32_t old;
+
+	if (!hs->p) {
+		return DCERPC_REQUEST_TIMEOUT;
+	}
+
+	old = hs->p->request_timeout;
+	hs->p->request_timeout = timeout;
+
+	return old;
+}
+
 struct dcerpc_bh_raw_call_state {
 	struct dcerpc_binding_handle *h;
 	DATA_BLOB in_data;
@@ -456,6 +473,7 @@ static NTSTATUS dcerpc_bh_ndr_validate_out(struct dcerpc_binding_handle *h,
 static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 	.name			= "dcerpc",
 	.is_connected		= dcerpc_bh_is_connected,
+	.set_timeout		= dcerpc_bh_set_timeout,
 	.raw_call_send		= dcerpc_bh_raw_call_send,
 	.raw_call_recv		= dcerpc_bh_raw_call_recv,
 	.disconnect_send	= dcerpc_bh_disconnect_send,
