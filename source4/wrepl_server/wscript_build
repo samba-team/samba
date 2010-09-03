@@ -5,6 +5,6 @@ bld.SAMBA_MODULE('WREPL_SRV',
 	autoproto='wrepl_server_proto.h',
 	subsystem='service',
 	init_function='server_service_wrepl_init',
-	deps='LIBCLI_WREPL WINSDB process_model'
+	deps='LIBCLI_WREPL WINSDB process_model RPC_NDR_IRPC'
 	)
 

@@ -20,9 +20,10 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
@@ -882,56 +883,55 @@ static NTSTATUS r_do_mhomed_merge(struct wreplsrv_partner *partner,
 }
 
 struct r_do_challenge_state {
-	struct messaging_context *msg_ctx;
+	struct dcerpc_binding_handle *irpc_handle;
 	struct wreplsrv_partner *partner;
 	struct winsdb_record *rec;
 	struct wrepl_wins_owner owner;
 	struct wrepl_name replica;
 	struct nbtd_proxy_wins_challenge r;
+	struct nbtd_proxy_wins_release_demand dr;
 };
 
-static void r_do_late_release_demand_handler(struct irpc_request *ireq)
+static void r_do_late_release_demand_handler(struct tevent_req *subreq)
 {
 	NTSTATUS status;
-	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private_data,
-							     struct r_do_challenge_state);
+	struct r_do_challenge_state *state =
+		tevent_req_callback_data(subreq,
+		struct r_do_challenge_state);
 
-	status = irpc_call_recv(ireq);
+	status = dcerpc_nbtd_proxy_wins_release_demand_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
+
 	/* don't care about the result */
 	talloc_free(state);
 }
 
 static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
 {
-	struct irpc_request *ireq;
-	struct server_id *nbt_servers;
-	struct nbtd_proxy_wins_release_demand r;
+	struct tevent_req *subreq;
 	uint32_t i;
 
 	DEBUG(4,("late release demand record %s\n",
 		 nbt_name_string(state, &state->replica.name)));
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	r.in.name	= state->replica.name;
-	r.in.num_addrs	= state->r.out.num_addrs;
-	r.in.addrs	= talloc_array(state, struct nbtd_proxy_wins_addr, r.in.num_addrs);
-	NT_STATUS_HAVE_NO_MEMORY(r.in.addrs);
+	state->dr.in.name	= state->replica.name;
+	state->dr.in.num_addrs	= state->r.out.num_addrs;
+	state->dr.in.addrs	= talloc_array(state,
+					       struct nbtd_proxy_wins_addr,
+					       state->dr.in.num_addrs);
+	NT_STATUS_HAVE_NO_MEMORY(state->dr.in.addrs);
 	/* TODO: fix pidl to handle inline ipv4address arrays */
-	for (i=0; i < r.in.num_addrs; i++) {
-		r.in.addrs[i].addr = state->r.out.addrs[i].addr;
+	for (i=0; i < state->dr.in.num_addrs; i++) {
+		state->dr.in.addrs[i].addr = state->r.out.addrs[i].addr;
 	}
 
-	ireq = IRPC_CALL_SEND(state->msg_ctx, nbt_servers[0],
-			      irpc, NBTD_PROXY_WINS_RELEASE_DEMAND,
-			      &r, state);
-	NT_STATUS_HAVE_NO_MEMORY(ireq);
+	subreq = dcerpc_nbtd_proxy_wins_release_demand_r_send(state,
+			state->partner->service->task->event_ctx,
+			state->irpc_handle,
+			&state->dr);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
-	ireq->async.fn		= r_do_late_release_demand_handler;
-	ireq->async.private_data= state;
+	tevent_req_set_callback(subreq, r_do_late_release_demand_handler, state);
 
 	return NT_STATUS_OK;
 }
@@ -951,18 +951,20 @@ _UA_UA_DI_PRA<00>: C:BEST vs. B:BEST2 (C:BEST2,LR:BEST2) => C:BEST => NOT REPLAC
 _UA_UA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
 _UA_MA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
 */
-static void r_do_challenge_handler(struct irpc_request *ireq)
+static void r_do_challenge_handler(struct tevent_req *subreq)
 {
 	NTSTATUS status;
-	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private_data,
-							     struct r_do_challenge_state);
+	struct r_do_challenge_state *state =
+		tevent_req_callback_data(subreq,
+		struct r_do_challenge_state);
 	bool old_is_subset = false;
 	bool new_is_subset = false;
 	bool found = false;
 	uint32_t i,j;
 	uint32_t num_rec_addrs;
 
-	status = irpc_call_recv(ireq);
+	status = dcerpc_nbtd_proxy_wins_challenge_r_recv(subreq, state);
+	TALLOC_FREE(subreq);
 
 	DEBUG(4,("r_do_challenge_handler: %s: %s\n", 
 		 nbt_name_string(state, &state->replica.name), nt_errstr(status)));
@@ -1033,9 +1035,8 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 			       struct wrepl_wins_owner *owner,
 			       struct wrepl_name *replica)
 {
-	struct irpc_request *ireq;
 	struct r_do_challenge_state *state;
-	struct server_id *nbt_servers;
+	struct tevent_req *subreq;
 	const char **addrs;
 	uint32_t i;
 
@@ -1044,7 +1045,6 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 
 	state = talloc_zero(mem_ctx, struct r_do_challenge_state);
 	NT_STATUS_HAVE_NO_MEMORY(state);
-	state->msg_ctx	= partner->service->task->msg_ctx;
 	state->partner	= partner;
 	state->rec	= talloc_steal(state, rec);
 	state->owner	= *owner;
@@ -1054,8 +1054,11 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 	talloc_steal(state, replica->owner);
 	talloc_steal(state, replica->addresses);
 
-	nbt_servers = irpc_servers_byname(state->msg_ctx, state, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0].id == 0)) {
+	state->irpc_handle = irpc_binding_handle_by_name(state,
+							 partner->service->task->msg_ctx,
+							 "nbt_server",
+							 &ndr_table_irpc);
+	if (state->irpc_handle == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1070,13 +1073,13 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 		state->r.in.addrs[i].addr = addrs[i];
 	}
 
-	ireq = IRPC_CALL_SEND(state->msg_ctx, nbt_servers[0],
-			      irpc, NBTD_PROXY_WINS_CHALLENGE,
-			      &state->r, state);
-	NT_STATUS_HAVE_NO_MEMORY(ireq);
+	subreq = dcerpc_nbtd_proxy_wins_challenge_r_send(state,
+			state->partner->service->task->event_ctx,
+			state->irpc_handle,
+			&state->r);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
-	ireq->async.fn		= r_do_challenge_handler;
-	ireq->async.private_data= state;
+	tevent_req_set_callback(subreq, r_do_challenge_handler, state);
 
 	talloc_steal(partner, state);
 	return NT_STATUS_OK;
