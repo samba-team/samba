@@ -1996,6 +1996,15 @@ static bool rpccli_bh_is_connected(struct dcerpc_binding_handle *h)
 	return rpccli_is_connected(hs->rpc_cli);
 }
 
+static uint32_t rpccli_bh_set_timeout(struct dcerpc_binding_handle *h,
+				      uint32_t timeout)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+
+	return rpccli_set_timeout(hs->rpc_cli, timeout);
+}
+
 struct rpccli_bh_raw_call_state {
 	DATA_BLOB in_data;
 	DATA_BLOB out_data;
@@ -2174,6 +2183,7 @@ static void rpccli_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 	.name			= "rpccli",
 	.is_connected		= rpccli_bh_is_connected,
+	.set_timeout		= rpccli_bh_set_timeout,
 	.raw_call_send		= rpccli_bh_raw_call_send,
 	.raw_call_recv		= rpccli_bh_raw_call_recv,
 	.disconnect_send	= rpccli_bh_disconnect_send,
