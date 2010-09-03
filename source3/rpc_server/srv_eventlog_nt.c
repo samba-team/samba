@@ -69,7 +69,7 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( struct pipes_struct * p,
 /********************************************************************
 ********************************************************************/
 
-static bool elog_check_access( EVENTLOG_INFO *info, struct security_token *token )
+static bool elog_check_access( EVENTLOG_INFO *info, const struct security_token *token )
 {
 	char *tdbname = elog_tdbname(talloc_tos(), info->logname );
 	struct security_descriptor *sec_desc;

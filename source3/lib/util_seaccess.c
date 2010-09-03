@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern struct security_token anonymous_token;
-
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
    objects.  Each type of object has its own mapping of generic to object

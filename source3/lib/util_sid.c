@@ -99,19 +99,13 @@ const struct dom_sid global_sid_Unix_Groups =			/* Unmapped Unix groups */
 #define SECURITY_NT_AUTHORITY          5
 #endif
 
-/*
- * An NT compatible anonymous token.
- */
-
-static struct dom_sid anon_sid_array[3] =
-{ { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
-  { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
-  { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
-struct security_token anonymous_token = { 3, anon_sid_array, SE_NONE };
-
 static struct dom_sid system_sid_array[1] =
 { { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
-struct security_token system_token = { 1, system_sid_array, SE_ALL_PRIVS };
+static const struct security_token system_token = {
+	.num_sids       = ARRAY_SIZE(system_sid_array),
+	.sids           = system_sid_array,
+	.privilege_mask = SE_ALL_PRIVS
+};
 
 /****************************************************************************
  Lookup string names for SID types.
@@ -153,7 +147,7 @@ const char *sid_type_lookup(uint32 sid_type)
  Create the SYSTEM token.
 ***************************************************************************/
 
-struct security_token *get_system_token(void)
+const struct security_token *get_system_token(void)
 {
 	return &system_token;
 }

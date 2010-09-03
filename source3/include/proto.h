@@ -1319,7 +1319,7 @@ bool is_setuid_root(void) ;
 /* The following definitions come from lib/util_sid.c  */
 
 const char *sid_type_lookup(uint32 sid_type) ;
-struct security_token *get_system_token(void) ;
+const struct security_token *get_system_token(void) ;
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid);
 char *sid_string_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_string_dbg(const struct dom_sid *sid);
