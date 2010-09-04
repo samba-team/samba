@@ -4,14 +4,19 @@
 
 __metaclass__ = type
 
+import codecs
 import datetime
 try:
-    from cStringIO import StringIO
+    from StringIO import StringIO
 except ImportError:
     from io import StringIO
 import doctest
+import os
+import shutil
 import sys
+import tempfile
 import threading
+import warnings
 
 from testtools import (
     ExtendedToOriginalDecorator,
@@ -22,9 +27,15 @@ from testtools import (
     ThreadsafeForwardingResult,
     testresult,
     )
+from testtools.compat import (
+    _b,
+    _get_exception_encoding,
+    _r,
+    _u,
+    str_is_unicode,
+    )
 from testtools.content import Content, ContentType
 from testtools.matchers import DocTestMatches
-from testtools.utils import _u, _b
 from testtools.tests.helpers import (
     LoggingResult,
     Python26TestResult,
@@ -253,8 +264,19 @@ class TestMultiTestResult(TestWithFakeExceptions):
         self.multiResult.stopTestRun()
         self.assertResultLogsEqual([('stopTestRun')])
 
+    def test_stopTestRun_returns_results(self):
+        # `MultiTestResult.stopTestRun` returns a tuple of all of the return
+        # values the `stopTestRun`s that it forwards to.
+        class Result(LoggingResult):
+            def stopTestRun(self):
+                super(Result, self).stopTestRun()
+                return 'foo'
+        multi_result = MultiTestResult(Result([]), Result([]))
+        result = multi_result.stopTestRun()
+        self.assertEqual(('foo', 'foo'), result)
 
-class TestTextTestResult(TestWithFakeExceptions):
+
+class TestTextTestResult(TestCase):
     """Tests for `TextTestResult`."""
 
     def setUp(self):
@@ -377,7 +399,7 @@ Traceback (most recent call last):
     testMethod()
   File "...testtools...tests...test_testresult.py", line ..., in error
     1/0
-ZeroDivisionError: int... division or modulo by zero
+ZeroDivisionError:... divi... by zero...
 ------------
 ======================================================================
 FAIL: testtools.tests.test_testresult.Test.failed
@@ -578,7 +600,7 @@ class TestExtendedToOriginalResultDecorator(
         self.make_26_result()
         self.converter.startTest(self)
         self.assertEqual([('startTest', self)], self.result._events)
-    
+
     def test_startTest_py27(self):
         self.make_27_result()
         self.converter.startTest(self)
@@ -593,7 +615,7 @@ class TestExtendedToOriginalResultDecorator(
         self.make_26_result()
         self.converter.startTestRun()
         self.assertEqual([], self.result._events)
-    
+
     def test_startTestRun_py27(self):
         self.make_27_result()
         self.converter.startTestRun()
@@ -608,7 +630,7 @@ class TestExtendedToOriginalResultDecorator(
         self.make_26_result()
         self.converter.stopTest(self)
         self.assertEqual([('stopTest', self)], self.result._events)
-    
+
     def test_stopTest_py27(self):
         self.make_27_result()
         self.converter.stopTest(self)
@@ -623,7 +645,7 @@ class TestExtendedToOriginalResultDecorator(
         self.make_26_result()
         self.converter.stopTestRun()
         self.assertEqual([], self.result._events)
-    
+
     def test_stopTestRun_py27(self):
         self.make_27_result()
         self.converter.stopTestRun()
@@ -668,7 +690,7 @@ class TestExtendedToOriginalAddError(TestExtendedToOriginalResultDecoratorBase):
     def test_outcome_Original_py26(self):
         self.make_26_result()
         self.check_outcome_exc_info(self.outcome)
-    
+
     def test_outcome_Original_py27(self):
         self.make_27_result()
         self.check_outcome_exc_info(self.outcome)
@@ -680,7 +702,7 @@ class TestExtendedToOriginalAddError(TestExtendedToOriginalResultDecoratorBase):
     def test_outcome_Extended_py26(self):
         self.make_26_result()
         self.check_outcome_details_to_exec_info(self.outcome)
-    
+
     def test_outcome_Extended_py27(self):
         self.make_27_result()
         self.check_outcome_details_to_exec_info(self.outcome)
@@ -709,11 +731,11 @@ class TestExtendedToOriginalAddExpectedFailure(
     def test_outcome_Original_py26(self):
         self.make_26_result()
         self.check_outcome_exc_info_to_nothing(self.outcome, 'addSuccess')
-    
+
     def test_outcome_Extended_py26(self):
         self.make_26_result()
         self.check_outcome_details_to_nothing(self.outcome, 'addSuccess')
-    
+
 
 
 class TestExtendedToOriginalAddSkip(
@@ -724,7 +746,7 @@ class TestExtendedToOriginalAddSkip(
     def test_outcome_Original_py26(self):
         self.make_26_result()
         self.check_outcome_string_nothing(self.outcome, 'addSuccess')
-    
+
     def test_outcome_Original_py27(self):
         self.make_27_result()
         self.check_outcome_string(self.outcome)
@@ -736,7 +758,7 @@ class TestExtendedToOriginalAddSkip(
     def test_outcome_Extended_py26(self):
         self.make_26_result()
         self.check_outcome_string_nothing(self.outcome, 'addSuccess')
-    
+
     def test_outcome_Extended_py27(self):
         self.make_27_result()
         self.check_outcome_details_to_string(self.outcome)
@@ -760,7 +782,7 @@ class TestExtendedToOriginalAddSuccess(
     def test_outcome_Original_py26(self):
         self.make_26_result()
         self.check_outcome_nothing(self.outcome, self.expected)
-    
+
     def test_outcome_Original_py27(self):
         self.make_27_result()
         self.check_outcome_nothing(self.outcome)
@@ -772,7 +794,7 @@ class TestExtendedToOriginalAddSuccess(
     def test_outcome_Extended_py26(self):
         self.make_26_result()
         self.check_outcome_details_to_nothing(self.outcome, self.expected)
-    
+
     def test_outcome_Extended_py27(self):
         self.make_27_result()
         self.check_outcome_details_to_nothing(self.outcome)
@@ -800,7 +822,299 @@ class TestExtendedToOriginalResultOtherAttributes(
         self.make_converter()
         self.assertEqual(1, self.converter.bar)
         self.assertEqual(2, self.converter.foo())
-    
+
+
+class TestNonAsciiResults(TestCase):
+    """Test all kinds of tracebacks are cleanly interpreted as unicode
+
+    Currently only uses weak "contains" assertions, would be good to be much
+    stricter about the expected output. This would add a few failures for the
+    current release of IronPython for instance, which gets some traceback
+    lines muddled.
+    """
+
+    _sample_texts = (
+        _u("pa\u026a\u03b8\u0259n"), # Unicode encodings only
+        _u("\u5357\u7121"), # In ISO 2022 encodings
+        _u("\xa7\xa7\xa7"), # In ISO 8859 encodings
+        )
+    # Everything but Jython shows syntax errors on the current character
+    _error_on_character = os.name != "java"
+
+    def _run(self, stream, test):
+        """Run the test, the same as in testtools.run but not to stdout"""
+        result = TextTestResult(stream)
+        result.startTestRun()
+        try:
+            return test.run(result)
+        finally:
+            result.stopTestRun()
+
+    def _write_module(self, name, encoding, contents):
+        """Create Python module on disk with contents in given encoding"""
+        try:
+            # Need to pre-check that the coding is valid or codecs.open drops
+            # the file without closing it which breaks non-refcounted pythons
+            codecs.lookup(encoding)
+        except LookupError:
+            self.skip("Encoding unsupported by implementation: %r" % encoding)
+        f = codecs.open(os.path.join(self.dir, name + ".py"), "w", encoding)
+        try:
+            f.write(contents)
+        finally:
+            f.close()
+
+    def _test_external_case(self, testline, coding="ascii", modulelevel="",
+            suffix=""):
+        """Create and run a test case in a seperate module"""
+        self._setup_external_case(testline, coding, modulelevel, suffix)
+        return self._run_external_case()
+
+    def _setup_external_case(self, testline, coding="ascii", modulelevel="",
+            suffix=""):
+        """Create a test case in a seperate module"""
+        _, prefix, self.modname = self.id().rsplit(".", 2)
+        self.dir = tempfile.mkdtemp(prefix=prefix, suffix=suffix)
+        self.addCleanup(shutil.rmtree, self.dir)
+        self._write_module(self.modname, coding,
+            # Older Python 2 versions don't see a coding declaration in a
+            # docstring so it has to be in a comment, but then we can't
+            # workaround bug: <http://ironpython.codeplex.com/workitem/26940>
+            "# coding: %s\n"
+            "import testtools\n"
+            "%s\n"
+            "class Test(testtools.TestCase):\n"
+            "    def runTest(self):\n"
+            "        %s\n" % (coding, modulelevel, testline))
+
+    def _run_external_case(self):
+        """Run the prepared test case in a seperate module"""
+        sys.path.insert(0, self.dir)
+        self.addCleanup(sys.path.remove, self.dir)
+        module = __import__(self.modname)
+        self.addCleanup(sys.modules.pop, self.modname)
+        stream = StringIO()
+        self._run(stream, module.Test())
+        return stream.getvalue()
+
+    def _silence_deprecation_warnings(self):
+        """Shut up DeprecationWarning for this test only"""
+        warnings.simplefilter("ignore", DeprecationWarning)
+        self.addCleanup(warnings.filters.remove, warnings.filters[0])
+
+    def _get_sample_text(self, encoding="unicode_internal"):
+        if encoding is None and str_is_unicode:
+           encoding = "unicode_internal"
+        for u in self._sample_texts:
+            try:
+                b = u.encode(encoding)
+                if u == b.decode(encoding):
+                   if str_is_unicode:
+                       return u, u
+                   return u, b
+            except (LookupError, UnicodeError):
+                pass
+        self.skip("Could not find a sample text for encoding: %r" % encoding)
+
+    def _as_output(self, text):
+        return text
+
+    def test_non_ascii_failure_string(self):
+        """Assertion contents can be non-ascii and should get decoded"""
+        text, raw = self._get_sample_text(_get_exception_encoding())
+        textoutput = self._test_external_case("self.fail(%s)" % _r(raw))
+        self.assertIn(self._as_output(text), textoutput)
+
+    def test_non_ascii_failure_string_via_exec(self):
+        """Assertion via exec can be non-ascii and still gets decoded"""
+        text, raw = self._get_sample_text(_get_exception_encoding())
+        textoutput = self._test_external_case(
+            testline='exec ("self.fail(%s)")' % _r(raw))
+        self.assertIn(self._as_output(text), textoutput)
+
+    def test_control_characters_in_failure_string(self):
+        """Control characters in assertions should be escaped"""
+        textoutput = self._test_external_case("self.fail('\\a\\a\\a')")
+        self.expectFailure("Defense against the beeping horror unimplemented",
+            self.assertNotIn, self._as_output("\a\a\a"), textoutput)
+        self.assertIn(self._as_output(_u("\uFFFD\uFFFD\uFFFD")), textoutput)
+
+    def test_os_error(self):
+        """Locale error messages from the OS shouldn't break anything"""
+        textoutput = self._test_external_case(
+            modulelevel="import os",
+            testline="os.mkdir('/')")
+        if os.name != "nt" or sys.version_info < (2, 5):
+            self.assertIn(self._as_output("OSError: "), textoutput)
+        else:
+            self.assertIn(self._as_output("WindowsError: "), textoutput)
+
+    def test_assertion_text_shift_jis(self):
+        """A terminal raw backslash in an encoded string is weird but fine"""
+        example_text = _u("\u5341")
+        textoutput = self._test_external_case(
+            coding="shift_jis",
+            testline="self.fail('%s')" % example_text)
+        if str_is_unicode:
+            output_text = example_text
+        else:
+            output_text = example_text.encode("shift_jis").decode(
+                _get_exception_encoding(), "replace")
+        self.assertIn(self._as_output("AssertionError: %s" % output_text),
+            textoutput)
+
+    def test_file_comment_iso2022_jp(self):
+        """Control character escapes must be preserved if valid encoding"""
+        example_text, _ = self._get_sample_text("iso2022_jp")
+        textoutput = self._test_external_case(
+            coding="iso2022_jp",
+            testline="self.fail('Simple') # %s" % example_text)
+        self.assertIn(self._as_output(example_text), textoutput)
+
+    def test_unicode_exception(self):
+        """Exceptions that can be formated losslessly as unicode should be"""
+        example_text, _ = self._get_sample_text()
+        exception_class = (
+            "class FancyError(Exception):\n"
+            # A __unicode__ method does nothing on py3k but the default works
+            "    def __unicode__(self):\n"
+            "        return self.args[0]\n")
+        textoutput = self._test_external_case(
+            modulelevel=exception_class,
+            testline="raise FancyError(%s)" % _r(example_text))
+        self.assertIn(self._as_output(example_text), textoutput)
+
+    def test_unprintable_exception(self):
+        """A totally useless exception instance still prints something"""
+        exception_class = (
+            "class UnprintableError(Exception):\n"
+            "    def __str__(self):\n"
+            "        raise RuntimeError\n"
+            "    def __repr__(self):\n"
+            "        raise RuntimeError\n")
+        textoutput = self._test_external_case(
+            modulelevel=exception_class,
+            testline="raise UnprintableError")
+        self.assertIn(self._as_output(
+            "UnprintableError: <unprintable UnprintableError object>\n"),
+            textoutput)
+
+    def test_string_exception(self):
+        """Raise a string rather than an exception instance if supported"""
+        if sys.version_info > (2, 6):
+            self.skip("No string exceptions in Python 2.6 or later")
+        elif sys.version_info > (2, 5):
+            self._silence_deprecation_warnings()
+        textoutput = self._test_external_case(testline="raise 'plain str'")
+        self.assertIn(self._as_output("\nplain str\n"), textoutput)
+
+    def test_non_ascii_dirname(self):
+        """Script paths in the traceback can be non-ascii"""
+        text, raw = self._get_sample_text(sys.getfilesystemencoding())
+        textoutput = self._test_external_case(
+            # Avoid bug in Python 3 by giving a unicode source encoding rather
+            # than just ascii which raises a SyntaxError with no other details
+            coding="utf-8",
+            testline="self.fail('Simple')",
+            suffix=raw)
+        self.assertIn(self._as_output(text), textoutput)
+
+    def test_syntax_error(self):
+        """Syntax errors should still have fancy special-case formatting"""
+        textoutput = self._test_external_case("exec ('f(a, b c)')")
+        self.assertIn(self._as_output(
+            '  File "<string>", line 1\n'
+            '    f(a, b c)\n'
+            + ' ' * self._error_on_character +
+            '          ^\n'
+            'SyntaxError: '
+            ), textoutput)
+
+    def test_syntax_error_import_binary(self):
+        """Importing a binary file shouldn't break SyntaxError formatting"""
+        if sys.version_info < (2, 5):
+            # Python 2.4 assumes the file is latin-1 and tells you off
+            self._silence_deprecation_warnings()
+        self._setup_external_case("import bad")
+        f = open(os.path.join(self.dir, "bad.py"), "wb")
+        try:
+            f.write(_b("x\x9c\xcb*\xcd\xcb\x06\x00\x04R\x01\xb9"))
+        finally:
+            f.close()
+        textoutput = self._run_external_case()
+        self.assertIn(self._as_output("\nSyntaxError: "), textoutput)
+
+    def test_syntax_error_line_iso_8859_1(self):
+        """Syntax error on a latin-1 line shows the line decoded"""
+        text, raw = self._get_sample_text("iso-8859-1")
+        textoutput = self._setup_external_case("import bad")
+        self._write_module("bad", "iso-8859-1",
+            "# coding: iso-8859-1\n! = 0 # %s\n" % text)
+        textoutput = self._run_external_case()
+        self.assertIn(self._as_output(_u(
+            #'bad.py", line 2\n'
+            '    ! = 0 # %s\n'
+            '    ^\n'
+            'SyntaxError: ') %
+            (text,)), textoutput)
+
+    def test_syntax_error_line_iso_8859_5(self):
+        """Syntax error on a iso-8859-5 line shows the line decoded"""
+        text, raw = self._get_sample_text("iso-8859-5")
+        textoutput = self._setup_external_case("import bad")
+        self._write_module("bad", "iso-8859-5",
+            "# coding: iso-8859-5\n%% = 0 # %s\n" % text)
+        textoutput = self._run_external_case()
+        self.assertIn(self._as_output(_u(
+            #'bad.py", line 2\n'
+            '    %% = 0 # %s\n'
+            + ' ' * self._error_on_character +
+            '   ^\n'
+            'SyntaxError: ') %
+            (text,)), textoutput)
+
+    def test_syntax_error_line_euc_jp(self):
+        """Syntax error on a euc_jp line shows the line decoded"""
+        text, raw = self._get_sample_text("euc_jp")
+        textoutput = self._setup_external_case("import bad")
+        self._write_module("bad", "euc_jp",
+            "# coding: euc_jp\n$ = 0 # %s\n" % text)
+        textoutput = self._run_external_case()
+        self.assertIn(self._as_output(_u(
+            #'bad.py", line 2\n'
+            '    $ = 0 # %s\n'
+            + ' ' * self._error_on_character +
+            '   ^\n'
+            'SyntaxError: ') %
+            (text,)), textoutput)
+
+    def test_syntax_error_line_utf_8(self):
+        """Syntax error on a utf-8 line shows the line decoded"""
+        text, raw = self._get_sample_text("utf-8")
+        textoutput = self._setup_external_case("import bad")
+        self._write_module("bad", "utf-8", _u("\ufeff^ = 0 # %s\n") % text)
+        textoutput = self._run_external_case()
+        self.assertIn(self._as_output(_u(
+            'bad.py", line 1\n'
+            '    ^ = 0 # %s\n'
+            + ' ' * self._error_on_character +
+            '   ^\n'
+            'SyntaxError: ') %
+            text), textoutput)
+
+
+class TestNonAsciiResultsWithUnittest(TestNonAsciiResults):
+    """Test that running under unittest produces clean ascii strings"""
+
+    def _run(self, stream, test):
+        from unittest import TextTestRunner as _Runner
+        return _Runner(stream).run(test)
+
+    def _as_output(self, text):
+        if str_is_unicode:
+            return text
+        return text.encode("utf-8")
+
 
 def test_suite():
     from unittest import TestLoader

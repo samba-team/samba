@@ -77,14 +77,12 @@ class TestRunTest(TestCase):
         e = KeyError('Yo')
         def raises():
             raise e
-        def log_exc(self, result, err):
-            log.append((result, err))
-        run = RunTest(case, [(KeyError, log_exc)])
+        run = RunTest(case, [(KeyError, None)])
         run.result = ExtendedTestResult()
         status = run._run_user(raises)
         self.assertEqual(run.exception_caught, status)
         self.assertEqual([], run.result._events)
-        self.assertEqual(["got it", (run.result, e)], log)
+        self.assertEqual(["got it"], log)
 
     def test__run_user_can_catch_Exception(self):
         case = self.make_case()
@@ -92,14 +90,12 @@ class TestRunTest(TestCase):
         def raises():
             raise e
         log = []
-        def log_exc(self, result, err):
-            log.append((result, err))
-        run = RunTest(case, [(Exception, log_exc)])
+        run = RunTest(case, [(Exception, None)])
         run.result = ExtendedTestResult()
         status = run._run_user(raises)
         self.assertEqual(run.exception_caught, status)
         self.assertEqual([], run.result._events)
-        self.assertEqual([(run.result, e)], log)
+        self.assertEqual([], log)
 
     def test__run_user_uncaught_Exception_raised(self):
         case = self.make_case()

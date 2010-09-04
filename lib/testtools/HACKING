@@ -122,6 +122,7 @@ In no particular order:
 * Possibly write a blurb into NEWS.
 
 * Replace any additional references to NEXT with the version being released.
+  (should be none).
 
 * Create a source distribution and upload to pypi ('make release').
 

@@ -1,11 +1,14 @@
-# Copyright (c) 2008 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
 
 """Tests for extensions to the base test library."""
 
+from pprint import pformat
 import sys
 import unittest
 
 from testtools import (
+    ErrorHolder,
+    PlaceHolder,
     TestCase,
     clone_test_with_new_id,
     content,
@@ -24,6 +27,167 @@ from testtools.tests.helpers import (
     Python27TestResult,
     ExtendedTestResult,
     )
+
+
+class TestPlaceHolder(TestCase):
+
+    def makePlaceHolder(self, test_id="foo", short_description=None):
+        return PlaceHolder(test_id, short_description)
+
+    def test_id_comes_from_constructor(self):
+        # The id() of a PlaceHolder is whatever you pass into the constructor.
+        test = PlaceHolder("test id")
+        self.assertEqual("test id", test.id())
+
+    def test_shortDescription_is_id(self):
+        # The shortDescription() of a PlaceHolder is the id, by default.
+        test = PlaceHolder("test id")
+        self.assertEqual(test.id(), test.shortDescription())
+
+    def test_shortDescription_specified(self):
+        # If a shortDescription is provided to the constructor, then
+        # shortDescription() returns that instead.
+        test = PlaceHolder("test id", "description")
+        self.assertEqual("description", test.shortDescription())
+
+    def test_repr_just_id(self):
+        # repr(placeholder) shows you how the object was constructed.
+        test = PlaceHolder("test id")
+        self.assertEqual(
+            "<testtools.testcase.PlaceHolder(%s)>" % repr(test.id()),
+            repr(test))
+
+    def test_repr_with_description(self):
+        # repr(placeholder) shows you how the object was constructed.
+        test = PlaceHolder("test id", "description")
+        self.assertEqual(
+            "<testtools.testcase.PlaceHolder(%r, %r)>" % (
+                test.id(), test.shortDescription()),
+            repr(test))
+
+    def test_counts_as_one_test(self):
+        # A placeholder test counts as one test.
+        test = self.makePlaceHolder()
+        self.assertEqual(1, test.countTestCases())
+
+    def test_str_is_id(self):
+        # str(placeholder) is always the id(). We are not barbarians.
+        test = self.makePlaceHolder()
+        self.assertEqual(test.id(), str(test))
+
+    def test_runs_as_success(self):
+        # When run, a PlaceHolder test records a success.
+        test = self.makePlaceHolder()
+        log = []
+        test.run(LoggingResult(log))
+        self.assertEqual(
+            [('startTest', test), ('addSuccess', test), ('stopTest', test)],
+            log)
+
+    def test_call_is_run(self):
+        # A PlaceHolder can be called, in which case it behaves like run.
+        test = self.makePlaceHolder()
+        run_log = []
+        test.run(LoggingResult(run_log))
+        call_log = []
+        test(LoggingResult(call_log))
+        self.assertEqual(run_log, call_log)
+
+    def test_runs_without_result(self):
+        # A PlaceHolder can be run without a result, in which case there's no
+        # way to actually get at the result.
+        self.makePlaceHolder().run()
+
+    def test_debug(self):
+        # A PlaceHolder can be debugged.
+        self.makePlaceHolder().debug()
+
+
+class TestErrorHolder(TestCase):
+
+    def makeException(self):
+        try:
+            raise RuntimeError("danger danger")
+        except:
+            return sys.exc_info()
+
+    def makePlaceHolder(self, test_id="foo", error=None,
+                        short_description=None):
+        if error is None:
+            error = self.makeException()
+        return ErrorHolder(test_id, error, short_description)
+
+    def test_id_comes_from_constructor(self):
+        # The id() of a PlaceHolder is whatever you pass into the constructor.
+        test = ErrorHolder("test id", self.makeException())
+        self.assertEqual("test id", test.id())
+
+    def test_shortDescription_is_id(self):
+        # The shortDescription() of a PlaceHolder is the id, by default.
+        test = ErrorHolder("test id", self.makeException())
+        self.assertEqual(test.id(), test.shortDescription())
+
+    def test_shortDescription_specified(self):
+        # If a shortDescription is provided to the constructor, then
+        # shortDescription() returns that instead.
+        test = ErrorHolder("test id", self.makeException(), "description")
+        self.assertEqual("description", test.shortDescription())
+
+    def test_repr_just_id(self):
+        # repr(placeholder) shows you how the object was constructed.
+        error = self.makeException()
+        test = ErrorHolder("test id", error)
+        self.assertEqual(
+            "<testtools.testcase.ErrorHolder(%r, %r)>" % (test.id(), error),
+            repr(test))
+
+    def test_repr_with_description(self):
+        # repr(placeholder) shows you how the object was constructed.
+        error = self.makeException()
+        test = ErrorHolder("test id", error, "description")
+        self.assertEqual(
+            "<testtools.testcase.ErrorHolder(%r, %r, %r)>" % (
+                test.id(), error, test.shortDescription()),
+            repr(test))
+
+    def test_counts_as_one_test(self):
+        # A placeholder test counts as one test.
+        test = self.makePlaceHolder()
+        self.assertEqual(1, test.countTestCases())
+
+    def test_str_is_id(self):
+        # str(placeholder) is always the id(). We are not barbarians.
+        test = self.makePlaceHolder()
+        self.assertEqual(test.id(), str(test))
+
+    def test_runs_as_error(self):
+        # When run, a PlaceHolder test records a success.
+        error = self.makeException()
+        test = self.makePlaceHolder(error=error)
+        log = []
+        test.run(LoggingResult(log))
+        self.assertEqual(
+            [('startTest', test),
+             ('addError', test, error),
+             ('stopTest', test)], log)
+
+    def test_call_is_run(self):
+        # A PlaceHolder can be called, in which case it behaves like run.
+        test = self.makePlaceHolder()
+        run_log = []
+        test.run(LoggingResult(run_log))
+        call_log = []
+        test(LoggingResult(call_log))
+        self.assertEqual(run_log, call_log)
+
+    def test_runs_without_result(self):
+        # A PlaceHolder can be run without a result, in which case there's no
+        # way to actually get at the result.
+        self.makePlaceHolder().run()
+
+    def test_debug(self):
+        # A PlaceHolder can be debugged.
+        self.makePlaceHolder().debug()
 
 
 class TestEquality(TestCase):
@@ -47,16 +211,16 @@ class TestAssertions(TestCase):
 
     def test_formatTypes_single(self):
         # Given a single class, _formatTypes returns the name.
-        class Foo:
+        class Foo(object):
             pass
         self.assertEqual('Foo', self._formatTypes(Foo))
 
     def test_formatTypes_multiple(self):
         # Given multiple types, _formatTypes returns the names joined by
         # commas.
-        class Foo:
+        class Foo(object):
             pass
-        class Bar:
+        class Bar(object):
             pass
         self.assertEqual('Foo, Bar', self._formatTypes([Foo, Bar]))
 
@@ -164,7 +328,7 @@ class TestAssertions(TestCase):
     def test_assertIsInstance(self):
         # assertIsInstance asserts that an object is an instance of a class.
 
-        class Foo:
+        class Foo(object):
             """Simple class for testing assertIsInstance."""
 
         foo = Foo()
@@ -174,10 +338,10 @@ class TestAssertions(TestCase):
         # assertIsInstance asserts that an object is an instance of one of a
         # group of classes.
 
-        class Foo:
+        class Foo(object):
             """Simple class for testing assertIsInstance."""
 
-        class Bar:
+        class Bar(object):
             """Another simple class for testing assertIsInstance."""
 
         foo = Foo()
@@ -188,7 +352,7 @@ class TestAssertions(TestCase):
         # assertIsInstance(obj, klass) fails the test when obj is not an
         # instance of klass.
 
-        class Foo:
+        class Foo(object):
             """Simple class for testing assertIsInstance."""
 
         self.assertFails(
@@ -199,10 +363,10 @@ class TestAssertions(TestCase):
         # assertIsInstance(obj, (klass1, klass2)) fails the test when obj is
         # not an instance of klass1 or klass2.
 
-        class Foo:
+        class Foo(object):
             """Simple class for testing assertIsInstance."""
 
-        class Bar:
+        class Bar(object):
             """Another simple class for testing assertIsInstance."""
 
         self.assertFails(
@@ -251,20 +415,22 @@ class TestAssertions(TestCase):
             'None is None: foo bar', self.assertIsNot, None, None, "foo bar")
 
     def test_assertThat_matches_clean(self):
-        class Matcher:
+        class Matcher(object):
             def match(self, foo):
                 return None
         self.assertThat("foo", Matcher())
 
     def test_assertThat_mismatch_raises_description(self):
         calls = []
-        class Mismatch:
+        class Mismatch(object):
             def __init__(self, thing):
                 self.thing = thing
             def describe(self):
                 calls.append(('describe_diff', self.thing))
                 return "object is not a thing"
-        class Matcher:
+            def get_details(self):
+                return {}
+        class Matcher(object):
             def match(self, thing):
                 calls.append(('match', thing))
                 return Mismatch(thing)
@@ -281,6 +447,35 @@ class TestAssertions(TestCase):
             ('__str__',),
             ], calls)
         self.assertFalse(result.wasSuccessful())
+
+    def test_assertEqual_nice_formatting(self):
+        message = "These things ought not be equal."
+        a = ['apple', 'banana', 'cherry']
+        b = {'Thatcher': 'One who mends roofs of straw',
+             'Major': 'A military officer, ranked below colonel',
+             'Blair': 'To shout loudly',
+             'Brown': 'The colour of healthy human faeces'}
+        expected_error = '\n'.join(
+            [message,
+             'not equal:',
+             'a = %s' % pformat(a),
+             'b = %s' % pformat(b),
+             ''])
+        self.assertFails(expected_error, self.assertEqual, a, b, message)
+        self.assertFails(expected_error, self.assertEquals, a, b, message)
+        self.assertFails(expected_error, self.failUnlessEqual, a, b, message)
+
+    def test_assertEqual_formatting_no_message(self):
+        a = "cat"
+        b = "dog"
+        expected_error = '\n'.join(
+            ['not equal:',
+             'a = %s' % pformat(a),
+             'b = %s' % pformat(b),
+             ''])
+        self.assertFails(expected_error, self.assertEqual, a, b)
+        self.assertFails(expected_error, self.assertEquals, a, b)
+        self.assertFails(expected_error, self.failUnlessEqual, a, b)
 
 
 class TestAddCleanup(TestCase):
@@ -300,6 +495,9 @@ class TestAddCleanup(TestCase):
 
         def runTest(self):
             self._calls.append('runTest')
+
+        def brokenTest(self):
+            raise RuntimeError('Deliberate broken test')
 
         def tearDown(self):
             self._calls.append('tearDown')
@@ -400,13 +598,29 @@ class TestAddCleanup(TestCase):
         self.assertRaises(
             KeyboardInterrupt, self.test.run, self.logging_result)
 
-    def test_multipleErrorsReported(self):
-        # Errors from all failing cleanups are reported.
+    def test_multipleCleanupErrorsReported(self):
+        # Errors from all failing cleanups are reported as separate backtraces.
         self.test.addCleanup(lambda: 1/0)
         self.test.addCleanup(lambda: 1/0)
+        self.logging_result = ExtendedTestResult()
         self.test.run(self.logging_result)
-        self.assertErrorLogEqual(
-            ['startTest', 'addError', 'addError', 'stopTest'])
+        self.assertEqual(['startTest', 'addError', 'stopTest'],
+            [event[0] for event in self.logging_result._events])
+        self.assertEqual(set(['traceback', 'traceback-1']),
+            set(self.logging_result._events[1][2].keys()))
+
+    def test_multipleErrorsCoreAndCleanupReported(self):
+        # Errors from all failing cleanups are reported, with stopTest,
+        # startTest inserted.
+        self.test = TestAddCleanup.LoggingTest('brokenTest')
+        self.test.addCleanup(lambda: 1/0)
+        self.test.addCleanup(lambda: 1/0)
+        self.logging_result = ExtendedTestResult()
+        self.test.run(self.logging_result)
+        self.assertEqual(['startTest', 'addError', 'stopTest'],
+            [event[0] for event in self.logging_result._events])
+        self.assertEqual(set(['traceback', 'traceback-1', 'traceback-2']),
+            set(self.logging_result._events[1][2].keys()))
 
 
 class TestWithDetails(TestCase):
@@ -594,6 +808,61 @@ class TestDetailsProvided(TestWithDetails):
         self.assertDetailsProvided(Case("test"), "addUnexpectedSuccess",
             ["foo"])
 
+    def test_addDetails_from_Mismatch(self):
+        content = self.get_content()
+        class Mismatch(object):
+            def describe(self):
+                return "Mismatch"
+            def get_details(self):
+                return {"foo": content}
+        class Matcher(object):
+            def match(self, thing):
+                return Mismatch()
+            def __str__(self):
+                return "a description"
+        class Case(TestCase):
+            def test(self):
+                self.assertThat("foo", Matcher())
+        self.assertDetailsProvided(Case("test"), "addFailure",
+            ["foo", "traceback"])
+
+    def test_multiple_addDetails_from_Mismatch(self):
+        content = self.get_content()
+        class Mismatch(object):
+            def describe(self):
+                return "Mismatch"
+            def get_details(self):
+                return {"foo": content, "bar": content}
+        class Matcher(object):
+            def match(self, thing):
+                return Mismatch()
+            def __str__(self):
+                return "a description"
+        class Case(TestCase):
+            def test(self):
+                self.assertThat("foo", Matcher())
+        self.assertDetailsProvided(Case("test"), "addFailure",
+            ["bar", "foo", "traceback"])
+
+    def test_addDetails_with_same_name_as_key_from_get_details(self):
+        content = self.get_content()
+        class Mismatch(object):
+            def describe(self):
+                return "Mismatch"
+            def get_details(self):
+                return {"foo": content}
+        class Matcher(object):
+            def match(self, thing):
+                return Mismatch()
+            def __str__(self):
+                return "a description"
+        class Case(TestCase):
+            def test(self):
+                self.addDetail("foo", content)
+                self.assertThat("foo", Matcher())
+        self.assertDetailsProvided(Case("test"), "addFailure",
+            ["foo", "foo-1", "traceback"])
+
 
 class TestSetupTearDown(TestCase):
 
@@ -623,6 +892,9 @@ class TestSkipping(TestCase):
 
     def test_skip_causes_skipException(self):
         self.assertRaises(self.skipException, self.skip, "Skip this test")
+
+    def test_can_use_skipTest(self):
+        self.assertRaises(self.skipException, self.skipTest, "Skip this test")
 
     def test_skip_without_reason_works(self):
         class Test(TestCase):
@@ -748,6 +1020,64 @@ class TestOnException(TestCase):
         case = Case("method")
         case.run()
         self.assertThat(events, Equals([]))
+
+
+class TestPatchSupport(TestCase):
+
+    class Case(TestCase):
+        def test(self):
+            pass
+
+    def test_patch(self):
+        # TestCase.patch masks obj.attribute with the new value.
+        self.foo = 'original'
+        test = self.Case('test')
+        test.patch(self, 'foo', 'patched')
+        self.assertEqual('patched', self.foo)
+
+    def test_patch_restored_after_run(self):
+        # TestCase.patch masks obj.attribute with the new value, but restores
+        # the original value after the test is finished.
+        self.foo = 'original'
+        test = self.Case('test')
+        test.patch(self, 'foo', 'patched')
+        test.run()
+        self.assertEqual('original', self.foo)
+
+    def test_successive_patches_apply(self):
+        # TestCase.patch can be called multiple times per test. Each time you
+        # call it, it overrides the original value.
+        self.foo = 'original'
+        test = self.Case('test')
+        test.patch(self, 'foo', 'patched')
+        test.patch(self, 'foo', 'second')
+        self.assertEqual('second', self.foo)
+
+    def test_successive_patches_restored_after_run(self):
+        # TestCase.patch restores the original value, no matter how many times
+        # it was called.
+        self.foo = 'original'
+        test = self.Case('test')
+        test.patch(self, 'foo', 'patched')
+        test.patch(self, 'foo', 'second')
+        test.run()
+        self.assertEqual('original', self.foo)
+
+    def test_patch_nonexistent_attribute(self):
+        # TestCase.patch can be used to patch a non-existent attribute.
+        test = self.Case('test')
+        test.patch(self, 'doesntexist', 'patched')
+        self.assertEqual('patched', self.doesntexist)
+
+    def test_restore_nonexistent_attribute(self):
+        # TestCase.patch can be used to patch a non-existent attribute, after
+        # the test run, the attribute is then removed from the object.
+        test = self.Case('test')
+        test.patch(self, 'doesntexist', 'patched')
+        test.run()
+        marker = object()
+        value = getattr(self, 'doesntexist', marker)
+        self.assertIs(marker, value)
 
 
 def test_suite():

@@ -1,18 +1,14 @@
-# Copyright (c) 2008 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
 
 import unittest
+from testtools import TestCase
+from testtools.compat import _u
 from testtools.content import Content, TracebackContent
 from testtools.content_type import ContentType
-from testtools.utils import _u
 from testtools.tests.helpers import an_exc_info
 
 
-def test_suite():
-    from unittest import TestLoader
-    return TestLoader().loadTestsFromName(__name__)
-
-
-class TestContent(unittest.TestCase):
+class TestContent(TestCase):
 
     def test___init___None_errors(self):
         self.assertRaises(ValueError, Content, None, None)
@@ -57,7 +53,7 @@ class TestContent(unittest.TestCase):
         self.assertEqual([text], list(content.iter_text()))
 
 
-class TestTracebackContent(unittest.TestCase):
+class TestTracebackContent(TestCase):
 
     def test___init___None_errors(self):
         self.assertRaises(ValueError, TracebackContent, None, None)
@@ -70,3 +66,8 @@ class TestTracebackContent(unittest.TestCase):
         result = unittest.TestResult()
         expected = result._exc_info_to_string(an_exc_info, self)
         self.assertEqual(expected, ''.join(list(content.iter_text())))
+
+
+def test_suite():
+    from unittest import TestLoader
+    return TestLoader().loadTestsFromName(__name__)

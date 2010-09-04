@@ -52,10 +52,28 @@ given the exc_info for the exception, and can use this opportunity to attach
 more data (via the addDetails API) and potentially other uses.
 
 
-TestCase.skip
-~~~~~~~~~~~~~
+TestCase.patch
+~~~~~~~~~~~~~~
 
-``skip`` is a simple way to have a test stop running and be reported as a
+``patch`` is a convenient way to monkey-patch a Python object for the duration
+of your test.  It's especially useful for testing legacy code.  e.g.::
+
+    def test_foo(self):
+        my_stream = StringIO()
+        self.patch(sys, 'stderr', my_stream)
+        run_some_code_that_prints_to_stderr()
+        self.assertEqual('', my_stream.getvalue())
+
+The call to ``patch`` above masks sys.stderr with 'my_stream' so that anything
+printed to stderr will be captured in a StringIO variable that can be actually
+tested. Once the test is done, the real sys.stderr is restored to its rightful
+place.
+
+
+TestCase.skipTest
+~~~~~~~~~~~~~~~~~
+
+``skipTest`` is a simple way to have a test stop running and be reported as a
 skipped test, rather than a success/error/failure. This is an alternative to
 convoluted logic during test loading, permitting later and more localized
 decisions about the appropriateness of running a test. Many reasons exist to
@@ -64,7 +82,9 @@ expensive and should not be run while on laptop battery power, or if the test
 is testing an incomplete feature (this is sometimes called a TODO). Using this
 feature when running your test suite with a TestResult object that is missing
 the ``addSkip`` method will result in the ``addError`` method being invoked
-instead.
+instead. ``skipTest`` was previously known as ``skip`` but as Python 2.7 adds
+``skipTest`` support, the ``skip`` name is now deprecated (but no warning
+is emitted yet - some time in the future we may do so).
 
 
 New assertion methods
@@ -211,3 +231,16 @@ Running tests
 
 Testtools provides a convenient way to run a test suite using the testtools
 result object: python -m testtools.run testspec [testspec...].
+
+Test discovery
+--------------
+
+Testtools includes a backported version of the Python 2.7 glue for using the
+discover test discovery module. If you either have Python 2.7/3.1 or newer, or
+install the 'discover' module, then you can invoke discovery::
+
+    python -m testtools.run discover [path]
+
+For more information see the Python 2.7 unittest documentation, or::
+
+    python -m testtools.run --help

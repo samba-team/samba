@@ -28,3 +28,6 @@ class ContentType(object):
 
     def __repr__(self):
         return "%s/%s params=%s" % (self.type, self.subtype, self.parameters)
+
+
+UTF8_TEXT = ContentType('text', 'plain', {'charset': 'utf8'})

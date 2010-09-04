@@ -12,14 +12,33 @@ from testtools.matchers import (
     Annotate,
     Equals,
     DocTestMatches,
+    Is,
+    LessThan,
     MatchesAny,
     MatchesAll,
+    Mismatch,
     Not,
     NotEquals,
     )
 
+# Silence pyflakes.
+Matcher
 
-class TestMatchersInterface:
+
+class TestMismatch(TestCase):
+
+    def test_constructor_arguments(self):
+        mismatch = Mismatch("some description", {'detail': "things"})
+        self.assertEqual("some description", mismatch.describe())
+        self.assertEqual({'detail': "things"}, mismatch.get_details())
+
+    def test_constructor_no_arguments(self):
+        mismatch = Mismatch()
+        self.assertRaises(NotImplementedError, mismatch.describe)
+        self.assertEqual({}, mismatch.get_details())
+
+
+class TestMatchersInterface(object):
 
     def test_matches_match(self):
         matcher = self.matches_matcher
@@ -44,6 +63,15 @@ class TestMatchersInterface:
         for difference, matchee, matcher in examples:
             mismatch = matcher.match(matchee)
             self.assertEqual(difference, mismatch.describe())
+
+    def test_mismatch_details(self):
+        # The mismatch object must provide get_details, which must return a
+        # dictionary mapping names to Content objects.
+        examples = self.describe_examples
+        for difference, matchee, matcher in examples:
+            mismatch = matcher.match(matchee)
+            details = mismatch.get_details()
+            self.assertEqual(dict(details), details)
 
 
 class TestDocTestMatchesInterface(TestCase, TestMatchersInterface):
@@ -95,6 +123,33 @@ class TestNotEqualsInterface(TestCase, TestMatchersInterface):
         ("NotEquals(1)", NotEquals(1)), ("NotEquals('1')", NotEquals('1'))]
 
     describe_examples = [("1 == 1", 1, NotEquals(1))]
+
+
+class TestIsInterface(TestCase, TestMatchersInterface):
+
+    foo = object()
+    bar = object()
+
+    matches_matcher = Is(foo)
+    matches_matches = [foo]
+    matches_mismatches = [bar, 1]
+
+    str_examples = [("Is(2)", Is(2))]
+
+    describe_examples = [("1 is not 2", 2, Is(1))]
+
+
+class TestLessThanInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = LessThan(4)
+    matches_matches = [-5, 3]
+    matches_mismatches = [4, 5, 5000]
+
+    str_examples = [
+        ("LessThan(12)", LessThan(12)),
+        ]
+
+    describe_examples = [('4 is >= 4', 4, LessThan(4))]
 
 
 class TestNotInterface(TestCase, TestMatchersInterface):

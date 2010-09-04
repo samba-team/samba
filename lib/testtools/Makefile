@@ -17,6 +17,8 @@ clean:
 	find testtools -name "*.pyc" -exec rm '{}' \;
 
 release:
+	# An existing MANIFEST breaks distutils sometimes. Avoid that.
+	-rm MANIFEST
 	./setup.py sdist upload --sign
 
 apidocs:

@@ -10,7 +10,7 @@ __all__ = [
     'ThreadsafeForwardingResult',
     ]
 
-from real import (
+from testtools.testresult.real import (
     ExtendedToOriginalDecorator,
     MultiTestResult,
     TestResult,

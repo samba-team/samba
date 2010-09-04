@@ -4,9 +4,11 @@
 
 import unittest
 from testtools.tests import (
+    test_compat,
     test_content,
     test_content_type,
     test_matchers,
+    test_monkey,
     test_runtest,
     test_testtools,
     test_testresult,
@@ -17,9 +19,11 @@ from testtools.tests import (
 def test_suite():
     suites = []
     modules = [
+        test_compat,
         test_content,
         test_content_type,
         test_matchers,
+        test_monkey,
         test_runtest,
         test_testresult,
         test_testsuite,

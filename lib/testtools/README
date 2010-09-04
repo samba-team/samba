@@ -14,6 +14,10 @@ Licensing
 This project is distributed under the MIT license and copyright is owned by
 Jonathan M. Lange. See LICENSE for details.
 
+Some code in testtools/run.py is taken from Python's unittest module, and
+is copyright Steve Purcell and the Python Software Foundation, it is
+distributed under the same license as Python, see LICENSE for details.
+
 
 Dependencies
 ------------

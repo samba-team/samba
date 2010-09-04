@@ -1,4 +1,4 @@
-# Copyright (c) 2008, 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
 
 """Test case related stuff."""
 
@@ -17,14 +17,16 @@ try:
 except ImportError:
     wraps = None
 import itertools
+from pprint import pformat
 import sys
 import types
 import unittest
 
 from testtools import content
+from testtools.compat import advance_iterator
+from testtools.monkey import patch
 from testtools.runtest import RunTest
 from testtools.testresult import TestResult
-from testtools.utils import advance_iterator
 
 
 try:
@@ -76,6 +78,7 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
         self._unique_id_gen = itertools.count(1)
+        self._traceback_id_gen = itertools.count(0)
         self.__setup_called = False
         self.__teardown_called = False
         self.__details = {}
@@ -88,6 +91,9 @@ class TestCase(unittest.TestCase):
             (_UnexpectedSuccess, self._report_unexpected_success),
             (Exception, self._report_error),
             ]
+        if sys.version_info < (2, 6):
+            # Catch old-style string exceptions with None as the instance
+            self.exception_handlers.append((type(None), self._report_error))
 
     def __eq__(self, other):
         eq = getattr(unittest.TestCase, '__eq__', None)
@@ -117,10 +123,23 @@ class TestCase(unittest.TestCase):
         """
         return self.__details
 
+    def patch(self, obj, attribute, value):
+        """Monkey-patch 'obj.attribute' to 'value' while the test is running.
+
+        If 'obj' has no attribute, then the monkey-patch will still go ahead,
+        and the attribute will be deleted instead of restored to its original
+        value.
+
+        :param obj: The object to patch. Can be anything.
+        :param attribute: The attribute on 'obj' to patch.
+        :param value: The value to set 'obj.attribute' to.
+        """
+        self.addCleanup(patch(obj, attribute, value))
+
     def shortDescription(self):
         return self.id()
 
-    def skip(self, reason):
+    def skipTest(self, reason):
         """Cause this test to be skipped.
 
         This raises self.skipException(reason). skipException is raised
@@ -132,6 +151,10 @@ class TestCase(unittest.TestCase):
             support being cast into a unicode string for reporting.
         """
         raise self.skipException(reason)
+
+    # skipTest is how python2.7 spells this. Sometime in the future
+    # This should be given a deprecation decorator - RBC 20100611.
+    skip = skipTest
 
     def _formatTypes(self, classOrIterable):
         """Format a class or a bunch of classes for display in an error."""
@@ -145,9 +168,10 @@ class TestCase(unittest.TestCase):
 
         See the docstring for addCleanup for more information.
 
-        Returns True if all cleanups ran without error, False otherwise.
+        :return: None if all cleanups ran without error, the most recently
+            raised exception from the cleanups otherwise.
         """
-        ok = True
+        last_exception = None
         while self._cleanups:
             function, arguments, keywordArguments = self._cleanups.pop()
             try:
@@ -155,15 +179,16 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                self._report_error(self, result, None)
-                ok = False
-        return ok
+                exc_info = sys.exc_info()
+                self._report_traceback(exc_info)
+                last_exception = exc_info[1]
+        return last_exception
 
     def addCleanup(self, function, *arguments, **keywordArguments):
         """Add a cleanup function to be called after tearDown.
 
         Functions added with addCleanup will be called in reverse order of
-        adding after the test method and before tearDown.
+        adding after tearDown, or after setUp if setUp raises an exception.
 
         If a function added with addCleanup raises an exception, the error
         will be recorded as a test error, and the next cleanup will then be
@@ -197,6 +222,28 @@ class TestCase(unittest.TestCase):
         self.addDetail('reason', content.Content(
             content.ContentType('text', 'plain'),
             lambda: [reason.encode('utf8')]))
+
+    def assertEqual(self, expected, observed, message=''):
+        """Assert that 'expected' is equal to 'observed'.
+
+        :param expected: The expected value.
+        :param observed: The observed value.
+        :param message: An optional message to include in the error.
+        """
+        try:
+            return super(TestCase, self).assertEqual(expected, observed)
+        except self.failureException:
+            lines = []
+            if message:
+                lines.append(message)
+            lines.extend(
+                ["not equal:",
+                 "a = %s" % pformat(expected),
+                 "b = %s" % pformat(observed),
+                 ''])
+            self.fail('\n'.join(lines))
+
+    failUnlessEqual = assertEquals = assertEqual
 
     def assertIn(self, needle, haystack):
         """Assert that needle is in haystack."""
@@ -261,6 +308,14 @@ class TestCase(unittest.TestCase):
         mismatch = matcher.match(matchee)
         if not mismatch:
             return
+        existing_details = self.getDetails()
+        for (name, content) in mismatch.get_details().items():
+            full_name = name
+            suffix = 1
+            while full_name in existing_details:
+                full_name = "%s-%d" % (name, suffix)
+                suffix += 1
+            self.addDetail(full_name, content)
         self.fail('Match failed. Matchee: "%s"\nMatcher: %s\nDifference: %s\n'
             % (matchee, matcher, mismatch.describe()))
 
@@ -288,8 +343,7 @@ class TestCase(unittest.TestCase):
             predicate(*args, **kwargs)
         except self.failureException:
             exc_info = sys.exc_info()
-            self.addDetail('traceback',
-                content.TracebackContent(exc_info, self))
+            self._report_traceback(exc_info)
             raise _ExpectedFailure(exc_info)
         else:
             raise _UnexpectedSuccess(reason)
@@ -323,12 +377,14 @@ class TestCase(unittest.TestCase):
 
         :seealso addOnException:
         """
+        if exc_info[0] not in [
+            TestSkipped, _UnexpectedSuccess, _ExpectedFailure]:
+            self._report_traceback(exc_info)
         for handler in self.__exception_handlers:
             handler(exc_info)
 
     @staticmethod
     def _report_error(self, result, err):
-        self._report_traceback()
         result.addError(self, details=self.getDetails())
 
     @staticmethod
@@ -337,7 +393,6 @@ class TestCase(unittest.TestCase):
 
     @staticmethod
     def _report_failure(self, result, err):
-        self._report_traceback()
         result.addFailure(self, details=self.getDetails())
 
     @staticmethod
@@ -349,9 +404,13 @@ class TestCase(unittest.TestCase):
         self._add_reason(reason)
         result.addSkip(self, details=self.getDetails())
 
-    def _report_traceback(self):
-        self.addDetail('traceback',
-            content.TracebackContent(sys.exc_info(), self))
+    def _report_traceback(self, exc_info):
+        tb_id = advance_iterator(self._traceback_id_gen)
+        if tb_id:
+            tb_label = 'traceback-%d' % tb_id
+        else:
+            tb_label = 'traceback'
+        self.addDetail(tb_label, content.TracebackContent(exc_info, self))
 
     @staticmethod
     def _report_unexpected_success(self, result, err):
@@ -414,15 +473,102 @@ class TestCase(unittest.TestCase):
         self.__teardown_called = True
 
 
+class PlaceHolder(object):
+    """A placeholder test.
+
+    `PlaceHolder` implements much of the same interface as `TestCase` and is
+    particularly suitable for being added to `TestResult`s.
+    """
+
+    def __init__(self, test_id, short_description=None):
+        """Construct a `PlaceHolder`.
+
+        :param test_id: The id of the placeholder test.
+        :param short_description: The short description of the place holder
+            test. If not provided, the id will be used instead.
+        """
+        self._test_id = test_id
+        self._short_description = short_description
+
+    def __call__(self, result=None):
+        return self.run(result=result)
+
+    def __repr__(self):
+        internal = [self._test_id]
+        if self._short_description is not None:
+            internal.append(self._short_description)
+        return "<%s.%s(%s)>" % (
+            self.__class__.__module__,
+            self.__class__.__name__,
+            ", ".join(map(repr, internal)))
+
+    def __str__(self):
+        return self.id()
+
+    def countTestCases(self):
+        return 1
+
+    def debug(self):
+        pass
+
+    def id(self):
+        return self._test_id
+
+    def run(self, result=None):
+        if result is None:
+            result = TestResult()
+        result.startTest(self)
+        result.addSuccess(self)
+        result.stopTest(self)
+
+    def shortDescription(self):
+        if self._short_description is None:
+            return self.id()
+        else:
+            return self._short_description
+
+
+class ErrorHolder(PlaceHolder):
+    """A placeholder test that will error out when run."""
+
+    failureException = None
+
+    def __init__(self, test_id, error, short_description=None):
+        """Construct an `ErrorHolder`.
+
+        :param test_id: The id of the test.
+        :param error: The exc info tuple that will be used as the test's error.
+        :param short_description: An optional short description of the test.
+        """
+        super(ErrorHolder, self).__init__(
+            test_id, short_description=short_description)
+        self._error = error
+
+    def __repr__(self):
+        internal = [self._test_id, self._error]
+        if self._short_description is not None:
+            internal.append(self._short_description)
+        return "<%s.%s(%s)>" % (
+            self.__class__.__module__,
+            self.__class__.__name__,
+            ", ".join(map(repr, internal)))
+
+    def run(self, result=None):
+        if result is None:
+            result = TestResult()
+        result.startTest(self)
+        result.addError(self, self._error)
+        result.stopTest(self)
+
+
 # Python 2.4 did not know how to copy functions.
 if types.FunctionType not in copy._copy_dispatch:
     copy._copy_dispatch[types.FunctionType] = copy._copy_immutable
 
 
-
 def clone_test_with_new_id(test, new_id):
     """Copy a TestCase, and give the copied test a new id.
-    
+
     This is only expected to be used on tests that have been constructed but
     not executed.
     """

@@ -4,6 +4,127 @@ testtools NEWS
 NEXT
 ~~~~
 
+0.9.6
+~~~~~
+
+Nothing major in this release, just enough small bits and pieces to make it
+useful enough to upgrade to.
+
+In particular, a serious bug in assertThat() has been fixed, it's easier to
+write Matchers, there's a TestCase.patch() method for those inevitable monkey
+patches and TestCase.assertEqual gives slightly nicer errors.
+
+Improvements
+------------
+
+ * 'TestCase.assertEqual' now formats errors a little more nicely, in the
+   style of bzrlib.
+
+ * Added `PlaceHolder` and `ErrorHolder`, TestCase-like objects that can be
+   used to add results to a `TestResult`.
+
+ * 'Mismatch' now takes optional description and details parameters, so
+   custom Matchers aren't compelled to make their own subclass.
+
+ * jml added a built-in UTF8_TEXT ContentType to make it slightly easier to
+   add details to test results. See bug #520044.
+
+ * Fix a bug in our built-in matchers where assertThat would blow up if any
+   of them failed. All built-in mismatch objects now provide get_details().
+
+ * New 'Is' matcher, which lets you assert that a thing is identical to
+   another thing.
+
+ * New 'LessThan' matcher which lets you assert that a thing is less than
+   another thing.
+
+ * TestCase now has a 'patch()' method to make it easier to monkey-patching
+   objects in tests. See the manual for more information. Fixes bug #310770.
+
+ * MultiTestResult methods now pass back return values from the results it
+   forwards to.
+
+0.9.5
+~~~~~
+
+This release fixes some obscure traceback formatting issues that probably
+weren't affecting you but were certainly breaking our own test suite.
+
+Changes
+-------
+
+* Jamu Kakar has updated classes in testtools.matchers and testtools.runtest
+  to be new-style classes, fixing bug #611273.
+
+Improvements
+------------
+
+* Martin[gz] fixed traceback handling to handle cases where extract_tb returns
+  a source line of None. Fixes bug #611307.
+
+* Martin[gz] fixed an unicode issue that was causing the tests to fail,
+  closing bug #604187.
+
+* testtools now handles string exceptions (although why would you want to use
+  them?) and formats their tracebacks correctly. Thanks to Martin[gz] for
+  fixing bug #592262.
+
+0.9.4
+~~~~~
+
+This release overhauls the traceback formatting layer to deal with Python 2
+line numbers and traceback objects often being local user encoded strings
+rather than unicode objects. Test discovery has also been added and Python 3.1
+is also supported. Finally, the Mismatch protocol has been extended to let
+Matchers collaborate with tests in supplying detailed data about failures.
+
+Changes
+-------
+
+* testtools.utils has been renamed to testtools.compat. Importing
+  testtools.utils will now generate a deprecation warning.
+
+Improvements
+------------
+
+* Add machinery for Python 2 to create unicode tracebacks like those used by
+  Python 3. This means testtools no longer throws on encountering non-ascii
+  filenames, source lines, or exception strings when displaying test results.
+  Largely contributed by Martin[gz] with some tweaks from Robert Collins.
+
+* James Westby has supplied test discovery support using the Python 2.7
+  TestRunner in testtools.run. This requires the 'discover' module. This
+  closes bug #250764.
+
+* Python 3.1 is now supported, thanks to Martin[gz] for a partial patch.
+  This fixes bug #592375.
+
+* TestCase.addCleanup has had its docstring corrected about when cleanups run.
+
+* TestCase.skip is now deprecated in favour of TestCase.skipTest, which is the
+  Python2.7 spelling for skip. This closes bug #560436.
+
+* Tests work on IronPython patch from Martin[gz] applied.
+
+* Thanks to a patch from James Westby testtools.matchers.Mismatch can now
+  supply a get_details method, which assertThat will query to provide
+  additional attachments. This can be used to provide additional detail
+  about the mismatch that doesn't suite being included in describe(). For
+  instance, if the match process was complex, a log of the process could be
+  included, permitting debugging.
+
+* testtools.testresults.real._StringException will now answer __str__ if its
+  value is unicode by encoding with UTF8, and vice versa to answer __unicode__.
+  This permits subunit decoded exceptions to contain unicode and still format
+  correctly.
+
+0.9.3
+~~~~~
+
+More matchers, Python 2.4 support, faster test cloning by switching to copy
+rather than deepcopy and better output when exceptions occur in cleanups are
+the defining characteristics of this release.
+
 Improvements
 ------------
 
@@ -33,6 +154,11 @@ Improvements
 
 * The backtrace test result output tests should now pass on windows and other
   systems where os.sep is not '/'.
+
+* When a cleanUp or tearDown exception occurs, it is now accumulated as a new
+  traceback in the test details, rather than as a separate call to addError / 
+  addException. This makes testtools work better with most TestResult objects
+  and fixes bug #335816.
 
 
 0.9.2

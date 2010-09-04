@@ -12,7 +12,7 @@ import sys
 from testtools.testresult import ExtendedToOriginalDecorator
 
 
-class RunTest:
+class RunTest(object):
     """An object to run a test.
 
     RunTest objects are used to implement the internal logic involved in
@@ -36,6 +36,8 @@ class RunTest:
         classes in the list).
     :ivar exception_caught: An object returned when _run_user catches an
         exception.
+    :ivar _exceptions: A list of caught exceptions, used to do the single
+        reporting of error/failure/skip etc.
     """
 
     def __init__(self, case, handlers=None):
@@ -48,6 +50,7 @@ class RunTest:
         self.case = case
         self.handlers = handlers or []
         self.exception_caught = object()
+        self._exceptions = []
 
     def run(self, result=None):
         """Run self.case reporting activity to result.
@@ -86,7 +89,16 @@ class RunTest:
         result.startTest(self.case)
         self.result = result
         try:
+            self._exceptions = []
             self._run_core()
+            if self._exceptions:
+                # One or more caught exceptions, now trigger the test's
+                # reporting method for just one.
+                e = self._exceptions.pop()
+                for exc_class, handler in self.handlers:
+                    if isinstance(e, exc_class):
+                        handler(self.case, self.result, e)
+                        break
         finally:
             result.stopTest(self.case)
         return result
@@ -96,7 +108,9 @@ class RunTest:
         if self.exception_caught == self._run_user(self.case._run_setup,
             self.result):
             # Don't run the test method if we failed getting here.
-            self.case._runCleanups(self.result)
+            e = self.case._runCleanups(self.result)
+            if e is not None:
+                self._exceptions.append(e)
             return
         # Run everything from here on in. If any of the methods raise an
         # exception we'll have failed.
@@ -112,8 +126,9 @@ class RunTest:
                     failed = True
             finally:
                 try:
-                    if not self._run_user(
-                        self.case._runCleanups, self.result):
+                    e = self._run_user(self.case._runCleanups, self.result)
+                    if e is not None:
+                        self._exceptions.append(e)
                         failed = True
                 finally:
                     if not failed:
@@ -129,14 +144,12 @@ class RunTest:
             return fn(*args)
         except KeyboardInterrupt:
             raise
-        except Exception:
-            # Note that bare exceptions are not caught, so raised strings will
-            # escape: but they are deprecated anyway.
+        except:
             exc_info = sys.exc_info()
             e = exc_info[1]
+            self.case.onException(exc_info)
             for exc_class, handler in self.handlers:
-                self.case.onException(exc_info)
                 if isinstance(e, exc_class):
-                    handler(self.case, self.result, e)
+                    self._exceptions.append(e)
                     return self.exception_caught
             raise e

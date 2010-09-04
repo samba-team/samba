@@ -15,6 +15,8 @@ __all__ = [
     'Annotate',
     'DocTestMatches',
     'Equals',
+    'Is',
+    'LessThan',
     'MatchesAll',
     'MatchesAny',
     'NotEquals',
@@ -22,9 +24,10 @@ __all__ = [
     ]
 
 import doctest
+import operator
 
 
-class Matcher:
+class Matcher(object):
     """A pattern matcher.
 
     A Matcher must implement match and __str__ to be used by
@@ -52,18 +55,53 @@ class Matcher:
         raise NotImplementedError(self.__str__)
 
 
-class Mismatch:
+class Mismatch(object):
     """An object describing a mismatch detected by a Matcher."""
+
+    def __init__(self, description=None, details=None):
+        """Construct a `Mismatch`.
+
+        :param description: A description to use.  If not provided,
+            `Mismatch.describe` must be implemented.
+        :param details: Extra details about the mismatch.  Defaults
+            to the empty dict.
+        """
+        if description:
+            self._description = description
+        if details is None:
+            details = {}
+        self._details = details
 
     def describe(self):
         """Describe the mismatch.
 
         This should be either a human-readable string or castable to a string.
         """
-        raise NotImplementedError(self.describe_difference)
+        try:
+            return self._description
+        except AttributeError:
+            raise NotImplementedError(self.describe)
+
+    def get_details(self):
+        """Get extra details about the mismatch.
+
+        This allows the mismatch to provide extra information beyond the basic
+        description, including large text or binary files, or debugging internals
+        without having to force it to fit in the output of 'describe'.
+
+        The testtools assertion assertThat will query get_details and attach
+        all its values to the test, permitting them to be reported in whatever
+        manner the test environment chooses.
+
+        :return: a dict mapping names to Content objects. name is a string to
+            name the detail, and the Content object is the detail to add
+            to the result. For more information see the API to which items from
+            this dict are passed testtools.TestCase.addDetail.
+        """
+        return getattr(self, '_details', {})
 
 
-class DocTestMatches:
+class DocTestMatches(object):
     """See if a string matches a doctest example."""
 
     def __init__(self, example, flags=0):
@@ -102,7 +140,7 @@ class DocTestMatches:
         return self._checker.output_difference(self, with_nl, self.flags)
 
 
-class DocTestMismatch:
+class DocTestMismatch(Mismatch):
     """Mismatch object for DocTestMatches."""
 
     def __init__(self, matcher, with_nl):
@@ -113,63 +151,69 @@ class DocTestMismatch:
         return self.matcher._describe_difference(self.with_nl)
 
 
-class Equals:
-    """Matches if the items are equal."""
+class _BinaryComparison(object):
+    """Matcher that compares an object to another object."""
 
     def __init__(self, expected):
         self.expected = expected
 
-    def match(self, other):
-        if self.expected == other:
-            return None
-        return EqualsMismatch(self.expected, other)
-
     def __str__(self):
-        return "Equals(%r)" % self.expected
+        return "%s(%r)" % (self.__class__.__name__, self.expected)
+
+    def match(self, other):
+        if self.comparator(other, self.expected):
+            return None
+        return _BinaryMismatch(self.expected, self.mismatch_string, other)
+
+    def comparator(self, expected, other):
+        raise NotImplementedError(self.comparator)
 
 
-class EqualsMismatch:
-    """Two things differed."""
+class _BinaryMismatch(Mismatch):
+    """Two things did not match."""
 
-    def __init__(self, expected, other):
+    def __init__(self, expected, mismatch_string, other):
         self.expected = expected
+        self._mismatch_string = mismatch_string
         self.other = other
 
     def describe(self):
-        return "%r != %r" % (self.expected, self.other)
+        return "%r %s %r" % (self.expected, self._mismatch_string, self.other)
 
 
-class NotEquals:
+class Equals(_BinaryComparison):
+    """Matches if the items are equal."""
+
+    comparator = operator.eq
+    mismatch_string = '!='
+
+
+class NotEquals(_BinaryComparison):
     """Matches if the items are not equal.
 
     In most cases, this is equivalent to `Not(Equals(foo))`. The difference
     only matters when testing `__ne__` implementations.
     """
 
-    def __init__(self, expected):
-        self.expected = expected
-
-    def __str__(self):
-        return 'NotEquals(%r)' % (self.expected,)
-
-    def match(self, other):
-        if self.expected != other:
-            return None
-        return NotEqualsMismatch(self.expected, other)
+    comparator = operator.ne
+    mismatch_string = '=='
 
 
-class NotEqualsMismatch:
-    """Two things are the same."""
+class Is(_BinaryComparison):
+    """Matches if the items are identical."""
 
-    def __init__(self, expected, other):
-        self.expected = expected
-        self.other = other
-
-    def describe(self):
-        return '%r == %r' % (self.expected, self.other)
+    comparator = operator.is_
+    mismatch_string = 'is not'
 
 
-class MatchesAny:
+class LessThan(_BinaryComparison):
+    """Matches if the item is less than the matchers reference object."""
+
+    comparator = operator.__lt__
+    mismatch_string = 'is >='
+
+
+class MatchesAny(object):
     """Matches if any of the matchers it is created with match."""
 
     def __init__(self, *matchers):
@@ -189,7 +233,7 @@ class MatchesAny:
             str(matcher) for matcher in self.matchers])
 
 
-class MatchesAll:
+class MatchesAll(object):
     """Matches if all of the matchers it is created with match."""
 
     def __init__(self, *matchers):
@@ -210,7 +254,7 @@ class MatchesAll:
             return None
 
 
-class MismatchesAll:
+class MismatchesAll(Mismatch):
     """A mismatch with many child mismatches."""
 
     def __init__(self, mismatches):
@@ -224,7 +268,7 @@ class MismatchesAll:
         return '\n'.join(descriptions)
 
 
-class Not:
+class Not(object):
     """Inverts a matcher."""
 
     def __init__(self, matcher):
@@ -241,7 +285,7 @@ class Not:
             return None
 
 
-class MatchedUnexpectedly:
+class MatchedUnexpectedly(Mismatch):
     """A thing matched when it wasn't supposed to."""
 
     def __init__(self, matcher, other):
@@ -252,7 +296,7 @@ class MatchedUnexpectedly:
         return "%r matches %s" % (self.other, self.matcher)
 
 
-class Annotate:
+class Annotate(object):
     """Annotates a matcher with a descriptive string.
 
     Mismatches are then described as '<mismatch>: <annotation>'.
@@ -271,7 +315,7 @@ class Annotate:
             return AnnotatedMismatch(self.annotation, mismatch)
 
 
-class AnnotatedMismatch:
+class AnnotatedMismatch(Mismatch):
     """A mismatch annotated with a descriptive string."""
 
     def __init__(self, annotation, mismatch):

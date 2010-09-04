@@ -1,13 +1,15 @@
-# Copyright (c) 2008, 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008, 2009, 2010 Jonathan M. Lange. See LICENSE for details.
 
 """Extensions to the standard Python unittest library."""
 
 __all__ = [
     'clone_test_with_new_id',
     'ConcurrentTestSuite',
+    'ErrorHolder',
     'ExtendedToOriginalDecorator',
     'iterate_tests',
     'MultiTestResult',
+    'PlaceHolder',
     'TestCase',
     'TestResult',
     'TextTestResult',
@@ -25,6 +27,8 @@ from testtools.runtest import (
     RunTest,
     )
 from testtools.testcase import (
+    ErrorHolder,
+    PlaceHolder,
     TestCase,
     clone_test_with_new_id,
     skip,
@@ -40,8 +44,8 @@ from testtools.testresult import (
     )
 from testtools.testsuite import (
     ConcurrentTestSuite,
+    iterate_tests,
     )
-from testtools.utils import iterate_tests
 
 # same format as sys.version_info: "A tuple containing the five components of
 # the version number: major, minor, micro, releaselevel, and serial. All
@@ -55,4 +59,4 @@ from testtools.utils import iterate_tests
 # If the releaselevel is 'final', then the tarball will be major.minor.micro.
 # Otherwise it is major.minor.micro~$(revno).
 
-__version__ = (0, 9, 2, 'final', 0)
+__version__ = (0, 9, 7, 'dev', 0)
