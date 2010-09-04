@@ -191,6 +191,19 @@ static ssize_t tstream_cli_np_pending_bytes(struct tstream_context *stream)
 	return cli_nps->read.left;
 }
 
+bool tstream_is_cli_np(struct tstream_context *stream)
+{
+	struct tstream_cli_np *cli_nps =
+		talloc_get_type(_tstream_context_data(stream),
+		struct tstream_cli_np);
+
+	if (!cli_nps) {
+		return false;
+	}
+
+	return true;
+}
+
 struct tstream_cli_np_writev_state {
 	struct tstream_context *stream;
 	struct tevent_context *ev;

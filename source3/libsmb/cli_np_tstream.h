@@ -44,4 +44,6 @@ NTSTATUS _tstream_cli_np_existing(TALLOC_CTX *mem_ctx,
 #define tstream_cli_np_existing(mem_ctx, cli, npipe, stream) \
 	_tstream_cli_np_existing(mem_ctx, cli, npipe, stream, __location__)
 
+bool tstream_is_cli_np(struct tstream_context *stream);
+
 #endif /*  _CLI_NP_TSTREAM_H_ */
