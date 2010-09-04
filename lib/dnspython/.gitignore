@@ -1,0 +1,5 @@
+build
+dist
+MANIFEST
+html
+tests/*.out

@@ -56,7 +56,7 @@ class UnknownAlgorithm(Exception):
 def algorithm_from_text(text):
     """Convert text into a DNSSEC algorithm value
     @rtype: int"""
-
+    
     value = _algorithm_by_text.get(text.upper())
     if value is None:
         value = int(text)
@@ -65,7 +65,7 @@ def algorithm_from_text(text):
 def algorithm_to_text(value):
     """Convert a DNSSEC algorithm value to text
     @rtype: string"""
-
+    
     text = _algorithm_by_value.get(value)
     if text is None:
         text = str(value)

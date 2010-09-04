@@ -29,7 +29,7 @@ def _validate_float_string(what):
         raise dns.exception.FormError
     if not right == '' and not right.isdigit():
         raise dns.exception.FormError
-
+    
 class GPOS(dns.rdata.Rdata):
     """GPOS record
 
@@ -42,7 +42,7 @@ class GPOS(dns.rdata.Rdata):
     @see: RFC 1712"""
 
     __slots__ = ['latitude', 'longitude', 'altitude']
-
+    
     def __init__(self, rdclass, rdtype, latitude, longitude, altitude):
         super(GPOS, self).__init__(rdclass, rdtype)
         if isinstance(latitude, float) or \
@@ -66,14 +66,14 @@ class GPOS(dns.rdata.Rdata):
 
     def to_text(self, origin=None, relativize=True, **kw):
         return '%s %s %s' % (self.latitude, self.longitude, self.altitude)
-
+        
     def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
         latitude = tok.get_string()
         longitude = tok.get_string()
         altitude = tok.get_string()
         tok.get_eol()
         return cls(rdclass, rdtype, latitude, longitude, altitude)
-
+    
     from_text = classmethod(from_text)
 
     def to_wire(self, file, compress = None, origin = None):
@@ -92,7 +92,7 @@ class GPOS(dns.rdata.Rdata):
         byte = chr(l)
         file.write(byte)
         file.write(self.altitude)
-
+        
     def from_wire(cls, rdclass, rdtype, wire, current, rdlen, origin = None):
         l = ord(wire[current])
         current += 1

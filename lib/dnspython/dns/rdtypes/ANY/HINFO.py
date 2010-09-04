@@ -27,7 +27,7 @@ class HINFO(dns.rdata.Rdata):
     @see: RFC 1035"""
 
     __slots__ = ['cpu', 'os']
-
+    
     def __init__(self, rdclass, rdtype, cpu, os):
         super(HINFO, self).__init__(rdclass, rdtype)
         self.cpu = cpu
@@ -36,13 +36,13 @@ class HINFO(dns.rdata.Rdata):
     def to_text(self, origin=None, relativize=True, **kw):
         return '"%s" "%s"' % (dns.rdata._escapify(self.cpu),
                               dns.rdata._escapify(self.os))
-
+        
     def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
         cpu = tok.get_string()
         os = tok.get_string()
         tok.get_eol()
         return cls(rdclass, rdtype, cpu, os)
-
+    
     from_text = classmethod(from_text)
 
     def to_wire(self, file, compress = None, origin = None):
@@ -56,7 +56,7 @@ class HINFO(dns.rdata.Rdata):
         byte = chr(l)
         file.write(byte)
         file.write(self.os)
-
+        
     def from_wire(cls, rdclass, rdtype, wire, current, rdlen, origin = None):
         l = ord(wire[current])
         current += 1

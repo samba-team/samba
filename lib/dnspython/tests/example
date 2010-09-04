@@ -35,11 +35,11 @@ a			TXT	"foo foo foo"
 			PTR	foo.net.
 ;; The next line not starting with ';;' is leading whitespace followed by
 ;; EOL.  We want to treat that as if EOL had appeared alone.
-
+   	    
 ;; The next line not starting with ';;' is leading whitespace followed by
 ;; a comment followed by EOL.  We want to treat that as if EOL had appeared
 ;; alone.
-		; foo
+		; foo	
 $TTL 3600	; 1 hour
 a01			A	0.0.0.0
 a02			A	255.255.255.255
@@ -72,7 +72,7 @@ $TTL 3600	; 1 hour
 dhcid01			DHCID	( AAIBY2/AuCccgoJbsaxcQc9TUapptP69l
 			          OjxfNuVAA2kjEA= )
 dhcid02			DHCID   ( AAEBOSD+XR3Os/0LozeXVqcNc7FwCfQdW
-				  L3b/NaiUDlW2No= )
+                        	  L3b/NaiUDlW2No= )
 dhcid03			DHCID	( AAABxLmlskllE0MVjd57zHcWmEH3pCQ6V
                                   ytcKD//7es/deY= )
 dname01			DNAME	dname-target.
@@ -93,7 +93,7 @@ gpos01			GPOS	"-22.6882" "116.8652" "250.0"
 ;;
 ;; XXXRTH  I have commented out the following line because I don't think
 ;; it is a valid GPOS record.
-;;
+;; 
 ;;gpos02			GPOS	"" "" ""
 hinfo01			HINFO	"Generic PC clone" "NetBSD-1.4"
 hinfo02			HINFO	"PC" "NetBSD"
