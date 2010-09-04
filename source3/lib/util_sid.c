@@ -230,8 +230,12 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	}
 
 	/* get identauth */
-	if (!q || (*q != '-')) {
 	conv = (uint32_t) strtoul(q, &q, 10);
+	if (!q) {
+		goto format_error;
+	} else if (*q == '\0') {
+		/* Just id_auth, no subauths */
+	} else if (*q != '-') {
 		goto format_error;
 	}
 	/* identauth in decimal should be <  2^32 */
@@ -243,8 +247,12 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	sidout->id_auth[4] = (conv & 0x0000ff00) >> 8;
 	sidout->id_auth[5] = (conv & 0x000000ff);
 
-	q++;
 	sidout->num_auths = 0;
+	if (*q == '\0') {
+		return true;
+	}
+
+	q++;
 
 	while (true) {
 		char *end;
