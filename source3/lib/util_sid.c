@@ -209,7 +209,7 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	const char *p;
 	char *q;
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-	uint32 conv;
+	uint32_t conv;
 
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
 		goto format_error;
@@ -224,11 +224,11 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 		goto format_error;
 	}
 
-	conv = (uint32) strtoul(p, &q, 10);
+	conv = (uint32_t) strtoul(p, &q, 10);
 	if (!q || (*q != '-')) {
 		goto format_error;
 	}
-	sidout->sid_rev_num = (uint8) conv;
+	sidout->sid_rev_num = (uint8_t) conv;
 	q++;
 
 	if (!isdigit(*q)) {
@@ -236,8 +236,8 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	}
 
 	/* get identauth */
-	conv = (uint32) strtoul(q, &q, 10);
 	if (!q || (*q != '-')) {
+	conv = (uint32_t) strtoul(q, &q, 10);
 		goto format_error;
 	}
 	/* identauth in decimal should be <  2^32 */
@@ -289,13 +289,13 @@ format_error:
  Add a rid to the end of a sid
 *****************************************************************/  
 
-bool sid_append_rid(struct dom_sid *sid, uint32 rid)
+bool sid_append_rid(struct dom_sid *sid, uint32_t rid)
 {
 	if (sid->num_auths < MAXSUBAUTHS) {
 		sid->sub_auths[sid->num_auths++] = rid;
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 bool sid_compose(struct dom_sid *dst, const struct dom_sid *domain_sid, uint32 rid)
