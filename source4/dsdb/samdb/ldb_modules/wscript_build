@@ -184,7 +184,7 @@ bld.SAMBA_MODULE('ldb_show_deleted',
 	subsystem='ldb',
 	init_function='LDB_MODULE(show_deleted)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSAMBA-UTIL'
+	deps='talloc LIBEVENTS LIBSAMBA-UTIL DSDB_MODULE_HELPERS'
 	)
 
 
@@ -239,7 +239,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_rename)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSAMBA-UTIL ldb'
+	deps='talloc LIBEVENTS LIBSAMBA-UTIL ldb SAMDB_COMMON'
 	)
 
 
