@@ -272,13 +272,13 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 {
 	struct dom_sid *sid;
 
-	sid = talloc(mem_ctx, struct dom_sid);
+	sid = dom_sid_dup(mem_ctx, domain_sid);
 	if (!sid) return NULL;
 
-	*sid = *domain_sid;
-
-	sid->sub_auths[sid->num_auths] = rid;
-	sid->num_auths++;
+	if (!sid_append_rid(sid, rid)) {
+		talloc_free(sid);
+		return NULL;
+	}
 
 	return sid;
 }
