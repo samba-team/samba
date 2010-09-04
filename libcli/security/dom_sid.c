@@ -85,60 +85,115 @@ bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 	return dom_sid_compare(sid1, sid2) == 0;
 }
 
-/* Yes, I did think about multibyte issues here, and for all I can see there's
- * none of those for parsing a SID. */
-#undef strncasecmp
+/*****************************************************************
+ Add a rid to the end of a sid
+*****************************************************************/
+
+bool sid_append_rid(struct dom_sid *sid, uint32_t rid)
+{
+	if (sid->num_auths < ARRAY_SIZE(sid->sub_auths)) {
+		sid->sub_auths[sid->num_auths++] = rid;
+		return true;
+	}
+	return false;
+}
+
+/*****************************************************************
+ Convert a string to a SID. Returns True on success, False on fail.
+*****************************************************************/
+
+bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
+{
+	const char *p;
+	char *q;
+	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	uint32_t conv;
+
+	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
+		goto format_error;
+	}
+
+	ZERO_STRUCTP(sidout);
+
+	/* Get the revision number. */
+	p = sidstr + 2;
+
+	if (!isdigit(*p)) {
+		goto format_error;
+	}
+
+	conv = (uint32_t) strtoul(p, &q, 10);
+	if (!q || (*q != '-')) {
+		goto format_error;
+	}
+	sidout->sid_rev_num = (uint8_t) conv;
+	q++;
+
+	if (!isdigit(*q)) {
+		goto format_error;
+	}
+
+	/* get identauth */
+	conv = (uint32_t) strtoul(q, &q, 10);
+	if (!q) {
+		goto format_error;
+	} else if (*q == '\0') {
+		/* Just id_auth, no subauths */
+	} else if (*q != '-') {
+		goto format_error;
+	}
+	/* identauth in decimal should be <  2^32 */
+	/* NOTE - the conv value is in big-endian format. */
+	sidout->id_auth[0] = 0;
+	sidout->id_auth[1] = 0;
+	sidout->id_auth[2] = (conv & 0xff000000) >> 24;
+	sidout->id_auth[3] = (conv & 0x00ff0000) >> 16;
+	sidout->id_auth[4] = (conv & 0x0000ff00) >> 8;
+	sidout->id_auth[5] = (conv & 0x000000ff);
+
+	sidout->num_auths = 0;
+	if (*q == '\0') {
+		return true;
+	}
+
+	q++;
+
+	while (true) {
+		char *end;
+
+		if (!isdigit(*q)) {
+			goto format_error;
+		}
+
+		conv = strtoul(q, &end, 10);
+		if (end == q) {
+			goto format_error;
+		}
+
+		if (!sid_append_rid(sidout, conv)) {
+			DEBUG(3, ("Too many sid auths in %s\n", sidstr));
+			return false;
+		}
+
+		q = end;
+		if (*q == '\0') {
+			break;
+		}
+		if (*q != '-') {
+			goto format_error;
+		}
+		q += 1;
+	}
+	return true;
+
+format_error:
+	DEBUG(3, ("string_to_sid: SID %s is not in a valid format\n", sidstr));
+	return false;
+}
 
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
-	unsigned int rev, ia, num_sub_auths, i;
-	char *p;
-
-	if (strncasecmp(sidstr, "S-", 2)) {
-		return false;
-	}
-
-	sidstr += 2;
-
-	rev = strtol(sidstr, &p, 10);
-	if (*p != '-') {
-		return false;
-	}
-	sidstr = p+1;
-
-	ia = strtol(sidstr, &p, 10);
-	if (p == sidstr) {
-		return false;
-	}
-	sidstr = p;
-
-	num_sub_auths = 0;
-	for (i=0;sidstr[i];i++) {
-		if (sidstr[i] == '-') num_sub_auths++;
-	}
-
-	ret->sid_rev_num = rev;
-	ret->id_auth[0] = 0;
-	ret->id_auth[1] = 0;
-	ret->id_auth[2] = ia >> 24;
-	ret->id_auth[3] = ia >> 16;
-	ret->id_auth[4] = ia >> 8;
-	ret->id_auth[5] = ia;
-	ret->num_auths = num_sub_auths;
-
-	for (i=0;i<num_sub_auths;i++) {
-		if (sidstr[0] != '-') {
-			return false;
-		}
-		sidstr++;
-		ret->sub_auths[i] = strtoul(sidstr, &p, 10);
-		if (p == sidstr) {
-			return false;
-		}
-		sidstr = p;
-	}
-
-	return true;
+	return string_to_sid(ret, sidstr);
 }
 
 /*
