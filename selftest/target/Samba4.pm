@@ -141,7 +141,7 @@ sub check_or_start($$$)
 		}
 		unlink($env_vars->{SAMBA_TEST_FIFO});
 		my $exit = $? >> 8;
-		if ( $ret == 0 ) {
+		if ($ret == 0) {
 			print "$samba exits with status $exit\n";
 		} elsif ( $ret & 127 ) {
 			print "$samba got signal ".($ret & 127)." and exits with $exit!\n";
@@ -1127,11 +1127,7 @@ sub check_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	return 1 if (-p $envvars->{SAMBA_TEST_FIFO});
-
-	print $self->getlog_env($envvars);
-
-	return 0;
+	return (-p $envvars->{SAMBA_TEST_FIFO});
 }
 
 sub setup_env($$$)

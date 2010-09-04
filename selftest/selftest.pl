@@ -832,6 +832,7 @@ sub setup_env($)
 	} elsif (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
 		if (not $target->check_env($testenv_vars)) {
+			print $self->getlog_env($testenv_vars);
 			$testenv_vars = undef;
 		}
 	} else {
