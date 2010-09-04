@@ -150,6 +150,11 @@ def symlink_lib(self):
         if os.path.islink(link_target) and os.readlink(link_target) == libpath:
             return
         os.unlink(link_target)
+
+    link_container = os.path.dirname(link_target)
+    if not os.path.isdir(link_container):
+        os.mkdir(link_container)
+
     os.symlink(libpath, link_target)
 
 

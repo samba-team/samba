@@ -59,7 +59,7 @@ def SAMBA_BUILD_ENV(conf):
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
     mkdir_p(os.path.join(conf.blddir, 'default'))
-    for p in ['python','shared']:
+    for p in ['python','shared', 'modules']:
         link_target = os.path.join(conf.blddir, 'default/' + p)
         if not os.path.lexists(link_target):
             os.symlink('../' + p, link_target)
@@ -351,7 +351,7 @@ def SAMBA_MODULE(bld, modname, source,
 
     obj_target = modname + '.objlist'
 
-    realname = modname 
+    realname = modname
     if subsystem is not None:
         deps += ' ' + subsystem
         while realname.startswith("lib"+subsystem+"_"):
@@ -363,6 +363,8 @@ def SAMBA_MODULE(bld, modname, source,
     while realname.startswith("lib"):
         realname = realname[len("lib"):]
 
+    build_link_name = "modules/%s/%s" % (subsystem, realname)
+
     bld.SAMBA_LIBRARY(modname,
                       source,
                       deps=deps,
@@ -371,6 +373,7 @@ def SAMBA_MODULE(bld, modname, source,
                       autoproto = autoproto,
                       local_include=local_include,
                       vars=vars,
+                      link_name=build_link_name,
                       install_path="${MODULESDIR}/%s" % subsystem
                       )
 
