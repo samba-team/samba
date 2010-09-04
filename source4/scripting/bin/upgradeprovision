@@ -456,7 +456,6 @@ def handle_special_add(samdb, dn, names):
         #This entry was misplaced lets remove it if it exists
         dntoremove = "CN=Certificate Service DCOM Access,"\
                      "CN=Users, %s" % names.rootdn
-        print dntoremove
 
     objDn = Dn(samdb, "CN=Cryptographic Operators, CN=Builtin, %s" % names.rootdn)
     if dn == objDn:
@@ -687,8 +686,9 @@ def add_missing_entries(ref_samdb, samdb, names, basedn, list):
                 # DN can't be created because it depends on some
                 # other DN in the list
                 listDefered.append(dn)
+
     if len(listDefered) != 0:
-        raise ProvisioningError("Unable to insert missing elements:" \
+        raise ProvisioningError("Unable to insert missing elements:"
                                 "circular references")
 
 def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
