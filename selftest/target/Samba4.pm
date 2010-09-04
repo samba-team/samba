@@ -440,9 +440,6 @@ Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
 EOF
 }
 
-#
-# provision_raw_prepare() is also used by Samba34.pm!
-#
 sub provision_raw_prepare($$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, 
@@ -543,8 +540,6 @@ sub provision_raw_prepare($$$$$$$$$$)
 	return $ctx;
 }
 
-#
-# provision_raw_step1() is also used by Samba34.pm!
 #
 # Step1 creates the basic configuration
 #
@@ -707,8 +702,6 @@ nogroup:x:65534:nobody
 	return $ret;
 }
 
-#
-# provision_raw_step2() is also used by Samba34.pm!
 #
 # Step2 runs the provision script
 #
