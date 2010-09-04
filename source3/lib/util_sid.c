@@ -293,7 +293,7 @@ format_error:
 
 bool sid_append_rid(struct dom_sid *sid, uint32_t rid)
 {
-	if (sid->num_auths < MAXSUBAUTHS) {
+	if (sid->num_auths < ARRAY_SIZE(sid->sub_auths)) {
 		sid->sub_auths[sid->num_auths++] = rid;
 		return true;
 	}
