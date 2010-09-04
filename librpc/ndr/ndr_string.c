@@ -456,7 +456,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 	case LIBNDR_FLAG_STR_NULLTERM:
 		/* 
 		 * here the strings are null terminated
-		 * but also the array is null terminated
+		 * but also the array is null terminated if LIBNDR_FLAG_REMAINING
+		 * is specified
 		 */
 		for (count = 0;; count++) {
 			TALLOC_CTX *tmp_ctx;
@@ -469,6 +470,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 			tmp_ctx = ndr->current_mem_ctx;
 			ndr->current_mem_ctx = a;
 			NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+			if ((ndr->data_size - ndr->offset) == 0 && ndr->flags & LIBNDR_FLAG_REMAINING)
+			{
+				a[count] = s;
+				break;
+			}
 			ndr->current_mem_ctx = tmp_ctx;
 			if (strcmp("", s)==0) {
 				a[count] = NULL;
@@ -491,11 +497,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_f
 		 * but serarated by a null terminator
 		 *
 		 * which means the same as:
-		 * very string is null terminated exept the last
+		 * Every string is null terminated exept the last
 		 * string is terminated by the end of the buffer
 		 *
 		 * as LIBNDR_FLAG_STR_NULLTERM also end at the end
 		 * of the buffer, we can pull each string with this flag
+		 *
+		 * The big difference with the case LIBNDR_FLAG_STR_NOTERM +
+		 * LIBNDR_FLAG_REMAINING is that the last string will not be null terminated
 		 */
 		ndr->flags &= ~(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_REMAINING);
 		ndr->flags |= LIBNDR_FLAG_STR_NULLTERM;
@@ -545,8 +554,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_string_array(struct ndr_push *ndr, int ndr_f
 		for (count = 0; a && a[count]; count++) {
 			NDR_CHECK(ndr_push_string(ndr, ndr_flags, a[count]));
 		}
-
-		NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
+		/* If LIBNDR_FLAG_REMAINING then we do not add a null terminator to the array */
+		if (!(flags & LIBNDR_FLAG_REMAINING))
+		{
+			NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
+		}
 		break;
 
 	case LIBNDR_FLAG_STR_NOTERM:
