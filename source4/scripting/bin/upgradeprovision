@@ -478,14 +478,27 @@ def handle_special_add(samdb, dn, names):
                             base=str(names.rootdn),
                             scope=SCOPE_SUBTREE, attrs=["dn"],
                             controls=["search_options:1:2"])
-        if len(res) > 0:
+
+        res2 = samdb.search(expression="(dn=%s)" % dn,
+                            base=str(names.rootdn),
+                            scope=SCOPE_SUBTREE, attrs=["dn"],
+                            controls=["search_options:1:2"])
+
+        if len(res) > 0 and len(res2) == 0:
             message(CHANGE, "Existing object %s must be replaced by %s,"
                             "Renaming old object" % (str(oldDn), str(dn)))
-            samdb.rename(oldDn, objDn)
+            samdb.rename(oldDn, objDn, ["relax:0"])
 
-        return 1
+        return 0
 
     if dntoremove is not None:
+        res = samdb.search(expression="(cn=RID Set)",
+                            base=str(names.rootdn),
+                            scope=SCOPE_SUBTREE, attrs=["dn"],
+                            controls=["search_options:1:2"])
+
+        if len(res) == 0:
+            return 2
         res = samdb.search(expression="(dn=%s)" % dntoremove,
                             base=str(names.rootdn),
                             scope=SCOPE_SUBTREE, attrs=["dn"],
@@ -494,7 +507,9 @@ def handle_special_add(samdb, dn, names):
             message(CHANGE, "Existing object %s must be replaced by %s,"
                             "removing old object" % (dntoremove, str(dn)))
             samdb.delete(res[0]["dn"])
-    return 0
+            return 0
+
+    return 1
 
 
 def check_dn_nottobecreated(hash, index, listdn):
@@ -541,8 +556,15 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
     :param index: Current creation order
     :return: True if the object was created False otherwise"""
 
-    if handle_special_add(samdb, dn, names):
-        return
+    ret = handle_special_add(samdb, dn, names)
+
+    if ret == 2:
+        return False
+
+    if ret == 0:
+        return True
+
+
     reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
                     scope=SCOPE_SUBTREE, controls=["search_options:1:2"])
     empty = Message()
