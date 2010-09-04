@@ -297,20 +297,14 @@ bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid)
 
 bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid)
 {
-	int i;
-	if (len < 8)
-		return False;
-
-	ZERO_STRUCTP(sid);
-
-	sid->sid_rev_num = CVAL(inbuf, 0);
-	sid->num_auths = CVAL(inbuf, 1);
-	memcpy(sid->id_auth, inbuf+2, 6);
-	if (len < 8 + sid->num_auths*4)
-		return False;
-	for (i=0;i<sid->num_auths;i++)
-		sid->sub_auths[i] = IVAL(inbuf, 8+i*4);
-	return True;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB in = data_blob_const(inbuf, len);
+	ndr_err = ndr_pull_struct_blob_all(&in, NULL, sid,
+					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+	return true;
 }
 
 /*****************************************************************
