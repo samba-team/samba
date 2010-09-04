@@ -555,7 +555,7 @@ sub write_clientconf($$)
 	my ($conffile, $vars) = @_;
 
 	mkdir("$prefix/client", 0777) unless -d "$prefix/client";
-	
+
 	if ( -d "$prefix/client/private" ) {
 	        unlink <$prefix/client/private/*>;
 	} else {
@@ -969,8 +969,6 @@ $envvarstr
 print "\n";
 
 teardown_env($_) foreach (keys %running_envs);
-
-$target->stop();
 
 my $failed = 0;
 

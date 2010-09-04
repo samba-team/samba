@@ -44,9 +44,4 @@ sub setup_env($$$)
 	return $envvars;
 }
 
-sub stop($)
-{
-	my ($self) = @_;
-}
-
 1;

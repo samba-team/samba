@@ -795,8 +795,7 @@ sub provision($$$$$$$$$)
 		$ldap_uri =~ s|/|%2F|g;
 		$ldap_uri = "ldapi://$ldap_uri";
 		$ctx->{ldap_uri} = $ldap_uri;
-
-                if ($self->{ldap} eq "fedora-ds") {
+		if ($self->{ldap} eq "fedora-ds") {
 			$ctx->{sid_generator} = "backend";
 		}
 
@@ -1345,11 +1344,6 @@ sub setup_vampire_dc($$$)
 	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
 
 	return $env;
-}
-
-sub stop($)
-{
-	my ($self) = @_;
 }
 
 1;

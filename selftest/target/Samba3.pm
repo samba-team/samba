@@ -178,11 +178,6 @@ sub setup_member($$$)
 	return $ret;
 }
 
-sub stop($)
-{
-	my ($self) = @_;
-}
-
 sub stop_sig_term($$) {
 	my ($self, $pid) = @_;
 	kill("USR1", $pid) or kill("ALRM", $pid) or warn("Unable to kill $pid: $!");

@@ -159,9 +159,4 @@ sub setup_env($$$)
 	}
 }
 
-sub stop($)
-{
-	my ($self) = @_;
-}
-
 1;
