@@ -1005,6 +1005,9 @@ static int objectclass_do_mod(struct oc_context *ac)
 			}
 			if (!found) {
 				/* we cannot delete a not existing object class */
+				ldb_asprintf_errstring(ldb, "Cannot delete this %.*s ",
+					       (int)oc_el_change->values[i].length, (const char *)oc_el_change->values[i].data);
+
 				talloc_free(mem_ctx);
 				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}

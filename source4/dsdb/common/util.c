@@ -1644,6 +1644,8 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 	*dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], attribute);
 	if (!*dn) {
 		talloc_free(res);
+		ldb_asprintf_errstring(ldb, "Cannot find dn of attribute %s of %s", attribute,
+					ldb_dn_get_linearized(base));
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
