@@ -47,8 +47,12 @@ class SimpleDetailsParser(DetailsParser):
     def get_details(self, style=None):
         result = {}
         if not style:
+            # We know that subunit/testtools serialise [] formatted
+            # tracebacks as utf8, but perhaps we need a ReplacingContent
+            # or something like that.
             result['traceback'] = content.Content(
-                content_type.ContentType("text", "x-traceback"),
+                content_type.ContentType("text", "x-traceback",
+                {"charset": "utf8"}),
                 lambda:[self._message])
         else:
             if style == 'skip':
@@ -92,7 +96,7 @@ class MultipartDetailsParser(DetailsParser):
         residue = self._chunk_parser.write(line)
         if residue is not None:
             # Line based use always ends on no residue.
-            assert residue == ''
+            assert residue == '', 'residue: %r' % (residue,)
             body = self._body
             self._details[self._name] = content.Content(
                 self._content_type, lambda:[body.getvalue()])

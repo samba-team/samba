@@ -102,6 +102,9 @@ class TestTestProtocolServerPipe(unittest.TestCase):
                 "------------\n\n")])
         self.assertEqual(client.testsRun, 3)
 
+    def test_non_test_characters_forwarded_immediately(self):
+        pass
+
 
 class TestTestProtocolServerStartTest(unittest.TestCase):
 
@@ -243,7 +246,8 @@ class TestTestProtocolServerPassThrough(unittest.TestCase):
         self.protocol.lineReceived("]\n")
         self.assertEqual(self.stdout.getvalue(), "")
         details = {}
-        details['traceback'] = Content(ContentType("text", "x-traceback"),
+        details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}),
             lambda:[
             "test old mcdonald\n"
             "failure a\n"
@@ -285,7 +289,7 @@ class TestTestProtocolServerLostConnection(unittest.TestCase):
         self.protocol.lineReceived("test old mcdonald\n")
         self.protocol.lostConnection()
         failure = subunit.RemoteError(
-            "lost connection during test 'old mcdonald'")
+            u"lost connection during test 'old mcdonald'")
         self.assertEqual([
             ('startTest', self.test),
             ('addError', self.test, failure),
@@ -298,7 +302,7 @@ class TestTestProtocolServerLostConnection(unittest.TestCase):
         self.protocol.lostConnection()
         self.assertEqual([
             ('startTest', self.test),
-            ('addError', self.test, subunit.RemoteError("")),
+            ('addError', self.test, subunit.RemoteError(u"")),
             ('stopTest', self.test),
             ], self.client._events)
 
@@ -307,7 +311,7 @@ class TestTestProtocolServerLostConnection(unittest.TestCase):
         self.protocol.lineReceived("%s old mcdonald %s" % (outcome, opening))
         self.protocol.lostConnection()
         failure = subunit.RemoteError(
-            "lost connection during %s report of test 'old mcdonald'" % 
+            u"lost connection during %s report of test 'old mcdonald'" % 
             outcome)
         self.assertEqual([
             ('startTest', self.test),
@@ -327,7 +331,7 @@ class TestTestProtocolServerLostConnection(unittest.TestCase):
         self.protocol.lostConnection()
         self.assertEqual([
             ('startTest', self.test),
-            ('addFailure', self.test, subunit.RemoteError("")),
+            ('addFailure', self.test, subunit.RemoteError(u"")),
             ('stopTest', self.test),
             ], self.client._events)
 
@@ -411,8 +415,8 @@ class TestTestProtocolServerAddError(unittest.TestCase):
         self.protocol.lineReceived("error mcdonalds farm [\n")
         self.protocol.lineReceived("]\n")
         details = {}
-        details['traceback'] = Content(ContentType("text", "x-traceback"),
-            lambda:[""])
+        details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}), lambda:[""])
         self.assertEqual([
             ('startTest', self.test),
             ('addError', self.test, details),
@@ -424,8 +428,8 @@ class TestTestProtocolServerAddError(unittest.TestCase):
         self.protocol.lineReceived(" ]\n")
         self.protocol.lineReceived("]\n")
         details = {}
-        details['traceback'] = Content(ContentType("text", "x-traceback"),
-            lambda:["]\n"])
+        details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}), lambda:["]\n"])
         self.assertEqual([
             ('startTest', self.test),
             ('addError', self.test, details),
@@ -469,8 +473,8 @@ class TestTestProtocolServerAddFailure(unittest.TestCase):
         self.protocol.lineReceived("failure mcdonalds farm [\n")
         self.protocol.lineReceived("]\n")
         details = {}
-        details['traceback'] = Content(ContentType("text", "x-traceback"),
-            lambda:[""])
+        details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}), lambda:[""])
         self.assertFailure(details)
 
     def failure_quoted_bracket(self, keyword):
@@ -478,8 +482,8 @@ class TestTestProtocolServerAddFailure(unittest.TestCase):
         self.protocol.lineReceived(" ]\n")
         self.protocol.lineReceived("]\n")
         details = {}
-        details['traceback'] = Content(ContentType("text", "x-traceback"),
-            lambda:["]\n"])
+        details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}), lambda:["]\n"])
         self.assertFailure(details)
 
     def test_failure_quoted_bracket(self):
@@ -535,12 +539,13 @@ class TestTestProtocolServerAddxFail(unittest.TestCase):
             details = {}
             if error_message is not None:
                 details['traceback'] = Content(
-                    ContentType("text", "x-traceback"), lambda:[error_message])
+                    ContentType("text", "x-traceback", {'charset': 'utf8'}),
+                    lambda:[error_message])
             if isinstance(self.client, ExtendedTestResult):
                 value = details
             else:
                 if error_message is not None:
-                    value = subunit.RemoteError('Text attachment: traceback\n'
+                    value = subunit.RemoteError(u'Text attachment: traceback\n'
                         '------------\n' + error_message + '------------\n')
                 else:
                     value = subunit.RemoteError()
@@ -845,15 +850,15 @@ class TestRemotedTestCase(unittest.TestCase):
 class TestRemoteError(unittest.TestCase):
 
     def test_eq(self):
-        error = subunit.RemoteError("Something went wrong")
-        another_error = subunit.RemoteError("Something went wrong")
-        different_error = subunit.RemoteError("boo!")
+        error = subunit.RemoteError(u"Something went wrong")
+        another_error = subunit.RemoteError(u"Something went wrong")
+        different_error = subunit.RemoteError(u"boo!")
         self.assertEqual(error, another_error)
         self.assertNotEqual(error, different_error)
         self.assertNotEqual(different_error, another_error)
 
     def test_empty_constructor(self):
-        self.assertEqual(subunit.RemoteError(), subunit.RemoteError(""))
+        self.assertEqual(subunit.RemoteError(), subunit.RemoteError(u""))
 
 
 class TestExecTestCase(unittest.TestCase):
@@ -887,8 +892,8 @@ class TestExecTestCase(unittest.TestCase):
         mcdonald = subunit.RemotedTestCase("old mcdonald")
         bing = subunit.RemotedTestCase("bing crosby")
         bing_details = {}
-        bing_details['traceback'] = Content(ContentType("text", "x-traceback"),
-            lambda:["foo.c:53:ERROR invalid state\n"])
+        bing_details['traceback'] = Content(ContentType("text", "x-traceback",
+            {'charset': 'utf8'}), lambda:["foo.c:53:ERROR invalid state\n"])
         an_error = subunit.RemotedTestCase("an error")
         error_details = {}
         self.assertEqual([
@@ -1004,7 +1009,7 @@ class TestTestProtocolClient(unittest.TestCase):
             ContentType('text', 'plain'), lambda:['serialised\nform'])}
         self.sample_tb_details = dict(self.sample_details)
         self.sample_tb_details['traceback'] = TracebackContent(
-            subunit.RemoteError("boo qux"), self.test)
+            subunit.RemoteError(u"boo qux"), self.test)
 
     def test_start_test(self):
         """Test startTest on a TestProtocolClient."""
@@ -1034,7 +1039,7 @@ class TestTestProtocolClient(unittest.TestCase):
     def test_add_failure(self):
         """Test addFailure on a TestProtocolClient."""
         self.protocol.addFailure(
-            self.test, subunit.RemoteError("boo qux"))
+            self.test, subunit.RemoteError(u"boo qux"))
         self.assertEqual(
             self.io.getvalue(),
             ('failure: %s [\n' + _remote_exception_str + ': boo qux\n]\n')
@@ -1058,7 +1063,7 @@ class TestTestProtocolClient(unittest.TestCase):
     def test_add_error(self):
         """Test stopTest on a TestProtocolClient."""
         self.protocol.addError(
-            self.test, subunit.RemoteError("phwoar crikey"))
+            self.test, subunit.RemoteError(u"phwoar crikey"))
         self.assertEqual(
             self.io.getvalue(),
             ('error: %s [\n' +
@@ -1083,7 +1088,7 @@ class TestTestProtocolClient(unittest.TestCase):
     def test_add_expected_failure(self):
         """Test addExpectedFailure on a TestProtocolClient."""
         self.protocol.addExpectedFailure(
-            self.test, subunit.RemoteError("phwoar crikey"))
+            self.test, subunit.RemoteError(u"phwoar crikey"))
         self.assertEqual(
             self.io.getvalue(),
             ('xfail: %s [\n' +

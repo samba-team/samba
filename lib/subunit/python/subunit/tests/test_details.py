@@ -51,7 +51,8 @@ class TestSimpleDetails(unittest.TestCase):
         traceback = ""
         expected = {}
         expected['traceback'] = content.Content(
-            content_type.ContentType("text", "x-traceback"),
+            content_type.ContentType("text", "x-traceback",
+                {'charset': 'utf8'}),
             lambda:[""])
         found = parser.get_details()
         self.assertEqual(expected.keys(), found.keys())

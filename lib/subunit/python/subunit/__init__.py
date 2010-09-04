@@ -133,9 +133,7 @@ try:
 except ImportError:
     raise ImportError ("testtools.testresult.real does not contain "
         "_StringException, check your version.")
-
-
-from testtools.testresult.real import _StringException
+from testtools import testresult
 
 import chunked, details, test_results
 
@@ -244,7 +242,7 @@ class _ParserState(object):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest('unknown state of ')
+        self.parser._lostConnectionInTest(u'unknown state of ')
 
     def startTest(self, offset, line):
         """A test start command received."""
@@ -324,7 +322,7 @@ class _InTest(_ParserState):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest('')
+        self.parser._lostConnectionInTest(u'')
 
 
 class _OutSideTest(_ParserState):
@@ -359,7 +357,7 @@ class _ReadingDetails(_ParserState):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest('%s report of ' %
+        self.parser._lostConnectionInTest(u'%s report of ' %
             self._outcome_label())
 
     def _outcome_label(self):
@@ -501,7 +499,7 @@ class TestProtocolServer(object):
         self._state.lineReceived(line)
 
     def _lostConnectionInTest(self, state_string):
-        error_string = "lost connection during %stest '%s'" % (
+        error_string = u"lost connection during %stest '%s'" % (
             state_string, self.current_test_description)
         self.client.addError(self._current_test, RemoteError(error_string))
         self.client.stopTest(self._current_test)
@@ -531,7 +529,7 @@ class TestProtocolServer(object):
         self._stream.write(line)
 
 
-class TestProtocolClient(unittest.TestResult):
+class TestProtocolClient(testresult.TestResult):
     """A TestResult which generates a subunit stream for a test run.
     
     # Get a TestSuite or TestCase to run
@@ -550,8 +548,9 @@ class TestProtocolClient(unittest.TestResult):
     """
 
     def __init__(self, stream):
-        unittest.TestResult.__init__(self)
+        testresult.TestResult.__init__(self)
         self._stream = stream
+        _make_stream_binary(stream)
 
     def addError(self, test, error=None, details=None):
         """Report an error in test test.
@@ -618,8 +617,10 @@ class TestProtocolClient(unittest.TestResult):
             raise ValueError
         if error is not None:
             self._stream.write(" [\n")
-            for line in self._exc_info_to_string(error, test).splitlines():
-                self._stream.write("%s\n" % line)
+            # XXX: this needs to be made much stricter, along the lines of
+            # Martin[gz]'s work in testtools. Perhaps subunit can use that?
+            for line in self._exc_info_to_unicode(error, test).splitlines():
+                self._stream.write(("%s\n" % line).encode('utf8'))
         else:
             self._write_details(details)
         self._stream.write("]\n")
@@ -704,7 +705,7 @@ class TestProtocolClient(unittest.TestResult):
         """Obey the testtools result.done() interface."""
 
 
-def RemoteError(description=""):
+def RemoteError(description=u""):
     return (_StringException, _StringException(description), None)
 
 
@@ -754,7 +755,7 @@ class RemotedTestCase(unittest.TestCase):
     def run(self, result=None):
         if result is None: result = self.defaultTestResult()
         result.startTest(self)
-        result.addError(self, RemoteError("Cannot run RemotedTestCases.\n"))
+        result.addError(self, RemoteError(u"Cannot run RemotedTestCases.\n"))
         result.stopTest(self)
 
     def _strclass(self):
@@ -784,7 +785,7 @@ class ExecTestCase(unittest.TestCase):
 
     def debug(self):
         """Run the test without collecting errors in a TestResult"""
-        self._run(unittest.TestResult())
+        self._run(testresult.TestResult())
 
     def _run(self, result):
         protocol = TestProtocolServer(result)
@@ -816,7 +817,7 @@ class IsolatedTestSuite(unittest.TestSuite):
     """
 
     def run(self, result=None):
-        if result is None: result = unittest.TestResult()
+        if result is None: result = testresult.TestResult()
         run_isolated(unittest.TestSuite, self, result)
 
 
@@ -1045,8 +1046,10 @@ class ProtocolTestCase(object):
             subunit input is not forwarded.
         """
         self._stream = stream
+        _make_stream_binary(stream)
         self._passthrough = passthrough
         self._forward = forward
+        _make_stream_binary(forward)
 
     def __call__(self, result=None):
         return self.run(result)
@@ -1062,7 +1065,7 @@ class ProtocolTestCase(object):
         protocol.lostConnection()
 
 
-class TestResultStats(unittest.TestResult):
+class TestResultStats(testresult.TestResult):
     """A pyunit TestResult interface implementation for making statistics.
     
     :ivar total_tests: The total tests seen.
@@ -1073,7 +1076,7 @@ class TestResultStats(unittest.TestResult):
 
     def __init__(self, stream):
         """Create a TestResultStats which outputs to stream."""
-        unittest.TestResult.__init__(self)
+        testresult.TestResult.__init__(self)
         self._stream = stream
         self.failed_tests = 0
         self.skipped_tests = 0
@@ -1124,3 +1127,14 @@ def get_default_formatter():
     else:
         return sys.stdout
 
+
+def _make_stream_binary(stream):
+    """Ensure that a stream will be binary safe. See _make_binary_on_windows."""
+    if getattr(stream, 'fileno', None) is not None:
+        _make_binary_on_windows(stream.fileno())
+
+def _make_binary_on_windows(fileno):
+    """Win32 mangles \r\n to \n and that breaks streams. See bug lp:505078."""
+    if sys.platform == "win32":
+        import msvcrt
+        msvcrt.setmode(fileno, os.O_BINARY)

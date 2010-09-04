@@ -159,4 +159,25 @@ sub report_time($)
 	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
 }
 
+sub progress_pop()
+{
+	print "progress: pop\n";
+}
+
+sub progress_push()
+{
+	print "progress: push\n";
+}
+
+sub progress($;$)
+{
+	my ($count, $whence) = @_;
+
+	unless(defined($whence)) {
+		$whence = "";
+	}
+
+	print "progress: $whence$count\n";
+}
+
 1;

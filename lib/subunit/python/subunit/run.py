@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Simple subunit testrunner for python
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
@@ -23,6 +23,13 @@
 import sys
 
 from subunit import TestProtocolClient, get_default_formatter
+from testtools.run import (
+    BUFFEROUTPUT,
+    CATCHBREAK,
+    FAILFAST,
+    TestProgram,
+    USAGE_AS_MAIN,
+    )
 
 
 class SubunitTestRunner(object):
@@ -36,12 +43,30 @@ class SubunitTestRunner(object):
         return result
 
 
+class SubunitTestProgram(TestProgram):
+
+    USAGE = USAGE_AS_MAIN
+
+    def usageExit(self, msg=None):
+        if msg:
+            print msg
+        usage = {'progName': self.progName, 'catchbreak': '', 'failfast': '',
+                 'buffer': ''}
+        if self.failfast != False:
+            usage['failfast'] = FAILFAST
+        if self.catchbreak != False:
+            usage['catchbreak'] = CATCHBREAK
+        if self.buffer != False:
+            usage['buffer'] = BUFFEROUTPUT
+        usage_text = self.USAGE % usage
+        usage_lines = usage_text.split('\n')
+        usage_lines.insert(2, "Run a test suite with a subunit reporter.")
+        usage_lines.insert(3, "")
+        print('\n'.join(usage_lines))
+        sys.exit(2)
+
+
 if __name__ == '__main__':
-    import optparse
-    from unittest import TestProgram
-    parser = optparse.OptionParser(__doc__)
-    args = parser.parse_args()[1]
     stream = get_default_formatter()
     runner = SubunitTestRunner(stream)
-    program = TestProgram(module=None, argv=[sys.argv[0]] + args,
-                          testRunner=runner)
+    SubunitTestProgram(module=None, argv=sys.argv, testRunner=runner)

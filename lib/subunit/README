@@ -160,7 +160,7 @@ tags: [-]TAG ...
 time: YYYY-MM-DD HH:MM:SSZ
 
 DETAILS ::= BRACKETED | MULTIPART
-BRACKETED ::= '[' CR lines ']' CR
+BRACKETED ::= '[' CR UTF8-lines ']' CR
 MULTIPART ::= '[ multipart' CR PART* ']' CR
 PART ::= PART_TYPE CR NAME CR PART_BYTES CR
 PART_TYPE ::= Content-Type: type/sub-type(;parameter=value,parameter=value)
