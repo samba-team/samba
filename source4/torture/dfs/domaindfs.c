@@ -47,6 +47,10 @@ static bool test_getdomainreferral(struct torture_context *tctx,
 				 "0 domains referrals returned");
 	torture_assert_int_equal(tctx, resp.header_flags, 0,
 				 "Header flag different it's not a referral server");
+	torture_assert_int_equal(tctx, resp.referral_entries[1].version, 3,
+				 talloc_asprintf(tctx,
+					"Not expected version for referral entry 1 got %d expected 3",
+					resp.referral_entries[1].version));
 	torture_assert_int_equal(tctx, resp.referral_entries[0].version, 3,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
@@ -74,6 +78,7 @@ static bool test_getdcreferral(struct torture_context *tctx,
 	struct dfs_GetDFSReferral r, r2, r3;
 	struct dfs_referral_resp resp, resp2, resp3;
 	const char* str;
+	const char* str2;
 
 	r.in.req.max_referral_level = 3;
 	r.in.req.servername = "";
@@ -125,6 +130,16 @@ static bool test_getdcreferral(struct torture_context *tctx,
 				 resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first dc is less than 0");
+	str = strchr(resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0], '.');
+	str2 = resp2.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	if (str2[0] == '\\') {
+		str2++;
+	}
+	torture_assert_int_equal(tctx, strlen(str) >0, 1 ,"Length of domain too short");
+	str++;
+	torture_assert_int_equal(tctx, strcmp(str,str2), 0,
+					talloc_asprintf(tctx, "Pb domain of the dc is not"\
+								"the same as the requested: domain = %s got =%s",str2 ,str));
 
 	r3.in.req.max_referral_level = 3;
 	/*
