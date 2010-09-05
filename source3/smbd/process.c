@@ -2663,6 +2663,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	size_t unread, num_pending;
 	NTSTATUS status;
 	struct iovec *tmp;
+	size_t iov_len;
 	uint32_t seqnum = 0;
 	bool reply;
 	bool ok;
@@ -2705,7 +2706,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 				    0 /* timeout */,
 				    &unread,
 				    &encrypted,
-				    &state->pending[num_pending].iov_len,
+				    &iov_len,
 				    &seqnum,
 				    false /* trusted_channel*/);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2713,6 +2714,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 			  (int)sys_getpid(), nt_errstr(status)));
 		exit(1);
 	}
+	state->pending[num_pending].iov_len = iov_len;
 
 	ok = smbd_unlock_socket_internal(sconn);
 	if (!ok) {
