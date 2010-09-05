@@ -153,7 +153,7 @@ def symlink_lib(self):
 
     link_container = os.path.dirname(link_target)
     if not os.path.isdir(link_container):
-        os.mkdir(link_container)
+        os.makedirs(link_container)
 
     os.symlink(libpath, link_target)
 
