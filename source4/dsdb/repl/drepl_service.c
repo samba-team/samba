@@ -244,7 +244,7 @@ static NTSTATUS dreplsrv_refresh(struct irpc_message *msg,
 	struct dreplsrv_service *s = talloc_get_type(msg->private_data,
 						     struct dreplsrv_service);
 
-	r->out.werr = dreplsrv_refresh_partitions(s);
+	r->out.result = dreplsrv_refresh_partitions(s);
 
 	return NT_STATUS_OK;
 }

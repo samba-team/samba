@@ -156,7 +156,5 @@ import "misc.idl", "security.idl", "nbt.idl";
 	 * @param partition_dn Partition to refresh cacheh for.
 	 *                     If empy/NULL, refresh all partitions.
 	 */
-	void dreplsrv_refresh(
-		[out] WERROR werr
-		);
+	WERROR dreplsrv_refresh();
 }
