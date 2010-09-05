@@ -694,6 +694,7 @@ foreach my $fn (@testlists) {
 }
 
 my $restricted = undef;
+my $restricted_used = {};
 
 if ($opt_load_list) {
 	$restricted = [];
@@ -718,14 +719,16 @@ foreach my $testsuite (@available) {
 		Subunit::skip_testsuite($name, $skipreason);
 	} elsif (defined($restricted)) {
 		# Find the testsuite for this test
-		my $match = 0;
+		my $match = undef;
 		foreach my $r (@$restricted) {
 			if ($r eq $name) {
 				$individual_tests->{$name} = [];
-				$match = 1;
-			} elsif ($r =~ /^$name\.(.*)$/) {
+				$match = $r;
+				$restricted_used->{$r} = 1;
+			} elsif (substr($r, $name, length($name)+1) eq "$name.") {
 				push(@{$individual_tests->{$name}}, $1);
-				$match = 1;
+				$match = $r;
+				$restricted_used->{$r} = 1;
 			}
 		}
 		push(@todo, $testsuite) if ($match);
@@ -736,7 +739,7 @@ foreach my $testsuite (@available) {
 
 if (defined($restricted)) {
 	foreach (@$restricted) {
-		unless (defined($individual_tests->{$_})) {
+		unless (defined($restricted_used->{$_})) {
 			print "No test or testsuite found matching $_\n";
 		}
 	}
