@@ -45,8 +45,14 @@ def parse_results(msg_ops, statistics, fh):
         elif command == "time":
             msg_ops.control_msg(l)
             grp = re.match(
-                "(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\n", arg)
-            msg_ops.report_time(time.mktime((int(grp.group(1)), int(grp.group(2)), int(grp.group(3)), int(grp.group(4)), int(grp.group(5)), int(grp.group(6)), 0, 0, 0)))
+                '(\d+)-(\d+)-(\d+) (\d+):(\d+):([.0-9]+)\n', arg)
+            if grp is None:
+                grp = re.match(
+                    '(\d+)-(\d+)-(\d+) (\d+):(\d+):([.0-9]+)Z\n', arg)
+                if grp is None:
+                    print "Unable to parse time line: %s" % arg
+            if grp is not None:
+                msg_ops.report_time(time.mktime((int(grp.group(1)), int(grp.group(2)), int(grp.group(3)), int(grp.group(4)), int(grp.group(5)), int(float(grp.group(6))), 0, 0, 0)))
         elif command in VALID_RESULTS:
             msg_ops.control_msg(l)
             result = command
