@@ -95,6 +95,9 @@ plansmbtorturetestsuite() {
 }
 
 samba4srcdir="`dirname $0`/.."
+if [ -z "$BUILDDIR" ]; then
+	BUILDDIR="$samba4srcdir"
+fi
 samba4bindir="$BUILDDIR/bin"
 smb4torture="$samba4bindir/smbtorture${EXEEXT}"
 if which tap2subunit 2>/dev/null; then
@@ -134,7 +137,7 @@ for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD -
 done
 # see if we support ldaps
 [ -n "$CONFIG_H" ] || {
-    CONFIG_H="include/config.h"
+    CONFIG_H="$samba4bindir/default/source4/include/config.h"
 }
 if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
     for options in "" "-U\$USERNAME%\$PASSWORD"; do
