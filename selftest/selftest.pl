@@ -698,8 +698,8 @@ my $restricted = undef;
 if ($opt_load_list) {
 	$restricted = [];
 	open(LOAD_LIST, "<$opt_load_list") or die("Unable to open $opt_load_list");
-	while (<LOAD_LIST>) { 
-		chomp; 
+	while (<LOAD_LIST>) {
+		chomp;
 		push (@$restricted, $_);
 	}
 	close(LOAD_LIST);
@@ -723,8 +723,7 @@ foreach my $testsuite (@available) {
 			if ($r eq $name) {
 				$individual_tests->{$name} = [];
 				$match = 1;
-			} 
-			if ($r =~ /^$name\.(.*)$/) {
+			} elsif ($r =~ /^$name\.(.*)$/) {
 				push(@{$individual_tests->{$name}}, $1);
 				$match = 1;
 			}
@@ -735,10 +734,16 @@ foreach my $testsuite (@available) {
 	}
 }
 
-if ($#todo == -1) {
+if (defined($restricted)) {
+	foreach (@$restricted) {
+		unless (defined($individual_tests->{$_})) {
+			print "No test or testsuite found matching $_\n";
+		}
+	}
+} elsif ($#todo == -1) {
 	print STDERR "No tests to run\n";
 	exit(1);
-	}
+}
 
 my $suitestotal = $#todo + 1;
 my $i = 0;
@@ -938,7 +943,7 @@ $envvarstr
 		$cmd =~ s/([\(\)])/\\$1/g;
 		my $name = $$_[0];
 		my $envname = $$_[1];
-		
+
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
 			Subunit::skip_testsuite($name, 
