@@ -80,55 +80,49 @@ bool torture_deleteuser(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
-	TALLOC_CTX *prep_mem_ctx, *mem_ctx;
+	TALLOC_CTX *mem_ctx;
 	struct policy_handle h;
 	struct lsa_String domain_name;
 	const char *name = TEST_USERNAME;
 	struct libnet_context *ctx = NULL;
 	struct libnet_DeleteUser req;
-	bool ret = true;
-
-	prep_mem_ctx = talloc_init("prepare test_deleteuser");
-
-	req.in.user_name = TEST_USERNAME;
-	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
+	bool ret = false;
 
 	status = torture_rpc_connection(torture,
 					&p,
 					&ndr_table_samr);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_ok(torture, status, "torture_rpc_connection() failed");
 
+	mem_ctx = talloc_init("torture_deleteuser");
+
+	/*
+	 * Pre-create a user to be deleted later
+	 */
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
-	if (!test_domain_open(torture, p->binding_handle, &domain_name, prep_mem_ctx, &h, NULL)) {
-		ret = false;
-		goto done;
-	}
+	ret = test_domain_open(torture, p->binding_handle, &domain_name, mem_ctx, &h, NULL);
+	torture_assert_goto(torture, ret, ret, done, "test_domain_open() failed");
 
-	if (!test_user_create(torture, p->binding_handle, prep_mem_ctx, &h, name, NULL)) {
-		ret = false;
-		goto done;
-	}
+	ret = test_user_create(torture, p->binding_handle, mem_ctx, &h, name, NULL);
+	torture_assert_goto(torture, ret, ret, done, "test_user_create() failed");
 
-	mem_ctx = talloc_init("test_deleteuser");
+	/*
+	 * Delete the user using libnet layer
+	 */
+	ret = test_libnet_context_init(torture, true, &ctx);
+	torture_assert_goto(torture, ret, ret, done, "test_libnet_context_init() failed");
 
-	if (!test_libnet_context_init(torture, true, &ctx)) {
-		return false;
-	}
+	req.in.user_name = TEST_USERNAME;
+	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);
 
 	status = libnet_DeleteUser(ctx, mem_ctx, &req);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "libnet_DeleteUser call failed: %s\n", nt_errstr(status));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done, "libnet_DeleteUser() failed");
 
-	talloc_free(mem_ctx);
+	/* mark test as successful */
+	ret = true;
 
 done:
 	talloc_free(ctx);
-	talloc_free(prep_mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
