@@ -136,15 +136,17 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 	}
 
 	if (ldb_transaction_start(b_state->sam_ctx) != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to start transaction on samdb\n"));
+		DEBUG(0,(__location__ ": Failed to start transaction on samdb: %s\n",
+			 ldb_errstring(b_state->sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
 	if (req->options & DRSUAPI_DRS_DEL_REF) {
 		werr = uref_del_dest(b_state->sam_ctx, mem_ctx, dn, &req->dest_dsa_guid, req->options);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("Failed to delete repsTo for %s\n",
-				 GUID_string(mem_ctx, &req->dest_dsa_guid)));
+			DEBUG(0,("Failed to delete repsTo for %s: %s\n",
+				 GUID_string(mem_ctx, &req->dest_dsa_guid),
+				 win_errstr(werr)));
 			goto failed;
 		}
 	}
@@ -163,14 +165,16 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 
 		werr = uref_add_dest(b_state->sam_ctx, mem_ctx, dn, &dest, req->options);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("Failed to add repsTo for %s\n",
-				 GUID_string(mem_ctx, &dest.source_dsa_obj_guid)));
+			DEBUG(0,("Failed to add repsTo for %s: %s\n",
+				 GUID_string(mem_ctx, &dest.source_dsa_obj_guid),
+				 win_errstr(werr)));
 			goto failed;
 		}
 	}
 
 	if (ldb_transaction_commit(b_state->sam_ctx) != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to commit transaction on samdb\n"));
+		DEBUG(0,(__location__ ": Failed to commit transaction on samdb: %s\n",
+			 ldb_errstring(b_state->sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
