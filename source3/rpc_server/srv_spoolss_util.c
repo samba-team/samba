@@ -2320,9 +2320,23 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	goto done;
 
 create_default:
+	result = winreg_printer_openkey(tmp_ctx,
+					server_info,
+					msg_ctx,
+					&winreg_pipe,
+					path,
+					"",
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	result = spoolss_create_default_secdesc(tmp_ctx, &secdesc);
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
+		goto done;
 	}
 
 	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
