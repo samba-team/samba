@@ -56,6 +56,11 @@ a wrapper to preferably get the monotonic time
 _PUBLIC_ void clock_gettime_mono(struct timespec *tp);
 
 /**
+a wrapper to preferably get the monotonic time in s
+**/
+_PUBLIC_ time_t time_mono(time_t *t);
+
+/**
 interpret an 8 byte "filetime" structure to a time_t
 It's originally in "100ns units since jan 1st 1601"
 **/
