@@ -297,7 +297,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	int resp_len = NS_PACKETSZ;
 	static time_t last_dns_check = 0;
 	static NTSTATUS last_dns_status = NT_STATUS_OK;
-	time_t now = time(NULL);
+	time_t now = time_mono(NULL);
 
 	/* Try to prevent bursts of DNS lookups if the server is down */
 
@@ -332,7 +332,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 				DEBUG(0,("ads_dns_lookup_srv: "
 					"talloc() failed!\n"));
 				last_dns_status = NT_STATUS_NO_MEMORY;
-				last_dns_check = time(NULL);
+				last_dns_check = time_mono(NULL);
 				return last_dns_status;
 			}
 		}
@@ -351,7 +351,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 			if (errno == ECONNREFUSED) {
 				last_dns_status = NT_STATUS_CONNECTION_REFUSED;
 			}
-			last_dns_check = time(NULL);
+			last_dns_check = time_mono(NULL);
 			return last_dns_status;
 		}
 
@@ -365,7 +365,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 					name));
 				TALLOC_FREE( buffer );
 				last_dns_status = NT_STATUS_BUFFER_TOO_SMALL;
-				last_dns_check = time(NULL);
+				last_dns_check = time_mono(NULL);
 				return last_dns_status;
 			}
 
@@ -378,7 +378,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	*buf = buffer;
 	*resp_length = resp_len;
 
-	last_dns_check = time(NULL);
+	last_dns_check = time_mono(NULL);
 	last_dns_status = NT_STATUS_OK;
 	return last_dns_status;
 }
