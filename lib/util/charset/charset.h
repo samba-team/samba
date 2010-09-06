@@ -242,7 +242,7 @@ static size_t CHARSETNAME ## _pull(void *cd, const char **inbuf, size_t *inbytes
 			 char **outbuf, size_t *outbytesleft)					\
 {												\
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {					\
-		*(uint16*)(*outbuf) = to_ucs2[((unsigned char*)(*inbuf))[0]];			\
+		SSVAL(*outbuf, 0, to_ucs2[((unsigned char*)(*inbuf))[0]]);			\
 		(*inbytesleft)  -= 1;								\
 		(*outbytesleft) -= 2;								\
 		(*inbuf)  += 1;									\
