@@ -153,7 +153,7 @@ int smbldap_modify(struct smbldap_state *ldap_state,
 struct smbldap_state {
 	LDAP *ldap_struct;
 	pid_t pid;
-	time_t last_ping;
+	time_t last_ping; /* monotonic */
 	/* retrive-once info */
 	const char *uri;
 
@@ -166,11 +166,11 @@ struct smbldap_state {
 
 	unsigned int num_failures;
 
-	time_t last_use;
+	time_t last_use; /* monotonic */
 	struct event_context *event_context;
 	struct timed_event *idle_event;
 
-	struct timeval last_rebind;
+	struct timeval last_rebind; /* monotonic */
 };
 
 /* struct used by both pdb_ldap.c and pdb_nds.c */
