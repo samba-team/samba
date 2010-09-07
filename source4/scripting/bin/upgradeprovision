@@ -88,7 +88,7 @@ hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
                         "distinguishedName": 1, "nTMixedDomain": 1,
                         "showInAdvancedViewOnly": 1, "instanceType": 1,
                         "msDS-Behavior-Version":1, "nextRid":1, "cn": 1,
-                        "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1,
+                        "lmPwdHistory":1, "pwdLastSet": 1,
                         "ntPwdHistory":1, "unicodePwd":1,"dBCSPwd":1,
                         "supplementalCredentials":1, "gPCUserExtensionNames":1,
                         "gPCMachineExtensionNames":1,"maxPwdAge":1, "secret":1,
@@ -111,8 +111,8 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
                         "rIDNextRID": add, "rIDUsedPool": never,
                         "defaultSecurityDescriptor": replace + add,
                         "isMemberOfPartialAttributeSet": delete,
-                        "attributeDisplayNames": replace + add}
-
+                        "attributeDisplayNames": replace + add,
+                        "versionNumber": add}
 
 backlinked = []
 forwardlinked = set()
