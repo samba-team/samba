@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 02/24/2010
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 09/08/2010
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "02/24/2010" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "09/08/2010" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -527,6 +527,15 @@ NAT\-GW is configured in /etc/sysconfigctdb by setting the following variables:
 # CTDB_NATGW_DEFAULT_GATEWAY=10\&.0\&.0\&.1
 # CTDB_NATGW_PRIVATE_NETWORK=10\&.1\&.1\&.0/24
 # CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+#
+# Normally any node in the natgw group can act as the natgw master\&.
+# In some configurations you may have special nodes that is a part of the
+# cluster/natgw group, but where the node lacks connectivity to the 
+# public network\&.
+# For these cases, set this variable to make these nodes not able to
+# become natgw master\&.
+#
+# CTDB_NATGW_SLAVE_ONLY=yes
     
 .fi
 .if n \{\

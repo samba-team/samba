@@ -900,6 +900,15 @@ CTDB_CAPABILITY_RECMASTER=no
 # CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 # CTDB_NATGW_PRIVATE_NETWORK=10.1.1.0/24
 # CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+#
+# Normally any node in the natgw group can act as the natgw master.
+# In some configurations you may have special nodes that is a part of the
+# cluster/natgw group, but where the node lacks connectivity to the 
+# public network.
+# For these cases, set this variable to make these nodes not able to
+# become natgw master.
+#
+# CTDB_NATGW_SLAVE_ONLY=yes
     </screen>
     </refsect2>
 

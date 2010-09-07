@@ -8,13 +8,22 @@
 . $CTDB_BASE/functions
 loadconfig
 
-[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] && exit 0
+[ -z "$CTDB_NATGW_NODES" ] && exit 0
+
+# Update capabilities to show whether we support teh NATGW capability or not
+if [ "$CTDB_NATGW_SLAVE_ONLY" = "yes" ] ; then
+	ctdb setnatgwstate off
+else
+	ctdb setnatgwstate on
+fi
 
 delete_all() {
 	local _ip=`echo $CTDB_NATGW_PUBLIC_IP | cut -d '/' -f1`
 	local _maskbits=`echo $CTDB_NATGW_PUBLIC_IP | cut -d '/' -f2`
 
-	delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits
+	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
+	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits
+	}
 	delete_ip_from_iface lo $_ip 32
 
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
@@ -42,8 +51,6 @@ case "$1" in
 	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
 	# do not send out arp requests from loopback addresses
 	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
-	# update capabilities to show we are using natgw
-	ctdb setnatgwstate on
 	;;
 
     recovered|updatenatgw|ipreallocated)
@@ -59,7 +66,7 @@ case "$1" in
 
 
 	if [ "$NATGWMASTER" = "-1" ]; then
-		echo "There is not NATGW master node"
+		echo "There is no NATGW master node"
 		exit 1
 	fi
 
