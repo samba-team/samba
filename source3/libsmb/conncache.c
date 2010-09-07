@@ -97,7 +97,7 @@ static char *negative_conn_cache_valuestr(NTSTATUS status)
  */
 static NTSTATUS negative_conn_cache_valuedecode(const char *value)
 {
-	unsigned int v = NT_STATUS_V(NT_STATUS_INTERNAL_ERROR);;
+	unsigned int v = NT_STATUS_V(NT_STATUS_INTERNAL_ERROR);
 
 	if (value != NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
