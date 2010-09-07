@@ -380,6 +380,7 @@ interface nbt
 
 	typedef [enum16bit,public] enum {
 		LOGON_REQUEST			  = 0,
+		LOGON_RESPONSE2			  = 6,
 		LOGON_PRIMARY_QUERY               = 7,	/* Was also NETLOGON_QUERY_FOR_PDC */
 		NETLOGON_ANNOUNCE_UAS             = 10,
 		NETLOGON_RESPONSE_FROM_PDC        = 12,
@@ -503,6 +504,12 @@ interface nbt
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		netlogon_command command;
+		astring pdc_name;
+		uint16 lm20_token;
+	} nbt_netlogon_response2;
 
 	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
 
