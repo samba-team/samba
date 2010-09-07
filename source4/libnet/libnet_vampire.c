@@ -105,6 +105,7 @@ void *libnet_vampire_replicate_init(TALLOC_CTX *mem_ctx,
 	s->ldb              = samdb;
 	s->lp_ctx           = lp_ctx;
 	s->provision_schema = dsdb_get_schema(s->ldb, s);
+	s->schema           = s->provision_schema;
 
 	return s;
 }
