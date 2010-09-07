@@ -812,6 +812,8 @@ static NTSTATUS ipasam_add_objectclasses(struct ldapsam_privates *ldap_state,
 	NTSTATUS status;
 	int ret;
 	char *princ;
+	const char *domain;
+	char *domain_with_dot;
 
 	dn = get_account_dn(pdb_get_username(sampass));
 	if (dn == NULL) {
@@ -820,6 +822,16 @@ static NTSTATUS ipasam_add_objectclasses(struct ldapsam_privates *ldap_state,
 
 	princ = talloc_asprintf(talloc_tos(), "%s@%s", pdb_get_username(sampass), lp_realm());
 	if (princ == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	domain = pdb_get_domain(sampass);
+	if (domain == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	domain_with_dot = talloc_asprintf(talloc_tos(), "%s.", domain);
+	if (domain_with_dot == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -832,7 +844,7 @@ static NTSTATUS ipasam_add_objectclasses(struct ldapsam_privates *ldap_state,
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"objectclass", "ipaHost");
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
-			"fqdn", "dummy.dummy.dummy");
+			"fqdn", domain);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"objectclass", "posixAccount");
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
@@ -841,6 +853,8 @@ static NTSTATUS ipasam_add_objectclasses(struct ldapsam_privates *ldap_state,
 			"gidNumber", "12345");
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"homeDirectory", "/dev/null");
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "uid", domain);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "uid", domain_with_dot);
 
 	ret = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	ldap_mods_free(mods, true);

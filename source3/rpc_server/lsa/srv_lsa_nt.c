@@ -1601,6 +1601,7 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 
 static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
 					const char *netbios_name,
+					const char *domain_name,
 					struct trustDomainPasswords auth_struct)
 {
 	NTSTATUS status;
@@ -1625,7 +1626,7 @@ static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!pdb_set_domain(sam_acct, get_global_sam_name(), PDB_SET)) {
+	if (!pdb_set_domain(sam_acct, domain_name, PDB_SET)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1787,6 +1788,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 	if (r->in.info->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
 		status = add_trusted_domain_user(p->mem_ctx,
 						 r->in.info->netbios_name.string,
+						 r->in.info->domain_name.string,
 						 auth_struct);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
