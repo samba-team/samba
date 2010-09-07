@@ -704,6 +704,7 @@ struct rpc_api_pipe_state {
 
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq);
 static void rpc_api_pipe_got_pdu(struct tevent_req *subreq);
+static void rpc_api_pipe_auth3_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 					    struct event_context *ev,
@@ -738,6 +739,16 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(talloc_tos(), cli)));
 
+	if (state->expected_pkt_type == DCERPC_PKT_AUTH3) {
+		subreq = rpc_write_send(state, ev, cli->transport,
+					data->data, data->length);
+		if (subreq == NULL) {
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, rpc_api_pipe_auth3_done, req);
+		return req;
+	}
+
 	/* get the header first, then fetch the rest once we have
 	 * the frag_length available */
 	max_recv_frag = RPC_HEADER_LEN;
@@ -756,6 +767,23 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
  fail:
 	TALLOC_FREE(req);
 	return NULL;
+}
+
+static void rpc_api_pipe_auth3_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	NTSTATUS status;
+
+	status = rpc_write_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 static void rpc_api_pipe_trans_done(struct tevent_req *subreq)
