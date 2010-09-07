@@ -425,7 +425,7 @@ static void update_wins_flag(struct name_record *namerec, int flags)
 	/* and add the given bits */
 	namerec->data.wins_flags|=flags;
 
-	DEBUG(8,("update_wins_flag: nbflags: 0x%x, ttl: 0x%d, flags: 0x%x, winsflags: 0x%x\n", 
+	DEBUG(8,("update_wins_flag: nbflags: 0x%x, ttl: %d, flags: 0x%x, winsflags: 0x%x\n", 
 		 namerec->data.nb_flags, (int)namerec->data.death_time, flags, namerec->data.wins_flags));
 }
 
