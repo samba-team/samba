@@ -900,7 +900,7 @@ int wait_for_aio_completion(files_struct *fsp)
 	struct aio_extra *aio_ex;
 	const SMB_STRUCT_AIOCB **aiocb_list;
 	int aio_completion_count = 0;
-	time_t start_time = time(NULL);
+	time_t start_time = time_mono(NULL);
 	int seconds_left;
 
 	for (seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT;
@@ -975,7 +975,7 @@ int wait_for_aio_completion(files_struct *fsp)
 
 		SAFE_FREE(aiocb_list);
 		seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT
-			- (time(NULL) - start_time);
+			- (time_mono(NULL) - start_time);
 	}
 
 	/* We timed out - we don't know why. Return ret if already an error,
