@@ -140,6 +140,8 @@ static int nt_printq_status(int v)
 	return 0;
 }
 
+static void prune_printername_cache(void);
+
 /***************************************************************************
  Disconnect from the client
 ****************************************************************************/
@@ -328,6 +330,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const c
 static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
+	WERROR result;
 
 	if (!Printer) {
 		DEBUG(2,("delete_printer_handle: Invalid handle (%s:%u:%u)\n",
@@ -355,8 +358,13 @@ static WERROR delete_printer_handle(pipes_struct *p, struct policy_handle *hnd)
 		return WERR_BADFID;
 	}
 
-	return delete_printer_hook(p->mem_ctx, p->server_info->ptok,
-				   Printer->sharename );
+	result = delete_printer_hook(p->mem_ctx, p->server_info->ptok,
+				     Printer->sharename);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+	prune_printername_cache();
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -412,6 +420,17 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *hand
 	}
 
 	return true;
+}
+
+static void prune_printername_cache_fn(const char *key, const char *value,
+				       time_t timeout, void *private_data)
+{
+	gencache_del(key);
+}
+
+static void prune_printername_cache(void)
+{
+	gencache_iterate(prune_printername_cache_fn, NULL, "PRINTERNAME/*");
 }
 
 /****************************************************************************
