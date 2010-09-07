@@ -5,7 +5,7 @@ objectClass: groupPolicyContainer
 displayName: Default Domain Policy
 gPCFunctionalityVersion: 2
 gPCFileSysPath: \\${DNSDOMAIN}\sysvol\${DNSDOMAIN}\Policies\{${POLICYGUID}}
-versionNumber: 65543
+versionNumber: 0
 flags: 0
 gPCMachineExtensionNames: [{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{53D6AB1B-248
  8-11D1-A28C-00C04FB94F17}][{827D319E-6EAC-11D2-A4EA-00C04F79F83A}{803E14A0-B4
@@ -36,7 +36,7 @@ objectClass: groupPolicyContainer
 displayName: Default Domain Controllers Policy
 gPCFunctionalityVersion: 2
 gPCFileSysPath: \\${DNSDOMAIN}\sysvol\${DNSDOMAIN}\Policies\{${POLICYGUID_DC}}
-versionNumber: 2
+versionNumber: 0
 flags: 0
 gPCMachineExtensionNames: [{827D319E-6EAC-11D2-A4EA-00C04F79F83A}{803E14A0-B4
  FB-11D0-A0D0-00A0C90F574B}]
