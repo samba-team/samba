@@ -42,6 +42,7 @@ struct packet_context {
 	bool serialise;
 	int processing;
 	bool recv_disable;
+	bool recv_need_enable;
 	bool nofree;
 
 	bool busy;
@@ -256,6 +257,7 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 	}
 
 	if (pc->recv_disable) {
+		pc->recv_need_enable = true;
 		EVENT_FD_NOT_READABLE(pc->fde);
 		return;
 	}
@@ -464,7 +466,6 @@ next_partial:
 */
 _PUBLIC_ void packet_recv_disable(struct packet_context *pc)
 {
-	EVENT_FD_NOT_READABLE(pc->fde);
 	pc->recv_disable = true;
 }
 
@@ -473,7 +474,10 @@ _PUBLIC_ void packet_recv_disable(struct packet_context *pc)
 */
 _PUBLIC_ void packet_recv_enable(struct packet_context *pc)
 {
-	EVENT_FD_READABLE(pc->fde);
+	if (pc->recv_need_enable) {
+		pc->recv_need_enable = false;
+		EVENT_FD_READABLE(pc->fde);
+	}
 	pc->recv_disable = false;
 	if (pc->num_read != 0 && pc->packet_size >= pc->num_read) {
 		event_add_timed(pc->ev, pc, timeval_zero(), packet_next_event, pc);
