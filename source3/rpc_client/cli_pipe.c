@@ -1651,11 +1651,11 @@ struct rpc_pipe_bind_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
 	DATA_BLOB rpc_out;
+	bool auth3;
 	uint32_t rpc_call_id;
 };
 
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
-static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
 static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
 				   struct rpc_pipe_bind_state *state,
 				   DATA_BLOB *credentials);
@@ -1686,7 +1686,6 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->rpc_call_id = get_rpc_call_id();
-	state->rpc_out = data_blob_null;
 
 	cli->auth = talloc_move(cli, &auth);
 
@@ -1737,6 +1736,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			  rpccli_pipe_txt(talloc_tos(), state->cli),
 			  nt_errstr(status)));
 		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (state->auth3) {
+		tevent_req_done(req);
 		return;
 	}
 
@@ -1862,21 +1866,6 @@ err_out:
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 }
 
-static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = rpc_write_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
-}
-
 static NTSTATUS rpc_bind_next_send(struct tevent_req *req,
 				   struct rpc_pipe_bind_state *state,
 				   DATA_BLOB *auth_token)
@@ -1917,6 +1906,8 @@ static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
+	state->auth3 = true;
+
 	/* Now prepare the auth3 context pdu. */
 	data_blob_free(&state->rpc_out);
 
@@ -1930,12 +1921,12 @@ static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
 		return status;
 	}
 
-	subreq = rpc_write_send(state, state->ev, state->cli->transport,
-				state->rpc_out.data, state->rpc_out.length);
+	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
+				   &state->rpc_out, DCERPC_PKT_AUTH3);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(subreq, rpc_bind_auth3_write_done, req);
+	tevent_req_set_callback(subreq, rpc_pipe_bind_step_one_done, req);
 	return NT_STATUS_OK;
 }
 
