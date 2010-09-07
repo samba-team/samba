@@ -194,7 +194,17 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 			data, mem_ctx, 
 			&response->data.samlogon);
 		break;
+	case NETLOGON_RESPONSE2:
+		ndr_err = ndr_push_struct_blob(data, mem_ctx,
+					       &response->data.response2,
+					       (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_response2);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		status = NT_STATUS_OK;
+		break;
 	}
+
 	return status;
 }
 

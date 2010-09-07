@@ -42,10 +42,11 @@ struct netlogon_samlogon_response
 
 struct nbt_netlogon_response
 {
-	enum {NETLOGON_GET_PDC, NETLOGON_SAMLOGON} response_type;
+	enum {NETLOGON_GET_PDC, NETLOGON_SAMLOGON, NETLOGON_RESPONSE2} response_type;
 	union {
 		struct nbt_netlogon_response_from_pdc get_pdc;
 		struct netlogon_samlogon_response samlogon;
+		struct nbt_netlogon_response2 response2;
 	} data;
 };
 
