@@ -50,6 +50,8 @@ struct ldapsrv_connection {
 		struct tevent_timer *ite;
 		struct tevent_timer *te;
 	} limits;
+
+	struct ldapsrv_packet_interfaces *packet_interface;
 };
 
 struct ldapsrv_call {
@@ -66,6 +68,11 @@ struct ldapsrv_call {
 struct ldapsrv_service {
 	struct tls_params *tls_params;
 	struct task_server *task;
+	struct ldapsrv_packet_interfaces {
+		struct ldapsrv_packet_interfaces *next, *prev;
+		struct packet_context *packet;
+		struct ldapsrv_service *service;
+	} *packet_interfaces;
 };
 
 #include "ldap_server/proto.h"

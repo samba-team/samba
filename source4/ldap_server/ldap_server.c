@@ -132,6 +132,32 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 }
 
 /*
+  disable packets on other sockets while processing this one
+ */
+static void ldapsrv_disable_recv(struct ldapsrv_connection *conn)
+{
+	struct ldapsrv_packet_interfaces *p;
+	for (p=conn->service->packet_interfaces; p; p=p->next) {
+		if (p->packet != conn->packet) {
+			packet_recv_disable(p->packet);
+		}
+	}
+}
+
+/*
+  disable packets on other sockets while processing this one
+ */
+static void ldapsrv_enable_recv(struct ldapsrv_connection *conn)
+{
+	struct ldapsrv_packet_interfaces *p;
+	for (p=conn->service->packet_interfaces; p; p=p->next) {
+		if (p->packet != conn->packet) {
+			packet_recv_enable(p->packet);
+		}
+	}
+}
+
+/*
   decode/process data
 */
 static NTSTATUS ldapsrv_decode(void *private_data, DATA_BLOB blob)
@@ -162,7 +188,13 @@ static NTSTATUS ldapsrv_decode(void *private_data, DATA_BLOB blob)
 	talloc_steal(conn, msg);
 	asn1_free(asn1);
 
+	/* disable messages on other sockets while processing this one */
+	ldapsrv_disable_recv(conn);
+
 	ldapsrv_process_message(conn, msg);
+
+	ldapsrv_enable_recv(conn);
+
 	return NT_STATUS_OK;
 }
 
@@ -325,6 +357,15 @@ failed:
 }
 
 /*
+  remove a packet interface from the service level list
+ */
+static int packet_interface_destructor(struct ldapsrv_packet_interfaces *packet_interface)
+{
+	DLIST_REMOVE(packet_interface->service->packet_interfaces, packet_interface);
+	return 0;
+}
+
+/*
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
@@ -396,6 +437,18 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	/* Ensure we don't get packets until the database is ready below */
 	packet_recv_disable(conn->packet);
+
+	/* add to the service level list of packet interfaces, to
+	 * allow us to serialise between connections
+	 */
+	conn->packet_interface = talloc(conn, struct ldapsrv_packet_interfaces);
+	if (conn->packet_interface == NULL) {
+		ldapsrv_terminate_connection(conn, "out of memory");
+	}
+	conn->packet_interface->service = ldapsrv_service;
+	conn->packet_interface->packet = conn->packet;
+	DLIST_ADD(conn->service->packet_interfaces, conn->packet_interface);
+	talloc_set_destructor(conn->packet_interface, packet_interface_destructor);
 
 	server_credentials = cli_credentials_init(conn);
 	if (!server_credentials) {
