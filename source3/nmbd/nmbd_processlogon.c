@@ -311,7 +311,6 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	fstring my_name;
 	fstring reply_name;
 	char outbuf[1024];
-	int code;
 	uint16 token = 0;
 	uint32 ntversion = 0;
 	uint16 lmnttoken = 0;
@@ -326,6 +325,10 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	struct sockaddr_storage ss;
 	const struct sockaddr_storage *pss;
 	struct in_addr ip;
+
+	DATA_BLOB blob_in;
+	enum ndr_err_code ndr_err;
+	struct nbt_netlogon_packet request;
 
 	in_addr_to_sockaddr_storage(&ss, p->ip);
 	pss = iface_ip((struct sockaddr *)&ss);
@@ -347,10 +350,25 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	fstrcpy(my_name, global_myname());
 
-	code = get_safe_SVAL(buf,len,buf,0,-1);
-	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
+	ZERO_STRUCT(request);
 
-	switch (code) {
+	blob_in = data_blob_const(buf, len);
+
+	ndr_err = ndr_pull_struct_blob(&blob_in, talloc_tos(), &request,
+		(ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1,("process_logon_packet: Failed to pull logon packet\n"));
+		return;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(nbt_netlogon_packet, &request);
+	}
+
+	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n",
+		inet_ntoa(p->ip), request.command));
+
+	switch (request.command) {
 	case 0: {
 		fstring mach_str, user_str, getdc_str;
 		char *q = buf + 2;
@@ -925,7 +943,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		break;
 
 	default:
-		DEBUG(3,("process_logon_packet: Unknown domain request %d\n",code));
+		DEBUG(3,("process_logon_packet: Unknown domain request %d\n",
+			request.command));
 		return;
 	}
 }
