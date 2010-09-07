@@ -379,6 +379,7 @@ interface nbt
 	} netlogon_nt_version_flags;
 
 	typedef [enum16bit,public] enum {
+		LOGON_REQUEST			  = 0,
 		LOGON_PRIMARY_QUERY               = 7,	/* Was also NETLOGON_QUERY_FOR_PDC */
 		NETLOGON_ANNOUNCE_UAS             = 10,
 		NETLOGON_RESPONSE_FROM_PDC        = 12,
@@ -414,6 +415,15 @@ interface nbt
 		uint16               lmnt_token;
 		uint16               lm20_token;
 	} NETLOGON_SAM_LOGON_REQUEST;
+
+	typedef struct {
+		astring              computer_name;
+		astring              user_name;
+		astring              mailslot_name;
+		uint8                request_count;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} NETLOGON_LOGON_REQUEST;
 
 	typedef [flag(NDR_NOALIGN),public] struct {
 		netlogon_command command;
@@ -522,6 +532,7 @@ interface nbt
 	} NETLOGON_DB_CHANGE;
 
 	typedef [nodiscriminant] union {
+		[case(LOGON_REQUEST)]  NETLOGON_LOGON_REQUEST logon0;
 		[case(LOGON_SAM_LOGON_REQUEST)]       NETLOGON_SAM_LOGON_REQUEST logon;
 		[case(LOGON_PRIMARY_QUERY)] nbt_netlogon_query_for_pdc pdc;
 		[case(NETLOGON_ANNOUNCE_UAS)] NETLOGON_DB_CHANGE uas;
