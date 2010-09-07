@@ -1725,13 +1725,12 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
 	struct pipe_auth_data *pauth = state->cli->auth;
-	DATA_BLOB reply_pdu;
 	struct ncacn_packet *pkt;
 	struct dcerpc_auth auth;
 	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
 
-	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, &reply_pdu);
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &pkt, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
