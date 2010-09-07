@@ -40,7 +40,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	*res = NULL;
 
 	if (!ads->ldap.ld &&
-	    time(NULL) - ads->ldap.last_attempt < ADS_RECONNECT_TIME) {
+	    time_mono(NULL) - ads->ldap.last_attempt < ADS_RECONNECT_TIME) {
 		return ADS_ERROR(LDAP_SERVER_DOWN);
 	}
 

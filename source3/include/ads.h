@@ -65,7 +65,7 @@ typedef struct ads_struct {
 	struct {
 		LDAP *ld;
 		struct sockaddr_storage ss; /* the ip of the active connection, if any */
-		time_t last_attempt; /* last attempt to reconnect */
+		time_t last_attempt; /* last attempt to reconnect, monotonic clock */
 		int port;
 
 		enum ads_saslwrap_type wrap_type;
