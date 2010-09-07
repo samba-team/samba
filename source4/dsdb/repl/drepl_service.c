@@ -1,22 +1,23 @@
-/* 
+/*
    Unix SMB/CIFS mplementation.
    DSDB replication service
-   
+
    Copyright (C) Stefan Metzmacher 2007
-    
+   Copyright (C) Kamen Mazdrashki <kamenim@samba.org> 2010
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -208,7 +209,7 @@ static WERROR _drepl_schedule_replication(struct dreplsrv_service *service,
 /*
   DsReplicaSync messages from the DRSUAPI server are forwarded here
  */
-static NTSTATUS drepl_replica_sync(struct irpc_message *msg, 
+static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 				   struct drsuapi_DsReplicaSync *r)
 {
 	WERROR werr;
@@ -355,11 +356,11 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration", 
+		task_server_terminate(task, "dreplsrv: no DSDB replication required in standalone configuration",
 				      false);
 		return;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration", 
+		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration",
 				      false);
 		return;
 	case ROLE_DOMAIN_CONTROLLER:
