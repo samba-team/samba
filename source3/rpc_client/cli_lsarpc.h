@@ -56,6 +56,38 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, bool sec_qos,
 				 uint32 des_access, struct policy_handle *pol);
 
+/**
+ * @brief Look up the names that correspond to an array of sids.
+ *
+ * @param[in]  h        The initialized binding handle for a dcerpc connection.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  pol      The opened domain policy handle.
+ *
+ * @param[in]  num_sids The number of sids in the sids array to look up.
+ *
+ * @param[in]  sids     The array of sids to look up.
+ *
+ * @param[out]  pdomains A pointer to store the refercenced domains.
+ *
+ * @param[out]  pnames  A pointer to an array for the translated names.
+ *
+ * @param[out]  ptypes  A pointer to an array for the types of the names.
+ *
+ * @param[out]  result  A pointer for the conversion result.
+ *
+ * @return              A corresponding NTSTATUS error code.
+ */
+NTSTATUS dcerpc_lsa_lookup_sids(struct dcerpc_binding_handle *h,
+				TALLOC_CTX *mem_ctx,
+				struct policy_handle *pol,
+				int num_sids,
+				const struct dom_sid *sids,
+				char ***pdomains,
+				char ***pnames,
+				enum lsa_SidType **ptypes,
+				NTSTATUS *result);
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *pol,
@@ -64,6 +96,39 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				char ***pdomains,
 				char ***pnames,
 				enum lsa_SidType **ptypes);
+
+/**
+ * @brief Look up the names that correspond to an array of sids.
+ *
+ * @param[in]  h        The initialized binding handle for a dcerpc connection.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  pol      The opened domain policy handle.
+ *
+ * @param[in]  num_sids The number of sids in the sids array to look up.
+ *
+ * @param[in]  sids     The array of sids to look up.
+ *
+ * @param[out]  pdomains A pointer to store the refercenced domains.
+ *
+ * @param[out]  pnames  A pointer to an array for the translated names.
+ *
+ * @param[out]  ptypes  A pointer to an array for the types of the names.
+ *
+ * @param[out]  result  A pointer for the conversion result.
+ *
+ * @return              A corresponding NTSTATUS error code.
+ */
+NTSTATUS dcerpc_lsa_lookup_sids3(struct dcerpc_binding_handle *h,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *pol,
+				 int num_sids,
+				 const struct dom_sid *sids,
+				 char ***pdomains,
+				 char ***pnames,
+				 enum lsa_SidType **ptypes,
+				 NTSTATUS *result);
 NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *pol,
@@ -72,6 +137,7 @@ NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 				 char ***pdomains,
 				 char ***pnames,
 				 enum lsa_SidType **ptypes);
+
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *pol, int num_names,
