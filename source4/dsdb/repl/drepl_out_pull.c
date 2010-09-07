@@ -163,6 +163,14 @@ void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 		rf->consecutive_sync_failures++;
 		s->ops.current = NULL;
 
+		/*
+		 * call the callback (if any) so it gets the chance
+		 * to do its job just like in any other failure situation
+		 */
+		if (op->callback) {
+			op->callback(s, rf->result_last_attempt, op->extended_ret, op->cb_data);
+		}
+
 		DEBUG(1,("dreplsrv_op_pull_source(%s/%s) failures[%u]\n",
 			win_errstr(rf->result_last_attempt),
 			nt_errstr(werror_to_ntstatus(rf->result_last_attempt)),
