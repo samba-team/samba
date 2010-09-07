@@ -29,6 +29,7 @@
 #endif
 #include "system/wait.h"
 #include "system/filesys.h"
+#include "system/time.h"
 #include "lib/events/events.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/mutex.h"
@@ -317,7 +318,7 @@ static int thread_rwlock_lock_read(smb_rwlock_t *rwlockP, const char *name)
 	pthread_rwlock_t *rwlock = (pthread_rwlock_t *)rwlockP->rwlock;
 	int rc;
 	double t;
-	struct time tp1;
+	struct timespec tp1;
 	/* Test below is ONLY for debugging */
 	if ((rc = pthread_rwlock_tryrdlock(rwlock))) {
 		if (rc == EBUSY) {
