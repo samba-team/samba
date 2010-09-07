@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/rpc/dcerpc.h"
 #undef strcasecmp
+#undef strncasecmp
 
 #define MAX_PROTSEQ		10
 
