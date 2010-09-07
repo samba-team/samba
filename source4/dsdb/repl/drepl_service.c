@@ -220,12 +220,20 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
 							   struct dreplsrv_service);
 
-#define REPLICA_SYNC_FAIL(_werr) do {r->out.result = _werr; goto done;} while(0)
+#define REPLICA_SYNC_FAIL(_msg, _werr) do {\
+		if (!W_ERROR_IS_OK(werr)) { \
+			DEBUG(0,(__location__ ": Failure - %s. werr = %s\n", \
+				 _msg, win_errstr(_werr))); \
+			NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, r); \
+		} \
+		r->out.result = _werr; \
+		goto done;\
+	} while(0)
+
 
 	if (r->in.level != 1) {
-		DEBUG(0,("%s: Level %d is not supported yet.\n",
-			 __FUNCTION__, r->in.level));
-		REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+		REPLICA_SYNC_FAIL("Unsupported level",
+				  WERR_DS_DRA_INVALID_PARAMETER);
 	}
 
 	req1 = &r->in.req->req1;
@@ -233,7 +241,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 
 	/* Check input parameters */
 	if (!nc) {
-		REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+		REPLICA_SYNC_FAIL("Invalid Naming Context",
+		                  WERR_DS_DRA_INVALID_PARAMETER);
 	}
 
 	/* Find Naming context to be synchronized */
@@ -241,12 +250,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	                                      &nc->guid, &nc->sid, nc->dn,
 	                                      &p);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("%s: failed to find NC for (%s, %s) - %s\n",
-			 __FUNCTION__,
-			 GUID_string(msg, &nc->guid),
-			 nc->dn,
-			 win_errstr(werr)));
-		REPLICA_SYNC_FAIL(werr);
+		REPLICA_SYNC_FAIL("Failed to find requested Naming Context",
+				  werr);
 	}
 
 	/* should we process it asynchronously? */
@@ -255,8 +260,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	} else {
 		cb_data = talloc_zero(msg, struct drepl_replica_sync_cb_data);
 		if (!cb_data) {
-			DEBUG(0,(__location__ ": Not enought memory!"));
-			REPLICA_SYNC_FAIL(WERR_DS_DRA_INTERNAL_ERROR);
+			REPLICA_SYNC_FAIL("Not enought memory",
+					  WERR_DS_DRA_INTERNAL_ERROR);
 		}
 
 		cb_data->msg = msg;
@@ -270,14 +275,16 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 			/* schedule replication item */
 			werr = _drepl_schedule_replication(service, dsa, nc, cb_data, msg);
 			if (!W_ERROR_IS_OK(werr)) {
-				REPLICA_SYNC_FAIL(werr);
+				REPLICA_SYNC_FAIL("_drepl_schedule_replication() failed",
+				                  werr);
 			}
 		}
 	} else {
 		if (req1->options & DRSUAPI_DRS_SYNC_BYNAME) {
 			/* client should pass at least valid string */
 			if (!req1->source_dsa_dns) {
-				REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+				REPLICA_SYNC_FAIL("'source_dsa_dns' is not valid",
+				                  WERR_DS_DRA_INVALID_PARAMETER);
 			}
 
 			werr = dreplsrv_partition_source_dsa_by_dns(p,
@@ -286,7 +293,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 		} else {
 			/* client should pass at least some GUID */
 			if (GUID_all_zero(&req1->source_dsa_guid)) {
-				REPLICA_SYNC_FAIL(WERR_DS_DRA_INVALID_PARAMETER);
+				REPLICA_SYNC_FAIL("'source_dsa_guid' is not valid",
+				                  WERR_DS_DRA_INVALID_PARAMETER);
 			}
 
 			werr = dreplsrv_partition_source_dsa_by_guid(p,
@@ -294,19 +302,15 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 			                                             &dsa);
 		}
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("%s: Failed to locate source DSA %s for NC %s.\n",
-				 __FUNCTION__,
-				 (req1->options & DRSUAPI_DRS_SYNC_BYNAME)
-					 ? req1->source_dsa_dns
-					 : GUID_string(r, &req1->source_dsa_guid),
-				 nc->dn));
-			REPLICA_SYNC_FAIL(WERR_DS_DRA_NO_REPLICA);
+			REPLICA_SYNC_FAIL("Failed to locate source DSA for given NC",
+					  WERR_DS_DRA_NO_REPLICA);
 		}
 
 		/* schedule replication item */
 		werr = _drepl_schedule_replication(service, dsa, nc, cb_data, msg);
 		if (!W_ERROR_IS_OK(werr)) {
-			REPLICA_SYNC_FAIL(werr);
+			REPLICA_SYNC_FAIL("_drepl_schedule_replication() failed",
+			                  werr);
 		}
 	}
 
