@@ -99,14 +99,13 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/** Open a LSA policy handle
-  *
-  * @param cli Handle on an initialised SMB connection
-  */
-
-NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx, bool sec_qos,
-				 uint32 des_access, struct policy_handle *pol)
+NTSTATUS dcerpc_lsa_open_policy2(struct dcerpc_binding_handle *h,
+				 TALLOC_CTX *mem_ctx,
+				 const char *srv_name_slash,
+				 bool sec_qos,
+				 uint32_t des_access,
+				 struct policy_handle *pol,
+				 NTSTATUS *result)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -124,11 +123,38 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 		attr.sec_qos		= &qos;
 	}
 
-	return rpccli_lsa_OpenPolicy2(cli, mem_ctx,
-				      cli->srv_name_slash,
+	return dcerpc_lsa_OpenPolicy2(h,
+				      mem_ctx,
+				      srv_name_slash,
 				      &attr,
 				      des_access,
-				      pol);
+				      pol,
+				      result);
+}
+
+/** Open a LSA policy handle
+  *
+  * @param cli Handle on an initialised SMB connection
+  */
+
+NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, bool sec_qos,
+				 uint32 des_access, struct policy_handle *pol)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_lsa_open_policy(cli->binding_handle,
+					mem_ctx,
+					sec_qos,
+					des_access,
+					pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
 }
 
 /* Lookup a list of sids
