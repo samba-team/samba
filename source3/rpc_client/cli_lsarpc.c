@@ -564,38 +564,41 @@ NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 
 /** Lookup a list of names */
 
-static NTSTATUS rpccli_lsa_lookup_names_generic(struct rpc_pipe_client *cli,
+static NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 						TALLOC_CTX *mem_ctx,
-						struct policy_handle *pol, int num_names,
+						struct policy_handle *pol,
+						uint32_t num_names,
 						const char **names,
 						const char ***dom_names,
-						int level,
+						enum lsa_LookupNamesLevel level,
 						struct dom_sid **sids,
 						enum lsa_SidType **types,
-						bool use_lookupnames4)
+						bool use_lookupnames4,
+						NTSTATUS *presult)
 {
-	NTSTATUS result;
-	int i;
+	NTSTATUS status;
 	struct lsa_String *lsa_names = NULL;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray sid_array;
 	struct lsa_TransSidArray3 sid_array3;
 	uint32_t count = 0;
+	uint32_t i;
 
 	ZERO_STRUCT(sid_array);
 	ZERO_STRUCT(sid_array3);
 
 	lsa_names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names);
-	if (!lsa_names) {
+	if (lsa_names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<num_names; i++) {
+	for (i = 0; i < num_names; i++) {
 		init_lsa_String(&lsa_names[i], names[i]);
 	}
 
 	if (use_lookupnames4) {
-		result = rpccli_lsa_LookupNames4(cli, mem_ctx,
+		status = dcerpc_lsa_LookupNames4(h,
+						 mem_ctx,
 						 num_names,
 						 lsa_names,
 						 &domains,
@@ -603,43 +606,46 @@ static NTSTATUS rpccli_lsa_lookup_names_generic(struct rpc_pipe_client *cli,
 						 level,
 						 &count,
 						 0,
-						 0);
+						 0,
+						 presult);
 	} else {
-		result = rpccli_lsa_LookupNames(cli, mem_ctx,
-					        pol,
+		status = dcerpc_lsa_LookupNames(h,
+						mem_ctx,
+						pol,
 						num_names,
 						lsa_names,
 						&domains,
 						&sid_array,
 						level,
-						&count);
+						&count,
+						presult);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
-	    NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
-
+	if (!NT_STATUS_IS_OK(*presult) &&
+	    !NT_STATUS_EQUAL(*presult, STATUS_SOME_UNMAPPED)) {
 		/* An actual error occured */
-
 		goto done;
 	}
 
 	/* Return output parameters */
-
 	if (count == 0) {
-		result = NT_STATUS_NONE_MAPPED;
+		*presult = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
 
 	if (num_names) {
 		if (!((*sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_names)))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
+			*presult = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
 		if (!((*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_names)))) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
+			*presult = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
@@ -647,7 +653,7 @@ static NTSTATUS rpccli_lsa_lookup_names_generic(struct rpc_pipe_client *cli,
 			*dom_names = TALLOC_ARRAY(mem_ctx, const char *, num_names);
 			if (*dom_names == NULL) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
-				result = NT_STATUS_NO_MEMORY;
+				*presult = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
 		}
@@ -698,34 +704,113 @@ static NTSTATUS rpccli_lsa_lookup_names_generic(struct rpc_pipe_client *cli,
 	}
 
  done:
+	return status;
+}
 
-	return result;
+NTSTATUS dcerpc_lsa_lookup_names(struct dcerpc_binding_handle *h,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *pol,
+				 uint32_t num_names,
+				 const char **names,
+				 const char ***dom_names,
+				 enum lsa_LookupNamesLevel level,
+				 struct dom_sid **sids,
+				 enum lsa_SidType **types,
+				 NTSTATUS *result)
+{
+	return dcerpc_lsa_lookup_names_generic(h,
+					       mem_ctx,
+					       pol,
+					       num_names,
+					       names,
+					       dom_names,
+					       level,
+					       sids,
+					       types,
+					       false,
+					       result);
 }
 
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *pol, int num_names,
+				 struct policy_handle *pol,
+				 int num_names,
 				 const char **names,
 				 const char ***dom_names,
 				 int level,
 				 struct dom_sid **sids,
 				 enum lsa_SidType **types)
 {
-	return rpccli_lsa_lookup_names_generic(cli, mem_ctx, pol, num_names,
-					       names, dom_names, level, sids,
-					       types, false);
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_lsa_lookup_names(cli->binding_handle,
+					 mem_ctx,
+					 pol,
+					 num_names,
+					 names,
+					 dom_names,
+					 level,
+					 sids,
+					 types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
+}
+
+NTSTATUS dcerpc_lsa_lookup_names4(struct dcerpc_binding_handle *h,
+				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *pol,
+				  uint32_t num_names,
+				  const char **names,
+				  const char ***dom_names,
+				  enum lsa_LookupNamesLevel level,
+				  struct dom_sid **sids,
+				  enum lsa_SidType **types,
+				  NTSTATUS *result)
+{
+	return dcerpc_lsa_lookup_names_generic(h,
+					       mem_ctx,
+					       pol,
+					       num_names,
+					       names,
+					       dom_names,
+					       level,
+					       sids,
+					       types,
+					       true,
+					       result);
 }
 
 NTSTATUS rpccli_lsa_lookup_names4(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *pol, int num_names,
+				  struct policy_handle *pol,
+				  int num_names,
 				  const char **names,
 				  const char ***dom_names,
 				  int level,
 				  struct dom_sid **sids,
 				  enum lsa_SidType **types)
 {
-	return rpccli_lsa_lookup_names_generic(cli, mem_ctx, pol, num_names,
-					       names, dom_names, level, sids,
-					       types, true);
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_lsa_lookup_names4(cli->binding_handle,
+					  mem_ctx,
+					  pol,
+					  num_names,
+					  names,
+					  dom_names,
+					  level,
+					  sids,
+					  types,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
 }
