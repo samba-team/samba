@@ -1474,53 +1474,6 @@ NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-#if 0
-/****************************************************************************
- Set the handle state.
-****************************************************************************/
-
-static bool rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
-				   const char *pipe_name, uint16 device_state)
-{
-	bool state_set = False;
-	char param[2];
-	uint16 setup[2]; /* only need 2 uint16 setup parameters */
-	char *rparam = NULL;
-	char *rdata = NULL;
-	uint32 rparam_len, rdata_len;
-
-	if (pipe_name == NULL)
-		return False;
-
-	DEBUG(5,("Set Handle state Pipe[%x]: %s - device state:%x\n",
-		 cli->fnum, pipe_name, device_state));
-
-	/* create parameters: device state */
-	SSVAL(param, 0, device_state);
-
-	/* create setup parameters. */
-	setup[0] = 0x0001; 
-	setup[1] = cli->fnum; /* pipe file handle.  got this from an SMBOpenX. */
-
-	/* send the data on \PIPE\ */
-	if (cli_api_pipe(cli->cli, "\\PIPE\\",
-	            setup, 2, 0,                /* setup, length, max */
-	            param, 2, 0,                /* param, length, max */
-	            NULL, 0, 1024,              /* data, length, max */
-	            &rparam, &rparam_len,        /* return param, length */
-	            &rdata, &rdata_len))         /* return data, length */
-	{
-		DEBUG(5, ("Set Handle state: return OK\n"));
-		state_set = True;
-	}
-
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return state_set;
-}
-#endif
-
 /****************************************************************************
  Check the rpc bind acknowledge response.
 ****************************************************************************/
