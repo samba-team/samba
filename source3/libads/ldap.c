@@ -596,7 +596,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	char addr[INET6_ADDRSTRLEN];
 
 	ZERO_STRUCT(ads->ldap);
-	ads->ldap.last_attempt	= time(NULL);
+	ads->ldap.last_attempt	= time_mono(NULL);
 	ads->ldap.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
 
 	/* try with a user specified server */
