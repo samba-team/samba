@@ -1,24 +1,24 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-2003
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
    Revision History:
 
 */
@@ -280,7 +280,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = push_netlogon_samlogon_response(&response, state, 
+	status = push_netlogon_samlogon_response(&response, state,
 						 &state->io.out.netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("failed to push netlogon_samlogon_response: %s\n",
@@ -304,7 +304,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 Process a domain logon packet
 **************************************************************************/
 
-void process_logon_packet(struct packet_struct *p, char *buf,int len, 
+void process_logon_packet(struct packet_struct *p, char *buf,int len,
                           const char *mailslot)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
@@ -627,7 +627,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				DEBUG(3,("process_logon_packet: LOGON_SAM_LOGON_REQUEST sidsize %d ntv %d\n", domainsidsize, ntversion));
 
 				/*
-				 * we respond regadless of whether the machine is in our password 
+				 * we respond regadless of whether the machine is in our password
 				 * database. If it isn't then we let smbd send an appropriate error.
 				 * Let's ignore the SID.
 				 */
@@ -857,7 +857,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				}
 
 				/* tell the client what version we are */
-				SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13); 
+				SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13);
 				/* our ntversion */
 				SSVAL(q, 4, 0xffff); /* our lmnttoken */
 				SSVAL(q, 6, 0xffff); /* our lm20token */
