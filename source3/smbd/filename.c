@@ -382,10 +382,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * or a missing intermediate component ?
 				 */
 				struct smb_filename parent_fname;
+				const char *last_component = NULL;
+
 				ZERO_STRUCT(parent_fname);
 				if (!parent_dirname(ctx, smb_fname->base_name,
 							&parent_fname.base_name,
-							NULL)) {
+							&last_component)) {
 					status = NT_STATUS_NO_MEMORY;
 					goto fail;
 				}
@@ -401,13 +403,101 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 						goto fail;
 					}
+				} else if (ret == 0) {
+					/*
+					 * stat() or lstat() of the parent dir
+					 * succeeded. So start the walk
+					 * at this point.
+					 */
+					status = check_for_dot_component(&parent_fname);
+					if (!NT_STATUS_IS_OK(status)) {
+						goto fail;
+					}
+
+		 			/*
+					 * If there was no parent component in
+					 * smb_fname->base_name then
+					 * don't do this optimization.
+					 */
+					if (smb_fname->base_name != last_component) {
+						/*
+						 * Safe to use CONST_DISCARD
+						 * here as last_component points
+						 * into our smb_fname->base_name.
+						 */
+						start = CONST_DISCARD(char *,
+							last_component);
+
+						DEBUG(5,("unix_convert optimize1: name "
+							"= %s, dirpath = %s, "
+							"start = %s\n",
+							smb_fname->base_name,
+							dirpath,
+							start));
+					}
 				}
+
 				/*
 				 * Missing last component is ok - new file.
 				 * Also deal with permission denied elsewhere.
 				 * Just drop out to done.
 				 */
 				goto done;
+			}
+		}
+	} else {
+		/*
+		 * We have a wildcard in the pathname.
+		 *
+		 * Optimization for common case where the wildcard
+		 * is in the last component and the client already
+		 * sent the correct case.
+		 */
+		struct smb_filename parent_fname;
+		const char *last_component = NULL;
+
+		ZERO_STRUCT(parent_fname);
+		if (!parent_dirname(ctx, smb_fname->base_name,
+					&parent_fname.base_name,
+					&last_component)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		/*
+		 * If there was no parent component in
+		 * smb_fname->base_name then
+		 * don't do this optimization.
+		 */
+		if ((smb_fname->base_name != last_component) &&
+				!ms_has_wild(parent_fname.base_name)) {
+			/*
+			 * Wildcard isn't in the parent, i.e.
+			 * it must be in the last component.
+			 */
+			if (posix_pathnames) {
+				ret = SMB_VFS_LSTAT(conn, &parent_fname);
+			} else {
+				ret = SMB_VFS_STAT(conn, &parent_fname);
+			}
+			if (ret == 0) {
+				status = check_for_dot_component(&parent_fname);
+				if (!NT_STATUS_IS_OK(status)) {
+					goto fail;
+				}
+
+				/*
+				 * Safe to use CONST_DISCARD
+				 * here as last_component points
+				 * into our smb_fname->base_name.
+				 */
+				start = CONST_DISCARD(char *,last_component);
+
+				DEBUG(5,("unix_convert optimize2: name "
+					"= %s, dirpath = %s, "
+					"start = %s\n",
+					smb_fname->base_name,
+					dirpath,
+					start));
 			}
 		}
 	}
@@ -478,6 +568,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		if (name_has_wildcard && end) {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto fail;
+		}
+
+		/* Skip the stat call if it's a wildcard end. */
+		if (name_has_wildcard) {
+			DEBUG(5,("Wildcard %s\n",start));
+			goto done;
 		}
 
 		/*
