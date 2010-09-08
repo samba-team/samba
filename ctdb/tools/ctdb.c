@@ -4579,60 +4579,35 @@ static int control_msglisten(struct ctdb_context *ctdb, int argc, const char **a
 
 /*
   list all nodes in the cluster
-  if the daemon is running, we read the data from the daemon.
-  if the daemon is not running we parse the nodes file directly
+  we parse the nodes file directly
  */
 static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
-	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct pnn_node *pnn_nodes;
+	struct pnn_node *pnn_node;
 
-	if (ctdb != NULL) {
-		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-			return ret;
-		}
+	pnn_nodes = read_nodes_file(mem_ctx);
+	if (pnn_nodes == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+		talloc_free(mem_ctx);
+		return -1;
+	}
 
-		for(i=0;i<nodemap->num;i++){
-			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
-				continue;
-			}
-			if (options.machinereadable){
-				printf(":%d:%s:\n", nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
-			} else {
-				printf("%s\n", ctdb_addr_to_str(&nodemap->nodes[i].addr));
-			}
-		}
-	} else {
-		TALLOC_CTX *mem_ctx = talloc_new(NULL);
-		struct pnn_node *pnn_nodes;
-		struct pnn_node *pnn_node;
-	
-		pnn_nodes = read_nodes_file(mem_ctx);
-		if (pnn_nodes == NULL) {
-			DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
+		ctdb_sock_addr addr;
+		if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
+			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
 			talloc_free(mem_ctx);
 			return -1;
 		}
-
-		for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
-			ctdb_sock_addr addr;
-
-			if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
-				DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
-				talloc_free(mem_ctx);
-				return -1;
-			}
-
-			if (options.machinereadable){
-				printf(":%d:%s:\n", pnn_node->pnn, pnn_node->addr);
-			} else {
-				printf("%s\n", pnn_node->addr);
-			}
+		if (options.machinereadable){
+			printf(":%d:%s:\n", pnn_node->pnn, pnn_node->addr);
+		} else {
+			printf("%s\n", pnn_node->addr);
 		}
-		talloc_free(mem_ctx);
 	}
+	talloc_free(mem_ctx);
 
 	return 0;
 }
