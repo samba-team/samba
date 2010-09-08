@@ -475,6 +475,10 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SPOOLSS',
 	public_deps='dcerpc NDR_SPOOLSS'
 	)
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
+	source='../../librpc/gen_ndr/ndr_nbt_c.c',
+	public_deps='dcerpc NDR_NBT'
+	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WKSSVC',
 	source='../../librpc/gen_ndr/ndr_wkssvc_c.c',
@@ -707,7 +711,7 @@ bld.SAMBA_PYTHON('python_atsvc',
 
 bld.SAMBA_PYTHON('python_dcerpc_nbt',
 	source='../../librpc/gen_ndr/py_nbt.c',
-	deps='NDR_NBT PYTALLOC pyrpc_util',
+	deps='NDR_NBT RPC_NDR_NBT PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/nbt.so'
 	)
 
