@@ -182,9 +182,6 @@ enum winbindd_result winbindd_dual_ccache_save(
 
 void set_domain_offline(struct winbindd_domain *domain);
 void set_domain_online_request(struct winbindd_domain *domain);
-void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
-					const char *server,
-					NTSTATUS result);
 void invalidate_cm_connection(struct winbindd_cm_conn *conn);
 void close_conns_after_fork(void);
 NTSTATUS init_dc_connection(struct winbindd_domain *domain);

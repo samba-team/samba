@@ -541,9 +541,10 @@ void set_domain_online_request(struct winbindd_domain *domain)
  Add -ve connection cache entries for domain and realm.
 ****************************************************************/
 
-void winbind_add_failed_connection_entry(const struct winbindd_domain *domain,
-					const char *server,
-					NTSTATUS result)
+static void winbind_add_failed_connection_entry(
+	const struct winbindd_domain *domain,
+	const char *server,
+	NTSTATUS result)
 {
 	add_failed_connection_entry(domain->name, server, result);
 	/* If this was the saf name for the last thing we talked to,
