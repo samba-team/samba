@@ -261,6 +261,7 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 
 	/* These levels are queries, not responses */
 	case LOGON_PRIMARY_QUERY:
+	case LOGON_REQUEST:
 	case NETLOGON_ANNOUNCE_UAS:
 	case LOGON_SAM_LOGON_REQUEST:
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
