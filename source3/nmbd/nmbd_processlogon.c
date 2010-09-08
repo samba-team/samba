@@ -309,18 +309,6 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 {
 	fstring source_name;
 	struct dgram_packet *dgram = &p->packet.dgram;
-	fstring my_name;
-	fstring reply_name;
-	char outbuf[1024];
-	uint32 ntversion = 0;
-	uint16 lmnttoken = 0;
-	uint16 lm20token = 0;
-	uint32 domainsidsize;
-	char *getdc;
-	char *uniuser; /* Unicode user name. */
-	fstring ascuser;
-	char *unicomp; /* Unicode computer name. */
-	size_t size;
 	struct sockaddr_storage ss;
 	const struct sockaddr_storage *pss;
 	struct in_addr ip;
@@ -342,15 +330,11 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	}
 	ip = ((struct sockaddr_in *)pss)->sin_addr;
 
-	memset(outbuf, 0, sizeof(outbuf));
-
 	if (!lp_domain_logons()) {
 		DEBUG(5,("process_logon_packet: Logon packet received from IP %s and domain \
 logons are not enabled.\n", inet_ntoa(p->ip) ));
 		return;
 	}
-
-	fstrcpy(my_name, global_myname());
 
 	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
@@ -468,10 +452,10 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 	}
 
 	case LOGON_SAM_LOGON_REQUEST: {
-		fstring getdc_str;
 		char *source_addr;
-		char *q = buf + 2;
-		fstring asccomp;
+		bool user_unknown = false;
+
+		struct netlogon_samlogon_response samlogon;
 
 		if (global_nmbd_proxy_logon) {
 			nmbd_proxy_logon(global_nmbd_proxy_logon,
@@ -479,317 +463,126 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 			return;
 		}
 
-		q += 2;
-
-		if (PTR_DIFF(q, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-
-		unicomp = q;
-		uniuser = skip_unibuf(unicomp, PTR_DIFF(buf+len, unicomp));
-
-		if (PTR_DIFF(uniuser, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-
-		getdc = skip_unibuf(uniuser,PTR_DIFF(buf+len, uniuser));
-
-		if (PTR_DIFF(getdc, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-
-		q = skip_string(buf,len,getdc);
-
-		if (!q || PTR_DIFF(q + 8, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-
-		q += 4; /* Account Control Bits - indicating username type */
-		domainsidsize = IVAL(q, 0);
-		q += 4;
-
-		DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST sidsize %d, len = %d\n", domainsidsize, len));
-
-		if (domainsidsize < (len - PTR_DIFF(q, buf)) && (domainsidsize != 0)) {
-			q += domainsidsize;
-			q = ALIGN4(q, buf);
-		}
-
-		DEBUG(5,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %ld\n", len, (unsigned long)PTR_DIFF(q, buf) ));
-
-		if (len - PTR_DIFF(q, buf) > 8) {
-			/* with NT5 clients we can sometimes
-				get additional data - a length specificed string
-				containing the domain name, then 16 bytes of
-				data (no idea what it is) */
-			int dom_len = CVAL(q, 0);
-			q++;
-			if (dom_len < (len - PTR_DIFF(q, buf)) && (dom_len != 0)) {
-				q += dom_len + 1;
-			}
-			q += 16;
-		}
-
-		if (PTR_DIFF(q + 8, buf) > len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-
-		ntversion = IVAL(q, 0);
-		lmnttoken = SVAL(q, 4);
-		lm20token = SVAL(q, 6);
-		q += 8;
-
-		DEBUG(3,("process_logon_packet: LOGON_SAM_LOGON_REQUEST sidsize %d ntv %d\n", domainsidsize, ntversion));
-
-		/*
-		 * we respond regadless of whether the machine is in our password
-		 * database. If it isn't then we let smbd send an appropriate error.
-		 * Let's ignore the SID.
-		 */
-		pull_ucs2_fstring(ascuser, uniuser);
-		pull_ucs2_fstring(asccomp, unicomp);
-		DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST user %s\n", ascuser));
-
-		fstrcpy(reply_name, "\\\\"); /* Here it wants \\LOGONSERVER. */
-		fstrcat(reply_name, my_name);
-
-		DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-			asccomp,inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup(),
-		LOGON_SAM_LOGON_RESPONSE ,lmnttoken));
-
-		/* Construct reply. */
-
-		q = outbuf;
-		/* we want the simple version unless we are an ADS PDC..which means  */
-		/* never, at least for now */
-		if ((ntversion < 11) || (SEC_ADS != lp_security()) || (ROLE_DOMAIN_PDC != lp_server_role())) {
-			if (SVAL(uniuser, 0) == 0) {
-				SSVAL(q, 0, LOGON_SAM_LOGON_USER_UNKNOWN);	/* user unknown */
-			} else {
-				SSVAL(q, 0, LOGON_SAM_LOGON_RESPONSE);
-			}
-
-			q += 2;
-
-			q += dos_PutUniCode(q, reply_name,
-				sizeof(outbuf) - PTR_DIFF(q, outbuf),
-				True);
-			q += dos_PutUniCode(q, ascuser,
-				sizeof(outbuf) - PTR_DIFF(q, outbuf),
-				True);
-			q += dos_PutUniCode(q, lp_workgroup(),
-				sizeof(outbuf) - PTR_DIFF(q, outbuf),
-				True);
-		}
-#ifdef HAVE_ADS
-		else {
-			struct GUID domain_guid;
-			UUID_FLAT flat_guid;
-			char *domain;
-			char *hostname;
-			char *component, *dc, *q1;
-			char *q_orig = q;
-			int str_offset;
-			char *saveptr = NULL;
-
-			domain = get_mydnsdomname(talloc_tos());
-			if (!domain) {
-				DEBUG(2,
-				("get_mydnsdomname failed.\n"));
-				return;
-			}
-			hostname = get_myname(talloc_tos());
-			if (!hostname) {
-				DEBUG(2,
-				("get_myname failed.\n"));
-				return;
-			}
-
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
-				return;
-			}
-			if (SVAL(uniuser, 0) == 0) {
-				SIVAL(q, 0, LOGON_SAM_LOGON_USER_UNKNOWN_EX);	/* user unknown */
-			} else {
-				SIVAL(q, 0, LOGON_SAM_LOGON_RESPONSE_EX);
-			}
-			q += 4;
-
-			SIVAL(q, 0, NBT_SERVER_PDC|NBT_SERVER_GC|NBT_SERVER_LDAP|NBT_SERVER_DS|
-				NBT_SERVER_KDC|NBT_SERVER_TIMESERV|NBT_SERVER_CLOSEST|NBT_SERVER_WRITABLE);
-			q += 4;
-
-			/* Push Domain GUID */
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < UUID_FLAT_SIZE) {
-				return;
-			}
-			if (False == secrets_fetch_domain_guid(domain, &domain_guid)) {
-				DEBUG(2, ("Could not fetch DomainGUID for %s\n", domain));
-				return;
-			}
-
-			smb_uuid_pack(domain_guid, &flat_guid);
-			memcpy(q, &flat_guid.info, UUID_FLAT_SIZE);
-			q += UUID_FLAT_SIZE;
-
-			/* Forest */
-			str_offset = q - q_orig;
-			dc = domain;
-			q1 = q;
-			while ((component = strtok_r(dc, ".", &saveptr)) != NULL) {
-				dc = NULL;
-				if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 1) {
-					return;
-				}
-				size = push_ascii(&q[1], component,
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					0);
-				if (size == (size_t)-1 || size > 0xff) {
-					return;
-				}
-				SCVAL(q, 0, size);
-				q += (size + 1);
-			}
-
-			/* Unk0 */
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 4) {
-				return;
-			}
-			SCVAL(q, 0, 0);
-			q++;
-
-			/* Domain */
-			SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
-			SCVAL(q, 1, str_offset & 0xFF);
-			q += 2;
-
-			/* Hostname */
-			size = push_ascii(&q[1], hostname,
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					0);
-			if (size == (size_t)-1 || size > 0xff) {
-				return;
-			}
-			SCVAL(q, 0, size);
-			q += (size + 1);
-
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 3) {
-				return;
-			}
-
-			SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
-			SCVAL(q, 1, str_offset & 0xFF);
-			q += 2;
-
-			/* NETBIOS of domain */
-			size = push_ascii(&q[1], lp_workgroup(),
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					STR_UPPER);
-			if (size == (size_t)-1 || size > 0xff) {
-				return;
-			}
-			SCVAL(q, 0, size);
-			q += (size + 1);
-
-			/* Unk1 */
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 2) {
-				return;
-			}
-
-			SCVAL(q, 0, 0);
-			q++;
-
-			/* NETBIOS of hostname */
-			size = push_ascii(&q[1], my_name,
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					0);
-			if (size == (size_t)-1 || size > 0xff) {
-				return;
-			}
-			SCVAL(q, 0, size);
-			q += (size + 1);
-
-			/* Unk2 */
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 4) {
-				return;
-			}
-
-			SCVAL(q, 0, 0);
-			q++;
-
-			/* User name */
-			if (SVAL(uniuser, 0) != 0) {
-				size = push_ascii(&q[1], ascuser,
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					0);
-				if (size == (size_t)-1 || size > 0xff) {
-					return;
-				}
-				SCVAL(q, 0, size);
-				q += (size + 1);
-			}
-
-			q_orig = q;
-			/* Site name */
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 1) {
-				return;
-			}
-			size = push_ascii(&q[1], "Default-First-Site-Name",
-					sizeof(outbuf) - PTR_DIFF(q+1, outbuf),
-					0);
-			if (size == (size_t)-1 || size > 0xff) {
-				return;
-			}
-			SCVAL(q, 0, size);
-			q += (size + 1);
-
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 18) {
-				return;
-			}
-
-			/* Site name (2) */
-			str_offset = q - q_orig;
-			SCVAL(q, 0, 0xc0 | ((str_offset >> 8) & 0x3F));
-			SCVAL(q, 1, str_offset & 0xFF);
-			q += 2;
-
-			SCVAL(q, 0, PTR_DIFF(q,q1));
-			SCVAL(q, 1, 0x10); /* unknown */
-
-			SIVAL(q, 0, 0x00000002);
-			q += 4; /* unknown */
-			SIVAL(q, 0, ntohl(ip.s_addr));
-			q += 4;
-			SIVAL(q, 0, 0x00000000);
-			q += 4; /* unknown */
-			SIVAL(q, 0, 0x00000000);
-			q += 4; /* unknown */
-		}
-#endif
-
-		if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
-			return;
-		}
-
-		/* tell the client what version we are */
-		SIVAL(q, 0, ((ntversion < 11) || (SEC_ADS != lp_security())) ? 1 : 13);
-		/* our ntversion */
-		SSVAL(q, 4, 0xffff); /* our lmnttoken */
-		SSVAL(q, 6, 0xffff); /* our lm20token */
-		q += 8;
-
-		dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
-
-		pull_ascii_fstring(getdc_str, getdc);
 		source_addr = SMB_STRDUP(inet_ntoa(dgram->header.source_ip));
 		if (source_addr == NULL) {
 			DEBUG(3, ("out of memory copying client"
 				  " address string\n"));
+			return;
+		}
+
+		DEBUG(5,("process_logon_packet: LOGON_SAM_LOGON_REQUEST request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+			request.req.logon.computer_name,
+			inet_ntoa(p->ip),
+			request.req.logon.user_name,
+			pdc_name,
+			lp_workgroup(),
+			LOGON_SAM_LOGON_RESPONSE,
+			request.req.logon.lmnt_token));
+
+		if (!request.req.logon.user_name) {
+			user_unknown = true;
+		}
+
+		/* we want the simple version unless we are an ADS PDC..which means  */
+		/* never, at least for now */
+
+		if ((request.req.logon.nt_version < (NETLOGON_NT_VERSION_1 | NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX_WITH_IP)) ||
+		    (SEC_ADS != lp_security()) || (ROLE_DOMAIN_PDC != lp_server_role())) {
+
+			struct NETLOGON_SAM_LOGON_RESPONSE_NT40 nt4;
+
+			nt4.command		= user_unknown ? LOGON_SAM_LOGON_USER_UNKNOWN :
+								 LOGON_SAM_LOGON_RESPONSE;
+			nt4.pdc_name		= pdc_name;
+			nt4.user_name		= request.req.logon.user_name;
+			nt4.domain_name		= lp_workgroup();
+			nt4.nt_version		= NETLOGON_NT_VERSION_1;
+			nt4.lmnt_token		= 0xffff;
+			nt4.lm20_token		= 0xffff;
+
+			samlogon.ntver = NETLOGON_NT_VERSION_1;
+			samlogon.data.nt4 = nt4;
+
+			if (DEBUGLEVEL >= 10) {
+				NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_NT40, &nt4);
+			}
+		}
+#ifdef HAVE_ADS
+		else {
+
+			struct NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
+			struct GUID domain_guid;
+			struct nbt_sockaddr saddr;
+			char *domain;
+			const char *hostname;
+
+			saddr.sockaddr_family	= 2; /* AF_INET */
+			saddr.pdc_ip		= inet_ntoa(ip);
+			saddr.remaining		= data_blob_talloc_zero(talloc_tos(), 8); /* ??? */
+
+			domain = get_mydnsdomname(talloc_tos());
+			if (!domain) {
+				DEBUG(2,("get_mydnsdomname failed.\n"));
+				return;
+			}
+
+			hostname = get_mydnsfullname();
+			if (!hostname) {
+				DEBUG(2,("get_mydnsfullname failed.\n"));
+				return;
+			}
+
+			if (!secrets_fetch_domain_guid(domain, &domain_guid)) {
+				DEBUG(2,("Could not fetch DomainGUID for %s\n", domain));
+				return;
+			}
+
+			nt5_ex.command		= user_unknown ? LOGON_SAM_LOGON_USER_UNKNOWN_EX :
+								 LOGON_SAM_LOGON_RESPONSE_EX;
+			nt5_ex.sbz		= 0;
+			nt5_ex.server_type	= NBT_SERVER_PDC |
+						  NBT_SERVER_GC |
+						  NBT_SERVER_LDAP |
+						  NBT_SERVER_DS |
+						  NBT_SERVER_KDC |
+						  NBT_SERVER_TIMESERV |
+						  NBT_SERVER_CLOSEST |
+						  NBT_SERVER_WRITABLE;
+			nt5_ex.domain_uuid	= domain_guid;
+			nt5_ex.forest		= domain;
+			nt5_ex.dns_domain	= domain;
+			nt5_ex.pdc_dns_name	= hostname;
+			nt5_ex.domain_name	= lp_workgroup();
+			nt5_ex.pdc_name		= global_myname();
+			nt5_ex.user_name	= request.req.logon.user_name;
+			nt5_ex.server_site	= "Default-First-Site-Name";
+			nt5_ex.client_site	= "Default-First-Site-Name";
+			nt5_ex.sockaddr_size	= 0x10; /* the w32 winsock addr size */
+			nt5_ex.sockaddr		= saddr;
+			nt5_ex.next_closest_site= NULL;
+			nt5_ex.nt_version	= NETLOGON_NT_VERSION_1 |
+						  NETLOGON_NT_VERSION_5EX |
+						  NETLOGON_NT_VERSION_5EX_WITH_IP;
+			nt5_ex.lmnt_token	= 0xffff;
+			nt5_ex.lm20_token	= 0xffff;
+
+			samlogon.ntver = NETLOGON_NT_VERSION_1 |
+					 NETLOGON_NT_VERSION_5EX |
+					 NETLOGON_NT_VERSION_5EX_WITH_IP;
+			samlogon.data.nt5_ex = nt5_ex;
+
+			if (DEBUGLEVEL >= 10) {
+				NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX, &nt5_ex);
+			}
+		}
+#endif /* HAVE_ADS */
+
+		response.response_type = NETLOGON_SAMLOGON;
+		response.data.samlogon = samlogon;
+
+		status = push_nbt_netlogon_response(&blob_out, talloc_tos(), &response);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("process_logon_packet: failed to push packet\n"));
 			return;
 		}
 
@@ -799,7 +592,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		 * locked.
 		 */
 		if ((p->locked == False) &&
-		    (strlen(ascuser) == 0) &&
+		    (strlen(request.req.logon.user_name) == 0) &&
 		    delay_logon(source_name, source_addr))
 		{
 			struct timeval when;
@@ -825,10 +618,10 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				  "logon reply for client "
 				  "%s(%s)\n",
 				  source_name, source_addr));
-
 			p->locked = false;
-			send_mailslot(true, getdc,
-				outbuf,PTR_DIFF(q,outbuf),
+			send_mailslot(true, request.req.logon.mailslot_name,
+				(char *)blob_out.data,
+				blob_out.length,
 				global_myname(), 0x0,
 				source_name,
 				dgram->source_name.name_type,
