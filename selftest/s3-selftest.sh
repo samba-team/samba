@@ -2,7 +2,6 @@
 
 FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SOURCEDIR}/selftest/knownfail"
 SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
-FORMAT_TEST_OUTPUT="${FILTER_XFAIL} | ${SUBUNIT_FORMATTER}"
 
 cleanup_and_exit() {
 	if test "$1" = 0 -o -z "$1"; then
@@ -36,7 +35,7 @@ else
 			--exclude=${SOURCEDIR}/selftest/skip \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
-		${SUBUNIT_FORMATTER}
+		${FILTER_XFAIL} | ${SUBUNIT_FORMATTER}
 	EXIT_STATUS=$?
 
 	st_test_done
