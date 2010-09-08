@@ -4160,8 +4160,7 @@ static bool run_opentest(int dummy)
 
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
 
-
-	printf("testing ctemp\n");
+	printf("Do ctemp tests\n");
 	if (!NT_STATUS_IS_OK(cli_ctemp(cli1, talloc_tos(), "\\", &fnum1, &tmp_path))) {
 		printf("ctemp failed (%s)\n", cli_errstr(cli1));
 		return False;
@@ -4189,22 +4188,22 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 1 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #1 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 1 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #1 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
-		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
@@ -4216,22 +4215,22 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 2 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #2 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 2 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #2 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #2 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
-		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #2 close 2 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
@@ -4243,22 +4242,22 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 3 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #3 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 3 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #3 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 3 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #3 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
-		printf("test 3 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #3 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
@@ -4270,20 +4269,20 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 4 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #4 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
-	printf("test 3 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
+	printf("TEST #4 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 4 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #4 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
@@ -4295,23 +4294,23 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 5 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #5 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_DELETE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 5 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #5 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 5 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #5 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
-		printf("test 5 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #5 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
@@ -4323,23 +4322,23 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 6 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #6 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_READ, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 6 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #6 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 6 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #6 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
-		printf("test 6 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #6 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
@@ -4351,20 +4350,20 @@ static bool run_opentest(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
-		printf("test 7 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #7 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
 	if (NT_STATUS_IS_OK(cli_ntcreate(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_READ|FILE_SHARE_DELETE, FILE_OPEN_IF, 0, 0, &fnum2))) {
-		printf("test 7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
+		printf("TEST #7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
 
-	printf("test 7 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
+	printf("TEST #7 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("test 7 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
+		printf("TEST #7 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
@@ -6982,7 +6981,7 @@ static bool test_stream_name(const char *fname, const char *expected_base,
 	return true;
 
  error:
-	d_fprintf(stderr, "test_stream(%s, %s, %s, %s)\n",
+	d_fprintf(stderr, "Do test_stream(%s, %s, %s, %s)\n",
 		  fname, expected_base ? expected_base : "<NULL>",
 		  expected_stream ? expected_stream : "<NULL>",
 		  nt_errstr(expected_status));
