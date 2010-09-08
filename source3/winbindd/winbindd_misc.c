@@ -209,25 +209,6 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	return WINBINDD_OK;
 }
 
-/* This is the child-only version of --sequence. It only allows for a single
- * domain (ie "our" one) to be displayed. */
-
-enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
-						 struct winbindd_cli_state *state)
-{
-	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
-
-	/* Ensure null termination */
-	state->request->domain_name[sizeof(state->request->domain_name)-1]='\0';
-
-	domain->methods->sequence_number(domain, &domain->sequence_number);
-
-	state->response->data.sequence_number =
-		domain->sequence_number;
-
-	return WINBINDD_OK;
-}
-
 struct domain_info_state {
 	struct winbindd_domain *domain;
 	struct winbindd_cli_state *cli;
