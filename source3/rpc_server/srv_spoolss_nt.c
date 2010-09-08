@@ -1134,7 +1134,10 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32_t idx )
 				}
 			}
 
-			construct_info_data( &notifies[count], msg->type, msg->field, id );
+			construct_info_data(&notifies[count],
+					    (enum spoolss_NotifyType) msg->type,
+					    msg->field,
+					    id);
 
 			switch(msg->type) {
 			case PRINTER_NOTIFY_TYPE:
@@ -2358,7 +2361,8 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 ****************************************************************************/
 
 static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
-					uint32_t localprinter, uint32_t type,
+					uint32_t localprinter,
+					enum winreg_Type type,
 					struct policy_handle *handle,
 					struct sockaddr_storage *client_ss,
 					struct messaging_context *msg_ctx)
@@ -2517,7 +2521,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	}
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
-					Printer->notify.printerlocal, 1,
+					Printer->notify.printerlocal, REG_SZ,
 					&Printer->notify.client_hnd,
 					&client_ss, p->msg_ctx))
 		return WERR_SERVER_UNAVAILABLE;
@@ -3098,8 +3102,8 @@ static const struct s_notify_info_data_table notify_info_data_table[] =
  Return the variable_type of info_data structure.
 ********************************************************************/
 
-static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
-						  uint16_t field)
+static enum spoolss_NotifyTable variable_type_of_notify_info_data(enum spoolss_NotifyType type,
+								  uint16_t field)
 {
 	int i=0;
 
@@ -3112,7 +3116,7 @@ static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
 
 	DEBUG(5, ("invalid notify data type %d/%d\n", type, field));
 
-	return 0;
+	return (enum spoolss_NotifyTable) 0;
 }
 
 /****************************************************************************
@@ -3632,7 +3636,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->status			= nt_printq_status(status.status);
 	r->enumerate_network_printers	= 0x0;
 	r->c_setprinter			= 0x0;
-	r->processor_architecture	= 0x0;
+	r->processor_architecture	= PROCESSOR_ARCHITECTURE_INTEL;
 	r->processor_level		= 0x6; 		/* 6  ???*/
 	r->ref_ic			= 0;
 	r->reserved2			= 0;
