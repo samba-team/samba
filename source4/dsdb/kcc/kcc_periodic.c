@@ -113,7 +113,7 @@ static void kccsrv_notify_drepl_server(struct kccsrv_service *s,
 	struct dcerpc_binding_handle *irpc_handle;
 	struct tevent_req *subreq;
 
-	state = talloc_zero(mem_ctx, struct kccsrv_notify_drepl_server_state);
+	state = talloc_zero(s, struct kccsrv_notify_drepl_server_state);
 	if (state == NULL) {
 		return;
 	}
