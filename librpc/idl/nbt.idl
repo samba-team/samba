@@ -10,7 +10,9 @@
 
 import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
 [
-	helper("../libcli/netlogon.h", "../libcli/nbt/libnbt.h")
+	helper("../libcli/netlogon.h", "../libcli/nbt/libnbt.h"),
+	helpstring("NBT messages"),
+	uuid("6def41b6-86e4-4c32-997c-ed33af7bcd8e")
 ]
 interface nbt
 {
@@ -541,6 +543,10 @@ interface nbt
 		netlogon_command command;
 		[switch_is(command)] nbt_netlogon_request req;
 	} nbt_netlogon_packet;
+
+	void decode_nbt_netlogon_packet(
+		[in] nbt_netlogon_packet packet
+		);
 
 	/********************************************************/
 	/* \MAILSLOT\BROWSE mailslot requests			*/
