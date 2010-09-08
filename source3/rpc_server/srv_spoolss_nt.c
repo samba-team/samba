@@ -97,6 +97,8 @@ struct xcv_api_table {
 	WERROR(*fn) (TALLOC_CTX *mem_ctx, NT_USER_TOKEN *token, DATA_BLOB *in, DATA_BLOB *out, uint32_t *needed);
 };
 
+static void prune_printername_cache(void);
+
 /********************************************************************
  * Canonicalize servername.
  ********************************************************************/
@@ -374,8 +376,13 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 		return WERR_BADFID;
 	}
 
-	return delete_printer_hook(p->mem_ctx, p->server_info->ptok,
+	result = delete_printer_hook(p->mem_ctx, p->server_info->ptok,
 				   Printer->sharename );
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+	prune_printername_cache();
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -431,6 +438,17 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *hand
 	}
 
 	return true;
+}
+
+static void prune_printername_cache_fn(const char *key, const char *value,
+					time_t timeout, void *private_data)
+{
+	gencache_del(key);
+}
+
+static void prune_printername_cache(void)
+{
+	gencache_iterate(prune_printername_cache_fn, NULL, "PRINTERNAME/*");
 }
 
 /****************************************************************************
