@@ -492,7 +492,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
 	/* 2. hopefully adding random replica dest should succeed */
-	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	torture_comment(tctx, "add    : %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
@@ -500,15 +500,39 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
 	/* 3. try adding same replica dest - should fail */
-	torture_comment(tctx, "add   : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	torture_comment(tctx, "add    : %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_ADD_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
 					 status, WERR_DS_DRA_REF_ALREADY_EXISTS, &r,
 					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
 
-	/* 4. delete random replicate added at step 2. */
-	torture_comment(tctx, "delete: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	/* 4. try resetting same replica dest - should succeed */
+	torture_comment(tctx, "reset : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF | DRSUAPI_DRS_ADD_REF;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 5. delete random replicate added at step 2. */
+	torture_comment(tctx, "delete : %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 6. try replace on non-existing replica dest - should succeed */
+	torture_comment(tctx, "replace: %s\n", r.in.req.req1.dest_dsa_dns_name);
+	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF | DRSUAPI_DRS_ADD_REF;
+	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
+	torture_drsuapi_assert_call_werr(tctx, p,
+					 status, WERR_OK, &r,
+					 "dcerpc_drsuapi_DsReplicaUpdateRefs");
+
+	/* 7. delete random replicate added at step 6. */
+	torture_comment(tctx, "delete : %s\n", r.in.req.req1.dest_dsa_dns_name);
 	r.in.req.req1.options		= DRSUAPI_DRS_DEL_REF;
 	status = dcerpc_drsuapi_DsReplicaUpdateRefs_r(p->binding_handle, tctx, &r);
 	torture_drsuapi_assert_call_werr(tctx, p,
