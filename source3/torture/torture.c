@@ -6124,11 +6124,18 @@ static bool run_uid_regression_test(int dummy)
 	cli->vuid = old_vuid;
 
 	/* Try an operation. */
-	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\uid_reg_test"))) {
-		/* We expect bad uid. */
+	status = cli_mkdir(cli, "\\uid_reg_test");
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) cli_mkdir succeeded\n",
+			 __location__);
+		correct = false;
+		goto out;
+	} else {
+		/* Should be bad uid. */
 		if (!check_error(__LINE__, cli, ERRSRV, ERRbaduid,
-				NT_STATUS_NO_SUCH_USER)) {
-			return False;
+				NT_STATUS_USER_SESSION_DELETED)) {
+			correct = false;
+			goto out;
 		}
 	}
 
@@ -6141,9 +6148,11 @@ static bool run_uid_regression_test(int dummy)
 	status = cli_tdis(cli);
 
 	if (NT_STATUS_IS_OK(status)) {
-		printf("First tdis with invalid vuid should succeed.\n");
+		d_printf("First tdis with invalid vuid should succeed.\n");
 	} else {
-		printf("First tdis failed (%s)\n", nt_errstr(status));
+		d_printf("First tdis failed (%s)\n", nt_errstr(status));
+		correct = false;
+		goto out;
 	}
 
 	cli->vuid = old_vuid;
@@ -6152,12 +6161,15 @@ static bool run_uid_regression_test(int dummy)
 	/* This should fail. */
 	status = cli_tdis(cli);
 	if (NT_STATUS_IS_OK(status)) {
-		printf("Second tdis with invalid vuid should fail - succeeded instead !.\n");
+		d_printf("Second tdis with invalid vuid should fail - succeeded instead !.\n");
+		correct = false;
+		goto out;
 	} else {
 		/* Should be bad tid. */
 		if (!check_error(__LINE__, cli, ERRSRV, ERRinvnid,
 				NT_STATUS_NETWORK_NAME_DELETED)) {
-			return False;
+			correct = false;
+			goto out;
 		}
 	}
 
