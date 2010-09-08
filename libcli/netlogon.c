@@ -238,6 +238,15 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_OK;
 		response->response_type = NETLOGON_GET_PDC;
 		break;
+	case LOGON_RESPONSE2:
+		ndr_err = ndr_pull_struct_blob(data, mem_ctx, &response->data.response2,
+			(ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_response2);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		status = NT_STATUS_OK;
+		response->response_type = NETLOGON_RESPONSE2;
+		break;
 	case LOGON_SAM_LOGON_RESPONSE:
 	case LOGON_SAM_LOGON_PAUSE_RESPONSE:
 	case LOGON_SAM_LOGON_USER_UNKNOWN:
