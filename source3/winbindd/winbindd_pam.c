@@ -1624,7 +1624,7 @@ process_result:
 						      state->mem_ctx,
 						      state->request->data.auth.user,
 						      state->request->data.auth.pass,
-						      info3, NULL);
+						      info3);
 			}
 		}
 
