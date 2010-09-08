@@ -142,14 +142,6 @@ NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 	return winbindd_store_creds(domain, mem_ctx, user, pass, info3, NULL);
 }
 
-NTSTATUS winbindd_update_creds_by_sid(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      const struct dom_sid *sid,
-				      const char *pass)
-{
-	return winbindd_store_creds(domain, mem_ctx, NULL, pass, NULL, sid);
-}
-
 NTSTATUS winbindd_update_creds_by_name(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
 				       const char *user,

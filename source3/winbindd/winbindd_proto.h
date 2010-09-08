@@ -241,10 +241,6 @@ NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 				        const char *user,
 				        const char *pass,
 				        struct netr_SamInfo3 *info3);
-NTSTATUS winbindd_update_creds_by_sid(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      const struct dom_sid *sid,
-				      const char *pass);
 NTSTATUS winbindd_update_creds_by_name(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
 				       const char *user,
