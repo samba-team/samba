@@ -1458,7 +1458,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	}
 
 	/* we have to check the server affinity cache here since 
-	   later we selecte a DC based on response time and not preference */
+	   later we select a DC based on response time and not preference */
 
 	/* Check the negative connection cache
 	   before talking to it. It going down may have
