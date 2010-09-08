@@ -1550,7 +1550,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();;
+	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1594,7 +1594,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();;
+	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1638,7 +1638,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();;
+	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
