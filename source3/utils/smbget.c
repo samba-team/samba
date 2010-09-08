@@ -276,7 +276,8 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 			     int resume, int toplevel, char *outfile)
 {
 	int remotehandle, localhandle;
-	struct timespec start_time, now;
+	time_t start_time = time_mono(NULL);
+	time_t now;
 	const char *newpath;
 	char path[SMB_MAXPATHLEN];
 	char checkbuf[2][RESUME_CHECK_SIZE];
@@ -284,7 +285,6 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 	off_t offset_download = 0, offset_check = 0, curpos = 0, start_offset = 0;
 	struct stat localstat, remotestat;
 
-	clock_gettime_mono(&start_time);
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base, (*base && *name && name[0] != '/' && base[strlen(base)-1] != '/')?"/":"", name);
 
 	remotehandle = smbc_open(path, O_RDONLY, 0755);
@@ -467,8 +467,7 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 
 		if(dots)fputc('.', stderr);
 		else if(!quiet) {
-			clock_gettime_mono(&now);
-			print_progress(newpath, start_time.tv_sec, now.tv_sec,
+			print_progress(newpath, start_time, time_mono(NULL),
 					start_offset, curpos, remotestat.st_size);
 		}
 	}
@@ -509,7 +508,7 @@ static void clean_exit(void)
 	char bs[100];
 	human_readable(total_bytes, bs, sizeof(bs));
 	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs,
-		(unsigned long)(time(NULL) - total_start_time));
+		(unsigned long)(time_mono(NULL) - total_start_time));
 	exit(0);
 }
 
@@ -668,7 +667,7 @@ int main(int argc, const char **argv)
 
 	columns = get_num_cols();
 
-	total_start_time = time(NULL);
+	total_start_time = time_mono(NULL);
 
 	while ( (file = poptGetArg(pc)) ) {
 		if (!recursive) 
