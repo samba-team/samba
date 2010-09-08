@@ -1478,7 +1478,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 			     sizeof(state->request->data.auth.user)-1 );
 	}
 
-	if (domain->online == false) {
+	if (!domain->online) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		if (domain->startup) {
 			/* Logons are very important to users. If we're offline and
