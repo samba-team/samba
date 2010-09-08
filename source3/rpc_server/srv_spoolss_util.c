@@ -2322,7 +2322,6 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 create_default:
 	result = winreg_printer_openkey(tmp_ctx,
 					server_info,
-					msg_ctx,
 					&winreg_pipe,
 					path,
 					"",
