@@ -307,6 +307,7 @@ Process a domain logon packet
 void process_logon_packet(struct packet_struct *p, char *buf,int len,
                           const char *mailslot)
 {
+	fstring source_name;
 	struct dgram_packet *dgram = &p->packet.dgram;
 	fstring my_name;
 	fstring reply_name;
@@ -349,6 +350,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 	}
 
 	fstrcpy(my_name, global_myname());
+
+	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 	ZERO_STRUCT(request);
 
@@ -424,7 +427,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		send_mailslot(True, getdc_str,
 				outbuf,PTR_DIFF(q,outbuf),
 				global_myname(), 0x0,
-				mach_str,
+				source_name,
 				dgram->source_name.name_type,
 				p->ip, ip, p->port);
 		break;
@@ -432,7 +435,6 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	case LOGON_PRIMARY_QUERY: {
 		fstring mach_str, getdc_str;
-		fstring source_name;
 		char *q = buf + 2;
 		char *machine = q;
 
@@ -549,7 +551,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
 		pull_ascii_fstring(getdc_str, getdc);
-		pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 		send_mailslot(True, getdc_str,
 			outbuf,PTR_DIFF(q,outbuf),
@@ -562,7 +563,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 	case LOGON_SAM_LOGON_REQUEST: {
 		fstring getdc_str;
-		fstring source_name;
 		char *source_addr;
 		char *q = buf + 2;
 		fstring asccomp;
@@ -880,7 +880,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
 
 		pull_ascii_fstring(getdc_str, getdc);
-		pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 		source_addr = SMB_STRDUP(inet_ntoa(dgram->header.source_ip));
 		if (source_addr == NULL) {
 			DEBUG(3, ("out of memory copying client"
