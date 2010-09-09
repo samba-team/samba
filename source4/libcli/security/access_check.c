@@ -29,7 +29,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 					 const struct security_token *token)
 {
 	uint32_t denied = 0, granted = 0;
-	unsigned i;
+	uint32_t i;
 	
 	if (security_token_has_sid(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
@@ -91,7 +91,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)
 {
-	int i;
+	uint32_t i;
 	uint32_t bits_remaining;
 
 	*access_granted = access_desired;
@@ -183,7 +183,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			     struct object_tree *tree,
 			     struct dom_sid *replace_sid)
 {
-        int i;
+        uint32_t i;
         uint32_t bits_remaining;
         struct object_tree *node;
         const struct GUID *type;
@@ -299,7 +299,4 @@ done:
 
         return NT_STATUS_OK;
 }
-
-
-
 

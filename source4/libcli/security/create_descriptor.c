@@ -90,7 +90,7 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 							    struct dom_sid *group,
 							    struct GUID *object_list)
 {
-	int i;
+	uint32_t i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(mem_ctx, struct security_acl);
 	struct dom_sid *co, *cg;
@@ -173,7 +173,7 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 					     struct dom_sid *group,
 					     struct GUID *object_list)
 {
-	int i;
+	uint32_t i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(tmp_ctx, struct security_acl);
 	struct security_acl *new_acl;

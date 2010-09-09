@@ -49,7 +49,7 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 void security_token_debug(int dbg_lev, const struct security_token *token)
 {
 	TALLOC_CTX *mem_ctx;
-	int i;
+	uint32_t i;
 
 	if (!token) {
 		DEBUG(dbg_lev, ("Security token: (NULL)\n"));
@@ -107,7 +107,7 @@ bool security_token_is_anonymous(const struct security_token *token)
 
 bool security_token_has_sid(const struct security_token *token, const struct dom_sid *sid)
 {
-	int i;
+	uint32_t i;
 	for (i = 0; i < token->num_sids; i++) {
 		if (dom_sid_equal(&token->sids[i], sid)) {
 			return true;
