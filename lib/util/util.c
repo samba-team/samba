@@ -899,8 +899,13 @@ void *allocate_anonymous_shared(size_t bufsz)
 void samba_start_debugger(void)
 {
 	char *cmd = NULL;
-	asprintf(&cmd, "xterm -e \"gdb --pid %u\"&", getpid());
-	system(cmd);
+	if (asprintf(&cmd, "xterm -e \"gdb --pid %u\"&", getpid()) == -1) {
+		return;
+	}
+	if (system(cmd) == -1) {
+		free(cmd);
+		return;
+	}
 	free(cmd);
 	sleep(2);
 }
