@@ -109,6 +109,11 @@ void load_case_tables(void)
 	if (!upcase_table) {
 		DEBUG(1,("creating lame upcase table\n"));
 		upcase_table = (smb_ucs2_t *)SMB_MALLOC(0x20000);
+		if (!upcase_table) {
+			smb_panic("lame upcase table malloc fail");
+			/* notreached. */
+			return;
+		}
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);
@@ -124,6 +129,11 @@ void load_case_tables(void)
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
 		lowcase_table = (smb_ucs2_t *)SMB_MALLOC(0x20000);
+		if (!lowcase_table) {
+			smb_panic("lame lowcase table malloc fail");
+			/* notreached. */
+			return;
+		}
 		for (i=0;i<0x10000;i++) {
 			smb_ucs2_t v;
 			SSVAL(&v, 0, i);

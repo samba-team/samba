@@ -2067,6 +2067,9 @@ void string_append(char **left, const char *right)
 
 	if (*left == NULL) {
 		*left = (char *)SMB_MALLOC(new_len);
+		if (*left == NULL) {
+			return;
+		}
 		*left[0] = '\0';
 	} else {
 		new_len += strlen(*left);
