@@ -466,7 +466,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         domain = domain.upper()
 
         if lp.get("workgroup").upper() != domain:
-            raise ProvisioningError("guess_names: Workgroup '%s' in %s must match chosen domain '%s'!  Please remove the %s file and let provision generate it" % (lp.get("workgroup").upper(), domain, lp.configfile))
+            raise ProvisioningError("guess_names: Workgroup '%s' in smb.conf must match chosen domain '%s'!  Please remove the %s file and let provision generate it" % (lp.get("workgroup").upper(), domain, lp.configfile))
 
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
