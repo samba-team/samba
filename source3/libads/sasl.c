@@ -987,6 +987,11 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 
 	output_token.length = 4;
 	output_token.value = SMB_MALLOC(output_token.length);
+	if (!output_token.value) {
+		output_token.length = 0;
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto failed;
+	}
 	p = (uint8 *)output_token.value;
 
 	RSIVAL(p,0,max_msg_size);
@@ -1002,14 +1007,19 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	 */
 
 	gss_rc = gss_wrap(&minor_status, context_handle,0,GSS_C_QOP_DEFAULT,
-			  &output_token, &conf_state,
-			  &input_token);
+			&output_token, /* used as *input* here. */
+			&conf_state,
+			&input_token); /* Used as *output* here. */
 	if (gss_rc) {
 		status = ADS_ERROR_GSS(gss_rc, minor_status);
+		output_token.length = 0;
+		SAFE_FREE(output_token.value);
 		goto failed;
 	}
 
-	free(output_token.value);
+	/* We've finished with output_token. */
+	SAFE_FREE(output_token.value);
+	output_token.length = 0;
 
 	cred.bv_val = (char *)input_token.value;
 	cred.bv_len = input_token.length;
