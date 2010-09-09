@@ -126,12 +126,20 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 		if (!fsmo_master_cmp(ntds_dn, fsmo_role_dn)) {
-			return drepl_request_extended_op(service,
+			WERROR werr;
+			werr = drepl_request_extended_op(service,
 							 role_owner_dn,
 							 fsmo_role_dn,
 							 DRSUAPI_EXOP_FSMO_REQ_ROLE,
 							 alloc_pool,
 							 drepl_role_callback);
+			if (W_ERROR_IS_OK(werr)) {
+				dreplsrv_run_pending_ops(service);
+			} else {
+				DEBUG(0,("%s: drepl_request_extended_op() failed with %s",
+						 __FUNCTION__, win_errstr(werr)));
+			}
+			return werr;
 		}
 		break;
 	case DREPL_PDC_MASTER:
