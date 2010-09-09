@@ -1311,7 +1311,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
 			domain->can_do_samlogon_ex = false;
-			retry = true;
 			continue;
 		}
 
@@ -1320,7 +1319,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		   our connection. */
 
 		if (!rpccli_is_connected(netlogon_pipe)) {
-			retry = true;
 			continue;
 		}
 
@@ -1761,7 +1759,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
 			domain->can_do_samlogon_ex = false;
-			retry = true;
 			continue;
 		}
 
@@ -1772,7 +1769,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		   our connection. */
 
 		if (!rpccli_is_connected(netlogon_pipe)) {
-			retry = true;
 			continue;
 		}
 
