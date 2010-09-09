@@ -111,7 +111,9 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	sid_parse(rdata+40,sid_len,&qt.sid);
+	if (!sid_parse(rdata+40,sid_len,&qt.sid)) {
+		return false;
+	}
 
 	qt.qtype = SMB_USER_QUOTA_TYPE;
 
