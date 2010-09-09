@@ -835,6 +835,10 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 	struct security_descriptor *psd = NULL;
 	NTSTATUS status;
 
+	if (!CAN_WRITE(fsp->conn)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
