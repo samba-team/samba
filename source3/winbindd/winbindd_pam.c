@@ -1612,17 +1612,15 @@ process_result:
 			goto done;
 		}
 
-		if ((state->request->flags & WBFLAG_PAM_CACHED_LOGIN)) {
+		if ((state->request->flags & WBFLAG_PAM_CACHED_LOGIN)
+		    && lp_winbind_offline_logon()) {
 
-			if (lp_winbind_offline_logon()) {
-				result = winbindd_store_creds(domain,
+			result = winbindd_store_creds(domain,
 						      state->mem_ctx,
 						      state->request->data.auth.user,
 						      state->request->data.auth.pass,
 						      info3);
-			}
 		}
-
 
 		if (state->request->flags & WBFLAG_PAM_GET_PWD_POLICY) {
 			struct winbindd_domain *our_domain = find_our_domain();
