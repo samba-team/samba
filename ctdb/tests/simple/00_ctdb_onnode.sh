@@ -34,5 +34,5 @@ onnode all onnode all true
 if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     echo "Starting time logging on each node..."
     f="/var/log/ctdb.test.time.log"
-    onnode -p all "[ -f $f ] || while : ; do date '+%T.%N' ; sleep 1 ; done >$f 2>&1 </dev/null &"  &
+    onnode -p all "[ -f $f ] || while : ; do date '+%s %N' ; sleep 1 ; done >$f 2>&1 </dev/null &"  &
 fi
