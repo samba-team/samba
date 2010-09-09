@@ -64,7 +64,7 @@ class cmd_join(Command):
         elif role == "MEMBER":
             secure_channel_type = SEC_CHAN_WKSTA
         elif role == "RODC":
-            join_rodc(server=server, creds=creds, lp=lp,
+            join_rodc(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name)
             return
         else:

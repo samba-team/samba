@@ -40,7 +40,7 @@ class join_ctx:
     pass
 
 def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
-              targetdir=None):
+              targetdir=None, domain=None):
     """join as a RODC"""
 
     if server is None:
@@ -77,15 +77,17 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
         res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
         return res[0]["dnsHostName"][0]
 
+    def get_domain_name(samdb):
+        '''get netbios name of the domain from the partitions record'''
+        partitions_dn = samdb.get_partitions_dn()
+        res = samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
+                           expression='ncName=%s' % samdb.get_default_basedn())
+        return res[0]["nETBIOSName"][0]
+
     def get_mysid(samdb):
         res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         binsid = res[0]["tokenGroups"][0]
         return samdb.schema_format_value("objectSID", binsid)
-
-    def get_domain_name(samdb):
-        # this should be done via CLDAP
-        res = samdb.search(base=samdb.get_default_basedn(), scope=ldb.SCOPE_BASE, attrs=["name"])
-        return res[0]["name"][0]
 
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
