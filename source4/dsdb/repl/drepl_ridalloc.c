@@ -32,7 +32,7 @@
 
 
 /*
-  create the RID manager source dsa structure
+  create the role owner source dsa structure
  */
 
 WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
@@ -122,7 +122,7 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 
 	werr = dreplsrv_schedule_partition_pull_source(service, service->ncchanges_extended.role_owner_source_dsa,
 						       extended_op, alloc_pool,
-						       callback);
+						       callback, NULL);
 	return werr;
 }
 
@@ -161,7 +161,7 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 						fsmo_role_dn,
 						DRSUAPI_EXOP_FSMO_RID_ALLOC,
 						alloc_pool,
-						drepl_new_rid_pool_callback, NULL);
+						drepl_new_rid_pool_callback);
 	return werr;
 }
 

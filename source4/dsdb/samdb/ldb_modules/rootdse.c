@@ -32,7 +32,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
 
 struct private_data {
 	unsigned int num_controls;
@@ -979,19 +979,25 @@ static int rootdse_become_master(struct ldb_module *module,
 				 uint32_t role)
 {
 	struct drepl_takeFSMORole r;
-	struct server_id *sid;
 	struct messaging_context *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
 	NTSTATUS status_call, status_fn;
+	struct dcerpc_binding_handle *irpc_handle;
 
 	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
 
-	sid = irpc_servers_byname(msg, tmp_ctx, "dreplsrv");
+	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg,
+						  "dreplsrv",
+						  &ndr_table_irpc);
+	if (irpc_handle == NULL) {
+		return ldb_oom(ldb);
+	}
 	r.in.role = role;
-	status_call = IRPC_CALL(msg, sid[0], irpc, DREPL_TAKEFSMOROLE, &r, NULL);
+
+	status_call = dcerpc_drepl_takeFSMORole_r(irpc_handle, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status_call)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
