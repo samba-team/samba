@@ -1143,46 +1143,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		req8->uptodateness_vector = NULL;
 	} 
 
-	/* we don't yet support extended operations */
-	switch (req8->extended_op) {
-	case DRSUAPI_EXOP_NONE:
-		break;
-
-	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
-		werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
-		W_ERROR_NOT_OK_RETURN(werr);
-		search_dn = ldb_get_default_basedn(sam_ctx);
-		break;
-
-	case DRSUAPI_EXOP_REPL_SECRET:
-		werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
-		r->out.result = werr;
-		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
-		W_ERROR_NOT_OK_RETURN(werr);
-		break;
-
-	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
-		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
-		W_ERROR_NOT_OK_RETURN(werr);
-		break;
-
-	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
-		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
-		W_ERROR_NOT_OK_RETURN(werr);
-		break;
-
-	case DRSUAPI_EXOP_FSMO_REQ_PDC:
-		werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
-		W_ERROR_NOT_OK_RETURN(werr);
-		break;
-
-	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
-	case DRSUAPI_EXOP_REPL_OBJ:
-		DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
-			 (unsigned)req8->extended_op));
-		return WERR_DS_DRA_NOT_SUPPORTED;
-	}
-
 	getnc_state = b_state->getncchanges_state;
 
 	/* see if a previous replication has been abandoned */
@@ -1210,6 +1170,51 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		ret = ldb_dn_compare(getnc_state->ncRoot_dn,
 				     ldb_get_schema_basedn(b_state->sam_ctx));
 		getnc_state->is_schema_nc = (0 == ret);
+
+		/*
+		 * This is the first replication cycle and it is
+		 * a good place to handle extended operations
+		 *
+		 * FIXME: we don't fully support extended operations yet
+		 */
+		switch (req8->extended_op) {
+		case DRSUAPI_EXOP_NONE:
+			break;
+
+		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+			werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			W_ERROR_NOT_OK_RETURN(werr);
+			search_dn = ldb_get_default_basedn(sam_ctx);
+			break;
+
+		case DRSUAPI_EXOP_REPL_SECRET:
+			werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
+			r->out.result = werr;
+			NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
+			W_ERROR_NOT_OK_RETURN(werr);
+			break;
+
+		case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			W_ERROR_NOT_OK_RETURN(werr);
+			break;
+
+		case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			W_ERROR_NOT_OK_RETURN(werr);
+			break;
+
+		case DRSUAPI_EXOP_FSMO_REQ_PDC:
+			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			W_ERROR_NOT_OK_RETURN(werr);
+			break;
+
+		case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+		case DRSUAPI_EXOP_REPL_OBJ:
+			DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
+				 (unsigned)req8->extended_op));
+			return WERR_DS_DRA_NOT_SUPPORTED;
+		}
 	}
 
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
