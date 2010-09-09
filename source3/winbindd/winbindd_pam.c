@@ -1689,17 +1689,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	state->request->data.auth_crap.domain[sizeof(state->request->data.auth_crap.domain)-1]=0;
 
 	name_user = state->request->data.auth_crap.user;
-
-	if (*state->request->data.auth_crap.domain) {
-		name_domain = state->request->data.auth_crap.domain;
-	} else if (lp_winbind_use_default_domain()) {
-		name_domain = lp_workgroup();
-	} else {
-		DEBUG(5,("no domain specified with username (%s) - failing auth\n",
-			 name_user));
-		result = NT_STATUS_NO_SUCH_USER;
-		goto done;
-	}
+	name_domain = state->request->data.auth_crap.domain;
 
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
 		  name_domain, name_user));
