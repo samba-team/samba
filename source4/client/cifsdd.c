@@ -60,19 +60,18 @@ static void dd_handle_signal(int sig)
 /* Argument handling.							     */
 /* ------------------------------------------------------------------------- */
 
+static const struct {
+	enum argtype arg_type;
+	const char * arg_name;
+} names [] = {
+	{ ARG_NUMERIC, "COUNT" },
+	{ ARG_SIZE, "SIZE" },
+	{ ARG_PATHNAME, "FILE" },
+	{ ARG_BOOL, "BOOLEAN" },
+};
+
 static const char * argtype_str(enum argtype arg_type)
 {
-	static const struct {
-		enum argtype arg_type;
-		const char * arg_name;
-	} names [] = 
-	{
-		{ ARG_NUMERIC, "COUNT" },
-		{ ARG_SIZE, "SIZE" },
-		{ ARG_PATHNAME, "FILE" },
-		{ ARG_BOOL, "BOOLEAN" },
-	};
-
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(names); ++i) {
