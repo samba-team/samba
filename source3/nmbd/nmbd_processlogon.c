@@ -312,7 +312,6 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	fstring my_name;
 	fstring reply_name;
 	char outbuf[1024];
-	uint16 token = 0;
 	uint32 ntversion = 0;
 	uint16 lmnttoken = 0;
 	uint16 lm20token = 0;
@@ -327,9 +326,12 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	const struct sockaddr_storage *pss;
 	struct in_addr ip;
 
-	DATA_BLOB blob_in;
+	DATA_BLOB blob_in, blob_out;
 	enum ndr_err_code ndr_err;
 	struct nbt_netlogon_packet request;
+	struct nbt_netlogon_response response;
+	NTSTATUS status;
+	const char *pdc_name;
 
 	in_addr_to_sockaddr_storage(&ss, p->ip);
 	pss = iface_ip((struct sockaddr *)&ss);
@@ -353,6 +355,11 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
+	pdc_name = talloc_asprintf(talloc_tos(), "\\\\%s", global_myname());
+	if (!pdc_name) {
+		return;
+	}
+
 	ZERO_STRUCT(request);
 
 	blob_in = data_blob_const(buf, len);
@@ -372,60 +379,35 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		inet_ntoa(p->ip), request.command));
 
 	switch (request.command) {
-	case 0: {
-		fstring mach_str, user_str, getdc_str;
-		char *q = buf + 2;
-		char *machine = q;
-		char *user = skip_string(buf,len,machine);
+	case LOGON_REQUEST: {
 
-		if (!user || PTR_DIFF(user, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-		getdc = skip_string(buf,len,user);
-
-		if (!getdc || PTR_DIFF(getdc, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-		q = skip_string(buf,len,getdc);
-
-		if (!q || PTR_DIFF(q + 5, buf) > len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-		token = SVAL(q,3);
-
-		fstrcpy(reply_name,my_name);
-
-		pull_ascii_fstring(mach_str, machine);
-		pull_ascii_fstring(user_str, user);
-		pull_ascii_fstring(getdc_str, getdc);
+		struct nbt_netlogon_response2 response2;
 
 		DEBUG(5,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
-			mach_str,inet_ntoa(p->ip),user_str,token));
+			request.req.logon0.computer_name, inet_ntoa(p->ip),
+			request.req.logon0.user_name,
+			request.req.logon0.lm20_token));
 
-		q = outbuf;
-		SSVAL(q, 0, 6);
-		q += 2;
+		response2.command	= LOGON_RESPONSE2;
+		response2.pdc_name	= pdc_name;
+		response2.lm20_token	= 0xffff;
 
-		fstrcpy(reply_name, "\\\\");
-		fstrcat(reply_name, my_name);
-		size = push_ascii(q,reply_name,
-				sizeof(outbuf)-PTR_DIFF(q, outbuf),
-				STR_TERMINATE);
-		if (size == (size_t)-1) {
+		response.response_type = NETLOGON_RESPONSE2;
+		response.data.response2 = response2;
+
+		status = push_nbt_netlogon_response(&blob_out, talloc_tos(), &response);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("process_logon_packet: failed to push packet\n"));
 			return;
 		}
-		q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
 
-		SSVAL(q, 0, token);
-		q += 2;
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(nbt_netlogon_response2, &response.data.response2);
+		}
 
-		dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
-
-		send_mailslot(True, getdc_str,
-				outbuf,PTR_DIFF(q,outbuf),
+		send_mailslot(True, request.req.logon0.mailslot_name,
+				(char *)blob_out.data,
+				blob_out.length,
 				global_myname(), 0x0,
 				source_name,
 				dgram->source_name.name_type,
