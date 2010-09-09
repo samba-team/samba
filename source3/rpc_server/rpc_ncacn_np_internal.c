@@ -116,7 +116,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
 					      struct client_address *client_id,
-					      struct auth_serversupplied_info *server_info,
+					      const struct auth_serversupplied_info *server_info,
 					      struct messaging_context *msg_ctx)
 {
 	struct pipes_struct *p;
@@ -429,7 +429,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 			const struct ndr_syntax_id *abstract_syntax,
 			const struct ndr_interface_table *ndr_table,
 			struct client_address *client_id,
-			struct auth_serversupplied_info *server_info,
+			const struct auth_serversupplied_info *server_info,
 			struct messaging_context *msg_ctx,
 			struct dcerpc_binding_handle **binding_handle)
 {
@@ -497,7 +497,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       struct client_address *client_id,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle)
 {
