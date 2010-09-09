@@ -921,6 +921,11 @@ NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
+const struct auth_serversupplied_info *get_server_info_system(void)
+{
+    return system_info;
+}
+
 bool copy_current_user(struct current_user *dst, struct current_user *src)
 {
 	gid_t *groups;

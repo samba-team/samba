@@ -147,6 +147,7 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info);
 NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
 				 struct auth_serversupplied_info **server_info);
+const struct auth_serversupplied_info *get_server_info_system(void);
 bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 			     fstring save_username, bool create );
