@@ -1004,7 +1004,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		my_info3->base.bad_password_count = 0;
 
 		result = winbindd_update_creds_by_info3(domain,
-							state->mem_ctx,
 							state->request->data.auth.user,
 							state->request->data.auth.pass,
 							my_info3);
@@ -1052,7 +1051,6 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 failed:
 	result = winbindd_update_creds_by_info3(domain,
-						state->mem_ctx,
 						state->request->data.auth.user,
 						NULL,
 						my_info3);
@@ -1615,7 +1613,6 @@ process_result:
 		    && lp_winbind_offline_logon()) {
 
 			result = winbindd_store_creds(domain,
-						      state->mem_ctx,
 						      state->request->data.auth.user,
 						      state->request->data.auth.pass,
 						      info3);
@@ -1933,8 +1930,7 @@ done:
 	if (NT_STATUS_IS_OK(result) && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN)) {
 		if (lp_winbind_offline_logon()) {
 			result = winbindd_update_creds_by_name(contact_domain,
-							 state->mem_ctx, user,
-							 newpass);
+							       user, newpass);
 			/* Again, this happens when we login from gdm or xdm
 			 * and the password expires, *BUT* cached crendentials
 			 * doesn't exist. winbindd_update_creds_by_name()

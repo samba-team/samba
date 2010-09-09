@@ -54,7 +54,6 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 
 
 NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
-			      TALLOC_CTX *mem_ctx, 
 			      const char *user, 
 			      const char *pass, 
 			      struct netr_SamInfo3 *info3)
@@ -128,20 +127,18 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 }
 
 NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
-				        TALLOC_CTX *mem_ctx,
 				        const char *user,
 				        const char *pass,
 				        struct netr_SamInfo3 *info3)
 {
-	return winbindd_store_creds(domain, mem_ctx, user, pass, info3);
+	return winbindd_store_creds(domain, user, pass, info3);
 }
 
 NTSTATUS winbindd_update_creds_by_name(struct winbindd_domain *domain,
-				       TALLOC_CTX *mem_ctx,
 				       const char *user,
 				       const char *pass)
 {
-	return winbindd_store_creds(domain, mem_ctx, user, pass, NULL);
+	return winbindd_store_creds(domain, user, pass, NULL);
 }
 
 
