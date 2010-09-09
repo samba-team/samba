@@ -1429,11 +1429,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: dual pam auth %s\n", (unsigned long)state->pid,
 		  state->request->data.auth.user));
 
-	if (!check_request_flags(state->request->flags)) {
-		result = NT_STATUS_INVALID_PARAMETER_MIX;
-		goto done;
-	}
-
 	/* Parse domain and username */
 
 	name_map_status = normalize_name_unmap(state->mem_ctx,
@@ -1692,11 +1687,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	/* Ensure null termination */
 	state->request->data.auth_crap.user[sizeof(state->request->data.auth_crap.user)-1]=0;
 	state->request->data.auth_crap.domain[sizeof(state->request->data.auth_crap.domain)-1]=0;
-
-	if (!check_request_flags(state->request->flags)) {
-		result = NT_STATUS_INVALID_PARAMETER_MIX;
-		goto done;
-	}
 
 	name_user = state->request->data.auth_crap.user;
 
