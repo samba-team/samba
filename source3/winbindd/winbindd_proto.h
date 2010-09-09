@@ -90,7 +90,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 			  const uint8 **cached_nt_pass,
 			  const uint8 **cached_salt);
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
-			   TALLOC_CTX *mem_ctx, 
 			   const struct dom_sid *sid,
 			   const uint8 nt_pass[NT_HASH_LEN]);
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 

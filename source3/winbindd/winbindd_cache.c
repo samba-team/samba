@@ -1359,7 +1359,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 /* Store creds for a SID - only writes out new salted ones. */
 
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
-			   TALLOC_CTX *mem_ctx, 
 			   const struct dom_sid *sid,
 			   const uint8 nt_pass[NT_HASH_LEN])
 {

@@ -112,7 +112,7 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 
 		dump_data_pw("nt_pass", nt_pass, NT_HASH_LEN);
 
-		status = wcache_save_creds(domain, mem_ctx, &cred_sid, nt_pass);
+		status = wcache_save_creds(domain, &cred_sid, nt_pass);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
