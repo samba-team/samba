@@ -1485,6 +1485,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.uptodateness_vector = NULL;
 		r->out.ctr->ctr6.nc_object_count = 0;
 		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
+		r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	}
 
 	DEBUG(r->out.ctr->ctr6.more_data?2:1,
