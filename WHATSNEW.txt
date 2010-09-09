@@ -18,8 +18,8 @@ o  CVE-2010-3069:
    Samba smbd server.
 
 
-Changes since 3.3.13
---------------------
+Changes since 3.4.8
+-------------------
 
 
 o   Jeremy Allison <jra@samba.org>
