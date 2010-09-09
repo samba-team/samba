@@ -838,8 +838,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	parse_domain_user(state->request->data.auth.user, name_domain, name_user);
 
 
-	if (!lookup_cached_name(state->mem_ctx,
-	                        name_domain,
+	if (!lookup_cached_name(name_domain,
 				name_user,
 				&sid,
 				&type)) {
