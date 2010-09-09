@@ -72,7 +72,7 @@ enum spoolss_PrinterInfo2Mask {
                                  SPOOLSS_PRINTER_INFO_UNTILTIME
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
-			     struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *server_info,
 			     struct messaging_context *msg_ctx,
 			     const char *servername,
 			     const char *sharename);
@@ -100,7 +100,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
-			     struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *server_info,
 			     struct messaging_context *msg_ctx,
 			     const char *sharename,
 			     uint32_t info2_mask,
@@ -126,7 +126,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
-			  struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *server_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername,
 			  const char *printer,
@@ -147,7 +147,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  struct spoolss_security_descriptor **psecdesc);
@@ -167,7 +167,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  const struct spoolss_security_descriptor *secdesc);
@@ -197,7 +197,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -231,7 +231,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -261,7 +261,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
  *                           code if something gone wrong.
  */
 WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  const char *printer,
 				  const char *key,
@@ -287,7 +287,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
-				    struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *server_info,
 				    struct messaging_context *msg_ctx,
 				    const char *printer,
 				    const char *key,
@@ -315,7 +315,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      code if something gone wrong.
  */
 WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       const char *printer,
 			       const char *key,
@@ -339,7 +339,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key);
@@ -363,7 +363,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
-				      struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *server_info,
 				      struct messaging_context *msg_ctx,
 				      const char *printer);
 
@@ -382,7 +382,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
-				   struct auth_serversupplied_info *server_info,
+				   const struct auth_serversupplied_info *server_info,
 				   struct messaging_context *msg_ctx,
 				   const char *printer,
 				   uint32_t *pchangeid);
@@ -405,7 +405,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       struct spoolss_AddFormInfo1 *form);
 
@@ -424,7 +424,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo);
@@ -444,7 +444,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  const char *form_name);
 
@@ -467,7 +467,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form);
@@ -487,7 +487,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *form);
@@ -509,7 +509,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
-			 struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *server_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_AddDriverInfoCtr *r,
 			 const char **driver_name,
@@ -535,7 +535,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
-			 struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *server_info,
 			 struct messaging_context *msg_ctx,
 			 const char *architecture,
 			 const char *driver_name,
@@ -558,7 +558,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
-			 struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *server_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_DriverInfo8 *info8,
 			 uint32_t version);
@@ -584,7 +584,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
-			      struct auth_serversupplied_info *server_info,
+			      const struct auth_serversupplied_info *server_info,
                               struct messaging_context *msg_ctx,
 			      const char *architecture,
 			      uint32_t version,

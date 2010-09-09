@@ -473,7 +473,7 @@ static void prune_printername_cache(void)
 ****************************************************************************/
 
 static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 Printer_entry *Printer,
 				 const char *handlename)
@@ -3563,7 +3563,7 @@ done:
  ********************************************************************/
 
 static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
-				      struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *server_info,
 				      struct messaging_context *msg_ctx,
 				      struct spoolss_PrinterInfo2 *info2,
 				      struct spoolss_PrinterInfo0 *r,
@@ -3907,7 +3907,7 @@ static bool snum_is_shared_printer(int snum)
 ********************************************************************/
 
 static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
-					   struct auth_serversupplied_info *server_info,
+					   const struct auth_serversupplied_info *server_info,
 					   struct messaging_context *msg_ctx,
 					   uint32_t level,
 					   uint32_t flags,
@@ -4014,7 +4014,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *servername,
@@ -4032,7 +4032,7 @@ static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
-				       struct auth_serversupplied_info *server_info,
+				       const struct auth_serversupplied_info *server_info,
 				       struct messaging_context *msg_ctx,
 				       uint32_t flags,
 				       union spoolss_PrinterInfo **info,
@@ -4049,7 +4049,7 @@ static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
-					     struct auth_serversupplied_info *server_info,
+					     const struct auth_serversupplied_info *server_info,
 					     struct messaging_context *msg_ctx,
 					     union spoolss_PrinterInfo **info,
 					     uint32_t *count)
@@ -4065,7 +4065,7 @@ static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
-					    struct auth_serversupplied_info *server_info,
+					    const struct auth_serversupplied_info *server_info,
 					    struct messaging_context *msg_ctx,
 					    const char *name,
 					    union spoolss_PrinterInfo **info,
@@ -4092,7 +4092,7 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 *********************************************************************/
 
 static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
-					       struct auth_serversupplied_info *server_info,
+					       const struct auth_serversupplied_info *server_info,
 					       struct messaging_context *msg_ctx,
 					       const char *name,
 					       union spoolss_PrinterInfo **info,
@@ -4129,7 +4129,7 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
-				       struct auth_serversupplied_info *server_info,
+				       const struct auth_serversupplied_info *server_info,
 				       struct messaging_context *msg_ctx,
 				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
@@ -4145,7 +4145,7 @@ static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *name,
@@ -4179,7 +4179,7 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *servername,
@@ -4212,7 +4212,7 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *servername,
@@ -4231,7 +4231,7 @@ static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *server_info,
 				  struct messaging_context *msg_ctx,
 				  uint32_t flags,
 				  const char *servername,
@@ -5107,7 +5107,7 @@ static WERROR fill_printer_driver_info101(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
-						  struct auth_serversupplied_info *server_info,
+						  const struct auth_serversupplied_info *server_info,
 						  struct messaging_context *msg_ctx,
 						  uint32_t level,
 						  union spoolss_DriverInfo *r,
@@ -5810,7 +5810,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token,
 }
 
 static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
-			       struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       int snum,
 			       struct spoolss_SetPrinterInfo2 *printer,
@@ -6858,7 +6858,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 ****************************************************************************/
 
 static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
-						       struct auth_serversupplied_info *server_info,
+						       const struct auth_serversupplied_info *server_info,
 						       struct messaging_context *msg_ctx,
 						       const char *servername,
 						       const char *architecture,
@@ -6976,7 +6976,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
-				       struct auth_serversupplied_info *server_info,
+				       const struct auth_serversupplied_info *server_info,
 				       struct messaging_context *msg_ctx,
 				       const char *servername,
 				       const char *architecture,
