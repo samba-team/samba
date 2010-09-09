@@ -311,6 +311,11 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 	case 0x03:/* SMB2_SETINFO_SECURITY */
 	{
+		if (!CAN_WRITE(conn)) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
 		status = set_sd(fsp,
 				in_input_buffer.data,
 				in_input_buffer.length,

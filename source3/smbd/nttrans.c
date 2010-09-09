@@ -1967,6 +1967,11 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
+	if (!CAN_WRITE(fsp->conn)) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
 	if(!lp_nt_acl_support(SNUM(conn))) {
 		goto done;
 	}
