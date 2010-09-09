@@ -94,9 +94,10 @@ class drs_Replicate():
                 if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
                                          samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
                     continue
-            search_flags = r["searchFlags"][0]
-            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
-                continue
+            if "searchFlags" in r:
+                search_flags = r["searchFlags"][0]
+                if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+                    continue
             attid = self.samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
             attids.append(int(attid))
 
