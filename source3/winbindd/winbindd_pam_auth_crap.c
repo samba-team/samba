@@ -48,6 +48,8 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		sizeof(request->data.auth_crap.user)-1] = '\0';
 	request->data.auth_crap.domain[
 		sizeof(request->data.auth_crap.domain)-1] = '\0';
+	request->data.auth_crap.workstation[
+		sizeof(request->data.auth_crap.workstation)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: pam auth crap domain: [%s] user: %s\n",
 		  (unsigned long)cli->pid,
