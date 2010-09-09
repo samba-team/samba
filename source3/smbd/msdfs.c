@@ -219,7 +219,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				struct auth_serversupplied_info *server_info,
+				const struct auth_serversupplied_info *server_info,
 				char **poldcwd)
 {
 	connection_struct *conn;
