@@ -277,7 +277,6 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 {
 	int remotehandle, localhandle;
 	time_t start_time = time_mono(NULL);
-	time_t now;
 	const char *newpath;
 	char path[SMB_MAXPATHLEN];
 	char checkbuf[2][RESUME_CHECK_SIZE];
