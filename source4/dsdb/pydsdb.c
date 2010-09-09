@@ -505,6 +505,35 @@ static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObj
 }
 
 
+static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
+{
+	struct ldb_context *ldb;
+	struct ldb_dn *dn;
+	PyObject *py_ldb, *ret;
+	TALLOC_CTX *tmp_ctx;
+	PyObject *mod;
+
+	mod = PyImport_ImportModule("ldb");
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	tmp_ctx = talloc_new(NULL);
+
+	dn = samdb_partitions_dn(ldb, tmp_ctx);
+
+	if (dn == NULL) {
+		talloc_free(tmp_ctx);
+		Py_RETURN_NONE;
+	}
+	ret = PyLdbDn_FromDn(dn);
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -550,6 +579,7 @@ static PyMethodDef py_dsdb_methods[] = {
 		NULL },
 	{ "_dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
+	{ "_dsdb_get_partitions_dn", (PyCFunction)py_dsdb_get_partitions_dn, METH_VARARGS, NULL },
 	{ NULL }
 };
 

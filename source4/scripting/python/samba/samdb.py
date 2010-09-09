@@ -595,3 +595,6 @@ accountExpires: %u
 
     def write_prefixes_from_schema(self):
         dsdb._dsdb_write_prefixes_from_schema_to_ldb(self)
+
+    def get_partitions_dn(self):
+        return dsdb._dsdb_get_partitions_dn(self)
