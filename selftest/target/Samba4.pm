@@ -1065,6 +1065,75 @@ sub provision_fl2008r2dc($$)
 	return $ret;
 }
 
+
+sub provision_rodc($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+	print "PROVISIONING RODC...";
+
+	# We do this so that we don't run the provision.  That's the job of 'net join RODC'.
+	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
+					       "rodc",
+					       "dc8",
+					       "SAMBADOMAIN",
+					       "samba.example.com",
+					       "2008",
+					       8, $dcvars->{PASSWORD},
+					       $dcvars->{SERVER_IP});
+
+	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
+
+	$ctx->{smb_conf_extra_options} = "
+	max xmit = 32K
+	server max protocol = SMB2
+
+[sysvol]
+	path = $ctx->{lockdir}/sysvol
+	read only = yes
+
+[netlogon]
+	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	read only = yes
+
+[tmp]
+	path = $ctx->{tmpdir}
+	read only = no
+	posix:sharedelay = 10000
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
+
+";
+
+	my $ret = $self->provision_raw_step1($ctx);
+
+	$ret or die("Unable to prepare test env");
+
+	my $net = $self->bindir_path("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} RODC";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+	$cmd .= " --server=$dcvars->{DC_SERVER}";
+
+	system($cmd) == 0 or die("RODC join failed\n$cmd");
+
+	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
+	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{RODC_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{RODC_DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
+
+	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
+	return $ret;
+}
+
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
@@ -1157,6 +1226,11 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_member("$path/member", $self->{vars}->{dc});
+	} elsif ($envname eq "rodc") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_rodc("$path/rodc", $self->{vars}->{dc});
 	} elsif ($envname eq "all") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1338,6 +1412,22 @@ sub setup_vampire_dc($$$)
 	# replicate Default NC
 	$cmd_repl = "$cmd \"$base_dn\"";
 	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
+
+	return $env;
+}
+
+sub setup_rodc($$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_rodc($path, $dc_vars);
+
+	$self->check_or_start($env,
+		($ENV{SMBD_MAXTIME} or 7500));
+
+	$self->wait_for_start($env);
+
+	$self->{vars}->{rodc} = $env;
 
 	return $env;
 }
