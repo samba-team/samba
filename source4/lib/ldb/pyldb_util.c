@@ -79,3 +79,32 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	PyErr_SetString(PyExc_TypeError, "Expected DN");
 	return false;
 }
+
+PyObject *PyLdbDn_FromDn(struct ldb_dn *dn)
+{
+	PyLdbDnObject *py_ret;
+	PyTypeObject *PyLdb_Dn_Type;
+
+	if (dn == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	if (ldb_module == NULL) {
+		ldb_module = PyImport_ImportModule("ldb");
+		if (ldb_module == NULL)
+			return NULL;
+	}
+
+	PyLdb_Dn_Type = (PyTypeObject *)PyObject_GetAttrString(ldb_module, "Dn");
+	if (PyLdb_Dn_Type == NULL)
+		return NULL;
+
+	py_ret = (PyLdbDnObject *)PyLdb_Dn_Type->tp_alloc(PyLdb_Dn_Type, 0);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	py_ret->mem_ctx = talloc_new(NULL);
+	py_ret->dn = talloc_reference(py_ret->mem_ctx, dn);
+	return (PyObject *)py_ret;
+}

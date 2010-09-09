@@ -357,24 +357,6 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	return (PyObject *)py_ret;
 }
 
-PyObject *PyLdbDn_FromDn(struct ldb_dn *dn)
-{
-	PyLdbDnObject *py_ret;
-
-	if (dn == NULL) {
-		Py_RETURN_NONE;
-	}
-
-	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
-	if (py_ret == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->dn = talloc_reference(py_ret->mem_ctx, dn);
-	return (PyObject *)py_ret;
-}
-
 static void py_ldb_dn_dealloc(PyLdbDnObject *self)
 {
 	talloc_free(self->mem_ctx);
