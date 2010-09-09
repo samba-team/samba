@@ -1690,15 +1690,10 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	name_user = state->request->data.auth_crap.user;
 	name_domain = state->request->data.auth_crap.domain;
+	workstation = state->request->data.auth_crap.workstation;
 
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
 		  name_domain, name_user));
-
-	if (*state->request->data.auth_crap.workstation) {
-		workstation = state->request->data.auth_crap.workstation;
-	} else {
-		workstation = global_myname();
-	}
 
 	if (state->request->data.auth_crap.lm_resp_len > sizeof(state->request->data.auth_crap.lm_resp)
 		|| state->request->data.auth_crap.nt_resp_len > sizeof(state->request->data.auth_crap.nt_resp)) {

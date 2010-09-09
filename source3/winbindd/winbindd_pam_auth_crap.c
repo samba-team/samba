@@ -80,6 +80,10 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 
 	fstrcpy(request->data.auth_crap.domain, domain->name);
 
+	if (request->data.auth_crap.workstation[0] == '\0') {
+		fstrcpy(request->data.auth_crap.workstation, global_myname());
+	}
+
 	subreq = wb_domain_request_send(state, winbind_event_context(), domain,
 					request);
 	if (tevent_req_nomem(subreq, req)) {
