@@ -2405,83 +2405,84 @@ static bool test_create_keynames(struct dcerpc_binding_handle *b,
 #define VALUE_CURRENT_VERSION "CurrentVersion"
 #define VALUE_SYSTEM_ROOT "SystemRoot"
 
+static const struct {
+	const char *values[3];
+	uint32_t num_values;
+	bool existing_value;
+	const char *error_message;
+} multiple_values_tests[] = {
+	{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = NULL,
+		.values[2] = NULL,
+		.num_values = 1,
+		.existing_value = true,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_SYSTEM_ROOT,
+		.values[1] = NULL,
+		.values[2] = NULL,
+		.num_values = 1,
+		.existing_value = true,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = VALUE_SYSTEM_ROOT,
+		.values[2] = NULL,
+		.num_values = 2,
+		.existing_value = true,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = VALUE_SYSTEM_ROOT,
+		.values[2] = VALUE_CURRENT_VERSION,
+		.num_values = 3,
+		.existing_value = true,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = NULL,
+		.values[2] = VALUE_SYSTEM_ROOT,
+		.num_values = 3,
+		.existing_value = false,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = "",
+		.values[2] = VALUE_SYSTEM_ROOT,
+		.num_values = 3,
+		.existing_value = false,
+		.error_message = NULL
+	},{
+		.values[0] = "IDoNotExist",
+		.values[1] = NULL,
+		.values[2] = NULL,
+		.num_values = 1,
+		.existing_value = false,
+		.error_message = NULL
+	},{
+		.values[0] = "IDoNotExist",
+		.values[1] = VALUE_CURRENT_VERSION,
+		.values[2] = NULL,
+		.num_values = 2,
+		.existing_value = false,
+		.error_message = NULL
+	},{
+		.values[0] = VALUE_CURRENT_VERSION,
+		.values[1] = "IDoNotExist",
+		.values[2] = NULL,
+		.num_values = 2,
+		.existing_value = false,
+		.error_message = NULL
+	}
+};
+
 static bool test_HKLM_wellknown(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle)
 {
 	struct policy_handle newhandle;
 	int i;
-	static const struct {
-		const char *values[3];
-		uint32_t num_values;
-		bool existing_value;
-		const char *error_message;
-	} multiple_values_tests[] = {
-		{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = NULL,
-			.values[2] = NULL,
-			.num_values = 1,
-			.existing_value = true,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_SYSTEM_ROOT,
-			.values[1] = NULL,
-			.values[2] = NULL,
-			.num_values = 1,
-			.existing_value = true,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = VALUE_SYSTEM_ROOT,
-			.values[2] = NULL,
-			.num_values = 2,
-			.existing_value = true,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = VALUE_SYSTEM_ROOT,
-			.values[2] = VALUE_CURRENT_VERSION,
-			.num_values = 3,
-			.existing_value = true,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = NULL,
-			.values[2] = VALUE_SYSTEM_ROOT,
-			.num_values = 3,
-			.existing_value = false,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = "",
-			.values[2] = VALUE_SYSTEM_ROOT,
-			.num_values = 3,
-			.existing_value = false,
-			.error_message = NULL
-		},{
-			.values[0] = "IDoNotExist",
-			.values[1] = NULL,
-			.values[2] = NULL,
-			.num_values = 1,
-			.existing_value = false,
-			.error_message = NULL
-		},{
-			.values[0] = "IDoNotExist",
-			.values[1] = VALUE_CURRENT_VERSION,
-			.values[2] = NULL,
-			.num_values = 2,
-			.existing_value = false,
-			.error_message = NULL
-		},{
-			.values[0] = VALUE_CURRENT_VERSION,
-			.values[1] = "IDoNotExist",
-			.values[2] = NULL,
-			.num_values = 2,
-			.existing_value = false,
-			.error_message = NULL
-		}
-	};
 
 	/* FIXME: s3 does not support SEC_FLAG_MAXIMUM_ALLOWED yet */
 	if (torture_setting_bool(tctx, "samba3", false)) {
