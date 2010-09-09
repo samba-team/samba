@@ -52,8 +52,16 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
-	sdsa->partition->dn = ldb_get_default_basedn(ldb);
+	sdsa->partition->dn = ldb_dn_copy(sdsa->partition, role_owner_dn);
+	if (!sdsa->partition->dn) {
+		talloc_free(sdsa);
+		return WERR_NOMEM;
+	}
 	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, role_owner_dn);
+	if (!sdsa->partition->nc.dn) {
+		talloc_free(sdsa);
+		return WERR_NOMEM;
+	}
 	ret = dsdb_find_guid_by_dn(ldb, role_owner_dn, &sdsa->partition->nc.guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find GUID for %s\n",
