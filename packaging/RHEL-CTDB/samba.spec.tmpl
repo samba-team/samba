@@ -15,7 +15,6 @@ URL: http://www.samba.org/
 Source: samba-%{version}.tar.bz2
 
 # Don't depend on Net::LDAP
-Source997: docs-3.6.tar.bz2
 Source998: filter-requires-samba.sh
 Source999: setup.tar.bz2
 
@@ -29,6 +28,8 @@ Provides: samba = %{version}
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel, ctdb, e2fsprogs-devel
+# requirements for building the man pages:
+BuildRequires: libxslt, docbook-utils, docbook-style-xsl
 
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
@@ -123,7 +124,6 @@ utilized by SWAT as well as the HTML and PDF version of "Using Samba",
 
 # setup the vendor files (init scripts, etc...)
 %setup -T -D -a 999 -n samba-%{version} -q
-%setup -T -D -a 997 -n samba-%{version} -q
 
 %build
 
@@ -281,8 +281,11 @@ do
 	fi
 done
 
-# Remove some permission bits to avoid to many dependencies
+# try and build the manpages
 cd ..
+./release-scripts/build-manpages-nogit
+
+# Remove some permission bits to avoid to many dependencies
 find examples docs -type f | xargs -r chmod -x
 
 %install
@@ -368,10 +371,6 @@ ln -s ../..%{initdir}/winbind  $RPM_BUILD_ROOT%{_sbindir}/winbind
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
-## don't duplicate the docs.  These are installed by/with SWAT
-rm -rf docs/htmldocs
-rm -rf docs/manpages
-( cd docs; ln -s %{_prefix}/share/swat/help htmldocs )
 
 ##
 ## Clean out man pages for tools not installed here
@@ -524,7 +523,9 @@ exit 0
 %doc Manifest 
 %doc WHATSNEW.txt
 %doc Roadmap
-%doc docs
+%doc docs-xml/archives/THANKS
+%doc docs-xml/archives/history
+%doc docs-xml/registry
 %doc examples/autofs
 %doc examples/LDAP
 %doc examples/libsmbclient

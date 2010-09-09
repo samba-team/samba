@@ -13,8 +13,6 @@
 # Note: Under this directory rpm expects to find the same directories
 # that are under the /usr/src/redhat directory.
 
-# Set DOCS_TARBALL to the path to a docs release tarball in .tar.bz2 format.
-
 # extra options passed to rpmbuild
 EXTRA_OPTIONS="$1"
 
@@ -27,7 +25,6 @@ DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/../..
 
 SPECFILE="samba.spec"
-DOCS="docs.tar.bz2"
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpmbuild"
 
@@ -74,10 +71,6 @@ fi
 ##
 ## copy additional source files
 ##
-if [ "x${DOCS_TARBALL}" != "x" ] && [ -f ${DOCS_TARBALL} ]; then
-    cp ${DOCS_TARBALL} ${RPMSRCDIR}/${DOCS}
-fi
-
 pushd ${DIRNAME}
 
 chmod 755 setup/filter-requires-samba.sh
