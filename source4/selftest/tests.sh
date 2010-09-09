@@ -535,3 +535,6 @@ plantestsuite "drs_delete_object.python" vampire_dc PYTHONPATH="$PYTHONPATH:$sam
 t="RPC-SAMR-LARGE-DC"
 plantestsuite "`normalize_testname $t.one`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
 plantestsuite "`normalize_testname $t.two`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+
+# some RODC testing
+plantestsuite "rpc.echo to RODC" "rodc" $smb4torture ncacn_np:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
