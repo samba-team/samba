@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# Copyright (C) Michael Adam 2010
+
+_exit() {
+	echo $@
+	popd
+	exit 1
+}
+
+DIRNAME=$(dirname $0)
+DOCS_XML_DIR=${DIRNAME}/../docs-xml
+DOCS_DIR=${DIRNAME}/../docs
+
+pushd ${DOCS_XML_DIR} || exit 1
+
+git clean -xdf || _exit "Error running git clean."
+
+autoconf || _exit "Error running autoconf."
+
+./configure || _exit "Error running configure."
+
+# enable offline build by creating catalog:
+cat $(pwd)/build/catalog.xml.in \
+	| sed -e "s|@BUILDDIR@|$(pwd)|g" \
+	> $(pwd)/build/catalog.xml
+
+export XML_CATALOG_FILES="file:///etc/xml/catalog file://$(pwd)/build/catalog.xml"
+
+make manpages3 || _exit "Error running make manpages3"
+
+popd
+
+test -e ${DOCS_DIR}/manpages && rm -rf ${DOCS_DIR}/manpages
+mkdir -p ${DOCS_DIR}/manpages
+
+rsync -Ca ${DOCS_XML_DIR}/output/manpages-3/ ${DOCS_DIR}/manpages
+
+echo "Success"
+exit
+
+# END
