@@ -52,10 +52,10 @@ static int naming_fsmo_init(struct ldb_module *module)
 
 	naming_dn = samdb_partitions_dn(ldb, mem_ctx);
 	if (!naming_dn) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "naming_fsmo_init: unable to determine partitions dn");
 		talloc_free(mem_ctx);
-		return ldb_next_init(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	naming_fsmo = talloc_zero(mem_ctx, struct dsdb_naming_fsmo);
@@ -69,8 +69,8 @@ static int naming_fsmo_init(struct ldb_module *module)
 				    naming_attrs,
 				    DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
+		ldb_debug(ldb, LDB_DEBUG_TRACE,
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}

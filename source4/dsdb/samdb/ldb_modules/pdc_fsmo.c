@@ -51,10 +51,10 @@ static int pdc_fsmo_init(struct ldb_module *module)
 
 	pdc_dn = ldb_get_default_basedn(ldb);
 	if (!pdc_dn) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "pdc_fsmo_init: no domain dn present: (skip loading of domain details)\n");
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			  "pdc_fsmo_init: could not determine default basedn");
 		talloc_free(mem_ctx);
-		return ldb_next_init(module);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	pdc_fsmo = talloc_zero(mem_ctx, struct dsdb_pdc_fsmo);
@@ -68,8 +68,8 @@ static int pdc_fsmo_init(struct ldb_module *module)
 				    pdc_attrs,
 				    DSDB_FLAG_NEXT_MODULE);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)\n");
+		ldb_debug(ldb, LDB_DEBUG_TRACE,
+			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (ret != LDB_SUCCESS) {
