@@ -117,6 +117,10 @@ bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 		if (sidstr[i] == '-') num_sub_auths++;
 	}
 
+	if (num_sub_auths > MAXSUBAUTHS) {
+		return false;
+	}
+
 	ret->sid_rev_num = rev;
 	ret->id_auth[0] = 0;
 	ret->id_auth[1] = 0;

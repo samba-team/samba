@@ -40,5 +40,9 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		       const struct dom_sid *sid);
 char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 
+#ifndef MAXSUBAUTHS
+#define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#endif
+
 #endif /*_DOM_SID_H_*/
 
