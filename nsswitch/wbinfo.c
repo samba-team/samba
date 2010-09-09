@@ -1440,7 +1440,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 
 	if (error) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror messsage was: %s\n",
+			 "error code was %s (0x%x)\nerror message was: %s\n",
 			 error->nt_string,
 			 error->nt_status,
 			 error->display_string);
@@ -1511,7 +1511,7 @@ static bool wbinfo_auth(char *username)
 #if 0
 	if (response.data.auth.nt_status)
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror messsage was: %s\n",
+			 "error code was %s (0x%x)\nerror message was: %s\n",
 			 response.data.auth.nt_status_string,
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -1612,7 +1612,7 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror messsage was: %s\n",
+			 "error code was %s (0x%x)\nerror message was: %s\n",
 			 err->nt_string,
 			 err->nt_status,
 			 err->display_string);
@@ -1686,7 +1686,7 @@ static bool wbinfo_pam_logon(char *username)
 
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr,
-			  "error code was %s (0x%x)\nerror messsage was: %s\n",
+			  "error code was %s (0x%x)\nerror message was: %s\n",
 			  error->nt_string,
 			  (int)error->nt_status,
 			  error->display_string);
@@ -1772,7 +1772,7 @@ static bool wbinfo_klog(char *username)
 
 	if (response.data.auth.nt_status)
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror messsage was: %s\n",
+			 "error code was %s (0x%x)\nerror message was: %s\n",
 			 response.data.auth.nt_status_string,
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
