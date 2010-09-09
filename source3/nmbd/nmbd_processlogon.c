@@ -316,7 +316,6 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	uint16 lmnttoken = 0;
 	uint16 lm20token = 0;
 	uint32 domainsidsize;
-	bool short_request = False;
 	char *getdc;
 	char *uniuser; /* Unicode user name. */
 	fstring ascuser;
@@ -416,130 +415,55 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 	}
 
 	case LOGON_PRIMARY_QUERY: {
-		fstring mach_str, getdc_str;
-		char *q = buf + 2;
-		char *machine = q;
+
+		struct nbt_netlogon_response_from_pdc get_pdc;
 
 		if (!lp_domain_master()) {
 			/* We're not Primary Domain Controller -- ignore this */
 			return;
 		}
 
-		getdc = skip_string(buf,len,machine);
+		DEBUG(5,("process_logon_packet: GETDC request from %s at IP %s, "
+			"reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
+			request.req.pdc.computer_name,
+			inet_ntoa(p->ip),
+			global_myname(),
+			lp_workgroup(),
+			NETLOGON_RESPONSE_FROM_PDC,
+			request.req.pdc.nt_version,
+			request.req.pdc.lmnt_token,
+			request.req.pdc.lm20_token));
 
-		if (!getdc || PTR_DIFF(getdc, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
+		get_pdc.command			= NETLOGON_RESPONSE_FROM_PDC;
+		get_pdc.pdc_name		= global_myname();
+		get_pdc._pad			= data_blob_null;
+		get_pdc.unicode_pdc_name	= global_myname();
+		get_pdc.domain_name		= lp_workgroup();
+		get_pdc.nt_version		= 1;
+		get_pdc.lmnt_token		= 0xffff;
+		get_pdc.lm20_token		= 0xffff;
+
+		response.response_type = NETLOGON_GET_PDC;
+		response.data.get_pdc = get_pdc;
+
+		status = push_nbt_netlogon_response(&blob_out, talloc_tos(), &response);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("process_logon_packet: failed to push packet\n"));
 			return;
 		}
-		q = skip_string(buf,len,getdc);
 
-		if (!q || PTR_DIFF(q, buf) >= len) {
-			DEBUG(0,("process_logon_packet: bad packet\n"));
-			return;
-		}
-		q = ALIGN2(q, buf);
-
-		/* At this point we can work out if this is a W9X or NT style
-		   request. Experiments show that the difference is wether the
-		   packet ends here. For a W9X request we now end with a pair of
-		   bytes (usually 0xFE 0xFF) whereas with NT we have two further
-		   strings - the following is a simple way of detecting this */
-
-		if (len - PTR_DIFF(q, buf) <= 3) {
-			short_request = True;
-		} else {
-			unicomp = q;
-
-			if (PTR_DIFF(q, buf) >= len) {
-				DEBUG(0,("process_logon_packet: bad packet\n"));
-				return;
-			}
-
-			/* A full length (NT style) request */
-			q = skip_unibuf(unicomp, PTR_DIFF(buf + len, unicomp));
-
-			if (PTR_DIFF(q, buf) >= len) {
-				DEBUG(0,("process_logon_packet: bad packet\n"));
-				return;
-			}
-
-			if (len - PTR_DIFF(q, buf) > 8) {
-				/* with NT5 clients we can sometimes
-					get additional data - a length specificed string
-					containing the domain name, then 16 bytes of
-					data (no idea what it is) */
-				int dom_len = CVAL(q, 0);
-				q++;
-				if (dom_len != 0) {
-					q += dom_len + 1;
-				}
-				q += 16;
-			}
-
-			if (PTR_DIFF(q + 8, buf) > len) {
-				DEBUG(0,("process_logon_packet: bad packet\n"));
-				return;
-			}
-
-			ntversion = IVAL(q, 0);
-			lmnttoken = SVAL(q, 4);
-			lm20token = SVAL(q, 6);
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(nbt_netlogon_response_from_pdc, &response.data.get_pdc);
 		}
 
-		/* Construct reply. */
-		q = outbuf;
-		SSVAL(q, 0, NETLOGON_RESPONSE_FROM_PDC);
-		q += 2;
-
-		fstrcpy(reply_name,my_name);
-		size = push_ascii(q, reply_name,
-				sizeof(outbuf)-PTR_DIFF(q, outbuf),
-				STR_TERMINATE);
-		if (size == (size_t)-1) {
-			return;
-		}
-		q = skip_string(outbuf,sizeof(outbuf),q); /* PDC name */
-
-		/* PDC and domain name */
-		if (!short_request) {
-			/* Make a full reply */
-			q = ALIGN2(q, outbuf);
-
-			q += dos_PutUniCode(q, my_name,
-				sizeof(outbuf) - PTR_DIFF(q, outbuf),
-				True); /* PDC name */
-			q += dos_PutUniCode(q, lp_workgroup(),
-				sizeof(outbuf) - PTR_DIFF(q, outbuf),
-				True); /* Domain name*/
-			if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 8) {
-				return;
-			}
-			SIVAL(q, 0, 1); /* our nt version */
-			SSVAL(q, 4, 0xffff); /* our lmnttoken */
-			SSVAL(q, 6, 0xffff); /* our lm20token */
-			q += 8;
-		}
-
-		/* RJS, 21-Feb-2000, we send a short reply if the request was short */
-
-		pull_ascii_fstring(mach_str, machine);
-
-		DEBUG(5,("process_logon_packet: GETDC request from %s at IP %s, \
-reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
-			mach_str,inet_ntoa(p->ip), reply_name, lp_workgroup(),
-			NETLOGON_RESPONSE_FROM_PDC, (uint32)ntversion, (uint32)lmnttoken,
-			(uint32)lm20token ));
-
-		dump_data(4, (uint8 *)outbuf, PTR_DIFF(q, outbuf));
-
-		pull_ascii_fstring(getdc_str, getdc);
-
-		send_mailslot(True, getdc_str,
-			outbuf,PTR_DIFF(q,outbuf),
+		send_mailslot(True, request.req.pdc.mailslot_name,
+			(char *)blob_out.data,
+			blob_out.length,
 			global_myname(), 0x0,
 			source_name,
 			dgram->source_name.name_type,
 			p->ip, ip, p->port);
+
 		return;
 	}
 
