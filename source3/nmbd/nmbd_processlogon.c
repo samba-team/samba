@@ -423,7 +423,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		get_pdc._pad			= data_blob_null;
 		get_pdc.unicode_pdc_name	= global_myname();
 		get_pdc.domain_name		= lp_workgroup();
-		get_pdc.nt_version		= 1;
+		get_pdc.nt_version		= NETLOGON_NT_VERSION_1;
 		get_pdc.lmnt_token		= 0xffff;
 		get_pdc.lm20_token		= 0xffff;
 
