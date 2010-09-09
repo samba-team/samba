@@ -5645,7 +5645,8 @@ static bool test_OpenPrinter_badname_list(struct torture_context *tctx,
 static bool test_OpenPrinter(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     const char *name,
-			     const char *environment)
+			     const char *environment,
+			     bool open_only)
 {
 	NTSTATUS status;
 	struct spoolss_OpenPrinter r;
@@ -5653,7 +5654,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	r.in.printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
+	r.in.printername	= name;
 	r.in.datatype		= NULL;
 	r.in.devmode_ctr.devmode= NULL;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
@@ -5667,6 +5668,10 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinter failed");
 
+	if (open_only) {
+		goto close_printer;
+	}
+
 	if (!test_GetPrinter(tctx, b, &handle, environment)) {
 		ret = false;
 	}
@@ -5677,6 +5682,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 		}
 	}
 
+ close_printer:
 	if (!test_ClosePrinter(tctx, b, &handle)) {
 		ret = false;
 	}
@@ -5965,7 +5971,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 		for (j=0;j<count;j++) {
 			if (r.in.level == 1) {
 				char *unc = talloc_strdup(tctx, info[j].info1.name);
-				char *slash, *name;
+				char *slash, *name, *full_name;
 				name = unc;
 				if (unc[0] == '\\' && unc[1] == '\\') {
 					unc +=2;
@@ -5975,7 +5981,15 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 					slash++;
 					name = slash;
 				}
-				if (!test_OpenPrinter(tctx, p, name, ctx->environment)) {
+				full_name = talloc_asprintf(tctx, "\\\\%s\\%s",
+							    dcerpc_server_name(p), name);
+				if (!test_OpenPrinter(tctx, p, name, ctx->environment, true)) {
+					ret = false;
+				}
+				if (!test_OpenPrinter(tctx, p, full_name, ctx->environment, true)) {
+					ret = false;
+				}
+				if (!test_OpenPrinter(tctx, p, name, ctx->environment, false)) {
 					ret = false;
 				}
 				if (!test_OpenPrinterEx(tctx, p, name, ctx->environment)) {
