@@ -569,6 +569,13 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     else:
         sid_generator_line = "sid generator = " + sid_generator
 
+    used_setup_dir = setup_path("")
+    default_setup_dir = default_lp.get("setup directory")
+    setupdir_line = ""
+    if used_setup_dir != default_setup_dir:
+        setupdir_line = "setup directory = %s" % used_setup_dir
+        default_lp.set("setup directory", used_setup_dir)
+
     sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
@@ -580,6 +587,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "SERVERROLE": serverrole,
             "NETLOGONPATH": netlogon,
             "SYSVOLPATH": sysvol,
+            "SETUPDIRECTORY_LINE": setupdir_line,
             "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line,
