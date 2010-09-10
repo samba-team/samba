@@ -149,10 +149,10 @@ static int anr_replace_value(struct anr_context *ac,
 
 	if (match->length > 1 && match->data[0] == '=') {
 		struct ldb_val *match2 = talloc(mem_ctx, struct ldb_val);
-		*match2 = data_blob_const(match->data+1, match->length - 1);
 		if (match2 == NULL){
 			return ldb_oom(ldb);
 		}
+		*match2 = data_blob_const(match->data+1, match->length - 1);
 		match = match2;
 		op = LDB_OP_EQUALITY;
 	} else {
