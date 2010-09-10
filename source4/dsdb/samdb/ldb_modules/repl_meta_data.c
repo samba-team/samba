@@ -2176,13 +2176,12 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ret = replmd_update_rpmd(module, ac->schema, req, msg, &ac->seq_num, t, &is_urgent);
 	if (ret == LDB_ERR_REFERRAL) {
-		talloc_free(ac);
-
 		referral = talloc_asprintf(req,
 					   "ldap://%s/%s",
 					   lpcfg_dnsdomain(lp_ctx),
 					   ldb_dn_get_linearized(msg->dn));
 		ret = ldb_module_send_referral(req, referral);
+		talloc_free(ac);
 		return ldb_module_done(req, NULL, NULL, ret);
 	}
 
