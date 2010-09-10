@@ -401,7 +401,6 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
 		 $(LIBNDR_NETLOGON_OBJ) \
 		 librpc/gen_ndr/ndr_dssetup.o \
-		 librpc/gen_ndr/ndr_notify.o \
 		 $(LIBNDR_XATTR_OBJ) \
 		 librpc/gen_ndr/ndr_epmapper.o \
 		 librpc/gen_ndr/ndr_ntsvcs.o \
@@ -757,7 +756,8 @@ PROFILES_OBJ = utils/profiles.o \
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o \
 	     smbd/oplock_onefs.o
 
-NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o
+NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
+	     librpc/gen_ndr/ndr_notify.o
 
 FNAME_UTIL_OBJ = smbd/filename_util.o
 
