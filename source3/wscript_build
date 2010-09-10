@@ -149,7 +149,6 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_eventlog.c
                  ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
-                 librpc/gen_ndr/ndr_notify.c
                  ${LIBNDR_XATTR_SRC}
                  ../librpc/gen_ndr/ndr_epmapper.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
@@ -518,7 +517,8 @@ PROFILES_SRC = '''utils/profiles.c
 OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
              smbd/oplock_onefs.c'''
 
-NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
+NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c
+                librpc/gen_ndr/ndr_notify.c'''
 
 FNAME_UTIL_SRC = '''smbd/filename_util.c'''
 
