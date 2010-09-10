@@ -373,7 +373,7 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->req.iov.iov_base = state->req.blob.data;
+	state->req.iov.iov_base = (char *) state->req.blob.data;
 	state->req.iov.iov_len = state->req.blob.length;
 
 	ok = tevent_queue_add(wrepl_socket->request_queue,
