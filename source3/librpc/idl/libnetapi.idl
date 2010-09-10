@@ -800,6 +800,24 @@ interface libnetapi
 	/* DsGetDcName                             */
 	/*******************************************/
 
+	[public] typedef [v1_enum] enum {
+		DS_PDC_FLAG			= 0x00000001,
+		DS_GC_FLAG			= 0x00000004,
+		DS_LDAP_FLAG			= 0x00000008,
+		DS_DS_FLAG			= 0x00000010,
+		DS_KDC_FLAG			= 0x00000020,
+		DS_TIMESERV_FLAG		= 0x00000040,
+		DS_CLOSEST_FLAG			= 0x00000080,
+		DS_WRITABLE_FLAG		= 0x00000100,
+		DS_GOOD_TIMESERV_FLAG		= 0x00000200,
+		DS_NDNC_FLAG			= 0x00000400,
+		DS_SELECT_SECRET_DOMAIN_6_FLAG	= 0x00000800,
+		DS_FULL_SECRET_DOMAIN_6_FLAG	= 0x00001000,
+		DS_DNS_CONTROLLER_FLAG		= 0x20000000,
+		DS_DNS_DOMAIN_FLAG		= 0x40000000,
+		DS_DNS_FOREST_FLAG		= 0x80000000
+	} DOMAIN_CONTROLLER_INFO_FLAGS;
+
 	[public] typedef struct {
 		string domain_controller_name;
 		string domain_controller_address;
@@ -807,7 +825,7 @@ interface libnetapi
 		GUID domain_guid;
 		string domain_name;
 		string dns_forest_name;
-		uint32 flags;
+		DOMAIN_CONTROLLER_INFO_FLAGS flags;
 		string dc_site_name;
 		string client_site_name;
 	} DOMAIN_CONTROLLER_INFO;
