@@ -499,7 +499,7 @@ _PUBLIC_ void ldap_set_reconn_params(struct ldap_connection *conn, int max_retri
 	if (conn) {
 		conn->reconnect.max_retries = max_retries;
 		conn->reconnect.retries = 0;
-		conn->reconnect.previous = time(NULL);
+		conn->reconnect.previous = time_mono(NULL);
 	}
 }
 
@@ -507,7 +507,7 @@ _PUBLIC_ void ldap_set_reconn_params(struct ldap_connection *conn, int max_retri
 static void ldap_reconnect(struct ldap_connection *conn)
 {
 	NTSTATUS status;
-	time_t now = time(NULL);
+	time_t now = time_mono(NULL);
 
 	/* do we have set up reconnect ? */
 	if (conn->reconnect.max_retries == 0) return;
