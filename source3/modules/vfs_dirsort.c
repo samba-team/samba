@@ -43,14 +43,15 @@ static void free_dirsort_privates(void **datap) {
 	return;
 }
 
-static void open_and_sort_dir (vfs_handle_struct *handle)
+static bool open_and_sort_dir (vfs_handle_struct *handle)
 {
 	SMB_STRUCT_DIRENT *dp;
 	struct stat dir_stat;
 	long current_pos;
 	struct dirsort_privates *data = NULL;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates, return);
+	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
+				return false);
 
 	data->number_of_entries = 0;
 
@@ -71,6 +72,9 @@ static void open_and_sort_dir (vfs_handle_struct *handle)
 	SAFE_FREE(data->directory_list); /* destroy previous cache if needed */
 	data->directory_list = (SMB_STRUCT_DIRENT *)SMB_MALLOC(
 		data->number_of_entries * sizeof(SMB_STRUCT_DIRENT));
+	if (!data->directory_list) {
+		return false;
+	}
 	current_pos = data->pos;
 	data->pos = 0;
 	while ((dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory,
@@ -81,6 +85,7 @@ static void open_and_sort_dir (vfs_handle_struct *handle)
 	/* Sort the directory entries by name */
 	data->pos = current_pos;
 	TYPESAFE_QSORT(data->directory_list, data->number_of_entries, compare_dirent);
+	return true;
 }
 
 static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
@@ -92,6 +97,10 @@ static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
 	/* set up our private data about this directory */
 	data = (struct dirsort_privates *)SMB_MALLOC(
 		sizeof(struct dirsort_privates));
+
+	if (!data) {
+		return NULL;
+	}
 
 	data->directory_list = NULL;
 	data->pos = 0;
@@ -105,7 +114,10 @@ static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_SET_DATA(handle, data, free_dirsort_privates,
 				struct dirsort_privates, return NULL);
 
-	open_and_sort_dir(handle);
+	if (!open_and_sort_dir(handle)) {
+		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
+		return NULL;
+	}
 
 	return data->source_directory;
 }
