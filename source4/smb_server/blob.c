@@ -100,14 +100,14 @@ size_t smbsrv_blob_pull_string(struct request_bufinfo *bufinfo,
   push a string into the data section of a trans2 request
   return the number of bytes consumed in the output
 */
-size_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
-			       DATA_BLOB *blob,
-			       uint32_t len_offset,
-			       uint32_t offset,
-			       const char *str,
-			       int dest_len,
-			       int default_flags,
-			       int flags)
+static ssize_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *blob,
+				       uint32_t len_offset,
+				       uint32_t offset,
+				       const char *str,
+				       int dest_len,
+				       int default_flags,
+				       int flags)
 {
 	int alignment = 0, ret = 0, pkt_len;
 
@@ -141,6 +141,9 @@ size_t smbsrv_blob_push_string(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		ret = push_string(blob->data + offset, str, dest_len, flags);
+	}
+	if (ret == -1) {
+		return -1;
 	}
 
 	/* sometimes the string needs to be terminated, but the length
