@@ -3088,10 +3088,10 @@ static bool do_connect(struct smbclient_context *ctx,
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
 		talloc_free(ctx);
-		return NULL;
+		return false;
 	}
 
-	return ctx;
+	return true;
 }
 
 /****************************************************************************
