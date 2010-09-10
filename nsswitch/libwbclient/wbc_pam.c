@@ -313,8 +313,7 @@ static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 	wbc_status = wbc_create_auth_info(resp, &i->info);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	if (resp->data.auth.krb5ccname &&
-	    strlen(resp->data.auth.krb5ccname)) {
+	if (resp->data.auth.krb5ccname[0] != '\0') {
 		wbc_status = wbcAddNamedBlob(&i->num_blobs,
 					     &i->blobs,
 					     "krb5ccname",
@@ -324,8 +323,7 @@ static wbcErr wbc_create_logon_info(struct winbindd_response *resp,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	if (resp->data.auth.unix_username &&
-	    strlen(resp->data.auth.unix_username)) {
+	if (resp->data.auth.unix_username[0] != '\0') {
 		wbc_status = wbcAddNamedBlob(&i->num_blobs,
 					     &i->blobs,
 					     "unix_username",
