@@ -807,6 +807,13 @@ static bool spoolss_init_cb(void *ptr)
 	return nt_printing_tdb_migrate(msg_ctx);
 }
 
+static bool spoolss_shutdown_cb(void *ptr)
+{
+	srv_spoolss_cleanup();
+
+	return true;
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -1165,7 +1172,7 @@ extern void build_options(bool screen);
 	 * can't register it twice.
 	 */
 	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = NULL;
+	spoolss_cb.shutdown = spoolss_shutdown_cb;
 	spoolss_cb.private_data = smbd_server_conn->msg_ctx;
 
 	/* Spoolss depends on a winreg pipe, so start it first. */

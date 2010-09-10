@@ -4386,6 +4386,7 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 		      bool *is_data_outstanding);
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
+void srv_spoolss_cleanup(void);
 
 void do_drv_upgrade_printer(struct messaging_context *msg,
 			    void *private_data,

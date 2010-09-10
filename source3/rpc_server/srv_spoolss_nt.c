@@ -1462,6 +1462,18 @@ static bool srv_spoolss_drv_upgrade_printer(const char *drivername,
 	return true;
 }
 
+void srv_spoolss_cleanup(void)
+{
+	struct printer_session_counter *session_counter;
+
+	for (session_counter = counter_list;
+	     session_counter != NULL;
+	     session_counter = counter_list) {
+		DLIST_REMOVE(counter_list, session_counter);
+		TALLOC_FREE(session_counter);
+	}
+}
+
 /**********************************************************************
  callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
  over all printers, upgrading ones as necessary
