@@ -291,7 +291,7 @@ static void check_domain_online_handler(struct event_context *ctx,
 
 	/* Are we still in "startup" mode ? */
 
-	if (domain->startup && (now.tv_sec > domain->startup_time + 30)) {
+	if (domain->startup && (time_mono(NULL) > domain->startup_time + 30)) {
 		/* No longer in "startup" mode. */
 		DEBUG(10,("check_domain_online_handler: domain %s no longer in 'startup' mode.\n",
 			domain->name ));
@@ -508,7 +508,7 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	GetTimeOfDay(&tev);
 
 	/* Go into "startup" mode again. */
-	domain->startup_time = tev.tv_sec;
+	domain->startup_time = time_mono(NULL);
 	domain->startup = True;
 
 	tev.tv_sec += 5;
