@@ -415,10 +415,11 @@ LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
 RPC_STATIC = ''
 
-RPC_LSA_SRC = '''rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c'''
+RPC_LSARPC_SRC = '''rpc_server/srv_lsa_nt.c
+                    ../librpc/gen_ndr/srv_lsa.c'''
 
-RPC_NETLOG_SRC = '''rpc_server/srv_netlog_nt.c
-                 ../librpc/gen_ndr/srv_netlogon.c'''
+RPC_NETLOGON_SRC = '''rpc_server/srv_netlog_nt.c
+                      ../librpc/gen_ndr/srv_netlogon.c'''
 
 RPC_SAMR_SRC = '''rpc_server/srv_samr_nt.c
                rpc_server/srv_samr_util.c
@@ -427,15 +428,16 @@ RPC_SAMR_SRC = '''rpc_server/srv_samr_nt.c
 
 RPC_INITSHUTDOWN_SRC = ''' ../librpc/gen_ndr/srv_initshutdown.c rpc_server/srv_initshutdown_nt.c'''
 
-RPC_REG_SRC = ''' rpc_server/srv_winreg_nt.c
-               ../librpc/gen_ndr/srv_winreg.c'''
+RPC_WINREG_SRC = '''rpc_server/srv_winreg_nt.c
+                    ../librpc/gen_ndr/srv_winreg.c'''
 
 RPC_DSSETUP_SRC = ''' rpc_server/srv_dssetup_nt.c ../librpc/gen_ndr/srv_dssetup.c'''
 
-RPC_SVC_SRC = '''rpc_server/srv_srvsvc_nt.c
-              ../librpc/gen_ndr/srv_srvsvc.c'''
+RPC_SRVSVC_SRC = '''rpc_server/srv_srvsvc_nt.c
+                    ../librpc/gen_ndr/srv_srvsvc.c'''
 
-RPC_WKS_SRC = ''' ../librpc/gen_ndr/srv_wkssvc.c rpc_server/srv_wkssvc_nt.c'''
+RPC_WKSSVC_SRC = '''../librpc/gen_ndr/srv_wkssvc.c
+                    rpc_server/srv_wkssvc_nt.c'''
 
 RPC_SVCCTL_SRC = ''' rpc_server/srv_svcctl_nt.c
                   ../librpc/gen_ndr/srv_svcctl.c
@@ -446,7 +448,8 @@ RPC_SVCCTL_SRC = ''' rpc_server/srv_svcctl_nt.c
 RPC_NTSVCS_SRC = '''rpc_server/srv_ntsvcs_nt.c
                  ../librpc/gen_ndr/srv_ntsvcs.c'''
 
-RPC_DFS_SRC = ''' ../librpc/gen_ndr/srv_dfs.c rpc_server/srv_dfs_nt.c'''
+RPC_NETDFS_SRC = '''../librpc/gen_ndr/srv_dfs.c
+                    rpc_server/srv_dfs_nt.c'''
 
 RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
                      rpc_server/srv_spoolss_util.c
@@ -464,10 +467,9 @@ RPC_NCACN_NP_INTERNAL = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_n
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c
                ${RPC_NCACN_NP_INTERNAL}'''
 
-RPC_ECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
+RPC_RPCECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
-#TODO: RPC_SERVER_SRC used to include RPC_STATIC modules
-RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
+RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC} ${RPC_STATIC}'''
 
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
@@ -717,7 +719,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
-                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSA_SRC}
+                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
                   ${LIBCLI_LSA_SRC}
@@ -790,13 +792,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
-                ${RPC_LSA_SRC}
-                ${RPC_NETLOG_SRC} ${RPC_SAMR_SRC}
-                ${RPC_INITSHUTDOWN_SRC} ${RPC_REG_SRC}
-                ${RPC_DSSETUP_SRC} ${RPC_SVC_SRC} ${RPC_WKS_SRC}
-                ${RPC_SVCCTL_SRC} ${RPC_NTSVCS_SRC} ${RPC_DFS_SRC}
-                ${RPC_SPOOLSS_SRC} ${RPC_EVENTLOG_SRC}
-                ${RPC_ECHO_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_WINREG_SRC}
                 ${LIBCLI_SRVSVC_SRC}
