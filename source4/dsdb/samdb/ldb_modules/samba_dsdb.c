@@ -259,6 +259,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 			link_modules = openldap_modules;
 			backend_modules = openldap_backend_modules;
 			extended_dn_module = extended_dn_module_openldap;
+		} else {
+			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "invalid backend type");
 		}
 		ret = ldb_set_opaque(ldb, "readOnlySchema", (void*)1);
 		if (ret != LDB_SUCCESS) {
