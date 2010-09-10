@@ -776,7 +776,8 @@ int rep_clock_gettime(clockid_t clk_id, struct timespec *tp)
 			tp->tv_nsec = tval.tv_usec * 1000;
 			break;
 		default:
-			return EINVAL;
+			errno = EINVAL;
+			return -1;
 	}
 	return 0;
 }
