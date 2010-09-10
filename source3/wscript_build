@@ -152,7 +152,6 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  librpc/gen_ndr/ndr_notify.c
                  ${LIBNDR_XATTR_SRC}
                  ../librpc/gen_ndr/ndr_epmapper.c
-                 ../librpc/gen_ndr/ndr_named_pipe_auth.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
                  ${LIBNDR_SPOOLSS_SRC}'''
 
@@ -460,7 +459,8 @@ RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
 RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
                    ${LIB_EVENTLOG_SRC} ../librpc/gen_ndr/srv_eventlog.c'''
 
-NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
+NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c
+                     ../librpc/gen_ndr/ndr_named_pipe_auth.c'''
 
 RPC_NCACN_NP_INTERNAL = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_np_internal.c
                         rpc_server/rpc_handles.c'''
