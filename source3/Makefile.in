@@ -404,7 +404,6 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 $(LIBNDR_XATTR_OBJ) \
 		 librpc/gen_ndr/ndr_epmapper.o \
-		 librpc/gen_ndr/ndr_named_pipe_auth.o \
 		 librpc/gen_ndr/ndr_ntsvcs.o \
 		 $(LIBNDR_SPOOLSS_OBJ)
 
@@ -702,7 +701,8 @@ RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
 		   $(LIB_EVENTLOG_OBJ) librpc/gen_ndr/srv_eventlog.o
 
-NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o
+NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o \
+		  librpc/gen_ndr/ndr_named_pipe_auth.o
 
 RPC_NCACN_NP_INTERNAL = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np_internal.o \
 			rpc_server/rpc_handles.o
