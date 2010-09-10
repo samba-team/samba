@@ -62,10 +62,10 @@ static bool try_failed_login(struct torture_context *tctx, struct smbcli_state *
 
 bool torture_sec_leak(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	time_t t1 = time(NULL);
+	time_t t1 = time_mono(NULL);
 	int timelimit = torture_setting_int(tctx, "timelimit", 20);
 
-	while (time(NULL) < t1+timelimit) {
+	while (time_mono(NULL) < t1+timelimit) {
 		if (!try_failed_login(tctx, cli)) {
 			return false;
 		}
