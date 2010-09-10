@@ -224,7 +224,7 @@ struct pvfs_search_state {
 	uint16_t search_attrib;
 	uint16_t must_attrib;
 	struct pvfs_dir *dir;
-	time_t last_used;
+	time_t last_used; /* monotonic clock time */
 	unsigned int num_ea_names;
 	struct ea_name *ea_names;
 	struct tevent_timer *te;

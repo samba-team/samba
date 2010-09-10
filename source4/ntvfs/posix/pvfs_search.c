@@ -291,7 +291,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 static void pvfs_search_cleanup(struct pvfs_state *pvfs)
 {
 	int i;
-	time_t t = time(NULL);
+	time_t t = time_mono(NULL);
 
 	for (i=0;i<MAX_OLD_SEARCHES;i++) {
 		struct pvfs_search_state *search;
@@ -379,7 +379,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	search->current_index = 0;
 	search->search_attrib = search_attrib & 0xFF;
 	search->must_attrib = (search_attrib>>8) & 0xFF;
-	search->last_used = time(NULL);
+	search->last_used = time_mono(NULL);
 	search->te = NULL;
 
 	DLIST_ADD(pvfs->search.list, search);
@@ -437,7 +437,7 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	search->last_used = time(NULL);
+	search->last_used = time_mono(NULL);
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.data_level,
 				  &reply_count, search_private, callback);
