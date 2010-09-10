@@ -40,8 +40,8 @@ enum {
 /****************************************************************
 ****************************************************************/
 
-static void print_result(uint32_t level,
-			 uint8_t *buffer)
+static void print_netlogon_info_result(uint32_t level,
+				       uint8_t *buffer)
 {
 	struct NETLOGON_INFO_1 *i1 = NULL;
 	struct NETLOGON_INFO_2 *i2 = NULL;
@@ -173,6 +173,9 @@ int main(int argc, const char **argv)
 					libnetapi_get_error_string(ctx, status));
 				goto done;
 			}
+
+			print_netlogon_info_result(query_level, buffer);
+
 			break;
 		case OPT_SC_QUERY:
 			query_level = 2;
@@ -187,6 +190,9 @@ int main(int argc, const char **argv)
 					libnetapi_get_error_string(ctx, status));
 				goto done;
 			}
+
+			print_netlogon_info_result(query_level, buffer);
+
 			break;
 		case OPT_SC_VERIFY:
 			query_level = 2;
@@ -201,6 +207,9 @@ int main(int argc, const char **argv)
 					libnetapi_get_error_string(ctx, status));
 				goto done;
 			}
+
+			print_netlogon_info_result(query_level, buffer);
+
 			break;
 		case OPT_SC_RESET:
 			query_level = 2;
@@ -215,6 +224,9 @@ int main(int argc, const char **argv)
 					libnetapi_get_error_string(ctx, status));
 				goto done;
 			}
+
+			print_netlogon_info_result(query_level, buffer);
+
 			break;
 		case OPT_SC_CHANGE_PWD:
 			query_level = 1;
@@ -229,14 +241,15 @@ int main(int argc, const char **argv)
 					libnetapi_get_error_string(ctx, status));
 				goto done;
 			}
+
+			print_netlogon_info_result(query_level, buffer);
+
 			break;
 		default:
 			poptPrintHelp(pc, stderr, 0);
 			goto done;
 		}
 	}
-
-	print_result(query_level, buffer);
 
 	printf("The command completed successfully\n");
 	status = 0;
