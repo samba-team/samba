@@ -539,7 +539,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	t = time(NULL);
+	t = time_mono(NULL);
 
 	torture_comment(tctx, "Testing cancel by CANCEL_LOCK\n");
 
@@ -574,7 +574,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel was not immediate (%s)\n", __location__));
 
 	/* MS-CIFS (2.2.4.32.1) states that a cancel is honored if and only
@@ -596,7 +596,7 @@ static bool test_async(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* setup 2 timed locks */
-	t = time(NULL);
+	t = time_mono(NULL);
 	io.lockx.in.timeout = 10000;
 	io.lockx.in.lock_cnt = 1;
 	io.lockx.in.locks = &lock[0];
@@ -624,7 +624,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "first lock was not cancelled immediately (%s)\n",
 		       __location__));
 
@@ -640,7 +640,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smbcli_request_simple_recv(req2);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "second lock was not cancelled immediately (%s)\n",
 		       __location__));
 
@@ -764,13 +764,13 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	t = time(NULL);
+	t = time_mono(NULL);
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by unlock was not immediate (%s) - took %d secs\n",
-		       __location__, (int)(time(NULL)-t)));
+		       __location__, (int)(time_mono(NULL)-t)));
 
 	torture_comment(tctx, "Testing cancel by close\n");
 	io.lockx.in.ulock_cnt = 0;
@@ -780,7 +780,7 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
-	t = time(NULL);
+	t = time_mono(NULL);
 	io.lockx.in.timeout = 10000;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
@@ -795,7 +795,7 @@ static bool test_async(struct torture_context *tctx,
 	else
 		CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by close was not immediate (%s)\n", __location__));
 
 	torture_comment(tctx, "create a new sessions\n");
@@ -851,7 +851,7 @@ static bool test_async(struct torture_context *tctx,
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 		io.lockx.in.timeout = 10000;
-		t = time(NULL);
+		t = time_mono(NULL);
 		req = smb_raw_lock_send(tree, &io);
 		torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 			       "Failed to setup timed lock (%s)\n",
@@ -866,7 +866,7 @@ static bool test_async(struct torture_context *tctx,
 		else
 			CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-		torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+		torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 			       "lock cancel by exit was not immediate (%s)\n",
 			       __location__));
 	}
@@ -903,7 +903,7 @@ static bool test_async(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	io.lockx.in.timeout = 10000;
-	t = time(NULL);
+	t = time_mono(NULL);
 	req = smb_raw_lock_send(tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -927,7 +927,7 @@ static bool test_async(struct torture_context *tctx,
 		CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 	}
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by ulogoff was not immediate (%s)\n", __location__));
 
 	torture_comment(tctx, "Testing cancel by tdis\n");
@@ -956,7 +956,7 @@ static bool test_async(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	io.lockx.in.timeout = 10000;
-	t = time(NULL);
+	t = time_mono(NULL);
 	req = smb_raw_lock_send(tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -970,7 +970,7 @@ static bool test_async(struct torture_context *tctx,
 	else
 		CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	torture_assert(tctx,!(time(NULL) > t+2), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by tdis was not immediate (%s)\n", __location__));
 
 done:
@@ -1343,7 +1343,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	start = time(NULL);
+	start = time_mono(NULL);
 	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
@@ -1363,7 +1363,7 @@ next_run:
 		delay /= 2;
 	}
 
-	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) < start+delay), talloc_asprintf(tctx,
 		       "lock comes back to early timeout[%d] delay[%d]"
 		       "(%s)\n", t, delay, __location__));
 
@@ -1390,7 +1390,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	start = time(NULL);
+	start = time_mono(NULL);
 	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
@@ -1410,7 +1410,7 @@ next_run:
 		delay /= 2;
 	}
 
-	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) < start+delay), talloc_asprintf(tctx,
 		       "lock comes back to early timeout[%d] delay[%d]"
 		       "(%s)\n", t, delay, __location__));
 
@@ -1439,7 +1439,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	start = time(NULL);
+	start = time_mono(NULL);
 	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
@@ -1457,7 +1457,7 @@ next_run:
 		delay /= 2;
 	}
 
-	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+	torture_assert(tctx,!(time_mono(NULL) < start+delay), talloc_asprintf(tctx,
 		       "lock comes back to early timeout[%d] delay[%d]"
 		       "(%s)\n", t, delay, __location__));
 
