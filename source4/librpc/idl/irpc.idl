@@ -169,7 +169,7 @@ import "misc.idl", "security.idl", "nbt.idl";
                DREPL_PDC_MASTER
 	} drepl_role_master;
 
-	NTSTATUS drepl_takeFSMORole(
+	WERROR drepl_takeFSMORole(
 		[in] uint32 role
 		);
 

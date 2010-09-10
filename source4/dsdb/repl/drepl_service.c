@@ -347,7 +347,7 @@ static NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 {
 	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
 							   struct dreplsrv_service);
-	r->out.result = werror_to_ntstatus(dreplsrv_fsmo_role_check(service, r->in.role));
+	r->out.result = dreplsrv_fsmo_role_check(service, r->in.role);
 	return NT_STATUS_OK;
 }
 

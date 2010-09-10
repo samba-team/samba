@@ -983,7 +983,8 @@ static int rootdse_become_master(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
-	NTSTATUS status_call, status_fn;
+	NTSTATUS status_call;
+	WERROR status_fn;
 	struct dcerpc_binding_handle *irpc_handle;
 
 	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
@@ -1002,7 +1003,7 @@ static int rootdse_become_master(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	status_fn = r.out.result;
-	if (!NT_STATUS_IS_OK(status_fn)) {
+	if (!W_ERROR_IS_OK(status_fn)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
