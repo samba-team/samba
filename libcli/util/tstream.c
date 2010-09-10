@@ -75,7 +75,7 @@ struct tevent_req *tstream_read_pdu_blob_send(TALLOC_CTX *mem_ctx,
 	state->pdu_blob.data = buf;
 	state->pdu_blob.length = initial_read_size;
 
-	state->tmp_vector.iov_base = buf;
+	state->tmp_vector.iov_base = (char *) buf;
 	state->tmp_vector.iov_len = initial_read_size;
 
 	subreq = tstream_readv_send(state, ev, stream, &state->tmp_vector, 1);
@@ -128,7 +128,7 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 	state->pdu_blob.data = buf;
 	state->pdu_blob.length = pdu_size;
 
-	state->tmp_vector.iov_base = buf + state->tmp_vector.iov_len;
+	state->tmp_vector.iov_base = (char *) (buf + state->tmp_vector.iov_len);
 	state->tmp_vector.iov_len = pdu_size - state->tmp_vector.iov_len;
 
 	subreq = tstream_readv_send(state,

@@ -172,7 +172,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	state->auth_req_iov.iov_base = state->auth_req_blob.data;
+	state->auth_req_iov.iov_base = (char *) state->auth_req_blob.data;
 	state->auth_req_iov.iov_len = state->auth_req_blob.length;
 
 	subreq = tstream_unix_connect_send(state,
@@ -313,7 +313,7 @@ static int tstream_npa_connect_next_vector(struct tstream_context *unix_stream,
 	if (!vector) {
 		return -1;
 	}
-	vector[0].iov_base = state->auth_rep_blob.data + ofs;
+	vector[0].iov_base = (char *) (state->auth_rep_blob.data + ofs);
 	vector[0].iov_len = state->auth_rep_blob.length - ofs;
 	count = 1;
 
@@ -575,7 +575,7 @@ static struct tevent_req *tstream_npa_readv_send(TALLOC_CTX *mem_ctx,
 				memcpy(base, pbase + ofs, left);
 
 				base += left;
-				state->vector[0].iov_base = base;
+				state->vector[0].iov_base = (char *) base;
 				state->vector[0].iov_len -= left;
 
 				ofs += left;
@@ -600,7 +600,7 @@ static struct tevent_req *tstream_npa_readv_send(TALLOC_CTX *mem_ctx,
 
 		if (left > 0) {
 			memmove(pbase, pbase + ofs, left);
-			npas->pending.iov_base = pbase;
+			npas->pending.iov_base = (char *) pbase;
 			npas->pending.iov_len = left;
 			/*
 			 * this cannot fail and even if it
@@ -608,7 +608,7 @@ static struct tevent_req *tstream_npa_readv_send(TALLOC_CTX *mem_ctx,
 			 */
 			pbase = talloc_realloc(npas, pbase, uint8_t, left);
 			if (pbase) {
-				npas->pending.iov_base = pbase;
+				npas->pending.iov_base = (char *) pbase;
 			}
 			pbase = NULL;
 		}
@@ -696,7 +696,7 @@ static int tstream_npa_readv_next_vector(struct tstream_context *unix_stream,
 			return -1;
 		}
 		ZERO_STRUCT(state->hdr);
-		vector[0].iov_base = state->hdr;
+		vector[0].iov_base = (char *) state->hdr;
 		vector[0].iov_len = sizeof(state->hdr);
 
 		count = 1;
@@ -732,11 +732,11 @@ static int tstream_npa_readv_next_vector(struct tstream_context *unix_stream,
 		if (left < state->vector[0].iov_len) {
 			uint8_t *base;
 			base = (uint8_t *)state->vector[0].iov_base;
-			vector[count].iov_base = base;
+			vector[count].iov_base = (char *) base;
 			vector[count].iov_len = left;
 			count++;
 			base += left;
-			state->vector[0].iov_base = base;
+			state->vector[0].iov_base = (char *) base;
 			state->vector[0].iov_len -= left;
 			break;
 		}
@@ -754,7 +754,7 @@ static int tstream_npa_readv_next_vector(struct tstream_context *unix_stream,
 		 * into the pending buffer, where the next readv can
 		 * be served from.
 		 */
-		npas->pending.iov_base = talloc_array(npas, uint8_t, left);
+		npas->pending.iov_base = talloc_array(npas, char, left);
 		if (!npas->pending.iov_base) {
 			return -1;
 		}
@@ -865,7 +865,7 @@ static struct tevent_req *tstream_npa_writev_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(new_vector, req)) {
 			goto post;
 		}
-		new_vector[0].iov_base = state->hdr;
+		new_vector[0].iov_base = (char *) state->hdr;
 		new_vector[0].iov_len = sizeof(state->hdr);
 		memcpy(new_vector + 1, vector, sizeof(struct iovec)*count);
 
@@ -1238,7 +1238,7 @@ static int tstream_npa_accept_next_vector(struct tstream_context *unix_stream,
 	if (!vector) {
 		return -1;
 	}
-	vector[0].iov_base = state->npa_blob.data + ofs;
+	vector[0].iov_base = (char *) (state->npa_blob.data + ofs);
 	vector[0].iov_len = state->npa_blob.length - ofs;
 	count = 1;
 
@@ -1442,7 +1442,7 @@ reply:
 
 	state->accept_status = pipe_reply.status;
 
-	state->out_iov.iov_base = out.data;
+	state->out_iov.iov_base = (char *) out.data;
 	state->out_iov.iov_len = out.length;
 
 	subreq = tstream_writev_send(state, state->ev,
