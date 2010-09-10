@@ -921,7 +921,8 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 					 struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
 	struct ldb_dn *fsmo_role_dn, *req_dn, *ntds_dn;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	struct ldb_context *ldb = b_state->sam_ctx;
 	struct ldb_message *msg;
 
