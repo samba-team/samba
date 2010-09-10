@@ -309,7 +309,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	struct dsdb_openldap_dereference_result_control *dereference_control = NULL;
 	int ret;
 	unsigned int i, j;
-	struct ldb_message *msg = ares->message;
+	struct ldb_message *msg;
 	struct extended_dn_out_private *p;
 	struct ldb_context *ldb;
 	bool have_reveal_control, checked_reveal_control=false;
@@ -325,6 +325,8 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
+
+	msg = ares->message;
 
 	switch (ares->type) {
 	case LDB_REPLY_REFERRAL:
