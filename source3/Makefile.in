@@ -656,10 +656,11 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
-RPC_LSA_OBJ = rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
+RPC_LSARPC_OBJ = rpc_server/srv_lsa_nt.o \
+		 librpc/gen_ndr/srv_lsa.o
 
-RPC_NETLOG_OBJ = rpc_server/srv_netlog_nt.o \
-		 librpc/gen_ndr/srv_netlogon.o
+RPC_NETLOGON_OBJ = rpc_server/srv_netlog_nt.o \
+		   librpc/gen_ndr/srv_netlogon.o
 
 RPC_SAMR_OBJ = rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o \
@@ -668,15 +669,16 @@ RPC_SAMR_OBJ = rpc_server/srv_samr_nt.o \
 
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
-RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
-	       librpc/gen_ndr/srv_winreg.o
+RPC_WINREG_OBJ =  rpc_server/srv_winreg_nt.o \
+		  librpc/gen_ndr/srv_winreg.o
 
 RPC_DSSETUP_OBJ =  rpc_server/srv_dssetup_nt.o librpc/gen_ndr/srv_dssetup.o
 
-RPC_SVC_OBJ = rpc_server/srv_srvsvc_nt.o \
-	      librpc/gen_ndr/srv_srvsvc.o
+RPC_SRVSVC_OBJ = rpc_server/srv_srvsvc_nt.o \
+		 librpc/gen_ndr/srv_srvsvc.o
 
-RPC_WKS_OBJ =  librpc/gen_ndr/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
+RPC_WKSSVC_OBJ =  librpc/gen_ndr/srv_wkssvc.o \
+		  rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl_nt.o \
 		  librpc/gen_ndr/srv_svcctl.o \
@@ -687,7 +689,8 @@ RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl_nt.o \
 RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs_nt.o \
 		 librpc/gen_ndr/srv_ntsvcs.o
 
-RPC_DFS_OBJ =  librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
+RPC_NETDFS_OBJ =  librpc/gen_ndr/srv_dfs.o \
+		  rpc_server/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 		  rpc_server/srv_spoolss_util.o \
@@ -705,7 +708,7 @@ RPC_NCACN_NP_INTERNAL = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np_i
 RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o \
 	       $(RPC_NCACN_NP_INTERNAL)
 
-RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
+RPC_RPCECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
                  $(LIBCLI_SPOOLSS_OBJ) \
@@ -1375,7 +1378,7 @@ WINBINDD_OBJ = \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
-		$(RPC_NCACN_NP_INTERNAL) $(RPC_SAMR_OBJ) $(RPC_LSA_OBJ) \
+		$(RPC_NCACN_NP_INTERNAL) $(RPC_SAMR_OBJ) $(RPC_LSARPC_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
 		$(LIBADS_SERVER_OBJ) \
 		$(TDB_VALIDATE_OBJ) \
@@ -2575,17 +2578,17 @@ SHLD_LIBRARY = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
 SHLD_MODULE = $(SHLD) $(LDSHFLAGS_MODULES) $(MODULE_EXPORTS) \
 	-o $@ @SONAMEFLAG@`basename $@`
 
-bin/librpc_lsarpc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_OBJ)
+bin/librpc_lsarpc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSARPC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_LSA_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_LSARPC_OBJ)
 
 bin/librpc_samr.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_LIBRARY) $(RPC_SAMR_OBJ)
 
-bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
+bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SRVSVC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_SVC_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_SRVSVC_OBJ)
 
 bin/librpc_svcctl.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
@@ -2595,17 +2598,17 @@ bin/librpc_ntsvcs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NTSVCS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_LIBRARY) $(RPC_NTSVCS_OBJ)
 
-bin/librpc_wkssvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_WKS_OBJ)
+bin/librpc_wkssvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_WKSSVC_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_WKS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_WKSSVC_OBJ)
 
-bin/librpc_NETLOGON.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETLOG_OBJ)
+bin/librpc_NETLOGON.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETLOGON_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_NETLOG_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_NETLOGON_OBJ)
 
-bin/librpc_winreg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_REG_OBJ)
+bin/librpc_winreg.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_WINREG_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_REG_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_WINREG_OBJ)
 
 bin/librpc_initshutdown.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
@@ -2623,13 +2626,13 @@ bin/librpc_eventlog.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_EVENTLOG_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_LIBRARY) $(RPC_EVENTLOG_OBJ)
 
-bin/librpc_netdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DFS_OBJ)
+bin/librpc_netdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_NETDFS_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_DFS_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_NETDFS_OBJ)
 
-bin/librpc_echo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_ECHO_OBJ)
+bin/librpc_rpcecho.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_RPCECHO_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_LIBRARY) $(RPC_ECHO_OBJ)
+	@$(SHLD_LIBRARY) $(RPC_RPCECHO_OBJ)
 
 bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
