@@ -101,7 +101,7 @@ static WERROR kccsrv_load_partitions(struct kccsrv_service *s)
 		return WERR_FOOBAR;
 	}
 
-	for (i=0; el && i < el->num_values; i++) {
+	for (i=0; i < el->num_values; i++) {
 		const char *v = (const char *)el->values[i].data;
 		struct ldb_dn *pdn;
 		struct kccsrv_partition *p;
