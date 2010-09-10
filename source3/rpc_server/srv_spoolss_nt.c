@@ -4246,7 +4246,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 				    lp_const_servicename(snum),
 				    &info2);
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
+		goto out;
 	}
 
 	switch (r->in.level) {
@@ -4293,6 +4293,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 		break;
 	}
 
+ out:
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("_spoolss_GetPrinter: failed to construct printer info level %d - %s\n",
 			  r->in.level, win_errstr(result)));
