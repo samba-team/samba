@@ -2412,65 +2412,48 @@ static const struct {
 	const char *error_message;
 } multiple_values_tests[] = {
 	{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = NULL,
-		.values[2] = NULL,
+		.values = { VALUE_CURRENT_VERSION, NULL, NULL },
 		.num_values = 1,
 		.existing_value = true,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_SYSTEM_ROOT,
-		.values[1] = NULL,
-		.values[2] = NULL,
+		.values = { VALUE_SYSTEM_ROOT, NULL, NULL },
 		.num_values = 1,
 		.existing_value = true,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = VALUE_SYSTEM_ROOT,
-		.values[2] = NULL,
+		.values = { VALUE_CURRENT_VERSION, VALUE_SYSTEM_ROOT, NULL },
 		.num_values = 2,
 		.existing_value = true,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = VALUE_SYSTEM_ROOT,
-		.values[2] = VALUE_CURRENT_VERSION,
+		.values = { VALUE_CURRENT_VERSION, VALUE_SYSTEM_ROOT,
+			    VALUE_CURRENT_VERSION },
 		.num_values = 3,
 		.existing_value = true,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = NULL,
-		.values[2] = VALUE_SYSTEM_ROOT,
+		.values = { VALUE_CURRENT_VERSION, NULL, VALUE_SYSTEM_ROOT },
 		.num_values = 3,
 		.existing_value = false,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = "",
-		.values[2] = VALUE_SYSTEM_ROOT,
+		.values = { VALUE_CURRENT_VERSION, "", VALUE_SYSTEM_ROOT },
 		.num_values = 3,
 		.existing_value = false,
 		.error_message = NULL
 	},{
-		.values[0] = "IDoNotExist",
-		.values[1] = NULL,
-		.values[2] = NULL,
+		.values = { "IDoNotExist", NULL, NULL },
 		.num_values = 1,
 		.existing_value = false,
 		.error_message = NULL
 	},{
-		.values[0] = "IDoNotExist",
-		.values[1] = VALUE_CURRENT_VERSION,
-		.values[2] = NULL,
+		.values = { "IDoNotExist", VALUE_CURRENT_VERSION, NULL },
 		.num_values = 2,
 		.existing_value = false,
 		.error_message = NULL
 	},{
-		.values[0] = VALUE_CURRENT_VERSION,
-		.values[1] = "IDoNotExist",
-		.values[2] = NULL,
+		.values = { VALUE_CURRENT_VERSION, "IDoNotExist", NULL },
 		.num_values = 2,
 		.existing_value = false,
 		.error_message = NULL
