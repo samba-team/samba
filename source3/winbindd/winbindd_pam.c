@@ -477,10 +477,6 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 		goto memory_ccache;
 	}
 
-	if (!type || type[0] == '\0') {
-		goto memory_ccache;
-	}
-
 	if (strequal(type, "FILE")) {
 		gen_cc = talloc_asprintf(mem_ctx, "FILE:/tmp/krb5cc_%d", uid);
 	} else if (strequal(type, "WRFILE")) {
