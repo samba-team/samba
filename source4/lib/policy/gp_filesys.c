@@ -178,8 +178,6 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 			&options,
 			&session_options,
 			lpcfg_gensec_settings(gp_ctx, gp_ctx->lp_ctx));
-
-	return NT_STATUS_OK;
 }
 
 static char * gp_get_share_path(TALLOC_CTX *mem_ctx, const char *file_sys_path)
