@@ -166,7 +166,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
-		talloc_free(down_req);
+		talloc_free(ac);
 		return ldb_operr(ldb);
 	}
 
