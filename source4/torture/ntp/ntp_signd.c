@@ -192,10 +192,10 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	 * First add the length of the request buffer
 	 */
 	RSIVAL(signd_client->request_hdr, 0, sign_req_blob.length);
-	signd_client->request_iov[0].iov_base = signd_client->request_hdr;
+	signd_client->request_iov[0].iov_base = (char *) signd_client->request_hdr;
 	signd_client->request_iov[0].iov_len = 4;
 
-	signd_client->request_iov[1].iov_base = sign_req_blob.data;
+	signd_client->request_iov[1].iov_base = (char *) sign_req_blob.data;
 	signd_client->request_iov[1].iov_len = sign_req_blob.length;
 
 	/* Fire the request buffer */
